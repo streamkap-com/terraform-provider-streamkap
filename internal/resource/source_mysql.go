@@ -3,6 +3,7 @@ package resource
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -18,56 +19,56 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var (
-	_ res.Resource                = &Source{}
-	_ res.ResourceWithImportState = &Source{}
+	_ res.Resource                = &SourceMySQL{}
+	_ res.ResourceWithImportState = &SourceMySQL{}
 )
 
-func NewSourceResource() res.Resource {
-	return &Source{}
+func NewSourceMySQLResource() res.Resource {
+	return &SourceMySQL{}
 }
 
-// Source defines the resource implementation.
-type Source struct {
+// SourceMySQL defines the resource implementation.
+type SourceMySQL struct {
 	client         api.StreamkapAPI
 	configurations []api.SourceConfigurationResponse
 }
 
 // SourceModel describes the resource data model.
 type SourceModel struct {
-	Id        types.String           `json:"id" tfsdk:"id"`
-	Name      types.String           `json:"name" tfsdk:"name"`
-	Connector types.String           `json:"connector" tfsdk:"connector"`
-	Config    map[string]interface{} `json:"config" tfsdk:"config"`
+	Id        types.String `json:"id" tfsdk:"id"`
+	Name      types.String `json:"name" tfsdk:"name"`
+	Connector types.String `json:"connector" tfsdk:"connector"`
+	Config    types.Object `json:"config" tfsdk:"config"`
 }
 
-func (r *Source) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_source"
+func (r *SourceMySQL) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_source_mysql"
 }
 
-func (r *Source) Schema(ctx context.Context, req res.SchemaRequest, resp *res.SchemaResponse) {
+func (r *SourceMySQL) Schema(ctx context.Context, req res.SchemaRequest, resp *res.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "Source resource",
+		MarkdownDescription: "Source MySQL resource",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "Source identifier",
+				MarkdownDescription: "Source MySQL identifier",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "Source name",
+				MarkdownDescription: "SourceMySQL name",
 			},
 			"connector": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "Source connector",
+				MarkdownDescription: "SourceMySQL connector",
 			},
 			"config": schema.ObjectAttribute{
 				Required:            true,
-				MarkdownDescription: "Source config",
+				MarkdownDescription: "SourceMySQL config",
 				AttributeTypes: map[string]attr.Type{
 					"database.hostname.user.defined":            types.StringType,
 					"database.port":                             types.StringType,
@@ -80,15 +81,15 @@ func (r *Source) Schema(ctx context.Context, req res.SchemaRequest, resp *res.Sc
 					"snapshot.gtid":                             types.StringType,
 					"snapshot.mode.user.defined":                types.StringType,
 					"binary.handling.mode":                      types.StringType,
-					"incremental.snapshot.chunk.size":           types.StringType,
-					"max.batch.size":                            types.StringType,
+					"incremental.snapshot.chunk.size":           types.Int64Type,
+					"max.batch.size":                            types.Int64Type,
 				},
 			},
 		},
 	}
 }
 
-func (r *Source) Configure(ctx context.Context, req res.ConfigureRequest, resp *res.ConfigureResponse) {
+func (r *SourceMySQL) Configure(ctx context.Context, req res.ConfigureRequest, resp *res.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -97,7 +98,7 @@ func (r *Source) Configure(ctx context.Context, req res.ConfigureRequest, resp *
 	client, ok := req.ProviderData.(api.StreamkapAPI)
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected Source Configure Type",
+			"Unexpected SourceMySQL Configure Type",
 			fmt.Sprintf("Expected api.StreamkapAPI, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
@@ -107,13 +108,12 @@ func (r *Source) Configure(ctx context.Context, req res.ConfigureRequest, resp *
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to list source configurations, got error: %s", err))
 	}
-	fmt.Println("configurations: ", configurations)
 
 	r.client = client
 	r.configurations = configurations
 }
 
-func (r *Source) Create(ctx context.Context, req res.CreateRequest, resp *res.CreateResponse) {
+func (r *SourceMySQL) Create(ctx context.Context, req res.CreateRequest, resp *res.CreateResponse) {
 	var data SourceModel
 
 	// Read Terraform plan data into the model
@@ -125,24 +125,37 @@ func (r *Source) Create(ctx context.Context, req res.CreateRequest, resp *res.Cr
 
 	// If applicable, this is a great opportunity to initialize any necessary
 	// provider client data and make a call using it.
+	config := api.CreateSourceConfig{
+		DatabaseHostnameUserDefined:          data.Config.Attributes()["database.hostname.user.defined"].String(),
+		DatabasePort:                         data.Config.Attributes()["database.port"].String(),
+		DatabaseUser:                         data.Config.Attributes()["database.user"].String(),
+		DatabasePassword:                     data.Config.Attributes()["database.password"].String(),
+		DatabaseIncludeListUserDefined:       data.Config.Attributes()["database.include.list.user.defined"].String(),
+		TableIncludeListUserDefined:          data.Config.Attributes()["table.include.list.user.defined"].String(),
+		SignalDataCollectionSchemaOrDatabase: data.Config.Attributes()["signal.data.collection.schema.or.database"].String(),
+		DatabaseConnectionTimeZone:           data.Config.Attributes()["database.connectionTimeZone"].String(),
+		SnapshotGtid:                         data.Config.Attributes()["snapshot.gtid"].String(),
+		SnapshotModeUserDefined:              data.Config.Attributes()["snapshot.mode.user.defined"].String(),
+		BinaryHandlingMode:                   data.Config.Attributes()["binary.handling.mode"].String(),
+	}
+	chunkSize, err := strconv.Atoi(data.Config.Attributes()["incremental.snapshot.chunk.size"].String())
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to get chunk size, got error: %s", err))
+		return
+	}
+	config.IncrementalSnapshotChunkSize = chunkSize
+
+	maxSize, err := strconv.Atoi(data.Config.Attributes()["max.batch.size"].String())
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to get max batch size, got error: %s", err))
+		return
+	}
+	config.MaxBatchSize = maxSize
+
 	httpResp, err := r.client.CreateSource(ctx, api.CreateSourceRequest{
 		Name:      data.Name.String(),
 		Connector: data.Connector.String(),
-		Config: api.CreateSourceConfig{
-			DatabaseHostnameUserDefined:          data.Config["database.hostname.user.defined"].(string),
-			DatabasePort:                         data.Config["database.port"].(string),
-			DatabaseUser:                         data.Config["database.user"].(string),
-			DatabasePassword:                     data.Config["database.password"].(string),
-			DatabaseIncludeListUserDefined:       data.Config["database.include.list.user.defined"].(string),
-			TableIncludeListUserDefined:          data.Config["table.include.list.user.defined"].(string),
-			SignalDataCollectionSchemaOrDatabase: data.Config["signal.data.collection.schema.or.database"].(string),
-			DatabaseConnectionTimeZone:           data.Config["database.connectionTimeZone"].(string),
-			SnapshotGtid:                         data.Config["snapshot.gtid"].(string),
-			SnapshotModeUserDefined:              data.Config["snapshot.mode.user.defined"].(string),
-			BinaryHandlingMode:                   data.Config["binary.handling.mode"].(string),
-			IncrementalSnapshotChunkSize:         data.Config["incremental.snapshot.chunk.size"].(int),
-			MaxBatchSize:                         data.Config["max.batch.size"].(int),
-		},
+		Config:    config,
 	})
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create example, got error: %s", err))
@@ -150,10 +163,9 @@ func (r *Source) Create(ctx context.Context, req res.CreateRequest, resp *res.Cr
 	}
 	source := httpResp.Data[0]
 
-	// For the purposes of this example code, hardcoding a response value to
-	// save into the Terraform state.
-	data.Id = types.StringValue(source.Id)
+	data.Id = types.StringValue(source.ID)
 	data.Name = types.StringValue(source.Name)
+	data.Connector = types.StringValue(source.Connector)
 
 	// Write logs using the tflog package
 	// Documentation: https://terraform.io/plugin/log
@@ -163,7 +175,7 @@ func (r *Source) Create(ctx context.Context, req res.CreateRequest, resp *res.Cr
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *Source) Read(ctx context.Context, req res.ReadRequest, resp *res.ReadResponse) {
+func (r *SourceMySQL) Read(ctx context.Context, req res.ReadRequest, resp *res.ReadResponse) {
 	var data SourceModel
 
 	// Read Terraform prior state data into the model
@@ -185,7 +197,7 @@ func (r *Source) Read(ctx context.Context, req res.ReadRequest, resp *res.ReadRe
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *Source) Update(ctx context.Context, req res.UpdateRequest, resp *res.UpdateResponse) {
+func (r *SourceMySQL) Update(ctx context.Context, req res.UpdateRequest, resp *res.UpdateResponse) {
 	var data SourceModel
 
 	// Read Terraform plan data into the model
@@ -195,19 +207,19 @@ func (r *Source) Update(ctx context.Context, req res.UpdateRequest, resp *res.Up
 		return
 	}
 
-	// If applicable, this is a great opportunity to initialize any necessary
-	// provider client data and make a call using it.
-	// httpResp, err := r.client.Do(httpReq)
-	// if err != nil {
-	//     resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update example, got error: %s", err))
-	//     return
-	// }
+	httpResp, err := r.client.GetSource(ctx, data.Id.String())
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create example, got error: %s", err))
+		return
+	}
+
+	data.Id = types.StringValue(httpResp.ID)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
-func (r *Source) Delete(ctx context.Context, req res.DeleteRequest, resp *res.DeleteResponse) {
+func (r *SourceMySQL) Delete(ctx context.Context, req res.DeleteRequest, resp *res.DeleteResponse) {
 	var data SourceModel
 
 	// Read Terraform prior state data into the model
@@ -226,6 +238,6 @@ func (r *Source) Delete(ctx context.Context, req res.DeleteRequest, resp *res.De
 	// }
 }
 
-func (r *Source) ImportState(ctx context.Context, req res.ImportStateRequest, resp *res.ImportStateResponse) {
+func (r *SourceMySQL) ImportState(ctx context.Context, req res.ImportStateRequest, resp *res.ImportStateResponse) {
 	res.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

@@ -1,3 +1,1 @@
-data "streamkap_example" "example" {
-  configurable_attribute = "some-value"
-}
+data "streamkap_token" "example" {}
