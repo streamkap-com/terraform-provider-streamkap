@@ -22,4 +22,6 @@ provider "streamkap" {
 
 ### Optional
 
-- `endpoint` (String) Example provider attribute
+- `host` (String) Streamkap provider attribute
+- `client_id` (String) Streamkap provider attribute
+- `secret` (String) Streamkap provider attribute

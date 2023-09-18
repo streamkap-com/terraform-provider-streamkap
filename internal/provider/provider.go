@@ -201,7 +201,7 @@ func (p *streamkapProvider) DataSources(_ context.Context) []func() datasource.D
 // Resources defines the resources implemented in the provider.
 func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		resource2.NewSourceResource,
+		resource2.NewSourceMySQLResource,
 		resource2.NewDestinationResource,
 		resource2.NewPipelineResource,
 	}

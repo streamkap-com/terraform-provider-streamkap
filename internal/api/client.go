@@ -14,6 +14,7 @@ type StreamkapAPI interface {
 	//Source APIs
 	ListSourceConfigurations(ctx context.Context) ([]SourceConfigurationResponse, error)
 	CreateSource(ctx context.Context, req CreateSourceRequest) (*CreateSourceResponse, error)
+	GetSource(ctx context.Context, sourceID string) (*Source, error)
 	CreateDestination(ctx context.Context, reqPayload CreateDestinationRequest) (*CreateDestinationResponse, error)
 	CreatePipeline(ctx context.Context, reqPayload CreatePipelineRequest) (*CreatePipelineResponse, error)
 }

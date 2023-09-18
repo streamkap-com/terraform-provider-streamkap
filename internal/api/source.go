@@ -9,10 +9,10 @@ import (
 )
 
 type Source struct {
-	Id           string `json:"id"`
+	ID           string `json:"id"`
 	Name         string `json:"name"`
-	SubId        string `json:"sub_id"`
-	TenantId     string `json:"tenant_id"`
+	SubID        string `json:"sub_id"`
+	TenantID     string `json:"tenant_id"`
 	Connector    string `json:"connector"`
 	TaskStatuses struct {
 		Field1 struct {
@@ -186,4 +186,18 @@ func (s *streamkapAPI) ListSourceConfigurations(ctx context.Context) ([]SourceCo
 	}
 
 	return resp, nil
+}
+
+func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) (*Source, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/sources/"+sourceID, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	var resp Source
+	err = s.doRequest(req, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 }
