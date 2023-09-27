@@ -48,7 +48,7 @@ func TestAccSourceResource(t *testing.T) {
 			}
 			return resp, nil
 		})
-	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/sources/example-id",
+	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/sources?id=example-id",
 		func(req *http.Request) (*http.Response, error) {
 			source := []api.Source{{
 				ID:        "example-id",
@@ -62,7 +62,7 @@ func TestAccSourceResource(t *testing.T) {
 			}
 			return resp, nil
 		})
-	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/sources/example-id",
+	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/sources?id=example-id",
 		func(req *http.Request) (*http.Response, error) {
 			source := []api.Source{{
 				ID:        "example-id",

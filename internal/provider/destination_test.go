@@ -48,7 +48,7 @@ func TestAccDestinationResource(t *testing.T) {
 			}
 			return resp, nil
 		})
-	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/destinations/example-id",
+	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/destinations?id=example-id",
 		func(req *http.Request) (*http.Response, error) {
 			source := []api.Destination{
 				{
@@ -64,7 +64,7 @@ func TestAccDestinationResource(t *testing.T) {
 			}
 			return resp, nil
 		})
-	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/destinations/example-id",
+	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/destinations?id=example-id",
 		func(req *http.Request) (*http.Response, error) {
 			source := []api.Destination{
 				{
