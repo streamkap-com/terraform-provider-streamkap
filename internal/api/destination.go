@@ -80,7 +80,7 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload CreateD
 }
 
 func (s *streamkapAPI) GetDestination(ctx context.Context, destinationID string) ([]Destination, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/destinations/"+destinationID, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/destinations?id="+destinationID, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (s *streamkapAPI) GetDestination(ctx context.Context, destinationID string)
 }
 
 func (s *streamkapAPI) DeleteDestination(ctx context.Context, destinationID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/api/destinations/"+destinationID, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/api/destinations?id="+destinationID, http.NoBody)
 	if err != nil {
 		return err
 	}

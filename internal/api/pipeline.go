@@ -104,7 +104,7 @@ func (s *streamkapAPI) GetPipeline(ctx context.Context, pipelineID string) ([]Pi
 }
 
 func (s *streamkapAPI) DeletePipeline(ctx context.Context, pipelineID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/api/pipelines/"+pipelineID, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/api/pipelines?id="+pipelineID, http.NoBody)
 	if err != nil {
 		return err
 	}
