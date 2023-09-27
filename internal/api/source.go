@@ -55,26 +55,11 @@ type Source struct {
 	} `json:"config"`
 }
 
-type CreateSourceConfig struct {
-	DatabaseHostnameUserDefined          string `json:"database.hostname.user.defined"`
-	DatabasePort                         string `json:"database.port"`
-	DatabaseUser                         string `json:"database.user"`
-	DatabasePassword                     string `json:"database.password"`
-	DatabaseIncludeListUserDefined       string `json:"database.include.list.user.defined"`
-	TableIncludeListUserDefined          string `json:"table.include.list.user.defined"`
-	SignalDataCollectionSchemaOrDatabase string `json:"signal.data.collection.schema.or.database"`
-	DatabaseConnectionTimeZone           string `json:"database.connectionTimeZone"`
-	SnapshotGtid                         string `json:"snapshot.gtid"`
-	SnapshotModeUserDefined              string `json:"snapshot.mode.user.defined"`
-	BinaryHandlingMode                   string `json:"binary.handling.mode"`
-	IncrementalSnapshotChunkSize         int    `json:"incremental.snapshot.chunk.size"`
-	MaxBatchSize                         int    `json:"max.batch.size"`
-}
-
 type CreateSourceRequest struct {
-	Name      string             `json:"name"`
-	Connector string             `json:"connector"`
-	Config    CreateSourceConfig `json:"config"`
+	ID        string          `json:"id,omitempty"`
+	Name      string          `json:"name"`
+	Connector string          `json:"connector"`
+	Config    json.RawMessage `json:"config"`
 }
 
 type CreateSourceResponse struct {
@@ -89,74 +74,7 @@ type CreateSourceResponse struct {
 	Data       []Source `json:"data"`
 }
 
-type SourceConfigurationResponse struct {
-	Connector             string   `json:"connector"`
-	DisplayName           string   `json:"display_name"`
-	Status                string   `json:"status"`
-	SchemaLevels          []string `json:"schema_levels"`
-	DebeziumConnectorName string   `json:"debezium_connector_name"`
-	Serialisation         string   `json:"serialisation"`
-	Metrics               []struct {
-		Attribute   string `json:"attribute"`
-		Aggregation string `json:"aggregation"`
-		Value       struct {
-			Dynamic      bool     `json:"dynamic"`
-			FunctionName string   `json:"function_name"`
-			Dependencies []string `json:"dependencies,omitempty"`
-		} `json:"value,omitempty"`
-		Display struct {
-			Name  string `json:"name"`
-			Unit  string `json:"unit"`
-			Pages struct {
-				Sources struct {
-					DisplayByDefault bool     `json:"display_by_default"`
-					Levels           []string `json:"levels"`
-				} `json:"sources"`
-				Pipelines struct {
-					DisplayByDefault bool     `json:"display_by_default"`
-					Levels           []string `json:"levels"`
-				} `json:"pipelines,omitempty"`
-				Subscriptions struct {
-					DisplayByDefault bool     `json:"display_by_default"`
-					Levels           []string `json:"levels"`
-				} `json:"subscriptions,omitempty"`
-			} `json:"pages"`
-		} `json:"display"`
-		Mbean                string `json:"mbean,omitempty"`
-		ClickhouseMetricName string `json:"clickhouse_metric_name,omitempty"`
-		Level                string `json:"level,omitempty"`
-		LabelAsValue         string `json:"label_as_value,omitempty"`
-		Context              string `json:"context,omitempty"`
-		Category             string `json:"category,omitempty"`
-	} `json:"metrics"`
-	Config []struct {
-		Name        string `json:"name"`
-		UserDefined bool   `json:"user_defined"`
-		Value       struct {
-			Type         string      `json:"type,omitempty"`
-			RawValue     interface{} `json:"raw_value,omitempty"`
-			Control      string      `json:"control,omitempty"`
-			FunctionName string      `json:"function_name,omitempty"`
-			RawValues    []string    `json:"raw_values,omitempty"`
-			Default      interface{} `json:"default,omitempty"`
-			Dependencies []string    `json:"dependencies,omitempty"`
-			Max          int         `json:"max,omitempty"`
-			Min          int         `json:"min,omitempty"`
-			Step         int         `json:"step,omitempty"`
-		} `json:"value"`
-		KafkaConfig      bool   `json:"kafka_config"`
-		Description      string `json:"description,omitempty"`
-		OrderOfDisplay   int    `json:"order_of_display,omitempty"`
-		Required         bool   `json:"required,omitempty"`
-		DisplayName      string `json:"display_name,omitempty"`
-		Tab              string `json:"tab,omitempty"`
-		Encrypt          bool   `json:"encrypt,omitempty"`
-		SchemaLevel      string `json:"schema_level,omitempty"`
-		SchemaNameFormat string `json:"schema_name_format,omitempty"`
-	} `json:"config"`
-}
-
-func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload CreateSourceRequest) (*CreateSourceResponse, error) {
+func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload CreateSourceRequest) (*Source, error) {
 	payload, err := json.Marshal(reqPayload)
 	if err != nil {
 		return nil, err
@@ -165,7 +83,7 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload CreateSource
 	if err != nil {
 		return nil, err
 	}
-	var resp CreateSourceResponse
+	var resp Source
 	err = s.doRequest(req, &resp)
 	if err != nil {
 		return nil, err
@@ -174,12 +92,12 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload CreateSource
 	return &resp, nil
 }
 
-func (s *streamkapAPI) ListSourceConfigurations(ctx context.Context) ([]SourceConfigurationResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/list-sources", http.NoBody)
+func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) ([]Source, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/sources/"+sourceID, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
-	var resp []SourceConfigurationResponse
+	var resp []Source
 	err = s.doRequest(req, &resp)
 	if err != nil {
 		return nil, err
@@ -188,8 +106,26 @@ func (s *streamkapAPI) ListSourceConfigurations(ctx context.Context) ([]SourceCo
 	return resp, nil
 }
 
-func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) (*Source, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/sources/"+sourceID, http.NoBody)
+func (s *streamkapAPI) DeleteSource(ctx context.Context, sourceID string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/api/sources/"+sourceID, http.NoBody)
+	if err != nil {
+		return err
+	}
+	var resp Source
+	err = s.doRequest(req, &resp)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *streamkapAPI) UpdateSource(ctx context.Context, reqPayload CreateSourceRequest) (*Source, error) {
+	payload, err := json.Marshal(reqPayload)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, s.cfg.BaseURL+"/api/sources", bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}

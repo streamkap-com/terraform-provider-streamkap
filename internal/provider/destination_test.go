@@ -12,7 +12,7 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 )
 
-func TestAccSourceResource(t *testing.T) {
+func TestAccDestinationResource(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterResponder("POST", "https://api.streamkap.com/api/auth/access-token",
@@ -34,9 +34,9 @@ func TestAccSourceResource(t *testing.T) {
 			return resp, nil
 		})
 
-	httpmock.RegisterResponder("POST", "https://api.streamkap.com/api/sources",
+	httpmock.RegisterResponder("POST", "https://api.streamkap.com/api/destinations",
 		func(req *http.Request) (*http.Response, error) {
-			source := &api.Source{
+			source := &api.Destination{
 				ID:        "example-id",
 				Name:      "one",
 				Connector: "mysql",
@@ -48,13 +48,15 @@ func TestAccSourceResource(t *testing.T) {
 			}
 			return resp, nil
 		})
-	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/sources/example-id",
+	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/destinations/example-id",
 		func(req *http.Request) (*http.Response, error) {
-			source := []api.Source{{
-				ID:        "example-id",
-				Name:      "one",
-				Connector: "mysql",
-			}}
+			source := []api.Destination{
+				{
+					ID:        "example-id",
+					Name:      "one",
+					Connector: "mysql",
+				},
+			}
 
 			resp, err := httpmock.NewJsonResponse(200, source)
 			if err != nil {
@@ -62,13 +64,15 @@ func TestAccSourceResource(t *testing.T) {
 			}
 			return resp, nil
 		})
-	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/sources/example-id",
+	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/destinations/example-id",
 		func(req *http.Request) (*http.Response, error) {
-			source := []api.Source{{
-				ID:        "example-id",
-				Name:      "one",
-				Connector: "mysql",
-			}}
+			source := []api.Destination{
+				{
+					ID:        "example-id",
+					Name:      "one",
+					Connector: "mysql",
+				},
+			}
 
 			resp, err := httpmock.NewJsonResponse(200, source)
 			if err != nil {
@@ -77,9 +81,9 @@ func TestAccSourceResource(t *testing.T) {
 			return resp, nil
 		})
 
-	httpmock.RegisterResponder("PUT", "https://api.streamkap.com/api/sources",
+	httpmock.RegisterResponder("PUT", "https://api.streamkap.com/api/destinations",
 		func(req *http.Request) (*http.Response, error) {
-			source := &api.Source{
+			source := &api.Destination{
 				ID:        "example-id",
 				Name:      "two",
 				Connector: "mysql",
@@ -98,25 +102,25 @@ func TestAccSourceResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccSourceResourceConfig("one"),
+				Config: testAccDestinationResourceConfig("one"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source.test", "name", "one"),
-					resource.TestCheckResourceAttr("streamkap_source.test", "connector", "mysql"),
-					resource.TestCheckResourceAttr("streamkap_source.test", "id", "example-id"),
+					resource.TestCheckResourceAttr("streamkap_destination.test", "name", "one"),
+					resource.TestCheckResourceAttr("streamkap_destination.test", "connector", "mysql"),
+					resource.TestCheckResourceAttr("streamkap_destination.test", "id", "example-id"),
 				),
 			},
 			// ImportState testing
 			{
-				ResourceName:      "streamkap_source.test",
+				ResourceName:      "streamkap_destination.test",
 				ImportState:       true,
 				ImportStateVerify: false,
 				ImportStateId:     "example-id",
 			},
 			// Update and Read testing
 			{
-				Config: testAccSourceResourceConfig("two"),
+				Config: testAccDestinationResourceConfig("two"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source.test", "name", "two"),
+					resource.TestCheckResourceAttr("streamkap_destination.test", "name", "two"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -124,9 +128,9 @@ func TestAccSourceResource(t *testing.T) {
 	})
 }
 
-func testAccSourceResourceConfig(configurableAttribute string) string {
+func testAccDestinationResourceConfig(configurableAttribute string) string {
 	return fmt.Sprintf(`
-resource "streamkap_source" "test" {
+resource "streamkap_destination" "test" {
 	name = %q
 	connector = "mysql"
 	config = jsonencode({
