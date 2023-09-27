@@ -26,3 +26,22 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 ```shell
 make testacc
 ```
+
+### Testing with terraform
+
+Configure `~/.terraformrc`, replace `$GOBIN_PATH` with your `$GOPATH/bin`
+```hcl
+provider_installation {
+  dev_overrides {
+    "github.com/streamkap-com/streamkap" = "$GOBIN_PATH"
+  }
+  direct {}
+}
+```
+
+Install provider with
+```shell
+go install .
+``````
+
+Write your module, can see the example in [examples/full](/examples/full/)
