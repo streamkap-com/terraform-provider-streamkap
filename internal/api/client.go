@@ -12,11 +12,22 @@ type StreamkapAPI interface {
 	SetToken(token *Token)
 
 	//Source APIs
-	ListSourceConfigurations(ctx context.Context) ([]SourceConfigurationResponse, error)
-	CreateSource(ctx context.Context, req CreateSourceRequest) (*CreateSourceResponse, error)
-	GetSource(ctx context.Context, sourceID string) (*Source, error)
-	CreateDestination(ctx context.Context, reqPayload CreateDestinationRequest) (*CreateDestinationResponse, error)
-	CreatePipeline(ctx context.Context, reqPayload CreatePipelineRequest) (*CreatePipelineResponse, error)
+	CreateSource(ctx context.Context, reqPayload CreateSourceRequest) (*Source, error)
+	UpdateSource(ctx context.Context, reqPayload CreateSourceRequest) (*Source, error)
+	GetSource(ctx context.Context, sourceID string) ([]Source, error)
+	DeleteSource(ctx context.Context, sourceID string) error
+
+	// Destination APIs
+	CreateDestination(ctx context.Context, reqPayload CreateDestinationRequest) (*Destination, error)
+	UpdateDestination(ctx context.Context, reqPayload CreateDestinationRequest) (*Destination, error)
+	GetDestination(ctx context.Context, destinationID string) ([]Destination, error)
+	DeleteDestination(ctx context.Context, destinationID string) error
+
+	// Pipeline APIs
+	CreatePipeline(ctx context.Context, reqPayload CreatePipelineRequest) (*Pipeline, error)
+	UpdatePipeline(ctx context.Context, reqPayload CreatePipelineRequest) (*Pipeline, error)
+	GetPipeline(ctx context.Context, pipelineID string) ([]Pipeline, error)
+	DeletePipeline(ctx context.Context, pipelineID string) error
 }
 
 type Config struct {

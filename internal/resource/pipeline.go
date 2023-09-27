@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
@@ -31,87 +33,43 @@ type Pipeline struct {
 
 // PipelineModel describes the res data model.
 type PipelineModel struct {
-	Id            string   `json:"id"`
-	Name          string   `json:"name"`
-	SubId         string   `json:"sub_id"`
-	TenantId      string   `json:"tenant_id"`
-	Transforms    []string `json:"transforms"`
-	TopicIds      []string `json:"topic_ids"`
-	Topics        []string `json:"topics"`
-	InlineMetrics struct {
-		Source struct {
-			ConnectorStatus []struct {
-				Timestamp string `json:"timestamp"`
-				Value     string `json:"value"`
-			} `json:"connector_status"`
-			Latency []struct {
-				Timestamp string `json:"timestamp"`
-				Value     string `json:"value"`
-			} `json:"latency"`
-			SnapshotState []struct {
-				Timestamp string `json:"timestamp"`
-				Value     string `json:"value"`
-			} `json:"snapshotState"`
-			State []struct {
-				Timestamp string `json:"timestamp"`
-				Value     string `json:"value"`
-			} `json:"state"`
-			StreamingState []struct {
-				Timestamp string `json:"timestamp"`
-				Value     string `json:"value"`
-			} `json:"streamingState"`
-		} `json:"source"`
-		Destination struct {
-			ConnectorStatus []struct {
-				Timestamp string `json:"timestamp"`
-				Value     string `json:"value"`
-			} `json:"connector_status"`
-			Latency []struct {
-				Timestamp string `json:"timestamp"`
-				Value     string `json:"value"`
-			} `json:"latency"`
-		} `json:"destination"`
-		Pipeline struct {
-			ConnectorStatus []struct {
-				Timestamp string `json:"timestamp"`
-				Value     string `json:"value"`
-			} `json:"connector_status"`
-			Latency []struct {
-				Timestamp string `json:"timestamp"`
-				Value     string `json:"value"`
-			} `json:"latency"`
-		} `json:"pipeline"`
-	} `json:"inline_metrics"`
-	Source struct {
-		Id           string `json:"id"`
-		Name         string `json:"name"`
-		SubId        string `json:"sub_id"`
-		TenantId     string `json:"tenant_id"`
-		Connector    string `json:"connector"`
+	ID         string   `json:"id" tfsdk:"id"`
+	Name       string   `json:"name" tfsdk:"name" tfsdk:"name"`
+	SubID      string   `json:"sub_id" tfsdk:"-" tfsdk:"-"`
+	TenantID   string   `json:"tenant_id" tfsdk:"-"`
+	Transforms []string `json:"transforms" tfsdk:"transforms"`
+	TopicIDs   []string `json:"topic_ids" tfsdk:"-"`
+	Topics     []string `json:"topics" tfsdk:"-"`
+	Source     struct {
+		ID           string `json:"id" tfsdk:"id"`
+		Name         string `json:"name" tfsdk:"name"`
+		SubID        string `json:"sub_id" tfsdk:"-"`
+		TenantID     string `json:"tenant_id" tfsdk:"-"`
+		Connector    string `json:"connector" tfsdk:"connector"`
 		TaskStatuses struct {
 			Field1 struct {
-				Status string `json:"status"`
-			} `json:"0"`
-		} `json:"task_statuses"`
-		Tasks           []int    `json:"tasks"`
-		ConnectorStatus string   `json:"connector_status"`
-		Topics          []string `json:"topics"`
-		Server          string   `json:"server"`
-	} `json:"source"`
+				Status string `json:"status" tfsdk:"-"`
+			} `json:"0" tfsdk:"-"`
+		} `json:"task_statuses" tfsdk:"-"`
+		Tasks           []int    `json:"tasks" tfsdk:"-"`
+		ConnectorStatus string   `json:"connector_status" tfsdk:"-"`
+		Topics          []string `json:"topics" tfsdk:"topics"`
+		Server          string   `json:"server" tfsdk:"server"`
+	} `json:"source" tfsdk:"source"`
 	Destination struct {
-		Id           string `json:"id"`
-		Name         string `json:"name"`
-		SubId        string `json:"sub_id"`
-		TenantId     string `json:"tenant_id"`
-		Connector    string `json:"connector"`
+		ID           string `json:"id" tfsdk:"id"`
+		Name         string `json:"name" tfsdk:"name"`
+		SubID        string `json:"sub_id" tfsdk:"-"`
+		TenantID     string `json:"tenant_id" tfsdk:"-"`
+		Connector    string `json:"connector" tfsdk:"connector"`
 		TaskStatuses struct {
 			Field1 struct {
-				Status string `json:"status"`
-			} `json:"0"`
-		} `json:"task_statuses"`
-		Tasks           []int  `json:"tasks"`
-		ConnectorStatus string `json:"connector_status"`
-	} `json:"destination"`
+				Status string `json:"status" tfsdk:"status"`
+			} `json:"0" tfsdk:"-"`
+		} `json:"task_statuses" tfsdk:"-"`
+		Tasks           []int  `json:"tasks" tfsdk:"-"`
+		ConnectorStatus string `json:"connector_status" tfsdk:"-"`
+	} `json:"destination" tfsdk:"destination"`
 }
 
 func (r *Pipeline) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -121,7 +79,7 @@ func (r *Pipeline) Metadata(ctx context.Context, req res.MetadataRequest, resp *
 func (r *Pipeline) Schema(ctx context.Context, req res.SchemaRequest, resp *res.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "Pipeline res",
+		MarkdownDescription: "Pipeline resource",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -135,13 +93,34 @@ func (r *Pipeline) Schema(ctx context.Context, req res.SchemaRequest, resp *res.
 				Required:            true,
 				MarkdownDescription: "Pipeline name",
 			},
-			"sub_id": schema.StringAttribute{
+			"source": schema.ObjectAttribute{
 				Required:            true,
-				MarkdownDescription: "Pipeline sub_id",
+				MarkdownDescription: "Pipeline source",
+				AttributeTypes: map[string]attr.Type{
+					"connector": types.StringType,
+					"name":      types.StringType,
+					"topics": types.ListType{
+						ElemType: types.StringType,
+					},
+					"id": types.MapType{
+						ElemType: types.StringType,
+					},
+				},
 			},
-			"tenant_id": schema.StringAttribute{
+			"destination": schema.ObjectAttribute{
 				Required:            true,
-				MarkdownDescription: "Pipeline tenant_id",
+				MarkdownDescription: "Pipeline source",
+				AttributeTypes: map[string]attr.Type{
+					"connector": types.StringType,
+					"name":      types.StringType,
+					"id": types.MapType{
+						ElemType: types.StringType,
+					},
+				},
+			},
+			"transforms": schema.ListAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
 			},
 		},
 	}
@@ -179,23 +158,39 @@ func (r *Pipeline) Create(ctx context.Context, req res.CreateRequest, resp *res.
 
 	// If applicable, this is a great opportunity to initialize any necessary
 	// provider client data and make a call using it.
-	httpResp, err := r.client.CreateDestination(ctx, api.CreateDestinationRequest{
+	pipeline, err := r.client.CreatePipeline(ctx, api.CreatePipelineRequest{
 		Name: data.Name,
+		Destination: api.CreatePipelineDestination{
+			Connector: data.Destination.Connector,
+			Name:      data.Destination.Name,
+			ID: struct {
+				OID string `json:"$oid"`
+			}(struct{ OID string }{
+				OID: data.Destination.ID,
+			}),
+		},
+		Source: api.CreatePipelineSource{
+			Connector: data.Source.Connector,
+			Name:      data.Source.Name,
+			Topics:    data.Source.Topics,
+			ID: struct {
+				OID string `json:"$oid"`
+			}(struct{ OID string }{
+				OID: data.Source.ID,
+			}),
+		},
+		Transforms: data.Transforms,
 	})
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create example, got error: %s", err))
 		return
 	}
-	source := httpResp.Data[0]
 
 	// For the purposes of this example code, hardcoding a response value to
 	// save into the Terraform state.
-	data.Id = source.Id
-	data.Name = source.Name
+	data.ID = pipeline.ID
 
-	// Write logs using the tflog package
-	// Documentation: https://terraform.io/plugin/log
-	tflog.Trace(ctx, "created a res")
+	tflog.Trace(ctx, "created a resource")
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
