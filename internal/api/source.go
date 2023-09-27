@@ -93,7 +93,7 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload CreateSource
 }
 
 func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) ([]Source, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/sources/"+sourceID, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/sources?id="+sourceID, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) ([]Source
 }
 
 func (s *streamkapAPI) DeleteSource(ctx context.Context, sourceID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/api/sources/"+sourceID, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/api/sources?id="+sourceID, http.NoBody)
 	if err != nil {
 		return err
 	}
