@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 type StreamkapAPI interface {
@@ -67,7 +69,15 @@ func (s *streamkapAPI) doRequest(req *http.Request, result interface{}) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		ctx := context.Background()
+		tflog.Trace(ctx, fmt.Sprintf("got status code: %d\n", resp.StatusCode))
+		var errResp []byte
+		_, err = resp.Body.Read(errResp)
+		if err != nil {
+			tflog.Error(ctx, fmt.Sprintf("got error: %s\n", err))
+		}
+		tflog.Trace(ctx, fmt.Sprintf("got error response: %s\n", errResp))
+		return fmt.Errorf("unexpected status code: %d - %s", resp.StatusCode, string(errResp))
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {

@@ -7,50 +7,54 @@ terraform {
 }
 
 provider "streamkap" {
-  host      = "https://aead568tp7.execute-api.us-west-2.amazonaws.com/dev"
+  host      = var.host
   client_id = var.client_id
   secret    = var.secret_key
 }
 
 data "streamkap_token" "this" {}
 
-resource "streamkap_source" "mysql" {
+resource "streamkap_source" "postgresql" {
   name      = "My Stream"
-  connector = "mysql"
+  connector = "postgresql"
 
   config = jsonencode({
-    "database.hostname.user.defined"            = "192.168.3.47"
-    "database.port"                             = "3306"
-    "database.user"                             = "root"
-    "database.password"                         = "iAxki9j9fr8H8LV"
-    "database.include.list.user.defined"        = "database1, database2"
-    "table.include.list.user.defined"           = "database1.table1, database1.table2, database2.table3, database2.table4"
-    "signal.data.collection.schema.or.database" = "test1"
-    "database.connectionTimeZone"               = "SERVER"
-    "snapshot.gtid"                             = "No"
-    "snapshot.mode.user.defined"                = "When Needed"
+    "database.hostname.user.defined"            = var.source_host
+    "database.port"                             = "5432"
+    "database.user"                             = "tf"
+    "database.password"                         = var.source_password
+    "database.dbname"                           = "tf"
+    "schema.include.list"                       = "public"
+    "table.include.list.user.defined"           = "tf.test"
+    "signal.data.collection.schema.or.database" = "tf"
+    "slot.name"                                 = "streamkap_pgoutput_slot"
+    "publication.name"                          = "streamkap_pub"
+    "database.sslmode"                          = "require"
     "binary.handling.mode"                      = "bytes"
+    "snapshot.mode.user.defined"                = "Initial"
     "incremental.snapshot.chunk.size"           = 1024
     "max.batch.size"                            = 2048
   })
 }
 
-resource "streamkap_destination" "mysql" {
+resource "streamkap_destination" "postgresql" {
   name      = "My Stream"
   connector = "postgresql"
 
   config = jsonencode({
-    "database.hostname.user.defined"            = "192.168.3.47"
-    "database.port"                             = "3306"
-    "database.user"                             = "root"
-    "database.password"                         = "iAxki9j9fr8H8LV"
-    "database.include.list.user.defined"        = "database1, database2"
-    "table.include.list.user.defined"           = "database1.table1, database1.table2, database2.table3, database2.table4"
-    "signal.data.collection.schema.or.database" = "test1"
-    "database.connectionTimeZone"               = "SERVER"
-    "snapshot.gtid"                             = "No"
-    "snapshot.mode.user.defined"                = "When Needed"
+    "database.hostname.user.defined"            = var.destination_host
+    "database.port"                             = "5432"
+    "database.user"                             = "tf"
+    "database.password"                         = var.destination_password
+    "database.dbname"                           = "tf"
+    "schema.include.list"                       = "public"
+    "table.include.list.user.defined"           = "tf.test"
+    "signal.data.collection.schema.or.database" = "tf"
+    "slot.name"                                 = "streamkap_pgoutput_slot"
+    "publication.name"                          = "streamkap_pub"
+    "database.sslmode"                          = "require"
     "binary.handling.mode"                      = "bytes"
+    "snapshot.mode.user.defined"                = "Initial"
     "incremental.snapshot.chunk.size"           = 1024
     "max.batch.size"                            = 2048
   })
@@ -61,18 +65,18 @@ resource "streamkap_pipeline" "this" {
 
   source = {
     id = {
-      "$oid" : streamkap_source.mysql.id
+      "$oid" : streamkap_source.postgresql.id
     }
-    name      = streamkap_source.mysql.name
-    connector = streamkap_source.mysql.connector
+    name      = streamkap_source.postgresql.name
+    connector = streamkap_source.postgresql.connector
     topics    = ["test1"]
   }
 
   destination = {
     id = {
-      "$oid" : streamkap_destination.mysql.id
+      "$oid" : streamkap_destination.postgresql.id
     }
-    name      = streamkap_destination.mysql.name
-    connector = streamkap_destination.mysql.connector
+    name      = streamkap_destination.postgresql.name
+    connector = streamkap_destination.postgresql.connector
   }
 }

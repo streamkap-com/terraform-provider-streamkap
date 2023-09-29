@@ -102,13 +102,16 @@ func (r *Source) Create(ctx context.Context, req res.CreateRequest, resp *res.Cr
 		return
 	}
 
+	tflog.Info(ctx, "===> config: "+data.Config.String())
+	var config map[string]interface{}
+	data.Config.Unmarshal(&config)
 	source, err := r.client.CreateSource(ctx, api.CreateSourceRequest{
-		Name:      data.Name.String(),
-		Connector: data.Connector.String(),
-		Config:    json.RawMessage(data.Config.String()),
+		Name:      data.Name.ValueString(),
+		Connector: data.Connector.ValueString(),
+		Config:    config,
 	})
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create example, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create source, got error: %s", err))
 		return
 	}
 
@@ -166,11 +169,11 @@ func (r *Source) Update(ctx context.Context, req res.UpdateRequest, resp *res.Up
 
 	source, err := r.client.GetSource(ctx, data.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create example, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to get example, got error: %s", err))
 		return
 	}
 	if len(source) == 0 {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create example, got error: %s", err))
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to get source, got error: %s", err))
 		return
 	}
 
@@ -178,14 +181,17 @@ func (r *Source) Update(ctx context.Context, req res.UpdateRequest, resp *res.Up
 	data.Instance.Unmarshal(currentInstance)
 	diff := cmp.Diff(source[0], currentInstance, cmp.AllowUnexported())
 	if diff != "" {
+		var config map[string]interface{}
+		data.Config.Unmarshal(&config)
+		fmt.Println("config", config)
 		updatedSource, err := r.client.UpdateSource(ctx, api.CreateSourceRequest{
-			Name:      data.Name.String(),
-			Connector: data.Connector.String(),
-			Config:    json.RawMessage(data.Config.String()),
+			Name:      data.Name.ValueString(),
+			Connector: data.Connector.ValueString(),
+			Config:    config,
 			ID:        data.ID.ValueString(),
 		})
 		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create example, got error: %s", err))
+			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update source, got error: %s", err))
 			return
 		}
 		sourceString, err := json.Marshal(updatedSource)
@@ -209,13 +215,13 @@ func (r *Source) Delete(ctx context.Context, req res.DeleteRequest, resp *res.De
 		return
 	}
 
-	// If applicable, this is a great opportunity to initialize any necessary
-	// provider client data and make a call using it.
-	// httpResp, err := r.client.Do(httpReq)
-	// if err != nil {
-	//     resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete example, got error: %s", err))
-	//     return
-	// }
+	err := r.client.DeleteSource(ctx, data.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete source, got error: %s", err))
+		return
+	}
+
+	tflog.Trace(ctx, "deleted a resource")
 }
 
 func (r *Source) ImportState(ctx context.Context, req res.ImportStateRequest, resp *res.ImportStateResponse) {
