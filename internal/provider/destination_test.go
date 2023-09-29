@@ -96,6 +96,19 @@ func TestAccDestinationResource(t *testing.T) {
 			return resp, nil
 		})
 
+	httpmock.RegisterResponder("DELETE", "https://api.streamkap.com/api/destinations?id=example-id",
+		func(req *http.Request) (*http.Response, error) {
+			source := &api.Source{
+				ID: "example-id",
+			}
+
+			resp, err := httpmock.NewJsonResponse(200, source)
+			if err != nil {
+				return httpmock.NewStringResponse(500, ""), nil
+			}
+			return resp, nil
+		})
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { TestAccPreCheck(t) },
 		ProtoV6ProviderFactories: TestAccProtoV6ProviderFactories,

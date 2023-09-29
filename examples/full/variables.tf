@@ -1,25 +1,45 @@
 variable "host" {
   type        = string
   description = "The host of the StreamKap."
-  default     = "https://aead568tp7.execute-api.us-west-2.amazonaws.com/dev"
+  default     = "https://api.streamkap.com"
 }
 
 variable "client_id" {
   type        = string
   description = "The client id of the service principal to use for the StreamKap."
-  default     = "84ecdc52-cb29-47a7-a337-acd0ac561958"
+  default     = "client_id"
   sensitive   = true
 }
 
 variable "secret_key" {
   type        = string
   description = "The client secret of the service principal to use for the StreamKap."
-  default     = "b293f1c9-83f2-48b4-968d-b55ce6c590c4"
+  default     = "secret_key"
   sensitive   = true
 }
 
-// 84ecdc52-cb29-47a7-a337-acd0ac561958
-// b293f1c9-83f2-48b4-968d-b55ce6c590c4
+variable "source_host" {
+    type        = string
+    description = "The host of the source to use for the StreamKap."
+    default     = "https://source.streamkap.com"
+}
 
-// "fa1fcb24-d229-41f4-8ace-dbe5387a0c88"
-// 3552e95b-3510-40cc-9fce-2f47602733bb
+variable "source_password" {
+    type        = string
+    description = "The password of the source to use for the StreamKap."
+    default     = "source_password"
+    sensitive   = true
+}
+
+variable "destination_host" {
+    type        = string
+    description = "The host of the destination to use for the StreamKap."
+    default     = "https://destination.streamkap.com"
+}
+
+variable "destination_password" {
+  type        = string
+  description = "The password of the destination to use for the StreamKap."
+  default     = "destination_password"
+  sensitive   = true
+}
