@@ -31,7 +31,7 @@ resource "streamkap_source" "mysql" {
   })
 }
 resource "streamkap_destination" "mysql" {
-  name      = "My Stream"
+  name      = "My Stream 1"
   connector = "mysql"
   config = jsonencode({
     "database.hostname.user.defined" = var.destination_host
@@ -49,7 +49,7 @@ resource "streamkap_destination" "mysql" {
   })
 }
 resource "streamkap_pipeline" "this" {
-  name = "My Stream 1"
+  name = "My Stream 2"
   source = {
     id = {
       "oid" : streamkap_source.mysql.id

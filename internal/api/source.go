@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 )
@@ -57,7 +56,7 @@ type Source struct {
 }
 
 type CreateSourceRequest struct {
-	ID        string                 `json:"id,omitempty"`
+	ID        string                 `json:"-"`
 	Name      string                 `json:"name"`
 	Connector string                 `json:"connector"`
 	Config    map[string]interface{} `json:"config"`
@@ -80,7 +79,6 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload CreateSource
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("payload", string(payload))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/api/sources", bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
@@ -127,7 +125,8 @@ func (s *streamkapAPI) UpdateSource(ctx context.Context, reqPayload CreateSource
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, s.cfg.BaseURL+"/api/sources", bytes.NewBuffer(payload))
+	req, err := http.NewRequestWithContext(
+		ctx, http.MethodPut, s.cfg.BaseURL+"/api/sources?id="+reqPayload.ID, bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
