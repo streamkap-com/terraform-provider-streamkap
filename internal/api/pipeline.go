@@ -32,10 +32,10 @@ type CreatePipelineSource struct {
 }
 
 type Pipeline struct {
+	ID       string   `json:"id"`
 	Name     string   `json:"name"`
 	SubID    string   `json:"sub_id"`
 	TenantID string   `json:"tenant_id"`
-	ID       string   `json:"id"`
 	TopicIds []string `json:"topic_ids"`
 	Source   struct {
 		Name            string `json:"name"`
@@ -90,7 +90,7 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload CreatePipe
 }
 
 func (s *streamkapAPI) GetPipeline(ctx context.Context, pipelineID string) ([]Pipeline, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/pipelines/"+pipelineID, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/pipelines?id="+pipelineID, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
