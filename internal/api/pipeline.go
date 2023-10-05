@@ -8,6 +8,7 @@ import (
 )
 
 type CreatePipelineRequest struct {
+	ID          string                    `json:"-"`
 	Name        string                    `json:"name"`
 	Destination CreatePipelineDestination `json:"destination"`
 	Source      CreatePipelineSource      `json:"source"`
@@ -122,7 +123,8 @@ func (s *streamkapAPI) UpdatePipeline(ctx context.Context, reqPayload CreatePipe
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, s.cfg.BaseURL+"/api/pipelines", bytes.NewBuffer(payload))
+	req, err := http.NewRequestWithContext(
+		ctx, http.MethodPut, s.cfg.BaseURL+"/api/pipelines?id="+reqPayload.ID, bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}

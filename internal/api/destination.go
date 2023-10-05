@@ -8,7 +8,7 @@ import (
 )
 
 type CreateDestinationRequest struct {
-	ID        string                 `json:"id,omitempty"`
+	ID        string                 `json:"-"`
 	Name      string                 `json:"name"`
 	Connector string                 `json:"connector"`
 	Config    map[string]interface{} `json:"config"`
@@ -99,7 +99,8 @@ func (s *streamkapAPI) UpdateDestination(ctx context.Context, reqPayload CreateD
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, s.cfg.BaseURL+"/api/destinations", bytes.NewBuffer(payload))
+	req, err := http.NewRequestWithContext(
+		ctx, http.MethodPut, s.cfg.BaseURL+"/api/destinations?id="+reqPayload.ID, bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}

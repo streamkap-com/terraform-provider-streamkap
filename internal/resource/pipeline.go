@@ -260,6 +260,7 @@ func (r *Pipeline) Update(ctx context.Context, req res.UpdateRequest, resp *res.
 		transform = []string{}
 	}
 	pipeline, err := r.client.UpdatePipeline(ctx, api.CreatePipelineRequest{
+		ID:   data.ID.ValueString(),
 		Name: data.Name,
 		Destination: api.CreatePipelineDestination{
 			Connector: data.Destination.Connector,
