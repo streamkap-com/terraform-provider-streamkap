@@ -183,7 +183,6 @@ func (r *Source) Update(ctx context.Context, req res.UpdateRequest, resp *res.Up
 	if diff != "" {
 		var config map[string]interface{}
 		data.Config.Unmarshal(&config)
-		fmt.Println("config", config)
 		updatedSource, err := r.client.UpdateSource(ctx, api.CreateSourceRequest{
 			Name:      data.Name.ValueString(),
 			Connector: data.Connector.ValueString(),
