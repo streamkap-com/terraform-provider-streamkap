@@ -15,19 +15,21 @@ resource "streamkap_source" "mysql" {
   name      = "My Stream"
   connector = "mysql"
   config = jsonencode({
-    "database.hostname.user.defined"            = var.source_host
-    "database.port"                             = "3306"
-    "database.user"                             = "root"
-    "database.password"                         = var.source_password
-    "database.include.list.user.defined"        = "test"
-    "table.include.list.user.defined"           = "test.test"
-    "signal.data.collection.schema.or.database" = "test"
-    "database.connectionTimeZone"               = "SERVER"
-    "snapshot.gtid"                             = "No"
-    "snapshot.mode.user.defined"                = "When Needed"
-    "binary.handling.mode"                      = "bytes"
-    "incremental.snapshot.chunk.size"           = 1024
-    "max.batch.size"                            = 2048
+    "database.hostname.user.defined"     = var.source_host
+    "database.port"                      = "3306"
+    "database.user"                      = "root"
+    "database.password"                  = var.source_password
+    "database.include.list.user.defined" = "database1, database2"
+    "table.include.list.user.defined"    = "database1.table1, database2.table2"
+    "database.connectionTimeZone"        = "SERVER"
+    "snapshot.gtid"                      = "Yes"
+    "snapshot.mode.user.defined"         = "When Needed"
+    "binary.handling.mode"               = "bytes"
+    "snapshot.max.threads"               = "1"
+    "snapshot.fetch.size"                = "102400"
+    "incremental.snapshot.chunk.size"    = 102400
+    "incremental.snapshot.chunk.size"    = 1024
+    "max.batch.size"                     = 2048
   })
 }
 resource "streamkap_destination" "mysql" {
@@ -36,13 +38,12 @@ resource "streamkap_destination" "mysql" {
   config = jsonencode({
     "database.hostname.user.defined" = var.destination_host
     "database.port.user.defined"     = "3306"
+    "database.database.user.defined" = "test"
     "connection.username"            = "root"
     "connection.password"            = var.destination_password
-    "database.database.user.defined" = "test"
     "delete.enabled"                 = true
-    "insert.mode"                    = "upsert"
-    "schema.evolution"               = "basic"
-    "slot.name"                      = "streamkap_pgoutput_slot"
+    "insert.mode"                    = "insert"
+    "schema.evolution"               = "none"
     "tasks.max"                      = 1
     "primary.key.mode"               = "record_key"
     "primary.key.fields"             = "id"
@@ -56,7 +57,7 @@ resource "streamkap_pipeline" "this" {
     }
     name      = streamkap_source.mysql.name
     connector = streamkap_source.mysql.connector
-    topics    = ["test.test"]
+    topics    = ["database1.table1", "database2.table2"]
   }
   destination = {
     id = {
