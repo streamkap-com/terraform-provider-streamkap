@@ -32,11 +32,11 @@ resource "streamkap_destination" "snowflake" {
   name      = "My Snowflake" # The name of the destination
   connector = "snowflake"    # Please do not change this
   config = jsonencode({
-    "snowflake.url.name"               = var.destination_host
+    "snowflake.url.name"               = "http://localhost.com"
     "tasks.max"                        = 1
     "snowflake.user.name"              = "root"
-    "snowflake.private.key"            = var.destination_private_key
-    "snowflake.private.key.passphrase" = var.destination_key_passphrase
+    "snowflake.private.key"            = "private_key"
+    "snowflake.private.key.passphrase" = "ABCD"
     "snowflake.database.name"          = "databasename"
     "snowflake.schema.name"            = "schemaname"
     "snowflake.role.name"              = "STREAMKAP_ROLE"
@@ -50,12 +50,12 @@ resource "streamkap_destination" "snowflake" {
 - `connector` (Required) Set the value as `snowflake` if we want to create a Snowflake conenctor
 - `name` (Required) Destination name
 
-##### config object
+##### "config" object
 
 - `snowflake.url.name` - (Required) The URL for accessing your Snowflake account. This URL must include your account identifier. Note that the protocol (https://) and port number are optional
 - `tasks.max` (Required) The maximum number of active tasks. Min: `1`, Max: `10`
 - `snowflake.user.name` (Required) Username to access the database
-- `snowflake.private.key` (Required) The private key to authenticate the user. Include only the key, not the header or footer. If the key is split across multiple lines, replace the line breaks to `n`.
+- `snowflake.private.key` (Required) The private key to authenticate the user. Include only the key, not the header or footer. If the key is split across multiple lines, replace the line breaks to `\n`.
 - `snowflake.private.key.passphrase` (Required) The private key passphrase. This must be at least 4 characters long.
 - `snowflake.database.name` (Required) Database from which to stream data
 - `snowflake.schema.name` (Required) Comma-separated list of schemas to include in the stream.
@@ -90,7 +90,7 @@ resource "streamkap_destination" "mysql" {
 - `connector` (Required) Set the value as `mysql` if we want to create a Snowflake conenctor
 - `name` (Required) Destination name
 
-##### config object
+##### "config" object
 
 - `database.hostname.user.defined` - (Required) MySQL Hostname. For example, mysqldb.something.rds.amazonaws.com
 - `tasks.max` (Required) The maximum number of active tasks. Min: `1`, Max: `10`
