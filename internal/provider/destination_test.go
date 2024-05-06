@@ -74,7 +74,9 @@ func TestAccDestinationResource(t *testing.T) {
 				},
 			}
 
-			resp, err := httpmock.NewJsonResponse(200, source)
+			resp, err := httpmock.NewJsonResponse(200, api.DestinationResponse{
+				Result: source,
+			})
 			if err != nil {
 				return httpmock.NewStringResponse(500, ""), nil
 			}

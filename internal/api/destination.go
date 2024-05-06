@@ -14,6 +14,13 @@ type CreateDestinationRequest struct {
 	Config    map[string]interface{} `json:"config"`
 }
 
+type DestinationResponse struct {
+	Total    int           `json:"total"`
+	PageSize int           `json:"page_size"`
+	Page     int           `json:"page"`
+	Result   []Destination `json:"result"`
+}
+
 type Destination struct {
 	ID           string `json:"id"`
 	Name         string `json:"name"`
@@ -71,13 +78,13 @@ func (s *streamkapAPI) GetDestination(ctx context.Context, destinationID string)
 	if err != nil {
 		return nil, err
 	}
-	var resp []Destination
+	var resp DestinationResponse
 	err = s.doRequest(req, &resp)
 	if err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	return resp.Result, nil
 }
 
 func (s *streamkapAPI) DeleteDestination(ctx context.Context, destinationID string) error {

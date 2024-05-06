@@ -50,11 +50,13 @@ func TestAccSourceResource(t *testing.T) {
 		})
 	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/sources?id=example-id",
 		func(req *http.Request) (*http.Response, error) {
-			source := []api.Source{{
-				ID:        "example-id",
-				Name:      "one",
-				Connector: "mysql",
-			}}
+			source := api.SourceResponse{
+				Result: []api.Source{{
+					ID:        "example-id",
+					Name:      "one",
+					Connector: "mysql",
+				}},
+			}
 
 			resp, err := httpmock.NewJsonResponse(200, source)
 			if err != nil {
@@ -64,11 +66,13 @@ func TestAccSourceResource(t *testing.T) {
 		})
 	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/sources?id=example-id",
 		func(req *http.Request) (*http.Response, error) {
-			source := []api.Source{{
-				ID:        "example-id",
-				Name:      "one",
-				Connector: "mysql",
-			}}
+			source := api.SourceResponse{
+				Result: []api.Source{{
+					ID:        "example-id",
+					Name:      "one",
+					Connector: "mysql",
+				}},
+			}
 
 			resp, err := httpmock.NewJsonResponse(200, source)
 			if err != nil {
@@ -119,10 +123,11 @@ func TestAccSourceResource(t *testing.T) {
 			},
 			// ImportState testing
 			{
-				ResourceName:      "streamkap_source.test",
-				ImportState:       true,
-				ImportStateVerify: false,
-				ImportStateId:     "example-id",
+				ResourceName:            "streamkap_source.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateId:           "example-id",
+				ImportStateVerifyIgnore: []string{"config", "connector", "name"},
 			},
 			// Update and Read testing
 			{
