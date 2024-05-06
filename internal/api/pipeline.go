@@ -15,6 +15,13 @@ type CreatePipelineRequest struct {
 	Transforms  []string                  `json:"transforms"`
 }
 
+type PipelineResponse struct {
+	Total    int        `json:"total"`
+	PageSize int        `json:"page_size"`
+	Page     int        `json:"page"`
+	Result   []Pipeline `json:"result"`
+}
+
 type CreatePipelineDestination struct {
 	Connector string `json:"connector"`
 	Name      string `json:"name"`
@@ -95,13 +102,13 @@ func (s *streamkapAPI) GetPipeline(ctx context.Context, pipelineID string) ([]Pi
 	if err != nil {
 		return nil, err
 	}
-	var resp []Pipeline
+	var resp PipelineResponse
 	err = s.doRequest(req, &resp)
 	if err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	return resp.Result, nil
 }
 
 func (s *streamkapAPI) DeletePipeline(ctx context.Context, pipelineID string) error {
