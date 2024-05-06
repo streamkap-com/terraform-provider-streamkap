@@ -37,13 +37,13 @@ type Pipeline struct {
 // PipelineModel describes the res data model.
 type PipelineModel struct {
 	ID         basetypes.StringValue `json:"id" tfsdk:"id"`
-	Name       string                `json:"name" tfsdk:"name" tfsdk:"name"`
+	Name       *string               `json:"name" tfsdk:"name" tfsdk:"name"`
 	SubID      string                `json:"sub_id" tfsdk:"-" tfsdk:"-"`
 	TenantID   string                `json:"tenant_id" tfsdk:"-"`
 	Transforms []string              `json:"transforms" tfsdk:"transforms"`
 	TopicIDs   []string              `json:"topic_ids" tfsdk:"-"`
 	Topics     []string              `json:"topics" tfsdk:"-"`
-	Source     struct {
+	Source     *struct {
 		ID struct {
 			OID basetypes.StringValue `json:"oid" tfsdk:"oid"`
 		} `json:"id" tfsdk:"id"`
@@ -60,7 +60,7 @@ type PipelineModel struct {
 		ConnectorStatus string   `json:"connector_status" tfsdk:"-"`
 		Topics          []string `json:"topics" tfsdk:"topics"`
 	} `json:"source" tfsdk:"source"`
-	Destination struct {
+	Destination *struct {
 		ID struct {
 			OID basetypes.StringValue `json:"oid" tfsdk:"oid"`
 		} `json:"id" tfsdk:"id"`

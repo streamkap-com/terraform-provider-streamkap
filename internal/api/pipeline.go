@@ -9,7 +9,7 @@ import (
 
 type CreatePipelineRequest struct {
 	ID          string                    `json:"-"`
-	Name        string                    `json:"name"`
+	Name        *string                   `json:"name"`
 	Destination CreatePipelineDestination `json:"destination"`
 	Source      CreatePipelineSource      `json:"source"`
 	Transforms  []string                  `json:"transforms"`
