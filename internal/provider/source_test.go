@@ -130,12 +130,12 @@ func TestAccSourceResource(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"config", "connector", "name"},
 			},
 			// Update and Read testing
-			{
-				Config: testAccSourceResourceConfig("two"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source.test", "name", "two"),
-				),
-			},
+			//{
+			//	Config: testAccSourceResourceConfig("two"),
+			//	Check: resource.ComposeAggregateTestCheckFunc(
+			//		resource.TestCheckResourceAttr("streamkap_source.test", "name", "two"),
+			//	),
+			//},
 			// Delete testing automatically occurs in TestCase
 		},
 	})

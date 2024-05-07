@@ -13,8 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/jinzhu/copier"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 )
@@ -36,17 +36,15 @@ type Pipeline struct {
 
 // PipelineModel describes the res data model.
 type PipelineModel struct {
-	ID         basetypes.StringValue `json:"id" tfsdk:"id"`
-	Name       *string               `json:"name" tfsdk:"name" tfsdk:"name"`
-	SubID      string                `json:"sub_id" tfsdk:"-" tfsdk:"-"`
-	TenantID   string                `json:"tenant_id" tfsdk:"-"`
-	Transforms []string              `json:"transforms" tfsdk:"transforms"`
-	TopicIDs   []string              `json:"topic_ids" tfsdk:"-"`
-	Topics     []string              `json:"topics" tfsdk:"-"`
+	ID         string   `json:"id" tfsdk:"id"`
+	Name       *string  `json:"name" tfsdk:"name" tfsdk:"name"`
+	SubID      string   `json:"sub_id" tfsdk:"-" tfsdk:"-"`
+	TenantID   string   `json:"tenant_id" tfsdk:"-"`
+	Transforms []string `json:"transforms" tfsdk:"transforms"`
+	TopicIDs   []string `json:"topic_ids" tfsdk:"-"`
+	Topics     []string `json:"topics" tfsdk:"-"`
 	Source     *struct {
-		ID struct {
-			OID basetypes.StringValue `json:"oid" tfsdk:"oid"`
-		} `json:"id" tfsdk:"id"`
+		ID           string `json:"id" tfsdk:"id"`
 		Name         string `json:"name" tfsdk:"name"`
 		SubID        string `json:"sub_id" tfsdk:"-"`
 		TenantID     string `json:"tenant_id" tfsdk:"-"`
@@ -61,9 +59,7 @@ type PipelineModel struct {
 		Topics          []string `json:"topics" tfsdk:"topics"`
 	} `json:"source" tfsdk:"source"`
 	Destination *struct {
-		ID struct {
-			OID basetypes.StringValue `json:"oid" tfsdk:"oid"`
-		} `json:"id" tfsdk:"id"`
+		ID           string `json:"id" tfsdk:"id"`
 		Name         string `json:"name" tfsdk:"name"`
 		SubID        string `json:"sub_id" tfsdk:"-"`
 		TenantID     string `json:"tenant_id" tfsdk:"-"`
@@ -109,11 +105,7 @@ func (r *Pipeline) Schema(ctx context.Context, req res.SchemaRequest, resp *res.
 					"topics": types.ListType{
 						ElemType: types.StringType,
 					},
-					"id": basetypes.ObjectType{
-						AttrTypes: map[string]attr.Type{
-							"oid": types.StringType,
-						},
-					},
+					"id": types.StringType,
 				},
 			},
 			"destination": schema.ObjectAttribute{
@@ -122,11 +114,7 @@ func (r *Pipeline) Schema(ctx context.Context, req res.SchemaRequest, resp *res.
 				AttributeTypes: map[string]attr.Type{
 					"connector": types.StringType,
 					"name":      types.StringType,
-					"id": basetypes.ObjectType{
-						AttrTypes: map[string]attr.Type{
-							"oid": types.StringType,
-						},
-					},
+					"id":        types.StringType,
 				},
 			},
 			"transforms": schema.ListAttribute{
@@ -181,7 +169,7 @@ func (r *Pipeline) Create(ctx context.Context, req res.CreateRequest, resp *res.
 			ID: struct {
 				OID string `json:"$oid"`
 			}(struct{ OID string }{
-				OID: data.Destination.ID.OID.ValueString(),
+				OID: data.Destination.ID,
 			}),
 		},
 		Source: api.CreatePipelineSource{
@@ -191,7 +179,7 @@ func (r *Pipeline) Create(ctx context.Context, req res.CreateRequest, resp *res.
 			ID: struct {
 				OID string `json:"$oid"`
 			}(struct{ OID string }{
-				OID: data.Source.ID.OID.ValueString(),
+				OID: data.Source.ID,
 			}),
 		},
 		Transforms: transform,
@@ -203,7 +191,7 @@ func (r *Pipeline) Create(ctx context.Context, req res.CreateRequest, resp *res.
 
 	// For the purposes of this example code, hardcoding a response value to
 	// save into the Terraform state.
-	data.ID = basetypes.NewStringValue(pipeline.ID)
+	data.ID = pipeline.ID
 	sourceString, err := json.Marshal(pipeline)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to parse pipeline, got error: %s", err))
@@ -227,7 +215,7 @@ func (r *Pipeline) Read(ctx context.Context, req res.ReadRequest, resp *res.Read
 		return
 	}
 
-	source, err := r.client.GetPipeline(ctx, data.ID.ValueString())
+	source, err := r.client.GetPipeline(ctx, data.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read pipeline, got error: %s", err))
 		return
@@ -238,6 +226,9 @@ func (r *Pipeline) Read(ctx context.Context, req res.ReadRequest, resp *res.Read
 			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to parse pipeline, got error: %s", err))
 			return
 		}
+		fmt.Println("=====> source: ", source[0].Source.ID)
+		copier.CopyWithOption(&data, &source[0], copier.Option{DeepCopy: true})
+		fmt.Println("=====> source: ", data.Source.ID)
 		data.Instance = jsontypes.NewExactValue(string(sourceString))
 	}
 
@@ -260,7 +251,7 @@ func (r *Pipeline) Update(ctx context.Context, req res.UpdateRequest, resp *res.
 		transform = []string{}
 	}
 	pipeline, err := r.client.UpdatePipeline(ctx, api.CreatePipelineRequest{
-		ID:   data.ID.ValueString(),
+		ID:   data.ID,
 		Name: data.Name,
 		Destination: api.CreatePipelineDestination{
 			Connector: data.Destination.Connector,
@@ -268,7 +259,7 @@ func (r *Pipeline) Update(ctx context.Context, req res.UpdateRequest, resp *res.
 			ID: struct {
 				OID string `json:"$oid"`
 			}(struct{ OID string }{
-				OID: data.Destination.ID.OID.ValueString(),
+				OID: data.Destination.ID,
 			}),
 		},
 		Source: api.CreatePipelineSource{
@@ -278,7 +269,7 @@ func (r *Pipeline) Update(ctx context.Context, req res.UpdateRequest, resp *res.
 			ID: struct {
 				OID string `json:"$oid"`
 			}(struct{ OID string }{
-				OID: data.Source.ID.OID.ValueString(),
+				OID: data.Source.ID,
 			}),
 		},
 		Transforms: transform,
@@ -309,7 +300,7 @@ func (r *Pipeline) Delete(ctx context.Context, req res.DeleteRequest, resp *res.
 		return
 	}
 
-	err := r.client.DeletePipeline(ctx, data.ID.ValueString())
+	err := r.client.DeletePipeline(ctx, data.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete pipeline, got error: %s", err))
 		return

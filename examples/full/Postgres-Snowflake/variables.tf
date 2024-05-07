@@ -7,14 +7,14 @@ variable "host" {
 variable "client_id" {
   type        = string
   description = "The client id of the service principal to use for the StreamKap."
-  default     = "client_id"
+  default     = "5a0ed5a9-1bb5-4339-9e9a-186404302cae"
   sensitive   = true
 }
 
 variable "secret_key" {
   type        = string
   description = "The client secret of the service principal to use for the StreamKap."
-  default     = "secret_key"
+  default     = "6b362b0b-f5df-4c05-9cea-ba85cfc5e1f9"
   sensitive   = true
 }
 
