@@ -226,9 +226,7 @@ func (r *Pipeline) Read(ctx context.Context, req res.ReadRequest, resp *res.Read
 			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to parse pipeline, got error: %s", err))
 			return
 		}
-		fmt.Println("=====> source: ", source[0].Source.ID)
 		copier.CopyWithOption(&data, &source[0], copier.Option{DeepCopy: true})
-		fmt.Println("=====> source: ", data.Source.ID)
 		data.Instance = jsontypes.NewExactValue(string(sourceString))
 	}
 
