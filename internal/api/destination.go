@@ -5,12 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 type CreateDestinationRequest struct {
 	ID        string                 `json:"-"`
-	Name      string                 `json:"name"`
-	Connector string                 `json:"connector"`
+	Name      *string                `json:"name"`
+	Connector *string                `json:"connector"`
 	Config    map[string]interface{} `json:"config"`
 }
 
@@ -51,7 +53,7 @@ type Destination struct {
 		} `json:"sourceRecordWriteTotal"`
 	} `json:"inline_metrics"`
 	Config struct {
-		Key string `json:"key"`
+		Key string `json:"key,omitempty"`
 	} `json:"config"`
 }
 
@@ -103,6 +105,9 @@ func (s *streamkapAPI) DeleteDestination(ctx context.Context, destinationID stri
 
 func (s *streamkapAPI) UpdateDestination(ctx context.Context, reqPayload CreateDestinationRequest) (*Destination, error) {
 	payload, err := json.Marshal(reqPayload)
+	tflog.Debug(ctx, "UpdateDestination payload: ", map[string]interface{}{
+		"payload": string(payload),
+	})
 	if err != nil {
 		return nil, err
 	}

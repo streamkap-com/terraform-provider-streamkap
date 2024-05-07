@@ -58,14 +58,14 @@ type Source struct {
 	} `json:"inline_metrics"`
 	Server string `json:"server"`
 	Config struct {
-		Key string `json:"key"`
+		Key string `json:"key,omitempty'"`
 	} `json:"config"`
 }
 
 type CreateSourceRequest struct {
 	ID        string                 `json:"-"`
-	Name      string                 `json:"name"`
-	Connector string                 `json:"connector"`
+	Name      *string                `json:"name"`
+	Connector *string                `json:"connector"`
 	Config    map[string]interface{} `json:"config"`
 }
 

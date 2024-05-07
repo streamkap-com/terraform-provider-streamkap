@@ -45,7 +45,7 @@ type Pipeline struct {
 	SubID    string   `json:"sub_id"`
 	TenantID string   `json:"tenant_id"`
 	TopicIds []string `json:"topic_ids"`
-	Source   struct {
+	Source   *struct {
 		Name            string `json:"name"`
 		Connector       string `json:"connector"`
 		ID              string `json:"id"`
@@ -64,7 +64,7 @@ type Pipeline struct {
 		} `json:"snapshot_status"`
 		Topics []string `json:"topics"`
 	} `json:"source"`
-	Destination struct {
+	Destination *struct {
 		Name            string `json:"name"`
 		Connector       string `json:"connector"`
 		ID              string `json:"id"`

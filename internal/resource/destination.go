@@ -13,7 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/jinzhu/copier"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 )
@@ -35,11 +37,10 @@ type Destination struct {
 
 // DestinationModel describes the resource data model.
 type DestinationModel struct {
-	ID        types.String    `json:"id" tfsdk:"id"`
-	Name      types.String    `json:"name" tfsdk:"name"`
-	Connector types.String    `json:"connector" tfsdk:"connector"`
-	Config    jsontypes.Exact `json:"config" tfsdk:"config"`
-	Instance  jsontypes.Exact `json:"instance" tfsdk:"-"`
+	ID        basetypes.StringValue `json:"id" tfsdk:"id"`
+	Name      *string               `json:"name" tfsdk:"name"`
+	Connector *string               `json:"connector" tfsdk:"connector"`
+	Config    jsontypes.Exact       `json:"config" tfsdk:"config"`
 }
 
 func (r *Destination) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -108,10 +109,9 @@ func (r *Destination) Create(ctx context.Context, req res.CreateRequest, resp *r
 
 	var config map[string]interface{}
 	data.Config.Unmarshal(&config)
-	fmt.Println("config", config)
 	destination, err := r.client.CreateDestination(ctx, api.CreateDestinationRequest{
-		Name:      data.Name.ValueString(),
-		Connector: data.Connector.ValueString(),
+		Name:      data.Name,
+		Connector: data.Connector,
 		Config:    config,
 	})
 	if err != nil {
@@ -120,16 +120,15 @@ func (r *Destination) Create(ctx context.Context, req res.CreateRequest, resp *r
 	}
 
 	data.ID = types.StringValue(destination.ID)
-	data.Name = types.StringValue(destination.Name)
-	data.Connector = types.StringValue(destination.Connector)
+	data.Name = &destination.Name
+	data.Connector = &destination.Connector
 
-	sourceString, err := json.Marshal(destination)
+	sourceString, err := json.Marshal(config)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to parse destination, got error: %s", err))
 		return
 	}
-	data.Instance = jsontypes.NewExactValue(string(sourceString))
-
+	data.Config = jsontypes.NewExactValue(string(sourceString))
 	tflog.Trace(ctx, "created a resource")
 
 	// Save data into Terraform state
@@ -157,7 +156,8 @@ func (r *Destination) Read(ctx context.Context, req res.ReadRequest, resp *res.R
 			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to parse destination, got error: %s", err))
 			return
 		}
-		data.Instance = jsontypes.NewExactValue(string(sourceString))
+		copier.CopyWithOption(&data, &destination[0], copier.Option{DeepCopy: true})
+		data.Config = jsontypes.NewExactValue(string(sourceString))
 	}
 
 	// Save updated data into Terraform state
@@ -185,15 +185,16 @@ func (r *Destination) Update(ctx context.Context, req res.UpdateRequest, resp *r
 	}
 
 	var currentInstance api.Source
-	data.Instance.Unmarshal(currentInstance)
+	copier.CopyWithOption(&currentInstance, &destination[0], copier.Option{DeepCopy: true})
+	json.Unmarshal([]byte(data.Config.String()), &currentInstance.Config)
 	diff := cmp.Diff(destination[0], currentInstance, cmp.AllowUnexported())
 	if diff != "" {
 		var config map[string]interface{}
 		data.Config.Unmarshal(&config)
 		fmt.Println("config", config)
 		updatedSource, err := r.client.UpdateDestination(ctx, api.CreateDestinationRequest{
-			Name:      data.Name.ValueString(),
-			Connector: data.Connector.ValueString(),
+			Name:      data.Name,
+			Connector: data.Connector,
 			Config:    config,
 			ID:        data.ID.ValueString(),
 		})
@@ -201,12 +202,13 @@ func (r *Destination) Update(ctx context.Context, req res.UpdateRequest, resp *r
 			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update destination, got error: %s", err))
 			return
 		}
-		sourceString, err := json.Marshal(updatedSource)
+		sourceString, err := json.Marshal(updatedSource.Config)
 		if err != nil {
 			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to parse source, got error: %s", err))
 			return
 		}
-		data.Instance = jsontypes.NewExactValue(string(sourceString))
+		copier.CopyWithOption(&data, &updatedSource, copier.Option{DeepCopy: true})
+		data.Config = jsontypes.NewExactValue(string(sourceString))
 	}
 
 	// Save updated data into Terraform state
