@@ -26,13 +26,8 @@ resource "streamkap_source" "postgresql" {
     "slot.name"                                 = "streamkap_pgoutput_slot"
     "publication.name"                          = "streamkap_pub"
     "database.sslmode"                          = "require"
-    "snapshot.max.threads"                      = "1"
-    "snapshot.fetch.size"                       = "102400"
-    "snapshot.mode.user.defined"                = "Initial"
     "binary.handling.mode"                      = "bytes"
-    "incremental.snapshot.chunk.size"           = 102400
-    "max.batch.size"                            = 2048
-    "max.queue.size.user.defined"               = "204800"
+    "heartbeat.enabled"                         = false
   })
 }
 resource "streamkap_destination" "snowflake" {
