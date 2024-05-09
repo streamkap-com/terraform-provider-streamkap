@@ -16,7 +16,7 @@ resource "streamkap_source" "mysql" {
   connector = "mysql"
   config = jsonencode({
     "database.hostname.user.defined"     = var.source_host
-    "database.port"                      = "3306"
+    "database.port.user.defined"         = "3306"
     "database.user"                      = "root"
     "database.password"                  = var.source_password
     "database.include.list.user.defined" = "database1, database2"
@@ -25,11 +25,12 @@ resource "streamkap_source" "mysql" {
     "snapshot.gtid"                      = "Yes"
     "snapshot.mode.user.defined"         = "When Needed"
     "binary.handling.mode"               = "bytes"
-    "snapshot.max.threads"               = "1"
-    "snapshot.fetch.size"                = "102400"
-    "incremental.snapshot.chunk.size"    = 102400
-    "incremental.snapshot.chunk.size"    = 1024
-    "max.batch.size"                     = 2048
+    "heartbeat.enabled"                  = false
+    "ssh.enabled"                        = true
+    "ssh.host"                           = "host"
+    "ssh.port"                           = "22"
+    "ssh.user"                           = "streamkap"
+    "ssh.public.key.user.displayed"      = "public_key"
   })
 }
 resource "streamkap_destination" "mysql" {

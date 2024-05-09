@@ -8,6 +8,13 @@ import (
 	"time"
 )
 
+type SourceResponse struct {
+	Total    int      `json:"total"`
+	PageSize int      `json:"page_size"`
+	Page     int      `json:"page"`
+	Result   []Source `json:"result"`
+}
+
 type Source struct {
 	ID           string `json:"id"`
 	Name         string `json:"name"`
@@ -51,14 +58,14 @@ type Source struct {
 	} `json:"inline_metrics"`
 	Server string `json:"server"`
 	Config struct {
-		Key string `json:"key"`
+		Key string `json:"key,omitempty'"`
 	} `json:"config"`
 }
 
 type CreateSourceRequest struct {
 	ID        string                 `json:"-"`
-	Name      string                 `json:"name"`
-	Connector string                 `json:"connector"`
+	Name      *string                `json:"name"`
+	Connector *string                `json:"connector"`
 	Config    map[string]interface{} `json:"config"`
 }
 
@@ -97,13 +104,13 @@ func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) ([]Source
 	if err != nil {
 		return nil, err
 	}
-	var resp []Source
+	var resp SourceResponse
 	err = s.doRequest(req, &resp)
 	if err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	return resp.Result, nil
 }
 
 func (s *streamkapAPI) DeleteSource(ctx context.Context, sourceID string) error {

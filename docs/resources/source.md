@@ -43,13 +43,8 @@ resource "streamkap_source" "postgresql" {
     "slot.name"                                 = "streamkap_pgoutput_slot"
     "publication.name"                          = "streamkap_pub"
     "database.sslmode"                          = "require"
-    "snapshot.max.threads"                      = "1"
-    "snapshot.fetch.size"                       = "102400"
     "snapshot.mode.user.defined"                = "Initial"
     "binary.handling.mode"                      = "bytes"
-    "incremental.snapshot.chunk.size"           = 102400
-    "max.batch.size"                            = 2048
-    "max.queue.size.user.defined"               = "204800"
   })
 }
 ```
@@ -73,13 +68,7 @@ resource "streamkap_source" "postgresql" {
 - `slot.name` (Required) The name of the replication slot for the connector to use.
 - `publication.name` (Required) The name of the publication for the connector to use.
 - `database.sslmode` (Required) Whether to use an encrypted connection to the PostgreSQL server. Options: `required` and `disable`
-- `snapshot.max.threads` (Required) How many tables to snapshot at the same time during initial snapshots. Min: `102400`, Max: `512000`
-- `snapshot.fetch.size` (Required) How many rows to fetch in batches during initial snapshots. Min: `102400`, Max: `512000`
-- `snapshot.mode.user.defined` (Required) Select the snapshot mode to use. 'Initial' is recommended and will snapshot existing data before streaming records. Options: `Initial` and `Never`
 - `binary.handling.mode` (Required) Specifies how the data for binary columns e.g. blob, binary, varbinary should be represented. This setting depends on what the destination is. See the documentation for more details. Options: `bytes`, `base64`, `hex` and `base64-url-safe`
-- `incremental.snapshot.chunk.size` (Required) How many rows to fetch in batches during incremental snapshots. Min: `102400`, Max: `512000`
-- `max.batch.size` (Required) Maximum size of each batch of source records. Min: `2048`, Max: `10240`
-- `max.queue.size.user.defined` (Required) Maximum number of pre-fetched records, awaiting to be polled. Max Queue Size must always be greater than 125% of Snapshot Rows (Initial). Min: `204800`, Max: `1024000`
 
 ### MySQL Connector
 
@@ -90,7 +79,7 @@ resource "streamkap_source" "mysql" {
   connector = "mysql"
   config = jsonencode({
     "database.hostname.user.defined"     = "localhost"
-    "database.port"                      = "3306"
+    "database.port.user.defined"         = "3306"
     "database.user"                      = "root"
     "database.password"                  = "password"
     "database.include.list.user.defined" = "database1, database2"
@@ -100,11 +89,11 @@ resource "streamkap_source" "mysql" {
     "snapshot.gtid"                      = "Yes"
     "snapshot.mode.user.defined"         = "When Needed"
     "binary.handling.mode"               = "bytes"
-    "snapshot.max.threads"               = "1"
-    "snapshot.fetch.size"                = "102400"
-    "incremental.snapshot.chunk.size"    = 102400
-    "incremental.snapshot.chunk.size"    = 1024
-    "max.batch.size"                     = 2048
+    "heartbeat.enabled"                  = false
+    "ssh.enabled"                        = true
+    "ssh.port"                           = "22"
+    "ssh.user"                           = "streamkap"
+    "ssh.public.key.user.displayed"      = "public_key"
   })
 }
 ```
@@ -125,10 +114,10 @@ resource "streamkap_source" "mysql" {
 - `table.include.list.user.defined` (Required) Comma-separated list of source tables to sync
 - `database.connectionTimeZone` (Required) Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MySQL server session variables 'time_zone' or 'system_time_zone'. Options: `SERVER`, `UTC`, `Africa/Cairo`, ` Asia/Riyadh`, `Africa/Casablanca`, `Asia/Seoul`, `Africa/Harare`, `Asia/Shanghai`, `Africa/Monrovia`, `Asia/Singapore`, `Africa/Nairobi`, `Asia/Taipei`, `Africa/Tripoli`, `Asia/Tehran`, `Africa/Windhoek`, `Asia/Tokyo`, `America/Araguaina`, `Asia/Ulaanbaatar`, `America/Asuncion`, `Asia/Vladivostok`, `America/Bogota`, `Asia/Yakutsk`, `America/Buenos_Aires`, `Asia/Yerevan`, `America/Caracas`, `Atlantic/Azores`, `America/Chihuahua`, `Australia/Adelaide`, `America/Cuiaba`, `Australia/Brisbane`, `America/Denver`, `Australia/Darwin`, `America/Fortaleza`, `Australia/Hobart`, `America/Guatemala`, `Australia/Perth`, `America/Halifax`, `Australia/Sydney`, `America/Manaus`, `Brazil/East`, `America/Matamoros`, `Canada/Newfoundland`, `America/Monterrey`, `Canada/Saskatchewan`, `America/Montevideo`, `Canada/Yukon`, `America/Phoenix`, `Europe/Amsterdam`, `America/Santiago`, `Europe/Athens`, `America/Tijuana`, `Europe/Dublin`, `Asia/Amman`, `Europe/Helsinki`, `Asia/Ashgabat`, `Europe/Istanbul`, `Asia/Baghdad`, `Europe/Kaliningrad`, `Asia/Baku`, `Europe/Moscow`, `Asia/Bangkok`, `Europe/Paris`, `Asia/Beirut`, `Europe/Prague`, `Asia/Calcutta`, `Europe/Sarajevo`, `Asia/Damascus`, `Pacific/Auckland`, `Asia/Dhaka`, `Pacific/Fiji`, `Asia/Irkutsk`, `Pacific/Guam`, `Asia/Jerusalem`, `Pacific/Honolulu`, `Asia/Kabul`, `Pacific/Samoa`, `Asia/Karachi`, `US/Alaska`, `Asia/Kathmandu`, `US/Central`, `Asia/Krasnoyarsk`, `US/Eastern`, `Asia/Magadan`, `US/East-Indiana`, `Asia/Muscat`, `US/Pacific` and `Asia/Novosibirsk`.
 - `snapshot.gtid` (Required) GTID snapshots are read only but require some prerequisite settings, including enabling GTID on the source database. See the documentation for more details. Options: `Yes` and `No`
-- `snapshot.max.threads` (Required) How many tables to snapshot at the same time during initial snapshots. Min: `102400`, Max: `512000`
-- `snapshot.fetch.size` (Required) How many rows to fetch in batches during initial snapshots. Min: `102400`, Max: `512000`
-- `snapshot.mode.user.defined` (Required) Select the snapshot mode to use. 'When Needed' is recommended and will snapshot existing data before streaming records. Options: `Initial`, `Never`, `When Needed`, `Schema Only` and `Schema Only Recovery`
 - `binary.handling.mode` (Required) Specifies how the data for binary columns e.g. blob, binary, varbinary should be represented. This setting depends on what the destination is. See the documentation for more details. Options: `bytes`, `base64`, `hex` and `base64-url-safe`
-- `incremental.snapshot.chunk.size` (Required) How many rows to fetch in batches during incremental snapshots. Min: `102400`, Max: `512000`
-- `max.batch.size` (Required) Maximum size of each batch of source records. Min: `2048`, Max: `10240`
-- `max.queue.size.user.defined` (Required) Maximum number of pre-fetched records, awaiting to be polled. Max Queue Size must always be greater than 125% of Snapshot Rows (Initial). Min: `204800`, Max: `1024000`
+- `heartbeat.enabled` (Required) Heartbeats are used to keep the pipeline healthy when there is a low volume of data at times.
+- `ssh.enabled` (Required) Specifies how the data for binary columns e.g. blob, binary, varbinary should be represented. This setting depends on what the destination is. See the documentation for more detaStreamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database.
+- `ssh.host` (Required if `ssh.enabled`) Hostname of your SSH server
+- `ssh.port` (Required if `ssh.enabled`) Port of your SSH server
+- `ssh.user` (Required if `ssh.enabled`) User that allows Streamkap to connect to SSH server
+- `ssh.public.key.user.displayed` (Required if `ssh.enabled`) Public key to add to SSH server

@@ -35,16 +35,8 @@ Pipeline resource
 Required:
 
 - `connector` (String)
-- `id` (Object) (see [below for nested schema](#nestedobjatt--destination--id))
+- `id` (String)
 - `name` (String)
-
-<a id="nestedobjatt--destination--id"></a>
-### Nested Schema for `destination.id`
-
-Required:
-
-- `oid` (String)
-
 
 
 <a id="nestedatt--source"></a>
@@ -53,13 +45,6 @@ Required:
 Required:
 
 - `connector` (String)
-- `id` (Object) (see [below for nested schema](#nestedobjatt--source--id))
+- `id` (String)
 - `name` (String)
 - `topics` (List of String)
-
-<a id="nestedobjatt--source--id"></a>
-### Nested Schema for `source.id`
-
-Required:
-
-- `oid` (String)
