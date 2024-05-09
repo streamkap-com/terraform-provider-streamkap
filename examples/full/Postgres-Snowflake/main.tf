@@ -26,13 +26,8 @@ resource "streamkap_source" "postgresql" {
     "slot.name"                                 = "streamkap_pgoutput_slot"
     "publication.name"                          = "streamkap_pub"
     "database.sslmode"                          = "require"
-    "snapshot.max.threads"                      = "1"
-    "snapshot.fetch.size"                       = "102400"
-    "snapshot.mode.user.defined"                = "Initial"
     "binary.handling.mode"                      = "bytes"
-    "incremental.snapshot.chunk.size"           = 102400
-    "max.batch.size"                            = 2048
-    "max.queue.size.user.defined"               = "204800"
+    "heartbeat.enabled"                         = false
   })
 }
 resource "streamkap_destination" "snowflake" {
@@ -52,17 +47,13 @@ resource "streamkap_destination" "snowflake" {
 resource "streamkap_pipeline" "this" {
   name = "My Pipeline" # The name of the pipeline
   source = {
-    id = {
-      "oid" : streamkap_source.postgresql.id # The id of the source
-    }
+    id        = streamkap_source.postgresql.id                     # The id of the source
     name      = streamkap_source.postgresql.name                   # The name of the source
     connector = streamkap_source.postgresql.connector              # The connector of the source
     topics    = ["schema1.table1, schema2.table2, schema2.table3"] # List of tables of the source that we want to sync to destination
   }
   destination = {
-    id = {
-      "oid" : streamkap_destination.snowflake.id # The id of the destination
-    }
+    id        = streamkap_destination.snowflake.id        # The id of the destination
     name      = streamkap_destination.snowflake.name      # The name of the destination
     connector = streamkap_destination.snowflake.connector # The connector of the destination
   }

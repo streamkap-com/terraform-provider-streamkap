@@ -9,10 +9,17 @@ import (
 
 type CreatePipelineRequest struct {
 	ID          string                    `json:"-"`
-	Name        string                    `json:"name"`
+	Name        *string                   `json:"name"`
 	Destination CreatePipelineDestination `json:"destination"`
 	Source      CreatePipelineSource      `json:"source"`
 	Transforms  []string                  `json:"transforms"`
+}
+
+type PipelineResponse struct {
+	Total    int        `json:"total"`
+	PageSize int        `json:"page_size"`
+	Page     int        `json:"page"`
+	Result   []Pipeline `json:"result"`
 }
 
 type CreatePipelineDestination struct {
@@ -38,7 +45,7 @@ type Pipeline struct {
 	SubID    string   `json:"sub_id"`
 	TenantID string   `json:"tenant_id"`
 	TopicIds []string `json:"topic_ids"`
-	Source   struct {
+	Source   *struct {
 		Name            string `json:"name"`
 		Connector       string `json:"connector"`
 		ID              string `json:"id"`
@@ -57,7 +64,7 @@ type Pipeline struct {
 		} `json:"snapshot_status"`
 		Topics []string `json:"topics"`
 	} `json:"source"`
-	Destination struct {
+	Destination *struct {
 		Name            string `json:"name"`
 		Connector       string `json:"connector"`
 		ID              string `json:"id"`
@@ -95,13 +102,13 @@ func (s *streamkapAPI) GetPipeline(ctx context.Context, pipelineID string) ([]Pi
 	if err != nil {
 		return nil, err
 	}
-	var resp []Pipeline
+	var resp PipelineResponse
 	err = s.doRequest(req, &resp)
 	if err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	return resp.Result, nil
 }
 
 func (s *streamkapAPI) DeletePipeline(ctx context.Context, pipelineID string) error {

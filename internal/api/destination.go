@@ -5,13 +5,22 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 type CreateDestinationRequest struct {
 	ID        string                 `json:"-"`
-	Name      string                 `json:"name"`
-	Connector string                 `json:"connector"`
+	Name      *string                `json:"name"`
+	Connector *string                `json:"connector"`
 	Config    map[string]interface{} `json:"config"`
+}
+
+type DestinationResponse struct {
+	Total    int           `json:"total"`
+	PageSize int           `json:"page_size"`
+	Page     int           `json:"page"`
+	Result   []Destination `json:"result"`
 }
 
 type Destination struct {
@@ -44,7 +53,7 @@ type Destination struct {
 		} `json:"sourceRecordWriteTotal"`
 	} `json:"inline_metrics"`
 	Config struct {
-		Key string `json:"key"`
+		Key string `json:"key,omitempty"`
 	} `json:"config"`
 }
 
@@ -71,13 +80,13 @@ func (s *streamkapAPI) GetDestination(ctx context.Context, destinationID string)
 	if err != nil {
 		return nil, err
 	}
-	var resp []Destination
+	var resp DestinationResponse
 	err = s.doRequest(req, &resp)
 	if err != nil {
 		return nil, err
 	}
 
-	return resp, nil
+	return resp.Result, nil
 }
 
 func (s *streamkapAPI) DeleteDestination(ctx context.Context, destinationID string) error {
@@ -96,6 +105,9 @@ func (s *streamkapAPI) DeleteDestination(ctx context.Context, destinationID stri
 
 func (s *streamkapAPI) UpdateDestination(ctx context.Context, reqPayload CreateDestinationRequest) (*Destination, error) {
 	payload, err := json.Marshal(reqPayload)
+	tflog.Debug(ctx, "UpdateDestination payload: ", map[string]interface{}{
+		"payload": string(payload),
+	})
 	if err != nil {
 		return nil, err
 	}
