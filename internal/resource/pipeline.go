@@ -2,10 +2,8 @@ package resource
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
@@ -72,7 +70,6 @@ type PipelineModel struct {
 		Tasks           []int  `json:"tasks" tfsdk:"-"`
 		ConnectorStatus string `json:"connector_status" tfsdk:"-"`
 	} `json:"destination" tfsdk:"destination"`
-	Instance jsontypes.Exact `json:"instance" tfsdk:"-"`
 }
 
 func (r *Pipeline) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -156,7 +153,7 @@ func (r *Pipeline) Create(ctx context.Context, req res.CreateRequest, resp *res.
 	}
 	transform := data.Transforms
 	if transform == nil {
-		transform = []string{}
+		transform = make([]string, 0)
 	}
 
 	// If applicable, this is a great opportunity to initialize any necessary
@@ -192,12 +189,6 @@ func (r *Pipeline) Create(ctx context.Context, req res.CreateRequest, resp *res.
 	// For the purposes of this example code, hardcoding a response value to
 	// save into the Terraform state.
 	data.ID = pipeline.ID
-	sourceString, err := json.Marshal(pipeline)
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to parse pipeline, got error: %s", err))
-		return
-	}
-	data.Instance = jsontypes.NewExactValue(string(sourceString))
 
 	tflog.Trace(ctx, "created a resource")
 
@@ -221,13 +212,7 @@ func (r *Pipeline) Read(ctx context.Context, req res.ReadRequest, resp *res.Read
 		return
 	}
 	if source != nil {
-		sourceString, err := json.Marshal(source[0])
-		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to parse pipeline, got error: %s", err))
-			return
-		}
 		copier.CopyWithOption(&data, &source[0], copier.Option{DeepCopy: true})
-		data.Instance = jsontypes.NewExactValue(string(sourceString))
 	}
 
 	// Save updated data into Terraform state
@@ -246,7 +231,7 @@ func (r *Pipeline) Update(ctx context.Context, req res.UpdateRequest, resp *res.
 
 	transform := data.Transforms
 	if transform == nil {
-		transform = []string{}
+		transform = make([]string, 0)
 	}
 	pipeline, err := r.client.UpdatePipeline(ctx, api.CreatePipelineRequest{
 		ID:   data.ID,
@@ -277,12 +262,9 @@ func (r *Pipeline) Update(ctx context.Context, req res.UpdateRequest, resp *res.
 		return
 	}
 
-	sourceString, err := json.Marshal(pipeline)
-	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to parse pipeline, got error: %s", err))
-		return
+	if pipeline != nil {
+		copier.CopyWithOption(&data, &pipeline, copier.Option{DeepCopy: true})
 	}
-	data.Instance = jsontypes.NewExactValue(string(sourceString))
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

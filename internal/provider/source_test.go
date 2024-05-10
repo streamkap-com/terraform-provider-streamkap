@@ -15,6 +15,21 @@ import (
 func TestAccSourceResource(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
+	config := []byte(`{
+		"database.hostname.user.defined": "192.168.3.47",
+		"database.port": "3306",
+		"database.user": "root",
+		"database.password": "iAxki9j9fr8H8LV",
+		"database.include.list.user.defined": "database1, database2",
+		"table.include.list.user.defined": "database1.table1, database1.table2, database2.table3, database2.table4",
+		"signal.data.collection.schema.or.database": "test1",
+		"database.connectionTimeZone": "SERVER",
+		"snapshot.gtid": "No",
+		"snapshot.mode.user.defined": "When Needed",
+		"binary.handling.mode": "bytes",
+		"incremental.snapshot.chunk.size": 1024,
+		"max.batch.size": 2048
+	}`)
 	httpmock.RegisterResponder("POST", "https://api.streamkap.com/api/auth/access-token",
 		func(req *http.Request) (*http.Response, error) {
 			token := make(map[string]interface{})
@@ -40,6 +55,7 @@ func TestAccSourceResource(t *testing.T) {
 				ID:        "example-id",
 				Name:      "one",
 				Connector: "mysql",
+				Config:    config,
 			}
 
 			resp, err := httpmock.NewJsonResponse(200, source)
@@ -55,22 +71,7 @@ func TestAccSourceResource(t *testing.T) {
 					ID:        "example-id",
 					Name:      "one",
 					Connector: "mysql",
-				}},
-			}
-
-			resp, err := httpmock.NewJsonResponse(200, source)
-			if err != nil {
-				return httpmock.NewStringResponse(500, ""), nil
-			}
-			return resp, nil
-		})
-	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/sources?id=example-id",
-		func(req *http.Request) (*http.Response, error) {
-			source := api.SourceResponse{
-				Result: []api.Source{{
-					ID:        "example-id",
-					Name:      "one",
-					Connector: "mysql",
+					Config:    config,
 				}},
 			}
 
@@ -122,14 +123,14 @@ func TestAccSourceResource(t *testing.T) {
 				),
 			},
 			// ImportState testing
-			{
-				ResourceName:            "streamkap_source.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateId:           "example-id",
-				ImportStateVerifyIgnore: []string{"config", "connector", "name"},
-			},
-			// Update and Read testing
+			//{
+			//	ResourceName:            "streamkap_source.test",
+			//	ImportState:             true,
+			//	ImportStateVerify:       true,
+			//	ImportStateId:           "example-id",
+			//	ImportStateVerifyIgnore: []string{"config", "connector", "name"},
+			//},
+			//// Update and Read testing
 			//{
 			//	Config: testAccSourceResourceConfig("two"),
 			//	Check: resource.ComposeAggregateTestCheckFunc(

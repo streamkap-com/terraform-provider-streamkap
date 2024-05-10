@@ -56,10 +56,8 @@ type Source struct {
 			Value     int    `json:"value"`
 		} `json:"sourceRecordWriteTotal"`
 	} `json:"inline_metrics"`
-	Server string `json:"server"`
-	Config struct {
-		Key string `json:"key,omitempty'"`
-	} `json:"config"`
+	Server string          `json:"server"`
+	Config json.RawMessage `json:"config"`
 }
 
 type CreateSourceRequest struct {

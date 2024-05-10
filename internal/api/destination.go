@@ -52,9 +52,7 @@ type Destination struct {
 			Value     int    `json:"value"`
 		} `json:"sourceRecordWriteTotal"`
 	} `json:"inline_metrics"`
-	Config struct {
-		Key string `json:"key,omitempty"`
-	} `json:"config"`
+	Config json.RawMessage `json:"config"`
 }
 
 func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload CreateDestinationRequest) (*Destination, error) {
