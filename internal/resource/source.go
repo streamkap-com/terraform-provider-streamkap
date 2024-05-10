@@ -119,6 +119,7 @@ func (r *Source) Create(ctx context.Context, req res.CreateRequest, resp *res.Cr
 	data.ID = types.StringValue(source.ID)
 	data.Name = &source.Name
 	data.Connector = &source.Connector
+	data.Config = jsontypes.NewExactValue(string(source.Config))
 	tflog.Trace(ctx, "created a resource")
 
 	// Save data into Terraform state
@@ -141,13 +142,8 @@ func (r *Source) Read(ctx context.Context, req res.ReadRequest, resp *res.ReadRe
 		return
 	}
 	if source != nil {
-		sourceString, err := json.Marshal(source[0].Config)
-		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to parse source, got error: %s", err))
-			return
-		}
 		copier.CopyWithOption(&data, &source[0], copier.Option{DeepCopy: true})
-		data.Config = jsontypes.NewExactValue(string(sourceString))
+		data.Config = jsontypes.NewExactValue(string(source[0].Config))
 		fmt.Println("=====> source: ", data)
 	}
 	// Save updated data into Terraform state

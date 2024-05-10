@@ -151,13 +151,8 @@ func (r *Destination) Read(ctx context.Context, req res.ReadRequest, resp *res.R
 		return
 	}
 	if destination != nil {
-		sourceString, err := json.Marshal(destination[0])
-		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to parse destination, got error: %s", err))
-			return
-		}
 		copier.CopyWithOption(&data, &destination[0], copier.Option{DeepCopy: true})
-		data.Config = jsontypes.NewExactValue(string(sourceString))
+		data.Config = jsontypes.NewExactValue(string(destination[0].Config))
 	}
 
 	// Save updated data into Terraform state
