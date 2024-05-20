@@ -16,7 +16,7 @@ type StreamkapAPI interface {
 	//Source APIs
 	CreateSource(ctx context.Context, reqPayload CreateSourceRequest) (*Source, error)
 	UpdateSource(ctx context.Context, reqPayload CreateSourceRequest) (*Source, error)
-	GetSource(ctx context.Context, sourceID string) ([]Source, error)
+	GetSource(ctx context.Context, sourceID string) (*Source, error)
 	DeleteSource(ctx context.Context, sourceID string) error
 
 	// Destination APIs

@@ -16,57 +16,17 @@ type SourceResponse struct {
 }
 
 type Source struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	SubID        string `json:"sub_id"`
-	TenantID     string `json:"tenant_id"`
-	Connector    string `json:"connector"`
-	TaskStatuses struct {
-		Field1 struct {
-			Status string `json:"status"`
-		} `json:"0"`
-	} `json:"task_statuses"`
-	Tasks           []int    `json:"tasks"`
-	ConnectorStatus string   `json:"connector_status"`
-	TopicIds        []string `json:"topic_ids"`
-	Topics          []string `json:"topics"`
-	InlineMetrics   struct {
-		ConnectorStatus []struct {
-			Timestamp string `json:"timestamp"`
-			Value     string `json:"value"`
-		} `json:"connector_status"`
-		Latency []struct {
-			Timestamp string `json:"timestamp"`
-			Value     string `json:"value"`
-		} `json:"latency"`
-		SnapshotState []struct {
-			Timestamp string `json:"timestamp"`
-			Value     string `json:"value"`
-		} `json:"snapshotState"`
-		State []struct {
-			Timestamp string `json:"timestamp"`
-			Value     string `json:"value"`
-		} `json:"state"`
-		StreamingState []struct {
-			Timestamp string `json:"timestamp"`
-			Value     string `json:"value"`
-		} `json:"streamingState"`
-		SourceRecordWriteTotal []struct {
-			Timestamp string `json:"timestamp"`
-			Value     int    `json:"value"`
-		} `json:"sourceRecordWriteTotal"`
-	} `json:"inline_metrics"`
-	Server string `json:"server"`
-	Config struct {
-		Key string `json:"key,omitempty'"`
-	} `json:"config"`
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Connector string `json:"connector"`
+	Config map[string]any `json:"config"`
 }
 
 type CreateSourceRequest struct {
-	ID        string                 `json:"-"`
-	Name      *string                `json:"name"`
-	Connector *string                `json:"connector"`
-	Config    map[string]interface{} `json:"config"`
+	ID        string         `json:"-"`
+	Name      *string        `json:"name"`
+	Connector *string        `json:"connector"`
+	Config    map[string]any `json:"config"`
 }
 
 type CreateSourceResponse struct {
@@ -99,7 +59,7 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload CreateSource
 	return &resp, nil
 }
 
-func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) ([]Source, error) {
+func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) (*Source, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/sources?id="+sourceID, http.NoBody)
 	if err != nil {
 		return nil, err
@@ -110,7 +70,7 @@ func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) ([]Source
 		return nil, err
 	}
 
-	return resp.Result, nil
+	return &resp.Result[0], nil
 }
 
 func (s *streamkapAPI) DeleteSource(ctx context.Context, sourceID string) error {
