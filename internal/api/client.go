@@ -14,8 +14,8 @@ type StreamkapAPI interface {
 	SetToken(token *Token)
 
 	//Source APIs
-	CreateSource(ctx context.Context, reqPayload CreateSourceRequest) (*Source, error)
-	UpdateSource(ctx context.Context, reqPayload CreateSourceRequest) (*Source, error)
+	CreateSource(ctx context.Context, reqPayload Source) (*Source, error)
+	UpdateSource(ctx context.Context, sourceID string, reqPayload Source) (*Source, error)
 	GetSource(ctx context.Context, sourceID string) (*Source, error)
 	DeleteSource(ctx context.Context, sourceID string) error
 

@@ -13,7 +13,7 @@ import (
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	ds "github.com/streamkap-com/terraform-provider-streamkap/internal/datasource"
-	resource2 "github.com/streamkap-com/terraform-provider-streamkap/internal/resource"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -136,13 +136,7 @@ func (p *streamkapProvider) Configure(ctx context.Context, req provider.Configur
 	// errors with provider-specific guidance.
 
 	if host == "" {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("host"),
-			"Missing Streamkap API Host",
-			"The provider cannot create the Streamkap API client as there is a missing or empty value for the Streamkap API host. "+
-				"Set the host value in the configuration or use the STREAMKAP_HOST environment variable. "+
-				"If either is already set, ensure the value is not empty.",
-		)
+		host = "https://api.streamkap.com"
 	}
 
 	if clientID == "" {
@@ -201,8 +195,8 @@ func (p *streamkapProvider) DataSources(_ context.Context) []func() datasource.D
 // Resources defines the resources implemented in the provider.
 func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		resource2.NewSourceResource,
-		resource2.NewDestinationResource,
-		resource2.NewPipelineResource,
+		source.NewSourcePostgreSQLResource,
+		// resource2.NewDestinationResource,
+		// resource2.NewPipelineResource,
 	}
 }

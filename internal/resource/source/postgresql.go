@@ -2,11 +2,8 @@ package source
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
@@ -19,7 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/jinzhu/copier"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 )
@@ -45,25 +41,25 @@ type SourcePostgreSQL struct {
 type SourcePostgreSQLModel struct {
 	ID                                      types.String `tfsdk:"id"`
 	Name                                    types.String `tfsdk:"name"`
-	DatabaseHostname                        types.String `tfsdk:"database_hostname" cfgname:"database.hostname.user.defined"`
-	DatabasePort                            types.Int64  `tfsdk:"database_port" cfgname:"database.port.user.defined"`
-	DatabaseUser                            types.String `tfsdk:"database_user" cfgname:"database.user"`
-	DatabasePassword                        types.String `tfsdk:"database_password" cfgname:"database.password"`
-	DatabaseDbname                          types.String `tfsdk:"database_dbname" cfgname:"database.dbname"`
-	DatabaseSSLMode                         types.String `tfsdk:"database_sslmode" cfgname:"database.sslmode"`
-	SchemaIncludeList                       types.String `tfsdk:"schema_include_list" cfgname:"schema.include.list"`
-	TableIncludeList                        types.String `tfsdk:"table_include_list" cfgname:"table.include.list.user.defined"`
-	SignalDataCollectionSchemaOrDatabase    types.String `tfsdk:"signal_data_collection_schema_or_database" cfgname:"signal.data.collection.schema.or.database"`
-	HeartbeatEnabled                        types.Bool   `tfsdk:"heartbeat_enabled" cfgname:"heartbeat.enabled"`
-	HeartbeatDataCollectionSchemaOrDatabase types.String `tfsdk:"heartbeat_data_collection_schema_or_database" cfgname:"heartbeat.data.collection.schema.or.database"`
-	IncludeSourceDBNameInTableName          types.Bool   `tfsdk:"include_source_db_name_in_table_name" cfgname:"include.source.db.name.in.table.name.user.defined"`
-	SlotName                                types.String `tfsdk:"slot_name" cfgname:"slot.name"`
-	PublicationName                         types.String `tfsdk:"publication_name" cfgname:"publication.name"`
-	BinaryHandlingMode                      types.String `tfsdk:"binary_handling_mode" cfgname:"binary.handling.mode"`
-	SSHEnabled                              types.Bool   `tfsdk:"ssh_enabled" cfgname:"ssh.enabled"`
-	SSHHost                                 types.String `tfsdk:"ssh_host" cfgname:"ssh.host"`
-	SSHPort                                 types.String `tfsdk:"ssh_port" cfgname:"ssh.port"`
-	SSHUser                                 types.String `tfsdk:"ssh_user" cfgname:"ssh.user"`
+	DatabaseHostname                        types.String `tfsdk:"database_hostname"`
+	DatabasePort                            types.Int64  `tfsdk:"database_port"`
+	DatabaseUser                            types.String `tfsdk:"database_user"`
+	DatabasePassword                        types.String `tfsdk:"database_password"`
+	DatabaseDbname                          types.String `tfsdk:"database_dbname"`
+	DatabaseSSLMode                         types.String `tfsdk:"database_sslmode"`
+	SchemaIncludeList                       types.String `tfsdk:"schema_include_list"`
+	TableIncludeList                        types.String `tfsdk:"table_include_list"`
+	SignalDataCollectionSchemaOrDatabase    types.String `tfsdk:"signal_data_collection_schema_or_database"`
+	HeartbeatEnabled                        types.Bool   `tfsdk:"heartbeat_enabled"`
+	HeartbeatDataCollectionSchemaOrDatabase types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
+	IncludeSourceDBNameInTableName          types.Bool   `tfsdk:"include_source_db_name_in_table_name"`
+	SlotName                                types.String `tfsdk:"slot_name"`
+	PublicationName                         types.String `tfsdk:"publication_name"`
+	BinaryHandlingMode                      types.String `tfsdk:"binary_handling_mode"`
+	SSHEnabled                              types.Bool   `tfsdk:"ssh_enabled"`
+	SSHHost                                 types.String `tfsdk:"ssh_host"`
+	SSHPort                                 types.String `tfsdk:"ssh_port"`
+	SSHUser                                 types.String `tfsdk:"ssh_user"`
 }
 
 func (r *SourcePostgreSQL) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -90,7 +86,8 @@ func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, re
 				MarkdownDescription: "PostgreSQL Hostname. For example, postgres.something.rds.amazonaws.com",
 			},
 			"database_port": schema.Int64Attribute{
-				Required:            true,
+				Computed:            true,
+				Optional:            true,
 				Default:             int64default.StaticInt64(5432),
 				MarkdownDescription: "PostgreSQL Port. For example, 5432",
 			},
@@ -102,12 +99,16 @@ func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, re
 				Required:            true,
 				Sensitive:           true,
 				MarkdownDescription: "Password to access the database",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"database_dbname": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "Database from which to stream data",
 			},
 			"database_sslmode": schema.StringAttribute{
+				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("require"),
 				MarkdownDescription: "Whether to use an encrypted connection to the PostgreSQL server",
@@ -124,11 +125,13 @@ func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, re
 				MarkdownDescription: "Source tables to sync",
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
-				Required:            true,
+				Computed:            true,
+				Optional:            true,
 				Default:             stringdefault.StaticString("public"),
 				MarkdownDescription: "Schema for signal data collection",
 			},
 			"heartbeat_enabled": schema.BoolAttribute{
+				Computed:            true,
 				Optional:            true,
 				Default:             booldefault.StaticBool(false),
 				MarkdownDescription: "Enable heartbeat to keep the pipeline healthy during low data volume",
@@ -138,21 +141,25 @@ func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, re
 				MarkdownDescription: "Schema for heartbeat data collection",
 			},
 			"include_source_db_name_in_table_name": schema.BoolAttribute{
+				Computed:            true,
 				Optional:            true,
 				Default:             booldefault.StaticBool(false),
 				MarkdownDescription: "Prefix topics with the database name",
 			},
 			"slot_name": schema.StringAttribute{
-				Required:            true,
+				Computed:            true,
+				Optional:            true,
 				Default:             stringdefault.StaticString("streamkap_pgoutput_slot"),
 				MarkdownDescription: "Replication slot name for the connector",
 			},
 			"publication_name": schema.StringAttribute{
-				Required:            true,
+				Computed:            true,
+				Optional:            true,
 				Default:             stringdefault.StaticString("streamkap_pub"),
 				MarkdownDescription: "Publication name for the connector",
 			},
 			"binary_handling_mode": schema.StringAttribute{
+				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("bytes"),
 				MarkdownDescription: "Representation of binary data for binary columns",
@@ -166,23 +173,26 @@ func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, re
 				},
 			},
 			"ssh_enabled": schema.BoolAttribute{
+				Computed:            true,
 				Optional:            true,
 				Default:             booldefault.StaticBool(false),
 				MarkdownDescription: "Connect via SSH tunnel",
 			},
 			"ssh_host": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Hostname of the SSH server",
+				MarkdownDescription: "Hostname of the SSH server, only required if `ssh_enabled` is true",
 			},
 			"ssh_port": schema.StringAttribute{
+				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("22"),
-				MarkdownDescription: "Port of the SSH server",
+				MarkdownDescription: "Port of the SSH server, only required if `ssh_enabled` is true",
 			},
 			"ssh_user": schema.StringAttribute{
+				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("streamkap"),
-				MarkdownDescription: "User for connecting to the SSH server",
+				MarkdownDescription: "User for connecting to the SSH server, only required if `ssh_enabled` is true",
 			},
 		},
 	}
@@ -219,22 +229,23 @@ func (r *SourcePostgreSQL) Create(ctx context.Context, req res.CreateRequest, re
 	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
 	config := r.configMapFromModel(plan)
 
-	source, err := r.client.CreateSource(ctx, api.CreateSourceRequest{
-		Name:      plan.Name.ValueStringPointer(),
-		Connector: &r.connector_code,
+	source, err := r.client.CreateSource(ctx, api.Source{
+		Name:      plan.Name.ValueString(),
+		Connector: r.connector_code,
 		Config:    config,
 	})
 
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to create source, got error: %s", err))
+		resp.Diagnostics.AddError(
+			"Error creating PostgreSQL source",
+			fmt.Sprintf("Unable to create PostgreSQL source, got error: %s", err),
+		)
 		return
 	}
 
 	plan.ID = types.StringValue(source.ID)
 	plan.Name = types.StringValue(source.Name)
 	r.modelFromConfigMap(source.Config, &plan)
-
-	tflog.Trace(ctx, "created a resource")
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -256,11 +267,17 @@ func (r *SourcePostgreSQL) Read(ctx context.Context, req res.ReadRequest, resp *
 	sourceID := state.ID.ValueString()
 	source, err := r.client.GetSource(ctx, sourceID)
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to read source, got error: %s", err))
+		resp.Diagnostics.AddError(
+			"Error reading PostgreSQL source",
+			fmt.Sprintf("Unable to read PostgreSQL source, got error: %s", err),
+		)
 		return
 	}
 	if source == nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Source %s does not exist", sourceID))
+		resp.Diagnostics.AddError(
+			"Error reading PostgreSQL source",
+			fmt.Sprintf("PostgreSQL source %s does not exist", sourceID),
+		)
 		return
 	}
 
@@ -275,71 +292,59 @@ func (r *SourcePostgreSQL) Read(ctx context.Context, req res.ReadRequest, resp *
 }
 
 func (r *SourcePostgreSQL) Update(ctx context.Context, req res.UpdateRequest, resp *res.UpdateResponse) {
-	var data SourcePostgreSQLModel
+	var plan SourcePostgreSQLModel
 
 	// Read Terraform plan data into the model
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	source, err := r.client.GetSource(ctx, data.ID.ValueString())
+	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
+	config := r.configMapFromModel(plan)
+
+	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{
+		Name:      plan.Name.ValueString(),
+		Connector: r.connector_code,
+		Config:    config,
+	})
+
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to get example, got error: %s", err))
-		return
-	}
-	if len(source) == 0 {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to get source, got error: %s", err))
+		resp.Diagnostics.AddError(
+			"Error updating PostgreSQL source",
+			fmt.Sprintf("Unable to update PostgreSQL source, got error: %s", err),
+		)
 		return
 	}
 
-	var currentInstance api.Source
-	copier.CopyWithOption(&currentInstance, &source[0], copier.Option{DeepCopy: true})
-	json.Unmarshal([]byte(data.Config.String()), &currentInstance.Config)
-
-	diff := cmp.Diff(source[0], currentInstance, cmp.AllowUnexported())
-	if diff != "" {
-		var config map[string]interface{}
-		data.Config.Unmarshal(&config)
-		updatedSource, err := r.client.UpdateSource(ctx, api.CreateSourceRequest{
-			Name:      data.Name,
-			Connector: data.Connector,
-			Config:    config,
-			ID:        data.ID.ValueString(),
-		})
-		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to update source, got error: %s", err))
-			return
-		}
-		sourceString, err := json.Marshal(updatedSource.Config)
-		if err != nil {
-			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to parse source, got error: %s", err))
-			return
-		}
-		copier.CopyWithOption(&data, &updatedSource, copier.Option{DeepCopy: true})
-		data.Config = jsontypes.NewExactValue(string(sourceString))
-	}
+	// Update resource state with updated items
+	plan.Name = types.StringValue(source.Name)
+	r.modelFromConfigMap(source.Config, &plan)
 
 	// Save updated data into Terraform state
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 func (r *SourcePostgreSQL) Delete(ctx context.Context, req res.DeleteRequest, resp *res.DeleteResponse) {
-	var data SourcePostgreSQLModel
+	var state SourcePostgreSQLModel
 
 	// Read Terraform prior state data into the model
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	err := r.client.DeleteSource(ctx, data.ID.ValueString())
+	err := r.client.DeleteSource(ctx, state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete source, got error: %s", err))
+		resp.Diagnostics.AddError(
+			"Error deleting PostgreSQL source",
+			fmt.Sprintf("Unable to delete PostgreSQL source, got error: %s", err),
+		)
 		return
 	}
-
-	tflog.Trace(ctx, "deleted a resource")
 }
 
 func (r *SourcePostgreSQL) ImportState(ctx context.Context, req res.ImportStateRequest, resp *res.ImportStateResponse) {
@@ -374,7 +379,7 @@ func (r *SourcePostgreSQL) configMapFromModel(model SourcePostgreSQLModel) map[s
 func (r *SourcePostgreSQL) modelFromConfigMap(cfg map[string]any, model *SourcePostgreSQLModel) {
 	// Copy the config map to the model
 	model.DatabaseHostname = types.StringValue(cfg["database.hostname.user.defined"].(string))
-	model.DatabasePort = types.Int64Value(cfg["database.port.user.defined"].(int64))
+	model.DatabasePort = types.Int64Value(int64(cfg["database.port.user.defined"].(float64)))
 	model.DatabaseUser = types.StringValue(cfg["database.user"].(string))
 	model.DatabasePassword = types.StringValue(cfg["database.password"].(string))
 	model.DatabaseDbname = types.StringValue(cfg["database.dbname"].(string))
