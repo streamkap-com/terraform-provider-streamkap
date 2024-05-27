@@ -5,18 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-type CreateDestinationRequest struct {
-	ID        string                 `json:"-"`
-	Name      *string                `json:"name"`
-	Connector *string                `json:"connector"`
-	Config    map[string]interface{} `json:"config"`
-}
-
-type DestinationResponse struct {
+type GetDestinationResponse struct {
 	Total    int           `json:"total"`
 	PageSize int           `json:"page_size"`
 	Page     int           `json:"page"`
@@ -24,40 +15,13 @@ type DestinationResponse struct {
 }
 
 type Destination struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	SubId        string `json:"sub_id"`
-	TenantId     string `json:"tenant_id"`
-	Connector    string `json:"connector"`
-	TaskStatuses struct {
-		Field1 struct {
-			Status string `json:"status"`
-		} `json:"0"`
-	} `json:"task_statuses"`
-	Tasks           []int    `json:"tasks"`
-	ConnectorStatus string   `json:"connector_status"`
-	TopicIds        []string `json:"topic_ids"`
-	Topics          []string `json:"topics"`
-	InlineMetrics   struct {
-		ConnectorStatus []struct {
-			Timestamp string `json:"timestamp"`
-			Value     string `json:"value"`
-		} `json:"connector_status"`
-		Latency []struct {
-			Timestamp string `json:"timestamp"`
-			Value     string `json:"value"`
-		} `json:"latency"`
-		SourceRecordWriteTotal []struct {
-			Timestamp string `json:"timestamp"`
-			Value     int    `json:"value"`
-		} `json:"sourceRecordWriteTotal"`
-	} `json:"inline_metrics"`
-	Config struct {
-		Key string `json:"key,omitempty"`
-	} `json:"config"`
+	ID        string         `json:"id"`
+	Name      string         `json:"name"`
+	Connector string         `json:"connector"`
+	Config    map[string]any `json:"config"`
 }
 
-func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload CreateDestinationRequest) (*Destination, error) {
+func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destination) (*Destination, error) {
 	payload, err := json.Marshal(reqPayload)
 	if err != nil {
 		return nil, err
@@ -75,22 +39,22 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload CreateD
 	return &resp, nil
 }
 
-func (s *streamkapAPI) GetDestination(ctx context.Context, destinationID string) ([]Destination, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/destinations?id="+destinationID, http.NoBody)
+func (s *streamkapAPI) GetDestination(ctx context.Context, destinationID string) (*Destination, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/destinations?secret_returned=true&id="+destinationID, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
-	var resp DestinationResponse
+	var resp GetDestinationResponse
 	err = s.doRequest(req, &resp)
 	if err != nil {
 		return nil, err
 	}
 
-	return resp.Result, nil
+	return &resp.Result[0], nil
 }
 
 func (s *streamkapAPI) DeleteDestination(ctx context.Context, destinationID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/api/destinations?id="+destinationID, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/api/destinations?secret_returned=true&id="+destinationID, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -103,16 +67,13 @@ func (s *streamkapAPI) DeleteDestination(ctx context.Context, destinationID stri
 	return nil
 }
 
-func (s *streamkapAPI) UpdateDestination(ctx context.Context, reqPayload CreateDestinationRequest) (*Destination, error) {
+func (s *streamkapAPI) UpdateDestination(ctx context.Context, destinationID string, reqPayload Destination) (*Destination, error) {
 	payload, err := json.Marshal(reqPayload)
-	tflog.Debug(ctx, "UpdateDestination payload: ", map[string]interface{}{
-		"payload": string(payload),
-	})
 	if err != nil {
 		return nil, err
 	}
 	req, err := http.NewRequestWithContext(
-		ctx, http.MethodPut, s.cfg.BaseURL+"/api/destinations?id="+reqPayload.ID, bytes.NewBuffer(payload))
+		ctx, http.MethodPut, s.cfg.BaseURL+"/api/destinations?secret_returned=true&id="+destinationID, bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}

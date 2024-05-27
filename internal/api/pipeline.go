@@ -98,7 +98,7 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload CreatePipe
 }
 
 func (s *streamkapAPI) GetPipeline(ctx context.Context, pipelineID string) ([]Pipeline, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/pipelines?id="+pipelineID, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/pipelines?secret_returned=true&id="+pipelineID, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (s *streamkapAPI) GetPipeline(ctx context.Context, pipelineID string) ([]Pi
 }
 
 func (s *streamkapAPI) DeletePipeline(ctx context.Context, pipelineID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/api/pipelines?id="+pipelineID, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/api/pipelines?secret_returned=true&id="+pipelineID, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func (s *streamkapAPI) UpdatePipeline(ctx context.Context, reqPayload CreatePipe
 		return nil, err
 	}
 	req, err := http.NewRequestWithContext(
-		ctx, http.MethodPut, s.cfg.BaseURL+"/api/pipelines?id="+reqPayload.ID, bytes.NewBuffer(payload))
+		ctx, http.MethodPut, s.cfg.BaseURL+"/api/pipelines?secret_returned=true&id="+reqPayload.ID, bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}

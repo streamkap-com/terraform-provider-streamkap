@@ -48,7 +48,7 @@ func TestAccDestinationResource(t *testing.T) {
 			}
 			return resp, nil
 		})
-	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/destinations?id=example-id",
+	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/destinations?secret_returned=true&id=example-id",
 		func(req *http.Request) (*http.Response, error) {
 			source := []api.Destination{
 				{
@@ -64,7 +64,7 @@ func TestAccDestinationResource(t *testing.T) {
 			}
 			return resp, nil
 		})
-	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/destinations?id=example-id",
+	httpmock.RegisterResponder("GET", "https://api.streamkap.com/api/destinations?secret_returned=true&id=example-id",
 		func(req *http.Request) (*http.Response, error) {
 			source := []api.Destination{
 				{
@@ -74,7 +74,7 @@ func TestAccDestinationResource(t *testing.T) {
 				},
 			}
 
-			resp, err := httpmock.NewJsonResponse(200, api.DestinationResponse{
+			resp, err := httpmock.NewJsonResponse(200, api.GetDestinationResponse{
 				Result: source,
 			})
 			if err != nil {
@@ -98,7 +98,7 @@ func TestAccDestinationResource(t *testing.T) {
 			return resp, nil
 		})
 
-	httpmock.RegisterResponder("DELETE", "https://api.streamkap.com/api/destinations?id=example-id",
+	httpmock.RegisterResponder("DELETE", "https://api.streamkap.com/api/destinations?secret_returned=true&id=example-id",
 		func(req *http.Request) (*http.Response, error) {
 			source := &api.Source{
 				ID: "example-id",

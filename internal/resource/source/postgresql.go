@@ -3,6 +3,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -379,7 +380,10 @@ func (r *SourcePostgreSQL) configMapFromModel(model SourcePostgreSQLModel) map[s
 func (r *SourcePostgreSQL) modelFromConfigMap(cfg map[string]any, model *SourcePostgreSQLModel) {
 	// Copy the config map to the model
 	model.DatabaseHostname = types.StringValue(cfg["database.hostname.user.defined"].(string))
-	model.DatabasePort = types.Int64Value(int64(cfg["database.port.user.defined"].(float64)))
+
+	port, _ := strconv.ParseInt(cfg["database.port.user.defined"].(string), 10, 64)
+	model.DatabasePort = types.Int64Value(port)
+
 	model.DatabaseUser = types.StringValue(cfg["database.user"].(string))
 	model.DatabasePassword = types.StringValue(cfg["database.password"].(string))
 	model.DatabaseDbname = types.StringValue(cfg["database.dbname"].(string))
