@@ -3,7 +3,6 @@ package source
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -19,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -100,9 +100,6 @@ func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, re
 				Required:            true,
 				Sensitive:           true,
 				MarkdownDescription: "Password to access the database",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"database_dbname": schema.StringAttribute{
 				Required:            true,
@@ -138,7 +135,9 @@ func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, re
 				MarkdownDescription: "Enable heartbeat to keep the pipeline healthy during low data volume",
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
+				Computed:            true,
 				Optional:            true,
+				Default:             stringdefault.StaticString(""),
 				MarkdownDescription: "Schema for heartbeat data collection",
 			},
 			"include_source_db_name_in_table_name": schema.BoolAttribute{
@@ -180,7 +179,9 @@ func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, re
 				MarkdownDescription: "Connect via SSH tunnel",
 			},
 			"ssh_host": schema.StringAttribute{
+				Computed:            true,
 				Optional:            true,
+				Default:             stringdefault.StaticString(""),
 				MarkdownDescription: "Hostname of the SSH server, only required if `ssh_enabled` is true",
 			},
 			"ssh_port": schema.StringAttribute{
@@ -227,7 +228,6 @@ func (r *SourcePostgreSQL) Create(ctx context.Context, req res.CreateRequest, re
 		return
 	}
 
-	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
 	config := r.configMapFromModel(plan)
 
 	source, err := r.client.CreateSource(ctx, api.Source{
@@ -284,7 +284,6 @@ func (r *SourcePostgreSQL) Read(ctx context.Context, req res.ReadRequest, resp *
 
 	state.Name = types.StringValue(source.Name)
 	r.modelFromConfigMap(source.Config, &state)
-
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -380,10 +379,7 @@ func (r *SourcePostgreSQL) configMapFromModel(model SourcePostgreSQLModel) map[s
 func (r *SourcePostgreSQL) modelFromConfigMap(cfg map[string]any, model *SourcePostgreSQLModel) {
 	// Copy the config map to the model
 	model.DatabaseHostname = types.StringValue(cfg["database.hostname.user.defined"].(string))
-
-	port, _ := strconv.ParseInt(cfg["database.port.user.defined"].(string), 10, 64)
-	model.DatabasePort = types.Int64Value(port)
-
+	model.DatabasePort = types.Int64Value(helper.ParseJSONInt64(cfg["database.port.user.defined"]))
 	model.DatabaseUser = types.StringValue(cfg["database.user"].(string))
 	model.DatabasePassword = types.StringValue(cfg["database.password"].(string))
 	model.DatabaseDbname = types.StringValue(cfg["database.dbname"].(string))

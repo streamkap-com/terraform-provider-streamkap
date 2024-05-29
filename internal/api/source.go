@@ -26,7 +26,7 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/api/sources", bytes.NewBuffer(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/api/sources?secret_returned=true&id=", bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}

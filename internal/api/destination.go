@@ -26,7 +26,7 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destina
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/api/destinations", bytes.NewBuffer(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/api/destinations?secret_returned=true", bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
