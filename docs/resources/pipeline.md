@@ -17,12 +17,13 @@ Pipeline resource
 
 ### Required
 
-- `destination` (Object) Pipeline source (see [below for nested schema](#nestedatt--destination))
+- `destination` (Object) Pipeline destination (see [below for nested schema](#nestedatt--destination))
 - `name` (String) Pipeline name
 - `source` (Object) Pipeline source (see [below for nested schema](#nestedatt--source))
 
 ### Optional
 
+- `snapshot_new_tables` (Boolean) Whether to snapshot new tables (topics) or not
 - `transforms` (List of String)
 
 ### Read-Only

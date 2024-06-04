@@ -35,9 +35,6 @@ func (s *streamkapAPI) GetAccessToken(clientID, secret string) (*Token, error) {
 		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-
 	var result Token
 	err = s.doRequest(req, &result)
 	if err != nil {
