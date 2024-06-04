@@ -13,7 +13,9 @@ const (
 	// test configuration so the HashiCups client is properly configured.
 	// It is also possible to use the HASHICUPS_ environment variables instead,
 	// such as updating the Makefile and running the testing through that tool.
-	providerConfig = `provider "streamkap" {}`
+	providerConfig = `
+provider "streamkap" {}
+`
 )
 
 // testAccProtoV6ProviderFactories are used to instantiate a provider during

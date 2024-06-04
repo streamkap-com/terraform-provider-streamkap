@@ -42,6 +42,7 @@ type SourcePostgreSQL struct {
 type SourcePostgreSQLModel struct {
 	ID                                      types.String `tfsdk:"id"`
 	Name                                    types.String `tfsdk:"name"`
+	Connector                               types.String `tfsdk:"connector"`
 	DatabaseHostname                        types.String `tfsdk:"database_hostname"`
 	DatabasePort                            types.Int64  `tfsdk:"database_port"`
 	DatabaseUser                            types.String `tfsdk:"database_user"`
@@ -81,6 +82,12 @@ func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, re
 			"name": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "Source name",
+			},
+			"connector": schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"database_hostname": schema.StringAttribute{
 				Required:            true,
@@ -223,6 +230,7 @@ func (r *SourcePostgreSQL) Create(ctx context.Context, req res.CreateRequest, re
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	plan.Connector = types.StringValue(r.connector_code)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -232,7 +240,7 @@ func (r *SourcePostgreSQL) Create(ctx context.Context, req res.CreateRequest, re
 
 	source, err := r.client.CreateSource(ctx, api.Source{
 		Name:      plan.Name.ValueString(),
-		Connector: r.connector_code,
+		Connector: plan.Connector.ValueString(),
 		Config:    config,
 	})
 
@@ -246,6 +254,7 @@ func (r *SourcePostgreSQL) Create(ctx context.Context, req res.CreateRequest, re
 
 	plan.ID = types.StringValue(source.ID)
 	plan.Name = types.StringValue(source.Name)
+	plan.Connector = types.StringValue(source.Connector)
 	r.modelFromConfigMap(source.Config, &plan)
 
 	// Save data into Terraform state
@@ -283,6 +292,7 @@ func (r *SourcePostgreSQL) Read(ctx context.Context, req res.ReadRequest, resp *
 	}
 
 	state.Name = types.StringValue(source.Name)
+	state.Connector = types.StringValue(source.Connector)
 	r.modelFromConfigMap(source.Config, &state)
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -305,7 +315,7 @@ func (r *SourcePostgreSQL) Update(ctx context.Context, req res.UpdateRequest, re
 
 	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{
 		Name:      plan.Name.ValueString(),
-		Connector: r.connector_code,
+		Connector: plan.Connector.ValueString(),
 		Config:    config,
 	})
 
@@ -319,6 +329,7 @@ func (r *SourcePostgreSQL) Update(ctx context.Context, req res.UpdateRequest, re
 
 	// Update resource state with updated items
 	plan.Name = types.StringValue(source.Name)
+	plan.Connector = types.StringValue(source.Connector)
 	r.modelFromConfigMap(source.Config, &plan)
 
 	// Save updated data into Terraform state

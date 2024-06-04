@@ -15,6 +15,8 @@ import (
 	ds "github.com/streamkap-com/terraform-provider-streamkap/internal/datasource"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/destination"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/pipeline"
+
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -198,6 +200,6 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 	return []func() resource.Resource{
 		source.NewSourcePostgreSQLResource,
 		destination.NewDestinationSnowflakeResource,
-		// resource2.NewPipelineResource,
+		pipeline.NewPipelineResource,
 	}
 }

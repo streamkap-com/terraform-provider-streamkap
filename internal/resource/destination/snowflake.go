@@ -37,6 +37,7 @@ type DestinationSnowflake struct {
 type DestinationSnowflakeModel struct {
 	ID                            types.String `tfsdk:"id"`
 	Name                          types.String `tfsdk:"name"`
+	Connector                     types.String `tfsdk:"connector"`
 	SnowflakeUrlName              types.String `tfsdk:"snowflake_url_name"`
 	SnowflakeUserName             types.String `tfsdk:"snowflake_user_name"`
 	SnowflakePrivateKey           types.String `tfsdk:"snowflake_private_key"`
@@ -64,6 +65,12 @@ func (r *DestinationSnowflake) Schema(ctx context.Context, req res.SchemaRequest
 			"name": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "Destination name",
+			},
+			"connector": schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"snowflake_url_name": schema.StringAttribute{
 				Required:            true,
@@ -124,6 +131,7 @@ func (r *DestinationSnowflake) Create(ctx context.Context, req res.CreateRequest
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	plan.Connector = types.StringValue(r.connector_code)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -134,7 +142,7 @@ func (r *DestinationSnowflake) Create(ctx context.Context, req res.CreateRequest
 
 	destination, err := r.client.CreateDestination(ctx, api.Destination{
 		Name:      plan.Name.ValueString(),
-		Connector: r.connector_code,
+		Connector: plan.Connector.ValueString(),
 		Config:    config,
 	})
 
@@ -148,6 +156,7 @@ func (r *DestinationSnowflake) Create(ctx context.Context, req res.CreateRequest
 
 	plan.ID = types.StringValue(destination.ID)
 	plan.Name = types.StringValue(destination.Name)
+	plan.Connector = types.StringValue(destination.Connector)
 	r.modelFromConfigMap(destination.Config, &plan)
 
 	// Save data into Terraform state
@@ -185,6 +194,7 @@ func (r *DestinationSnowflake) Read(ctx context.Context, req res.ReadRequest, re
 	}
 
 	state.Name = types.StringValue(destination.Name)
+	state.Connector = types.StringValue(destination.Connector)
 	r.modelFromConfigMap(destination.Config, &state)
 
 	// Save updated data into Terraform state
@@ -208,7 +218,7 @@ func (r *DestinationSnowflake) Update(ctx context.Context, req res.UpdateRequest
 
 	destination, err := r.client.UpdateDestination(ctx, plan.ID.ValueString(), api.Destination{
 		Name:      plan.Name.ValueString(),
-		Connector: r.connector_code,
+		Connector: plan.Connector.ValueString(),
 		Config:    config,
 	})
 
@@ -222,6 +232,7 @@ func (r *DestinationSnowflake) Update(ctx context.Context, req res.UpdateRequest
 
 	// Update resource state with updated items
 	plan.Name = types.StringValue(destination.Name)
+	plan.Connector = types.StringValue(destination.Connector)
 	r.modelFromConfigMap(destination.Config, &plan)
 
 	// Save updated data into Terraform state
