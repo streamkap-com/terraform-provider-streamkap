@@ -53,10 +53,12 @@ func (r *DestinationSnowflake) Metadata(ctx context.Context, req res.MetadataReq
 
 func (r *DestinationSnowflake) Schema(ctx context.Context, req res.SchemaRequest, resp *res.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description:         "Destination Snowflake resource",
 		MarkdownDescription: "Destination Snowflake resource",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Destination Snowflake identifier",
 				MarkdownDescription: "Destination Snowflake identifier",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -64,6 +66,7 @@ func (r *DestinationSnowflake) Schema(ctx context.Context, req res.SchemaRequest
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
+				Description:         "Destination name",
 				MarkdownDescription: "Destination name",
 			},
 			"connector": schema.StringAttribute{
@@ -74,34 +77,41 @@ func (r *DestinationSnowflake) Schema(ctx context.Context, req res.SchemaRequest
 			},
 			"snowflake_url_name": schema.StringAttribute{
 				Required:            true,
+				Description:         "The URL for accessing your Snowflake account. This URL must include your account identifier. Note that the protocol (https://) and port number are optional.",
 				MarkdownDescription: "The URL for accessing your Snowflake account. This URL must include your account identifier. Note that the protocol (https://) and port number are optional.",
 			},
 			"snowflake_user_name": schema.StringAttribute{
 				Required:            true,
+				Description:         "User login name for the Snowflake account.",
 				MarkdownDescription: "User login name for the Snowflake account.",
 			},
 			"snowflake_private_key": schema.StringAttribute{
 				Required:            true,
 				Sensitive:           true,
+				Description:         "The private key to authenticate the user. Include only the key, not the header or footer. If the key is split across multiple lines, remove the line breaks.",
 				MarkdownDescription: "The private key to authenticate the user. Include only the key, not the header or footer. If the key is split across multiple lines, remove the line breaks.",
 			},
 			"snowflake_private_key_passphrase": schema.StringAttribute{
 				Required:            true,
 				Sensitive:           true,
+				Description:         "If the value is not empty, this phrase is used to try to decrypt the private key.",
 				MarkdownDescription: "If the value is not empty, this phrase is used to try to decrypt the private key.",
 			},
 			"snowflake_database_name": schema.StringAttribute{
 				Required:            true,
+				Description:         "The name of the database that contains the table to insert rows into.",
 				MarkdownDescription: "The name of the database that contains the table to insert rows into.",
 			},
 			"snowflake_schema_name": schema.StringAttribute{
 				Required:            true,
+				Description:         "The name of the schema that contains the table to insert rows into.",
 				MarkdownDescription: "The name of the schema that contains the table to insert rows into.",
 			},
 			"snowflake_role_name": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("STREAMKAP_ROLE"),
+				Description:         "The name of an existing role with necessary privileges (for Streamkap) assigned to the Username.",
 				MarkdownDescription: "The name of an existing role with necessary privileges (for Streamkap) assigned to the Username.",
 			},
 		},

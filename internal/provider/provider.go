@@ -13,10 +13,9 @@ import (
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	ds "github.com/streamkap-com/terraform-provider-streamkap/internal/datasource"
-	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/destination"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/pipeline"
-
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -59,14 +58,20 @@ func (p *streamkapProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
-				Optional: true,
+				Description:         "The Streamkap API host. Defaults to https://api.streamkap.com.",
+				MarkdownDescription: "The Streamkap API host. Defaults to https://api.streamkap.com.",
+				Optional:            true,
 			},
 			"client_id": schema.StringAttribute{
-				Optional: true,
+				Description:         "The Streamkap API client_id.",
+				MarkdownDescription: "The Streamkap API client_id.",
+				Optional:            true,
 			},
 			"secret": schema.StringAttribute{
-				Optional:  true,
-				Sensitive: true,
+				Description:         "The Streamkap API secret.",
+				MarkdownDescription: "The Streamkap API secret.",
+				Optional:            true,
+				Sensitive:           true,
 			},
 		},
 	}

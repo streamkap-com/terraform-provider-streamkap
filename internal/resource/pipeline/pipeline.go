@@ -73,11 +73,13 @@ func (r *Pipeline) Schema(ctx context.Context, req res.SchemaRequest, resp *res.
 
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
+		Description:         "Pipeline resource",
 		MarkdownDescription: "Pipeline resource",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Pipeline identifier",
 				MarkdownDescription: "Pipeline identifier",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -85,16 +87,19 @@ func (r *Pipeline) Schema(ctx context.Context, req res.SchemaRequest, resp *res.
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
+				Description:         "Pipeline name",
 				MarkdownDescription: "Pipeline name",
 			},
 			"snapshot_new_tables": schema.BoolAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             booldefault.StaticBool(true),
+				Description:         "Whether to snapshot new tables (topics) or not",
 				MarkdownDescription: "Whether to snapshot new tables (topics) or not",
 			},
 			"source": schema.ObjectAttribute{
 				Required:            true,
+				Description:         "Pipeline source",
 				MarkdownDescription: "Pipeline source",
 				AttributeTypes: map[string]attr.Type{
 					"id":        types.StringType,
@@ -107,7 +112,8 @@ func (r *Pipeline) Schema(ctx context.Context, req res.SchemaRequest, resp *res.
 			},
 			"destination": schema.ObjectAttribute{
 				Required:            true,
-				MarkdownDescription: "Pipeline source",
+				Description:         "Pipeline destination",
+				MarkdownDescription: "Pipeline destination",
 				AttributeTypes: map[string]attr.Type{
 					"id":        types.StringType,
 					"name":      types.StringType,

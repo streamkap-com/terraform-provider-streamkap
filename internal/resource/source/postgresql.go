@@ -70,10 +70,12 @@ func (r *SourcePostgreSQL) Metadata(ctx context.Context, req res.MetadataRequest
 
 func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, resp *res.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description:         "Source PostgreSQL resource",
 		MarkdownDescription: "Source PostgreSQL resource",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Source PostgreSQL identifier",
 				MarkdownDescription: "Source PostgreSQL identifier",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -81,6 +83,7 @@ func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, re
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
+				Description:         "Source name",
 				MarkdownDescription: "Source name",
 			},
 			"connector": schema.StringAttribute{
@@ -91,31 +94,37 @@ func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, re
 			},
 			"database_hostname": schema.StringAttribute{
 				Required:            true,
+				Description:         "PostgreSQL Hostname. For example, postgres.something.rds.amazonaws.com",
 				MarkdownDescription: "PostgreSQL Hostname. For example, postgres.something.rds.amazonaws.com",
 			},
 			"database_port": schema.Int64Attribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             int64default.StaticInt64(5432),
+				Description:         "PostgreSQL Port. For example, 5432",
 				MarkdownDescription: "PostgreSQL Port. For example, 5432",
 			},
 			"database_user": schema.StringAttribute{
 				Required:            true,
+				Description:         "Username to access the database",
 				MarkdownDescription: "Username to access the database",
 			},
 			"database_password": schema.StringAttribute{
 				Required:            true,
 				Sensitive:           true,
+				Description:         "Password to access the database",
 				MarkdownDescription: "Password to access the database",
 			},
 			"database_dbname": schema.StringAttribute{
 				Required:            true,
+				Description:         "Database from which to stream data",
 				MarkdownDescription: "Database from which to stream data",
 			},
 			"database_sslmode": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("require"),
+				Description:         "Whether to use an encrypted connection to the PostgreSQL server",
 				MarkdownDescription: "Whether to use an encrypted connection to the PostgreSQL server",
 				Validators: []validator.String{
 					stringvalidator.OneOf("require", "disable"),
@@ -123,52 +132,61 @@ func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, re
 			},
 			"schema_include_list": schema.StringAttribute{
 				Required:            true,
+				Description:         "Schemas to include",
 				MarkdownDescription: "Schemas to include",
 			},
 			"table_include_list": schema.StringAttribute{
 				Required:            true,
+				Description:         "Source tables to sync",
 				MarkdownDescription: "Source tables to sync",
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("public"),
+				Description:         "Schema for signal data collection",
 				MarkdownDescription: "Schema for signal data collection",
 			},
 			"heartbeat_enabled": schema.BoolAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             booldefault.StaticBool(false),
+				Description:         "Enable heartbeat to keep the pipeline healthy during low data volume",
 				MarkdownDescription: "Enable heartbeat to keep the pipeline healthy during low data volume",
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString(""),
+				Description:         "Schema for heartbeat data collection",
 				MarkdownDescription: "Schema for heartbeat data collection",
 			},
 			"include_source_db_name_in_table_name": schema.BoolAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             booldefault.StaticBool(false),
+				Description:         "Prefix topics with the database name",
 				MarkdownDescription: "Prefix topics with the database name",
 			},
 			"slot_name": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("streamkap_pgoutput_slot"),
+				Description:         "Replication slot name for the connector",
 				MarkdownDescription: "Replication slot name for the connector",
 			},
 			"publication_name": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("streamkap_pub"),
+				Description:         "Publication name for the connector",
 				MarkdownDescription: "Publication name for the connector",
 			},
 			"binary_handling_mode": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("bytes"),
+				Description:         "Representation of binary data for binary columns",
 				MarkdownDescription: "Representation of binary data for binary columns",
 				Validators: []validator.String{
 					stringvalidator.OneOf(
@@ -183,24 +201,28 @@ func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, re
 				Computed:            true,
 				Optional:            true,
 				Default:             booldefault.StaticBool(false),
+				Description:         "Connect via SSH tunnel",
 				MarkdownDescription: "Connect via SSH tunnel",
 			},
 			"ssh_host": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString(""),
+				Description:         "Hostname of the SSH server, only required if `ssh_enabled` is true",
 				MarkdownDescription: "Hostname of the SSH server, only required if `ssh_enabled` is true",
 			},
 			"ssh_port": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("22"),
+				Description:         "Port of the SSH server, only required if `ssh_enabled` is true",
 				MarkdownDescription: "Port of the SSH server, only required if `ssh_enabled` is true",
 			},
 			"ssh_user": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("streamkap"),
+				Description:         "User for connecting to the SSH server, only required if `ssh_enabled` is true",
 				MarkdownDescription: "User for connecting to the SSH server, only required if `ssh_enabled` is true",
 			},
 		},
