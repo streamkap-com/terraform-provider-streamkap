@@ -13,7 +13,9 @@ import (
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	ds "github.com/streamkap-com/terraform-provider-streamkap/internal/datasource"
-	resource2 "github.com/streamkap-com/terraform-provider-streamkap/internal/resource"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/destination"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/pipeline"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -56,14 +58,20 @@ func (p *streamkapProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
-				Optional: true,
+				Description:         "The Streamkap API host. Defaults to https://api.streamkap.com.",
+				MarkdownDescription: "The Streamkap API host. Defaults to https://api.streamkap.com.",
+				Optional:            true,
 			},
 			"client_id": schema.StringAttribute{
-				Optional: true,
+				Description:         "The Streamkap API client_id.",
+				MarkdownDescription: "The Streamkap API client_id.",
+				Optional:            true,
 			},
 			"secret": schema.StringAttribute{
-				Optional:  true,
-				Sensitive: true,
+				Description:         "The Streamkap API secret.",
+				MarkdownDescription: "The Streamkap API secret.",
+				Optional:            true,
+				Sensitive:           true,
 			},
 		},
 	}
@@ -136,13 +144,7 @@ func (p *streamkapProvider) Configure(ctx context.Context, req provider.Configur
 	// errors with provider-specific guidance.
 
 	if host == "" {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("host"),
-			"Missing Streamkap API Host",
-			"The provider cannot create the Streamkap API client as there is a missing or empty value for the Streamkap API host. "+
-				"Set the host value in the configuration or use the STREAMKAP_HOST environment variable. "+
-				"If either is already set, ensure the value is not empty.",
-		)
+		host = "https://api.streamkap.com"
 	}
 
 	if clientID == "" {
@@ -201,8 +203,8 @@ func (p *streamkapProvider) DataSources(_ context.Context) []func() datasource.D
 // Resources defines the resources implemented in the provider.
 func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		resource2.NewSourceResource,
-		resource2.NewDestinationResource,
-		resource2.NewPipelineResource,
+		source.NewSourcePostgreSQLResource,
+		destination.NewDestinationSnowflakeResource,
+		pipeline.NewPipelineResource,
 	}
 }

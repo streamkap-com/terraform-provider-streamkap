@@ -14,21 +14,21 @@ type StreamkapAPI interface {
 	SetToken(token *Token)
 
 	//Source APIs
-	CreateSource(ctx context.Context, reqPayload CreateSourceRequest) (*Source, error)
-	UpdateSource(ctx context.Context, reqPayload CreateSourceRequest) (*Source, error)
-	GetSource(ctx context.Context, sourceID string) ([]Source, error)
+	CreateSource(ctx context.Context, reqPayload Source) (*Source, error)
+	UpdateSource(ctx context.Context, sourceID string, reqPayload Source) (*Source, error)
+	GetSource(ctx context.Context, sourceID string) (*Source, error)
 	DeleteSource(ctx context.Context, sourceID string) error
 
 	// Destination APIs
-	CreateDestination(ctx context.Context, reqPayload CreateDestinationRequest) (*Destination, error)
-	UpdateDestination(ctx context.Context, reqPayload CreateDestinationRequest) (*Destination, error)
-	GetDestination(ctx context.Context, destinationID string) ([]Destination, error)
+	CreateDestination(ctx context.Context, reqPayload Destination) (*Destination, error)
+	UpdateDestination(ctx context.Context, destinationID string, reqPayload Destination) (*Destination, error)
+	GetDestination(ctx context.Context, destinationID string) (*Destination, error)
 	DeleteDestination(ctx context.Context, destinationID string) error
 
 	// Pipeline APIs
-	CreatePipeline(ctx context.Context, reqPayload CreatePipelineRequest) (*Pipeline, error)
-	UpdatePipeline(ctx context.Context, reqPayload CreatePipelineRequest) (*Pipeline, error)
-	GetPipeline(ctx context.Context, pipelineID string) ([]Pipeline, error)
+	CreatePipeline(ctx context.Context, reqPayload Pipeline) (*Pipeline, error)
+	UpdatePipeline(ctx context.Context, pipelineID string, reqPayload Pipeline) (*Pipeline, error)
+	GetPipeline(ctx context.Context, pipelineID string) (*Pipeline, error)
 	DeletePipeline(ctx context.Context, pipelineID string) error
 }
 
@@ -54,6 +54,8 @@ func (s *streamkapAPI) SetToken(token *Token) {
 }
 
 func (s *streamkapAPI) doRequest(req *http.Request, result interface{}) error {
+	ctx := context.Background()
+	tflog.Debug(ctx, fmt.Sprintf("doRequest: %s %s\n", req.Method, req.URL.String()))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
@@ -79,10 +81,9 @@ func (s *streamkapAPI) doRequest(req *http.Request, result interface{}) error {
 		tflog.Trace(ctx, fmt.Sprintf("got error response: %s\n", errResp))
 		return fmt.Errorf("unexpected status code: %d - %s", resp.StatusCode, string(errResp))
 	}
-
+	
 	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
 		return err
 	}
-
 	return nil
 }
