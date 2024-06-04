@@ -11,10 +11,10 @@ provider "streamkap" {}
 
 resource "streamkap_source_postgresql" "example-source-postgresql" {
   name                                      = "example-source-postgresql"
-  database_hostname                         = "sandbox-postgresql.cluster-cfpneamopmi0.us-west-2.rds.amazonaws.com"
+  database_hostname                         = ""
   database_port                             = 5432
   database_user                             = "postgresql"
-  database_password                         = "sy_h$j#fxZZVg0CZ<X)Y(JC.F%Gd"
+  database_password                         = ""
   database_dbname                           = "postgres"
   database_sslmode                          = "require"
   schema_include_list                       = "public"
