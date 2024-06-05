@@ -1,26 +1,27 @@
 package provider
 
 import (
-	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-var pipelineSrcPostgreSQLHostname = os.Getenv("SOURCE_POSTGRESQL_HOSTNAME")
-var pipelineSrcPostgreSQLPassword = os.Getenv("SOURCE_POSTGRESQL_PASSWORD")
-var pipelineDestSnowflakeURLName = os.Getenv("DESTINATION_SNOWFLAKE_URL_NAME")
-var pipelineDestSnowflakePrivateKey = os.Getenv("DESTINATION_SNOWFLAKE_PRIVATE_KEY")
-var pipelineDestSnowflakeKeyPassphrase = os.Getenv("DESTINATION_SNOWFLAKE_KEY_PASSPHRASE")
-
-var pipelineSrcPostgreSQLResourceDef = fmt.Sprintf(`
+var pipelineSrcPostgreSQLResourceDef = `
+variable "source_postgresql_hostname" {
+	type        = string
+	description = "The hostname of the PostgreSQL database"
+}
+variable "source_postgresql_password" {
+	type        = string
+	sensitive   = true
+	description = "The password of the PostgreSQL database"
+}
 resource "streamkap_source_postgresql" "test" {
 	name                                         = "test-source-postgresql"
-	database_hostname                            = "%s"
+	database_hostname                            = var.source_postgresql_hostname
 	database_port                                = 5432
 	database_user                                = "postgresql"
-	database_password                            = "%s"
+	database_password                            = var.source_postgresql_password
 	database_dbname                              = "postgres"
 	database_sslmode                             = "require"
 	schema_include_list                          = "public"
@@ -29,25 +30,39 @@ resource "streamkap_source_postgresql" "test" {
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = null
 	include_source_db_name_in_table_name         = false
-	slot_name                                    = "fleetio_pgoutput_slot"
-	publication_name                             = "fleetio_pub"
+	slot_name                                    = "streamkap_pgoutput_slot"
+	publication_name                             = "streamkap_pub"
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
-`, pipelineSrcPostgreSQLHostname, pipelineSrcPostgreSQLPassword)
+`
 
-var pipelineDestSnowflakeResourceDef = fmt.Sprintf(`
+var pipelineDestSnowflakeResourceDef = `
+variable "destination_snowflake_url_name" {
+	type        = string
+	description = "The URL name of the Snowflake database"
+}
+variable "destination_snowflake_private_key" {
+	type        = string
+	sensitive   = true
+	description = "The private key of the Snowflake database"
+}
+variable "destination_snowflake_key_passphrase" {
+	type        = string
+	sensitive   = true
+	description = "The passphrase of the private key of the Snowflake database"
+}
 resource "streamkap_destination_snowflake" "test" {
 	name                             = "test-destination-snowflake"
-	snowflake_url_name               = "%s"
+	snowflake_url_name               = var.destination_snowflake_url_name
 	snowflake_user_name              = "STREAMKAP_USER_POSTGRESQL"
-	snowflake_private_key            = "%s"
-	snowflake_private_key_passphrase = "%s"
+	snowflake_private_key            = var.destination_snowflake_private_key
+	snowflake_private_key_passphrase = var.destination_snowflake_key_passphrase
 	snowflake_database_name          = "STREAMKAP_POSTGRESQL"
 	snowflake_schema_name            = "STREAMKAP"
 	snowflake_role_name              = "STREAMKAP_ROLE"
 }
-`, pipelineDestSnowflakeURLName, pipelineDestSnowflakePrivateKey, pipelineDestSnowflakeKeyPassphrase)
+`
 
 func TestAccPipelineResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
@@ -57,7 +72,8 @@ func TestAccPipelineResource(t *testing.T) {
 			{
 				Config: providerConfig + pipelineSrcPostgreSQLResourceDef + pipelineDestSnowflakeResourceDef + `
 resource "streamkap_pipeline" "test" {
-	name                             = "test-pipeline"
+	name                = "test-pipeline"
+	snapshot_new_tables = true
 	source = {
 		id        = streamkap_source_postgresql.test.id
 		name      = streamkap_source_postgresql.test.name
@@ -86,7 +102,8 @@ resource "streamkap_pipeline" "test" {
 			{
 				Config: providerConfig + pipelineSrcPostgreSQLResourceDef + pipelineDestSnowflakeResourceDef + `
 resource "streamkap_pipeline" "test" {
-	name                             = "test-pipeline-updated"
+	name                = "test-pipeline-updated"
+	snapshot_new_tables = true
 	source = {
 		id        = streamkap_source_postgresql.test.id
 		name      = streamkap_source_postgresql.test.name

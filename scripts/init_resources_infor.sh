@@ -1,9 +1,9 @@
 #! /bin/bash
 # Source PostgreSQL
-export SOURCE_POSTGRESQL_HOSTNAME=""
-export SOURCE_POSTGRESQL_PASSWORD=''
+export TF_VAR_source_postgresql_hostname=""
+export TF_VAR_source_postgresql_password=''
 
 # Destination Snowflake
-export DESTINATION_SNOWFLAKE_URL_NAME=""
-export DESTINATION_SNOWFLAKE_PRIVATE_KEY=''
-export DESTINATION_SNOWFLAKE_KEY_PASSPHRASE=""
+export TF_VAR_destination_snowflake_url_name=""
+export TF_VAR_destination_snowflake_private_key=''
+export TF_VAR_destination_snowflake_key_passphrase=""

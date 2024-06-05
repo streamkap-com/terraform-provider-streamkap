@@ -58,18 +58,18 @@ func (p *streamkapProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
-				Description:         "The Streamkap API host. Defaults to https://api.streamkap.com.",
-				MarkdownDescription: "The Streamkap API host. Defaults to https://api.streamkap.com.",
+				Description:         "The Streamkap API host. If not set, Streamkap will use environment variable `STREAMKAP_HOST`. Defaults to https://api.streamkap.com if both are not set.",
+				MarkdownDescription: "The Streamkap API host. If not set, Streamkap will use environment variable `STREAMKAP_HOST`. Defaults to https://api.streamkap.com if both are not set.",
 				Optional:            true,
 			},
 			"client_id": schema.StringAttribute{
-				Description:         "The Streamkap API client_id.",
-				MarkdownDescription: "The Streamkap API client_id.",
+				Description:         "The Streamkap API client_id. If not set, Streamkap will use environment variable `STREAMKAP_CLIENT_ID`",
+				MarkdownDescription: "The Streamkap API client_id. If not set, Streamkap will use environment variable `STREAMKAP_CLIENT_ID`",
 				Optional:            true,
 			},
 			"secret": schema.StringAttribute{
-				Description:         "The Streamkap API secret.",
-				MarkdownDescription: "The Streamkap API secret.",
+				Description:         "The Streamkap API secret. If not set, Streamkap will use environment variable `STREAMKAP_SECRET`",
+				MarkdownDescription: "The Streamkap API secret. If not set, Streamkap will use environment variable `STREAMKAP_SECRET`",
 				Optional:            true,
 				Sensitive:           true,
 			},

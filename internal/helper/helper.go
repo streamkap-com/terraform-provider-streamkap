@@ -1,23 +1,43 @@
 package helper
 
-import "strconv"
+import (
+	"strconv"
 
-func ParseJSONInt64(input any) int64 {
-	var (
-		fltInput float64
-		strInput string
-		output   int64
-		ok       bool
-	)
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
 
-	strInput, ok = input.(string)
+func GetTfCfgString(cfg map[string]any, key string) types.String {
+	if val, ok := cfg[key]; ok && val != nil {
+		val, _ := val.(string)
 
-	if !ok {
-		fltInput, _ = input.(float64)
-		output = int64(fltInput)
-	} else {
-		output, _ = strconv.ParseInt(strInput, 10, 64)
+		return types.StringValue(val)
 	}
 
-	return output
+	return types.StringValue("")
+}
+
+func GetTfCfgInt64(cfg map[string]any, key string) types.Int64 {
+	if val, ok := cfg[key]; ok && val != nil {
+		if strVal, ok := val.(string); ok {
+			val, _ := strconv.ParseInt(strVal, 10, 64)
+
+			return types.Int64Value(val)
+		} else {
+			val, _ := val.(float64)
+
+			return types.Int64Value(int64(val))
+		}
+	}
+
+	return types.Int64Value(0)
+}
+
+func GetTfCfgBool(cfg map[string]any, key string) types.Bool {
+	if val, ok := cfg[key]; ok && val != nil {
+		val, _ := val.(bool)
+
+		return types.BoolValue(val)
+	}
+
+	return types.BoolValue(false)
 }
