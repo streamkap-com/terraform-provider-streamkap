@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     streamkap = {
-      source = "github.com/streamkap-com/streamkap"
+      source = "streamkap-com/streamkap"
     }
   }
   required_version = ">= 1.0"
@@ -9,12 +9,23 @@ terraform {
 
 provider "streamkap" {}
 
+variable "source_postgresql_hostname" {
+  type        = string
+  description = "The hostname of the PostgreSQL database"
+}
+
+variable "source_postgresql_password" {
+  type        = string
+  sensitive   = true
+  description = "The password of the PostgreSQL database"
+}
+
 resource "streamkap_source_postgresql" "example-source-postgresql" {
   name                                      = "example-source-postgresql"
-  database_hostname                         = ""
+  database_hostname                         = var.source_postgresql_hostname
   database_port                             = 5432
   database_user                             = "postgresql"
-  database_password                         = ""
+  database_password                         = var.source_postgresql_password
   database_dbname                           = "postgres"
   database_sslmode                          = "require"
   schema_include_list                       = "public"

@@ -1,16 +1,15 @@
 package provider
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-var destinationSnowflakeURLName = os.Getenv("DESTINATION_SNOWFLAKE_URL_NAME")
-var destinationSnowflakePrivateKey = os.Getenv("DESTINATION_SNOWFLAKE_PRIVATE_KEY")
-var destinationSnowflakeKeyPassphrase = os.Getenv("DESTINATION_SNOWFLAKE_KEY_PASSPHRASE")
+var destinationSnowflakeURLName = os.Getenv("TF_VAR_destination_snowflake_url_name")
+var destinationSnowflakePrivateKey = os.Getenv("TF_VAR_destination_snowflake_private_key")
+var destinationSnowflakeKeyPassphrase = os.Getenv("TF_VAR_destination_snowflake_key_passphrase")
 
 func TestAccDestinationSnowflakeResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
@@ -18,18 +17,32 @@ func TestAccDestinationSnowflakeResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + fmt.Sprintf(`
+				Config: providerConfig + `
+variable "destination_snowflake_url_name" {
+	type        = string
+	description = "The URL name of the Snowflake database"
+}
+variable "destination_snowflake_private_key" {
+	type        = string
+	sensitive   = true
+	description = "The private key of the Snowflake database"
+}
+variable "destination_snowflake_key_passphrase" {
+	type        = string
+	sensitive   = true
+	description = "The passphrase of the private key of the Snowflake database"
+}
 resource "streamkap_destination_snowflake" "test" {
 	name                             = "test-destination-snowflake"
-	snowflake_url_name               = "%s"
+	snowflake_url_name               = var.destination_snowflake_url_name
 	snowflake_user_name              = "STREAMKAP_USER_POSTGRESQL"
-	snowflake_private_key            = "%s"
-	snowflake_private_key_passphrase = "%s"
+	snowflake_private_key            = var.destination_snowflake_private_key
+	snowflake_private_key_passphrase = var.destination_snowflake_key_passphrase
 	snowflake_database_name          = "STREAMKAP_POSTGRESQL"
 	snowflake_schema_name            = "STREAMKAP"
 	snowflake_role_name              = "STREAMKAP_ROLE"
 }
-`, destinationSnowflakeURLName, destinationSnowflakePrivateKey, destinationSnowflakeKeyPassphrase),
+`,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify if attributes are propagated correctly
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "name", "test-destination-snowflake"),
@@ -50,18 +63,32 @@ resource "streamkap_destination_snowflake" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + fmt.Sprintf(`
+				Config: providerConfig + `
+variable "destination_snowflake_url_name" {
+	type        = string
+	description = "The URL name of the Snowflake database"
+}
+variable "destination_snowflake_private_key" {
+	type        = string
+	sensitive   = true
+	description = "The private key of the Snowflake database"
+}
+variable "destination_snowflake_key_passphrase" {
+	type        = string
+	sensitive   = true
+	description = "The passphrase of the private key of the Snowflake database"
+}
 resource "streamkap_destination_snowflake" "test" {
 	name                             = "test-destination-snowflake-updated"
-	snowflake_url_name               = "%s"
+	snowflake_url_name               = var.destination_snowflake_url_name
 	snowflake_user_name              = "STREAMKAP_USER_POSTGRESQL"
-	snowflake_private_key            = "%s"
-	snowflake_private_key_passphrase = "%s"
+	snowflake_private_key            = var.destination_snowflake_private_key
+	snowflake_private_key_passphrase = var.destination_snowflake_key_passphrase
 	snowflake_database_name          = "STREAMKAP_POSTGRESQL"
 	snowflake_schema_name            = "STREAMKAP"
 	snowflake_role_name              = "STREAMKAP_ROLE"
 }
-`, destinationSnowflakeURLName, destinationSnowflakePrivateKey, destinationSnowflakeKeyPassphrase),
+`,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify if attributes are propagated correctly
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "name", "test-destination-snowflake-updated"),
