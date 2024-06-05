@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -290,11 +291,11 @@ func (r *DestinationSnowflake) configMapFromModel(model DestinationSnowflakeMode
 
 func (r *DestinationSnowflake) modelFromConfigMap(cfg map[string]any, model *DestinationSnowflakeModel) {
 	// Copy the config map to the model
-	model.SnowflakeUrlName = types.StringValue(cfg["snowflake.url.name"].(string))
-	model.SnowflakeUserName = types.StringValue(cfg["snowflake.user.name"].(string))
-	model.SnowflakePrivateKey = types.StringValue(cfg["snowflake.private.key"].(string))
-	model.SnowflakePrivateKeyPassphrase = types.StringValue(cfg["snowflake.private.key.passphrase"].(string))
-	model.SnowflakeDatabaseName = types.StringValue(cfg["snowflake.database.name"].(string))
-	model.SnowflakeSchemaName = types.StringValue(cfg["snowflake.schema.name"].(string))
-	model.SnowflakeRoleName = types.StringValue(cfg["snowflake.role.name"].(string))
+	model.SnowflakeUrlName = helper.GetTfCfgString(cfg, "snowflake.url.name")
+	model.SnowflakeUserName = helper.GetTfCfgString(cfg, "snowflake.user.name")
+	model.SnowflakePrivateKey = helper.GetTfCfgString(cfg, "snowflake.private.key")
+	model.SnowflakePrivateKeyPassphrase = helper.GetTfCfgString(cfg, "snowflake.private.key.passphrase")
+	model.SnowflakeDatabaseName = helper.GetTfCfgString(cfg, "snowflake.database.name")
+	model.SnowflakeSchemaName = helper.GetTfCfgString(cfg, "snowflake.schema.name")
+	model.SnowflakeRoleName = helper.GetTfCfgString(cfg, "snowflake.role.name")
 }
