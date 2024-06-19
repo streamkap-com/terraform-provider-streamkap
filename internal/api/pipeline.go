@@ -8,12 +8,12 @@ import (
 )
 
 type Pipeline struct {
-	ID                string              `json:"id,omitempty"`
-	Name              string              `json:"name"`
-	SnapshotNewTables bool                `json:"snapshot_new_tables"`
-	Source            PipelineSource      `json:"source"`
-	Destination       PipelineDestination `json:"destination"`
-	Transforms        []string            `json:"transforms"`
+	ID                string               `json:"id,omitempty"`
+	Name              string               `json:"name"`
+	SnapshotNewTables bool                 `json:"snapshot_new_tables"`
+	Source            PipelineSource       `json:"source"`
+	Destination       PipelineDestination  `json:"destination"`
+	Transforms        []*PipelineTransform `json:"transforms"`
 }
 
 type GetPipelineResponse struct {
@@ -34,6 +34,14 @@ type PipelineDestination struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Connector string `json:"connector"`
+}
+
+type PipelineTransform struct {
+	ID        string  `json:"id"`
+	Name      string  `json:"name"`
+	StartTime *string `json:"start_time"`
+	TopicID   string  `json:"topic_id"`
+	Topic     string  `json:"topic"`
 }
 
 func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload Pipeline) (*Pipeline, error) {

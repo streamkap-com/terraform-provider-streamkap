@@ -29,6 +29,6 @@ provider "streamkap" {}
 
 ### Optional
 
-- `client_id` (String) The Streamkap API client_id.
-- `host` (String) The Streamkap API host. Defaults to https://api.streamkap.com.
-- `secret` (String, Sensitive) The Streamkap API secret.
+- `client_id` (String) The Streamkap API client_id. If not set, Streamkap will use environment variable `STREAMKAP_CLIENT_ID`
+- `host` (String) The Streamkap API host. If not set, Streamkap will use environment variable `STREAMKAP_HOST`. Defaults to https://api.streamkap.com if both are not set.
+- `secret` (String, Sensitive) The Streamkap API secret. If not set, Streamkap will use environment variable `STREAMKAP_SECRET`

@@ -30,8 +30,8 @@ resource "streamkap_source_postgresql" "test" {
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = null
 	include_source_db_name_in_table_name         = false
-	slot_name                                    = "streamkap_pgoutput_slot"
-	publication_name                             = "streamkap_pub"
+	slot_name                                    = "terraform_pgoutput_slot"
+	publication_name                             = "terraform_pub"
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
@@ -64,13 +64,23 @@ resource "streamkap_destination_snowflake" "test" {
 }
 `
 
+var pipelineTransformsDef = `
+data "streamkap_transform" "test-transform" {
+  id = "63975020676fa8f369d55001"
+}
+
+data "streamkap_transform" "another-test-transform" {
+  id = "63975020676fa8f369d55005"
+}
+`
+
 func TestAccPipelineResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + pipelineSrcPostgreSQLResourceDef + pipelineDestSnowflakeResourceDef + `
+				Config: providerConfig + pipelineSrcPostgreSQLResourceDef + pipelineDestSnowflakeResourceDef + pipelineTransformsDef + `
 resource "streamkap_pipeline" "test" {
 	name                = "test-pipeline"
 	snapshot_new_tables = true
@@ -85,6 +95,15 @@ resource "streamkap_pipeline" "test" {
 		name      = streamkap_destination_snowflake.test.name
 		connector = streamkap_destination_snowflake.test.connector
 	}
+	transforms = [
+    {
+      id = data.streamkap_transform.test-transform.id
+      topics = [
+        "test1",
+        "test2",
+      ]
+    }
+  ]
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -100,21 +119,36 @@ resource "streamkap_pipeline" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + pipelineSrcPostgreSQLResourceDef + pipelineDestSnowflakeResourceDef + `
+				Config: providerConfig + pipelineSrcPostgreSQLResourceDef + pipelineDestSnowflakeResourceDef + pipelineTransformsDef + `
 resource "streamkap_pipeline" "test" {
-	name                = "test-pipeline-updated"
-	snapshot_new_tables = true
-	source = {
-		id        = streamkap_source_postgresql.test.id
-		name      = streamkap_source_postgresql.test.name
-		connector = streamkap_source_postgresql.test.connector
-		topics    = ["public.users"]
-		}
-	destination = {
-		id        = streamkap_destination_snowflake.test.id
-		name      = streamkap_destination_snowflake.test.name
-		connector = streamkap_destination_snowflake.test.connector
-	}
+  name                = "test-pipeline-updated"
+  snapshot_new_tables = true
+  source = {
+    id        = streamkap_source_postgresql.test.id
+    name      = streamkap_source_postgresql.test.name
+    connector = streamkap_source_postgresql.test.connector
+    topics    = ["public.users"]
+  }
+  destination = {
+    id        = streamkap_destination_snowflake.test.id
+    name      = streamkap_destination_snowflake.test.name
+    connector = streamkap_destination_snowflake.test.connector
+  }
+  transforms = [
+    {
+      id = data.streamkap_transform.test-transform.id
+      topics = [
+        "test1",
+        "test2",
+      ],
+    },
+    {
+      id = data.streamkap_transform.another-test-transform.id
+      topics = [
+        "test3",
+      ]
+    }
+  ]
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
