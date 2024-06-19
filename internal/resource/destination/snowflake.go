@@ -19,23 +19,23 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var (
-	_ res.Resource                = &DestinationSnowflake{}
-	_ res.ResourceWithConfigure   = &DestinationSnowflake{}
-	_ res.ResourceWithImportState = &DestinationSnowflake{}
+	_ res.Resource                = &DestinationSnowflakeResource{}
+	_ res.ResourceWithConfigure   = &DestinationSnowflakeResource{}
+	_ res.ResourceWithImportState = &DestinationSnowflakeResource{}
 )
 
 func NewDestinationSnowflakeResource() res.Resource {
-	return &DestinationSnowflake{connector_code: "snowflake"}
+	return &DestinationSnowflakeResource{connector_code: "snowflake"}
 }
 
-// DestinationSnowflake defines the resource implementation.
-type DestinationSnowflake struct {
+// DestinationSnowflakeResource defines the resource implementation.
+type DestinationSnowflakeResource struct {
 	client         api.StreamkapAPI
 	connector_code string
 }
 
-// DestinationSnowflakeModel describes the resource data model.
-type DestinationSnowflakeModel struct {
+// DestinationSnowflakeResourceModel describes the resource data model.
+type DestinationSnowflakeResourceModel struct {
 	ID                            types.String `tfsdk:"id"`
 	Name                          types.String `tfsdk:"name"`
 	Connector                     types.String `tfsdk:"connector"`
@@ -48,11 +48,11 @@ type DestinationSnowflakeModel struct {
 	SnowflakeRoleName             types.String `tfsdk:"snowflake_role_name"`
 }
 
-func (r *DestinationSnowflake) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
+func (r *DestinationSnowflakeResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_destination_snowflake"
 }
 
-func (r *DestinationSnowflake) Schema(ctx context.Context, req res.SchemaRequest, resp *res.SchemaResponse) {
+func (r *DestinationSnowflakeResource) Schema(ctx context.Context, req res.SchemaRequest, resp *res.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description:         "Destination Snowflake resource",
 		MarkdownDescription: "Destination Snowflake resource",
@@ -119,7 +119,7 @@ func (r *DestinationSnowflake) Schema(ctx context.Context, req res.SchemaRequest
 	}
 }
 
-func (r *DestinationSnowflake) Configure(ctx context.Context, req res.ConfigureRequest, resp *res.ConfigureResponse) {
+func (r *DestinationSnowflakeResource) Configure(ctx context.Context, req res.ConfigureRequest, resp *res.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -137,8 +137,8 @@ func (r *DestinationSnowflake) Configure(ctx context.Context, req res.ConfigureR
 	r.client = client
 }
 
-func (r *DestinationSnowflake) Create(ctx context.Context, req res.CreateRequest, resp *res.CreateResponse) {
-	var plan DestinationSnowflakeModel
+func (r *DestinationSnowflakeResource) Create(ctx context.Context, req res.CreateRequest, resp *res.CreateResponse) {
+	var plan DestinationSnowflakeResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -177,8 +177,8 @@ func (r *DestinationSnowflake) Create(ctx context.Context, req res.CreateRequest
 	}
 }
 
-func (r *DestinationSnowflake) Read(ctx context.Context, req res.ReadRequest, resp *res.ReadResponse) {
-	var state DestinationSnowflakeModel
+func (r *DestinationSnowflakeResource) Read(ctx context.Context, req res.ReadRequest, resp *res.ReadResponse) {
+	var state DestinationSnowflakeResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -215,8 +215,8 @@ func (r *DestinationSnowflake) Read(ctx context.Context, req res.ReadRequest, re
 	}
 }
 
-func (r *DestinationSnowflake) Update(ctx context.Context, req res.UpdateRequest, resp *res.UpdateResponse) {
-	var plan DestinationSnowflakeModel
+func (r *DestinationSnowflakeResource) Update(ctx context.Context, req res.UpdateRequest, resp *res.UpdateResponse) {
+	var plan DestinationSnowflakeResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -253,8 +253,8 @@ func (r *DestinationSnowflake) Update(ctx context.Context, req res.UpdateRequest
 	}
 }
 
-func (r *DestinationSnowflake) Delete(ctx context.Context, req res.DeleteRequest, resp *res.DeleteResponse) {
-	var state DestinationSnowflakeModel
+func (r *DestinationSnowflakeResource) Delete(ctx context.Context, req res.DeleteRequest, resp *res.DeleteResponse) {
+	var state DestinationSnowflakeResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -272,12 +272,12 @@ func (r *DestinationSnowflake) Delete(ctx context.Context, req res.DeleteRequest
 	}
 }
 
-func (r *DestinationSnowflake) ImportState(ctx context.Context, req res.ImportStateRequest, resp *res.ImportStateResponse) {
+func (r *DestinationSnowflakeResource) ImportState(ctx context.Context, req res.ImportStateRequest, resp *res.ImportStateResponse) {
 	res.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Helpers
-func (r *DestinationSnowflake) configMapFromModel(model DestinationSnowflakeModel) map[string]any {
+func (r *DestinationSnowflakeResource) configMapFromModel(model DestinationSnowflakeResourceModel) map[string]any {
 	return map[string]any{
 		"snowflake.url.name":               model.SnowflakeUrlName.ValueString(),
 		"snowflake.user.name":              model.SnowflakeUserName.ValueString(),
@@ -289,7 +289,7 @@ func (r *DestinationSnowflake) configMapFromModel(model DestinationSnowflakeMode
 	}
 }
 
-func (r *DestinationSnowflake) modelFromConfigMap(cfg map[string]any, model *DestinationSnowflakeModel) {
+func (r *DestinationSnowflakeResource) modelFromConfigMap(cfg map[string]any, model *DestinationSnowflakeResourceModel) {
 	// Copy the config map to the model
 	model.SnowflakeUrlName = helper.GetTfCfgString(cfg, "snowflake.url.name")
 	model.SnowflakeUserName = helper.GetTfCfgString(cfg, "snowflake.user.name")

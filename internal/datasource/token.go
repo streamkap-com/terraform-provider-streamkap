@@ -13,14 +13,14 @@ import (
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
-var _ ds.DataSource = &TokenDS{}
+var _ ds.DataSource = &TokenDataSource{}
 
-func NewDataSource() ds.DataSource {
-	return &TokenDS{}
+func NewTokenDataSource() ds.DataSource {
+	return &TokenDataSource{}
 }
 
-// TokenDS defines the data source implementation.
-type TokenDS struct {
+// TokenDataSource defines the data source implementation.
+type TokenDataSource struct {
 	token *api.Token
 }
 
@@ -32,11 +32,11 @@ type TokenModel struct {
 	Expires      types.String `tfsdk:"expires"`
 }
 
-func (d *TokenDS) Metadata(ctx context.Context, req ds.MetadataRequest, resp *ds.MetadataResponse) {
+func (d *TokenDataSource) Metadata(ctx context.Context, req ds.MetadataRequest, resp *ds.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_token"
 }
 
-func (d *TokenDS) Schema(ctx context.Context, req ds.SchemaRequest, resp *ds.SchemaResponse) {
+func (d *TokenDataSource) Schema(ctx context.Context, req ds.SchemaRequest, resp *ds.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
 		MarkdownDescription: "Token data source",
@@ -62,7 +62,7 @@ func (d *TokenDS) Schema(ctx context.Context, req ds.SchemaRequest, resp *ds.Sch
 	}
 }
 
-func (d *TokenDS) Configure(ctx context.Context, req ds.ConfigureRequest, resp *ds.ConfigureResponse) {
+func (d *TokenDataSource) Configure(ctx context.Context, req ds.ConfigureRequest, resp *ds.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -82,7 +82,7 @@ func (d *TokenDS) Configure(ctx context.Context, req ds.ConfigureRequest, resp *
 	d.token = token
 }
 
-func (d *TokenDS) Read(ctx context.Context, req ds.ReadRequest, resp *ds.ReadResponse) {
+func (d *TokenDataSource) Read(ctx context.Context, req ds.ReadRequest, resp *ds.ReadResponse) {
 	var data TokenModel
 
 	// Read Terraform configuration data into the model

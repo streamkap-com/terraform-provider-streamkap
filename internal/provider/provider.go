@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	// "fmt"
 	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -10,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	// "github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	ds "github.com/streamkap-com/terraform-provider-streamkap/internal/datasource"
@@ -142,7 +144,6 @@ func (p *streamkapProvider) Configure(ctx context.Context, req provider.Configur
 
 	// If any of the expected configurations are missing, return
 	// errors with provider-specific guidance.
-
 	if host == "" {
 		host = "https://api.streamkap.com"
 	}
@@ -189,14 +190,15 @@ func (p *streamkapProvider) Configure(ctx context.Context, req provider.Configur
 
 	// Make the Streamkap client available during TokenDS and Resource
 	// type Configure methods.
-	resp.DataSourceData = token
+	resp.DataSourceData = p.client
 	resp.ResourceData = p.client
 }
 
 // DataSources defines the data sources implemented in the provider.
 func (p *streamkapProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		ds.NewDataSource,
+		// ds.NewTokenDataSource,
+		ds.NewTransformDataSource,
 	}
 }
 
