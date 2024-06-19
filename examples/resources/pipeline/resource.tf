@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     streamkap = {
-      source = "github.com/streamkap-com/streamkap"
+      source = "streamkap-com/streamkap"
     }
   }
   required_version = ">= 1.0"
@@ -67,8 +67,12 @@ resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   snowflake_role_name              = "STREAMKAP_ROLE"
 }
 
-output "example-destination-snowflake" {
-  value = streamkap_destination_snowflake.example-destination-snowflake.id
+data "streamkap_transform" "example-transform" {
+  id = "63975020676fa8f369d55001"
+}
+
+data "streamkap_transform" "another-example-transform" {
+  id = "63975020676fa8f369d55005"
 }
 
 resource "streamkap_pipeline" "example-pipeline" {
@@ -85,6 +89,21 @@ resource "streamkap_pipeline" "example-pipeline" {
     name      = streamkap_destination_snowflake.example-destination-snowflake.name
     connector = streamkap_destination_snowflake.example-destination-snowflake.connector
   }
+  transforms = [
+    {
+      id = data.streamkap_transform.example-transform.id
+      topics = [
+        "test1",
+        "test2",
+      ]
+    },
+    {
+      id = data.streamkap_transform.another-example-transform.id
+      topics = [
+        "test3",
+      ]
+    }
+  ]
 }
 
 output "example-pipeline" {

@@ -23,23 +23,23 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var (
-	_ res.Resource                = &SourcePostgreSQL{}
-	_ res.ResourceWithConfigure   = &SourcePostgreSQL{}
-	_ res.ResourceWithImportState = &SourcePostgreSQL{}
+	_ res.Resource                = &SourcePostgreSQLResource{}
+	_ res.ResourceWithConfigure   = &SourcePostgreSQLResource{}
+	_ res.ResourceWithImportState = &SourcePostgreSQLResource{}
 )
 
 func NewSourcePostgreSQLResource() res.Resource {
-	return &SourcePostgreSQL{connector_code: "postgresql"}
+	return &SourcePostgreSQLResource{connector_code: "postgresql"}
 }
 
-// SourcePostgreSQL defines the resource implementation.
-type SourcePostgreSQL struct {
+// SourcePostgreSQLResource defines the resource implementation.
+type SourcePostgreSQLResource struct {
 	client         api.StreamkapAPI
 	connector_code string
 }
 
-// SourcePostgreSQLModel describes the resource data model.
-type SourcePostgreSQLModel struct {
+// SourcePostgreSQLResourceModel describes the resource data model.
+type SourcePostgreSQLResourceModel struct {
 	ID                                      types.String `tfsdk:"id"`
 	Name                                    types.String `tfsdk:"name"`
 	Connector                               types.String `tfsdk:"connector"`
@@ -64,11 +64,11 @@ type SourcePostgreSQLModel struct {
 	SSHUser                                 types.String `tfsdk:"ssh_user"`
 }
 
-func (r *SourcePostgreSQL) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
+func (r *SourcePostgreSQLResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_source_postgresql"
 }
 
-func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, resp *res.SchemaResponse) {
+func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaRequest, resp *res.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description:         "Source PostgreSQL resource",
 		MarkdownDescription: "Source PostgreSQL resource",
@@ -229,7 +229,7 @@ func (r *SourcePostgreSQL) Schema(ctx context.Context, req res.SchemaRequest, re
 	}
 }
 
-func (r *SourcePostgreSQL) Configure(ctx context.Context, req res.ConfigureRequest, resp *res.ConfigureResponse) {
+func (r *SourcePostgreSQLResource) Configure(ctx context.Context, req res.ConfigureRequest, resp *res.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
 		return
@@ -247,8 +247,8 @@ func (r *SourcePostgreSQL) Configure(ctx context.Context, req res.ConfigureReque
 	r.client = client
 }
 
-func (r *SourcePostgreSQL) Create(ctx context.Context, req res.CreateRequest, resp *res.CreateResponse) {
-	var plan SourcePostgreSQLModel
+func (r *SourcePostgreSQLResource) Create(ctx context.Context, req res.CreateRequest, resp *res.CreateResponse) {
+	var plan SourcePostgreSQLResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -286,8 +286,8 @@ func (r *SourcePostgreSQL) Create(ctx context.Context, req res.CreateRequest, re
 	}
 }
 
-func (r *SourcePostgreSQL) Read(ctx context.Context, req res.ReadRequest, resp *res.ReadResponse) {
-	var state SourcePostgreSQLModel
+func (r *SourcePostgreSQLResource) Read(ctx context.Context, req res.ReadRequest, resp *res.ReadResponse) {
+	var state SourcePostgreSQLResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -323,8 +323,8 @@ func (r *SourcePostgreSQL) Read(ctx context.Context, req res.ReadRequest, resp *
 	}
 }
 
-func (r *SourcePostgreSQL) Update(ctx context.Context, req res.UpdateRequest, resp *res.UpdateResponse) {
-	var plan SourcePostgreSQLModel
+func (r *SourcePostgreSQLResource) Update(ctx context.Context, req res.UpdateRequest, resp *res.UpdateResponse) {
+	var plan SourcePostgreSQLResourceModel
 
 	// Read Terraform plan data into the model
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -361,8 +361,8 @@ func (r *SourcePostgreSQL) Update(ctx context.Context, req res.UpdateRequest, re
 	}
 }
 
-func (r *SourcePostgreSQL) Delete(ctx context.Context, req res.DeleteRequest, resp *res.DeleteResponse) {
-	var state SourcePostgreSQLModel
+func (r *SourcePostgreSQLResource) Delete(ctx context.Context, req res.DeleteRequest, resp *res.DeleteResponse) {
+	var state SourcePostgreSQLResourceModel
 
 	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -380,12 +380,12 @@ func (r *SourcePostgreSQL) Delete(ctx context.Context, req res.DeleteRequest, re
 	}
 }
 
-func (r *SourcePostgreSQL) ImportState(ctx context.Context, req res.ImportStateRequest, resp *res.ImportStateResponse) {
+func (r *SourcePostgreSQLResource) ImportState(ctx context.Context, req res.ImportStateRequest, resp *res.ImportStateResponse) {
 	res.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
 // Helpers
-func (r *SourcePostgreSQL) configMapFromModel(model SourcePostgreSQLModel) map[string]any {
+func (r *SourcePostgreSQLResource) configMapFromModel(model SourcePostgreSQLResourceModel) map[string]any {
 	return map[string]any{
 		"database.hostname.user.defined":                    model.DatabaseHostname.ValueString(),
 		"database.port.user.defined":                        int(model.DatabasePort.ValueInt64()),
@@ -409,7 +409,7 @@ func (r *SourcePostgreSQL) configMapFromModel(model SourcePostgreSQLModel) map[s
 	}
 }
 
-func (r *SourcePostgreSQL) modelFromConfigMap(cfg map[string]any, model *SourcePostgreSQLModel) {
+func (r *SourcePostgreSQLResource) modelFromConfigMap(cfg map[string]any, model *SourcePostgreSQLResourceModel) {
 	// Copy the config map to the model
 	model.DatabaseHostname = helper.GetTfCfgString(cfg, "database.hostname.user.defined")
 	model.DatabasePort = helper.GetTfCfgInt64(cfg, "database.port.user.defined")

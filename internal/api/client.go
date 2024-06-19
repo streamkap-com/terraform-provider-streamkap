@@ -30,6 +30,9 @@ type StreamkapAPI interface {
 	UpdatePipeline(ctx context.Context, pipelineID string, reqPayload Pipeline) (*Pipeline, error)
 	GetPipeline(ctx context.Context, pipelineID string) (*Pipeline, error)
 	DeletePipeline(ctx context.Context, pipelineID string) error
+
+	// Transform APIs
+	GetTransform(ctx context.Context, transformID string) (*Transform, error)
 }
 
 type Config struct {
