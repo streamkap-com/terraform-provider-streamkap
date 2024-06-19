@@ -24,7 +24,7 @@ Pipeline resource
 ### Optional
 
 - `snapshot_new_tables` (Boolean) Whether to snapshot new tables (topics) or not
-- `transforms` (List of String)
+- `transforms` (Attributes List) Pipeline transforms (see [below for nested schema](#nestedatt--transforms))
 
 ### Read-Only
 
@@ -49,3 +49,12 @@ Required:
 - `id` (String)
 - `name` (String)
 - `topics` (List of String)
+
+
+<a id="nestedatt--transforms"></a>
+### Nested Schema for `transforms`
+
+Required:
+
+- `id` (String) Transform identifier
+- `topics` (List of String) List of transform topics' names

@@ -197,7 +197,6 @@ func (p *streamkapProvider) Configure(ctx context.Context, req provider.Configur
 // DataSources defines the data sources implemented in the provider.
 func (p *streamkapProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		// ds.NewTokenDataSource,
 		ds.NewTransformDataSource,
 	}
 }
