@@ -31,5 +31,9 @@ func (s *streamkapAPI) GetTransform(ctx context.Context, TransformID string) (*T
 		return nil, err
 	}
 
+	if len(resp.Result) == 0 {
+		return nil, nil
+	}
+
 	return &resp.Result[0], nil
 }

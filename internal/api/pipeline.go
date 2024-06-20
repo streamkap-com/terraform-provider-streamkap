@@ -73,6 +73,10 @@ func (s *streamkapAPI) GetPipeline(ctx context.Context, pipelineID string) (*Pip
 		return nil, err
 	}
 
+	if len(resp.Result) == 0 {
+		return nil, nil
+	}
+
 	return &resp.Result[0], nil
 }
 

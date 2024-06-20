@@ -50,6 +50,10 @@ func (s *streamkapAPI) GetDestination(ctx context.Context, destinationID string)
 		return nil, err
 	}
 
+	if len(resp.Result) == 0 {
+		return nil, nil
+	}
+
 	return &resp.Result[0], nil
 }
 
