@@ -50,6 +50,10 @@ func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) (*Source,
 		return nil, err
 	}
 
+	if len(resp.Result) == 0 {
+		return nil, nil
+	}
+
 	return &resp.Result[0], nil
 }
 
