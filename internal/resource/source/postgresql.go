@@ -52,6 +52,7 @@ type SourcePostgreSQLResourceModel struct {
 	SchemaIncludeList                       types.String `tfsdk:"schema_include_list"`
 	TableIncludeList                        types.String `tfsdk:"table_include_list"`
 	SignalDataCollectionSchemaOrDatabase    types.String `tfsdk:"signal_data_collection_schema_or_database"`
+	ColumnIncludeList                       types.String `tfsdk:"column_include_list"`
 	HeartbeatEnabled                        types.Bool   `tfsdk:"heartbeat_enabled"`
 	HeartbeatDataCollectionSchemaOrDatabase types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
 	IncludeSourceDBNameInTableName          types.Bool   `tfsdk:"include_source_db_name_in_table_name"`
@@ -146,6 +147,13 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 				Default:             stringdefault.StaticString("public"),
 				Description:         "Schema for signal data collection",
 				MarkdownDescription: "Schema for signal data collection",
+			},
+			"column_include_list": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "Comma separated list of columns whitelist regular expressions, format schema[.]table[.](column1|column2|etc)",
+				MarkdownDescription: "Comma separated list of columns whitelist regular expressions, format schema[.]table[.](column1|column2|etc)",
 			},
 			"heartbeat_enabled": schema.BoolAttribute{
 				Computed:            true,
@@ -396,6 +404,7 @@ func (r *SourcePostgreSQLResource) configMapFromModel(model SourcePostgreSQLReso
 		"schema.include.list":                               model.SchemaIncludeList.ValueString(),
 		"table.include.list.user.defined":                   model.TableIncludeList.ValueString(),
 		"signal.data.collection.schema.or.database":         model.SignalDataCollectionSchemaOrDatabase.ValueString(),
+		"column.include.list.user.defined":                  model.ColumnIncludeList.ValueString(),
 		"heartbeat.enabled":                                 model.HeartbeatEnabled.ValueBool(),
 		"heartbeat.data.collection.schema.or.database":      model.HeartbeatDataCollectionSchemaOrDatabase.ValueString(),
 		"include.source.db.name.in.table.name.user.defined": model.IncludeSourceDBNameInTableName.ValueBool(),
@@ -420,6 +429,7 @@ func (r *SourcePostgreSQLResource) modelFromConfigMap(cfg map[string]any, model 
 	model.SchemaIncludeList = helper.GetTfCfgString(cfg, "schema.include.list")
 	model.TableIncludeList = helper.GetTfCfgString(cfg, "table.include.list.user.defined")
 	model.SignalDataCollectionSchemaOrDatabase = helper.GetTfCfgString(cfg, "signal.data.collection.schema.or.database")
+	model.ColumnIncludeList = helper.GetTfCfgString(cfg, "column.include.list.user.defined")
 	model.HeartbeatEnabled = helper.GetTfCfgBool(cfg, "heartbeat.enabled")
 	model.HeartbeatDataCollectionSchemaOrDatabase = helper.GetTfCfgString(cfg, "heartbeat.data.collection.schema.or.database")
 	model.IncludeSourceDBNameInTableName = helper.GetTfCfgBool(cfg, "include.source.db.name.in.table.name.user.defined")

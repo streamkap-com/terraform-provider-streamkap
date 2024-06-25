@@ -31,6 +31,7 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   schema_include_list                       = "public"
   table_include_list                        = "public.users"
   signal_data_collection_schema_or_database = "streamkap"
+  column_include_list                       = "public[.]users[.](user_id|email)"
   heartbeat_enabled                         = false
   include_source_db_name_in_table_name      = false
   slot_name                                 = "streamkap_pgoutput_slot"
