@@ -37,6 +37,7 @@ resource "streamkap_source_postgresql" "test" {
 	schema_include_list                          = "public"
 	table_include_list                           = "public.users"
 	signal_data_collection_schema_or_database    = "streamkap"
+	column_include_list                          = "public[.]users[.](user_id|email)"
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = null
 	include_source_db_name_in_table_name         = false
@@ -57,6 +58,7 @@ resource "streamkap_source_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "schema_include_list", "public"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "table_include_list", "public.users"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "signal_data_collection_schema_or_database", "streamkap"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "column_include_list", "public[.]users[.](user_id|email)"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", "streamkap_pgoutput_slot"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", "streamkap_pub"),
 				),
@@ -90,6 +92,7 @@ resource "streamkap_source_postgresql" "test" {
 	schema_include_list                          = "public"
 	table_include_list                           = "public.users"
 	signal_data_collection_schema_or_database    = "streamkap"
+	column_include_list                          = "public[.]users[.](user_id|email)"
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = null
 	include_source_db_name_in_table_name         = false
@@ -110,6 +113,7 @@ resource "streamkap_source_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "schema_include_list", "public"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "table_include_list", "public.users"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "signal_data_collection_schema_or_database", "streamkap"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "column_include_list", "public[.]users[.](user_id|email)"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", "streamkap_pgoutput_slot"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", "streamkap_pub"),
 				),
