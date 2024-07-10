@@ -330,6 +330,8 @@ func (r *PipelineResource) idxStringInSlice(a string, list []string) int {
 }
 
 func (r *PipelineResource) model2APITransforms(ctx context.Context, modelTransforms []*PipelineTransformModel) (res []*api.PipelineTransform, err error) {
+	res = []*api.PipelineTransform{}
+
 	for _, modelTransform := range modelTransforms {
 		transformID := modelTransform.ID.ValueString()
 		transform, err := r.client.GetTransform(ctx, transformID)
@@ -362,7 +364,7 @@ func (r *PipelineResource) model2APITransforms(ctx context.Context, modelTransfo
 func (r *PipelineResource) api2ModelTransforms(apiTransforms []*api.PipelineTransform) (modelTransforms []*PipelineTransformModel, err error) {
 	// Loop through all api.Transforms and fetch unwinded transform data
 	if len(apiTransforms) == 0 {
-		return nil, nil
+		return []*PipelineTransformModel{}, nil
 	}
 
 	modelTransforms = make([]*PipelineTransformModel, 1, len(apiTransforms))
