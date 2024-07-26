@@ -66,11 +66,11 @@ resource "streamkap_destination_snowflake" "test" {
 
 var pipelineTransformsDef = `
 data "streamkap_transform" "test-transform" {
-  id = "63975020676fa8f369d55001"
+	id = "63975020676fa8f369d55001"
 }
 
 data "streamkap_transform" "another-test-transform" {
-  id = "63975020676fa8f369d55005"
+	id = "63975020676fa8f369d55005"
 }
 `
 
@@ -88,22 +88,34 @@ resource "streamkap_pipeline" "test" {
 		id        = streamkap_source_postgresql.test.id
 		name      = streamkap_source_postgresql.test.name
 		connector = streamkap_source_postgresql.test.connector
-		topics    = ["public.users"]
-		}
+		topics    = [
+			"public.users",
+			"public.itst_scen20240530141046",
+			"public.itst_scen20240528100603",
+			"public.itst_scen20240528103635",
+		]
+	}
 	destination = {
 		id        = streamkap_destination_snowflake.test.id
 		name      = streamkap_destination_snowflake.test.name
 		connector = streamkap_destination_snowflake.test.connector
 	}
 	transforms = [
-    {
-      id = data.streamkap_transform.test-transform.id
-      topics = [
-        "test1",
-        "test2",
-      ]
-    }
-  ]
+		{
+			id     = data.streamkap_transform.test-transform.id
+			topics = [
+				"public.itst_scen20240530123456",
+				"random_topic",
+			]
+		},
+		{
+			id     = data.streamkap_transform.another-test-transform.id
+			topics = [
+				"public.itst_scen20240530654321",
+				"public.itst_scen20240528121212",
+			]
+		}
+	]
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -121,34 +133,30 @@ resource "streamkap_pipeline" "test" {
 			{
 				Config: providerConfig + pipelineSrcPostgreSQLResourceDef + pipelineDestSnowflakeResourceDef + pipelineTransformsDef + `
 resource "streamkap_pipeline" "test" {
-  name                = "test-pipeline-updated"
-  snapshot_new_tables = true
-  source = {
-    id        = streamkap_source_postgresql.test.id
-    name      = streamkap_source_postgresql.test.name
-    connector = streamkap_source_postgresql.test.connector
-    topics    = ["public.users"]
-  }
-  destination = {
-    id        = streamkap_destination_snowflake.test.id
-    name      = streamkap_destination_snowflake.test.name
-    connector = streamkap_destination_snowflake.test.connector
-  }
-  transforms = [
-    {
-      id = data.streamkap_transform.test-transform.id
-      topics = [
-        "test1",
-        "test2",
-      ],
-    },
-    {
-      id = data.streamkap_transform.another-test-transform.id
-      topics = [
-        "test3",
-      ]
-    }
-  ]
+	name                = "test-pipeline-updated"
+	snapshot_new_tables = true
+	source = {
+		id        = streamkap_source_postgresql.test.id
+		name      = streamkap_source_postgresql.test.name
+		connector = streamkap_source_postgresql.test.connector
+		topics    = [
+			"public.itst_scen20240530141046",
+			"public.itst_scen20240528103635",
+		]
+	}
+	destination = {
+		id        = streamkap_destination_snowflake.test.id
+		name      = streamkap_destination_snowflake.test.name
+		connector = streamkap_destination_snowflake.test.connector
+	}
+	transforms = [
+		{
+			id     = data.streamkap_transform.test-transform.id
+			topics = [
+				"public.itst_scen20240530123456",
+			]
+		},
+	]
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(

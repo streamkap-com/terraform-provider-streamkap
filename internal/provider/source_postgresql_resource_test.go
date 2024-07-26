@@ -35,14 +35,14 @@ resource "streamkap_source_postgresql" "test" {
 	database_dbname                              = "postgres"
 	database_sslmode                             = "require"
 	schema_include_list                          = "public"
-	table_include_list                           = "public.users"
+	table_include_list                           = "public.users,public.itst_scen20240528100603,pubic.itst_scen20240528103635,public.itst_scen20240530141046"
 	signal_data_collection_schema_or_database    = "streamkap"
 	column_include_list                          = "public[.]users[.](user_id|email)"
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = null
 	include_source_db_name_in_table_name         = false
-	slot_name                                    = "streamkap_pgoutput_slot"
-	publication_name                             = "streamkap_pub"
+	slot_name                                    = "terraform_pgoutput_slot"
+	publication_name                             = "terraform_pub"
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
@@ -56,11 +56,11 @@ resource "streamkap_source_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_password", sourcePostgreSQLPassword),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_dbname", "postgres"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "schema_include_list", "public"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "table_include_list", "public.users"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "table_include_list", "public.users,public.itst_scen20240528100603,pubic.itst_scen20240528103635,public.itst_scen20240530141046"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "signal_data_collection_schema_or_database", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "column_include_list", "public[.]users[.](user_id|email)"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", "streamkap_pgoutput_slot"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", "streamkap_pub"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", "terraform_pgoutput_slot"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", "terraform_pub"),
 				),
 			},
 			// ImportState testing
@@ -96,8 +96,8 @@ resource "streamkap_source_postgresql" "test" {
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = null
 	include_source_db_name_in_table_name         = false
-	slot_name                                    = "streamkap_pgoutput_slot"
-	publication_name                             = "streamkap_pub"
+	slot_name                                    = "terraform_pgoutput_slot"
+	publication_name                             = "terraform_pub"
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
@@ -114,8 +114,8 @@ resource "streamkap_source_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "table_include_list", "public.users"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "signal_data_collection_schema_or_database", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "column_include_list", "public[.]users[.](user_id|email)"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", "streamkap_pgoutput_slot"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", "streamkap_pub"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", "terraform_pgoutput_slot"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", "terraform_pub"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
