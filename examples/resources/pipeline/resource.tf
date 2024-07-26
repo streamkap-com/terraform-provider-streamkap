@@ -29,12 +29,12 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   database_dbname                           = "postgres"
   database_sslmode                          = "require"
   schema_include_list                       = "public"
-  table_include_list                        = "public.users"
+  table_include_list                        = "public.users,public.itst_scen20240528100603,public.itst_scen20240528103635,public.itst_scen20240530141046"
   signal_data_collection_schema_or_database = "streamkap"
   heartbeat_enabled                         = false
   include_source_db_name_in_table_name      = false
-  slot_name                                 = "streamkap_pgoutput_slot"
-  publication_name                          = "streamkap_pub"
+  slot_name                                 = "terraform_pgoutput_slot"
+  publication_name                          = "terraform_pub"
   binary_handling_mode                      = "bytes"
   ssh_enabled                               = false
 }
@@ -57,7 +57,7 @@ variable "destination_snowflake_key_passphrase" {
 }
 
 resource "streamkap_destination_snowflake" "example-destination-snowflake" {
-  name                             = "test-destination-snowflake"
+  name                             = "example-destination-snowflake"
   snowflake_url_name               = var.destination_snowflake_url_name
   snowflake_user_name              = "STREAMKAP_USER_POSTGRESQL"
   snowflake_private_key            = var.destination_snowflake_private_key
@@ -76,13 +76,18 @@ data "streamkap_transform" "another-example-transform" {
 }
 
 resource "streamkap_pipeline" "example-pipeline" {
-  name                = "test-pipeline"
+  name                = "example-pipeline"
   snapshot_new_tables = true
   source = {
     id        = streamkap_source_postgresql.example-source-postgresql.id
     name      = streamkap_source_postgresql.example-source-postgresql.name
     connector = streamkap_source_postgresql.example-source-postgresql.connector
-    topics    = ["public.users"]
+    topics = [
+      "public.itst_scen20240530141046",
+      "public.itst_scen20240528100603",
+      "public.itst_scen20240528103635",
+      "public.users",
+    ]
   }
   destination = {
     id        = streamkap_destination_snowflake.example-destination-snowflake.id
@@ -93,14 +98,15 @@ resource "streamkap_pipeline" "example-pipeline" {
     {
       id = data.streamkap_transform.example-transform.id
       topics = [
-        "test1",
-        "test2",
+        "public.itst_scen20240530123456",
+        "random_topic",
       ]
     },
     {
       id = data.streamkap_transform.another-example-transform.id
       topics = [
-        "test3",
+        "public.itst_scen20240530654321",
+        "public.itst_scen20240528121212",
       ]
     }
   ]

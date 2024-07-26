@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	// "github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 )
@@ -44,10 +45,10 @@ type PipelineResourceModel struct {
 }
 
 type PipelineSourceModel struct {
-	ID        types.String   `tfsdk:"id"`
-	Name      types.String   `tfsdk:"name"`
-	Connector types.String   `tfsdk:"connector"`
-	Topics    []types.String `tfsdk:"topics"`
+	ID        types.String `tfsdk:"id"`
+	Name      types.String `tfsdk:"name"`
+	Connector types.String `tfsdk:"connector"`
+	Topics    types.Set    `tfsdk:"topics"`
 }
 
 type PipelineDestinationModel struct {
@@ -57,8 +58,8 @@ type PipelineDestinationModel struct {
 }
 
 type PipelineTransformModel struct {
-	ID     types.String   `tfsdk:"id"`
-	Topics []types.String `tfsdk:"topics"`
+	ID     types.String `tfsdk:"id"`
+	Topics types.Set    `tfsdk:"topics"`
 }
 
 func (r *PipelineResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -69,7 +70,7 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 	transformsNestedObjectType := types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"id": types.StringType,
-			"topics": types.ListType{
+			"topics": types.SetType{
 				ElemType: types.StringType,
 			},
 		},
@@ -119,7 +120,7 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 					"id":        types.StringType,
 					"name":      types.StringType,
 					"connector": types.StringType,
-					"topics": types.ListType{
+					"topics": types.SetType{
 						ElemType: types.StringType,
 					},
 				},
@@ -146,7 +147,7 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 							Description:         "Transform identifier",
 							MarkdownDescription: "Transform identifier",
 						},
-						"topics": schema.ListAttribute{
+						"topics": schema.SetAttribute{
 							Required:            true,
 							ElementType:         types.StringType,
 							Description:         "List of transform topics' names",
@@ -192,7 +193,7 @@ func (r *PipelineResource) Create(ctx context.Context, req res.CreateRequest, re
 
 	// If applicable, this is a great opportunity to initialize any necessary
 	// provider client data and make a call using it.
-	payload, err := r.apiObjectFromModel(ctx, plan)
+	payload, err := r.model2API(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating pipeline",
@@ -200,7 +201,6 @@ func (r *PipelineResource) Create(ctx context.Context, req res.CreateRequest, re
 		)
 		return
 	}
-
 	pipeline, err := r.client.CreatePipeline(ctx, *payload)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -209,10 +209,10 @@ func (r *PipelineResource) Create(ctx context.Context, req res.CreateRequest, re
 		)
 		return
 	}
-
+	
 	// For the purposes of this example code, hardcoding a response value to
 	// save into the Terraform state.
-	r.modelFromAPIObject(*pipeline, &plan)
+	r.api2Model(ctx, *pipeline, &plan)
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -248,7 +248,7 @@ func (r *PipelineResource) Read(ctx context.Context, req res.ReadRequest, resp *
 		return
 	}
 
-	r.modelFromAPIObject(*pipeline, &state)
+	r.api2Model(ctx, *pipeline, &state)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -266,7 +266,7 @@ func (r *PipelineResource) Update(ctx context.Context, req res.UpdateRequest, re
 		return
 	}
 
-	payload, err := r.apiObjectFromModel(ctx, plan)
+	payload, err := r.model2API(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating pipeline",
@@ -287,7 +287,7 @@ func (r *PipelineResource) Update(ctx context.Context, req res.UpdateRequest, re
 
 	// For the purposes of this example code, hardcoding a response value to
 	// save into the Terraform state.
-	r.modelFromAPIObject(*pipeline, &plan)
+	r.api2Model(ctx, *pipeline, &plan)
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -342,18 +342,23 @@ func (r *PipelineResource) model2APITransforms(ctx context.Context, modelTransfo
 			return nil, fmt.Errorf("transform %s does not exist", transformID)
 		}
 
-		for _, modelTopic := range modelTransform.Topics {
-			modelTopicStr := modelTopic.ValueString()
-			if topicIdx := r.idxStringInSlice(modelTopicStr, transform.Topics); topicIdx >= 0 {
+		strModelTransformTopics := []string{}
+		diags := modelTransform.Topics.ElementsAs(ctx, &strModelTransformTopics, false)
+		if diags.HasError() {
+			return nil, fmt.Errorf("error converting model transform topics: %s", diags)
+		}
+
+		for _, strModelTransformTopic := range strModelTransformTopics {
+			if topicIdx := r.idxStringInSlice(strModelTransformTopic, transform.Topics); topicIdx >= 0 {
 				res = append(res, &api.PipelineTransform{
 					ID:        transform.ID,
 					Name:      transform.Name,
 					StartTime: transform.StartTime,
-					Topic:     modelTopicStr,
+					Topic:     strModelTransformTopic,
 					TopicID:   transform.TopicIDs[topicIdx],
 				})
 			} else {
-				return nil, fmt.Errorf("topic %s not found in transform %s", modelTopicStr, transformID)
+				return nil, fmt.Errorf("topic %s not found in transform %s", strModelTransformTopic, transformID)
 			}
 		}
 	}
@@ -361,42 +366,60 @@ func (r *PipelineResource) model2APITransforms(ctx context.Context, modelTransfo
 	return res, nil
 }
 
-func (r *PipelineResource) api2ModelTransforms(apiTransforms []*api.PipelineTransform) (modelTransforms []*PipelineTransformModel, err error) {
+func (r *PipelineResource) strListToTfStrList(strList []string) (tfStrList []attr.Value) {
+	tfStrList = make([]attr.Value, len(strList))
+	for i, str := range strList {
+		tfStrList[i] = types.StringValue(str)
+	}
+	return
+}
+
+func (r *PipelineResource) api2ModelTransforms(ctx context.Context, apiTransforms []*api.PipelineTransform) (modelTransforms []*PipelineTransformModel, err error) {
 	// Loop through all api.Transforms and fetch unwinded transform data
 	if len(apiTransforms) == 0 {
 		return []*PipelineTransformModel{}, nil
 	}
 
-	modelTransforms = make([]*PipelineTransformModel, 1, len(apiTransforms))
-	j := 0
-	modelTransforms[j] = &PipelineTransformModel{
-		ID:     types.StringValue(apiTransforms[j].ID),
-		Topics: []types.String{types.StringValue(apiTransforms[j].Topic)},
-	}
+	modelTransforms = make([]*PipelineTransformModel, 0, len(apiTransforms))
 
-	for i, apiTransform := range apiTransforms {
-		if i < 1 {
-			continue
-		}
+	currentTransformID := apiTransforms[0].ID
+	currentTransformTopics := make([]string, 0, len(apiTransforms))
 
-		if modelTransform := modelTransforms[j]; apiTransform.ID == modelTransform.ID.ValueString() {
-			modelTransform.Topics = append(modelTransform.Topics, types.StringValue(apiTransform.Topic))
+	for _, apiTransform := range apiTransforms {
+		if apiTransform.ID == currentTransformID {
+			currentTransformTopics = append(currentTransformTopics, apiTransform.Topic)
 		} else {
+			modelTransformTopics, diags := types.SetValue(types.StringType, r.strListToTfStrList(currentTransformTopics))
+			if diags.HasError() {
+				return nil, fmt.Errorf("error creating topic set: %s", diags)
+			}
 			modelTransforms = append(modelTransforms, &PipelineTransformModel{
-				ID:     types.StringValue(apiTransform.ID),
-				Topics: []types.String{types.StringValue(apiTransform.Topic)},
+				ID:     types.StringValue(currentTransformID),
+				Topics: modelTransformTopics,
 			})
-			j++
+			currentTransformID = apiTransform.ID
+			currentTransformTopics = make([]string, 0, len(apiTransforms))
+			currentTransformTopics = append(currentTransformTopics, apiTransform.Topic)
 		}
 	}
+
+	modelTransformTopics, diags := types.SetValue(types.StringType, r.strListToTfStrList(currentTransformTopics))
+	if diags.HasError() {
+		return nil, fmt.Errorf("error creating topic set: %s", diags)
+	}
+	modelTransforms = append(modelTransforms, &PipelineTransformModel{
+		ID:     types.StringValue(currentTransformID),
+		Topics: modelTransformTopics,
+	})
 
 	return modelTransforms, nil
 }
 
-func (r *PipelineResource) apiObjectFromModel(ctx context.Context, model PipelineResourceModel) (res *api.Pipeline, err error) {
+func (r *PipelineResource) model2API(ctx context.Context, model PipelineResourceModel) (res *api.Pipeline, err error) {
 	sourceTopics := []string{}
-	for _, topic := range model.Source.Topics {
-		sourceTopics = append(sourceTopics, topic.ValueString())
+	diags := model.Source.Topics.ElementsAs(ctx, &sourceTopics, false)
+	if diags.HasError() {
+		return nil, fmt.Errorf("error converting model source topics: %s", diags)
 	}
 
 	// Loop through all model.Transforms and fetch unwinded transform data
@@ -427,16 +450,16 @@ func (r *PipelineResource) apiObjectFromModel(ctx context.Context, model Pipelin
 	return res, nil
 }
 
-func (r *PipelineResource) modelFromAPIObject(apiObject api.Pipeline, model *PipelineResourceModel) error {
+func (r *PipelineResource) api2Model(ctx context.Context, apiObject api.Pipeline, model *PipelineResourceModel) error {
 	// Copy the API Object to the model
 	model.ID = types.StringValue(apiObject.ID)
 	model.Name = types.StringValue(apiObject.Name)
 
 	model.SnapshotNewTables = types.BoolValue(apiObject.SnapshotNewTables)
 
-	sourceTopics := []types.String{}
-	for _, topic := range apiObject.Source.Topics {
-		sourceTopics = append(sourceTopics, types.StringValue(topic))
+	sourceTopics, diags := types.SetValue(types.StringType, r.strListToTfStrList(apiObject.Source.Topics))
+	if diags.HasError() {
+		return fmt.Errorf("error parsing source topic set: %s", diags)
 	}
 	model.Source = &PipelineSourceModel{
 		ID:        types.StringValue(apiObject.Source.ID),
@@ -451,7 +474,7 @@ func (r *PipelineResource) modelFromAPIObject(apiObject api.Pipeline, model *Pip
 		Connector: types.StringValue(apiObject.Destination.Connector),
 	}
 
-	transforms, err := r.api2ModelTransforms(apiObject.Transforms)
+	transforms, err := r.api2ModelTransforms(ctx, apiObject.Transforms)
 	if err != nil {
 		return err
 	}
