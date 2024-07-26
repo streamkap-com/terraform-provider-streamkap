@@ -29,7 +29,7 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   database_dbname                           = "postgres"
   database_sslmode                          = "require"
   schema_include_list                       = "public"
-  table_include_list                        = "public.users"
+  table_include_list                        = "public.users,public.itst_scen20240528100603,pubic.itst_scen20240528103635,public.itst_scen20240530141046"
   signal_data_collection_schema_or_database = "streamkap"
   column_include_list                       = "public[.]users[.](user_id|email)"
   heartbeat_enabled                         = false
