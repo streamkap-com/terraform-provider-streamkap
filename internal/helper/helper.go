@@ -13,7 +13,7 @@ func GetTfCfgString(cfg map[string]any, key string) types.String {
 		return types.StringValue(val)
 	}
 
-	return types.StringValue("")
+	return types.StringNull()
 }
 
 func GetTfCfgInt64(cfg map[string]any, key string) types.Int64 {
@@ -29,7 +29,7 @@ func GetTfCfgInt64(cfg map[string]any, key string) types.Int64 {
 		}
 	}
 
-	return types.Int64Value(0)
+	return types.Int64Null()
 }
 
 func GetTfCfgBool(cfg map[string]any, key string) types.Bool {
@@ -39,5 +39,5 @@ func GetTfCfgBool(cfg map[string]any, key string) types.Bool {
 		return types.BoolValue(val)
 	}
 
-	return types.BoolValue(false)
+	return types.BoolNull()
 }
