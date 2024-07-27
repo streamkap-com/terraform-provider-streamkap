@@ -205,6 +205,7 @@ func (p *streamkapProvider) DataSources(_ context.Context) []func() datasource.D
 func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		source.NewSourcePostgreSQLResource,
+		source.NewSourceDynamoDBResource,
 		destination.NewDestinationSnowflakeResource,
 		pipeline.NewPipelineResource,
 	}

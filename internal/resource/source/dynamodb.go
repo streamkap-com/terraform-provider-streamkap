@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -120,7 +116,7 @@ func (r *SourceDynamoDBResource) Schema(ctx context.Context, req res.SchemaReque
 				MarkdownDescription: "Batch size to fetch records.",
 			},
 			"dynamodb_service_endpoint": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "Dynamodb Service Endpoint (optional)",
 				MarkdownDescription: "Dynamodb Service Endpoint (optional)",
 			},
@@ -328,49 +324,35 @@ func (r *SourceDynamoDBResource) ImportState(ctx context.Context, req res.Import
 // Helpers
 func (r *SourceDynamoDBResource) configMapFromModel(model SourceDynamoDBResourceModel) map[string]any {
 	return map[string]any{
-		"database.hostname.user.defined":                    model.DatabaseHostname.ValueString(),
-		"database.port.user.defined":                        int(model.DatabasePort.ValueInt64()),
-		"database.user":                                     model.DatabaseUser.ValueString(),
-		"database.password":                                 model.DatabasePassword.ValueString(),
-		"database.dbname":                                   model.DatabaseDbname.ValueString(),
-		"database.sslmode":                                  model.DatabaseSSLMode.ValueString(),
-		"schema.include.list":                               model.SchemaIncludeList.ValueString(),
-		"table.include.list.user.defined":                   model.TableIncludeList.ValueString(),
-		"signal.data.collection.schema.or.database":         model.SignalDataCollectionSchemaOrDatabase.ValueString(),
-		"column.include.list.user.defined":                  model.ColumnIncludeList.ValueString(),
-		"heartbeat.enabled":                                 model.HeartbeatEnabled.ValueBool(),
-		"heartbeat.data.collection.schema.or.database":      model.HeartbeatDataCollectionSchemaOrDatabase.ValueString(),
-		"include.source.db.name.in.table.name.user.defined": model.IncludeSourceDBNameInTableName.ValueBool(),
-		"slot.name":                                         model.SlotName.ValueString(),
-		"publication.name":                                  model.PublicationName.ValueString(),
-		"binary.handling.mode":                              model.BinaryHandlingMode.ValueString(),
-		"ssh.enabled":                                       model.SSHEnabled.ValueBool(),
-		"ssh.host":                                          model.SSHHost.ValueString(),
-		"ssh.port":                                          model.SSHPort.ValueString(),
-		"ssh.user":                                          model.SSHUser.ValueString(),
+		"aws.region":                       model.AWSRegion.ValueString(),
+		"aws.access.key.id":                model.AWSAccessKeyID.ValueString(),
+		"aws.secret.key":                   model.AWSSecretKey.ValueString(),
+		"s3.export.bucket.name":            model.S3ExportBucketName.ValueString(),
+		"table.include.list.user.defined":  model.TableIncludeListUserDefined.ValueString(),
+		"batch.size":                       int(model.BatchSize.ValueInt64()),
+		"dynamodb.service.endpoint":        model.DynamoDBServiceEndpoint.ValueStringPointer(),
+		"poll.timeout.ms":                  int(model.PollTimeoutMS.ValueInt64()),
+		"incremental.snapshot.chunk.size":  int(model.IncrementalSnapshotChunkSize.ValueInt64()),
+		"incremental.snapshot.max.threads": int(model.IncrementalSnapshotMaxThreads.ValueInt64()),
+		"incremental.snapshot.interval.ms": int(model.IncrementalSnapshotIntervalMS.ValueInt64()),
+		"full.export.expiration.time.ms":   int(model.FullExportExpirationTimeMS.ValueInt64()),
+		"signal.kafka.poll.timeout.ms":     int(model.SignalKafkaPollTimeoutMS.ValueInt64()),
 	}
 }
 
 func (r *SourceDynamoDBResource) modelFromConfigMap(cfg map[string]any, model *SourceDynamoDBResourceModel) {
 	// Copy the config map to the model
-	model.DatabaseHostname = helper.GetTfCfgString(cfg, "database.hostname.user.defined")
-	model.DatabasePort = helper.GetTfCfgInt64(cfg, "database.port.user.defined")
-	model.DatabaseUser = helper.GetTfCfgString(cfg, "database.user")
-	model.DatabasePassword = helper.GetTfCfgString(cfg, "database.password")
-	model.DatabaseDbname = helper.GetTfCfgString(cfg, "database.dbname")
-	model.DatabaseSSLMode = helper.GetTfCfgString(cfg, "database.sslmode")
-	model.SchemaIncludeList = helper.GetTfCfgString(cfg, "schema.include.list")
-	model.TableIncludeList = helper.GetTfCfgString(cfg, "table.include.list.user.defined")
-	model.SignalDataCollectionSchemaOrDatabase = helper.GetTfCfgString(cfg, "signal.data.collection.schema.or.database")
-	model.ColumnIncludeList = helper.GetTfCfgString(cfg, "column.include.list.user.defined")
-	model.HeartbeatEnabled = helper.GetTfCfgBool(cfg, "heartbeat.enabled")
-	model.HeartbeatDataCollectionSchemaOrDatabase = helper.GetTfCfgString(cfg, "heartbeat.data.collection.schema.or.database")
-	model.IncludeSourceDBNameInTableName = helper.GetTfCfgBool(cfg, "include.source.db.name.in.table.name.user.defined")
-	model.SlotName = helper.GetTfCfgString(cfg, "slot.name")
-	model.PublicationName = helper.GetTfCfgString(cfg, "publication.name")
-	model.BinaryHandlingMode = helper.GetTfCfgString(cfg, "binary.handling.mode")
-	model.SSHEnabled = helper.GetTfCfgBool(cfg, "ssh.enabled")
-	model.SSHHost = helper.GetTfCfgString(cfg, "ssh.host")
-	model.SSHPort = helper.GetTfCfgString(cfg, "ssh.port")
-	model.SSHUser = helper.GetTfCfgString(cfg, "ssh.user")
+	model.AWSRegion = helper.GetTfCfgString(cfg, "aws.region")
+	model.AWSAccessKeyID = helper.GetTfCfgString(cfg, "aws.access.key.id")
+	model.AWSSecretKey = helper.GetTfCfgString(cfg, "aws.secret.key")
+	model.S3ExportBucketName = helper.GetTfCfgString(cfg, "s3.export.bucket.name")
+	model.TableIncludeListUserDefined = helper.GetTfCfgString(cfg, "table.include.list.user.defined")
+	model.BatchSize = helper.GetTfCfgInt64(cfg, "batch.size")
+	model.DynamoDBServiceEndpoint = helper.GetTfCfgString(cfg, "dynamodb.service.endpoint")
+	model.PollTimeoutMS = helper.GetTfCfgInt64(cfg, "poll.timeout.ms")
+	model.IncrementalSnapshotChunkSize = helper.GetTfCfgInt64(cfg, "incremental.snapshot.chunk.size")
+	model.IncrementalSnapshotMaxThreads = helper.GetTfCfgInt64(cfg, "incremental.snapshot.max.threads")
+	model.IncrementalSnapshotIntervalMS = helper.GetTfCfgInt64(cfg, "incremental.snapshot.interval.ms")
+	model.FullExportExpirationTimeMS = helper.GetTfCfgInt64(cfg, "full.export.expiration.time.ms")
+	model.SignalKafkaPollTimeoutMS = helper.GetTfCfgInt64(cfg, "signal.kafka.poll.timeout.ms")
 }
