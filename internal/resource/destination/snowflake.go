@@ -149,7 +149,7 @@ func (r *DestinationSnowflakeResource) Create(ctx context.Context, req res.Creat
 	}
 
 	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
-	config := r.configMapFromModel(plan)
+	config := r.model2ConfigMap(plan)
 
 	destination, err := r.client.CreateDestination(ctx, api.Destination{
 		Name:      plan.Name.ValueString(),
@@ -168,7 +168,7 @@ func (r *DestinationSnowflakeResource) Create(ctx context.Context, req res.Creat
 	plan.ID = types.StringValue(destination.ID)
 	plan.Name = types.StringValue(destination.Name)
 	plan.Connector = types.StringValue(destination.Connector)
-	r.modelFromConfigMap(destination.Config, &plan)
+	r.configMap2Model(destination.Config, &plan)
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -206,7 +206,7 @@ func (r *DestinationSnowflakeResource) Read(ctx context.Context, req res.ReadReq
 
 	state.Name = types.StringValue(destination.Name)
 	state.Connector = types.StringValue(destination.Connector)
-	r.modelFromConfigMap(destination.Config, &state)
+	r.configMap2Model(destination.Config, &state)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -225,7 +225,7 @@ func (r *DestinationSnowflakeResource) Update(ctx context.Context, req res.Updat
 	}
 
 	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
-	config := r.configMapFromModel(plan)
+	config := r.model2ConfigMap(plan)
 
 	destination, err := r.client.UpdateDestination(ctx, plan.ID.ValueString(), api.Destination{
 		Name:      plan.Name.ValueString(),
@@ -244,7 +244,7 @@ func (r *DestinationSnowflakeResource) Update(ctx context.Context, req res.Updat
 	// Update resource state with updated items
 	plan.Name = types.StringValue(destination.Name)
 	plan.Connector = types.StringValue(destination.Connector)
-	r.modelFromConfigMap(destination.Config, &plan)
+	r.configMap2Model(destination.Config, &plan)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -277,7 +277,7 @@ func (r *DestinationSnowflakeResource) ImportState(ctx context.Context, req res.
 }
 
 // Helpers
-func (r *DestinationSnowflakeResource) configMapFromModel(model DestinationSnowflakeResourceModel) map[string]any {
+func (r *DestinationSnowflakeResource) model2ConfigMap(model DestinationSnowflakeResourceModel) map[string]any {
 	return map[string]any{
 		"snowflake.url.name":               model.SnowflakeUrlName.ValueString(),
 		"snowflake.user.name":              model.SnowflakeUserName.ValueString(),
@@ -289,7 +289,7 @@ func (r *DestinationSnowflakeResource) configMapFromModel(model DestinationSnowf
 	}
 }
 
-func (r *DestinationSnowflakeResource) modelFromConfigMap(cfg map[string]any, model *DestinationSnowflakeResourceModel) {
+func (r *DestinationSnowflakeResource) configMap2Model(cfg map[string]any, model *DestinationSnowflakeResourceModel) {
 	// Copy the config map to the model
 	model.SnowflakeUrlName = helper.GetTfCfgString(cfg, "snowflake.url.name")
 	model.SnowflakeUserName = helper.GetTfCfgString(cfg, "snowflake.user.name")
