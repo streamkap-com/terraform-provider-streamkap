@@ -260,7 +260,7 @@ func (r *SourcePostgreSQLResource) Create(ctx context.Context, req res.CreateReq
 		return
 	}
 
-	config := r.configMapFromModel(plan)
+	config := r.model2ConfigMap(plan)
 
 	source, err := r.client.CreateSource(ctx, api.Source{
 		Name:      plan.Name.ValueString(),
@@ -279,7 +279,7 @@ func (r *SourcePostgreSQLResource) Create(ctx context.Context, req res.CreateReq
 	plan.ID = types.StringValue(source.ID)
 	plan.Name = types.StringValue(source.Name)
 	plan.Connector = types.StringValue(source.Connector)
-	r.modelFromConfigMap(source.Config, &plan)
+	r.configMap2Model(source.Config, &plan)
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -317,7 +317,7 @@ func (r *SourcePostgreSQLResource) Read(ctx context.Context, req res.ReadRequest
 
 	state.Name = types.StringValue(source.Name)
 	state.Connector = types.StringValue(source.Connector)
-	r.modelFromConfigMap(source.Config, &state)
+	r.configMap2Model(source.Config, &state)
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -335,7 +335,7 @@ func (r *SourcePostgreSQLResource) Update(ctx context.Context, req res.UpdateReq
 	}
 
 	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
-	config := r.configMapFromModel(plan)
+	config := r.model2ConfigMap(plan)
 
 	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{
 		Name:      plan.Name.ValueString(),
@@ -354,7 +354,7 @@ func (r *SourcePostgreSQLResource) Update(ctx context.Context, req res.UpdateReq
 	// Update resource state with updated items
 	plan.Name = types.StringValue(source.Name)
 	plan.Connector = types.StringValue(source.Connector)
-	r.modelFromConfigMap(source.Config, &plan)
+	r.configMap2Model(source.Config, &plan)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -387,7 +387,7 @@ func (r *SourcePostgreSQLResource) ImportState(ctx context.Context, req res.Impo
 }
 
 // Helpers
-func (r *SourcePostgreSQLResource) configMapFromModel(model SourcePostgreSQLResourceModel) map[string]any {
+func (r *SourcePostgreSQLResource) model2ConfigMap(model SourcePostgreSQLResourceModel) map[string]any {
 	return map[string]any{
 		"database.hostname.user.defined":                    model.DatabaseHostname.ValueString(),
 		"database.port.user.defined":                        int(model.DatabasePort.ValueInt64()),
@@ -412,7 +412,7 @@ func (r *SourcePostgreSQLResource) configMapFromModel(model SourcePostgreSQLReso
 	}
 }
 
-func (r *SourcePostgreSQLResource) modelFromConfigMap(cfg map[string]any, model *SourcePostgreSQLResourceModel) {
+func (r *SourcePostgreSQLResource) configMap2Model(cfg map[string]any, model *SourcePostgreSQLResourceModel) {
 	// Copy the config map to the model
 	model.DatabaseHostname = helper.GetTfCfgString(cfg, "database.hostname.user.defined")
 	model.DatabasePort = helper.GetTfCfgInt64(cfg, "database.port.user.defined")

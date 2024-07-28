@@ -195,7 +195,7 @@ func (r *SourceDynamoDBResource) Create(ctx context.Context, req res.CreateReque
 		return
 	}
 
-	config := r.configMapFromModel(plan)
+	config := r.model2ConfigMap(plan)
 
 	source, err := r.client.CreateSource(ctx, api.Source{
 		Name:      plan.Name.ValueString(),
@@ -214,7 +214,7 @@ func (r *SourceDynamoDBResource) Create(ctx context.Context, req res.CreateReque
 	plan.ID = types.StringValue(source.ID)
 	plan.Name = types.StringValue(source.Name)
 	plan.Connector = types.StringValue(source.Connector)
-	r.modelFromConfigMap(source.Config, &plan)
+	r.configMap2Model(source.Config, &plan)
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -252,7 +252,7 @@ func (r *SourceDynamoDBResource) Read(ctx context.Context, req res.ReadRequest, 
 
 	state.Name = types.StringValue(source.Name)
 	state.Connector = types.StringValue(source.Connector)
-	r.modelFromConfigMap(source.Config, &state)
+	r.configMap2Model(source.Config, &state)
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -270,7 +270,7 @@ func (r *SourceDynamoDBResource) Update(ctx context.Context, req res.UpdateReque
 	}
 
 	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
-	config := r.configMapFromModel(plan)
+	config := r.model2ConfigMap(plan)
 
 	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{
 		Name:      plan.Name.ValueString(),
@@ -289,7 +289,7 @@ func (r *SourceDynamoDBResource) Update(ctx context.Context, req res.UpdateReque
 	// Update resource state with updated items
 	plan.Name = types.StringValue(source.Name)
 	plan.Connector = types.StringValue(source.Connector)
-	r.modelFromConfigMap(source.Config, &plan)
+	r.configMap2Model(source.Config, &plan)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -322,7 +322,7 @@ func (r *SourceDynamoDBResource) ImportState(ctx context.Context, req res.Import
 }
 
 // Helpers
-func (r *SourceDynamoDBResource) configMapFromModel(model SourceDynamoDBResourceModel) map[string]any {
+func (r *SourceDynamoDBResource) model2ConfigMap(model SourceDynamoDBResourceModel) map[string]any {
 	return map[string]any{
 		"aws.region":                       model.AWSRegion.ValueString(),
 		"aws.access.key.id":                model.AWSAccessKeyID.ValueString(),
@@ -340,7 +340,7 @@ func (r *SourceDynamoDBResource) configMapFromModel(model SourceDynamoDBResource
 	}
 }
 
-func (r *SourceDynamoDBResource) modelFromConfigMap(cfg map[string]any, model *SourceDynamoDBResourceModel) {
+func (r *SourceDynamoDBResource) configMap2Model(cfg map[string]any, model *SourceDynamoDBResourceModel) {
 	// Copy the config map to the model
 	model.AWSRegion = helper.GetTfCfgString(cfg, "aws.region")
 	model.AWSAccessKeyID = helper.GetTfCfgString(cfg, "aws.access.key.id")

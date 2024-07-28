@@ -209,7 +209,7 @@ func (r *PipelineResource) Create(ctx context.Context, req res.CreateRequest, re
 		)
 		return
 	}
-	
+
 	// For the purposes of this example code, hardcoding a response value to
 	// save into the Terraform state.
 	r.api2Model(ctx, *pipeline, &plan)

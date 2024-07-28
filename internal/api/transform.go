@@ -6,9 +6,9 @@ import (
 )
 
 type GetTransformResponse struct {
-	Total    int      `json:"total"`
-	PageSize int      `json:"page_size"`
-	Page     int      `json:"page"`
+	Total    int         `json:"total"`
+	PageSize int         `json:"page_size"`
+	Page     int         `json:"page"`
 	Result   []Transform `json:"result"`
 }
 

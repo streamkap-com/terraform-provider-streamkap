@@ -35,3 +35,5 @@ terraform.rc
 
 .idea
 .DS_Store
+
+.terraform.lock.hcl

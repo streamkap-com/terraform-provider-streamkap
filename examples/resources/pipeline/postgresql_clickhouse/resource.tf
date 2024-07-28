@@ -4,7 +4,7 @@ terraform {
       source = "streamkap-com/streamkap"
     }
   }
-  required_version = ">= 1.0"
+  required_version = ">= 1.1.3"
 }
 
 provider "streamkap" {}
@@ -39,40 +39,32 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   ssh_enabled                               = false
 }
 
-variable "destination_snowflake_url_name" {
+variable "destination_clickhouse_hostname" {
   type        = string
-  description = "The URL name of the Snowflake database"
+  description = "The hostname of the Clickhouse server"
 }
 
-variable "destination_snowflake_private_key" {
+variable "destination_clickhouse_connection_username" {
+  type        = string
+  description = "The username to connect to the Clickhouse server"
+}
+
+variable "destination_clickhouse_connection_password" {
   type        = string
   sensitive   = true
-  description = "The private key of the Snowflake database"
+  description = "The password to connect to the Clickhouse server"
 }
 
-variable "destination_snowflake_key_passphrase" {
-  type        = string
-  sensitive   = true
-  description = "The passphrase of the private key of the Snowflake database"
-}
-
-resource "streamkap_destination_snowflake" "example-destination-snowflake" {
-  name                             = "example-destination-snowflake"
-  snowflake_url_name               = var.destination_snowflake_url_name
-  snowflake_user_name              = "STREAMKAP_USER_POSTGRESQL"
-  snowflake_private_key            = var.destination_snowflake_private_key
-  snowflake_private_key_passphrase = var.destination_snowflake_key_passphrase
-  snowflake_database_name          = "STREAMKAP_POSTGRESQL"
-  snowflake_schema_name            = "STREAMKAP"
-  snowflake_role_name              = "STREAMKAP_ROLE"
-}
-
-data "streamkap_transform" "example-transform" {
-  id = "63975020676fa8f369d55001"
-}
-
-data "streamkap_transform" "another-example-transform" {
-  id = "63975020676fa8f369d55005"
+resource "streamkap_destination_clickhouse" "example-destination-clickhouse" {
+  name                = "example-destination-clickhouse"
+  ingestion_mode      = "append"
+  tasks_max           = 5
+  hostname            = var.destination_clickhouse_hostname
+  connection_username = var.destination_clickhouse_connection_username
+  connection_password = var.destination_clickhouse_connection_password
+  port                = 8443
+  database            = "demo"
+  ssl                 = true
 }
 
 resource "streamkap_pipeline" "example-pipeline" {
@@ -90,26 +82,10 @@ resource "streamkap_pipeline" "example-pipeline" {
     ]
   }
   destination = {
-    id        = streamkap_destination_snowflake.example-destination-snowflake.id
-    name      = streamkap_destination_snowflake.example-destination-snowflake.name
-    connector = streamkap_destination_snowflake.example-destination-snowflake.connector
+    id        = streamkap_destination_clickhouse.example-destination-clickhouse.id
+    name      = streamkap_destination_clickhouse.example-destination-clickhouse.name
+    connector = streamkap_destination_clickhouse.example-destination-clickhouse.connector
   }
-  transforms = [
-    {
-      id = data.streamkap_transform.example-transform.id
-      topics = [
-        "public.itst_scen20240530123456",
-        "random_topic",
-      ]
-    },
-    {
-      id = data.streamkap_transform.another-example-transform.id
-      topics = [
-        "public.itst_scen20240530654321",
-        "public.itst_scen20240528121212",
-      ]
-    }
-  ]
 }
 
 output "example-pipeline" {

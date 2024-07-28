@@ -84,7 +84,7 @@ func (s *streamkapAPI) doRequest(req *http.Request, result interface{}) error {
 		tflog.Trace(ctx, fmt.Sprintf("got error response: %s\n", errResp))
 		return fmt.Errorf("unexpected status code: %d - %s", resp.StatusCode, string(errResp))
 	}
-	
+
 	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
 		return err
 	}
