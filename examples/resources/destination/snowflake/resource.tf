@@ -27,7 +27,7 @@ variable "destination_snowflake_key_passphrase" {
 }
 
 resource "streamkap_destination_snowflake" "example-destination-snowflake" {
-  name                             = "test-destination-snowflake"
+  name                             = "example-destination-snowflake"
   snowflake_url_name               = var.destination_snowflake_url_name
   snowflake_user_name              = "STREAMKAP_USER_POSTGRESQL"
   snowflake_private_key            = var.destination_snowflake_private_key

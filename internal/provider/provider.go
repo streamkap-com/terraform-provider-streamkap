@@ -207,6 +207,7 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		source.NewSourcePostgreSQLResource,
 		source.NewSourceDynamoDBResource,
 		destination.NewDestinationSnowflakeResource,
+		destination.NewDestinationClickHouseResource,
 		pipeline.NewPipelineResource,
 	}
 }
