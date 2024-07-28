@@ -3,6 +3,7 @@ package destination
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -48,7 +49,7 @@ type DestinationClickHouseResourceModel struct {
 	Hostname           types.String `tfsdk:"hostname"`
 	ConnectionUsername types.String `tfsdk:"connection_username"`
 	ConnectionPassword types.String `tfsdk:"connection_password"`
-	Port               types.String `tfsdk:"port"`
+	Port               types.Int64  `tfsdk:"port"`
 	Database           types.String `tfsdk:"database"`
 	SSL                types.Bool   `tfsdk:"ssl"`
 }
@@ -117,8 +118,10 @@ func (r *DestinationClickHouseResource) Schema(ctx context.Context, req res.Sche
 				Description:         "Password to access the ClickHouse",
 				MarkdownDescription: "Password to access the ClickHouse",
 			},
-			"port": schema.StringAttribute{
-				Required:            true,
+			"port": schema.Int64Attribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             int64default.StaticInt64(8443),
 				Description:         "ClickHouse Port. For example, 8443",
 				MarkdownDescription: "ClickHouse Port. For example, 8443",
 			},
@@ -303,9 +306,10 @@ func (r *DestinationClickHouseResource) model2ConfigMap(model DestinationClickHo
 		"hostname":            model.Hostname.ValueString(),
 		"connection.username": model.ConnectionUsername.ValueString(),
 		"connection.password": model.ConnectionPassword.ValueString(),
-		"port":                model.Port.ValueString(),
-		"database":            model.Database.ValueStringPointer(),
-		"ssl":                 model.SSL.ValueBool(),
+		// TODO: Until API change port to int, we need to convert it to string
+		"port":     strconv.Itoa(int(model.Port.ValueInt64())),
+		"database": model.Database.ValueStringPointer(),
+		"ssl":      model.SSL.ValueBool(),
 	}
 }
 
@@ -316,7 +320,8 @@ func (r *DestinationClickHouseResource) configMap2Model(cfg map[string]any, mode
 	model.Hostname = helper.GetTfCfgString(cfg, "hostname")
 	model.ConnectionUsername = helper.GetTfCfgString(cfg, "connection.username")
 	model.ConnectionPassword = helper.GetTfCfgString(cfg, "connection.password")
-	model.Port = helper.GetTfCfgString(cfg, "port")
+	// TODO: Until API change port to int, we need to convert it to string
+	model.Port = helper.GetTfCfgInt64(cfg, "port")
 	model.Database = helper.GetTfCfgString(cfg, "database")
 	model.SSL = helper.GetTfCfgBool(cfg, "ssl")
 }

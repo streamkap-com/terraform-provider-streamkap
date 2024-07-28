@@ -34,8 +34,8 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   column_include_list                       = "public[.]users[.](user_id|email)"
   heartbeat_enabled                         = false
   include_source_db_name_in_table_name      = false
-  slot_name                                 = "streamkap_pgoutput_slot"
-  publication_name                          = "streamkap_pub"
+  slot_name                                 = "terraform_pgoutput_slot"
+  publication_name                          = "terraform_pub"
   binary_handling_mode                      = "bytes"
   ssh_enabled                               = false
 }
