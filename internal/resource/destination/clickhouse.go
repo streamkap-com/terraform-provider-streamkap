@@ -52,6 +52,7 @@ type DestinationClickHouseResourceModel struct {
 	Port               types.Int64  `tfsdk:"port"`
 	Database           types.String `tfsdk:"database"`
 	SSL                types.Bool   `tfsdk:"ssl"`
+	TopicsConfigMap	   types.String `tfsdk:"topics.config.map"`
 }
 
 func (r *DestinationClickHouseResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -137,6 +138,11 @@ func (r *DestinationClickHouseResource) Schema(ctx context.Context, req res.Sche
 				Description:         "Enable TLS for network connections",
 				MarkdownDescription: "Enable TLS for network connections",
 			},
+			"topics.config.map": schema.StringAttribute{
+				Optional:			 true,
+				Description:		 "Per topic configuration in JSON format",
+				MarkdownDescription: "Per topic configuration in JSON format",
+			}
 		},
 	}
 }
@@ -310,6 +316,7 @@ func (r *DestinationClickHouseResource) model2ConfigMap(model DestinationClickHo
 		"port":     strconv.Itoa(int(model.Port.ValueInt64())),
 		"database": model.Database.ValueStringPointer(),
 		"ssl":      model.SSL.ValueBool(),
+		"topics.config.map": model.TopicsConfigMap.ValueString()
 	}
 }
 
@@ -324,4 +331,5 @@ func (r *DestinationClickHouseResource) configMap2Model(cfg map[string]any, mode
 	model.Port = helper.GetTfCfgInt64(cfg, "port")
 	model.Database = helper.GetTfCfgString(cfg, "database")
 	model.SSL = helper.GetTfCfgBool(cfg, "ssl")
+	model.TopicsConfigMap = helper.getTfCfgString(cfg, "topics.config.map")
 }
