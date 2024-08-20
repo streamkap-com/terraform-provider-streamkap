@@ -43,6 +43,11 @@ resource "streamkap_destination_clickhouse" "test" {
 	port                = 8443
 	database            = "demo"
 	ssl                 = true
+	topics_config_map = {
+		"public.users" = {
+			delete_sql_execute = "SELECT 1;"
+		}
+	}
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -92,6 +97,11 @@ resource "streamkap_destination_clickhouse" "test" {
 	port                = 8443
 	database            = "demo"
 	ssl                 = true
+	topics_config_map = {
+		"public.users" = {
+			delete_sql_execute = "SELECT 1;"
+		}
+	}
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(

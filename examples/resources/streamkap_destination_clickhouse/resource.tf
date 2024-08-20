@@ -34,6 +34,11 @@ resource "streamkap_destination_clickhouse" "example-destination-clickhouse" {
   port                = 8443
   database            = "demo"
   ssl                 = true
+  topics_config_map = {
+    "public.users" = {
+      delete_sql_execute = "SELECT 1;"
+    }
+  }
 }
 
 output "example-destination-clickhouse" {
