@@ -43,6 +43,11 @@ resource "streamkap_destination_clickhouse" "test" {
 	port                = 8443
 	database            = "demo"
 	ssl                 = true
+	topics_config_map = {
+		"public.users" = {
+			delete_sql_execute = "SELECT 1;"
+		}
+	}
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -56,6 +61,7 @@ resource "streamkap_destination_clickhouse" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "port", "8443"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "database", "demo"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ssl", "true"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "topics_config_map.public.users.delete_sql_execute", "SELECT 1;"),
 				),
 			},
 			// ImportState testing
@@ -105,6 +111,7 @@ resource "streamkap_destination_clickhouse" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "port", "8443"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "database", "demo"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ssl", "true"),
+					resource.TestCheckNoResourceAttr("streamkap_destination_clickhouse.test", "topics_config_map"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
