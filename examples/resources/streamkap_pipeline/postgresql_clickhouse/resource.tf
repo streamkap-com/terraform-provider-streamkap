@@ -68,7 +68,10 @@ resource "streamkap_destination_clickhouse" "example-destination-clickhouse" {
   topics_config_map = {
     "public.users" = {
       delete_sql_execute = "SELECT 1;"
-    }
+    },
+    "public.itst_scen20240528100603" = {
+      delete_sql_execute = "SELECT 1;"
+    },
   }
 }
 

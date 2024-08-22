@@ -148,7 +148,7 @@ func (r *DestinationClickHouseResource) Schema(ctx context.Context, req res.Sche
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"delete_sql_execute": schema.StringAttribute{
-							Required: true,
+							Optional: true,
 						},
 					},
 				},
@@ -188,7 +188,7 @@ func (r *DestinationClickHouseResource) Create(ctx context.Context, req res.Crea
 		return
 	}
 
-	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
+	tflog.Debug(ctx, "Pre creation ===> plan: "+fmt.Sprintf("%+v", plan))
 	config, err := r.model2ConfigMap(plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -198,6 +198,7 @@ func (r *DestinationClickHouseResource) Create(ctx context.Context, req res.Crea
 		return
 	}
 
+	tflog.Debug(ctx, "Pre creation ===> config: "+fmt.Sprintf("%+v", config))
 	destination, err := r.client.CreateDestination(ctx, api.Destination{
 		Name:      plan.Name.ValueString(),
 		Connector: plan.Connector.ValueString(),
@@ -210,11 +211,13 @@ func (r *DestinationClickHouseResource) Create(ctx context.Context, req res.Crea
 		)
 		return
 	}
+	tflog.Debug(ctx, "Post creation ===> config: "+fmt.Sprintf("%+v", destination.Config))
 
 	plan.ID = types.StringValue(destination.ID)
 	plan.Name = types.StringValue(destination.Name)
 	plan.Connector = types.StringValue(destination.Connector)
 	r.configMap2Model(destination.Config, &plan)
+	tflog.Debug(ctx, "Post creation ===> plan: "+fmt.Sprintf("%+v", plan))
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -253,6 +256,7 @@ func (r *DestinationClickHouseResource) Read(ctx context.Context, req res.ReadRe
 	state.Name = types.StringValue(destination.Name)
 	state.Connector = types.StringValue(destination.Connector)
 	r.configMap2Model(destination.Config, &state)
+	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", state))
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -270,7 +274,6 @@ func (r *DestinationClickHouseResource) Update(ctx context.Context, req res.Upda
 		return
 	}
 
-	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
 	config, err := r.model2ConfigMap(plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -330,15 +333,24 @@ func (r *DestinationClickHouseResource) ImportState(ctx context.Context, req res
 
 // Helpers
 func (r *DestinationClickHouseResource) model2ConfigMap(model DestinationClickHouseResourceModel) (map[string]any, error) {
-	topicsConfigMapJSON := make(map[string]map[string]string)
-	for topic, topicConfig := range model.TopicsConfigMap {
-		topicsConfigMapJSON[topic] = map[string]string{
-			"delete.sql.execute": topicConfig.DeleteSQLExecute.ValueString(),
+	var topicsConfigMapStr string
+	topicsConfigMapJSON := make(map[string]string)
+	if len(model.TopicsConfigMap) != 0 {
+		for topic, topicConfig := range model.TopicsConfigMap {
+			topicConfigMap, err := json.Marshal(map[string]string{
+				"delete.sql.execute": topicConfig.DeleteSQLExecute.ValueString(),
+			})
+			if err != nil {
+				return nil, err
+			}
+			topicsConfigMapJSON[topic] = string(topicConfigMap)
 		}
-	}
-	TopicsConfigMapStr, err := json.Marshal(topicsConfigMapJSON)
-	if err != nil {
-		return nil, err
+
+		topicsConfigMapBytes, err := json.Marshal(topicsConfigMapJSON)
+		topicsConfigMapStr = string(topicsConfigMapBytes)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return map[string]any{
@@ -351,7 +363,7 @@ func (r *DestinationClickHouseResource) model2ConfigMap(model DestinationClickHo
 		"port":              strconv.Itoa(int(model.Port.ValueInt64())),
 		"database":          model.Database.ValueStringPointer(),
 		"ssl":               model.SSL.ValueBool(),
-		"topics.config.map": TopicsConfigMapStr,
+		"topics.config.map": topicsConfigMapStr,
 	}, nil
 }
 
@@ -368,20 +380,28 @@ func (r *DestinationClickHouseResource) configMap2Model(cfg map[string]any, mode
 	model.SSL = helper.GetTfCfgBool(cfg, "ssl")
 
 	// Parse topics config map
-
-	strTopicsConfigMap := helper.GetTfCfgString(cfg, "topics.config.map")
+	topicsConfigMapStr := helper.GetTfCfgString(cfg, "topics.config.map").ValueString()
 	topicsConfigMap := make(map[string]clickHouseTopicsConfigMapItemModel)
-	if strTopicsConfigMap.ValueString() != "" {
-		var topicsConfigMapJSON map[string]map[string]string
-		err = json.Unmarshal([]byte(strTopicsConfigMap.ValueString()), &topicsConfigMapJSON)
+
+	topicsConfigMapPartialJSON := make(map[string]string)
+	err = json.Unmarshal([]byte(topicsConfigMapStr), &topicsConfigMapPartialJSON)
+	if err != nil {
+		return
+	}
+
+	topicsConfigMapJSON := make(map[string]map[string]string)
+	for topic, topicConfigStr := range topicsConfigMapPartialJSON {
+		topicConfig := make(map[string]string)
+		err = json.Unmarshal([]byte(topicConfigStr), &topicConfig)
 		if err != nil {
 			return
 		}
+		topicsConfigMapJSON[topic] = topicConfig
+	}
 
-		for topic, topicConfig := range topicsConfigMapJSON {
-			topicsConfigMap[topic] = clickHouseTopicsConfigMapItemModel{
-				DeleteSQLExecute: types.StringValue(topicConfig["delete.sql.execute"]),
-			}
+	for topic, topicConfig := range topicsConfigMapJSON {
+		topicsConfigMap[topic] = clickHouseTopicsConfigMapItemModel{
+			DeleteSQLExecute: types.StringValue(topicConfig["delete.sql.execute"]),
 		}
 	}
 	model.TopicsConfigMap = topicsConfigMap
