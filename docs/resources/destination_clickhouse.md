@@ -49,6 +49,11 @@ resource "streamkap_destination_clickhouse" "example-destination-clickhouse" {
   port                = 8443
   database            = "demo"
   ssl                 = true
+  topics_config_map = {
+    "public.users" = {
+      delete_sql_execute = "SELECT 1;"
+    }
+  }
 }
 
 output "example-destination-clickhouse" {
@@ -73,11 +78,19 @@ output "example-destination-clickhouse" {
 - `port` (Number) ClickHouse Port. For example, 8443
 - `ssl` (Boolean) Enable TLS for network connections
 - `tasks_max` (Number) The maximum number of active task
+- `topics_config_map` (Attributes Map) Per topic configuration in JSON format (see [below for nested schema](#nestedatt--topics_config_map))
 
 ### Read-Only
 
 - `connector` (String)
 - `id` (String) Destination ClickHouse identifier
+
+<a id="nestedatt--topics_config_map"></a>
+### Nested Schema for `topics_config_map`
+
+Optional:
+
+- `delete_sql_execute` (String)
 
 ## Import
 
