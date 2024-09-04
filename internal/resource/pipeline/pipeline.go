@@ -374,7 +374,7 @@ func (r *PipelineResource) strListToTfStrList(strList []string) (tfStrList []att
 	return
 }
 
-func (r *PipelineResource) api2ModelTransforms(ctx context.Context, apiTransforms []*api.PipelineTransform) (modelTransforms []*PipelineTransformModel, err error) {
+func (r *PipelineResource) api2ModelTransforms(_ context.Context, apiTransforms []*api.PipelineTransform) (modelTransforms []*PipelineTransformModel, err error) {
 	// Loop through all api.Transforms and fetch unwinded transform data
 	if len(apiTransforms) == 0 {
 		return []*PipelineTransformModel{}, nil

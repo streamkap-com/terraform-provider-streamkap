@@ -44,12 +44,23 @@ variable "destination_snowflake_key_passphrase" {
 resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   name                             = "example-destination-snowflake"
   snowflake_url_name               = var.destination_snowflake_url_name
-  snowflake_user_name              = "STREAMKAP_USER_POSTGRESQL"
+  snowflake_user_name              = "STREAMKAP_USER_JUNIT"
   snowflake_private_key            = var.destination_snowflake_private_key
   snowflake_private_key_passphrase = var.destination_snowflake_key_passphrase
-  snowflake_database_name          = "STREAMKAP_POSTGRESQL"
-  snowflake_schema_name            = "STREAMKAP"
-  snowflake_role_name              = "STREAMKAP_ROLE"
+  sfwarehouse                      = "STREAMKAP_WH"
+  snowflake_database_name          = "JUNIT"
+  snowflake_schema_name            = "JUNIT"
+  snowflake_role_name              = "STREAMKAP_ROLE_JUNIT"
+  ingestion_mode                   = "append"
+  hard_delete                      = true
+  use_hybrid_tables                = false
+  apply_dynamic_table_script       = false
+  dynamic_table_target_lag         = 15
+  cleanup_task_schedule            = 60
+  dedupe_table_mapping = {
+    users                   = "JUNIT.USERS",
+    itst_scen20240528103635 = "ITST_SCEN20240528103635"
+  }
 }
 
 output "example-destination-snowflake" {
@@ -72,7 +83,15 @@ output "example-destination-snowflake" {
 
 ### Optional
 
+- `apply_dynamic_table_script` (Boolean) Specifies whether the connector should create Dyanmic Tables & Cleanup Task (applies to `append` only)
+- `cleanup_task_schedule` (Number) Schedule for cleanup task in minutes (applies to `append` only)
+- `dedupe_table_mapping` (Map of String) Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.
+- `dynamic_table_target_lag` (Number) Target lag for dynamic tables in minutes (applies to `append` only)
+- `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)
+- `ingestion_mode` (String) `upsert` or `append` modes are available
+- `sfwarehouse` (String) The name of the Snowflake warehouse.
 - `snowflake_role_name` (String) The name of an existing role with necessary privileges (for Streamkap) assigned to the Username.
+- `use_hybrid_tables` (Boolean) Specifies whether the connector should create Hybrid Tables (applies to `upsert` only)
 
 ### Read-Only
 

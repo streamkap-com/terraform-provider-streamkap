@@ -62,9 +62,20 @@ resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   snowflake_user_name              = "STREAMKAP_USER_JUNIT"
   snowflake_private_key            = var.destination_snowflake_private_key
   snowflake_private_key_passphrase = var.destination_snowflake_key_passphrase
+  sfwarehouse                      = "STREAMKAP_WH"
   snowflake_database_name          = "JUNIT"
   snowflake_schema_name            = "JUNIT"
   snowflake_role_name              = "STREAMKAP_ROLE_JUNIT"
+  ingestion_mode                   = "append"
+  hard_delete                      = true
+  use_hybrid_tables                = false
+  apply_dynamic_table_script       = false
+  dynamic_table_target_lag         = 15
+  cleanup_task_schedule            = 60
+  dedupe_table_mapping = {
+    users                   = "JUNIT.USERS",
+    itst_scen20240528103635 = "ITST_SCEN20240528103635"
+  }
 }
 
 data "streamkap_transform" "example-transform" {

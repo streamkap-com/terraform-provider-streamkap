@@ -188,7 +188,7 @@ func (r *DestinationClickHouseResource) Create(ctx context.Context, req res.Crea
 		return
 	}
 
-	tflog.Debug(ctx, "Pre creation ===> plan: "+fmt.Sprintf("%+v", plan))
+	tflog.Debug(ctx, "Pre CREATE ===> plan: "+fmt.Sprintf("%+v", plan))
 	config, err := r.model2ConfigMap(plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -198,7 +198,7 @@ func (r *DestinationClickHouseResource) Create(ctx context.Context, req res.Crea
 		return
 	}
 
-	tflog.Debug(ctx, "Pre creation ===> config: "+fmt.Sprintf("%+v", config))
+	tflog.Debug(ctx, "Pre CREATE ===> config: "+fmt.Sprintf("%+v", config))
 	destination, err := r.client.CreateDestination(ctx, api.Destination{
 		Name:      plan.Name.ValueString(),
 		Connector: plan.Connector.ValueString(),
@@ -211,13 +211,13 @@ func (r *DestinationClickHouseResource) Create(ctx context.Context, req res.Crea
 		)
 		return
 	}
-	tflog.Debug(ctx, "Post creation ===> config: "+fmt.Sprintf("%+v", destination.Config))
+	tflog.Debug(ctx, "Post CREATE ===> config: "+fmt.Sprintf("%+v", destination.Config))
 
 	plan.ID = types.StringValue(destination.ID)
 	plan.Name = types.StringValue(destination.Name)
 	plan.Connector = types.StringValue(destination.Connector)
 	r.configMap2Model(destination.Config, &plan)
-	tflog.Debug(ctx, "Post creation ===> plan: "+fmt.Sprintf("%+v", plan))
+	tflog.Debug(ctx, "Post CREATE ===> plan: "+fmt.Sprintf("%+v", plan))
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -333,6 +333,20 @@ func (r *DestinationClickHouseResource) ImportState(ctx context.Context, req res
 
 // Helpers
 func (r *DestinationClickHouseResource) model2ConfigMap(model DestinationClickHouseResourceModel) (map[string]any, error) {
+	// Convert topics config map to JSON string.
+	// Example:
+	// model.TopicsConfigMap = map[string]clickHouseTopicsConfigMapItemModel{
+	// 	"topic1": {
+	// 		DeleteSQLExecute: types.StringValue("DELETE FROM table WHERE id = ?"),
+	// 	},
+	// 	"topic2": {
+	// 		DeleteSQLExecute: types.StringValue("DELETE FROM table WHERE id = ?"),
+	// 	},
+	// }
+	// ---> topicsConfigMapJSON = {
+	// 	"topic1": "{\"delete.sql.execute\":\"DELETE FROM table WHERE id = ?\"}",
+	// 	"topic2": "{\"delete.sql.execute\":\"DELETE FROM table WHERE id = ?\"}",
+	// }
 	var topicsConfigMapStr string
 	topicsConfigMapJSON := make(map[string]string)
 	if len(model.TopicsConfigMap) != 0 {
@@ -380,6 +394,19 @@ func (r *DestinationClickHouseResource) configMap2Model(cfg map[string]any, mode
 	model.SSL = helper.GetTfCfgBool(cfg, "ssl")
 
 	// Parse topics config map
+	// Example:
+	// topicsConfigMapStr = {
+	// 	"topic1": "{\"delete.sql.execute\":\"DELETE FROM table WHERE id = ?\"}",
+	// 	"topic2": "{\"delete.sql.execute\":\"DELETE FROM table WHERE id = ?\"}",
+	// }
+	// ---> model.TopicsConfigMap = map[string]clickHouseTopicsConfigMapItemModel{
+	// 	"topic1": {
+	// 		DeleteSQLExecute: types.StringValue("DELETE FROM table WHERE id = ?"),
+	// 	},
+	// 	"topic2": {
+	// 		DeleteSQLExecute: types.StringValue("DELETE FROM table WHERE id = ?"),
+	// 	},
+	// }
 	topicsConfigMapStr := helper.GetTfCfgString(cfg, "topics.config.map").ValueString()
 	topicsConfigMap := make(map[string]clickHouseTopicsConfigMapItemModel)
 
