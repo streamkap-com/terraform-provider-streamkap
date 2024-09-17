@@ -107,7 +107,7 @@ func (r *DestinationSnowflakeResource) Schema(ctx context.Context, req res.Schem
 				MarkdownDescription: "The private key to authenticate the user. Include only the key, not the header or footer. If the key is split across multiple lines, remove the line breaks.",
 			},
 			"snowflake_private_key_passphrase": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Sensitive:           true,
 				Description:         "If the value is not empty, this phrase is used to try to decrypt the private key.",
 				MarkdownDescription: "If the value is not empty, this phrase is used to try to decrypt the private key.",
@@ -382,7 +382,7 @@ func (r *DestinationSnowflakeResource) model2ConfigMap(_ context.Context, model 
 		"snowflake.url.name":               model.SnowflakeUrlName.ValueString(),
 		"snowflake.user.name":              model.SnowflakeUserName.ValueString(),
 		"snowflake.private.key":            model.SnowflakePrivateKey.ValueString(),
-		"snowflake.private.key.passphrase": model.SnowflakePrivateKeyPassphrase.ValueString(),
+		"snowflake.private.key.passphrase": model.SnowflakePrivateKeyPassphrase.ValueStringPointer(),
 		"sfwarehouse":                      model.Sfwarehouse.ValueString(),
 		"snowflake.database.name":          model.SnowflakeDatabaseName.ValueString(),
 		"snowflake.schema.name":            model.SnowflakeSchemaName.ValueString(),

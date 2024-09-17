@@ -76,7 +76,6 @@ output "example-destination-snowflake" {
 - `name` (String) Destination name
 - `snowflake_database_name` (String) The name of the database that contains the table to insert rows into.
 - `snowflake_private_key` (String, Sensitive) The private key to authenticate the user. Include only the key, not the header or footer. If the key is split across multiple lines, remove the line breaks.
-- `snowflake_private_key_passphrase` (String, Sensitive) If the value is not empty, this phrase is used to try to decrypt the private key.
 - `snowflake_schema_name` (String) The name of the schema that contains the table to insert rows into.
 - `snowflake_url_name` (String) The URL for accessing your Snowflake account. This URL must include your account identifier. Note that the protocol (https://) and port number are optional.
 - `snowflake_user_name` (String) User login name for the Snowflake account.
@@ -90,6 +89,7 @@ output "example-destination-snowflake" {
 - `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)
 - `ingestion_mode` (String) `upsert` or `append` modes are available
 - `sfwarehouse` (String) The name of the Snowflake warehouse.
+- `snowflake_private_key_passphrase` (String, Sensitive) If the value is not empty, this phrase is used to try to decrypt the private key.
 - `snowflake_role_name` (String) The name of an existing role with necessary privileges (for Streamkap) assigned to the Username.
 - `use_hybrid_tables` (Boolean) Specifies whether the connector should create Hybrid Tables (applies to `upsert` only)
 
