@@ -56,9 +56,7 @@ func (s *streamkapAPI) SetToken(token *Token) {
 	s.token = token
 }
 
-func (s *streamkapAPI) doRequest(req *http.Request, result interface{}) error {
-	ctx := context.Background()
-	tflog.Debug(ctx, fmt.Sprintf("doRequest: %s %s\n", req.Method, req.URL.String()))
+func (s *streamkapAPI) doRequest(ctx context.Context, req *http.Request, result interface{}) error {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
@@ -74,7 +72,6 @@ func (s *streamkapAPI) doRequest(req *http.Request, result interface{}) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		ctx := context.Background()
 		tflog.Trace(ctx, fmt.Sprintf("got status code: %d\n", resp.StatusCode))
 		var errResp []byte
 		_, err = resp.Body.Read(errResp)
