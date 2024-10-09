@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 type Pipeline struct {
@@ -49,12 +52,21 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload Pipeline) 
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/api/pipelines?secret_returned=true", bytes.NewBuffer(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/pipelines?secret_returned=true", bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"CreatePipeline request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n"+
+			"\tBody: %s",
+		req.Method,
+		req.URL.String(),
+		payload,
+	))
 	var resp Pipeline
-	err = s.doRequest(req, &resp)
+	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -63,12 +75,19 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload Pipeline) 
 }
 
 func (s *streamkapAPI) GetPipeline(ctx context.Context, pipelineID string) (*Pipeline, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/pipelines?secret_returned=true&id="+pipelineID, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/pipelines/"+pipelineID+"?secret_returned=true"+pipelineID, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"GetPipeline request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n",
+		req.Method,
+		req.URL.String(),
+	))
 	var resp GetPipelineResponse
-	err = s.doRequest(req, &resp)
+	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -81,12 +100,19 @@ func (s *streamkapAPI) GetPipeline(ctx context.Context, pipelineID string) (*Pip
 }
 
 func (s *streamkapAPI) DeletePipeline(ctx context.Context, pipelineID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/api/pipelines?secret_returned=true&id="+pipelineID, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/pipelines/"+pipelineID+"?secret_returned=true"+pipelineID, http.NoBody)
 	if err != nil {
 		return err
 	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"DeletePipeline request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n",
+		req.Method,
+		req.URL.String(),
+	))
 	var resp Pipeline
-	err = s.doRequest(req, &resp)
+	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
 		return err
 	}
@@ -100,12 +126,21 @@ func (s *streamkapAPI) UpdatePipeline(ctx context.Context, pipelineID string, re
 		return nil, err
 	}
 	req, err := http.NewRequestWithContext(
-		ctx, http.MethodPut, s.cfg.BaseURL+"/api/pipelines?secret_returned=true&id="+pipelineID, bytes.NewBuffer(payload))
+		ctx, http.MethodPut, s.cfg.BaseURL+"/pipelines/"+pipelineID+"?secret_returned=true"+pipelineID, bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"UpdatePipeline request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n"+
+			"\tBody: %s",
+		req.Method,
+		req.URL.String(),
+		payload,
+	))
 	var resp Pipeline
-	err = s.doRequest(req, &resp)
+	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}

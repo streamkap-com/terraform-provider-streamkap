@@ -30,13 +30,13 @@ func (s *streamkapAPI) GetAccessToken(clientID, secret string) (*Token, error) {
 	}
 	ctx := context.Background()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/api/auth/access-token", bytes.NewBuffer(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/auth/access-token", bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
 
 	var result Token
-	err = s.doRequest(req, &result)
+	err = s.doRequest(ctx, req, &result)
 	if err != nil {
 		return nil, err
 	}
