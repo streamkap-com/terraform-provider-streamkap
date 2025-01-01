@@ -13,9 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	// "github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -42,6 +42,7 @@ type PipelineResourceModel struct {
 	Source            *PipelineSourceModel      `tfsdk:"source"`
 	Destination       *PipelineDestinationModel `tfsdk:"destination"`
 	Transforms        []*PipelineTransformModel `tfsdk:"transforms"`
+	Tags              []types.String            `tfsdk:"tags"`
 }
 
 type PipelineSourceModel struct {
@@ -79,6 +80,16 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 	defaultEmptyList, diags := types.ListValue(
 		transformsNestedObjectType,
 		[]attr.Value{},
+	)
+
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	defaultTagsWithDev, diags := types.ListValue(
+		types.StringType,
+		[]attr.Value{types.StringValue(constants.DEV_TAG_ID)},
 	)
 
 	resp.Diagnostics.Append(diags...)
@@ -156,6 +167,13 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 					},
 				},
 				Default: listdefault.StaticValue(defaultEmptyList),
+			},
+			"tags": schema.ListAttribute{
+				Optional:            true,
+				Description:         fmt.Sprintf("List of tag IDs for the pipeline. Default is `[\"%s\"]`, which is Streamkap system `Development` tag.", constants.DEV_TAG_ID),
+				MarkdownDescription: fmt.Sprintf("List of tag IDs for the pipeline. Default is `[\"%s\"]`, which is Streamkap system `Development` tag.", constants.DEV_TAG_ID),
+				ElementType:         types.StringType,
+				Default:             listdefault.StaticValue(defaultTagsWithDev),
 			},
 		},
 	}
