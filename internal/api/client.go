@@ -33,6 +33,9 @@ type StreamkapAPI interface {
 
 	// Transform APIs
 	GetTransform(ctx context.Context, transformID string) (*Transform, error)
+
+	// Tags APIs
+	GetTag(ctx context.Context, TagID string) (*Tag, error)
 }
 
 type Config struct {
