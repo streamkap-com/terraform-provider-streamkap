@@ -24,6 +24,14 @@ terraform {
 
 provider "streamkap" {}
 
+data "streamkap_tag" "development-tag" {
+  id = "670e5ca40afe1d3983ce0c22" # Development tag
+}
+
+data "streamkap_tag" "production-tag" {
+  id = "670e5bab0d119c0d1f8cda9d" # Production tag
+}
+
 variable "source_postgresql_hostname" {
   type        = string
   description = "The hostname of the PostgreSQL database"
@@ -125,6 +133,9 @@ resource "streamkap_pipeline" "example-pipeline" {
       ]
     }
   ]
+  tags = [
+    data.streamkap_tag.development-tag.id,
+  ]
 }
 
 output "example-pipeline" {
@@ -144,6 +155,7 @@ output "example-pipeline" {
 ### Optional
 
 - `snapshot_new_tables` (Boolean) Whether to snapshot new tables (topics) or not
+- `tags` (Set of String) List of tag IDs for the pipeline. Default is `["670e5ca40afe1d3983ce0c22"]`, which is Streamkap system `Development` tag.
 - `transforms` (Attributes List) Pipeline transforms (see [below for nested schema](#nestedatt--transforms))
 
 ### Read-Only
