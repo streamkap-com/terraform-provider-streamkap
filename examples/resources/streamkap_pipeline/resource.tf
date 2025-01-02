@@ -9,6 +9,14 @@ terraform {
 
 provider "streamkap" {}
 
+data "streamkap_tag" "development-tag" {
+  id = "670e5ca40afe1d3983ce0c22" # Development tag
+}
+
+data "streamkap_tag" "production-tag" {
+  id = "670e5bab0d119c0d1f8cda9d" # Production tag
+}
+
 variable "source_postgresql_hostname" {
   type        = string
   description = "The hostname of the PostgreSQL database"
@@ -120,6 +128,9 @@ resource "streamkap_pipeline" "example-pipeline" {
         "public.itst_scen20240528121212",
       ]
     }
+  ]
+  tags = [
+    data.streamkap_tag.development-tag.id,
   ]
 }
 

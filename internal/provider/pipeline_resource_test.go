@@ -75,13 +75,23 @@ data "streamkap_transform" "another-test-transform" {
 }
 `
 
+var pipelineTagsDef = `
+data "streamkap_tag" "development-tag" {
+  id = "670e5ca40afe1d3983ce0c22" # Development tag
+}
+
+data "streamkap_tag" "production-tag" {
+  id = "670e5bab0d119c0d1f8cda9d" # Production tag
+}
+`
+
 func TestAccPostgreSQLSnowflakePipelineResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + pipelineSrcPostgreSQLResourceDef + pipelineDestSnowflakeResourceDef + pipelineTransformsDef + `
+				Config: providerConfig + pipelineSrcPostgreSQLResourceDef + pipelineDestSnowflakeResourceDef + pipelineTransformsDef + pipelineTagsDef + `
 resource "streamkap_pipeline" "test" {
 	name                = "test-pipeline"
 	snapshot_new_tables = true
@@ -117,6 +127,9 @@ resource "streamkap_pipeline" "test" {
 			]
 		}
 	]
+	tags = [
+		data.streamkap_tag.production-tag.id,
+	]
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -132,7 +145,7 @@ resource "streamkap_pipeline" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + pipelineSrcPostgreSQLResourceDef + pipelineDestSnowflakeResourceDef + pipelineTransformsDef + `
+				Config: providerConfig + pipelineSrcPostgreSQLResourceDef + pipelineDestSnowflakeResourceDef + pipelineTransformsDef + pipelineTagsDef + `
 resource "streamkap_pipeline" "test" {
 	name                = "test-pipeline-updated"
 	snapshot_new_tables = true
@@ -157,6 +170,9 @@ resource "streamkap_pipeline" "test" {
 				"public.itst_scen20240530123456",
 			]
 		},
+	]
+	tags = [
+		data.streamkap_tag.production-tag.id,
 	]
 }
 `,
@@ -240,7 +256,7 @@ func TestAccDynamoDBClickHousePipelineResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + pipelineSrcDynamoDBResourceDef + pipelineDestClickHouseResourceDef + pipelineTransformsDef + `
+				Config: providerConfig + pipelineSrcDynamoDBResourceDef + pipelineDestClickHouseResourceDef + pipelineTransformsDef + pipelineTagsDef + `
 resource "streamkap_pipeline" "test" {
 	name                = "test-pipeline"
 	snapshot_new_tables = true
@@ -257,6 +273,9 @@ resource "streamkap_pipeline" "test" {
 		name      = streamkap_destination_clickhouse.test.name
 		connector = streamkap_destination_clickhouse.test.connector
 	}
+	tags = [
+		data.streamkap_tag.development-tag.id,
+	]
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -272,7 +291,7 @@ resource "streamkap_pipeline" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + pipelineSrcDynamoDBResourceDef + pipelineDestClickHouseResourceDef + pipelineTransformsDef + `
+				Config: providerConfig + pipelineSrcDynamoDBResourceDef + pipelineDestClickHouseResourceDef + pipelineTransformsDef + pipelineTagsDef + `
 resource "streamkap_pipeline" "test" {
 	name                = "test-pipeline-updated"
 	snapshot_new_tables = true
@@ -289,6 +308,9 @@ resource "streamkap_pipeline" "test" {
 		name      = streamkap_destination_clickhouse.test.name
 		connector = streamkap_destination_clickhouse.test.connector
 	}
+	tags = [
+		data.streamkap_tag.development-tag.id,
+	]
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(

@@ -17,6 +17,7 @@ type Pipeline struct {
 	Source            PipelineSource       `json:"source"`
 	Destination       PipelineDestination  `json:"destination"`
 	Transforms        []*PipelineTransform `json:"transforms"`
+	Tags              []string             `json:"tags"`
 }
 
 type GetPipelineResponse struct {
