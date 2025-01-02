@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 type GetSourceResponse struct {
@@ -26,12 +29,21 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/api/sources?secret_returned=true", bytes.NewBuffer(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/sources?secret_returned=true", bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"CreateSource request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n"+
+			"\tBody: %s",
+		req.Method,
+		req.URL.String(),
+		payload,
+	))
 	var resp Source
-	err = s.doRequest(req, &resp)
+	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -40,12 +52,19 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 }
 
 func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) (*Source, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/api/sources?secret_returned=true&id="+sourceID, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/sources/"+sourceID+"?secret_returned=true", http.NoBody)
 	if err != nil {
 		return nil, err
 	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"GetSource request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n",
+		req.Method,
+		req.URL.String(),
+	))
 	var resp GetSourceResponse
-	err = s.doRequest(req, &resp)
+	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -58,12 +77,19 @@ func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) (*Source,
 }
 
 func (s *streamkapAPI) DeleteSource(ctx context.Context, sourceID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/api/sources?secret_returned=true&id="+sourceID, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/sources/"+sourceID+"?secret_returned=true", http.NoBody)
 	if err != nil {
 		return err
 	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"DeleteSource request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n",
+		req.Method,
+		req.URL.String(),
+	))
 	var resp Source
-	err = s.doRequest(req, &resp)
+	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
 		return err
 	}
@@ -77,12 +103,21 @@ func (s *streamkapAPI) UpdateSource(ctx context.Context, sourceID string, reqPay
 		return nil, err
 	}
 	req, err := http.NewRequestWithContext(
-		ctx, http.MethodPut, s.cfg.BaseURL+"/api/sources?secret_returned=true&id="+sourceID, bytes.NewBuffer(payload))
+		ctx, http.MethodPut, s.cfg.BaseURL+"/sources/"+sourceID+"?secret_returned=true", bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"UpdateSource request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n"+
+			"\tBody: %s",
+		req.Method,
+		req.URL.String(),
+		payload,
+	))
 	var resp Source
-	err = s.doRequest(req, &resp)
+	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
