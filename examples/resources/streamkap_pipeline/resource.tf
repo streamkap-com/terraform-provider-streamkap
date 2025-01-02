@@ -4,10 +4,18 @@ terraform {
       source = "streamkap-com/streamkap"
     }
   }
-  required_version = ">= 1.1.3"
+  required_version = ">= 2.0.0"
 }
 
 provider "streamkap" {}
+
+data "streamkap_tag" "development-tag" {
+  id = "670e5ca40afe1d3983ce0c22" # Development tag
+}
+
+data "streamkap_tag" "production-tag" {
+  id = "670e5bab0d119c0d1f8cda9d" # Production tag
+}
 
 variable "source_postgresql_hostname" {
   type        = string
@@ -120,6 +128,9 @@ resource "streamkap_pipeline" "example-pipeline" {
         "public.itst_scen20240528121212",
       ]
     }
+  ]
+  tags = [
+    data.streamkap_tag.development-tag.id,
   ]
 }
 

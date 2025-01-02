@@ -145,7 +145,7 @@ func (p *streamkapProvider) Configure(ctx context.Context, req provider.Configur
 	// If any of the expected configurations are missing, return
 	// errors with provider-specific guidance.
 	if host == "" {
-		host = "https://api.streamkap.com"
+		host = "https://api-prod.streamkap.net"
 	}
 
 	if clientID == "" {
@@ -198,6 +198,7 @@ func (p *streamkapProvider) Configure(ctx context.Context, req provider.Configur
 func (p *streamkapProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		ds.NewTransformDataSource,
+		ds.NewTagDataSource,
 	}
 }
 

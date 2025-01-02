@@ -11,11 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	// "github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -42,6 +43,7 @@ type PipelineResourceModel struct {
 	Source            *PipelineSourceModel      `tfsdk:"source"`
 	Destination       *PipelineDestinationModel `tfsdk:"destination"`
 	Transforms        []*PipelineTransformModel `tfsdk:"transforms"`
+	Tags              types.Set                 `tfsdk:"tags"`
 }
 
 type PipelineSourceModel struct {
@@ -79,6 +81,16 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 	defaultEmptyList, diags := types.ListValue(
 		transformsNestedObjectType,
 		[]attr.Value{},
+	)
+
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	defaultTagsWithDev, diags := types.SetValue(
+		types.StringType,
+		[]attr.Value{types.StringValue(constants.DEV_TAG_ID)},
 	)
 
 	resp.Diagnostics.Append(diags...)
@@ -156,6 +168,14 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 					},
 				},
 				Default: listdefault.StaticValue(defaultEmptyList),
+			},
+			"tags": schema.SetAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         fmt.Sprintf("List of tag IDs for the pipeline. Default is `[\"%s\"]`, which is Streamkap system `Development` tag.", constants.DEV_TAG_ID),
+				MarkdownDescription: fmt.Sprintf("List of tag IDs for the pipeline. Default is `[\"%s\"]`, which is Streamkap system `Development` tag.", constants.DEV_TAG_ID),
+				ElementType:         types.StringType,
+				Default:             setdefault.StaticValue(defaultTagsWithDev),
 			},
 		},
 	}
@@ -426,8 +446,14 @@ func (r *PipelineResource) model2API(ctx context.Context, model PipelineResource
 	apiTransforms, err := r.model2APITransforms(ctx, model.Transforms)
 	if err != nil {
 		// Log error and continue to next transform
-		fmt.Printf("Error enriching model Transforms: %s\n", err)
+		fmt.Printf("error enriching model Transforms: %s\n", err)
 		return nil, err
+	}
+
+	apiTags := []string{}
+	diags = model.Tags.ElementsAs(ctx, &apiTags, false)
+	if diags.HasError() {
+		return nil, fmt.Errorf("error converting model tags: %s", diags)
 	}
 
 	res = &api.Pipeline{
@@ -445,6 +471,7 @@ func (r *PipelineResource) model2API(ctx context.Context, model PipelineResource
 			Topics:    sourceTopics,
 		},
 		Transforms: apiTransforms,
+		Tags:       apiTags,
 	}
 
 	return res, nil
@@ -479,6 +506,12 @@ func (r *PipelineResource) api2Model(ctx context.Context, apiObject api.Pipeline
 		return err
 	}
 	model.Transforms = transforms
+
+	tags, diags := types.SetValue(types.StringType, r.strListToTfStrList(apiObject.Tags))
+	if diags.HasError() {
+		return fmt.Errorf("error parsing tags set: %s", diags)
+	}
+	model.Tags = tags
 
 	return nil
 }
