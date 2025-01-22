@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -36,6 +37,10 @@ type StreamkapAPI interface {
 
 	// Tags APIs
 	GetTag(ctx context.Context, TagID string) (*Tag, error)
+}
+
+type APIErrorResponse struct {
+	Detail string `json:"detail"`
 }
 
 type Config struct {
@@ -74,18 +79,25 @@ func (s *streamkapAPI) doRequest(ctx context.Context, req *http.Request, result 
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		tflog.Trace(ctx, fmt.Sprintf("got status code: %d\n", resp.StatusCode))
-		var errResp []byte
-		_, err = resp.Body.Read(errResp)
-		if err != nil {
-			tflog.Error(ctx, fmt.Sprintf("got error: %s\n", err))
+	respBodyDecoder := json.NewDecoder(resp.Body)
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		var apiErr APIErrorResponse
+		if err := respBodyDecoder.Decode(&apiErr); err != nil {
+			tflog.Debug(ctx,
+				fmt.Sprintf("%s request to %s got status code: %d. Failed to parse API error response: %v",
+					req.Method,
+					req.URL,
+					resp.StatusCode,
+					err,
+				),
+			)
+			return err
+		} else {
+			return errors.New(apiErr.Detail)
 		}
-		tflog.Trace(ctx, fmt.Sprintf("got error response: %s\n", errResp))
-		return fmt.Errorf("unexpected status code: %d - %s", resp.StatusCode, string(errResp))
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
+	if err := respBodyDecoder.Decode(result); err != nil {
 		return err
 	}
 	return nil
