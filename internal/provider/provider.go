@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
 	// "github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
@@ -145,7 +146,7 @@ func (p *streamkapProvider) Configure(ctx context.Context, req provider.Configur
 	// If any of the expected configurations are missing, return
 	// errors with provider-specific guidance.
 	if host == "" {
-		host = "https://api-prod.streamkap.net"
+		host = "https://api.streamkap.com"
 	}
 
 	if clientID == "" {

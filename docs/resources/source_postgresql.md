@@ -16,7 +16,7 @@ Source PostgreSQL resource
 terraform {
   required_providers {
     streamkap = {
-      source = "streamkap-com/streamkap"
+      source  = "streamkap-com/streamkap"
       version = ">= 2.0.0"
     }
   }
