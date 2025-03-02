@@ -9,6 +9,10 @@ export TF_VAR_source_dynamodb_aws_region=""
 export TF_VAR_source_dynamodb_aws_access_key_id=""
 export TF_VAR_source_dynamodb_aws_secret_key=""
 
+# MySQL
+export TF_VAR_source_mysql_hostname=""
+export TF_VAR_source_mysql_password=''
+
 # Destinations-----------------------------------------------
 # Snowflake
 export TF_VAR_destination_snowflake_url_name=""
