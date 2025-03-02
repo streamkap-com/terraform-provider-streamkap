@@ -13,6 +13,9 @@ export TF_VAR_source_dynamodb_aws_secret_key=""
 export TF_VAR_source_mysql_hostname=""
 export TF_VAR_source_mysql_password=''
 
+# MongoDB
+export TF_VAR_source_mongodb_connection_string=""
+
 # Destinations-----------------------------------------------
 # Snowflake
 export TF_VAR_destination_snowflake_url_name=""
