@@ -48,8 +48,8 @@ resource "streamkap_destination_snowflake" "test" {
 	apply_dynamic_table_script       = false
 	dynamic_table_target_lag         = 60
 	cleanup_task_schedule            = 120
-	dedupe_table_mapping = {
-		users                   = "JUNIT.USERS",
+	 = {
+		users                   = dedupe_table_mapping"JUNIT.USERS",
 		itst_scen20240528103635 = "ITST_SCEN20240528103635"
 	}
 }
