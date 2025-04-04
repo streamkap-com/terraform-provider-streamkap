@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
@@ -48,12 +49,15 @@ type SourcePostgreSQLResourceModel struct {
 	DatabaseUser                            types.String `tfsdk:"database_user"`
 	DatabasePassword                        types.String `tfsdk:"database_password"`
 	DatabaseDbname                          types.String `tfsdk:"database_dbname"`
+	SnapshotReadOnly                        types.String `tfsdk:"snapshot_read_only"`
 	DatabaseSSLMode                         types.String `tfsdk:"database_sslmode"`
 	SchemaIncludeList                       types.String `tfsdk:"schema_include_list"`
 	TableIncludeList                        types.String `tfsdk:"table_include_list"`
 	SignalDataCollectionSchemaOrDatabase    types.String `tfsdk:"signal_data_collection_schema_or_database"`
 	ColumnIncludeList                       types.String `tfsdk:"column_include_list"`
+	ColumnExcludeList                       types.String `tfsdk:"column_exclude_list"`
 	HeartbeatEnabled                        types.Bool   `tfsdk:"heartbeat_enabled"`
+	HeartbeatIntervalMin                    types.Int64  `tfsdk:"heartbeat_interval_min"`
 	HeartbeatDataCollectionSchemaOrDatabase types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
 	IncludeSourceDBNameInTableName          types.Bool   `tfsdk:"include_source_db_name_in_table_name"`
 	SlotName                                types.String `tfsdk:"slot_name"`
@@ -121,6 +125,18 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 				Description:         "Database from which to stream data",
 				MarkdownDescription: "Database from which to stream data",
 			},
+			"snapshot_read_only": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Default:  stringdefault.StaticString("Yes"),
+				Description: "When connecting to a read replica PostgreSQL database, " +
+					"this must be set to 'Yes' to support Streamkap snapshots",
+				MarkdownDescription: "When connecting to a read replica PostgreSQL database, " +
+					"this must be set to 'Yes' to support Streamkap snapshots",
+				Validators: []validator.String{
+					stringvalidator.OneOf("Yes", "No"),
+				},
+			},
 			"database_sslmode": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
@@ -149,9 +165,26 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 				MarkdownDescription: "Schema for signal data collection",
 			},
 			"column_include_list": schema.StringAttribute{
-				Optional:            true,
-				Description:         "Comma separated list of columns whitelist regular expressions, format schema[.]table[.](column1|column2|etc)",
-				MarkdownDescription: "Comma separated list of columns whitelist regular expressions, format schema[.]table[.](column1|column2|etc)",
+				Optional: true,
+				Description: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns " +
+					"that should be included in change event record values. Fully-qualified names for columns " +
+					"are of the form schemaName[.]tableName[.](columnName1|columnName2). " +
+					"You can only specify either `column_include_list` or `column_exclude_list`, not both.",
+				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns " +
+					"that should be included in change event record values. Fully-qualified names for columns " +
+					"are of the form schemaName[.]tableName[.](columnName1|columnName2)" +
+					"You can only specify either `column_include_list` or `column_exclude_list`, not both.",
+			},
+			"column_exclude_list": schema.StringAttribute{
+				Optional: true,
+				Description: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns " +
+					"that should be excluded from change event record values. " +
+					"Fully-qualified names for columns are of the form schemaName.tableName.columnName." +
+					"You can only specify either `column_include_list` or `column_exclude_list`, not both.",
+				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns " +
+					"that should be excluded from change event record values. " +
+					"Fully-qualified names for columns are of the form schemaName.tableName.columnName." +
+					"You can only specify either `column_include_list` or `column_exclude_list`, not both.",
 			},
 			"heartbeat_enabled": schema.BoolAttribute{
 				Computed:            true,
@@ -159,6 +192,16 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 				Default:             booldefault.StaticBool(false),
 				Description:         "Enable heartbeat to keep the pipeline healthy during low data volume",
 				MarkdownDescription: "Enable heartbeat to keep the pipeline healthy during low data volume",
+			},
+			"heartbeat_interval_min": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             int64default.StaticInt64(5),
+				Description:         "The interval (minutes) at which the heartbeat event is generated",
+				MarkdownDescription: "The interval (minutes) at which the heartbeat event is generated",
+				Validators: []validator.Int64{
+					int64validator.Between(1, 30),
+				},
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
@@ -260,7 +303,14 @@ func (r *SourcePostgreSQLResource) Create(ctx context.Context, req res.CreateReq
 		return
 	}
 
-	config := r.model2ConfigMap(plan)
+	config, err := r.model2ConfigMap(plan)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating PostgreSQL source",
+			fmt.Sprintf("Unable to create PostgreSQL source, got error: %s", err),
+		)
+		return
+	}
 
 	source, err := r.client.CreateSource(ctx, api.Source{
 		Name:      plan.Name.ValueString(),
@@ -335,7 +385,7 @@ func (r *SourcePostgreSQLResource) Update(ctx context.Context, req res.UpdateReq
 	}
 
 	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
-	config := r.model2ConfigMap(plan)
+	config, err := r.model2ConfigMap(plan)
 
 	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{
 		Name:      plan.Name.ValueString(),
@@ -387,20 +437,26 @@ func (r *SourcePostgreSQLResource) ImportState(ctx context.Context, req res.Impo
 }
 
 // Helpers
-func (r *SourcePostgreSQLResource) model2ConfigMap(model SourcePostgreSQLResourceModel) map[string]any {
-	return map[string]any{
+func (r *SourcePostgreSQLResource) model2ConfigMap(model SourcePostgreSQLResourceModel) (map[string]any, error) {
+	if !model.ColumnExcludeList.IsNull() && !model.ColumnIncludeList.IsNull() {
+		return nil, fmt.Errorf("only one of column_include_list or column_exclude_list can be set")
+	}
+
+	configMap := map[string]any{
 		"database.hostname.user.defined":                    model.DatabaseHostname.ValueString(),
 		"database.port.user.defined":                        int(model.DatabasePort.ValueInt64()),
 		"database.user":                                     model.DatabaseUser.ValueString(),
 		"database.password":                                 model.DatabasePassword.ValueString(),
 		"database.dbname":                                   model.DatabaseDbname.ValueString(),
+		"snapshot.read.only.user.defined":                   model.SnapshotReadOnly.ValueString(),
 		"database.sslmode":                                  model.DatabaseSSLMode.ValueString(),
 		"schema.include.list":                               model.SchemaIncludeList.ValueString(),
 		"table.include.list.user.defined":                   model.TableIncludeList.ValueString(),
 		"signal.data.collection.schema.or.database":         model.SignalDataCollectionSchemaOrDatabase.ValueString(),
-		"column.include.list.user.defined":                  model.ColumnIncludeList.ValueStringPointer(),
+		"column.include.list.toggled":                       true,
 		"heartbeat.enabled":                                 model.HeartbeatEnabled.ValueBool(),
 		"heartbeat.data.collection.schema.or.database":      model.HeartbeatDataCollectionSchemaOrDatabase.ValueStringPointer(),
+		"heartbeat.interval.min.user.defined":               int(model.HeartbeatIntervalMin.ValueInt64()),
 		"include.source.db.name.in.table.name.user.defined": model.IncludeSourceDBNameInTableName.ValueBool(),
 		"slot.name":                                         model.SlotName.ValueString(),
 		"publication.name":                                  model.PublicationName.ValueString(),
@@ -410,6 +466,16 @@ func (r *SourcePostgreSQLResource) model2ConfigMap(model SourcePostgreSQLResourc
 		"ssh.port":                                          model.SSHPort.ValueString(),
 		"ssh.user":                                          model.SSHUser.ValueString(),
 	}
+
+	if !model.ColumnIncludeList.IsNull() {
+		configMap["column.include.list.toggled"] = true
+		configMap["column.include.list.user.defined"] = model.ColumnIncludeList.ValueStringPointer()
+	} else if !model.ColumnExcludeList.IsNull() {
+		configMap["column.include.list.toggled"] = false
+		configMap["column.exclude.list.user.defined"] = model.ColumnExcludeList.ValueStringPointer()
+	}
+
+	return configMap, nil
 }
 
 func (r *SourcePostgreSQLResource) configMap2Model(cfg map[string]any, model *SourcePostgreSQLResourceModel) {
@@ -419,12 +485,15 @@ func (r *SourcePostgreSQLResource) configMap2Model(cfg map[string]any, model *So
 	model.DatabaseUser = helper.GetTfCfgString(cfg, "database.user")
 	model.DatabasePassword = helper.GetTfCfgString(cfg, "database.password")
 	model.DatabaseDbname = helper.GetTfCfgString(cfg, "database.dbname")
+	model.SnapshotReadOnly = helper.GetTfCfgString(cfg, "snapshot.read.only.user.defined")
 	model.DatabaseSSLMode = helper.GetTfCfgString(cfg, "database.sslmode")
 	model.SchemaIncludeList = helper.GetTfCfgString(cfg, "schema.include.list")
 	model.TableIncludeList = helper.GetTfCfgString(cfg, "table.include.list.user.defined")
 	model.SignalDataCollectionSchemaOrDatabase = helper.GetTfCfgString(cfg, "signal.data.collection.schema.or.database")
 	model.ColumnIncludeList = helper.GetTfCfgString(cfg, "column.include.list.user.defined")
+	model.ColumnExcludeList = helper.GetTfCfgString(cfg, "column.exclude.list.user.defined")
 	model.HeartbeatEnabled = helper.GetTfCfgBool(cfg, "heartbeat.enabled")
+	model.HeartbeatIntervalMin = helper.GetTfCfgInt64(cfg, "heartbeat.interval.min.user.defined")
 	model.HeartbeatDataCollectionSchemaOrDatabase = helper.GetTfCfgString(cfg, "heartbeat.data.collection.schema.or.database")
 	model.IncludeSourceDBNameInTableName = helper.GetTfCfgBool(cfg, "include.source.db.name.in.table.name.user.defined")
 	model.SlotName = helper.GetTfCfgString(cfg, "slot.name")
