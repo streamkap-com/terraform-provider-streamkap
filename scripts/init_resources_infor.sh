@@ -3,6 +3,7 @@
 # PostgreSQL
 export TF_VAR_source_postgresql_hostname=""
 export TF_VAR_source_postgresql_password=''
+export TF_VAR_source_postgresql_ssh_host=""
 
 # DynamoDB
 export TF_VAR_source_dynamodb_aws_region=""
