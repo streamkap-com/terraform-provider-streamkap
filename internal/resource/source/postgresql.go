@@ -469,11 +469,11 @@ func (r *SourcePostgreSQLResource) model2ConfigMap(model SourcePostgreSQLResourc
 
 	if !model.ColumnIncludeList.IsNull() {
 		configMap["column.include.list.toggled"] = true
-		configMap["column.include.list.user.defined"] = model.ColumnIncludeList.ValueStringPointer()
 	} else if !model.ColumnExcludeList.IsNull() {
 		configMap["column.include.list.toggled"] = false
-		configMap["column.exclude.list.user.defined"] = model.ColumnExcludeList.ValueStringPointer()
 	}
+	configMap["column.include.list.user.defined"] = model.ColumnIncludeList.ValueStringPointer()
+	configMap["column.exclude.list.user.defined"] = model.ColumnExcludeList.ValueStringPointer()
 
 	return configMap, nil
 }
