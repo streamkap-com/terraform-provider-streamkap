@@ -3,7 +3,6 @@ package destination
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -42,24 +41,27 @@ type DestinationSnowflakeResource struct {
 
 // DestinationSnowflakeResourceModel describes the resource data model.
 type DestinationSnowflakeResourceModel struct {
-	ID                            types.String            `tfsdk:"id"`
-	Name                          types.String            `tfsdk:"name"`
-	Connector                     types.String            `tfsdk:"connector"`
-	SnowflakeUrlName              types.String            `tfsdk:"snowflake_url_name"`
-	SnowflakeUserName             types.String            `tfsdk:"snowflake_user_name"`
-	SnowflakePrivateKey           types.String            `tfsdk:"snowflake_private_key"`
-	SnowflakePrivateKeyPassphrase types.String            `tfsdk:"snowflake_private_key_passphrase"`
-	Sfwarehouse                   types.String            `tfsdk:"sfwarehouse"`
-	SnowflakeDatabaseName         types.String            `tfsdk:"snowflake_database_name"`
-	SnowflakeSchemaName           types.String            `tfsdk:"snowflake_schema_name"`
-	SnowflakeRoleName             types.String            `tfsdk:"snowflake_role_name"`
-	IngestionMode                 types.String            `tfsdk:"ingestion_mode"`
-	HardDelete                    types.Bool              `tfsdk:"hard_delete"`
-	UseHybridTables               types.Bool              `tfsdk:"use_hybrid_tables"`
-	ApplyDynamicTableScript       types.Bool              `tfsdk:"apply_dynamic_table_script"`
-	DynamicTableTargetLag         types.Int64             `tfsdk:"dynamic_table_target_lag"`
-	CleanupTaskSchedule           types.Int64             `tfsdk:"cleanup_task_schedule"`
-	DedupeTableMapping            map[string]types.String `tfsdk:"dedupe_table_mapping"`
+	ID                            types.String `tfsdk:"id"`
+	Name                          types.String `tfsdk:"name"`
+	Connector                     types.String `tfsdk:"connector"`
+	SnowflakeUrlName              types.String `tfsdk:"snowflake_url_name"`
+	SnowflakeUserName             types.String `tfsdk:"snowflake_user_name"`
+	SnowflakePrivateKey           types.String `tfsdk:"snowflake_private_key"`
+	SnowflakePrivateKeyPassphrase types.String `tfsdk:"snowflake_private_key_passphrase"`
+	Sfwarehouse                   types.String `tfsdk:"sfwarehouse"`
+	SnowflakeDatabaseName         types.String `tfsdk:"snowflake_database_name"`
+	SnowflakeSchemaName           types.String `tfsdk:"snowflake_schema_name"`
+	SnowflakeRoleName             types.String `tfsdk:"snowflake_role_name"`
+	IngestionMode                 types.String `tfsdk:"ingestion_mode"`
+	HardDelete                    types.Bool   `tfsdk:"hard_delete"`
+	SchemaEvolution               types.String `tfsdk:"schema_evolution"`
+	UseHybridTables               types.Bool   `tfsdk:"use_hybrid_tables"`
+	ApplyDynamicTableScript       types.Bool   `tfsdk:"apply_dynamic_table_script"`
+	DynamicTableTargetLag         types.Int64  `tfsdk:"dynamic_table_target_lag"`
+	CleanupTaskSchedule           types.Int64  `tfsdk:"cleanup_task_schedule"`
+	CreateSQLExecute              types.String `tfsdk:"create_sql_execute"`
+	CreateSQLData                 types.String `tfsdk:"create_sql_data"`
+	SQLTableName                  types.String `tfsdk:"sql_table_name"`
 }
 
 func (r *DestinationSnowflakeResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -156,6 +158,19 @@ func (r *DestinationSnowflakeResource) Schema(ctx context.Context, req res.Schem
 				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)",
 				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)",
 			},
+			"schema_evolution": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString("basic"),
+				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `none`",
+				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `none`",
+				Validators: []validator.String{
+					stringvalidator.OneOf(
+						"none",
+						"basic",
+					),
+				},
+			},
 			"use_hybrid_tables": schema.BoolAttribute{
 				Computed:            true,
 				Optional:            true,
@@ -167,15 +182,15 @@ func (r *DestinationSnowflakeResource) Schema(ctx context.Context, req res.Schem
 				Computed:            true,
 				Optional:            true,
 				Default:             booldefault.StaticBool(false),
-				Description:         "Specifies whether the connector should create Dyanmic Tables & Cleanup Task (applies to `append` only)",
-				MarkdownDescription: "Specifies whether the connector should create Dyanmic Tables & Cleanup Task (applies to `append` only)",
+				Description:         "Specifies whether the connector should create Dyanmic Tables & Cleanup Task (applies to `append` mode only)",
+				MarkdownDescription: "Specifies whether the connector should create Dyanmic Tables & Cleanup Task (applies to `append` mode only)",
 			},
 			"dynamic_table_target_lag": schema.Int64Attribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             int64default.StaticInt64(15),
-				Description:         "Target lag for dynamic tables in minutes (applies to `append` only)",
-				MarkdownDescription: "Target lag for dynamic tables in minutes (applies to `append` only)",
+				Description:         "Target lag for dynamic tables in minutes (applies to `append` mode only)",
+				MarkdownDescription: "Target lag for dynamic tables in minutes (applies to `append` mode only)",
 				Validators: []validator.Int64{
 					int64validator.Between(0, 2147483647),
 				},
@@ -184,17 +199,37 @@ func (r *DestinationSnowflakeResource) Schema(ctx context.Context, req res.Schem
 				Computed:            true,
 				Optional:            true,
 				Default:             int64default.StaticInt64(60),
-				Description:         "Schedule for cleanup task in minutes (applies to `append` only)",
-				MarkdownDescription: "Schedule for cleanup task in minutes (applies to `append` only)",
+				Description:         "Schedule for cleanup task in minutes (applies to `append` mode only)",
+				MarkdownDescription: "Schedule for cleanup task in minutes (applies to `append` mode only)",
 				Validators: []validator.Int64{
 					int64validator.Between(0, 2147483647),
 				},
 			},
-			"dedupe_table_mapping": schema.MapAttribute{
+			"create_sql_execute": schema.StringAttribute{
+				Computed: true,
+				Optional: true,
+				Default: stringdefault.StaticString("CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='{{targetLag}} minutes' WAREHOUSE={{warehouse}} " +
+					"AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id " +
+					"FROM \"{{table}}\" ) WHERE dedupe_id = 1 AND __deleted = 'false';\n" +
+					"CREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='{{schedule}} minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE " +
+					"AS DELETE FROM \"{{table}}\" WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM \"{{table}}\" GROUP BY {{primaryKeyColumns}} ) AS subquery " +
+					"WHERE {{{keyColumnsAndCondition}}} AND \"{{table}}\"._streamkap_ts_ms = subquery.max_timestamp);\nALTER TASK {{table}}_CT RESUME"),
+				Description:         "Custom SQL mustache template to be run the first time a record is streamed for each table.",
+				MarkdownDescription: "Custom SQL mustache template to be run the first time a record is streamed for each table.",
+			},
+			"create_sql_data": schema.StringAttribute{
+				Computed:            true,
 				Optional:            true,
-				ElementType:         types.StringType,
-				Description:         "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
-				MarkdownDescription: "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
+				Default:             stringdefault.StaticString("{\n    \"TABLE_DATA\": {\n        \"my-table-name\": {\n            \"someTableSpecificKey\": \"someTableSpecificValue\"\n        }\n    }\n}"),
+				Description:         "Custom SQL mustache template input JSON data. Use TABLE_DATA dictionary to set table specific data.",
+				MarkdownDescription: "Custom SQL mustache template input JSON data. Use TABLE_DATA dictionary to set table specific data.",
+			},
+			"sql_table_name": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString("{{table}}_DT"),
+				Description:         "Dynamic Table Name mustache template. Can be used as {{dynamicTableName}} in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic.",
+				MarkdownDescription: "Dynamic Table Name mustache template. Can be used as {{dynamicTableName}} in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic.",
 			},
 		},
 	}
@@ -365,39 +400,36 @@ func (r *DestinationSnowflakeResource) ImportState(ctx context.Context, req res.
 
 // Helpers
 func (r *DestinationSnowflakeResource) model2ConfigMap(_ context.Context, model DestinationSnowflakeResourceModel) map[string]any {
-	// Convert deduplication table mapping to a string
-	// Example:
-	// model.DedupeTableMapping = map[string]types.String{
-	// 	"rawTable1": types.StringValue("dedupeSchema.dedupeTable1"),
-	// 	"rawTable2": types.StringValue("dedupeTable2"),
-	// }
-	// ---> dedupeTableMappingMap = "rawTable1:dedupeSchema.dedupeTable1,rawTable2:dedupeTable2"
-	dedupeTableMappingArr := make([]string, 0)
-	for k, v := range model.DedupeTableMapping {
-		dedupeTableMappingArr = append(dedupeTableMappingArr, fmt.Sprintf("%s:%s", k, v.ValueString()))
+	configMap := map[string]any{
+		"snowflake.url.name":                       model.SnowflakeUrlName.ValueString(),
+		"snowflake.user.name":                      model.SnowflakeUserName.ValueString(),
+		"snowflake.private.key":                    model.SnowflakePrivateKey.ValueString(),
+		"snowflake.private.key.passphrase.secured": true,
+		"snowflake.private.key.passphrase":         model.SnowflakePrivateKeyPassphrase.ValueStringPointer(),
+		"sfwarehouse":                              model.Sfwarehouse.ValueString(),
+		"snowflake.database.name":                  model.SnowflakeDatabaseName.ValueString(),
+		"snowflake.schema.name":                    model.SnowflakeSchemaName.ValueString(),
+		"snowflake.role.name":                      model.SnowflakeRoleName.ValueString(),
+		"ingestion.mode":                           model.IngestionMode.ValueString(),
+		"hard.delete":                              model.HardDelete.ValueBool(),
+		"schema.evolution":                         model.SchemaEvolution.ValueString(),
+		"use.hybrid.tables":                        model.UseHybridTables.ValueBool(),
+		"apply.dynamic.table.script":               model.ApplyDynamicTableScript.ValueBool(),
+		"dynamic.table.target.lag":                 model.DynamicTableTargetLag.ValueInt64(),
+		"cleanup.task.schedule":                    model.CleanupTaskSchedule.ValueInt64(),
+		"create.sql.execute":                       model.CreateSQLExecute.ValueString(),
+		"create.sql.data":                          model.CreateSQLData.ValueString(),
+		"sql.table.name":                           model.SQLTableName.ValueString(),
 	}
-	dedupeTableMappingStr := strings.Join(dedupeTableMappingArr, ",")
 
-	return map[string]any{
-		"snowflake.url.name":               model.SnowflakeUrlName.ValueString(),
-		"snowflake.user.name":              model.SnowflakeUserName.ValueString(),
-		"snowflake.private.key":            model.SnowflakePrivateKey.ValueString(),
-		"snowflake.private.key.passphrase": model.SnowflakePrivateKeyPassphrase.ValueStringPointer(),
-		"sfwarehouse":                      model.Sfwarehouse.ValueString(),
-		"snowflake.database.name":          model.SnowflakeDatabaseName.ValueString(),
-		"snowflake.schema.name":            model.SnowflakeSchemaName.ValueString(),
-		"snowflake.role.name":              model.SnowflakeRoleName.ValueString(),
-		"ingestion.mode":                   model.IngestionMode.ValueString(),
-		"hard.delete":                      model.HardDelete.ValueBool(),
-		"use.hybrid.tables":                model.UseHybridTables.ValueBool(),
-		"apply.dynamic.table.script":       model.ApplyDynamicTableScript.ValueBool(),
-		"dynamic.table.target.lag":         model.DynamicTableTargetLag.ValueInt64(),
-		"cleanup.task.schedule":            model.CleanupTaskSchedule.ValueInt64(),
-		"dedupe.table.mapping":             dedupeTableMappingStr,
+	if model.SnowflakePrivateKeyPassphrase.IsNull() {
+		configMap["snowflake.private.key.passphrase.secured"] = false
 	}
+
+	return configMap
 }
 
-func (r *DestinationSnowflakeResource) configMap2Model(ctx context.Context, cfg map[string]any, model *DestinationSnowflakeResourceModel) {
+func (r *DestinationSnowflakeResource) configMap2Model(_ context.Context, cfg map[string]any, model *DestinationSnowflakeResourceModel) {
 	// Copy the config map to the model
 	model.SnowflakeUrlName = helper.GetTfCfgString(cfg, "snowflake.url.name")
 	model.SnowflakeUserName = helper.GetTfCfgString(cfg, "snowflake.user.name")
@@ -409,31 +441,12 @@ func (r *DestinationSnowflakeResource) configMap2Model(ctx context.Context, cfg 
 	model.SnowflakeRoleName = helper.GetTfCfgString(cfg, "snowflake.role.name")
 	model.IngestionMode = helper.GetTfCfgString(cfg, "ingestion.mode")
 	model.HardDelete = helper.GetTfCfgBool(cfg, "hard.delete")
+	model.SchemaEvolution = helper.GetTfCfgString(cfg, "schema.evolution")
 	model.UseHybridTables = helper.GetTfCfgBool(cfg, "use.hybrid.tables")
 	model.ApplyDynamicTableScript = helper.GetTfCfgBool(cfg, "apply.dynamic.table.script")
 	model.DynamicTableTargetLag = helper.GetTfCfgInt64(cfg, "dynamic.table.target.lag")
 	model.CleanupTaskSchedule = helper.GetTfCfgInt64(cfg, "cleanup.task.schedule")
-
-	// Parse deduplication table mapping
-	// Example:
-	// dedupeTableMappingMapStr = "rawTable1:dedupeSchema.dedupeTable1,rawTable2:dedupeTable2"
-	// ---> model.DedupeTableMapping = map[string]types.String{
-	// 	"rawTable1": types.StringValue("dedupeSchema.dedupeTable1"),
-	// 	"rawTable2": types.StringValue("dedupeTable2"),
-	// }
-	dedupeTableMappingStr := helper.GetTfCfgString(cfg, "dedupe.table.mapping").ValueString()
-	var dedupeTableMapping map[string]types.String
-	if len(dedupeTableMappingStr) > 0 {
-		dedupeTableMappingArr := strings.Split(dedupeTableMappingStr, ",")
-		dedupeTableMapping = make(map[string]types.String)
-		for _, item := range dedupeTableMappingArr {
-			parts := strings.Split(item, ":")
-			if len(parts) == 2 {
-				dedupeTableMapping[parts[0]] = types.StringValue(parts[1])
-			} else {
-				tflog.Warn(ctx, "Invalid dedupe table mapping item: "+item)
-			}
-		}
-	}
-	model.DedupeTableMapping = dedupeTableMapping
+	model.CreateSQLExecute = helper.GetTfCfgString(cfg, "create.sql.execute")
+	model.CreateSQLData = helper.GetTfCfgString(cfg, "create.sql.data")
+	model.SQLTableName = helper.GetTfCfgString(cfg, "sql.table.name")
 }
