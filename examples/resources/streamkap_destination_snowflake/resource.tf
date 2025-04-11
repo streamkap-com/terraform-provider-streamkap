@@ -14,19 +14,16 @@ variable "destination_snowflake_url_name" {
   type        = string
   description = "The URL name of the Snowflake database"
 }
-
 variable "destination_snowflake_private_key" {
   type        = string
   sensitive   = true
   description = "The private key of the Snowflake database"
 }
-
 variable "destination_snowflake_key_passphrase" {
   type        = string
   sensitive   = true
   description = "The passphrase of the private key of the Snowflake database"
 }
-
 resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   name                             = "example-destination-snowflake"
   snowflake_url_name               = var.destination_snowflake_url_name
@@ -37,16 +34,12 @@ resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   snowflake_database_name          = "JUNIT"
   snowflake_schema_name            = "JUNIT"
   snowflake_role_name              = "STREAMKAP_ROLE_JUNIT"
-  ingestion_mode                   = "append"
+  ingestion_mode                   = "upsert"
   hard_delete                      = true
   use_hybrid_tables                = false
   apply_dynamic_table_script       = false
-  dynamic_table_target_lag         = 15
-  cleanup_task_schedule            = 60
-  dedupe_table_mapping = {
-    users                   = "JUNIT.USERS",
-    itst_scen20240528103635 = "ITST_SCEN20240528103635"
-  }
+  dynamic_table_target_lag         = 60
+  cleanup_task_schedule            = 120
 }
 
 output "example-destination-snowflake" {
