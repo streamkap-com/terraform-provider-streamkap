@@ -29,19 +29,16 @@ variable "destination_snowflake_url_name" {
   type        = string
   description = "The URL name of the Snowflake database"
 }
-
 variable "destination_snowflake_private_key" {
   type        = string
   sensitive   = true
   description = "The private key of the Snowflake database"
 }
-
 variable "destination_snowflake_key_passphrase" {
   type        = string
   sensitive   = true
   description = "The passphrase of the private key of the Snowflake database"
 }
-
 resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   name                             = "example-destination-snowflake"
   snowflake_url_name               = var.destination_snowflake_url_name
@@ -52,16 +49,12 @@ resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   snowflake_database_name          = "JUNIT"
   snowflake_schema_name            = "JUNIT"
   snowflake_role_name              = "STREAMKAP_ROLE_JUNIT"
-  ingestion_mode                   = "append"
+  ingestion_mode                   = "upsert"
   hard_delete                      = true
   use_hybrid_tables                = false
   apply_dynamic_table_script       = false
-  dynamic_table_target_lag         = 15
-  cleanup_task_schedule            = 60
-  dedupe_table_mapping = {
-    users                   = "JUNIT.USERS",
-    itst_scen20240528103635 = "ITST_SCEN20240528103635"
-  }
+  dynamic_table_target_lag         = 60
+  cleanup_task_schedule            = 120
 }
 
 output "example-destination-snowflake" {
@@ -83,15 +76,18 @@ output "example-destination-snowflake" {
 
 ### Optional
 
-- `apply_dynamic_table_script` (Boolean) Specifies whether the connector should create Dyanmic Tables & Cleanup Task (applies to `append` only)
-- `cleanup_task_schedule` (Number) Schedule for cleanup task in minutes (applies to `append` only)
-- `dedupe_table_mapping` (Map of String) Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.
-- `dynamic_table_target_lag` (Number) Target lag for dynamic tables in minutes (applies to `append` only)
+- `apply_dynamic_table_script` (Boolean) Specifies whether the connector should create Dyanmic Tables & Cleanup Task (applies to `append` mode only)
+- `cleanup_task_schedule` (Number) Schedule for cleanup task in minutes (applies to `append` mode only)
+- `create_sql_data` (String) Custom SQL mustache template input JSON data. Use TABLE_DATA dictionary to set table specific data.
+- `create_sql_execute` (String) Custom SQL mustache template to be run the first time a record is streamed for each table.
+- `dynamic_table_target_lag` (Number) Target lag for dynamic tables in minutes (applies to `append` mode only)
 - `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)
 - `ingestion_mode` (String) `upsert` or `append` modes are available
+- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `none`
 - `sfwarehouse` (String) The name of the Snowflake warehouse.
 - `snowflake_private_key_passphrase` (String, Sensitive) If the value is not empty, this phrase is used to try to decrypt the private key.
 - `snowflake_role_name` (String) The name of an existing role with necessary privileges (for Streamkap) assigned to the Username.
+- `sql_table_name` (String) Dynamic Table Name mustache template. Can be used as `{{dynamicTableName}}` in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic.
 - `use_hybrid_tables` (Boolean) Specifies whether the connector should create Hybrid Tables (applies to `upsert` only)
 
 ### Read-Only
