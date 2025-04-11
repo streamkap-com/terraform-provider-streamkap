@@ -228,8 +228,8 @@ func (r *DestinationSnowflakeResource) Schema(ctx context.Context, req res.Schem
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("{{table}}_DT"),
-				Description:         "Dynamic Table Name mustache template. Can be used as {{dynamicTableName}} in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic.",
-				MarkdownDescription: "Dynamic Table Name mustache template. Can be used as {{dynamicTableName}} in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic.",
+				Description:         "Dynamic Table Name mustache template. Can be used as `{{`{`}}{{`{`}}dynamicTableName{{`}`}}{{`}`}}` in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic.",
+				MarkdownDescription: "Dynamic Table Name mustache template. Can be used as `{{`{`}}{{`{`}}dynamicTableName{{`}`}}{{`}`}}` in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic.",
 			},
 		},
 	}
