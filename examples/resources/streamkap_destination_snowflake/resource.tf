@@ -40,6 +40,10 @@ resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   apply_dynamic_table_script       = false
   dynamic_table_target_lag         = 60
   cleanup_task_schedule            = 120
+  auto_qa_dedupe_table_mapping = {
+    users                   = "JUNIT.USERS",
+    itst_scen20240528103635 = "ITST_SCEN20240528103635"
+  }
 }
 
 output "example-destination-snowflake" {
