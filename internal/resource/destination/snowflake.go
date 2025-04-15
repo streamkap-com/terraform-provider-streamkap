@@ -3,6 +3,7 @@ package destination
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -41,27 +42,28 @@ type DestinationSnowflakeResource struct {
 
 // DestinationSnowflakeResourceModel describes the resource data model.
 type DestinationSnowflakeResourceModel struct {
-	ID                            types.String `tfsdk:"id"`
-	Name                          types.String `tfsdk:"name"`
-	Connector                     types.String `tfsdk:"connector"`
-	SnowflakeUrlName              types.String `tfsdk:"snowflake_url_name"`
-	SnowflakeUserName             types.String `tfsdk:"snowflake_user_name"`
-	SnowflakePrivateKey           types.String `tfsdk:"snowflake_private_key"`
-	SnowflakePrivateKeyPassphrase types.String `tfsdk:"snowflake_private_key_passphrase"`
-	Sfwarehouse                   types.String `tfsdk:"sfwarehouse"`
-	SnowflakeDatabaseName         types.String `tfsdk:"snowflake_database_name"`
-	SnowflakeSchemaName           types.String `tfsdk:"snowflake_schema_name"`
-	SnowflakeRoleName             types.String `tfsdk:"snowflake_role_name"`
-	IngestionMode                 types.String `tfsdk:"ingestion_mode"`
-	HardDelete                    types.Bool   `tfsdk:"hard_delete"`
-	SchemaEvolution               types.String `tfsdk:"schema_evolution"`
-	UseHybridTables               types.Bool   `tfsdk:"use_hybrid_tables"`
-	ApplyDynamicTableScript       types.Bool   `tfsdk:"apply_dynamic_table_script"`
-	DynamicTableTargetLag         types.Int64  `tfsdk:"dynamic_table_target_lag"`
-	CleanupTaskSchedule           types.Int64  `tfsdk:"cleanup_task_schedule"`
-	CreateSQLExecute              types.String `tfsdk:"create_sql_execute"`
-	CreateSQLData                 types.String `tfsdk:"create_sql_data"`
-	SQLTableName                  types.String `tfsdk:"sql_table_name"`
+	ID                            types.String            `tfsdk:"id"`
+	Name                          types.String            `tfsdk:"name"`
+	Connector                     types.String            `tfsdk:"connector"`
+	SnowflakeUrlName              types.String            `tfsdk:"snowflake_url_name"`
+	SnowflakeUserName             types.String            `tfsdk:"snowflake_user_name"`
+	SnowflakePrivateKey           types.String            `tfsdk:"snowflake_private_key"`
+	SnowflakePrivateKeyPassphrase types.String            `tfsdk:"snowflake_private_key_passphrase"`
+	Sfwarehouse                   types.String            `tfsdk:"sfwarehouse"`
+	SnowflakeDatabaseName         types.String            `tfsdk:"snowflake_database_name"`
+	SnowflakeSchemaName           types.String            `tfsdk:"snowflake_schema_name"`
+	SnowflakeRoleName             types.String            `tfsdk:"snowflake_role_name"`
+	IngestionMode                 types.String            `tfsdk:"ingestion_mode"`
+	HardDelete                    types.Bool              `tfsdk:"hard_delete"`
+	SchemaEvolution               types.String            `tfsdk:"schema_evolution"`
+	UseHybridTables               types.Bool              `tfsdk:"use_hybrid_tables"`
+	ApplyDynamicTableScript       types.Bool              `tfsdk:"apply_dynamic_table_script"`
+	DynamicTableTargetLag         types.Int64             `tfsdk:"dynamic_table_target_lag"`
+	CleanupTaskSchedule           types.Int64             `tfsdk:"cleanup_task_schedule"`
+	CreateSQLExecute              types.String            `tfsdk:"create_sql_execute"`
+	CreateSQLData                 types.String            `tfsdk:"create_sql_data"`
+	SQLTableName                  types.String            `tfsdk:"sql_table_name"`
+	AutoQADedupeTableMapping      map[string]types.String `tfsdk:"auto_qa_dedupe_table_mapping"`
 }
 
 func (r *DestinationSnowflakeResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -206,23 +208,30 @@ func (r *DestinationSnowflakeResource) Schema(ctx context.Context, req res.Schem
 				},
 			},
 			"create_sql_execute": schema.StringAttribute{
-				Computed: true,
 				Optional: true,
-				Default: stringdefault.StaticString("CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='{{targetLag}} minutes' WAREHOUSE={{warehouse}} " +
-					"AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id " +
-					"FROM \"{{table}}\" ) WHERE dedupe_id = 1 AND __deleted = 'false';\n" +
-					"CREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='{{schedule}} minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE " +
-					"AS DELETE FROM \"{{table}}\" WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM \"{{table}}\" GROUP BY {{primaryKeyColumns}} ) AS subquery " +
-					"WHERE {{{keyColumnsAndCondition}}} AND \"{{table}}\"._streamkap_ts_ms = subquery.max_timestamp);\nALTER TASK {{table}}_CT RESUME"),
-				Description:         "Custom SQL mustache template to be run the first time a record is streamed for each table.",
-				MarkdownDescription: "Custom SQL mustache template to be run the first time a record is streamed for each table.",
+				Description: "Custom SQL mustache template to be run the first time a record is streamed for each table. e.g: " +
+					"\n\t```\n\tCREATE OR REPLACE DYNAMIC TABLE {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_DT TARGET_LAG='{{`{`}}{{`{`}}targetLag{{`}`}}{{`}`}} minutes' WAREHOUSE={{`{`}}{{`{`}}warehouse{{`}`}}{{`}`}} " +
+					"AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id " +
+					"FROM \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\" ) WHERE dedupe_id = 1 AND __deleted = 'false';\n\t" +
+					"CREATE OR REPLACE TASK {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_CT WAREHOUSE={{`{`}}{{`{`}}warehouse{{`}`}}{{`}`}} SCHEDULE='{{`{`}}{{`{`}}schedule{{`}`}}{{`}`}} minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE " +
+					"AS DELETE FROM \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\" WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\" GROUP BY {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}} ) AS subquery " +
+					"WHERE {{`{`}}{{`{`}}{{`{`}}keyColumnsAndCondition{{`}`}}{{`}`}}{{`}`}} AND \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\"._streamkap_ts_ms = subquery.max_timestamp);\n\t" +
+					"ALTER TASK {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_CT RESUME\n\t```",
+				MarkdownDescription: "Custom SQL mustache template to be run the first time a record is streamed for each table. e.g: " +
+					"\n\t```\n\tCREATE OR REPLACE DYNAMIC TABLE {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_DT TARGET_LAG='{{`{`}}{{`{`}}targetLag{{`}`}}{{`}`}} minutes' WAREHOUSE={{`{`}}{{`{`}}warehouse{{`}`}}{{`}`}} " +
+					"AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id " +
+					"FROM \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\" ) WHERE dedupe_id = 1 AND __deleted = 'false';\n\t" +
+					"CREATE OR REPLACE TASK {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_CT WAREHOUSE={{`{`}}{{`{`}}warehouse{{`}`}}{{`}`}} SCHEDULE='{{`{`}}{{`{`}}schedule{{`}`}}{{`}`}} minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE " +
+					"AS DELETE FROM \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\" WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\" GROUP BY {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}} ) AS subquery " +
+					"WHERE {{`{`}}{{`{`}}{{`{`}}keyColumnsAndCondition{{`}`}}{{`}`}}{{`}`}} AND \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\"._streamkap_ts_ms = subquery.max_timestamp);\n\t" +
+					"ALTER TASK {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_CT RESUME\n\t```",
 			},
 			"create_sql_data": schema.StringAttribute{
-				Computed:            true,
 				Optional:            true,
-				Default:             stringdefault.StaticString("{\n    \"TABLE_DATA\": {\n        \"my-table-name\": {\n            \"someTableSpecificKey\": \"someTableSpecificValue\"\n        }\n    }\n}"),
-				Description:         "Custom SQL mustache template input JSON data. Use TABLE_DATA dictionary to set table specific data.",
-				MarkdownDescription: "Custom SQL mustache template input JSON data. Use TABLE_DATA dictionary to set table specific data.",
+				Description:         "Custom SQL mustache template input JSON data. Use TABLE_DATA dictionary to set table specific data. e.g:"+
+				"\n\t```\n\t{{`{`}}\n\t    \"TABLE_DATA\": {{`{`}}\n\t        \"my-table-name\": {{`{`}}\n\t            \"someTableSpecificKey\": \"someTableSpecificValue\"\n\t        {{`}`}}\n\t    {{`}`}}\n\t{{`}`}}\n\t```",
+				MarkdownDescription: "Custom SQL mustache template input JSON data. Use TABLE_DATA dictionary to set table specific data. e.g:"+
+				"\n\t```\n\t{{`{`}}\n\t    \"TABLE_DATA\": {{`{`}}\n\t        \"my-table-name\": {{`{`}}\n\t            \"someTableSpecificKey\": \"someTableSpecificValue\"\n\t        {{`}`}}\n\t    {{`}`}}\n\t{{`}`}}\n\t```",
 			},
 			"sql_table_name": schema.StringAttribute{
 				Computed:            true,
@@ -230,6 +239,12 @@ func (r *DestinationSnowflakeResource) Schema(ctx context.Context, req res.Schem
 				Default:             stringdefault.StaticString("{{table}}_DT"),
 				Description:         "Dynamic Table Name mustache template. Can be used as `{{`{`}}{{`{`}}dynamicTableName{{`}`}}{{`}`}}` in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic.",
 				MarkdownDescription: "Dynamic Table Name mustache template. Can be used as `{{`{`}}{{`{`}}dynamicTableName{{`}`}}{{`}`}}` in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic.",
+			},
+			"auto_qa_dedupe_table_mapping": schema.MapAttribute{
+				Optional:            true,
+				ElementType:         types.StringType,
+				Description:         "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
+				MarkdownDescription: "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
 			},
 		},
 	}
@@ -400,6 +415,19 @@ func (r *DestinationSnowflakeResource) ImportState(ctx context.Context, req res.
 
 // Helpers
 func (r *DestinationSnowflakeResource) model2ConfigMap(_ context.Context, model DestinationSnowflakeResourceModel) map[string]any {
+	// Convert auto QA deduplication table mapping to a string
+	// Example:
+	// model.AutoQADedupeTableMapping = map[string]types.String{
+	// 	"rawTable1": types.StringValue("dedupeSchema.dedupeTable1"),
+	// 	"rawTable2": types.StringValue("dedupeTable2"),
+	// }
+	// ---> autoQADedupeTableMappingStr = "rawTable1:dedupeSchema.dedupeTable1,rawTable2:dedupeTable2"
+	autoQADedupeTableMappingArr := make([]string, 0)
+	for k, v := range model.AutoQADedupeTableMapping {
+		autoQADedupeTableMappingArr = append(autoQADedupeTableMappingArr, fmt.Sprintf("%s:%s", k, v.ValueString()))
+	}
+	autoQADedupeTableMappingStr := strings.Join(autoQADedupeTableMappingArr, ",")
+
 	configMap := map[string]any{
 		"snowflake.url.name":                       model.SnowflakeUrlName.ValueString(),
 		"snowflake.user.name":                      model.SnowflakeUserName.ValueString(),
@@ -417,9 +445,10 @@ func (r *DestinationSnowflakeResource) model2ConfigMap(_ context.Context, model 
 		"apply.dynamic.table.script":               model.ApplyDynamicTableScript.ValueBool(),
 		"dynamic.table.target.lag":                 model.DynamicTableTargetLag.ValueInt64(),
 		"cleanup.task.schedule":                    model.CleanupTaskSchedule.ValueInt64(),
-		"create.sql.execute":                       model.CreateSQLExecute.ValueString(),
-		"create.sql.data":                          model.CreateSQLData.ValueString(),
-		"sql.table.name":                           model.SQLTableName.ValueString(),
+		"create.sql.execute":                       model.CreateSQLExecute.ValueStringPointer(),
+		"create.sql.data":                          model.CreateSQLData.ValueStringPointer(),
+		"sql.table.name":                           model.SQLTableName.ValueStringPointer(),
+		"auto.qa.dedupe.table.mapping":             autoQADedupeTableMappingStr,
 	}
 
 	if model.SnowflakePrivateKeyPassphrase.IsNull() {
@@ -429,7 +458,7 @@ func (r *DestinationSnowflakeResource) model2ConfigMap(_ context.Context, model 
 	return configMap
 }
 
-func (r *DestinationSnowflakeResource) configMap2Model(_ context.Context, cfg map[string]any, model *DestinationSnowflakeResourceModel) {
+func (r *DestinationSnowflakeResource) configMap2Model(ctx context.Context, cfg map[string]any, model *DestinationSnowflakeResourceModel) {
 	// Copy the config map to the model
 	model.SnowflakeUrlName = helper.GetTfCfgString(cfg, "snowflake.url.name")
 	model.SnowflakeUserName = helper.GetTfCfgString(cfg, "snowflake.user.name")
@@ -449,4 +478,27 @@ func (r *DestinationSnowflakeResource) configMap2Model(_ context.Context, cfg ma
 	model.CreateSQLExecute = helper.GetTfCfgString(cfg, "create.sql.execute")
 	model.CreateSQLData = helper.GetTfCfgString(cfg, "create.sql.data")
 	model.SQLTableName = helper.GetTfCfgString(cfg, "sql.table.name")
+
+	// Parse auto QA deduplication table mapping
+	// Example:
+	// autoQADedupeTableMappingMapStr = "rawTable1:dedupeSchema.dedupeTable1,rawTable2:dedupeTable2"
+	// ---> model.AutoQADedupeTableMapping = map[string]types.String{
+	// 	"rawTable1": types.StringValue("dedupeSchema.dedupeTable1"),
+	// 	"rawTable2": types.StringValue("dedupeTable2"),
+	// }
+	autoQADedupeTableMappingStr := helper.GetTfCfgString(cfg, "auto.qa.dedupe.table.mapping").ValueString()
+	var autoQADedupeTableMapping map[string]types.String
+	if len(autoQADedupeTableMappingStr) > 0 {
+		dedupeTableMappingArr := strings.Split(autoQADedupeTableMappingStr, ",")
+		autoQADedupeTableMapping = make(map[string]types.String)
+		for _, item := range dedupeTableMappingArr {
+			parts := strings.Split(item, ":")
+			if len(parts) == 2 {
+				autoQADedupeTableMapping[parts[0]] = types.StringValue(parts[1])
+			} else {
+				tflog.Warn(ctx, "Invalid auto QA dedupe table mapping item: "+item)
+			}
+		}
+	}
+	model.AutoQADedupeTableMapping = autoQADedupeTableMapping
 }
