@@ -93,7 +93,7 @@ output "example-destination-snowflake" {
 	    }
 	}
 	```
-- `create_sql_execute` (String) Custom SQL mustache template to be run the first time a record is streamed for each table. e.g: 
+- `create_sql_execute` (String) Custom SQL mustache template to be run the first time a record is streamed for each table. Default is: 
 	```
 	CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='{{targetLag}} minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM "{{table}}" ) WHERE dedupe_id = 1 AND __deleted = 'false';
 	CREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='{{schedule}} minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM "{{table}}" WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM "{{table}}" GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND "{{table}}"._streamkap_ts_ms = subquery.max_timestamp);
