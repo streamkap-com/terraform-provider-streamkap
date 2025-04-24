@@ -7,114 +7,134 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-var destinationClickhouseHostname = os.Getenv("TF_VAR_destination_clickhouse_hostname")
-var destinationClickhouseConnectionUsername = os.Getenv("TF_VAR_destination_clickhouse_connection_username")
-var destinationClickhouseConnectionPassword = os.Getenv("TF_VAR_destination_clickhouse_connection_password")
+// Define environment variables for ClickHouse configuration
+var destinationClickHouseHostname = os.Getenv("TF_VAR_destination_clickhouse_hostname")
+var destinationClickHouseUsername = os.Getenv("TF_VAR_destination_clickhouse_connection_username")
+var destinationClickHousePassword = os.Getenv("TF_VAR_destination_clickhouse_connection_password")
 
 func TestAccDestinationClickHouseResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
-			// Create and Read testing
+			// Step 1: Create and Read Testing
 			{
 				Config: providerConfig + `
 variable "destination_clickhouse_hostname" {
 	type        = string
-	description = "The hostname of the Clickhouse server"
+	description = "The hostname of the ClickHouse database"
 }
-
 variable "destination_clickhouse_connection_username" {
 	type        = string
-	description = "The username to connect to the Clickhouse server"
+	description = "The username for the ClickHouse database"
 }
-
 variable "destination_clickhouse_connection_password" {
 	type        = string
-	description = "The password to connect to the Clickhouse server"
+	sensitive   = true
+	description = "The password for the ClickHouse database"
 }
-
 resource "streamkap_destination_clickhouse" "test" {
-	name                = "test-destination-clickhouse"
-	ingestion_mode      = "append"
-	tasks_max           = 5
-	hostname            = var.destination_clickhouse_hostname
-	connection_username = var.destination_clickhouse_connection_username
-	connection_password = var.destination_clickhouse_connection_password
-	port                = 8443
-	database            = "demo"
-	ssl                 = true
+	name                 = "test-destination-clickhouse"
+	hostname             = var.destination_clickhouse_hostname
+	connection_username  = var.destination_clickhouse_connection_username
+	connection_password  = var.destination_clickhouse_connection_password
+	ingestion_mode       = "upsert"
+	hard_delete          = true
+	tasks_max            = 3
+	port                 = 8443
+	database             = "demo"
+	ssl                  = true
 	topics_config_map = {
-		"public.users" = {
-			delete_sql_execute = "SELECT 1;"
+		"streamkap.customer" = {
+			delete_sql_execute = "DELETE FROM table1 WHERE id = ?"
+		}
+		"streamkap.customer2" = {
+			delete_sql_execute = "DELETE FROM table2 WHERE id = ?"
 		}
 	}
+	schema_evolution     = "basic"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// Verify if attributes are propagated correctly
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "name", "test-destination-clickhouse"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ingestion_mode", "append"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "tasks_max", "5"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "hostname", destinationClickhouseHostname),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connection_username", destinationClickhouseConnectionUsername),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connection_password", destinationClickhouseConnectionPassword),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "hostname", destinationClickHouseHostname),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connection_username", destinationClickHouseUsername),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connection_password", destinationClickHousePassword),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ingestion_mode", "upsert"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "hard_delete", "true"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "tasks_max", "3"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "port", "8443"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "database", "demo"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ssl", "true"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "topics_config_map.public.users.delete_sql_execute", "SELECT 1;"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "topics_config_map.streamkap.customer.delete_sql_execute", "DELETE FROM table1 WHERE id = ?"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "topics_config_map.streamkap.customer2.delete_sql_execute", "DELETE FROM table2 WHERE id = ?"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "schema_evolution", "basic"),
+					resource.TestCheckResourceAttrSet("streamkap_destination_clickhouse.test", "id"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connector", "clickhouse"),
 				),
 			},
-			// ImportState testing
+			// Step 2: ImportState Testing
 			{
 				ResourceName:      "streamkap_destination_clickhouse.test",
 				ImportState:       true,
 				ImportStateVerify: true,
 			},
-			// Update and Read testing
+			// Step 3: Update and Read Testing
 			{
 				Config: providerConfig + `
 variable "destination_clickhouse_hostname" {
 	type        = string
-	description = "The hostname of the Clickhouse server"
+	description = "The hostname of the ClickHouse database"
 }
-
 variable "destination_clickhouse_connection_username" {
 	type        = string
-	description = "The username to connect to the Clickhouse server"
+	description = "The username for the ClickHouse database"
 }
-
 variable "destination_clickhouse_connection_password" {
 	type        = string
-	description = "The password to connect to the Clickhouse server"
+	sensitive   = true
+	description = "The password for the ClickHouse database"
 }
-
 resource "streamkap_destination_clickhouse" "test" {
-	name                = "test-destination-clickhouse-updated"
-	ingestion_mode      = "append"
-	tasks_max           = 1
-	hostname            = var.destination_clickhouse_hostname
-	connection_username = var.destination_clickhouse_connection_username
-	connection_password = var.destination_clickhouse_connection_password
-	port                = 8443
-	database            = "demo"
-	ssl                 = true
+	name                 = "test-destination-clickhouse-updated"
+	hostname             = var.destination_clickhouse_hostname
+	connection_username  = var.destination_clickhouse_connection_username
+	connection_password  = var.destination_clickhouse_connection_password
+	ingestion_mode       = "append"
+	hard_delete          = false
+	tasks_max            = 5
+	port                 = 8443
+	database             = "demo"
+	ssl                  = false
+	topics_config_map = {
+		"streamkap.customer" = {
+			delete_sql_execute = "DELETE FROM table1 WHERE id = ? AND name = ?"
+		}
+		"topic3" = {
+			delete_sql_execute = "DELETE FROM table3 WHERE id = ?"
+		}
+	}
+	schema_evolution     = "none"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// Verify if attributes are propagated correctly
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "name", "test-destination-clickhouse-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "hostname", destinationClickHouseHostname),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connection_username", destinationClickHouseUsername),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connection_password", destinationClickHousePassword),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ingestion_mode", "append"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "tasks_max", "1"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "hostname", destinationClickhouseHostname),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connection_username", destinationClickhouseConnectionUsername),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connection_password", destinationClickhouseConnectionPassword),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "hard_delete", "false"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "tasks_max", "5"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "port", "8443"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "database", "demo"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ssl", "true"),
-					resource.TestCheckNoResourceAttr("streamkap_destination_clickhouse.test", "topics_config_map"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ssl", "false"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "topics_config_map.streamkap.customer.delete_sql_execute", "DELETE FROM table1 WHERE id = ? AND name = ?"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "topics_config_map.topic3.delete_sql_execute", "DELETE FROM table3 WHERE id = ?"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "schema_evolution", "none"),
+					resource.TestCheckResourceAttrSet("streamkap_destination_clickhouse.test", "id"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connector", "clickhouse"),
 				),
 			},
-			// Delete testing automatically occurs in TestCase
+			// Delete testing is automatically handled by the test framework
 		},
 	})
 }

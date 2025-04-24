@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
@@ -46,6 +47,7 @@ type DestinationClickHouseResourceModel struct {
 	Name               types.String                                  `tfsdk:"name"`
 	Connector          types.String                                  `tfsdk:"connector"`
 	IngestionMode      types.String                                  `tfsdk:"ingestion_mode"`
+	HardDelete         types.Bool                                    `tfsdk:"hard_delete"`
 	TasksMax           types.Int64                                   `tfsdk:"tasks_max"`
 	Hostname           types.String                                  `tfsdk:"hostname"`
 	ConnectionUsername types.String                                  `tfsdk:"connection_username"`
@@ -54,6 +56,7 @@ type DestinationClickHouseResourceModel struct {
 	Database           types.String                                  `tfsdk:"database"`
 	SSL                types.Bool                                    `tfsdk:"ssl"`
 	TopicsConfigMap    map[string]clickHouseTopicsConfigMapItemModel `tfsdk:"topics_config_map"`
+	SchemaEvolution    types.String                                  `tfsdk:"schema_evolution"`
 }
 
 type clickHouseTopicsConfigMapItemModel struct {
@@ -101,12 +104,22 @@ func (r *DestinationClickHouseResource) Schema(ctx context.Context, req res.Sche
 					),
 				},
 			},
+			"hard_delete": schema.BoolAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             booldefault.StaticBool(true),
+				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)",
+				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)",
+			},
 			"tasks_max": schema.Int64Attribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             int64default.StaticInt64(5),
 				Description:         "The maximum number of active task",
 				MarkdownDescription: "The maximum number of active task",
+				Validators: []validator.Int64{
+					int64validator.Between(1, 10),
+				},
 			},
 			"hostname": schema.StringAttribute{
 				Required:            true,
@@ -154,6 +167,19 @@ func (r *DestinationClickHouseResource) Schema(ctx context.Context, req res.Sche
 				},
 				Description:         "Per topic configuration in JSON format",
 				MarkdownDescription: "Per topic configuration in JSON format",
+			},
+			"schema_evolution": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString("basic"),
+				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `none`",
+				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `none`",
+				Validators: []validator.String{
+					stringvalidator.OneOf(
+						"basic",
+						"none",
+					),
+				},
 			},
 		},
 	}
@@ -369,6 +395,7 @@ func (r *DestinationClickHouseResource) model2ConfigMap(model DestinationClickHo
 
 	return map[string]any{
 		"ingestion.mode":      model.IngestionMode.ValueString(),
+		"hard.delete":         model.HardDelete.ValueBool(),
 		"tasks.max":           model.TasksMax.ValueInt64(),
 		"hostname":            model.Hostname.ValueString(),
 		"connection.username": model.ConnectionUsername.ValueString(),
@@ -378,12 +405,14 @@ func (r *DestinationClickHouseResource) model2ConfigMap(model DestinationClickHo
 		"database":          model.Database.ValueStringPointer(),
 		"ssl":               model.SSL.ValueBool(),
 		"topics.config.map": topicsConfigMapStr,
+		"schema.evolution":  model.SchemaEvolution.ValueString(),
 	}, nil
 }
 
 func (r *DestinationClickHouseResource) configMap2Model(cfg map[string]any, model *DestinationClickHouseResourceModel) (err error) {
 	// Copy the config map to the model
 	model.IngestionMode = helper.GetTfCfgString(cfg, "ingestion.mode")
+	model.HardDelete = helper.GetTfCfgBool(cfg, "hard.delete")
 	model.TasksMax = helper.GetTfCfgInt64(cfg, "tasks.max")
 	model.Hostname = helper.GetTfCfgString(cfg, "hostname")
 	model.ConnectionUsername = helper.GetTfCfgString(cfg, "connection.username")
@@ -392,6 +421,7 @@ func (r *DestinationClickHouseResource) configMap2Model(cfg map[string]any, mode
 	model.Port = helper.GetTfCfgInt64(cfg, "port")
 	model.Database = helper.GetTfCfgString(cfg, "database")
 	model.SSL = helper.GetTfCfgBool(cfg, "ssl")
+	model.SchemaEvolution = helper.GetTfCfgString(cfg, "schema.evolution")
 
 	// Parse topics config map
 	// Example:
