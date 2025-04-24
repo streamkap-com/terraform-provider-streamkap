@@ -43,6 +43,7 @@ variable "destination_clickhouse_connection_password" {
 resource "streamkap_destination_clickhouse" "example-destination-clickhouse" {
   name                = "example-destination-clickhouse"
   ingestion_mode      = "append"
+  hard_delete         = true
   tasks_max           = 5
   hostname            = var.destination_clickhouse_hostname
   connection_username = var.destination_clickhouse_connection_username
@@ -51,10 +52,11 @@ resource "streamkap_destination_clickhouse" "example-destination-clickhouse" {
   database            = "demo"
   ssl                 = true
   topics_config_map = {
-    "public.users" = {
+    "streamkap.customer" = {
       delete_sql_execute = "SELECT 1;"
     }
   }
+  schema_evolution = "basic"
 }
 
 output "example-destination-clickhouse" {
@@ -75,8 +77,10 @@ output "example-destination-clickhouse" {
 ### Optional
 
 - `database` (String) ClickHouse database
+- `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)
 - `ingestion_mode` (String) Upsert or append modes are available
 - `port` (Number) ClickHouse Port. For example, 8443
+- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `none`
 - `ssl` (Boolean) Enable TLS for network connections
 - `tasks_max` (Number) The maximum number of active task
 - `topics_config_map` (Attributes Map) Per topic configuration in JSON format (see [below for nested schema](#nestedatt--topics_config_map))

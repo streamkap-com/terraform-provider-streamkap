@@ -61,6 +61,7 @@ variable "destination_clickhouse_connection_password" {
 resource "streamkap_destination_clickhouse" "example-destination-clickhouse" {
   name                = "example-destination-clickhouse"
   ingestion_mode      = "append"
+  hard_delete         = true
   tasks_max           = 5
   hostname            = var.destination_clickhouse_hostname
   connection_username = var.destination_clickhouse_connection_username
@@ -68,6 +69,12 @@ resource "streamkap_destination_clickhouse" "example-destination-clickhouse" {
   port                = 8443
   database            = "demo"
   ssl                 = true
+  topics_config_map = {
+    "streamkap.customer" = {
+      delete_sql_execute = "SELECT 1;"
+    }
+  }
+  schema_evolution = "basic"
 }
 
 resource "streamkap_pipeline" "example-pipeline" {
