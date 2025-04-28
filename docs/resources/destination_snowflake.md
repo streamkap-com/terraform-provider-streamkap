@@ -82,6 +82,7 @@ output "example-destination-snowflake" {
 
 - `apply_dynamic_table_script` (Boolean) Specifies whether the connector should create Dyanmic Tables & Cleanup Task (applies to `append` mode only)
 - `auto_qa_dedupe_table_mapping` (Map of String) Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.
+- `auto_schema_creation` (Boolean) Specifies whether the connector should create the schema automatically. If set to `false`, the schema must be created manually before starting the connector.
 - `cleanup_task_schedule` (Number) Schedule for cleanup task in minutes (applies to `append` mode only)
 - `create_sql_data` (String) Custom SQL mustache template input JSON data. Use TABLE_DATA dictionary to set table specific data. e.g:
 	```
