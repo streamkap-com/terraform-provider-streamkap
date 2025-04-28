@@ -52,6 +52,7 @@ type DestinationSnowflakeResourceModel struct {
 	Sfwarehouse                   types.String            `tfsdk:"sfwarehouse"`
 	SnowflakeDatabaseName         types.String            `tfsdk:"snowflake_database_name"`
 	SnowflakeSchemaName           types.String            `tfsdk:"snowflake_schema_name"`
+	AutoSchemaCreation            types.Bool              `tfsdk:"auto_schema_creation"`
 	SnowflakeRoleName             types.String            `tfsdk:"snowflake_role_name"`
 	IngestionMode                 types.String            `tfsdk:"ingestion_mode"`
 	HardDelete                    types.Bool              `tfsdk:"hard_delete"`
@@ -132,6 +133,13 @@ func (r *DestinationSnowflakeResource) Schema(ctx context.Context, req res.Schem
 				Required:            true,
 				Description:         "The name of the schema that contains the table to insert rows into.",
 				MarkdownDescription: "The name of the schema that contains the table to insert rows into.",
+			},
+			"auto_schema_creation": schema.BoolAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             booldefault.StaticBool(true),
+				Description:         "Specifies whether the connector should create the schema automatically. If set to `false`, the schema must be created manually before starting the connector.",
+				MarkdownDescription: "Specifies whether the connector should create the schema automatically. If set to `false`, the schema must be created manually before starting the connector.",
 			},
 			"snowflake_role_name": schema.StringAttribute{
 				Computed:            true,
@@ -444,6 +452,7 @@ func (r *DestinationSnowflakeResource) model2ConfigMap(_ context.Context, model 
 		"sfwarehouse":                              model.Sfwarehouse.ValueString(),
 		"snowflake.database.name":                  model.SnowflakeDatabaseName.ValueString(),
 		"snowflake.schema.name":                    model.SnowflakeSchemaName.ValueString(),
+		"create.schema.auto":                       model.AutoSchemaCreation.ValueBool(),
 		"snowflake.role.name":                      model.SnowflakeRoleName.ValueString(),
 		"ingestion.mode":                           model.IngestionMode.ValueString(),
 		"hard.delete":                              model.HardDelete.ValueBool(),
@@ -474,6 +483,7 @@ func (r *DestinationSnowflakeResource) configMap2Model(ctx context.Context, cfg 
 	model.Sfwarehouse = helper.GetTfCfgString(cfg, "sfwarehouse")
 	model.SnowflakeDatabaseName = helper.GetTfCfgString(cfg, "snowflake.database.name")
 	model.SnowflakeSchemaName = helper.GetTfCfgString(cfg, "snowflake.schema.name")
+	model.AutoSchemaCreation = helper.GetTfCfgBool(cfg, "create.schema.auto")
 	model.SnowflakeRoleName = helper.GetTfCfgString(cfg, "snowflake.role.name")
 	model.IngestionMode = helper.GetTfCfgString(cfg, "ingestion.mode")
 	model.HardDelete = helper.GetTfCfgBool(cfg, "hard.delete")
