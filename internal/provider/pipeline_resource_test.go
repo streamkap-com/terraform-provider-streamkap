@@ -24,10 +24,12 @@ resource "streamkap_source_postgresql" "test" {
 	database_user                                = "postgresql"
 	database_password                            = var.source_postgresql_password
 	database_dbname                              = "postgres"
+	snapshot_read_only                           = "No"
 	database_sslmode                             = "require"
-	schema_include_list                          = "public"
-	table_include_list                           = "public.users"
+	schema_include_list                          = "streamkap"
+	table_include_list                           = "streamkap.customer,streamkap.customer2"
 	signal_data_collection_schema_or_database    = "streamkap"
+	column_include_list                          = "streamkap[.]customer[.](id|name)"
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = null
 	include_source_db_name_in_table_name         = false
@@ -56,22 +58,33 @@ variable "destination_snowflake_key_passphrase" {
 resource "streamkap_destination_snowflake" "test" {
 	name                             = "test-destination-snowflake"
 	snowflake_url_name               = var.destination_snowflake_url_name
-	snowflake_user_name              = "STREAMKAP_USER_POSTGRESQL"
+	snowflake_user_name              = "STREAMKAP_USER_JUNIT"
 	snowflake_private_key            = var.destination_snowflake_private_key
 	snowflake_private_key_passphrase = var.destination_snowflake_key_passphrase
-	snowflake_database_name          = "STREAMKAP_POSTGRESQL"
-	snowflake_schema_name            = "STREAMKAP"
-	snowflake_role_name              = "STREAMKAP_ROLE"
+	sfwarehouse                      = "STREAMKAP_WH"
+	snowflake_database_name          = "JUNIT"
+	snowflake_schema_name            = "JUNIT"
+	snowflake_role_name              = "STREAMKAP_ROLE_JUNIT"
+	ingestion_mode                   = "upsert"
+	hard_delete                      = true
+	use_hybrid_tables                = false
+	apply_dynamic_table_script       = false
+	dynamic_table_target_lag         = 60
+	cleanup_task_schedule            = 120
+	auto_qa_dedupe_table_mapping = {
+		users                   = "JUNIT.USERS",
+		itst_scen20240528103635 = "ITST_SCEN20240528103635"
+	}
 }
 `
 
 var pipelineTransformsDef = `
 data "streamkap_transform" "test-transform" {
-	id = "63975020676fa8f369d55001"
+	id = "67d43b4ed21e8f093edae34b"
 }
 
 data "streamkap_transform" "another-test-transform" {
-	id = "63975020676fa8f369d55005"
+	id = "67dbe945308e0871a4e1fc49"
 }
 `
 
@@ -100,10 +113,8 @@ resource "streamkap_pipeline" "test" {
 		name      = streamkap_source_postgresql.test.name
 		connector = streamkap_source_postgresql.test.connector
 		topics    = [
-			"public.users",
-			"public.itst_scen20240530141046",
-			"public.itst_scen20240528100603",
-			"public.itst_scen20240528103635",
+			"streamkap.customer",
+			"streamkap.customer2",
 		]
 	}
 	destination = {
@@ -115,15 +126,13 @@ resource "streamkap_pipeline" "test" {
 		{
 			id     = data.streamkap_transform.test-transform.id
 			topics = [
-				"public.itst_scen20240530123456",
-				"random_topic",
+				"public.test_transformed",
 			]
 		},
 		{
 			id     = data.streamkap_transform.another-test-transform.id
 			topics = [
-				"public.itst_scen20240530654321",
-				"public.itst_scen20240528121212",
+				"test",
 			]
 		}
 	]
@@ -154,8 +163,8 @@ resource "streamkap_pipeline" "test" {
 		name      = streamkap_source_postgresql.test.name
 		connector = streamkap_source_postgresql.test.connector
 		topics    = [
-			"public.itst_scen20240530141046",
-			"public.itst_scen20240528103635",
+			"streamkap.customer",
+			"streamkap.customer2",
 		]
 	}
 	destination = {
@@ -167,7 +176,7 @@ resource "streamkap_pipeline" "test" {
 		{
 			id     = data.streamkap_transform.test-transform.id
 			topics = [
-				"public.itst_scen20240530123456",
+				"public.test_transformed",
 			]
 		},
 	]
