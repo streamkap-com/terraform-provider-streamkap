@@ -29,7 +29,7 @@ variable "source_postgresql_password" {
   description = "The password of the PostgreSQL database"
 }
 
-resource "streamkap_source_postgresql" "example-source-postgresql" {
+resource "streamkap_source_postgresql" "example" {
   name                                         = "example-source-postgresql"
   database_hostname                            = var.source_postgresql_hostname
   database_port                                = 5432
@@ -68,7 +68,7 @@ variable "destination_snowflake_key_passphrase" {
   description = "The passphrase of the private key of the Snowflake database"
 }
 
-resource "streamkap_destination_snowflake" "example-destination-snowflake" {
+resource "streamkap_destination_snowflake" "example" {
   name                             = "example-destination-snowflake"
   snowflake_url_name               = var.destination_snowflake_url_name
   snowflake_user_name              = "STREAMKAP_USER_JUNIT"
@@ -84,6 +84,10 @@ resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   apply_dynamic_table_script       = false
   dynamic_table_target_lag         = 60
   cleanup_task_schedule            = 120
+  auto_qa_dedupe_table_mapping = {
+    users                   = "JUNIT.USERS",
+    itst_scen20240528103635 = "ITST_SCEN20240528103635"
+  }
 }
 
 data "streamkap_transform" "example-transform" {
@@ -94,41 +98,39 @@ data "streamkap_transform" "another-example-transform" {
   id = "63975020676fa8f369d55005"
 }
 
-resource "streamkap_pipeline" "example-pipeline" {
+resource "streamkap_pipeline" "example" {
   name                = "example-pipeline"
   snapshot_new_tables = true
   source = {
-    id        = streamkap_source_postgresql.example-source-postgresql.id
-    name      = streamkap_source_postgresql.example-source-postgresql.name
-    connector = streamkap_source_postgresql.example-source-postgresql.connector
+    id        = streamkap_source_postgresql.example.id
+    name      = streamkap_source_postgresql.example.name
+    connector = streamkap_source_postgresql.example.connector
     topics = [
       "streamkap.customer",
       "streamkap.customer2",
     ]
   }
   destination = {
-    id        = streamkap_destination_snowflake.example-destination-snowflake.id
-    name      = streamkap_destination_snowflake.example-destination-snowflake.name
-    connector = streamkap_destination_snowflake.example-destination-snowflake.connector
+    id        = streamkap_destination_snowflake.example.id
+    name      = streamkap_destination_snowflake.example.name
+    connector = streamkap_destination_snowflake.example.connector
   }
   transforms = [
     {
       id = data.streamkap_transform.example-transform.id
       topics = [
-        "public.itst_scen20240530123456",
-        "random_topic",
+        "public.test_transformed",
       ]
     },
     {
       id = data.streamkap_transform.another-example-transform.id
       topics = [
-        "public.itst_scen20240530654321",
-        "public.itst_scen20240528121212",
+        "test",
       ]
     }
   ]
   tags = [
-    data.streamkap_tag.development-tag.id,
+    data.streamkap_tag.production-tag.id,
   ]
 }
 
