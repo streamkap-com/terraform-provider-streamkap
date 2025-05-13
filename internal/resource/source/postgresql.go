@@ -386,6 +386,13 @@ func (r *SourcePostgreSQLResource) Update(ctx context.Context, req res.UpdateReq
 
 	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
 	config, err := r.model2ConfigMap(plan)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating PostgreSQL source",
+			fmt.Sprintf("Unable to update PostgreSQL source, got error: %s", err),
+		)
+		return
+	}
 
 	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{
 		Name:      plan.Name.ValueString(),
