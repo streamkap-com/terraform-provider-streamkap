@@ -51,11 +51,17 @@ type SourceMySQLResourceModel struct {
 	TableIncludeList                        types.String `tfsdk:"table_include_list"`
 	SignalDataCollectionSchemaOrDatabase    types.String `tfsdk:"signal_data_collection_schema_or_database"`
 	ColumnIncludeList                       types.String `tfsdk:"column_include_list"`
+	ColumnExcludeList                       types.String `tfsdk:"column_exclude_list"`
 	HeartbeatEnabled                        types.Bool   `tfsdk:"heartbeat_enabled"`
+	HeartbeatIntervalMin                    types.Int64  `tfsdk:"heartbeat_interval_min"`
 	HeartbeatDataCollectionSchemaOrDatabase types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
 	SnapshotGTID                            types.Bool   `tfsdk:"snapshot_gtid"`
 	BinaryHandlingMode                      types.String `tfsdk:"binary_handling_mode"`
 	DatabaseConnectionTimezone              types.String `tfsdk:"database_connection_timezone"`
+	InsertStaticKeyField                    types.String `tfsdk:"insert_static_key_field"`
+	InsertStaticKeyValue                    types.String `tfsdk:"insert_static_key_value"`
+	InsertStaticValueField                  types.String `tfsdk:"insert_static_value_field"`
+	InsertStaticValue                       types.String `tfsdk:"insert_static_value"`
 	SSHEnabled                              types.Bool   `tfsdk:"ssh_enabled"`
 	SSHHost                                 types.String `tfsdk:"ssh_host"`
 	SSHPort                                 types.String `tfsdk:"ssh_port"`
@@ -133,12 +139,24 @@ func (r *SourceMySQLResource) Schema(ctx context.Context, req res.SchemaRequest,
 				Description:         "Comma separated list of columns whitelist regular expressions, format schema[.]table[.](column1|column2|etc)",
 				MarkdownDescription: "Comma separated list of columns whitelist regular expressions, format schema[.]table[.](column1|column2|etc)",
 			},
+			"column_exclude_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Comma separated list of columns blacklist regular expressions, format schema[.]table[.](column1|column2|etc)",
+				MarkdownDescription: "Comma separated list of columns blacklist regular expressions, format schema[.]table[.](column1|column2|etc)",
+			},
 			"heartbeat_enabled": schema.BoolAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             booldefault.StaticBool(false),
 				Description:         "Heartbeats are used to keep the pipeline healthy when there is a low volume of data at times.",
 				MarkdownDescription: "Heartbeats are used to keep the pipeline healthy when there is a low volume of data at times.",
+			},
+			"heartbeat_interval_min": schema.Int64Attribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             int64default.StaticInt64(5),
+				Description:         "Interval in minutes between heartbeats",
+				MarkdownDescription: "Interval in minutes between heartbeats",
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
@@ -243,6 +261,34 @@ func (r *SourceMySQLResource) Schema(ctx context.Context, req res.SchemaRequest,
 					),
 				},
 			},
+			"insert_static_key_field": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The name of the static field to be added to the message key.",
+				MarkdownDescription: "The name of the static field to be added to the message key.",
+			},
+			"insert_static_key_value": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The value of the static field to be added to the message key.",
+				MarkdownDescription: "The value of the static field to be added to the message key.",
+			},
+			"insert_static_value_field": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The name of the static field to be added to the message value.",
+				MarkdownDescription: "The name of the static field to be added to the message value.",
+			},
+			"insert_static_value": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The value of the static field to be added to the message value.",
+				MarkdownDescription: "The value of the static field to be added to the message value.",
+			},
 			"snapshot_gtid": schema.BoolAttribute{
 				Computed:            true,
 				Optional:            true,
@@ -324,7 +370,14 @@ func (r *SourceMySQLResource) Create(ctx context.Context, req res.CreateRequest,
 		return
 	}
 
-	config := r.model2ConfigMap(plan)
+	config, err := r.model2ConfigMap(plan)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error converting MySQL source config",
+			fmt.Sprintf("Unable to convert MySQL source config, got error: %s", err),
+		)
+		return
+	}
 
 	source, err := r.client.CreateSource(ctx, api.Source{
 		Name:      plan.Name.ValueString(),
@@ -399,7 +452,14 @@ func (r *SourceMySQLResource) Update(ctx context.Context, req res.UpdateRequest,
 	}
 
 	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
-	config := r.model2ConfigMap(plan)
+	config, err := r.model2ConfigMap(plan)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error converting MySQL source config",
+			fmt.Sprintf("Unable to convert MySQL source config, got error: %s", err),
+		)
+		return
+	}
 
 	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{
 		Name:      plan.Name.ValueString(),
@@ -451,12 +511,16 @@ func (r *SourceMySQLResource) ImportState(ctx context.Context, req res.ImportSta
 }
 
 // Helpers
-func (r *SourceMySQLResource) model2ConfigMap(model SourceMySQLResourceModel) map[string]any {
+func (r *SourceMySQLResource) model2ConfigMap(model SourceMySQLResourceModel) (map[string]any, error) {
 	snapshotGTIDStr := "Yes"
 	if !model.SnapshotGTID.ValueBool() {
 		snapshotGTIDStr = "No"
 	}
-	return map[string]any{
+	if !model.ColumnExcludeList.IsNull() && !model.ColumnIncludeList.IsNull() {
+		return nil, fmt.Errorf("only one of column_include_list or column_exclude_list can be set")
+	}
+
+	configMap := map[string]any{
 		"database.hostname.user.defined":               model.DatabaseHostname.ValueString(),
 		"database.port.user.defined":                   int(model.DatabasePort.ValueInt64()),
 		"database.user":                                model.DatabaseUser.ValueString(),
@@ -464,17 +528,32 @@ func (r *SourceMySQLResource) model2ConfigMap(model SourceMySQLResourceModel) ma
 		"database.include.list.user.defined":           model.DatabaseIncludeList.ValueString(),
 		"table.include.list.user.defined":              model.TableIncludeList.ValueString(),
 		"signal.data.collection.schema.or.database":    model.SignalDataCollectionSchemaOrDatabase.ValueStringPointer(),
-		"column.include.list.user.defined":             model.ColumnIncludeList.ValueStringPointer(),
+		"column.include.list.toggled":                  true,
 		"heartbeat.enabled":                            model.HeartbeatEnabled.ValueBool(),
+		"heartbeat.interval.min.user.defined":                       int(model.HeartbeatIntervalMin.ValueInt64()),
 		"heartbeat.data.collection.schema.or.database": model.HeartbeatDataCollectionSchemaOrDatabase.ValueStringPointer(),
-		"database.connectionTimeZone":                 model.DatabaseConnectionTimezone.ValueString(),
+		"database.connectionTimeZone":                  model.DatabaseConnectionTimezone.ValueString(),
 		"snapshot.gtid":                                snapshotGTIDStr,
+		"transforms.InsertStaticKey.static.field":      model.InsertStaticKeyField.ValueString(),
+		"transforms.InsertStaticKey.static.value":      model.InsertStaticKeyValue.ValueString(),
+		"transforms.InsertStaticValue.static.field":    model.InsertStaticValueField.ValueString(),
+		"transforms.InsertStaticValue.static.value":    model.InsertStaticValue.ValueString(),
 		"binary.handling.mode":                         model.BinaryHandlingMode.ValueString(),
 		"ssh.enabled":                                  model.SSHEnabled.ValueBool(),
 		"ssh.host":                                     model.SSHHost.ValueStringPointer(),
 		"ssh.port":                                     model.SSHPort.ValueString(),
 		"ssh.user":                                     model.SSHUser.ValueString(),
 	}
+
+	if !model.ColumnIncludeList.IsNull() {
+		configMap["column.include.list.toggled"] = true
+	} else if !model.ColumnExcludeList.IsNull() {
+		configMap["column.include.list.toggled"] = false
+	}
+	configMap["column.include.list.user.defined"] = model.ColumnIncludeList.ValueStringPointer()
+	configMap["column.exclude.list.user.defined"] = model.ColumnExcludeList.ValueStringPointer()
+
+	return configMap, nil
 }
 
 func (r *SourceMySQLResource) configMap2Model(cfg map[string]any, model *SourceMySQLResourceModel) {
@@ -487,10 +566,16 @@ func (r *SourceMySQLResource) configMap2Model(cfg map[string]any, model *SourceM
 	model.TableIncludeList = helper.GetTfCfgString(cfg, "table.include.list.user.defined")
 	model.SignalDataCollectionSchemaOrDatabase = helper.GetTfCfgString(cfg, "signal.data.collection.schema.or.database")
 	model.ColumnIncludeList = helper.GetTfCfgString(cfg, "column.include.list.user.defined")
+	model.ColumnExcludeList = helper.GetTfCfgString(cfg, "column.exclude.list.user.defined")
 	model.HeartbeatEnabled = helper.GetTfCfgBool(cfg, "heartbeat.enabled")
+	model.HeartbeatIntervalMin = helper.GetTfCfgInt64(cfg, "heartbeat.interval.min.user.defined")
 	model.HeartbeatDataCollectionSchemaOrDatabase = helper.GetTfCfgString(cfg, "heartbeat.data.collection.schema.or.database")
 	model.DatabaseConnectionTimezone = helper.GetTfCfgString(cfg, "database.connectionTimeZone")
 	model.SnapshotGTID = types.BoolValue(helper.GetTfCfgString(cfg, "snapshot.gtid").ValueString() == "Yes")
+	model.InsertStaticKeyField = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey.static.field")
+	model.InsertStaticKeyValue = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey.static.value")
+	model.InsertStaticValueField = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue.static.field")
+	model.InsertStaticValue = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue.static.value")
 	model.BinaryHandlingMode = helper.GetTfCfgString(cfg, "binary.handling.mode")
 	model.SSHEnabled = helper.GetTfCfgBool(cfg, "ssh.enabled")
 	model.SSHHost = helper.GetTfCfgString(cfg, "ssh.host")
