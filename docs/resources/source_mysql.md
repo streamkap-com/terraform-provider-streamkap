@@ -36,19 +36,20 @@ variable "source_mysql_password" {
   description = "The password of the MySQL database"
 }
 
-resource "streamkap_source_mysql" "example-source-mysql" {
-  name                         = "example-source-mysql"
-  database_hostname            = var.source_mysql_hostname
-  database_port                = 3306
-  database_user                = "admin"
-  database_password            = var.source_mysql_password
-  database_include_list        = "crm,ecommerce,tst"
-  table_include_list           = "crm.demo,ecommerce.Customers,tst.test_id_timestamp"
-  heartbeat_enabled            = false
-  database_connection_timezone = "SERVER"
-  snapshot_gtid                = true
-  binary_handling_mode         = "bytes"
-  ssh_enabled                  = false
+resource "streamkap_source_mysql" "test" {
+  name                                      = "test-source-mysql"
+  database_hostname                         = var.source_mysql_hostname
+  database_port                             = 3306
+  database_user                             = "admin"
+  database_password                         = var.source_mysql_password
+  database_include_list                     = "crm,ecommerce,tst"
+  table_include_list                        = "crm.demo,ecommerce.customers,tst.test_id_timestamp"
+  signal_data_collection_schema_or_database = "crm"
+  column_include_list                       = "crm[.]demo[.](id|name),ecommerce[.]customers[.](customer_id|email)"
+  database_connection_timezone              = "SERVER"
+  snapshot_gtid                             = true
+  binary_handling_mode                      = "bytes"
+  ssh_enabled                               = false
 }
 
 output "example-source-mysql" {
@@ -71,11 +72,17 @@ output "example-source-mysql" {
 ### Optional
 
 - `binary_handling_mode` (String) Specifies how the data for binary columns e.g. blob, binary, varbinary should be represented. This setting depends on what the destination is. See the documentation for more details.
+- `column_exclude_list` (String) Comma separated list of columns blacklist regular expressions, format schema[.]table[.](column1|column2|etc)
 - `column_include_list` (String) Comma separated list of columns whitelist regular expressions, format schema[.]table[.](column1|column2|etc)
 - `database_connection_timezone` (String) Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MySQL server session variables 'time_zone' or 'system_time_zone'
 - `database_port` (Number) MySQL Port. For example, 3306
 - `heartbeat_data_collection_schema_or_database` (String) Heartbeat Table Database
 - `heartbeat_enabled` (Boolean) Heartbeats are used to keep the pipeline healthy when there is a low volume of data at times.
+- `heartbeat_interval_min` (Number) Interval in minutes between heartbeats
+- `insert_static_key_field` (String) The name of the static field to be added to the message key.
+- `insert_static_key_value` (String) The value of the static field to be added to the message key.
+- `insert_static_value` (String) The value of the static field to be added to the message value.
+- `insert_static_value_field` (String) The name of the static field to be added to the message value.
 - `signal_data_collection_schema_or_database` (String) Schema for signal data collection. If connector is in read-only mode (snapshot_gtid="Yes"), set this to null.
 - `snapshot_gtid` (Boolean) GTID snapshots are read only but require some prerequisite settings, including enabling GTID on the source database. See the documentation for more details.
 - `ssh_enabled` (Boolean) Connect via SSH tunnel
