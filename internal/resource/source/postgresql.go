@@ -67,6 +67,7 @@ type SourcePostgreSQLResourceModel struct {
 	SSHHost                                 types.String `tfsdk:"ssh_host"`
 	SSHPort                                 types.String `tfsdk:"ssh_port"`
 	SSHUser                                 types.String `tfsdk:"ssh_user"`
+	PredicatesIsTopicToEnrichPattern        types.String `tfsdk:"predicates_istopictoenrich_pattern"`
 }
 
 func (r *SourcePostgreSQLResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -270,6 +271,13 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 				Description:         "User for connecting to the SSH server, only required if `ssh_enabled` is true",
 				MarkdownDescription: "User for connecting to the SSH server, only required if `ssh_enabled` is true",
 			},
+			"predicates_istopictoenrich_pattern": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString("$^"),
+				Description:         "Regex pattern to match topics for enrichment",
+				MarkdownDescription: "Regex pattern to match topics for enrichment",
+			},
 		},
 	}
 }
@@ -472,6 +480,7 @@ func (r *SourcePostgreSQLResource) model2ConfigMap(model SourcePostgreSQLResourc
 		"ssh.host":                                          model.SSHHost.ValueStringPointer(),
 		"ssh.port":                                          model.SSHPort.ValueString(),
 		"ssh.user":                                          model.SSHUser.ValueString(),
+		"predicates.IsTopicToEnrich.pattern":    model.PredicatesIsTopicToEnrichPattern.ValueString(),
 	}
 
 	if !model.ColumnIncludeList.IsNull() {
@@ -510,4 +519,5 @@ func (r *SourcePostgreSQLResource) configMap2Model(cfg map[string]any, model *So
 	model.SSHHost = helper.GetTfCfgString(cfg, "ssh.host")
 	model.SSHPort = helper.GetTfCfgString(cfg, "ssh.port")
 	model.SSHUser = helper.GetTfCfgString(cfg, "ssh.user")
+	model.PredicatesIsTopicToEnrichPattern = helper.GetTfCfgString(cfg, "predicates.IsTopicToEnrich.pattern")
 }
