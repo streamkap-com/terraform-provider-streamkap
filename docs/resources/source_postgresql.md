@@ -94,6 +94,7 @@ output "example-source-postgresql" {
 - `ssh_host` (String) Hostname of the SSH server, only required if `ssh_enabled` is true
 - `ssh_port` (String) Port of the SSH server, only required if `ssh_enabled` is true
 - `ssh_user` (String) User for connecting to the SSH server, only required if `ssh_enabled` is true
+- `predicates_istopictoenrich_pattern` (String) Regex pattern to match topics for enrichment
 
 ### Read-Only
 
