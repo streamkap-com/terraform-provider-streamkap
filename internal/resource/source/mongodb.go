@@ -52,6 +52,7 @@ type SourceMongoDBResourceModel struct {
 	SSHHost                              types.String `tfsdk:"ssh_host"`
 	SSHPort                              types.String `tfsdk:"ssh_port"`
 	SSHUser                              types.String `tfsdk:"ssh_user"`
+	PredicatesIsTopicToEnrichPattern     types.String `tfsdk:"predicates_istopictoenrich_pattern"`
 }
 
 func (r *SourceMongoDBResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -154,6 +155,13 @@ func (r *SourceMongoDBResource) Schema(ctx context.Context, req res.SchemaReques
 				Default:             stringdefault.StaticString("streamkap"),
 				Description:         "User for connecting to the SSH server, only required if `ssh_enabled` is true",
 				MarkdownDescription: "User for connecting to the SSH server, only required if `ssh_enabled` is true",
+			},
+			"predicates_istopictoenrich_pattern": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString("$^"),
+				Description:         "Regex pattern to match topics for enrichment",
+				MarkdownDescription: "Regex pattern to match topics for enrichment",
 			},
 		},
 	}
@@ -327,6 +335,7 @@ func (r *SourceMongoDBResource) model2ConfigMap(model SourceMongoDBResourceModel
 		"ssh.host":    model.SSHHost.ValueStringPointer(),
 		"ssh.port":    model.SSHPort.ValueString(),
 		"ssh.user":    model.SSHUser.ValueString(),
+		"predicates.IsTopicToEnrich.pattern":    model.PredicatesIsTopicToEnrichPattern.ValueString(),
 	}
 }
 
@@ -342,4 +351,5 @@ func (r *SourceMongoDBResource) configMap2Model(cfg map[string]any, model *Sourc
 	model.SSHHost = helper.GetTfCfgString(cfg, "ssh.host")
 	model.SSHPort = helper.GetTfCfgString(cfg, "ssh.port")
 	model.SSHUser = helper.GetTfCfgString(cfg, "ssh.user")
+	model.PredicatesIsTopicToEnrichPattern = helper.GetTfCfgString(cfg, "predicates.IsTopicToEnrich.pattern")
 }
