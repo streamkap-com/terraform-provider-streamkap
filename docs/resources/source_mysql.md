@@ -79,17 +79,21 @@ output "example-source-mysql" {
 - `heartbeat_data_collection_schema_or_database` (String) Heartbeat Table Database
 - `heartbeat_enabled` (Boolean) Heartbeats are used to keep the pipeline healthy when there is a low volume of data at times.
 - `heartbeat_interval_min` (Number) Interval in minutes between heartbeats
-- `insert_static_key_field` (String) The name of the static field to be added to the message key.
-- `insert_static_key_value` (String) The value of the static field to be added to the message key.
-- `insert_static_value` (String) The value of the static field to be added to the message value.
-- `insert_static_value_field` (String) The name of the static field to be added to the message value.
+- `insert_static_key_field_1` (String) The name of the static field to be added to the message key.
+- `insert_static_key_field_2` (String) The name of the static field to be added to the message key.
+- `insert_static_key_value_1` (String) The value of the static field to be added to the message key.
+- `insert_static_key_value_2` (String) The value of the static field to be added to the message key.
+- `insert_static_value_1` (String) The value of the static field to be added to the message value.
+- `insert_static_value_2` (String) The value of the static field to be added to the message value.
+- `insert_static_value_field_1` (String) The name of the static field to be added to the message value.
+- `insert_static_value_field_2` (String) The name of the static field to be added to the message value.
+- `predicates_istopictoenrich_pattern` (String) Regex pattern to match topics for enrichment
 - `signal_data_collection_schema_or_database` (String) Schema for signal data collection. If connector is in read-only mode (snapshot_gtid="Yes"), set this to null.
 - `snapshot_gtid` (Boolean) GTID snapshots are read only but require some prerequisite settings, including enabling GTID on the source database. See the documentation for more details.
 - `ssh_enabled` (Boolean) Connect via SSH tunnel
 - `ssh_host` (String) Hostname of the SSH server, only required if `ssh_enabled` is true
 - `ssh_port` (String) Port of the SSH server, only required if `ssh_enabled` is true
 - `ssh_user` (String) User for connecting to the SSH server, only required if `ssh_enabled` is true
-- `predicates_istopictoenrich_pattern` (String) Regex pattern to match topics for enrichment
 
 ### Read-Only
 
