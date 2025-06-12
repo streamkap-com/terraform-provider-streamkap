@@ -58,10 +58,14 @@ type SourceMySQLResourceModel struct {
 	SnapshotGTID                            types.Bool   `tfsdk:"snapshot_gtid"`
 	BinaryHandlingMode                      types.String `tfsdk:"binary_handling_mode"`
 	DatabaseConnectionTimezone              types.String `tfsdk:"database_connection_timezone"`
-	InsertStaticKeyField                    types.String `tfsdk:"insert_static_key_field"`
-	InsertStaticKeyValue                    types.String `tfsdk:"insert_static_key_value"`
-	InsertStaticValueField                  types.String `tfsdk:"insert_static_value_field"`
-	InsertStaticValue                       types.String `tfsdk:"insert_static_value"`
+	InsertStaticKeyField1                   types.String `tfsdk:"insert_static_key_field_1"`
+	InsertStaticKeyValue1                   types.String `tfsdk:"insert_static_key_value_1"`
+	InsertStaticValueField1                 types.String `tfsdk:"insert_static_value_field_1"`
+	InsertStaticValue1                      types.String `tfsdk:"insert_static_value_1"`
+	InsertStaticKeyField2                   types.String `tfsdk:"insert_static_key_field_2"`
+	InsertStaticKeyValue2                   types.String `tfsdk:"insert_static_key_value_2"`
+	InsertStaticValueField2                 types.String `tfsdk:"insert_static_value_field_2"`
+	InsertStaticValue2                      types.String `tfsdk:"insert_static_value_2"`
 	SSHEnabled                              types.Bool   `tfsdk:"ssh_enabled"`
 	SSHHost                                 types.String `tfsdk:"ssh_host"`
 	SSHPort                                 types.String `tfsdk:"ssh_port"`
@@ -262,28 +266,56 @@ func (r *SourceMySQLResource) Schema(ctx context.Context, req res.SchemaRequest,
 					),
 				},
 			},
-			"insert_static_key_field": schema.StringAttribute{
+			"insert_static_key_field_1": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString(""),
 				Description:         "The name of the static field to be added to the message key.",
 				MarkdownDescription: "The name of the static field to be added to the message key.",
 			},
-			"insert_static_key_value": schema.StringAttribute{
+			"insert_static_key_value_1": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString(""),
 				Description:         "The value of the static field to be added to the message key.",
 				MarkdownDescription: "The value of the static field to be added to the message key.",
 			},
-			"insert_static_value_field": schema.StringAttribute{
+			"insert_static_value_field_1": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString(""),
 				Description:         "The name of the static field to be added to the message value.",
 				MarkdownDescription: "The name of the static field to be added to the message value.",
 			},
-			"insert_static_value": schema.StringAttribute{
+			"insert_static_value_1": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The value of the static field to be added to the message value.",
+				MarkdownDescription: "The value of the static field to be added to the message value.",
+			},
+			"insert_static_key_field_2": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The name of the static field to be added to the message key.",
+				MarkdownDescription: "The name of the static field to be added to the message key.",
+			},
+			"insert_static_key_value_2": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The value of the static field to be added to the message key.",
+				MarkdownDescription: "The value of the static field to be added to the message key.",
+			},
+			"insert_static_value_field_2": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The name of the static field to be added to the message value.",
+				MarkdownDescription: "The name of the static field to be added to the message value.",
+			},
+			"insert_static_value_2": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString(""),
@@ -542,10 +574,14 @@ func (r *SourceMySQLResource) model2ConfigMap(model SourceMySQLResourceModel) (m
 		"heartbeat.data.collection.schema.or.database": model.HeartbeatDataCollectionSchemaOrDatabase.ValueStringPointer(),
 		"database.connectionTimeZone":                  model.DatabaseConnectionTimezone.ValueString(),
 		"snapshot.gtid":                                snapshotGTIDStr,
-		"transforms.InsertStaticKey.static.field":      model.InsertStaticKeyField.ValueString(),
-		"transforms.InsertStaticKey.static.value":      model.InsertStaticKeyValue.ValueString(),
-		"transforms.InsertStaticValue.static.field":    model.InsertStaticValueField.ValueString(),
-		"transforms.InsertStaticValue.static.value":    model.InsertStaticValue.ValueString(),
+		"transforms.InsertStaticKey1.static.field":      model.InsertStaticKeyField1.ValueString(),
+		"transforms.InsertStaticKey1.static.value":      model.InsertStaticKeyValue1.ValueString(),
+		"transforms.InsertStaticValue1.static.field":    model.InsertStaticValueField1.ValueString(),
+		"transforms.InsertStaticValue1.static.value":    model.InsertStaticValue1.ValueString(),
+		"transforms.InsertStaticKey2.static.field":      model.InsertStaticKeyField2.ValueString(),
+		"transforms.InsertStaticKey2.static.value":      model.InsertStaticKeyValue2.ValueString(),
+		"transforms.InsertStaticValue2.static.field":    model.InsertStaticValueField2.ValueString(),
+		"transforms.InsertStaticValue2.static.value":    model.InsertStaticValue2.ValueString(),
 		"binary.handling.mode":                         model.BinaryHandlingMode.ValueString(),
 		"ssh.enabled":                                  model.SSHEnabled.ValueBool(),
 		"ssh.host":                                     model.SSHHost.ValueStringPointer(),
@@ -581,10 +617,14 @@ func (r *SourceMySQLResource) configMap2Model(cfg map[string]any, model *SourceM
 	model.HeartbeatDataCollectionSchemaOrDatabase = helper.GetTfCfgString(cfg, "heartbeat.data.collection.schema.or.database")
 	model.DatabaseConnectionTimezone = helper.GetTfCfgString(cfg, "database.connectionTimeZone")
 	model.SnapshotGTID = types.BoolValue(helper.GetTfCfgString(cfg, "snapshot.gtid").ValueString() == "Yes")
-	model.InsertStaticKeyField = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey.static.field")
-	model.InsertStaticKeyValue = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey.static.value")
-	model.InsertStaticValueField = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue.static.field")
-	model.InsertStaticValue = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue.static.value")
+	model.InsertStaticKeyField1 = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey1.static.field")
+	model.InsertStaticKeyValue1 = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey1.static.value")
+	model.InsertStaticValueField1 = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue1.static.field")
+	model.InsertStaticValue1 = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue1.static.value")
+	model.InsertStaticKeyField2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey2.static.field")
+	model.InsertStaticKeyValue2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey2.static.value")
+	model.InsertStaticValueField2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue2.static.field")
+	model.InsertStaticValue2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue2.static.value")
 	model.BinaryHandlingMode = helper.GetTfCfgString(cfg, "binary.handling.mode")
 	model.SSHEnabled = helper.GetTfCfgBool(cfg, "ssh.enabled")
 	model.SSHHost = helper.GetTfCfgString(cfg, "ssh.host")
