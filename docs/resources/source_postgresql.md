@@ -86,6 +86,7 @@ output "example-source-postgresql" {
 - `heartbeat_enabled` (Boolean) Enable heartbeat to keep the pipeline healthy during low data volume
 - `heartbeat_interval_min` (Number) The interval (minutes) at which the heartbeat event is generated
 - `include_source_db_name_in_table_name` (Boolean) Prefix topics with the database name
+- `predicates_istopictoenrich_pattern` (String) Regex pattern to match topics for enrichment
 - `publication_name` (String) Publication name for the connector
 - `signal_data_collection_schema_or_database` (String) Schema for signal data collection
 - `slot_name` (String) Replication slot name for the connector
@@ -94,7 +95,6 @@ output "example-source-postgresql" {
 - `ssh_host` (String) Hostname of the SSH server, only required if `ssh_enabled` is true
 - `ssh_port` (String) Port of the SSH server, only required if `ssh_enabled` is true
 - `ssh_user` (String) User for connecting to the SSH server, only required if `ssh_enabled` is true
-- `predicates_istopictoenrich_pattern` (String) Regex pattern to match topics for enrichment
 
 ### Read-Only
 

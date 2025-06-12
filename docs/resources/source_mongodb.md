@@ -61,11 +61,11 @@ output "example-source-mongodb" {
 
 - `array_encoding` (String) How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types
 - `nested_document_encoding` (String) How to encode nested documents. 'Document' encodes them as JSON Objects, 'String' encodes them as JSON Strings
+- `predicates_istopictoenrich_pattern` (String) Regex pattern to match topics for enrichment
 - `ssh_enabled` (Boolean) Connect via SSH tunnel
 - `ssh_host` (String) Hostname of the SSH server, only required if `ssh_enabled` is true
 - `ssh_port` (String) Port of the SSH server, only required if `ssh_enabled` is true
 - `ssh_user` (String) User for connecting to the SSH server, only required if `ssh_enabled` is true
-- `predicates_istopictoenrich_pattern` (String) Regex pattern to match topics for enrichment
 
 ### Read-Only
 
