@@ -53,7 +53,6 @@ type SourceMySQLResourceModel struct {
 	ColumnIncludeList                       types.String `tfsdk:"column_include_list"`
 	ColumnExcludeList                       types.String `tfsdk:"column_exclude_list"`
 	HeartbeatEnabled                        types.Bool   `tfsdk:"heartbeat_enabled"`
-	HeartbeatIntervalMin                    types.Int64  `tfsdk:"heartbeat_interval_min"`
 	HeartbeatDataCollectionSchemaOrDatabase types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
 	SnapshotGTID                            types.Bool   `tfsdk:"snapshot_gtid"`
 	BinaryHandlingMode                      types.String `tfsdk:"binary_handling_mode"`
@@ -155,13 +154,6 @@ func (r *SourceMySQLResource) Schema(ctx context.Context, req res.SchemaRequest,
 				Default:             booldefault.StaticBool(false),
 				Description:         "Heartbeats are used to keep the pipeline healthy when there is a low volume of data at times.",
 				MarkdownDescription: "Heartbeats are used to keep the pipeline healthy when there is a low volume of data at times.",
-			},
-			"heartbeat_interval_min": schema.Int64Attribute{
-				Computed:            true,
-				Optional:            true,
-				Default:             int64default.StaticInt64(5),
-				Description:         "Interval in minutes between heartbeats",
-				MarkdownDescription: "Interval in minutes between heartbeats",
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
@@ -570,7 +562,6 @@ func (r *SourceMySQLResource) model2ConfigMap(model SourceMySQLResourceModel) (m
 		"signal.data.collection.schema.or.database":    model.SignalDataCollectionSchemaOrDatabase.ValueStringPointer(),
 		"column.include.list.toggled":                  true,
 		"heartbeat.enabled":                            model.HeartbeatEnabled.ValueBool(),
-		"heartbeat.interval.min.user.defined":                       int(model.HeartbeatIntervalMin.ValueInt64()),
 		"heartbeat.data.collection.schema.or.database": model.HeartbeatDataCollectionSchemaOrDatabase.ValueStringPointer(),
 		"database.connectionTimeZone":                  model.DatabaseConnectionTimezone.ValueString(),
 		"snapshot.gtid":                                snapshotGTIDStr,
@@ -613,7 +604,6 @@ func (r *SourceMySQLResource) configMap2Model(cfg map[string]any, model *SourceM
 	model.ColumnIncludeList = helper.GetTfCfgString(cfg, "column.include.list.user.defined")
 	model.ColumnExcludeList = helper.GetTfCfgString(cfg, "column.exclude.list.user.defined")
 	model.HeartbeatEnabled = helper.GetTfCfgBool(cfg, "heartbeat.enabled")
-	model.HeartbeatIntervalMin = helper.GetTfCfgInt64(cfg, "heartbeat.interval.min.user.defined")
 	model.HeartbeatDataCollectionSchemaOrDatabase = helper.GetTfCfgString(cfg, "heartbeat.data.collection.schema.or.database")
 	model.DatabaseConnectionTimezone = helper.GetTfCfgString(cfg, "database.connectionTimeZone")
 	model.SnapshotGTID = types.BoolValue(helper.GetTfCfgString(cfg, "snapshot.gtid").ValueString() == "Yes")

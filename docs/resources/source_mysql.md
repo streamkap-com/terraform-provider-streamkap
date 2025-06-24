@@ -78,7 +78,6 @@ output "example-source-mysql" {
 - `database_port` (Number) MySQL Port. For example, 3306
 - `heartbeat_data_collection_schema_or_database` (String) Heartbeat Table Database
 - `heartbeat_enabled` (Boolean) Heartbeats are used to keep the pipeline healthy when there is a low volume of data at times.
-- `heartbeat_interval_min` (Number) Interval in minutes between heartbeats
 - `insert_static_key_field_1` (String) The name of the static field to be added to the message key.
 - `insert_static_key_field_2` (String) The name of the static field to be added to the message key.
 - `insert_static_key_value_1` (String) The value of the static field to be added to the message key.

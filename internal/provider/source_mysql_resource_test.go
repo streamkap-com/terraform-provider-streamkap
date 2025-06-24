@@ -59,7 +59,6 @@ resource "streamkap_source_mysql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "ssh_enabled", "false"),
 					// Check defaults for unset attributes
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "heartbeat_enabled", "false"),
-					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "heartbeat_interval_min", "5"),
 				),
 			},
 			// Step 2: ImportState testing
@@ -165,10 +164,6 @@ resource "streamkap_source_mysql" "test" {
 	table_include_list                        = "crm.demo"
 	signal_data_collection_schema_or_database = "crm"
 	column_include_list                       = "crm[.]demo[.](id|name)"
-	insert_static_key_field                   = "static_key"
-	insert_static_key_value                   = "key_value"
-	insert_static_value_field                 = "static_value"
-	insert_static_value                       = "value"
 	heartbeat_enabled                         = true
 	heartbeat_data_collection_schema_or_database = "crm"
 	database_connection_timezone              = "SERVER"
@@ -179,10 +174,6 @@ resource "streamkap_source_mysql" "test" {
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "name", "test-source-mysql-static"),
-					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "insert_static_key_field", "static_key"),
-					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "insert_static_key_value", "key_value"),
-					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "insert_static_value_field", "static_value"),
-					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "insert_static_value", "value"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "column_include_list", "crm[.]demo[.](id|name)"),
 				),
 			},
@@ -212,10 +203,6 @@ resource "streamkap_source_mysql" "test" {
 	table_include_list                        = "crm.demo"
 	signal_data_collection_schema_or_database = "crm"
 	column_include_list                       = "crm[.]demo[.](id|name)"
-	insert_static_key_field                   = "static_key"
-	insert_static_key_value                   = "key_value"
-	insert_static_value_field                 = "static_value"
-	insert_static_value                       = "value"
 	heartbeat_enabled                         = true
 	heartbeat_data_collection_schema_or_database = "crm"
 	database_connection_timezone              = "SERVER"

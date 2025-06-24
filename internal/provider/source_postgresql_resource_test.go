@@ -64,7 +64,6 @@ resource "streamkap_source_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "column_include_list", "streamkap[.]customer[.](id|name)"),
 					// Check defaults for unset attributes
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "heartbeat_enabled", "false"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "heartbeat_interval_min", "5"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "include_source_db_name_in_table_name", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", "terraform_pgoutput_slot"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", "terraform_pub"),
@@ -126,7 +125,6 @@ resource "streamkap_source_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "signal_data_collection_schema_or_database", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "column_include_list", "streamkap[.]customer[.](id|name)"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "heartbeat_enabled", "false"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "heartbeat_interval_min", "5"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "include_source_db_name_in_table_name", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", "terraform_pgoutput_slot"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", "terraform_pub"),
@@ -184,7 +182,6 @@ resource "streamkap_source_postgresql" "test" {
 					// Verify column_include_list is not set (null)
 					resource.TestCheckNoResourceAttr("streamkap_source_postgresql.test", "column_include_list"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "heartbeat_enabled", "false"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "heartbeat_interval_min", "5"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "include_source_db_name_in_table_name", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", "terraform_pgoutput_slot"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", "terraform_pub"),
@@ -247,7 +244,6 @@ resource "streamkap_source_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "signal_data_collection_schema_or_database", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "column_include_list", "streamkap[.]customer[.](id|name)"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "heartbeat_enabled", "false"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "heartbeat_interval_min", "5"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "include_source_db_name_in_table_name", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", "terraform_pgoutput_slot"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", "terraform_pub"),

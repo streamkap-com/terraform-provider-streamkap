@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
@@ -57,7 +56,6 @@ type SourcePostgreSQLResourceModel struct {
 	ColumnIncludeList                       types.String `tfsdk:"column_include_list"`
 	ColumnExcludeList                       types.String `tfsdk:"column_exclude_list"`
 	HeartbeatEnabled                        types.Bool   `tfsdk:"heartbeat_enabled"`
-	HeartbeatIntervalMin                    types.Int64  `tfsdk:"heartbeat_interval_min"`
 	HeartbeatDataCollectionSchemaOrDatabase types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
 	IncludeSourceDBNameInTableName          types.Bool   `tfsdk:"include_source_db_name_in_table_name"`
 	SlotName                                types.String `tfsdk:"slot_name"`
@@ -68,6 +66,14 @@ type SourcePostgreSQLResourceModel struct {
 	SSHPort                                 types.String `tfsdk:"ssh_port"`
 	SSHUser                                 types.String `tfsdk:"ssh_user"`
 	PredicatesIsTopicToEnrichPattern        types.String `tfsdk:"predicates_istopictoenrich_pattern"`
+	InsertStaticKeyField1                   types.String `tfsdk:"insert_static_key_field_1"`
+	InsertStaticKeyValue1                   types.String `tfsdk:"insert_static_key_value_1"`
+	InsertStaticValueField1                 types.String `tfsdk:"insert_static_value_field_1"`
+	InsertStaticValue1                      types.String `tfsdk:"insert_static_value_1"`
+	InsertStaticKeyField2                   types.String `tfsdk:"insert_static_key_field_2"`
+	InsertStaticKeyValue2                   types.String `tfsdk:"insert_static_key_value_2"`
+	InsertStaticValueField2                 types.String `tfsdk:"insert_static_value_field_2"`
+	InsertStaticValue2                      types.String `tfsdk:"insert_static_value_2"`
 }
 
 func (r *SourcePostgreSQLResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -194,16 +200,6 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 				Description:         "Enable heartbeat to keep the pipeline healthy during low data volume",
 				MarkdownDescription: "Enable heartbeat to keep the pipeline healthy during low data volume",
 			},
-			"heartbeat_interval_min": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Default:             int64default.StaticInt64(5),
-				Description:         "The interval (minutes) at which the heartbeat event is generated",
-				MarkdownDescription: "The interval (minutes) at which the heartbeat event is generated",
-				Validators: []validator.Int64{
-					int64validator.Between(1, 30),
-				},
-			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
 				Description:         "Schema for heartbeat data collection",
@@ -277,6 +273,62 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 				Default:             stringdefault.StaticString("$^"),
 				Description:         "Regex pattern to match topics for enrichment",
 				MarkdownDescription: "Regex pattern to match topics for enrichment",
+			},
+			"insert_static_key_field_1": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The name of the static field to be added to the message key.",
+				MarkdownDescription: "The name of the static field to be added to the message key.",
+			},
+			"insert_static_key_value_1": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The value of the static field to be added to the message key.",
+				MarkdownDescription: "The value of the static field to be added to the message key.",
+			},
+			"insert_static_value_field_1": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The name of the static field to be added to the message value.",
+				MarkdownDescription: "The name of the static field to be added to the message value.",
+			},
+			"insert_static_value_1": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The value of the static field to be added to the message value.",
+				MarkdownDescription: "The value of the static field to be added to the message value.",
+			},
+			"insert_static_key_field_2": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The name of the static field to be added to the message key.",
+				MarkdownDescription: "The name of the static field to be added to the message key.",
+			},
+			"insert_static_key_value_2": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The value of the static field to be added to the message key.",
+				MarkdownDescription: "The value of the static field to be added to the message key.",
+			},
+			"insert_static_value_field_2": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The name of the static field to be added to the message value.",
+				MarkdownDescription: "The name of the static field to be added to the message value.",
+			},
+			"insert_static_value_2": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Description:         "The value of the static field to be added to the message value.",
+				MarkdownDescription: "The value of the static field to be added to the message value.",
 			},
 		},
 	}
@@ -471,7 +523,6 @@ func (r *SourcePostgreSQLResource) model2ConfigMap(model SourcePostgreSQLResourc
 		"column.include.list.toggled":                       true,
 		"heartbeat.enabled":                                 model.HeartbeatEnabled.ValueBool(),
 		"heartbeat.data.collection.schema.or.database":      model.HeartbeatDataCollectionSchemaOrDatabase.ValueStringPointer(),
-		"heartbeat.interval.min.user.defined":               int(model.HeartbeatIntervalMin.ValueInt64()),
 		"include.source.db.name.in.table.name.user.defined": model.IncludeSourceDBNameInTableName.ValueBool(),
 		"slot.name":                                         model.SlotName.ValueString(),
 		"publication.name":                                  model.PublicationName.ValueString(),
@@ -481,6 +532,14 @@ func (r *SourcePostgreSQLResource) model2ConfigMap(model SourcePostgreSQLResourc
 		"ssh.port":                                          model.SSHPort.ValueString(),
 		"ssh.user":                                          model.SSHUser.ValueString(),
 		"predicates.IsTopicToEnrich.pattern":    model.PredicatesIsTopicToEnrichPattern.ValueString(),
+		"transforms.InsertStaticKey1.static.field":      model.InsertStaticKeyField1.ValueString(),
+		"transforms.InsertStaticKey1.static.value":      model.InsertStaticKeyValue1.ValueString(),
+		"transforms.InsertStaticValue1.static.field":    model.InsertStaticValueField1.ValueString(),
+		"transforms.InsertStaticValue1.static.value":    model.InsertStaticValue1.ValueString(),
+		"transforms.InsertStaticKey2.static.field":      model.InsertStaticKeyField2.ValueString(),
+		"transforms.InsertStaticKey2.static.value":      model.InsertStaticKeyValue2.ValueString(),
+		"transforms.InsertStaticValue2.static.field":    model.InsertStaticValueField2.ValueString(),
+		"transforms.InsertStaticValue2.static.value":    model.InsertStaticValue2.ValueString(),
 	}
 
 	if !model.ColumnIncludeList.IsNull() {
@@ -509,7 +568,6 @@ func (r *SourcePostgreSQLResource) configMap2Model(cfg map[string]any, model *So
 	model.ColumnIncludeList = helper.GetTfCfgString(cfg, "column.include.list.user.defined")
 	model.ColumnExcludeList = helper.GetTfCfgString(cfg, "column.exclude.list.user.defined")
 	model.HeartbeatEnabled = helper.GetTfCfgBool(cfg, "heartbeat.enabled")
-	model.HeartbeatIntervalMin = helper.GetTfCfgInt64(cfg, "heartbeat.interval.min.user.defined")
 	model.HeartbeatDataCollectionSchemaOrDatabase = helper.GetTfCfgString(cfg, "heartbeat.data.collection.schema.or.database")
 	model.IncludeSourceDBNameInTableName = helper.GetTfCfgBool(cfg, "include.source.db.name.in.table.name.user.defined")
 	model.SlotName = helper.GetTfCfgString(cfg, "slot.name")
@@ -520,4 +578,12 @@ func (r *SourcePostgreSQLResource) configMap2Model(cfg map[string]any, model *So
 	model.SSHPort = helper.GetTfCfgString(cfg, "ssh.port")
 	model.SSHUser = helper.GetTfCfgString(cfg, "ssh.user")
 	model.PredicatesIsTopicToEnrichPattern = helper.GetTfCfgString(cfg, "predicates.IsTopicToEnrich.pattern")
+	model.InsertStaticKeyField1 = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey1.static.field")
+	model.InsertStaticKeyValue1 = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey1.static.value")
+	model.InsertStaticValueField1 = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue1.static.field")
+	model.InsertStaticValue1 = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue1.static.value")
+	model.InsertStaticKeyField2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey2.static.field")
+	model.InsertStaticKeyValue2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey2.static.value")
+	model.InsertStaticValueField2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue2.static.field")
+	model.InsertStaticValue2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue2.static.value")
 }
