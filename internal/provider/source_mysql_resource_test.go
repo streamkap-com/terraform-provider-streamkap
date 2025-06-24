@@ -59,7 +59,6 @@ resource "streamkap_source_mysql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "ssh_enabled", "false"),
 					// Check defaults for unset attributes
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "heartbeat_enabled", "false"),
-					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "heartbeat_interval_min", "5"),
 				),
 			},
 			// Step 2: ImportState testing

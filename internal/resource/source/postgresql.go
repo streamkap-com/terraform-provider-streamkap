@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
@@ -57,7 +56,6 @@ type SourcePostgreSQLResourceModel struct {
 	ColumnIncludeList                       types.String `tfsdk:"column_include_list"`
 	ColumnExcludeList                       types.String `tfsdk:"column_exclude_list"`
 	HeartbeatEnabled                        types.Bool   `tfsdk:"heartbeat_enabled"`
-	HeartbeatIntervalMin                    types.Int64  `tfsdk:"heartbeat_interval_min"`
 	HeartbeatDataCollectionSchemaOrDatabase types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
 	IncludeSourceDBNameInTableName          types.Bool   `tfsdk:"include_source_db_name_in_table_name"`
 	SlotName                                types.String `tfsdk:"slot_name"`
@@ -193,16 +191,6 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 				Default:             booldefault.StaticBool(false),
 				Description:         "Enable heartbeat to keep the pipeline healthy during low data volume",
 				MarkdownDescription: "Enable heartbeat to keep the pipeline healthy during low data volume",
-			},
-			"heartbeat_interval_min": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Default:             int64default.StaticInt64(5),
-				Description:         "The interval (minutes) at which the heartbeat event is generated",
-				MarkdownDescription: "The interval (minutes) at which the heartbeat event is generated",
-				Validators: []validator.Int64{
-					int64validator.Between(1, 30),
-				},
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
@@ -471,7 +459,6 @@ func (r *SourcePostgreSQLResource) model2ConfigMap(model SourcePostgreSQLResourc
 		"column.include.list.toggled":                       true,
 		"heartbeat.enabled":                                 model.HeartbeatEnabled.ValueBool(),
 		"heartbeat.data.collection.schema.or.database":      model.HeartbeatDataCollectionSchemaOrDatabase.ValueStringPointer(),
-		"heartbeat.interval.min.user.defined":               int(model.HeartbeatIntervalMin.ValueInt64()),
 		"include.source.db.name.in.table.name.user.defined": model.IncludeSourceDBNameInTableName.ValueBool(),
 		"slot.name":                                         model.SlotName.ValueString(),
 		"publication.name":                                  model.PublicationName.ValueString(),
@@ -509,7 +496,6 @@ func (r *SourcePostgreSQLResource) configMap2Model(cfg map[string]any, model *So
 	model.ColumnIncludeList = helper.GetTfCfgString(cfg, "column.include.list.user.defined")
 	model.ColumnExcludeList = helper.GetTfCfgString(cfg, "column.exclude.list.user.defined")
 	model.HeartbeatEnabled = helper.GetTfCfgBool(cfg, "heartbeat.enabled")
-	model.HeartbeatIntervalMin = helper.GetTfCfgInt64(cfg, "heartbeat.interval.min.user.defined")
 	model.HeartbeatDataCollectionSchemaOrDatabase = helper.GetTfCfgString(cfg, "heartbeat.data.collection.schema.or.database")
 	model.IncludeSourceDBNameInTableName = helper.GetTfCfgBool(cfg, "include.source.db.name.in.table.name.user.defined")
 	model.SlotName = helper.GetTfCfgString(cfg, "slot.name")
