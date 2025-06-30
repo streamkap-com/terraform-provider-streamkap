@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -49,9 +50,10 @@ type SourceDynamoDBResourceModel struct {
 	PollTimeoutMS                 types.Int64  `tfsdk:"poll_timeout_ms"`
 	IncrementalSnapshotChunkSize  types.Int64  `tfsdk:"incremental_snapshot_chunk_size"`
 	IncrementalSnapshotMaxThreads types.Int64  `tfsdk:"incremental_snapshot_max_threads"`
-	IncrementalSnapshotIntervalMS types.Int64  `tfsdk:"incremental_snapshot_interval_ms"`
 	FullExportExpirationTimeMS    types.Int64  `tfsdk:"full_export_expiration_time_ms"`
 	SignalKafkaPollTimeoutMS      types.Int64  `tfsdk:"signal_kafka_poll_timeout_ms"`
+	ArrayEncodingJson             types.Bool   `tfsdk:"array_encoding_json"`
+	StructEncodingJson            types.Bool   `tfsdk:"struct_encoding_json"`
 }
 
 func (r *SourceDynamoDBResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -141,13 +143,6 @@ func (r *SourceDynamoDBResource) Schema(ctx context.Context, req res.SchemaReque
 				Description:         "Incremental snapshot max threads",
 				MarkdownDescription: "Incremental snapshot max threads",
 			},
-			"incremental_snapshot_interval_ms": schema.Int64Attribute{
-				Computed:            true,
-				Optional:            true,
-				Default:             int64default.StaticInt64(8),
-				Description:         "Incremental snapshot chunk size (ms)",
-				MarkdownDescription: "Incremental snapshot chunk size (ms)",
-			},
 			"full_export_expiration_time_ms": schema.Int64Attribute{
 				Computed:            true,
 				Optional:            true,
@@ -161,6 +156,20 @@ func (r *SourceDynamoDBResource) Schema(ctx context.Context, req res.SchemaReque
 				Default:             int64default.StaticInt64(1000),
 				Description:         "Signal Kafka Poll Timeout (ms)",
 				MarkdownDescription: "Signal Kafka Poll Timeout (ms)",
+			},
+			"array_encoding_json": schema.BoolAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             booldefault.StaticBool(true),
+				Description:         "Force nested lists as JSON string",
+				MarkdownDescription: "Force nested lists as JSON string",
+			},
+			"struct_encoding_json": schema.BoolAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             booldefault.StaticBool(true),
+				Description:         "Force nested lists as JSON string",
+				MarkdownDescription: "Force nested lists as JSON string",
 			},
 		},
 	}
@@ -334,9 +343,10 @@ func (r *SourceDynamoDBResource) model2ConfigMap(model SourceDynamoDBResourceMod
 		"poll.timeout.ms":                  int(model.PollTimeoutMS.ValueInt64()),
 		"incremental.snapshot.chunk.size":  int(model.IncrementalSnapshotChunkSize.ValueInt64()),
 		"incremental.snapshot.max.threads": int(model.IncrementalSnapshotMaxThreads.ValueInt64()),
-		"incremental.snapshot.interval.ms": int(model.IncrementalSnapshotIntervalMS.ValueInt64()),
 		"full.export.expiration.time.ms":   int(model.FullExportExpirationTimeMS.ValueInt64()),
 		"signal.kafka.poll.timeout.ms":     int(model.SignalKafkaPollTimeoutMS.ValueInt64()),
+		"array.encoding.json":              model.ArrayEncodingJson.ValueBool(),
+		"struct.encoding.json":             model.StructEncodingJson.ValueBool(),
 	}
 }
 
@@ -352,7 +362,8 @@ func (r *SourceDynamoDBResource) configMap2Model(cfg map[string]any, model *Sour
 	model.PollTimeoutMS = helper.GetTfCfgInt64(cfg, "poll.timeout.ms")
 	model.IncrementalSnapshotChunkSize = helper.GetTfCfgInt64(cfg, "incremental.snapshot.chunk.size")
 	model.IncrementalSnapshotMaxThreads = helper.GetTfCfgInt64(cfg, "incremental.snapshot.max.threads")
-	model.IncrementalSnapshotIntervalMS = helper.GetTfCfgInt64(cfg, "incremental.snapshot.interval.ms")
 	model.FullExportExpirationTimeMS = helper.GetTfCfgInt64(cfg, "full.export.expiration.time.ms")
 	model.SignalKafkaPollTimeoutMS = helper.GetTfCfgInt64(cfg, "signal.kafka.poll.timeout.ms")
+	model.ArrayEncodingJson = helper.GetTfCfgBool(cfg, "array.encoding.json")
+	model.StructEncodingJson = helper.GetTfCfgBool(cfg, "struct.encoding.json")
 }
