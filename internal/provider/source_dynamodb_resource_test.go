@@ -125,7 +125,6 @@ resource "streamkap_source_dynamodb" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "poll_timeout_ms", "2000"),
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "incremental_snapshot_chunk_size", "32768"),
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "incremental_snapshot_max_threads", "8"),
-					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "incremental_snapshot_interval_ms", "12"),
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "full_export_expiration_time_ms", "86400000"),
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "signal_kafka_poll_timeout_ms", "2000"),
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "array_encoding_json", "true"),

@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com-test/streamkap"
+      source  = "streamkap-com/streamkap"
       version = ">= 2.0.0"
     }
   }
@@ -40,7 +40,7 @@ resource "streamkap_source_dynamodb" "example-source-dynamodb" {
   full_export_expiration_time_ms   = 86400000
   signal_kafka_poll_timeout_ms     = 1000
   array_encoding_json              = true
-	struct_encoding_json             = true
+  struct_encoding_json             = true
 }
 
 output "example-source-dynamodb" {
