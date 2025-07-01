@@ -168,8 +168,8 @@ func (r *SourceDynamoDBResource) Schema(ctx context.Context, req res.SchemaReque
 				Computed:            true,
 				Optional:            true,
 				Default:             booldefault.StaticBool(true),
-				Description:         "Force nested lists as JSON string",
-				MarkdownDescription: "Force nested lists as JSON string",
+				Description:         "Force nested maps as JSON string",
+				MarkdownDescription: "Force nested maps as JSON string",
 			},
 		},
 	}
