@@ -46,15 +46,16 @@ resource "streamkap_source_dynamodb" "example-source-dynamodb" {
   aws_region                       = var.source_dynamodb_aws_region
   aws_access_key_id                = var.source_dynamodb_aws_access_key_id
   aws_secret_key                   = var.source_dynamodb_aws_secret_key
-  s3_export_bucket_name            = "streamkap-export"
-  table_include_list_user_defined  = "warehouse-test-2"
+  s3_export_bucket_name            = "tst-s3-export-snapshot"
+  table_include_list_user_defined  = "DynamoDBToClickHouseDemo"
   batch_size                       = 1024
   poll_timeout_ms                  = 1000
   incremental_snapshot_chunk_size  = 32768
   incremental_snapshot_max_threads = 8
-  incremental_snapshot_interval_ms = 8
   full_export_expiration_time_ms   = 86400000
   signal_kafka_poll_timeout_ms     = 1000
+  array_encoding_json              = true
+  struct_encoding_json             = true
 }
 
 output "example-source-dynamodb" {
@@ -76,14 +77,15 @@ output "example-source-dynamodb" {
 
 ### Optional
 
+- `array_encoding_json` (Boolean) Force nested lists as JSON string
 - `batch_size` (Number) Batch size to fetch records.
 - `dynamodb_service_endpoint` (String) Dynamodb Service Endpoint (optional)
 - `full_export_expiration_time_ms` (Number) Full Export Expiration Time (ms)
 - `incremental_snapshot_chunk_size` (Number) Incremental snapshot chunk size
-- `incremental_snapshot_interval_ms` (Number) Incremental snapshot chunk size (ms)
 - `incremental_snapshot_max_threads` (Number) Incremental snapshot max threads
 - `poll_timeout_ms` (Number) Poll Timeout (ms)
 - `signal_kafka_poll_timeout_ms` (Number) Signal Kafka Poll Timeout (ms)
+- `struct_encoding_json` (Boolean) Force nested maps as JSON string
 
 ### Read-Only
 
