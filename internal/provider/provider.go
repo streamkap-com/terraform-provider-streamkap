@@ -210,8 +210,10 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		source.NewSourceMySQLResource,
 		source.NewSourcePostgreSQLResource,
 		source.NewSourceDynamoDBResource,
+		source.NewSourceSQLServerResource,
 		destination.NewDestinationSnowflakeResource,
 		destination.NewDestinationClickHouseResource,
+		destination.NewDestinationDatabricksResource,
 		pipeline.NewPipelineResource,
 	}
 }
