@@ -60,6 +60,14 @@ output "example-source-mongodb" {
 ### Optional
 
 - `array_encoding` (String) How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types
+- `insert_static_key_field_1` (String) The name of the static field to be added to the message key.
+- `insert_static_key_field_2` (String) The name of the static field to be added to the message key.
+- `insert_static_key_value_1` (String) The value of the static field to be added to the message key.
+- `insert_static_key_value_2` (String) The value of the static field to be added to the message key.
+- `insert_static_value_1` (String) The value of the static field to be added to the message value.
+- `insert_static_value_2` (String) The value of the static field to be added to the message value.
+- `insert_static_value_field_1` (String) The name of the static field to be added to the message value.
+- `insert_static_value_field_2` (String) The name of the static field to be added to the message value.
 - `nested_document_encoding` (String) How to encode nested documents. 'Document' encodes them as JSON Objects, 'String' encodes them as JSON Strings
 - `predicates_istopictoenrich_pattern` (String) Regex pattern to match topics for enrichment
 - `ssh_enabled` (Boolean) Connect via SSH tunnel

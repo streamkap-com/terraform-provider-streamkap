@@ -85,6 +85,14 @@ output "example-source-postgresql" {
 - `heartbeat_data_collection_schema_or_database` (String) Schema for heartbeat data collection
 - `heartbeat_enabled` (Boolean) Enable heartbeat to keep the pipeline healthy during low data volume
 - `include_source_db_name_in_table_name` (Boolean) Prefix topics with the database name
+- `insert_static_key_field_1` (String) The name of the static field to be added to the message key.
+- `insert_static_key_field_2` (String) The name of the static field to be added to the message key.
+- `insert_static_key_value_1` (String) The value of the static field to be added to the message key.
+- `insert_static_key_value_2` (String) The value of the static field to be added to the message key.
+- `insert_static_value_1` (String) The value of the static field to be added to the message value.
+- `insert_static_value_2` (String) The value of the static field to be added to the message value.
+- `insert_static_value_field_1` (String) The name of the static field to be added to the message value.
+- `insert_static_value_field_2` (String) The name of the static field to be added to the message value.
 - `predicates_istopictoenrich_pattern` (String) Regex pattern to match topics for enrichment
 - `publication_name` (String) Publication name for the connector
 - `signal_data_collection_schema_or_database` (String) Schema for signal data collection
