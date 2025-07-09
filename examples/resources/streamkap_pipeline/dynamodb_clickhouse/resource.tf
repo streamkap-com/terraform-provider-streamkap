@@ -37,7 +37,6 @@ resource "streamkap_source_dynamodb" "example-source-dynamodb" {
   poll_timeout_ms                  = 1000
   incremental_snapshot_chunk_size  = 32768
   incremental_snapshot_max_threads = 8
-  incremental_snapshot_interval_ms = 8
   full_export_expiration_time_ms   = 86400000
   signal_kafka_poll_timeout_ms     = 1000
 }
