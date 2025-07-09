@@ -114,7 +114,7 @@ func (r *DestinationDatabricksResource) Schema(ctx context.Context, req res.Sche
 			"partition_mode": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
-				Default:             stringdefault.StaticString("append"),
+				Default:             stringdefault.StaticString("by_topic"),
 				Description:         "Partition tables or not",
 				MarkdownDescription: "Partition tables or not",
 				Validators: []validator.String{

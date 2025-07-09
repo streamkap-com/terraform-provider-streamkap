@@ -48,15 +48,15 @@ variable "destination_databricks_token" {
 }
 
 resource "streamkap_destination_databricks" "example-destination-databricks" {
-  name                = "example-destination-databricks"
-  table_name_prefix   = "streamkap"
-  ingestion_mode      = "append"
-  partition_mode      = "by_topic"
-  hard_delete         = true
-  tasks_max           = 5
-  connection_url      = var.destination_databricks_connection_url
-  databricks_token    = var.destination_databricks_token
-  schema_evolution    = "basic"
+  name              = "example-destination-databricks"
+  table_name_prefix = "streamkap"
+  ingestion_mode    = "append"
+  partition_mode    = "by_topic"
+  hard_delete       = true
+  tasks_max         = 5
+  connection_url    = var.destination_databricks_connection_url
+  databricks_token  = var.destination_databricks_token
+  schema_evolution  = "basic"
 }
 
 resource "streamkap_pipeline" "example-pipeline" {
@@ -67,7 +67,7 @@ resource "streamkap_pipeline" "example-pipeline" {
     name      = streamkap_source_sqlserver.example-source-sqlserver.name
     connector = streamkap_source_sqlserver.example-source-sqlserver.connector
     topics = [
-      "default.warehouse-test-2",
+      "dbo.Orders,dbo.Customers",
     ]
   }
   destination = {
