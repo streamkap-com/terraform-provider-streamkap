@@ -1,0 +1,41 @@
+terraform {
+  required_providers {
+    streamkap = {
+      source  = "streamkap-com/streamkap"
+      version = ">= 2.0.0"
+    }
+  }
+  required_version = ">= 1.0.0"
+}
+
+provider "streamkap" {}
+
+variable "source_sqlserver_hostname" {
+  type        = string
+  description = "The hostname of the SQLServer database"
+}
+variable "source_sqlserver_password" {
+  type        = string
+  sensitive   = true
+  description = "The password of the SQLServer database"
+}
+
+resource "streamkap_source_sqlserver" "example-source-sqlserver" {
+  name                                         = "example-source-sqlserver"
+  database_hostname                            = var.source_sqlserver_hostname
+  database_port                                = 1433
+  database_user                                = "admin"
+  database_password                            = var.source_sqlserver_password
+  database_dbname                              = "sqlserverdemo"
+  schema_include_list                          = "dbo"
+  table_include_list                           = "dbo.Orders"
+  signal_data_collection_schema_or_database    = "streamkap"
+  heartbeat_enabled                            = false
+  heartbeat_data_collection_schema_or_database = null
+  binary_handling_mode                         = "bytes"
+  ssh_enabled                                  = false
+}
+
+output "example-source-sqlserver" {
+  value = streamkap_source_sqlserver.example-source-sqlserver.id
+}
