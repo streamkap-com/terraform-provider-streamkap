@@ -67,7 +67,8 @@ resource "streamkap_pipeline" "example-pipeline" {
     name      = streamkap_source_sqlserver.example-source-sqlserver.name
     connector = streamkap_source_sqlserver.example-source-sqlserver.connector
     topics = [
-      "dbo.Orders,dbo.Customers",
+      "dbo.Orders",
+      "dbo.Customers"
     ]
   }
   destination = {
