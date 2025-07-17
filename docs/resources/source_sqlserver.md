@@ -49,6 +49,10 @@ resource "streamkap_source_sqlserver" "example-source-sqlserver" {
   heartbeat_data_collection_schema_or_database = null
   binary_handling_mode                         = "bytes"
   ssh_enabled                                  = false
+  insert_static_key_field                      = "key_field"
+  insert_static_key_value                      = "key_value"
+  insert_static_value_field                    = "value_field"
+  insert_static_value                          = "value_value"
 }
 
 output "example-source-sqlserver" {
