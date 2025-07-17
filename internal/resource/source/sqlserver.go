@@ -411,10 +411,10 @@ func (r *SourceSQLServerResource) model2ConfigMap(model SourceSQLServerResourceM
 		"column.exclude.list.user.defined":             model.ColumnExcludeList.ValueStringPointer(),
 		"heartbeat.enabled":                            model.HeartbeatEnabled.ValueBool(),
 		"heartbeat.data.collection.schema.or.database": model.HeartbeatDataCollectionSchemaOrDatabase.ValueStringPointer(),
-		"transforms.InsertStaticKey.static.field":      model.InsertStaticKeyField.ValueString(),
-		"transforms.InsertStaticKey.static.value":      model.InsertStaticKeyValue.ValueString(),
-		"transforms.InsertStaticValue.static.field":    model.InsertStaticValueField.ValueString(),
-		"transforms.InsertStaticValue.static.value":    model.InsertStaticValue.ValueString(),
+		"transforms.InsertStaticKey1.static.field":      model.InsertStaticKeyField.ValueString(),
+		"transforms.InsertStaticKey1.static.value":      model.InsertStaticKeyValue.ValueString(),
+		"transforms.InsertStaticValue1.static.field":    model.InsertStaticValueField.ValueString(),
+		"transforms.InsertStaticValue1.static.value":    model.InsertStaticValue.ValueString(),
 		"binary.handling.mode":                         model.BinaryHandlingMode.ValueString(),
 		"ssh.enabled":                                  model.SSHEnabled.ValueBool(),
 		"ssh.host":                                     model.SSHHost.ValueStringPointer(),
@@ -438,10 +438,10 @@ func (r *SourceSQLServerResource) configMap2Model(cfg map[string]any, model *Sou
 	model.ColumnExcludeList = helper.GetTfCfgString(cfg, "column.exclude.list.user.defined")
 	model.HeartbeatEnabled = helper.GetTfCfgBool(cfg, "heartbeat.enabled")
 	model.HeartbeatDataCollectionSchemaOrDatabase = helper.GetTfCfgString(cfg, "heartbeat.data.collection.schema.or.database")
-	model.InsertStaticKeyField = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey.static.field")
-	model.InsertStaticKeyValue = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey.static.value")
-	model.InsertStaticValueField = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue.static.field")
-	model.InsertStaticValue = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue.static.value")
+	model.InsertStaticKeyField = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey1.static.field")
+	model.InsertStaticKeyValue = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey1.static.value")
+	model.InsertStaticValueField = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue1.static.field")
+	model.InsertStaticValue = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue1.static.value")
 	model.BinaryHandlingMode = helper.GetTfCfgString(cfg, "binary.handling.mode")
 	model.SSHEnabled = helper.GetTfCfgBool(cfg, "ssh.enabled")
 	model.SSHHost = helper.GetTfCfgString(cfg, "ssh.host")
