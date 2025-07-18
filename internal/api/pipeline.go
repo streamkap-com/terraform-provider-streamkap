@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
 )
 
 type Pipeline struct {
@@ -53,6 +54,20 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload Pipeline) 
 	if err != nil {
 		return nil, err
 	}
+
+	var payloadMap map[string]any
+	err = json.Unmarshal(payload, &payloadMap)
+    if err != nil {
+        return nil, err
+    }
+
+    payloadMap["created_from"] = constants.TERRAFORM
+
+	payload, err = json.Marshal(payloadMap)
+	if err != nil {
+		return nil, err
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/pipelines?secret_returned=true", bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
