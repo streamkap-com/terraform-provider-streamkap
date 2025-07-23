@@ -46,6 +46,7 @@ type DestinationDatabricksResourceModel struct {
 	Connector                     types.String            `tfsdk:"connector"`
 	ConnectionUrl                 types.String            `tfsdk:"connection_url"`
 	DatabricksToken               types.String            `tfsdk:"databricks_token"`
+	DatabricksCatalog             types.String            `tfsdk:"databricks_catalog"`
 	TableNamePrefix               types.String            `tfsdk:"table_name_prefix"`
 	IngestionMode                 types.String            `tfsdk:"ingestion_mode"`
 	PartitionMode                 types.String            `tfsdk:"partition_mode"`
@@ -92,6 +93,13 @@ func (r *DestinationDatabricksResource) Schema(ctx context.Context, req res.Sche
 				Sensitive:           true,
 				Description:         "Token",
 				MarkdownDescription: "Token",
+			},
+			"databricks_catalog": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString("hive_metastore"),
+				Description:         "Catalog Name. Make sure to change this to the correct cataog name",
+				MarkdownDescription: "Catalog Name. Make sure to change this to the correct cataog name",
 			},
 			"table_name_prefix": schema.StringAttribute{
 				Required:            true,
@@ -327,6 +335,7 @@ func (r *DestinationDatabricksResource) model2ConfigMap(_ context.Context, model
 	configMap := map[string]any{
 		"connection.url.user.defined": model.ConnectionUrl.ValueString(),
 		"databricks.token":            model.DatabricksToken.ValueString(),
+		"databricks.catalog.user.defined":              model.DatabricksCatalog.ValueString(),
 		"table.name.prefix":           model.TableNamePrefix.ValueString(),
 		"ingestion.mode":              model.IngestionMode.ValueString(),
 		"partition.mode":              model.PartitionMode.ValueString(),
@@ -342,6 +351,7 @@ func (r *DestinationDatabricksResource) configMap2Model(ctx context.Context, cfg
 	// Copy the config map to the model
 	model.ConnectionUrl = helper.GetTfCfgString(cfg, "connection.url.user.defined")
 	model.DatabricksToken = helper.GetTfCfgString(cfg, "databricks.token")
+	model.DatabricksCatalog = helper.GetTfCfgString(cfg, "databricks.catalog.user.defined")
 	model.TableNamePrefix = helper.GetTfCfgString(cfg, "table.name.prefix")
 	model.IngestionMode = helper.GetTfCfgString(cfg, "ingestion.mode")
 	model.PartitionMode = helper.GetTfCfgString(cfg, "partition.mode")
