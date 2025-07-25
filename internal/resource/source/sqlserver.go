@@ -3,7 +3,9 @@ package source
 import (
 	"context"
 	"fmt"
+	"encoding/json"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
@@ -63,6 +65,13 @@ type SourceSQLServerResourceModel struct {
 	SSHHost                                 types.String `tfsdk:"ssh_host"`
 	SSHPort                                 types.String `tfsdk:"ssh_port"`
 	SSHUser                                 types.String `tfsdk:"ssh_user"`
+	SnapshotParallelism                     types.Int64 `tfsdk:"snapshot_parallelism"`
+	SnapshotLargeTableThreshold             types.Int64 `tfsdk:"snapshot_large_table_threshold"`
+	SnapshotCustomTableConfig               map[string]snapshotCustomTableConfigModel `tfsdk:"snapshot_custom_table_config"`
+}
+
+type snapshotCustomTableConfigModel struct {
+	Chunks types.Int64 `tfsdk:"chunks"`
 }
 
 func (r *SourceSQLServerResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -149,7 +158,9 @@ func (r *SourceSQLServerResource) Schema(ctx context.Context, req res.SchemaRequ
 				MarkdownDescription: "Heartbeats are used to keep the pipeline healthy when there is a low volume of data at times.",
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
+				Computed:            true,
 				Optional:            true,
+				Default:             stringdefault.StaticString("streamkap"),
 				Description:         "Heartbeat Table Database",
 				MarkdownDescription: "Heartbeat Table Database",
 			},
@@ -221,6 +232,41 @@ func (r *SourceSQLServerResource) Schema(ctx context.Context, req res.SchemaRequ
 				Default:             stringdefault.StaticString("streamkap"),
 				Description:         "User for connecting to the SSH server, only required if `ssh_enabled` is true",
 				MarkdownDescription: "User for connecting to the SSH server, only required if `ssh_enabled` is true",
+			},
+			"snapshot_parallelism": schema.Int64Attribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             int64default.StaticInt64(1),
+				Description:         "How many parallel chunk requests to send to the source DB",
+				MarkdownDescription: "How many parallel chunk requests to send to the source DB",
+				Validators: []validator.Int64{
+					int64validator.Between(1, 10),
+				},
+			},
+			"snapshot_large_table_threshold": schema.Int64Attribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             int64default.StaticInt64(20000),
+				Description:         "The threshold in MB for a Large Table to require multiple chunks to be read in parallel",
+				MarkdownDescription: "The threshold in MB for a Large Table to require multiple chunks to be read in parallel",
+				Validators: []validator.Int64{
+					int64validator.Between(1, 64000),
+				},
+			},
+			"snapshot_custom_table_config": schema.MapNestedAttribute{
+				Optional:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"chunks": schema.Int64Attribute{
+							Required:   true,
+							Validators: []validator.Int64{
+								int64validator.AtLeast(1),
+							},
+						},
+					},
+				},
+				Description:         "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",
+				MarkdownDescription: "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",
 			},
 		},
 	}
@@ -399,6 +445,37 @@ func (r *SourceSQLServerResource) ImportState(ctx context.Context, req res.Impor
 // Helpers
 func (r *SourceSQLServerResource) model2ConfigMap(model SourceSQLServerResourceModel) (map[string]any, error) {
 
+	var snapshotCustomTableConfigStr string
+	snapshotCustomTableConfigJSON := make(map[string]map[string]int64)
+	if len(model.SnapshotCustomTableConfig) != 0 {
+		for table, chunks := range model.SnapshotCustomTableConfig {
+			_, err := json.Marshal(map[string]int64{
+				"chunks": chunks.Chunks.ValueInt64(),
+			})
+			if err != nil {
+				return nil, err
+			}
+			chunksMap := map[string]int64{
+				"chunks": chunks.Chunks.ValueInt64(),
+			}
+			snapshotCustomTableConfigJSON[table] = chunksMap
+		}
+
+		snapshotCustomTableConfig, err := json.Marshal(snapshotCustomTableConfigJSON)
+		snapshotCustomTableConfigStr = string(snapshotCustomTableConfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var expectedSnapshotCustomTableConfig *string
+
+	if snapshotCustomTableConfigStr == "" {
+		expectedSnapshotCustomTableConfig = nil
+	} else {
+		expectedSnapshotCustomTableConfig = &snapshotCustomTableConfigStr
+	}
+
 	configMap := map[string]any{
 		"database.hostname.user.defined":               model.DatabaseHostname.ValueString(),
 		"database.port.user.defined":                   int(model.DatabasePort.ValueInt64()),
@@ -420,12 +497,15 @@ func (r *SourceSQLServerResource) model2ConfigMap(model SourceSQLServerResourceM
 		"ssh.host":                                     model.SSHHost.ValueStringPointer(),
 		"ssh.port":                                     model.SSHPort.ValueString(),
 		"ssh.user":                                     model.SSHUser.ValueString(),
+		"streamkap.snapshot.parallelism":               model.SnapshotParallelism.ValueInt64(),
+		"streamkap.snapshot.large.table.threshold":     model.SnapshotLargeTableThreshold.ValueInt64(),
+		"streamkap.snapshot.custom.table.config.user.defined": expectedSnapshotCustomTableConfig,
 	}
 
 	return configMap, nil
 }
 
-func (r *SourceSQLServerResource) configMap2Model(cfg map[string]any, model *SourceSQLServerResourceModel) {
+func (r *SourceSQLServerResource) configMap2Model(cfg map[string]any, model *SourceSQLServerResourceModel) (err error) {
 	// Copy the config map to the model
 	model.DatabaseHostname = helper.GetTfCfgString(cfg, "database.hostname.user.defined")
 	model.DatabasePort = helper.GetTfCfgInt64(cfg, "database.port.user.defined")
@@ -447,4 +527,36 @@ func (r *SourceSQLServerResource) configMap2Model(cfg map[string]any, model *Sou
 	model.SSHHost = helper.GetTfCfgString(cfg, "ssh.host")
 	model.SSHPort = helper.GetTfCfgString(cfg, "ssh.port")
 	model.SSHUser = helper.GetTfCfgString(cfg, "ssh.user")
+	model.SnapshotParallelism = helper.GetTfCfgInt64(cfg, "streamkap.snapshot.parallelism")
+	model.SnapshotLargeTableThreshold = helper.GetTfCfgInt64(cfg, "streamkap.snapshot.large.table.threshold")
+
+	snapshotCustomTableConfigStr := helper.GetTfCfgString(cfg, "streamkap.snapshot.custom.table.config.user.defined").ValueString()
+	snapshotCustomTableConfig := make(map[string]snapshotCustomTableConfigModel)
+
+	snapshotCustomTableConfigPartialJSON := make(map[string]int64)
+	err = json.Unmarshal([]byte(snapshotCustomTableConfigStr), &snapshotCustomTableConfigPartialJSON)
+	if err != nil {
+		return
+	}
+
+	snapshotCustomTableConfigJSON := make(map[string]map[string]int64)
+	for table, chunks := range snapshotCustomTableConfigPartialJSON {
+		// chunksMap := make(map[string]int64)
+		// err = json.Unmarshal([]byte(chunks), &chunksMap)
+		// if err != nil {
+		// 	return
+		// }
+		chunksMap := map[string]int64{
+			"chunks": chunks,
+		}
+		snapshotCustomTableConfigJSON[table] = chunksMap
+	}
+
+	for table, chunks := range snapshotCustomTableConfigJSON {
+		snapshotCustomTableConfig[table] = snapshotCustomTableConfigModel{
+			Chunks: types.Int64Value(chunks["chunks"]),
+		}
+	}
+	model.SnapshotCustomTableConfig = snapshotCustomTableConfig
+	return
 }
