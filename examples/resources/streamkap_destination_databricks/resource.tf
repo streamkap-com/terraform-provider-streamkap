@@ -22,15 +22,16 @@ variable "destination_databricks_token" {
 }
 
 resource "streamkap_destination_databricks" "example-destination-databricks" {
-  name              = "example-destination-databricks"
-  table_name_prefix = "streamkap"
-  ingestion_mode    = "append"
-  partition_mode    = "by_topic"
-  hard_delete       = true
-  tasks_max         = 5
-  connection_url    = var.destination_databricks_connection_url
-  databricks_token  = var.destination_databricks_token
-  schema_evolution  = "basic"
+  name               = "example-destination-databricks"
+  table_name_prefix  = "streamkap"
+  ingestion_mode     = "append"
+  partition_mode     = "by_topic"
+  hard_delete        = true
+  tasks_max          = 5
+  connection_url     = var.destination_databricks_connection_url
+  databricks_token   = var.destination_databricks_token
+  databricks_catalog = "hive_metastore"
+  schema_evolution   = "basic"
 }
 
 output "example-destination-databricks" {
