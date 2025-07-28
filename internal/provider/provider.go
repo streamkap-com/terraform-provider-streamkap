@@ -19,6 +19,7 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/destination"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/pipeline"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/topic"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -215,5 +216,6 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		destination.NewDestinationClickHouseResource,
 		destination.NewDestinationDatabricksResource,
 		pipeline.NewPipelineResource,
+		topic.NewTopicResource,
 	}
 }
