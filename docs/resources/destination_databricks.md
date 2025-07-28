@@ -37,15 +37,16 @@ variable "destination_databricks_token" {
 }
 
 resource "streamkap_destination_databricks" "example-destination-databricks" {
-  name              = "example-destination-databricks"
-  table_name_prefix = "streamkap"
-  ingestion_mode    = "append"
-  partition_mode    = "by_topic"
-  hard_delete       = true
-  tasks_max         = 5
-  connection_url    = var.destination_databricks_connection_url
-  databricks_token  = var.destination_databricks_token
-  schema_evolution  = "basic"
+  name               = "example-destination-databricks"
+  table_name_prefix  = "streamkap"
+  ingestion_mode     = "append"
+  partition_mode     = "by_topic"
+  hard_delete        = true
+  tasks_max          = 5
+  connection_url     = var.destination_databricks_connection_url
+  databricks_token   = var.destination_databricks_token
+  databricks_catalog = "hive_metastore"
+  schema_evolution   = "basic"
 }
 
 output "example-destination-databricks" {
@@ -65,6 +66,7 @@ output "example-destination-databricks" {
 
 ### Optional
 
+- `databricks_catalog` (String) Catalog Name. Make sure to change this to the correct cataog name
 - `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)
 - `ingestion_mode` (String) `upsert` or `append` modes are available
 - `partition_mode` (String) Partition tables or not
