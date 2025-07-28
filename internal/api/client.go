@@ -37,6 +37,10 @@ type StreamkapAPI interface {
 
 	// Tags APIs
 	GetTag(ctx context.Context, TagID string) (*Tag, error)
+
+	// Topic APIs
+	GetTopic(ctx context.Context, TopicID string) (*Topic, error)
+	UpdateTopic(ctx context.Context, TopicID string, reqPayload Topic) (*Topic, error)
 }
 
 type APIErrorResponse struct {
