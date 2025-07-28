@@ -21,8 +21,8 @@ resource "streamkap_topic" "test" {
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("topic_id.test", "topic_id", "source_67adbcc172417ef6338e01a1.default.tst-junit-2"),
-					resource.TestCheckResourceAttr("topic_id.test", "partition_count", 25)
+					resource.TestCheckResourceAttr("streamkap_topic.test", "topic_id", "source_67adbcc172417ef6338e01a1.default.tst-junit-2"),
+					resource.TestCheckResourceAttr("streamkap_topic.test", "partition_count", 25)
 				),
 			},
 			// Step 2: ImportState testing
@@ -40,8 +40,8 @@ resource "streamkap_topic" "test" {
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("topic_id.test", "topic_id", "source_67adbcc172417ef6338e01a1.default.tst-junit-2"),
-					resource.TestCheckResourceAttr("topic_id.test", "partition_count", 26)
+					resource.TestCheckResourceAttr("streamkap_topic.test", "topic_id", "source_67adbcc172417ef6338e01a1.default.tst-junit-2"),
+					resource.TestCheckResourceAttr("streamkap_topic.test", "partition_count", 26)
 				),
 			},
 			// Delete testing automatically occurs in TestCase
