@@ -35,7 +35,7 @@ resource "streamkap_topic" "example-topic2" {
   partition_count = 25
 }
 
-output "example-source-sqlserver" {
+output "example-topic" {
   value = streamkap_topic.example-topic.topic_id
 }
 ```
@@ -53,6 +53,6 @@ output "example-source-sqlserver" {
 Import is supported using the following syntax:
 
 ```shell
-# Source SQL Server can be imported by specifying the identifier
+# StreamKap topic can be imported by specifying the identifier
 terraform import streamkap_topic.example-topic source_67adbcc172417ef6338e01a1.default.tst-junit-2
 ```

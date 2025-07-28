@@ -20,6 +20,6 @@ resource "streamkap_topic" "example-topic2" {
   partition_count = 25
 }
 
-output "example-source-sqlserver" {
+output "example-topic" {
   value = streamkap_topic.example-topic.topic_id
 }
