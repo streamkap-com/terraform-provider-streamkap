@@ -49,6 +49,7 @@ resource "streamkap_source_dynamodb" "test" {
 	signal_kafka_poll_timeout_ms     = 1000
 	array_encoding_json              = true
 	struct_encoding_json             = true
+	tasks_max                        = 3
 }
 `,
 
@@ -68,6 +69,7 @@ resource "streamkap_source_dynamodb" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "signal_kafka_poll_timeout_ms", "1000"),
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "array_encoding_json", "true"),
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "struct_encoding_json", "true"),
+					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "tasks_max", "3"),
 				),
 			},
 			// ImportState testing
@@ -110,6 +112,7 @@ resource "streamkap_source_dynamodb" "test" {
 	signal_kafka_poll_timeout_ms     = 2000
 	array_encoding_json              = true
 	struct_encoding_json             = true
+	tasks_max                        = 5
 }
 `,
 
@@ -129,6 +132,7 @@ resource "streamkap_source_dynamodb" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "signal_kafka_poll_timeout_ms", "2000"),
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "array_encoding_json", "true"),
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "struct_encoding_json", "true"),
+					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "tasks_max", "5"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

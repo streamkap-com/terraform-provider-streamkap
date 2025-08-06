@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -14,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
 )
@@ -54,6 +56,7 @@ type SourceDynamoDBResourceModel struct {
 	SignalKafkaPollTimeoutMS      types.Int64  `tfsdk:"signal_kafka_poll_timeout_ms"`
 	ArrayEncodingJson             types.Bool   `tfsdk:"array_encoding_json"`
 	StructEncodingJson            types.Bool   `tfsdk:"struct_encoding_json"`
+	TasksMax                      types.Int64  `tfsdk:"tasks_max"`
 }
 
 func (r *SourceDynamoDBResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -170,6 +173,16 @@ func (r *SourceDynamoDBResource) Schema(ctx context.Context, req res.SchemaReque
 				Default:             booldefault.StaticBool(true),
 				Description:         "Force nested maps as JSON string",
 				MarkdownDescription: "Force nested maps as JSON string",
+			},
+			"tasks_max": schema.Int64Attribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             int64default.StaticInt64(10),
+				Description:         "The maximum number of active task",
+				MarkdownDescription: "The maximum number of active task",
+				Validators: []validator.Int64{
+					int64validator.Between(1, 40),
+				},
 			},
 		},
 	}
@@ -347,6 +360,7 @@ func (r *SourceDynamoDBResource) model2ConfigMap(model SourceDynamoDBResourceMod
 		"signal.kafka.poll.timeout.ms":     int(model.SignalKafkaPollTimeoutMS.ValueInt64()),
 		"array.encoding.json":              model.ArrayEncodingJson.ValueBool(),
 		"struct.encoding.json":             model.StructEncodingJson.ValueBool(),
+		"tasks.max":                        model.TasksMax.ValueInt64(),
 	}
 }
 
@@ -366,4 +380,5 @@ func (r *SourceDynamoDBResource) configMap2Model(cfg map[string]any, model *Sour
 	model.SignalKafkaPollTimeoutMS = helper.GetTfCfgInt64(cfg, "signal.kafka.poll.timeout.ms")
 	model.ArrayEncodingJson = helper.GetTfCfgBool(cfg, "array.encoding.json")
 	model.StructEncodingJson = helper.GetTfCfgBool(cfg, "struct.encoding.json")
+	model.TasksMax = helper.GetTfCfgInt64(cfg, "tasks.max")
 }
