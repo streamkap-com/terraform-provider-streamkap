@@ -159,7 +159,7 @@ func (r *DestinationDatabricksResource) Schema(ctx context.Context, req res.Sche
 				Description:         "The maximum number of active task",
 				MarkdownDescription: "The maximum number of active task",
 				Validators: []validator.Int64{
-					int64validator.Between(1, 10),
+					int64validator.Between(1, 25),
 				},
 			},
 		},
