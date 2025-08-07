@@ -41,6 +41,7 @@ resource "streamkap_source_dynamodb" "example-source-dynamodb" {
   signal_kafka_poll_timeout_ms     = 1000
   array_encoding_json              = true
   struct_encoding_json             = true
+  tasks_max                        = 3
 }
 
 output "example-source-dynamodb" {
