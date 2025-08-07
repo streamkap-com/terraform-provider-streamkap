@@ -56,6 +56,7 @@ resource "streamkap_source_dynamodb" "example-source-dynamodb" {
   signal_kafka_poll_timeout_ms     = 1000
   array_encoding_json              = true
   struct_encoding_json             = true
+  tasks_max                        = 3
 }
 
 output "example-source-dynamodb" {
@@ -86,6 +87,7 @@ output "example-source-dynamodb" {
 - `poll_timeout_ms` (Number) Poll Timeout (ms)
 - `signal_kafka_poll_timeout_ms` (Number) Signal Kafka Poll Timeout (ms)
 - `struct_encoding_json` (Boolean) Force nested maps as JSON string
+- `tasks_max` (Number) The maximum number of active task
 
 ### Read-Only
 
