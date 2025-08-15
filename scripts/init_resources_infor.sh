@@ -27,3 +27,7 @@ export TF_VAR_destination_snowflake_key_passphrase=""
 export TF_VAR_destination_clickhouse_hostname=""
 export TF_VAR_destination_clickhouse_connection_username=""
 export TF_VAR_destination_clickhouse_connection_password=''
+
+# Postgresql
+export TF_VAR_destination_postgresql_hostname=""
+export TF_VAR_destination_postgresql_password=''
