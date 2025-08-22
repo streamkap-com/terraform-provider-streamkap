@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -40,4 +41,15 @@ func GetTfCfgBool(cfg map[string]any, key string) types.Bool {
 	}
 
 	return types.BoolNull()
+}
+
+func GetTfCfgListString(ctx context.Context, cfg map[string]any, key string) types.List {
+	if val, ok := cfg[key]; ok && val != nil {
+		val, _ := val.([]string)
+
+		listVal, _ := types.ListValueFrom(ctx, types.StringType, val)
+		return listVal
+	}
+
+	return types.ListNull(types.StringType)
 }
