@@ -45,7 +45,7 @@ func GetTfCfgBool(cfg map[string]any, key string) types.Bool {
 
 func GetTfCfgListString(ctx context.Context, cfg map[string]any, key string) types.List {
 	if val, ok := cfg[key]; ok && val != nil {
-		val, _ := val.([]string)
+		val, _ := val.([]interface{})
 
 		listVal, _ := types.ListValueFrom(ctx, types.StringType, val)
 		return listVal
