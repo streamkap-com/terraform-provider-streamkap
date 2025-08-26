@@ -31,3 +31,11 @@ export TF_VAR_destination_clickhouse_connection_password=''
 # Postgresql
 export TF_VAR_destination_postgresql_hostname=""
 export TF_VAR_destination_postgresql_password=''
+
+# S3
+export TF_VAR_s3_aws_access_key=""
+export TF_VAR_s3_aws_secret_key=''
+
+# Iceberge
+export TF_VAR_iceberg_aws_access_key="abc"
+export TF_VAR_iceberg_aws_secret_key=''
