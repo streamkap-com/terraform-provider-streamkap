@@ -44,4 +44,4 @@ Install provider with
 go install .
 ``````
 
-Write your module, can see the example in [examples/full](/examples/full/)
+Write your module, can see the example in [examples/](/examples/)
