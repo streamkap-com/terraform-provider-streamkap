@@ -47,8 +47,6 @@ resource "streamkap_destination_snowflake" "test" {
 	hard_delete                      = true
 	use_hybrid_tables                = false
 	apply_dynamic_table_script       = false
-	dynamic_table_target_lag         = 60
-	cleanup_task_schedule            = 120
 	auto_qa_dedupe_table_mapping = {
 		users                   = "JUNIT.USERS",
 		itst_scen20240528103635 = "ITST_SCEN20240528103635"
@@ -70,8 +68,6 @@ resource "streamkap_destination_snowflake" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "schema_evolution", "basic"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "use_hybrid_tables", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "apply_dynamic_table_script", "false"),
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "dynamic_table_target_lag", "60"),
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "cleanup_task_schedule", "120"),
 					resource.TestCheckResourceAttrSet("streamkap_destination_snowflake.test", "id"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "connector", "snowflake"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "auto_qa_dedupe_table_mapping.users", "JUNIT.USERS"),
@@ -129,8 +125,6 @@ resource "streamkap_destination_snowflake" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "schema_evolution", "basic"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "use_hybrid_tables", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "apply_dynamic_table_script", "false"),
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "dynamic_table_target_lag", "15"),
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "cleanup_task_schedule", "60"),
 					resource.TestCheckResourceAttrSet("streamkap_destination_snowflake.test", "id"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "connector", "snowflake"),
 					resource.TestCheckNoResourceAttr("streamkap_destination_snowflake.test", "auto_qa_dedupe_table_mapping"),
@@ -233,8 +227,6 @@ resource "streamkap_destination_snowflake" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "schema_evolution", "basic"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "use_hybrid_tables", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "apply_dynamic_table_script", "false"),
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "dynamic_table_target_lag", "15"),
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "cleanup_task_schedule", "60"),
 					resource.TestCheckResourceAttrSet("streamkap_destination_snowflake.test", "id"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "connector", "snowflake"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "auto_qa_dedupe_table_mapping.users", "JUNIT.USERS"),

@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -59,8 +57,6 @@ type DestinationSnowflakeResourceModel struct {
 	SchemaEvolution               types.String            `tfsdk:"schema_evolution"`
 	UseHybridTables               types.Bool              `tfsdk:"use_hybrid_tables"`
 	ApplyDynamicTableScript       types.Bool              `tfsdk:"apply_dynamic_table_script"`
-	DynamicTableTargetLag         types.Int64             `tfsdk:"dynamic_table_target_lag"`
-	CleanupTaskSchedule           types.Int64             `tfsdk:"cleanup_task_schedule"`
 	CreateSQLExecute              types.String            `tfsdk:"create_sql_execute"`
 	CreateSQLData                 types.String            `tfsdk:"create_sql_data"`
 	SQLTableName                  types.String            `tfsdk:"sql_table_name"`
@@ -195,50 +191,30 @@ func (r *DestinationSnowflakeResource) Schema(ctx context.Context, req res.Schem
 				Description:         "Specifies whether the connector should create Dyanmic Tables & Cleanup Task (applies to `append` mode only)",
 				MarkdownDescription: "Specifies whether the connector should create Dyanmic Tables & Cleanup Task (applies to `append` mode only)",
 			},
-			"dynamic_table_target_lag": schema.Int64Attribute{
-				Computed:            true,
-				Optional:            true,
-				Default:             int64default.StaticInt64(15),
-				Description:         "Target lag for dynamic tables in minutes (applies to `append` mode only)",
-				MarkdownDescription: "Target lag for dynamic tables in minutes (applies to `append` mode only)",
-				Validators: []validator.Int64{
-					int64validator.Between(0, 2147483647),
-				},
-			},
-			"cleanup_task_schedule": schema.Int64Attribute{
-				Computed:            true,
-				Optional:            true,
-				Default:             int64default.StaticInt64(60),
-				Description:         "Schedule for cleanup task in minutes (applies to `append` mode only)",
-				MarkdownDescription: "Schedule for cleanup task in minutes (applies to `append` mode only)",
-				Validators: []validator.Int64{
-					int64validator.Between(0, 2147483647),
-				},
-			},
 			"create_sql_execute": schema.StringAttribute{
 				Computed: true,
 				Optional: true,
-				Default: stringdefault.StaticString("CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='{{targetLag}} minutes' WAREHOUSE={{warehouse}} " +
+				Default: stringdefault.StaticString("CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} " +
 					"AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id " +
-					"FROM \"{{table}}\" ) WHERE dedupe_id = 1 AND __deleted = 'false';\n" +
-					"CREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='{{schedule}} minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE " +
-					"AS DELETE FROM \"{{table}}\" WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM \"{{table}}\" GROUP BY {{primaryKeyColumns}} ) AS subquery " +
-					"WHERE {{{keyColumnsAndCondition}}} AND \"{{table}}\"._streamkap_ts_ms = subquery.max_timestamp);\nALTER TASK {{table}}_CT RESUME"),
+					"FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';\n" +
+					"CREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE " +
+					"AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery " +
+					"WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);\nALTER TASK {{table}}_CT RESUME"),
 				Description: "Custom SQL mustache template to be run the first time a record is streamed for each table. Default is: " +
-					"\n\t```\n\tCREATE OR REPLACE DYNAMIC TABLE {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_DT TARGET_LAG='{{`{`}}{{`{`}}targetLag{{`}`}}{{`}`}} minutes' WAREHOUSE={{`{`}}{{`{`}}warehouse{{`}`}}{{`}`}} " +
+					"\n\t```\n\tCREATE OR REPLACE DYNAMIC TABLE {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{`{`}}{{`{`}}warehouse{{`}`}}{{`}`}} " +
 					"AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id " +
-					"FROM \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\" ) WHERE dedupe_id = 1 AND __deleted = 'false';\n\t" +
-					"CREATE OR REPLACE TASK {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_CT WAREHOUSE={{`{`}}{{`{`}}warehouse{{`}`}}{{`}`}} SCHEDULE='{{`{`}}{{`{`}}schedule{{`}`}}{{`}`}} minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE " +
-					"AS DELETE FROM \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\" WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\" GROUP BY {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}} ) AS subquery " +
-					"WHERE {{`{`}}{{`{`}}{{`{`}}keyColumnsAndCondition{{`}`}}{{`}`}}{{`}`}} AND \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\"._streamkap_ts_ms = subquery.max_timestamp);\n\t" +
+					"FROM {{`{`}}{{`{`}}table{{`}`}}{{`}`}} ) WHERE dedupe_id = 1 AND __deleted = 'false';\n\t" +
+					"CREATE OR REPLACE TASK {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_CT WAREHOUSE={{`{`}}{{`{`}}warehouse{{`}`}}{{`}`}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE " +
+					"AS DELETE FROM {{`{`}}{{`{`}}table{{`}`}}{{`}`}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{`{`}}{{`{`}}table{{`}`}}{{`}`}} GROUP BY {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}} ) AS subquery " +
+					"WHERE {{`{`}}{{`{`}}{{`{`}}keyColumnsAndCondition{{`}`}}{{`}`}}{{`}`}} AND {{`{`}}{{`{`}}table{{`}`}}{{`}`}}._streamkap_ts_ms = subquery.max_timestamp);\n\t" +
 					"ALTER TASK {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_CT RESUME\n\t```",
 				MarkdownDescription: "Custom SQL mustache template to be run the first time a record is streamed for each table. Default is: " +
-					"\n\t```\n\tCREATE OR REPLACE DYNAMIC TABLE {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_DT TARGET_LAG='{{`{`}}{{`{`}}targetLag{{`}`}}{{`}`}} minutes' WAREHOUSE={{`{`}}{{`{`}}warehouse{{`}`}}{{`}`}} " +
+					"\n\t```\n\tCREATE OR REPLACE DYNAMIC TABLE {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{`{`}}{{`{`}}warehouse{{`}`}}{{`}`}} " +
 					"AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id " +
-					"FROM \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\" ) WHERE dedupe_id = 1 AND __deleted = 'false';\n\t" +
-					"CREATE OR REPLACE TASK {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_CT WAREHOUSE={{`{`}}{{`{`}}warehouse{{`}`}}{{`}`}} SCHEDULE='{{`{`}}{{`{`}}schedule{{`}`}}{{`}`}} minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE " +
-					"AS DELETE FROM \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\" WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\" GROUP BY {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}} ) AS subquery " +
-					"WHERE {{`{`}}{{`{`}}{{`{`}}keyColumnsAndCondition{{`}`}}{{`}`}}{{`}`}} AND \"{{`{`}}{{`{`}}table{{`}`}}{{`}`}}\"._streamkap_ts_ms = subquery.max_timestamp);\n\t" +
+					"FROM {{`{`}}{{`{`}}table{{`}`}}{{`}`}} ) WHERE dedupe_id = 1 AND __deleted = 'false';\n\t" +
+					"CREATE OR REPLACE TASK {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_CT WAREHOUSE={{`{`}}{{`{`}}warehouse{{`}`}}{{`}`}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE " +
+					"AS DELETE FROM {{`{`}}{{`{`}}table{{`}`}}{{`}`}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{`{`}}{{`{`}}table{{`}`}}{{`}`}} GROUP BY {{`{`}}{{`{`}}primaryKeyColumns{{`}`}}{{`}`}} ) AS subquery " +
+					"WHERE {{`{`}}{{`{`}}{{`{`}}keyColumnsAndCondition{{`}`}}{{`}`}}{{`}`}} AND {{`{`}}{{`{`}}table{{`}`}}{{`}`}}._streamkap_ts_ms = subquery.max_timestamp);\n\t" +
 					"ALTER TASK {{`{`}}{{`{`}}table{{`}`}}{{`}`}}_CT RESUME\n\t```",
 			},
 			"create_sql_data": schema.StringAttribute{
@@ -459,8 +435,6 @@ func (r *DestinationSnowflakeResource) model2ConfigMap(_ context.Context, model 
 		"schema.evolution":                         model.SchemaEvolution.ValueString(),
 		"use.hybrid.tables":                        model.UseHybridTables.ValueBool(),
 		"apply.dynamic.table.script":               model.ApplyDynamicTableScript.ValueBool(),
-		"dynamic.table.target.lag":                 model.DynamicTableTargetLag.ValueInt64(),
-		"cleanup.task.schedule":                    model.CleanupTaskSchedule.ValueInt64(),
 		"create.sql.execute":                       model.CreateSQLExecute.ValueStringPointer(),
 		"create.sql.data":                          model.CreateSQLData.ValueStringPointer(),
 		"sql.table.name":                           model.SQLTableName.ValueStringPointer(),
@@ -490,8 +464,6 @@ func (r *DestinationSnowflakeResource) configMap2Model(ctx context.Context, cfg 
 	model.SchemaEvolution = helper.GetTfCfgString(cfg, "schema.evolution")
 	model.UseHybridTables = helper.GetTfCfgBool(cfg, "use.hybrid.tables")
 	model.ApplyDynamicTableScript = helper.GetTfCfgBool(cfg, "apply.dynamic.table.script")
-	model.DynamicTableTargetLag = helper.GetTfCfgInt64(cfg, "dynamic.table.target.lag")
-	model.CleanupTaskSchedule = helper.GetTfCfgInt64(cfg, "cleanup.task.schedule")
 	model.CreateSQLExecute = helper.GetTfCfgString(cfg, "create.sql.execute")
 	model.CreateSQLData = helper.GetTfCfgString(cfg, "create.sql.data")
 	model.SQLTableName = helper.GetTfCfgString(cfg, "sql.table.name")
