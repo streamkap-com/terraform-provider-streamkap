@@ -53,8 +53,7 @@ resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   hard_delete                      = true
   use_hybrid_tables                = false
   apply_dynamic_table_script       = false
-  dynamic_table_target_lag         = 60
-  cleanup_task_schedule            = 120
+
   auto_qa_dedupe_table_mapping = {
     users                   = "JUNIT.USERS",
     itst_scen20240528103635 = "ITST_SCEN20240528103635"
@@ -83,7 +82,6 @@ output "example-destination-snowflake" {
 - `apply_dynamic_table_script` (Boolean) Specifies whether the connector should create Dyanmic Tables & Cleanup Task (applies to `append` mode only)
 - `auto_qa_dedupe_table_mapping` (Map of String) Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.
 - `auto_schema_creation` (Boolean) Specifies whether the connector should create the schema automatically. If set to `false`, the schema must be created manually before starting the connector.
-- `cleanup_task_schedule` (Number) Schedule for cleanup task in minutes (applies to `append` mode only)
 - `create_sql_data` (String) Custom SQL mustache template input JSON data. Use TABLE_DATA dictionary to set table specific data. e.g:
 	```
 	{
@@ -96,11 +94,10 @@ output "example-destination-snowflake" {
 	```
 - `create_sql_execute` (String) Custom SQL mustache template to be run the first time a record is streamed for each table. Default is: 
 	```
-	CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='{{targetLag}} minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM "{{table}}" ) WHERE dedupe_id = 1 AND __deleted = 'false';
-	CREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='{{schedule}} minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM "{{table}}" WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM "{{table}}" GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND "{{table}}"._streamkap_ts_ms = subquery.max_timestamp);
+	CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';
+	CREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);
 	ALTER TASK {{table}}_CT RESUME
 	```
-- `dynamic_table_target_lag` (Number) Target lag for dynamic tables in minutes (applies to `append` mode only)
 - `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)
 - `ingestion_mode` (String) `upsert` or `append` modes are available
 - `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `none`
