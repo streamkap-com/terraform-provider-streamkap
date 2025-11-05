@@ -129,6 +129,7 @@ func (r *DestinationDatabricksResource) Schema(ctx context.Context, req res.Sche
 					stringvalidator.OneOf(
 						"by_topic",
 						"by_partition",
+						"by_topic_and_partition",
 					),
 				},
 			},
