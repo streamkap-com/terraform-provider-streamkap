@@ -7,7 +7,7 @@ Resources are streamkap sources, destinations, pipelines and transforms.
 
 * [postgresql source](./internal/provider/source_postgresql_resource_test.go) -> [postgresql source details from backend](../backend/app/sources/plugins/postgresql/configuration.latest.json)
 * [kafkadirect source] TODO -> [kafkadirect source details from backend](../backend/app/sources/plugins/kafkadirect/configuration.latest.jsons)
-* [databricks destination](./internal/provider/destination_databricks_resource_test.go) -> [databricks destination deatails from backend](../backend/app/destinations/plugins/databricks/configuration.latest.json)
+* [databricks destination](./internal/provider/destination_databricks_resource_test.go) -> [databricks destination details from backend](../backend/app/destinations/plugins/databricks/configuration.latest.json)
 * [kafka destination] TODO -> [kafka destination details from backend](../backend/app/destinations/plugins/kafka/configuration.latest.json)
 
 
