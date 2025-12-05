@@ -27,9 +27,9 @@ provider "streamkap" {}
 
 resource "streamkap_destination_kafka" "example-destination-kafka" {
   name                 = "example-destination-kafka"
-  kafka_sink_bootstrap = "kafka-controller-0.tenant-internal.internal.dev.streamkap.net:9098"
+  kafka_sink_bootstrap = "kafka-controller.streamkap.net:9098"
   destination_format   = "avro"
-  schema_registry_url  = "https://schema-registry-dev-tenant-internal.streamkap.net"
+  schema_registry_url  = "https://schema-registry-dev.streamkap.net"
 }
 
 output "example-destination-kafka" {
@@ -63,6 +63,6 @@ output "example-destination-kafka" {
 Import is supported using the following syntax:
 
 ```shell
-# Destination Snowflake can be imported by specifying the identifier.
+# Destination Kafka can be imported by specifying the identifier.
 terraform import streamkap_destination_kafka.example-destination-kafka 665e894ebb3753f38d983cee
 ```

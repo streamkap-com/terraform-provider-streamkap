@@ -105,6 +105,7 @@ func (r *DestinationKafkaResource) Schema(ctx context.Context, req res.SchemaReq
 			},
 			"schema_registry_url": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Destination kafka schema registry url",
 				MarkdownDescription: "Kafka Hostname Or IP address",
 			},

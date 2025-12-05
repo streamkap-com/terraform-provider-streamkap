@@ -24,7 +24,6 @@ resource "streamkap_source_kafkadirect" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_kafkadirect.test", "name", "test-source-kafkadirect"),
 					resource.TestCheckResourceAttr("streamkap_source_kafkadirect.test", "topic_prefix", "sample-topic_"),
-					resource.TestCheckResourceAttr("streamkap_source_kafkadirect.test", "database_port", "1433"),
 					resource.TestCheckResourceAttr("streamkap_source_kafkadirect.test", "kafka_format", "json"),
 					resource.TestCheckResourceAttr("streamkap_source_kafkadirect.test", "schemas_enable", "true"),
 					resource.TestCheckResourceAttr("streamkap_source_kafkadirect.test", "topic_include_list", "sample-topic_topic1, sample-topic_topic2, sample-topic_topic3"),
