@@ -164,6 +164,16 @@ func (r *DestinationDatabricksResource) Schema(ctx context.Context, req res.Sche
 					int64validator.Between(1, 100),
 				},
 			},
+			"consumer_wait_time_for_larger_batch_ms": schema.Int64Attribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             int64default.StaticInt64(500),
+				Description:         "Time in milliseconds to wait for a larger batch size",
+				MarkdownDescription: "Time in milliseconds to wait for a larger batch size",
+				Validators: []validator.Int64{
+					int64validator.Between(500, 300000),
+				},
+			},
 		},
 	}
 }
