@@ -41,18 +41,19 @@ type DestinationDatabricksResource struct {
 
 // DestinationDatabricksResourceModel describes the resource data model.
 type DestinationDatabricksResourceModel struct {
-	ID                            types.String            `tfsdk:"id"`
-	Name                          types.String            `tfsdk:"name"`
-	Connector                     types.String            `tfsdk:"connector"`
-	ConnectionUrl                 types.String            `tfsdk:"connection_url"`
-	DatabricksToken               types.String            `tfsdk:"databricks_token"`
-	DatabricksCatalog             types.String            `tfsdk:"databricks_catalog"`
-	TableNamePrefix               types.String            `tfsdk:"table_name_prefix"`
-	IngestionMode                 types.String            `tfsdk:"ingestion_mode"`
-	PartitionMode                 types.String            `tfsdk:"partition_mode"`
-	HardDelete                    types.Bool              `tfsdk:"hard_delete"`
-	SchemaEvolution               types.String            `tfsdk:"schema_evolution"`
-	TasksMax                      types.Int64             `tfsdk:"tasks_max"`
+	ID                               types.String `tfsdk:"id"`
+	Name                             types.String `tfsdk:"name"`
+	Connector                        types.String `tfsdk:"connector"`
+	ConnectionUrl                    types.String `tfsdk:"connection_url"`
+	DatabricksToken                  types.String `tfsdk:"databricks_token"`
+	DatabricksCatalog                types.String `tfsdk:"databricks_catalog"`
+	TableNamePrefix                  types.String `tfsdk:"table_name_prefix"`
+	IngestionMode                    types.String `tfsdk:"ingestion_mode"`
+	PartitionMode                    types.String `tfsdk:"partition_mode"`
+	HardDelete                       types.Bool   `tfsdk:"hard_delete"`
+	SchemaEvolution                  types.String `tfsdk:"schema_evolution"`
+	TasksMax                         types.Int64  `tfsdk:"tasks_max"`
+	ConsumerWaitTimeForLargerBatchMs types.Int64  `tfsdk:"consumer_wait_time_for_larger_batch_ms"`
 }
 
 func (r *DestinationDatabricksResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -160,7 +161,17 @@ func (r *DestinationDatabricksResource) Schema(ctx context.Context, req res.Sche
 				Description:         "The maximum number of active task",
 				MarkdownDescription: "The maximum number of active task",
 				Validators: []validator.Int64{
-					int64validator.Between(1, 25),
+					int64validator.Between(1, 100),
+				},
+			},
+			"consumer_wait_time_for_larger_batch_ms": schema.Int64Attribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             int64default.StaticInt64(500),
+				Description:         "Time in milliseconds to wait for a larger batch size",
+				MarkdownDescription: "Time in milliseconds to wait for a larger batch size",
+				Validators: []validator.Int64{
+					int64validator.Between(500, 300000),
 				},
 			},
 		},
@@ -334,15 +345,16 @@ func (r *DestinationDatabricksResource) ImportState(ctx context.Context, req res
 func (r *DestinationDatabricksResource) model2ConfigMap(_ context.Context, model DestinationDatabricksResourceModel) map[string]any {
 
 	configMap := map[string]any{
-		"connection.url.user.defined": model.ConnectionUrl.ValueString(),
-		"databricks.token":            model.DatabricksToken.ValueString(),
-		"databricks.catalog.user.defined":              model.DatabricksCatalog.ValueString(),
-		"table.name.prefix":           model.TableNamePrefix.ValueString(),
-		"ingestion.mode":              model.IngestionMode.ValueString(),
-		"partition.mode":              model.PartitionMode.ValueString(),
-		"hard.delete":                 model.HardDelete.ValueBool(),
-		"schema.evolution":            model.SchemaEvolution.ValueString(),
-		"tasks.max":                   model.TasksMax.ValueInt64(),
+		"connection.url.user.defined":            model.ConnectionUrl.ValueString(),
+		"databricks.token":                       model.DatabricksToken.ValueString(),
+		"databricks.catalog.user.defined":        model.DatabricksCatalog.ValueString(),
+		"table.name.prefix":                      model.TableNamePrefix.ValueString(),
+		"ingestion.mode":                         model.IngestionMode.ValueString(),
+		"partition.mode":                         model.PartitionMode.ValueString(),
+		"hard.delete":                            model.HardDelete.ValueBool(),
+		"schema.evolution":                       model.SchemaEvolution.ValueString(),
+		"tasks.max":                              model.TasksMax.ValueInt64(),
+		"consumer.wait.time.for.larger.batch.ms": model.ConsumerWaitTimeForLargerBatchMs.ValueInt64(),
 	}
 
 	return configMap
@@ -359,4 +371,5 @@ func (r *DestinationDatabricksResource) configMap2Model(ctx context.Context, cfg
 	model.HardDelete = helper.GetTfCfgBool(cfg, "hard.delete")
 	model.SchemaEvolution = helper.GetTfCfgString(cfg, "schema.evolution")
 	model.TasksMax = helper.GetTfCfgInt64(cfg, "tasks.max")
+	model.ConsumerWaitTimeForLargerBatchMs = helper.GetTfCfgInt64(cfg, "consumer.wait.time.for.larger.batch.ms")
 }

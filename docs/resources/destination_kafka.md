@@ -50,6 +50,7 @@ output "example-destination-kafka" {
 - `destination_format` (String) The format to use when writing data to kafka
 - `json_schema_enable` (Boolean) Include schema in json message
 - `schema_registry_url` (String) Kafka Hostname Or IP address
+- `tasks_max` (Number) The maximum number of active task
 - `topic_prefix` (String) Prefix for destination topics
 - `topic_suffix` (String) Suffix for destination topics
 

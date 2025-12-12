@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -48,6 +50,7 @@ type DestinationKafkaResourceModel struct {
 	SchemaRegistryUrl  types.String `tfsdk:"schema_registry_url"`
 	TopicPrefix        types.String `tfsdk:"topic_prefix"`
 	TopicSuffix        types.String `tfsdk:"topic_suffix"`
+	TasksMax           types.Int64  `tfsdk:"tasks_max"`
 }
 
 func (r *DestinationKafkaResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -120,6 +123,16 @@ func (r *DestinationKafkaResource) Schema(ctx context.Context, req res.SchemaReq
 				Computed:            true,
 				Description:         "Suffix for destination topics",
 				MarkdownDescription: "Suffix for destination topics",
+			},
+			"tasks_max": schema.Int64Attribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             int64default.StaticInt64(5),
+				Description:         "The maximum number of active task",
+				MarkdownDescription: "The maximum number of active task",
+				Validators: []validator.Int64{
+					int64validator.Between(1, 100),
+				},
 			},
 		},
 	}
@@ -307,6 +320,7 @@ func (r *DestinationKafkaResource) model2ConfigMap(model DestinationKafkaResourc
 		"schema.registry.url.user.defined": model.SchemaRegistryUrl.ValueString(),
 		"topic.prefix":                     model.TopicPrefix.ValueString(),
 		"topic.suffix":                     model.TopicSuffix.ValueString(),
+		"tasks.max":                        model.TasksMax.ValueInt64(),
 	}, nil
 }
 
@@ -318,4 +332,5 @@ func (r *DestinationKafkaResource) configMap2Model(cfg map[string]any, model *De
 	model.SchemaRegistryUrl = helper.GetTfCfgString(cfg, "schema.registry.url.user.defined")
 	model.TopicPrefix = helper.GetTfCfgString(cfg, "topic.prefix")
 	model.TopicSuffix = helper.GetTfCfgString(cfg, "topic.suffix")
+	model.TasksMax = helper.GetTfCfgInt64(cfg, "tasks.max")
 }
