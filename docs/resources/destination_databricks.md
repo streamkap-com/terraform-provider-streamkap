@@ -66,6 +66,7 @@ output "example-destination-databricks" {
 
 ### Optional
 
+- `consumer_wait_time_for_larger_batch_ms` (Number) Time in milliseconds to wait for a larger batch size
 - `databricks_catalog` (String) Catalog Name. Make sure to change this to the correct cataog name
 - `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)
 - `ingestion_mode` (String) `upsert` or `append` modes are available

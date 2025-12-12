@@ -91,6 +91,7 @@ func (r *SourceKafkaDirectResource) Schema(ctx context.Context, req res.SchemaRe
 					stringvalidator.OneOf(
 						"string",
 						"json",
+						"avro",
 					),
 				},
 			},
