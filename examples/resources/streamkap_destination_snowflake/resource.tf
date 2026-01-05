@@ -38,8 +38,7 @@ resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   hard_delete                      = true
   use_hybrid_tables                = false
   apply_dynamic_table_script       = false
-  dynamic_table_target_lag         = 60
-  cleanup_task_schedule            = 120
+  snowflake_topic2table_map        = "REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5"
   auto_qa_dedupe_table_mapping = {
     users                   = "JUNIT.USERS",
     itst_scen20240528103635 = "ITST_SCEN20240528103635"

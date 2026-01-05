@@ -53,8 +53,7 @@ resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   hard_delete                      = true
   use_hybrid_tables                = false
   apply_dynamic_table_script       = false
-  dynamic_table_target_lag         = 60
-  cleanup_task_schedule            = 120
+  snowflake_topic2table_map        = "REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5"
   auto_qa_dedupe_table_mapping = {
     users                   = "JUNIT.USERS",
     itst_scen20240528103635 = "ITST_SCEN20240528103635"
@@ -105,6 +104,7 @@ output "example-destination-snowflake" {
 - `sfwarehouse` (String) The name of the Snowflake warehouse.
 - `snowflake_private_key_passphrase` (String, Sensitive) If the value is not empty, this phrase is used to try to decrypt the private key.
 - `snowflake_role_name` (String) The name of an existing role with necessary privileges (for Streamkap) assigned to the Username.
+- `snowflake_topic2table_map` (String) Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>REGEX_MATCHER>^([-\w]+\.)([-\w]+\.)?([-\w]+\.)?([-\w]+\.)?([-\w]+):$5</code> uses only the last segment as table name
 - `sql_table_name` (String) Dynamic Table Name mustache template. Can be used as `{{dynamicTableName}}` in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic.
 - `use_hybrid_tables` (Boolean) Specifies whether the connector should create Hybrid Tables (applies to `upsert` only)
 

@@ -61,6 +61,7 @@ type DestinationSnowflakeResourceModel struct {
 	CreateSQLData                 types.String            `tfsdk:"create_sql_data"`
 	SQLTableName                  types.String            `tfsdk:"sql_table_name"`
 	AutoQADedupeTableMapping      map[string]types.String `tfsdk:"auto_qa_dedupe_table_mapping"`
+	SnowflakeTopic2TableMap       types.String            `tfsdk:"snowflake_topic2table_map"`
 }
 
 func (r *DestinationSnowflakeResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -236,6 +237,13 @@ func (r *DestinationSnowflakeResource) Schema(ctx context.Context, req res.Schem
 				ElementType:         types.StringType,
 				Description:         "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
 				MarkdownDescription: "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
+			},
+			"snowflake_topic2table_map": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString("REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5"),
+				Description:         "Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5</code> uses only the last segment as table name",
+				MarkdownDescription: "Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5</code> uses only the last segment as table name",
 			},
 		},
 	}
@@ -439,6 +447,7 @@ func (r *DestinationSnowflakeResource) model2ConfigMap(_ context.Context, model 
 		"create.sql.data":                          model.CreateSQLData.ValueStringPointer(),
 		"sql.table.name":                           model.SQLTableName.ValueStringPointer(),
 		"auto.qa.dedupe.table.mapping":             autoQADedupeTableMappingStr,
+		"snowflake.topic2table.map":                model.SnowflakeTopic2TableMap.ValueStringPointer(),
 	}
 
 	if model.SnowflakePrivateKeyPassphrase.IsNull() {
@@ -467,6 +476,7 @@ func (r *DestinationSnowflakeResource) configMap2Model(ctx context.Context, cfg 
 	model.CreateSQLExecute = helper.GetTfCfgString(cfg, "create.sql.execute")
 	model.CreateSQLData = helper.GetTfCfgString(cfg, "create.sql.data")
 	model.SQLTableName = helper.GetTfCfgString(cfg, "sql.table.name")
+	model.SnowflakeTopic2TableMap = helper.GetTfCfgString(cfg, "snowflake.topic2table.map")
 
 	// Parse auto QA deduplication table mapping
 	// Example:
