@@ -14,16 +14,16 @@
               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Resources                                   │
-├──────────────────┬──────────────────┬───────────────────────────┤
-│  Sources (6)     │  Destinations (7)│  Other                    │
-│  - PostgreSQL    │  - Snowflake     │  - Pipeline               │
-│  - MySQL         │  - ClickHouse    │  - Topic                  │
-│  - MongoDB       │  - Databricks    │  - Tag                    │
-│  - DynamoDB      │  - PostgreSQL    │                           │
-│  - SQLServer     │  - S3            │                           │
-│  - KafkaDirect   │  - Iceberg       │                           │
-│                  │  - Kafka         │                           │
-└──────────────────┴──────────────────┴───────────────────────────┘
+├──────────────────┬──────────────────┬──────────────────┬────────┤
+│  Sources (6)     │  Destinations (7)│  Transforms (6)  │ Other  │
+│  - PostgreSQL    │  - Snowflake     │  - MapFilter     │Pipeline│
+│  - MySQL         │  - ClickHouse    │  - Enrich        │ Topic  │
+│  - MongoDB       │  - Databricks    │  - EnrichAsync   │  Tag   │
+│  - DynamoDB      │  - PostgreSQL    │  - SQLJoin       │        │
+│  - SQLServer     │  - S3            │  - Rollup        │        │
+│  - KafkaDirect   │  - Iceberg       │  - FanOut        │        │
+│                  │  - Kafka         │                  │        │
+└──────────────────┴──────────────────┴──────────────────┴────────┘
               │
               ▼
 ┌─────────────────────────────────────────────────────────────────┐
@@ -37,7 +37,7 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                      API Client                                  │
 │  - HTTP client with Bearer token auth                            │
-│  - Source, Destination, Pipeline, Topic, Tag CRUD                │
+│  - Source, Destination, Transform, Pipeline, Topic, Tag CRUD     │
 └─────────────────────────────────────────────────────────────────┘
               │
               ▼
@@ -220,12 +220,13 @@ terraform-provider-streamkap/
 │   │   ├── pipeline.go           # Pipeline CRUD
 │   │   ├── topic.go              # Topic CRUD
 │   │   ├── tag.go                # Tag CRUD
-│   │   └── transform.go          # Transform read
+│   │   └── transform.go          # Transform CRUD
 │   │
 │   ├── generated/                # Generated code (DO NOT EDIT)
 │   │   ├── doc.go                # Package doc
 │   │   ├── source_*.go           # Generated source schemas
-│   │   └── destination_*.go      # Generated destination schemas
+│   │   ├── destination_*.go      # Generated destination schemas
+│   │   └── transform_*.go        # Generated transform schemas
 │   │
 │   ├── provider/                 # Provider + tests
 │   │   ├── provider.go           # Main provider
@@ -239,6 +240,9 @@ terraform-provider-streamkap/
 │   │   │   └── *_generated.go    # ConnectorConfig implementations
 │   │   ├── destination/          # Destination config wrappers
 │   │   │   └── *_generated.go    # ConnectorConfig implementations
+│   │   ├── transform/            # Transform config wrappers
+│   │   │   ├── base.go           # BaseTransformResource
+│   │   │   └── *_generated.go    # TransformConfig implementations
 │   │   ├── pipeline/             # Pipeline resource
 │   │   ├── topic/                # Topic resource
 │   │   └── tag/                  # Tag resource
