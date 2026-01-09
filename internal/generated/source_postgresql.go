@@ -56,6 +56,17 @@ type SourcePostgresqlModel struct {
 	SSHPort                                 types.String `tfsdk:"ssh_port"`
 	SSHUser                                 types.String `tfsdk:"ssh_user"`
 	SSHPublicKey                            types.String `tfsdk:"ssh_public_key"`
+
+	// Deprecated aliases for backward compatibility
+	InsertStaticKeyField1              types.String `tfsdk:"insert_static_key_field_1"`
+	InsertStaticKeyValue1              types.String `tfsdk:"insert_static_key_value_1"`
+	InsertStaticValueField1            types.String `tfsdk:"insert_static_value_field_1"`
+	InsertStaticValue1                 types.String `tfsdk:"insert_static_value_1"`
+	InsertStaticKeyField2              types.String `tfsdk:"insert_static_key_field_2"`
+	InsertStaticKeyValue2              types.String `tfsdk:"insert_static_key_value_2"`
+	InsertStaticValueField2            types.String `tfsdk:"insert_static_value_field_2"`
+	InsertStaticValue2                 types.String `tfsdk:"insert_static_value_2"`
+	PredicatesIstopictoenrichPattern   types.String `tfsdk:"predicates_istopictoenrich_pattern"`
 }
 
 // SourcePostgresqlSchema returns the Terraform schema for the postgresql source.
@@ -273,6 +284,62 @@ func SourcePostgresqlSchema() schema.Schema {
 				MarkdownDescription: "Public key to add to SSH server",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
+
+			// Deprecated aliases - these map to the same API fields as the new names
+			"insert_static_key_field_1": schema.StringAttribute{
+				Optional:           true,
+				Computed:           true,
+				DeprecationMessage: "Use 'transforms_insert_static_key1_static_field' instead.",
+				Description:        "DEPRECATED: Use 'transforms_insert_static_key1_static_field' instead.",
+			},
+			"insert_static_key_value_1": schema.StringAttribute{
+				Optional:           true,
+				Computed:           true,
+				DeprecationMessage: "Use 'transforms_insert_static_key1_static_value' instead.",
+				Description:        "DEPRECATED: Use 'transforms_insert_static_key1_static_value' instead.",
+			},
+			"insert_static_value_field_1": schema.StringAttribute{
+				Optional:           true,
+				Computed:           true,
+				DeprecationMessage: "Use 'transforms_insert_static_value1_static_field' instead.",
+				Description:        "DEPRECATED: Use 'transforms_insert_static_value1_static_field' instead.",
+			},
+			"insert_static_value_1": schema.StringAttribute{
+				Optional:           true,
+				Computed:           true,
+				DeprecationMessage: "Use 'transforms_insert_static_value1_static_value' instead.",
+				Description:        "DEPRECATED: Use 'transforms_insert_static_value1_static_value' instead.",
+			},
+			"insert_static_key_field_2": schema.StringAttribute{
+				Optional:           true,
+				Computed:           true,
+				DeprecationMessage: "Use 'transforms_insert_static_key2_static_field' instead.",
+				Description:        "DEPRECATED: Use 'transforms_insert_static_key2_static_field' instead.",
+			},
+			"insert_static_key_value_2": schema.StringAttribute{
+				Optional:           true,
+				Computed:           true,
+				DeprecationMessage: "Use 'transforms_insert_static_key2_static_value' instead.",
+				Description:        "DEPRECATED: Use 'transforms_insert_static_key2_static_value' instead.",
+			},
+			"insert_static_value_field_2": schema.StringAttribute{
+				Optional:           true,
+				Computed:           true,
+				DeprecationMessage: "Use 'transforms_insert_static_value2_static_field' instead.",
+				Description:        "DEPRECATED: Use 'transforms_insert_static_value2_static_field' instead.",
+			},
+			"insert_static_value_2": schema.StringAttribute{
+				Optional:           true,
+				Computed:           true,
+				DeprecationMessage: "Use 'transforms_insert_static_value2_static_value' instead.",
+				Description:        "DEPRECATED: Use 'transforms_insert_static_value2_static_value' instead.",
+			},
+			"predicates_istopictoenrich_pattern": schema.StringAttribute{
+				Optional:           true,
+				Computed:           true,
+				DeprecationMessage: "Use 'predicates_is_topic_to_enrich_pattern' instead.",
+				Description:        "DEPRECATED: Use 'predicates_is_topic_to_enrich_pattern' instead.",
+			},
 		},
 	}
 }
@@ -315,4 +382,15 @@ var SourcePostgresqlFieldMappings = map[string]string{
 	"ssh_port":                                     "ssh.port",
 	"ssh_user":                                     "ssh.user",
 	"ssh_public_key":                               "ssh.public.key.user.displayed",
+
+	// Deprecated aliases - map to same API fields
+	"insert_static_key_field_1":          "transforms.InsertStaticKey1.static.field",
+	"insert_static_key_value_1":          "transforms.InsertStaticKey1.static.value",
+	"insert_static_value_field_1":        "transforms.InsertStaticValue1.static.field",
+	"insert_static_value_1":              "transforms.InsertStaticValue1.static.value",
+	"insert_static_key_field_2":          "transforms.InsertStaticKey2.static.field",
+	"insert_static_key_value_2":          "transforms.InsertStaticKey2.static.value",
+	"insert_static_value_field_2":        "transforms.InsertStaticValue2.static.field",
+	"insert_static_value_2":              "transforms.InsertStaticValue2.static.value",
+	"predicates_istopictoenrich_pattern": "predicates.IsTopicToEnrich.pattern",
 }
