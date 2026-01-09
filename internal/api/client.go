@@ -33,7 +33,10 @@ type StreamkapAPI interface {
 	DeletePipeline(ctx context.Context, pipelineID string) error
 
 	// Transform APIs
+	CreateTransform(ctx context.Context, reqPayload CreateTransformRequest) (*Transform, error)
+	UpdateTransform(ctx context.Context, transformID string, reqPayload UpdateTransformRequest) (*Transform, error)
 	GetTransform(ctx context.Context, transformID string) (*Transform, error)
+	DeleteTransform(ctx context.Context, transformID string) error
 
 	// Tags APIs
 	GetTag(ctx context.Context, TagID string) (*Tag, error)
