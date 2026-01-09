@@ -1,7 +1,9 @@
 package api
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -55,4 +57,76 @@ func (s *streamkapAPI) GetTag(ctx context.Context, TagID string) (*Tag, error) {
 	}
 
 	return &resp.Tags[0], nil
+}
+
+func (s *streamkapAPI) CreateTag(ctx context.Context, reqPayload Tag) (*Tag, error) {
+	payload, err := json.Marshal(reqPayload)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/tags", bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"CreateTag request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n"+
+			"\tBody: %s",
+		req.Method,
+		req.URL.String(),
+		payload,
+	))
+	var resp Tag
+	err = s.doRequest(ctx, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (s *streamkapAPI) UpdateTag(ctx context.Context, tagID string, reqPayload Tag) (*Tag, error) {
+	payload, err := json.Marshal(reqPayload)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, s.cfg.BaseURL+"/tags/"+tagID, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"UpdateTag request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n"+
+			"\tBody: %s",
+		req.Method,
+		req.URL.String(),
+		payload,
+	))
+	var resp Tag
+	err = s.doRequest(ctx, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (s *streamkapAPI) DeleteTag(ctx context.Context, tagID string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/tags/"+tagID, http.NoBody)
+	if err != nil {
+		return err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"DeleteTag request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n",
+		req.Method,
+		req.URL.String(),
+	))
+	var resp Tag
+	err = s.doRequest(ctx, req, &resp)
+	if err != nil {
+		return err
+	}
+	return nil
 }
