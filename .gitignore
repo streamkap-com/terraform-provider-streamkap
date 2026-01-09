@@ -42,3 +42,8 @@ terraform.rc
 .env
 .env.*
 !.env.example
+
+# Local tooling
+.mcp.json
+.serena/
+tfgen
