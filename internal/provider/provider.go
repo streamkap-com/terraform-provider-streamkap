@@ -208,12 +208,12 @@ func (p *streamkapProvider) DataSources(_ context.Context) []func() datasource.D
 // Resources defines the resources implemented in the provider.
 func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		source.NewSourceMongoDBResource,
-		source.NewSourceMySQLResource,
+		source.NewMongoDBResource,
+		source.NewMySQLResource,
 		source.NewPostgreSQLResource,
-		source.NewSourceDynamoDBResource,
-		source.NewSourceSQLServerResource,
-		source.NewSourceKafkaDirectResource,
+		source.NewDynamoDBResource,
+		source.NewSQLServerResource,
+		source.NewKafkaDirectResource,
 		destination.NewDestinationSnowflakeResource,
 		destination.NewDestinationClickHouseResource,
 		destination.NewDestinationDatabricksResource,
