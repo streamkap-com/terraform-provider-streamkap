@@ -9,6 +9,17 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/connector"
 )
 
+// snowflakeFieldMappings extends the generated field mappings with deprecated aliases.
+var snowflakeFieldMappings = func() map[string]string {
+	mappings := make(map[string]string)
+	for k, v := range generated.DestinationSnowflakeFieldMappings {
+		mappings[k] = v
+	}
+	// Deprecated alias - maps to same API field
+	mappings["auto_schema_creation"] = "create.schema.auto"
+	return mappings
+}()
+
 // SnowflakeConfig implements the ConnectorConfig interface for Snowflake destinations.
 type SnowflakeConfig struct{}
 
@@ -17,12 +28,20 @@ var _ connector.ConnectorConfig = (*SnowflakeConfig)(nil)
 
 // GetSchema returns the Terraform schema for Snowflake destination.
 func (c *SnowflakeConfig) GetSchema() schema.Schema {
-	return generated.DestinationSnowflakeSchema()
+	s := generated.DestinationSnowflakeSchema()
+	// Add deprecated alias - maps to the same API field as create_schema_auto
+	s.Attributes["auto_schema_creation"] = schema.BoolAttribute{
+		Optional:           true,
+		Computed:           true,
+		DeprecationMessage: "Use 'create_schema_auto' instead.",
+		Description:        "DEPRECATED: Use 'create_schema_auto' instead.",
+	}
+	return s
 }
 
 // GetFieldMappings returns the field mappings from Terraform attributes to API fields.
 func (c *SnowflakeConfig) GetFieldMappings() map[string]string {
-	return generated.DestinationSnowflakeFieldMappings
+	return snowflakeFieldMappings
 }
 
 // GetConnectorType returns the connector type (destination).
