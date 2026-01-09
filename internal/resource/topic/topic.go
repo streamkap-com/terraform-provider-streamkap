@@ -186,6 +186,20 @@ func (r *TopicResource) Delete(ctx context.Context, req res.DeleteRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	topicID := state.TopicID.ValueString()
+	tflog.Debug(ctx, "Deleting topic: "+topicID)
+
+	err := r.client.DeleteTopic(ctx, topicID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error deleting topic",
+			fmt.Sprintf("Unable to delete topic %s, got error: %s", topicID, err),
+		)
+		return
+	}
+
+	tflog.Info(ctx, "Deleted topic: "+topicID)
 }
 
 func (r *TopicResource) ImportState(ctx context.Context, req res.ImportStateRequest, resp *res.ImportStateResponse) {
