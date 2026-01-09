@@ -30,7 +30,7 @@ variable "source_postgresql_password" {
 resource "streamkap_source_postgresql" "test" {
 	name                                         = "test-source-postgresql"
 	database_hostname                            = var.source_postgresql_hostname
-	database_port                                = 5432
+	database_port                                = "5432"
 	database_user                                = "postgresql"
 	database_password                            = var.source_postgresql_password
 	database_dbname                              = "postgres"
@@ -92,7 +92,7 @@ variable "source_postgresql_password" {
 resource "streamkap_source_postgresql" "test" {
 	name                                         = "test-source-postgresql-updated"
 	database_hostname                            = var.source_postgresql_hostname
-	database_port                                = 5432
+	database_port                                = "5432"
 	database_user                                = "postgresql"
 	database_password                            = var.source_postgresql_password
 	database_dbname                              = "postgres"
@@ -147,7 +147,7 @@ variable "source_postgresql_password" {
 resource "streamkap_source_postgresql" "test" {
 	name                                         = "test-source-postgresql-exclude"
 	database_hostname                            = var.source_postgresql_hostname
-	database_port                                = 5432
+	database_port                                = "5432"
 	database_user                                = "postgresql"
 	database_password                            = var.source_postgresql_password
 	database_dbname                              = "postgres"
@@ -208,7 +208,7 @@ variable "source_postgresql_ssh_host" {
 resource "streamkap_source_postgresql" "test" {
 	name                                         = "test-source-postgresql-ssh"
 	database_hostname                            = var.source_postgresql_hostname
-	database_port                                = 5432
+	database_port                                = "5432"
 	database_user                                = "postgresql"
 	database_password                            = var.source_postgresql_password
 	database_dbname                              = "postgres"
