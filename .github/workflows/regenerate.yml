@@ -1,0 +1,66 @@
+# Schema regeneration workflow for Terraform provider.
+# This workflow regenerates Terraform schemas from backend configuration files.
+#
+# STATUS: DISABLED - Manual trigger only until generator is implemented.
+#
+# TO ENABLE (after Phase 1 of provider refactor is complete):
+# 1. Uncomment the schedule/push triggers below
+# 2. Configure BACKEND_REPO_URL secret in GitHub repository settings
+# 3. Uncomment the actual clone and generate commands
+# 4. Remove the placeholder echo statements
+#
+# See docs/plans/2026-01-08-provider-refactor-design.md for full refactor plan.
+
+name: Regenerate Schemas
+
+on:
+  workflow_dispatch:  # Manual trigger only for now
+  # Future triggers - uncomment when generator is complete:
+  # schedule:
+  #   - cron: '0 6 * * 1'  # Weekly on Monday at 6 AM UTC
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - 'cmd/tfgen/**'
+  #     - 'internal/generated/**'
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Clone backend repository
+        run: |
+          echo "Backend clone disabled until generator is implemented"
+          # TODO: Uncomment when ready
+          # git clone --depth 1 ${{ secrets.BACKEND_REPO_URL }} backend
+
+      - name: Run generator
+        run: |
+          echo "Generator disabled - enable when Phase 1 complete"
+          # TODO: Uncomment when ready
+          # go run cmd/tfgen/main.go generate --backend-path=./backend --output=internal/generated
+
+      - name: Verify no changes
+        run: |
+          # This step will verify generated code is up to date
+          # Currently a no-op since generator is disabled
+          echo "Verification skipped - generator not yet implemented"
+          # TODO: Uncomment when ready
+          # if git diff --exit-code internal/generated/; then
+          #   echo "✅ Generated code is up to date"
+          # else
+          #   echo "❌ Generated code is out of date"
+          #   git diff internal/generated/
+          #   exit 1
+          # fi
