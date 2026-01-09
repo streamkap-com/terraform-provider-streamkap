@@ -260,9 +260,13 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 	} else if entry.HasDefault() {
 		field.Optional = true
 		field.Computed = true
-		field.HasDefault = true
 		field.DefaultFunc = g.defaultFunc(entry)
-		field.NeedsPlanMod = false // Fields with defaults don't need UseStateForUnknown
+		// Only set HasDefault if we actually have a default function
+		// (list types don't have simple defaults like strings/ints/bools)
+		if field.DefaultFunc != "" {
+			field.HasDefault = true
+			field.NeedsPlanMod = false // Fields with defaults don't need UseStateForUnknown
+		}
 	} else {
 		field.Optional = true
 	}
@@ -357,7 +361,10 @@ func capitalizeFirst(s string) string {
 }
 
 // toPascalCase converts a snake_case string to PascalCase.
+// Also handles hyphens by replacing them with underscores first.
 func toPascalCase(s string) string {
+	// Replace hyphens with underscores for consistent splitting
+	s = strings.ReplaceAll(s, "-", "_")
 	parts := strings.Split(s, "_")
 	for i, part := range parts {
 		if part == "" {
@@ -365,7 +372,7 @@ func toPascalCase(s string) string {
 		}
 		// Handle common abbreviations
 		upper := strings.ToUpper(part)
-		if upper == "ID" || upper == "SSH" || upper == "SSL" || upper == "DB" || upper == "URL" || upper == "API" {
+		if upper == "ID" || upper == "SSH" || upper == "SSL" || upper == "DB" || upper == "URL" || upper == "API" || upper == "AWS" || upper == "ARN" {
 			parts[i] = upper
 		} else {
 			parts[i] = capitalizeFirst(part)
