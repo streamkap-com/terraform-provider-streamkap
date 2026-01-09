@@ -65,7 +65,7 @@ type ValueObject struct {
 	Type          string   `json:"type,omitempty"`          // "raw" or "dynamic"
 	Default       any      `json:"default,omitempty"`       // Can be string, int, bool, etc.
 	RawValue      any      `json:"raw_value,omitempty"`     // Static value when type=raw, user_defined=false
-	RawValues     []string `json:"raw_values,omitempty"`    // Options for select controls
+	RawValues     []any    `json:"raw_values,omitempty"`    // Options for select controls (can be strings or bools)
 	FunctionName  string   `json:"function_name,omitempty"` // Dynamic resolution function
 	Dependencies  []string `json:"dependencies,omitempty"`  // Dependencies for dynamic resolution
 	Max           *float64 `json:"max,omitempty"`           // Slider: maximum value
@@ -289,8 +289,26 @@ func camelToSnake(s string) string {
 }
 
 // GetRawValues returns the list of allowed values for one-select or multi-select controls.
+// Converts any boolean or numeric values to their string representation.
 func (e *ConfigEntry) GetRawValues() []string {
-	return e.Value.RawValues
+	result := make([]string, 0, len(e.Value.RawValues))
+	for _, v := range e.Value.RawValues {
+		switch val := v.(type) {
+		case string:
+			result = append(result, val)
+		case bool:
+			result = append(result, fmt.Sprintf("%t", val))
+		case float64:
+			if val == float64(int64(val)) {
+				result = append(result, fmt.Sprintf("%d", int64(val)))
+			} else {
+				result = append(result, fmt.Sprintf("%v", val))
+			}
+		default:
+			result = append(result, fmt.Sprintf("%v", v))
+		}
+	}
+	return result
 }
 
 // GetSliderMin returns the minimum value for a slider control, or 0 if not set.
