@@ -239,6 +239,7 @@ func (e *ConfigEntry) TerraformType() TerraformType {
 
 // TerraformAttributeName converts the backend config name to a Terraform-friendly attribute name.
 // - Replaces "." with "_"
+// - Replaces "-" with "_" (hyphens not allowed in TF attribute names)
 // - Removes ".user.defined" suffix
 // - Converts to snake_case
 func (e *ConfigEntry) TerraformAttributeName() string {
@@ -248,8 +249,9 @@ func (e *ConfigEntry) TerraformAttributeName() string {
 	name = strings.TrimSuffix(name, ".user.defined")
 	name = strings.TrimSuffix(name, ".user.displayed")
 
-	// Replace dots with underscores
+	// Replace dots and hyphens with underscores
 	name = strings.ReplaceAll(name, ".", "_")
+	name = strings.ReplaceAll(name, "-", "_")
 
 	// Convert camelCase to snake_case
 	name = camelToSnake(name)
