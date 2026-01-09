@@ -94,6 +94,7 @@ done
 
 - `internal/generated/source_<name>.go` - Schema and model for source
 - `internal/generated/destination_<name>.go` - Schema and model for destination
+- `internal/generated/transform_<name>.go` - Schema and model for transform
 
 ## Adding a New Connector
 
@@ -103,6 +104,7 @@ Find the `configuration.latest.json` file:
 ```
 backend/app/sources/plugins/<connector>/configuration.latest.json
 backend/app/destinations/plugins/<connector>/configuration.latest.json
+backend/app/transforms/plugins/<connector>/configuration.latest.json
 ```
 
 ### Step 2: Generate Schema
@@ -114,7 +116,8 @@ go run cmd/tfgen/main.go generate \
   --type source \
   --output internal/generated/
 
-# For destinations, use --type destination instead
+# For destinations, use --type destination
+# For transforms, use --type transform
 ```
 
 ### Step 3: Create Config Wrapper

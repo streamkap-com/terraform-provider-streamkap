@@ -21,6 +21,14 @@ Terraform provider for [Streamkap](https://streamkap.com) - a real-time data str
 - Iceberg
 - Kafka
 
+### Transform Resources
+- Map Filter
+- Enrich
+- Enrich Async
+- SQL Join
+- Rollup
+- Fan Out
+
 ### Other Resources
 - Pipelines
 - Topics
@@ -136,7 +144,7 @@ provider_installation {
 Then build and use:
 ```bash
 go install .
-cd examples/full
+cd examples/provider
 terraform plan
 ```
 
@@ -167,6 +175,7 @@ go test -v ./cmd/tfgen/...
 │   │   ├── connector/   # Generic base resource
 │   │   ├── source/      # Source connector configs
 │   │   ├── destination/ # Destination connector configs
+│   │   ├── transform/   # Transform resource configs
 │   │   ├── pipeline/    # Pipeline resource
 │   │   ├── topic/       # Topic resource
 │   │   └── tag/         # Tag resource
@@ -180,6 +189,10 @@ go test -v ./cmd/tfgen/...
 - [Streamkap Provider on Terraform Registry](https://registry.terraform.io/providers/streamkap-com/streamkap)
 - [Streamkap Documentation](https://docs.streamkap.com)
 - [API Reference](https://api.streamkap.com/openapi.json)
+
+## Upgrading
+
+See [MIGRATION.md](docs/MIGRATION.md) for guidance on upgrading from previous versions, including breaking changes and deprecated attributes.
 
 ## License
 
