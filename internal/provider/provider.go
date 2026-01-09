@@ -21,6 +21,7 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/tag"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/topic"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/transform"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -224,5 +225,11 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		pipeline.NewPipelineResource,
 		topic.NewTopicResource,
 		tag.NewTagResource,
+		transform.NewMapFilterResource,
+		transform.NewEnrichResource,
+		transform.NewEnrichAsyncResource,
+		transform.NewSqlJoinResource,
+		transform.NewRollupResource,
+		transform.NewFanOutResource,
 	}
 }
