@@ -74,16 +74,22 @@ func TestCommonFields(t *testing.T) {
 				t.Errorf("nameField.Description = %q, want %q", nameField.Description, tt.wantNameDesc)
 			}
 
-			// Verify Connector field
-			connField := fields[2]
-			if connField.GoFieldName != "Connector" {
-				t.Errorf("connField.GoFieldName = %q, want %q", connField.GoFieldName, "Connector")
+			// Verify third field (Connector for sources/destinations, TransformType for transforms)
+			thirdField := fields[2]
+			if tt.entityType == "transform" {
+				if thirdField.GoFieldName != "TransformType" {
+					t.Errorf("thirdField.GoFieldName = %q, want %q", thirdField.GoFieldName, "TransformType")
+				}
+			} else {
+				if thirdField.GoFieldName != "Connector" {
+					t.Errorf("thirdField.GoFieldName = %q, want %q", thirdField.GoFieldName, "Connector")
+				}
 			}
-			if !connField.Computed {
-				t.Error("connField.Computed should be true")
+			if !thirdField.Computed {
+				t.Error("thirdField.Computed should be true")
 			}
-			if !connField.NeedsPlanMod {
-				t.Error("connField.NeedsPlanMod should be true (UseStateForUnknown)")
+			if !thirdField.NeedsPlanMod {
+				t.Error("thirdField.NeedsPlanMod should be true (UseStateForUnknown)")
 			}
 		})
 	}
