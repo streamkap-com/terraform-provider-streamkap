@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
 )
 
 type GetTagResponse struct {
@@ -32,7 +33,6 @@ func (s *streamkapAPI) GetTag(ctx context.Context, TagID string) (*Tag, error) {
 	url = url.JoinPath("tags")
 	q := url.Query()
 	q.Set("tag_ids", TagID)
-	q.Set("secret_returned", "true")
 	url.RawQuery = q.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), http.NoBody)
@@ -64,6 +64,20 @@ func (s *streamkapAPI) CreateTag(ctx context.Context, reqPayload Tag) (*Tag, err
 	if err != nil {
 		return nil, err
 	}
+
+	var payloadMap map[string]any
+	err = json.Unmarshal(payload, &payloadMap)
+	if err != nil {
+		return nil, err
+	}
+
+	payloadMap["created_from"] = constants.TERRAFORM
+
+	payload, err = json.Marshal(payloadMap)
+	if err != nil {
+		return nil, err
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/tags", bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
