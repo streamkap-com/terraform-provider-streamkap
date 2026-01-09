@@ -210,7 +210,7 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 	return []func() resource.Resource{
 		source.NewSourceMongoDBResource,
 		source.NewSourceMySQLResource,
-		source.NewSourcePostgreSQLResource,
+		source.NewPostgreSQLResource,
 		source.NewSourceDynamoDBResource,
 		source.NewSourceSQLServerResource,
 		source.NewSourceKafkaDirectResource,

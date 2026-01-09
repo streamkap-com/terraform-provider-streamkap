@@ -138,8 +138,8 @@ func SourcePostgresqlSchema() schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
-				Required:            true,
-				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
+				Optional:            true,
+				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'. Required when heartbeat_enabled is true.",
 			},
 			"slot_name": schema.StringAttribute{
 				Optional:            true,
