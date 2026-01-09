@@ -49,7 +49,7 @@ func (s *streamkapAPI) UpdateTopic(ctx context.Context, topicID string, reqPaylo
 }
 
 func (s *streamkapAPI) GetTopic(ctx context.Context, topicID string) (*Topic, error) {
-	
+
 	req, err := http.NewRequestWithContext(
 		ctx, http.MethodGet, s.cfg.BaseURL+"/topics/"+topicID, http.NoBody)
 	if err != nil {
@@ -62,7 +62,7 @@ func (s *streamkapAPI) GetTopic(ctx context.Context, topicID string) (*Topic, er
 		req.Method,
 		req.URL.String(),
 	))
-	
+
 	var resp Topic
 	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
@@ -70,4 +70,24 @@ func (s *streamkapAPI) GetTopic(ctx context.Context, topicID string) (*Topic, er
 	}
 
 	return &resp, nil
+}
+
+func (s *streamkapAPI) DeleteTopic(ctx context.Context, topicID string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/topics/"+topicID, http.NoBody)
+	if err != nil {
+		return err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"DeleteTopic request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n",
+		req.Method,
+		req.URL.String(),
+	))
+	var resp Topic
+	err = s.doRequest(ctx, req, &resp)
+	if err != nil {
+		return err
+	}
+	return nil
 }
