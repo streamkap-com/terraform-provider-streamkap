@@ -37,7 +37,7 @@ func (c *SQLServerConfig) GetConnectorCode() string {
 
 // GetResourceName returns the Terraform resource name.
 func (c *SQLServerConfig) GetResourceName() string {
-	return "streamkap_source_sqlserver"
+	return "source_sqlserver"
 }
 
 // NewModelInstance returns a new instance of the SQL Server model.

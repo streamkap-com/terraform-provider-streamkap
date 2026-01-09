@@ -37,7 +37,7 @@ func (c *KafkaConfig) GetConnectorCode() string {
 
 // GetResourceName returns the Terraform resource name.
 func (c *KafkaConfig) GetResourceName() string {
-	return "streamkap_destination_kafka"
+	return "destination_kafka"
 }
 
 // NewModelInstance returns a new instance of the Kafka model.

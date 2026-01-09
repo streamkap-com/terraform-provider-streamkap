@@ -37,7 +37,7 @@ func (c *MongoDBConfig) GetConnectorCode() string {
 
 // GetResourceName returns the Terraform resource name.
 func (c *MongoDBConfig) GetResourceName() string {
-	return "streamkap_source_mongodb"
+	return "source_mongodb"
 }
 
 // NewModelInstance returns a new instance of the MongoDB model.

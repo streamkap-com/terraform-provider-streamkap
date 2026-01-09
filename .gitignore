@@ -37,3 +37,7 @@ terraform.rc
 .DS_Store
 
 .terraform.lock.hcl
+
+# Environment files with credentials
+.env
+.env.*

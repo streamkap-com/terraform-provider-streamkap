@@ -35,9 +35,9 @@ func (c *KafkaDirectConfig) GetConnectorCode() string {
 	return "kafkadirect"
 }
 
-// GetResourceName returns the Terraform resource name.
+// GetResourceName returns the Terraform resource name suffix.
 func (c *KafkaDirectConfig) GetResourceName() string {
-	return "streamkap_source_kafkadirect"
+	return "source_kafkadirect"
 }
 
 // NewModelInstance returns a new instance of the KafkaDirect model.

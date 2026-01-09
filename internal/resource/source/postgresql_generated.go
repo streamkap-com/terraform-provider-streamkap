@@ -37,7 +37,7 @@ func (c *PostgreSQLConfig) GetConnectorCode() string {
 
 // GetResourceName returns the Terraform resource name.
 func (c *PostgreSQLConfig) GetResourceName() string {
-	return "streamkap_source_postgresql"
+	return "source_postgresql"
 }
 
 // NewModelInstance returns a new instance of the PostgreSQL model.
