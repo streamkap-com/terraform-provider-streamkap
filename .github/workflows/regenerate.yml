@@ -1,32 +1,33 @@
 # Schema regeneration workflow for Terraform provider.
 # This workflow regenerates Terraform schemas from backend configuration files.
 #
-# STATUS: DISABLED - Manual trigger only until generator is implemented.
-#
-# TO ENABLE (after Phase 1 of provider refactor is complete):
-# 1. Uncomment the schedule/push triggers below
-# 2. Configure BACKEND_REPO_URL secret in GitHub repository settings
-# 3. Uncomment the actual clone and generate commands
-# 4. Remove the placeholder echo statements
+# PREREQUISITES:
+# 1. Configure BACKEND_REPO_URL secret with the backend repository URL
+# 2. Configure BACKEND_TOKEN secret with access token for the backend repo (if private)
 #
 # See docs/plans/2026-01-08-provider-refactor-design.md for full refactor plan.
 
 name: Regenerate Schemas
 
 on:
-  workflow_dispatch:  # Manual trigger only for now
-  # Future triggers - uncomment when generator is complete:
+  workflow_dispatch:  # Manual trigger
+    inputs:
+      connector_type:
+        description: 'Connector type to generate (source/destination/all)'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - source
+          - destination
+  # Uncomment to enable automatic regeneration:
   # schedule:
   #   - cron: '0 6 * * 1'  # Weekly on Monday at 6 AM UTC
-  # push:
-  #   branches:
-  #     - main
-  #   paths:
-  #     - 'cmd/tfgen/**'
-  #     - 'internal/generated/**'
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   regenerate:
@@ -40,27 +41,77 @@ jobs:
           cache: true
 
       - name: Clone backend repository
+        env:
+          BACKEND_REPO_URL: ${{ secrets.BACKEND_REPO_URL }}
+          BACKEND_TOKEN: ${{ secrets.BACKEND_TOKEN }}
         run: |
-          echo "Backend clone disabled until generator is implemented"
-          # TODO: Uncomment when ready
-          # git clone --depth 1 ${{ secrets.BACKEND_REPO_URL }} backend
+          if [ -z "$BACKEND_REPO_URL" ]; then
+            echo "❌ BACKEND_REPO_URL secret is not configured"
+            exit 1
+          fi
 
-      - name: Run generator
-        run: |
-          echo "Generator disabled - enable when Phase 1 complete"
-          # TODO: Uncomment when ready
-          # go run cmd/tfgen/main.go generate --backend-path=./backend --output=internal/generated
+          # Clone with token if provided
+          if [ -n "$BACKEND_TOKEN" ]; then
+            git clone --depth 1 "https://${BACKEND_TOKEN}@${BACKEND_REPO_URL#https://}" backend
+          else
+            git clone --depth 1 "$BACKEND_REPO_URL" backend
+          fi
 
-      - name: Verify no changes
+      - name: Build generator
+        run: go build -o tfgen ./cmd/tfgen
+
+      - name: Generate schemas
         run: |
-          # This step will verify generated code is up to date
-          # Currently a no-op since generator is disabled
-          echo "Verification skipped - generator not yet implemented"
-          # TODO: Uncomment when ready
-          # if git diff --exit-code internal/generated/; then
-          #   echo "✅ Generated code is up to date"
-          # else
-          #   echo "❌ Generated code is out of date"
-          #   git diff internal/generated/
-          #   exit 1
-          # fi
+          CONNECTOR_TYPE="${{ github.event.inputs.connector_type || 'all' }}"
+
+          if [ "$CONNECTOR_TYPE" = "all" ] || [ "$CONNECTOR_TYPE" = "source" ]; then
+            echo "Generating source schemas..."
+            for config in backend/app/sources/plugins/*/configuration.latest.json; do
+              connector=$(basename $(dirname "$config"))
+              echo "  - $connector"
+              ./tfgen generate --config "$config" --type source --output internal/generated/
+            done
+          fi
+
+          if [ "$CONNECTOR_TYPE" = "all" ] || [ "$CONNECTOR_TYPE" = "destination" ]; then
+            echo "Generating destination schemas..."
+            for config in backend/app/destinations/plugins/*/configuration.latest.json; do
+              connector=$(basename $(dirname "$config"))
+              echo "  - $connector"
+              ./tfgen generate --config "$config" --type destination --output internal/generated/
+            done
+          fi
+
+      - name: Run tests
+        run: go test -v -short ./...
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --exit-code internal/generated/; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "✅ No schema changes detected"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "📝 Schema changes detected"
+          fi
+
+      - name: Create Pull Request
+        if: steps.check_changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: regenerate Terraform schemas from backend"
+          title: "chore: regenerate Terraform schemas"
+          body: |
+            This PR was automatically generated by the schema regeneration workflow.
+
+            ## Changes
+            Updated Terraform schemas based on the latest backend configuration files.
+
+            ## Verification
+            - [ ] Review the generated schema changes
+            - [ ] Run acceptance tests if needed
+            - [ ] Verify documentation is updated
+          branch: chore/regenerate-schemas
+          delete-branch: true

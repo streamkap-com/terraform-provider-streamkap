@@ -26,7 +26,10 @@ var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 	"streamkap": providerserver.NewProtocol6WithError(New("test")()),
 }
 
-func TestAccPreCheck(t *testing.T) {
+// testAccPreCheck is a helper function called by acceptance tests to verify
+// required environment variables are set before running tests.
+func testAccPreCheck(t *testing.T) {
+	t.Helper()
 	if v := os.Getenv("STREAMKAP_CLIENT_ID"); v == "" {
 		t.Fatal("STREAMKAP_CLIENT_ID must be set for acceptance tests")
 	}
