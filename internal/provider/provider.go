@@ -19,6 +19,7 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/destination"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/pipeline"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/tag"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/topic"
 )
 
@@ -222,5 +223,6 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		destination.NewDestinationKafkaResource,
 		pipeline.NewPipelineResource,
 		topic.NewTopicResource,
+		tag.NewTagResource,
 	}
 }
