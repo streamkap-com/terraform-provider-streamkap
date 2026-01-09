@@ -113,11 +113,16 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 		"github.com/hashicorp/terraform-plugin-framework/types":           true,
 	}
 
-	// Add common fields first (id, name, connector)
+	// Add common fields first (id, name, connector/transform_type)
 	data.Fields = append(data.Fields, g.commonFields()...)
 
 	// Add user-defined fields from config
 	for _, entry := range config.UserDefinedEntries() {
+		// Skip transforms.name for transforms - it's handled by the common Name field
+		if g.entityType == "transform" && entry.Name == "transforms.name" {
+			continue
+		}
+
 		field := g.entryToFieldData(&entry)
 		data.Fields = append(data.Fields, field)
 
@@ -183,7 +188,7 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 
 // commonFields returns the common fields present in all resources.
 func (g *Generator) commonFields() []FieldData {
-	return []FieldData{
+	fields := []FieldData{
 		{
 			GoFieldName:    "ID",
 			GoType:         "types.String",
@@ -205,7 +210,23 @@ func (g *Generator) commonFields() []FieldData {
 			Description:    fmt.Sprintf("Name of the %s", g.entityType),
 			APIFieldName:   "", // Name is handled separately
 		},
-		{
+	}
+
+	// For transforms, use "transform_type" instead of "connector"
+	if g.entityType == "transform" {
+		fields = append(fields, FieldData{
+			GoFieldName:    "TransformType",
+			GoType:         "types.String",
+			TfsdkTag:       "transform_type",
+			TfAttrName:     "transform_type",
+			SchemaAttrType: "schema.StringAttribute",
+			Computed:       true,
+			Description:    "Transform type",
+			NeedsPlanMod:   true,
+			APIFieldName:   "", // TransformType is handled separately
+		})
+	} else {
+		fields = append(fields, FieldData{
 			GoFieldName:    "Connector",
 			GoType:         "types.String",
 			TfsdkTag:       "connector",
@@ -215,8 +236,10 @@ func (g *Generator) commonFields() []FieldData {
 			Description:    "Connector type",
 			NeedsPlanMod:   true,
 			APIFieldName:   "", // Connector is handled separately
-		},
+		})
 	}
+
+	return fields
 }
 
 // entryToFieldData converts a ConfigEntry to FieldData.
@@ -321,7 +344,7 @@ func (g *Generator) rangeValidator(entry *ConfigEntry) string {
 func (g *Generator) generateFile(outputPath string, data *TemplateData) error {
 	tmpl, err := template.New("schema").Funcs(template.FuncMap{
 		"isCommonField": func(name string) bool {
-			return name == "id" || name == "name" || name == "connector"
+			return name == "id" || name == "name" || name == "connector" || name == "transform_type"
 		},
 	}).Parse(schemaTemplate)
 	if err != nil {
