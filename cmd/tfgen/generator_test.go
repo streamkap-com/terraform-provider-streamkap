@@ -276,7 +276,7 @@ func TestValidatorGeneration(t *testing.T) {
 			UserDefined: true,
 			Value: ValueObject{
 				Control:   "one-select",
-				RawValues: []string{"Yes", "No"},
+				RawValues: []any{"Yes", "No"},
 			},
 		}
 
@@ -297,7 +297,7 @@ func TestValidatorGeneration(t *testing.T) {
 			UserDefined: true,
 			Value: ValueObject{
 				Control:   "one-select",
-				RawValues: []string{"MERGE", "SNOWPIPE_STREAMING", "APPEND_ONLY"},
+				RawValues: []any{"MERGE", "SNOWPIPE_STREAMING", "APPEND_ONLY"},
 			},
 		}
 
@@ -342,7 +342,7 @@ func TestValidatorGeneration(t *testing.T) {
 			UserDefined: true,
 			Value: ValueObject{
 				Control:   "one-select",
-				RawValues: []string{}, // Empty values
+				RawValues: []any{}, // Empty values
 			},
 		}
 
@@ -720,22 +720,22 @@ func TestOneOfValidator(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		rawValues []string
+		rawValues []any
 		expected  string
 	}{
 		{
 			name:      "two values",
-			rawValues: []string{"Yes", "No"},
+			rawValues: []any{"Yes", "No"},
 			expected:  `stringvalidator.OneOf("Yes", "No")`,
 		},
 		{
 			name:      "multiple values",
-			rawValues: []string{"MERGE", "APPEND_ONLY", "SNOWPIPE_STREAMING"},
+			rawValues: []any{"MERGE", "APPEND_ONLY", "SNOWPIPE_STREAMING"},
 			expected:  `stringvalidator.OneOf("MERGE", "APPEND_ONLY", "SNOWPIPE_STREAMING")`,
 		},
 		{
 			name:      "single value",
-			rawValues: []string{"only"},
+			rawValues: []any{"only"},
 			expected:  `stringvalidator.OneOf("only")`,
 		},
 	}
@@ -920,7 +920,7 @@ func TestGenerateFile_Integration(t *testing.T) {
 				DisplayName: "Snapshot Mode",
 				Value: ValueObject{
 					Control:   "one-select",
-					RawValues: []string{"initial", "never", "always"},
+					RawValues: []any{"initial", "never", "always"},
 					Default:   "initial",
 				},
 			},
@@ -1210,7 +1210,7 @@ func TestImportsTracking(t *testing.T) {
 					UserDefined: true,
 					Value: ValueObject{
 						Control:   "one-select",
-						RawValues: []string{"a", "b"},
+						RawValues: []any{"a", "b"},
 					},
 				},
 			},
