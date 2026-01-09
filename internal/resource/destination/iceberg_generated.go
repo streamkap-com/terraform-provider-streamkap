@@ -37,7 +37,7 @@ func (c *IcebergConfig) GetConnectorCode() string {
 
 // GetResourceName returns the Terraform resource name.
 func (c *IcebergConfig) GetResourceName() string {
-	return "streamkap_destination_iceberg"
+	return "destination_iceberg"
 }
 
 // NewModelInstance returns a new instance of the Iceberg model.

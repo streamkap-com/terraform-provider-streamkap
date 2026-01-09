@@ -37,7 +37,7 @@ func (c *DynamoDBConfig) GetConnectorCode() string {
 
 // GetResourceName returns the Terraform resource name.
 func (c *DynamoDBConfig) GetResourceName() string {
-	return "streamkap_source_dynamodb"
+	return "source_dynamodb"
 }
 
 // NewModelInstance returns a new instance of the DynamoDB model.

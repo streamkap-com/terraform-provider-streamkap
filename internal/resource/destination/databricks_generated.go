@@ -37,7 +37,7 @@ func (c *DatabricksConfig) GetConnectorCode() string {
 
 // GetResourceName returns the Terraform resource name.
 func (c *DatabricksConfig) GetResourceName() string {
-	return "streamkap_destination_databricks"
+	return "destination_databricks"
 }
 
 // NewModelInstance returns a new instance of the Databricks model.

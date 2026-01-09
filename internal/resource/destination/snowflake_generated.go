@@ -37,7 +37,7 @@ func (c *SnowflakeConfig) GetConnectorCode() string {
 
 // GetResourceName returns the Terraform resource name.
 func (c *SnowflakeConfig) GetResourceName() string {
-	return "streamkap_destination_snowflake"
+	return "destination_snowflake"
 }
 
 // NewModelInstance returns a new instance of the Snowflake model.

@@ -37,7 +37,7 @@ func (c *MySQLConfig) GetConnectorCode() string {
 
 // GetResourceName returns the Terraform resource name.
 func (c *MySQLConfig) GetResourceName() string {
-	return "streamkap_source_mysql"
+	return "source_mysql"
 }
 
 // NewModelInstance returns a new instance of the MySQL model.

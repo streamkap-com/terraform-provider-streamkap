@@ -37,7 +37,7 @@ func (c *ClickHouseConfig) GetConnectorCode() string {
 
 // GetResourceName returns the Terraform resource name.
 func (c *ClickHouseConfig) GetResourceName() string {
-	return "streamkap_destination_clickhouse"
+	return "destination_clickhouse"
 }
 
 // NewModelInstance returns a new instance of the ClickHouse model.

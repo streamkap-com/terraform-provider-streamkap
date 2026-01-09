@@ -37,7 +37,7 @@ func (c *S3Config) GetConnectorCode() string {
 
 // GetResourceName returns the Terraform resource name.
 func (c *S3Config) GetResourceName() string {
-	return "streamkap_destination_s3"
+	return "destination_s3"
 }
 
 // NewModelInstance returns a new instance of the S3 model.
