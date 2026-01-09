@@ -240,7 +240,7 @@ func (e *ConfigEntry) TerraformType() TerraformType {
 // TerraformAttributeName converts the backend config name to a Terraform-friendly attribute name.
 // - Replaces "." with "_"
 // - Removes ".user.defined" suffix
-// - Uses snake_case
+// - Converts to snake_case
 func (e *ConfigEntry) TerraformAttributeName() string {
 	name := e.Name
 
@@ -251,7 +251,41 @@ func (e *ConfigEntry) TerraformAttributeName() string {
 	// Replace dots with underscores
 	name = strings.ReplaceAll(name, ".", "_")
 
-	return name
+	// Convert camelCase to snake_case
+	name = camelToSnake(name)
+
+	return strings.ToLower(name)
+}
+
+// camelToSnake converts a camelCase or PascalCase string to snake_case.
+// It also handles strings that already contain underscores.
+func camelToSnake(s string) string {
+	var result strings.Builder
+	for i, r := range s {
+		// If it's uppercase and not the first character
+		if r >= 'A' && r <= 'Z' {
+			// Check if we need to insert underscore
+			if i > 0 {
+				prev := rune(s[i-1])
+				// Don't add underscore if previous char is underscore or uppercase
+				// (to handle sequences like "SSLMode" -> "ssl_mode" not "s_s_l_mode")
+				if prev != '_' && (prev < 'A' || prev > 'Z') {
+					result.WriteRune('_')
+				} else if prev >= 'A' && prev <= 'Z' && i+1 < len(s) {
+					// Check next char - if lowercase, we need underscore before current
+					// e.g., "SSLMode" -> the 'M' needs underscore before it
+					next := rune(s[i+1])
+					if next >= 'a' && next <= 'z' {
+						result.WriteRune('_')
+					}
+				}
+			}
+			result.WriteRune(r)
+		} else {
+			result.WriteRune(r)
+		}
+	}
+	return result.String()
 }
 
 // GetRawValues returns the list of allowed values for one-select or multi-select controls.
