@@ -41,3 +41,4 @@ terraform.rc
 # Environment files with credentials
 .env
 .env.*
+!.env.example
