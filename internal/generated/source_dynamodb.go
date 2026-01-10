@@ -18,9 +18,9 @@ type SourceDynamodbModel struct {
 	ID                            types.String `tfsdk:"id"`
 	Name                          types.String `tfsdk:"name"`
 	Connector                     types.String `tfsdk:"connector"`
-	AwsRegion                     types.String `tfsdk:"aws_region"`
-	AwsAccessKeyID                types.String `tfsdk:"aws_access_key_id"`
-	AwsSecretKey                  types.String `tfsdk:"aws_secret_key"`
+	AWSRegion                     types.String `tfsdk:"aws_region"`
+	AWSAccessKeyID                types.String `tfsdk:"aws_access_key_id"`
+	AWSSecretKey                  types.String `tfsdk:"aws_secret_key"`
 	S3ExportBucketName            types.String `tfsdk:"s3_export_bucket_name"`
 	TableIncludeList              types.String `tfsdk:"table_include_list"`
 	BatchSize                     types.Int64  `tfsdk:"batch_size"`
@@ -39,10 +39,14 @@ type SourceDynamodbModel struct {
 // SourceDynamodbSchema returns the Terraform schema for the dynamodb source.
 func SourceDynamodbSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "DynamoDB source connector",
+		Description: "Manages a DynamoDB source connector.",
+		MarkdownDescription: "Manages a **DynamoDB source connector**.\n\n" +
+			"This resource creates and manages a DynamoDB source for Streamkap data pipelines.\n\n" +
+			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Unique identifier for the source",
 				MarkdownDescription: "Unique identifier for the source",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -50,10 +54,12 @@ func SourceDynamodbSchema() schema.Schema {
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
+				Description:         "Name of the source",
 				MarkdownDescription: "Name of the source",
 			},
 			"connector": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Connector type",
 				MarkdownDescription: "Connector type",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -61,24 +67,29 @@ func SourceDynamodbSchema() schema.Schema {
 			},
 			"aws_region": schema.StringAttribute{
 				Required:            true,
+				Description:         "AWS Region",
 				MarkdownDescription: "AWS Region",
 			},
 			"aws_access_key_id": schema.StringAttribute{
 				Required:            true,
 				Sensitive:           true,
-				MarkdownDescription: "AWS Access Key ID",
+				Description:         "AWS Access Key ID This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "AWS Access Key ID\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"aws_secret_key": schema.StringAttribute{
 				Required:            true,
 				Sensitive:           true,
-				MarkdownDescription: "AWS Secret Key",
+				Description:         "AWS Secret Key This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "AWS Secret Key\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"s3_export_bucket_name": schema.StringAttribute{
 				Required:            true,
+				Description:         "used for backfill (snapshot)",
 				MarkdownDescription: "used for backfill (snapshot)",
 			},
 			"table_include_list": schema.StringAttribute{
 				Required:            true,
+				Description:         "Source tables to sync.",
 				MarkdownDescription: "Source tables to sync.",
 			},
 			"batch_size": schema.Int64Attribute{
@@ -86,12 +97,14 @@ func SourceDynamodbSchema() schema.Schema {
 			},
 			"dynamodb_service_endpoint": schema.StringAttribute{
 				Optional:            true,
+				Description:         "Dynamodb Service Endpoint (optional)",
 				MarkdownDescription: "Dynamodb Service Endpoint (optional)",
 			},
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The maximum number of active tasks",
+				Description:         "The maximum number of active tasks Defaults to 10.",
+				MarkdownDescription: "The maximum number of active tasks Defaults to `10`.",
 				Default:             int64default.StaticInt64(10),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 40),
@@ -100,7 +113,8 @@ func SourceDynamodbSchema() schema.Schema {
 			"snapshot_parallel_time_offset": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "If > 0, snapshot will run in parallel with streaming and snapshot records _streamkap_ts_ms will be set back in time by this amount to prioritize CDC events downstream",
+				Description:         "If > 0, snapshot will run in parallel with streaming and snapshot records _streamkap_ts_ms will be set back in time by this amount to prioritize CDC events downstream Defaults to 0.",
+				MarkdownDescription: "If > 0, snapshot will run in parallel with streaming and snapshot records _streamkap_ts_ms will be set back in time by this amount to prioritize CDC events downstream Defaults to `0`.",
 				Default:             int64default.StaticInt64(0),
 				Validators: []validator.Int64{
 					int64validator.Between(0, 604800000),
@@ -109,43 +123,50 @@ func SourceDynamodbSchema() schema.Schema {
 			"poll_timeout_ms": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Poll Timeout (ms)",
+				Description:         "Poll Timeout (ms) Defaults to 0.",
+				MarkdownDescription: "Poll Timeout (ms) Defaults to `0`.",
 				Default:             int64default.StaticInt64(0),
 			},
 			"incremental_snapshot_chunk_size": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Incremental snapshot chunk size",
+				Description:         "Incremental snapshot chunk size Defaults to 0.",
+				MarkdownDescription: "Incremental snapshot chunk size Defaults to `0`.",
 				Default:             int64default.StaticInt64(0),
 			},
 			"incremental_snapshot_max_threads": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Incremental snapshot max threads",
+				Description:         "Incremental snapshot max threads Defaults to 0.",
+				MarkdownDescription: "Incremental snapshot max threads Defaults to `0`.",
 				Default:             int64default.StaticInt64(0),
 			},
 			"full_export_expiration_time_ms": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Full Export Expiration Time (ms)",
+				Description:         "Full Export Expiration Time (ms) Defaults to 0.",
+				MarkdownDescription: "Full Export Expiration Time (ms) Defaults to `0`.",
 				Default:             int64default.StaticInt64(0),
 			},
 			"signal_kafka_poll_timeout_ms": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Signal Kafka Poll Timeout (ms)",
+				Description:         "Signal Kafka Poll Timeout (ms) Defaults to 0.",
+				MarkdownDescription: "Signal Kafka Poll Timeout (ms) Defaults to `0`.",
 				Default:             int64default.StaticInt64(0),
 			},
 			"array_encoding_json": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Force nested lists as JSON string",
+				Description:         "Force nested lists as JSON string Defaults to true.",
+				MarkdownDescription: "Force nested lists as JSON string Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"struct_encoding_json": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Force nested maps as JSON string",
+				Description:         "Force nested maps as JSON string Defaults to true.",
+				MarkdownDescription: "Force nested maps as JSON string Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 		},

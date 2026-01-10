@@ -33,10 +33,14 @@ type DestinationIcebergModel struct {
 // DestinationIcebergSchema returns the Terraform schema for the iceberg destination.
 func DestinationIcebergSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Iceberg destination connector",
+		Description: "Manages a Iceberg destination connector.",
+		MarkdownDescription: "Manages a **Iceberg destination connector**.\n\n" +
+			"This resource creates and manages a Iceberg destination for Streamkap data pipelines.\n\n" +
+			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Unique identifier for the destination",
 				MarkdownDescription: "Unique identifier for the destination",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -44,10 +48,12 @@ func DestinationIcebergSchema() schema.Schema {
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
+				Description:         "Name of the destination",
 				MarkdownDescription: "Name of the destination",
 			},
 			"connector": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Connector type",
 				MarkdownDescription: "Connector type",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -56,7 +62,8 @@ func DestinationIcebergSchema() schema.Schema {
 			"iceberg_catalog_type": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Type of Iceberg catalog",
+				Description:         "Type of Iceberg catalog Defaults to \"rest\". Valid values: rest, hive, glue.",
+				MarkdownDescription: "Type of Iceberg catalog Defaults to `rest`. Valid values: `rest`, `hive`, `glue`.",
 				Default:             stringdefault.StaticString("rest"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("rest", "hive", "glue"),
@@ -64,29 +71,35 @@ func DestinationIcebergSchema() schema.Schema {
 			},
 			"iceberg_catalog_name": schema.StringAttribute{
 				Optional:            true,
+				Description:         "Iceberg catalog name",
 				MarkdownDescription: "Iceberg catalog name",
 			},
 			"iceberg_catalog_client_assume_role_arn": schema.StringAttribute{
 				Optional:            true,
+				Description:         "AWS IAM role (e.g., arn:aws:iam::<your-account>:role/<role-name>)",
 				MarkdownDescription: "AWS IAM role (e.g., arn:aws:iam::<your-account>:role/<role-name>)",
 			},
 			"iceberg_catalog_uri": schema.StringAttribute{
 				Optional:            true,
+				Description:         "Iceberg catalog uri",
 				MarkdownDescription: "Iceberg catalog uri",
 			},
 			"iceberg_catalog_s3_access_key_id": schema.StringAttribute{
 				Optional:            true,
+				Description:         "The AWS Access Key ID used to connect to S3.",
 				MarkdownDescription: "The AWS Access Key ID used to connect to S3.",
 			},
 			"iceberg_catalog_s3_secret_access_key": schema.StringAttribute{
 				Optional:            true,
 				Sensitive:           true,
-				MarkdownDescription: "The AWS Secret Access Key used to connect to S3.",
+				Description:         "The AWS Secret Access Key used to connect to S3. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The AWS Secret Access Key used to connect to S3.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"iceberg_catalog_client_region": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The AWS region to be used",
+				Description:         "The AWS region to be used Defaults to \"us-west-2\". Valid values: ap-south-1, eu-west-2, eu-west-1, ap-northeast-2, ap-northeast-1, ca-central-1, sa-east-1, cn-north-1, us-gov-west-1, ap-southeast-1, ap-southeast-2, eu-central-1, us-east-1, us-east-2, us-west-1, us-west-2.",
+				MarkdownDescription: "The AWS region to be used Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.",
 				Default:             stringdefault.StaticString("us-west-2"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("ap-south-1", "eu-west-2", "eu-west-1", "ap-northeast-2", "ap-northeast-1", "ca-central-1", "sa-east-1", "cn-north-1", "us-gov-west-1", "ap-southeast-1", "ap-southeast-2", "eu-central-1", "us-east-1", "us-east-2", "us-west-1", "us-west-2"),
@@ -94,16 +107,19 @@ func DestinationIcebergSchema() schema.Schema {
 			},
 			"iceberg_catalog_warehouse": schema.StringAttribute{
 				Required:            true,
+				Description:         "The S3 Bucket path to use.",
 				MarkdownDescription: "The S3 Bucket path to use.",
 			},
 			"table_name_prefix": schema.StringAttribute{
 				Required:            true,
+				Description:         "Name of the database schema that contains the table (e.g., public, sales, analytics).",
 				MarkdownDescription: "Name of the database schema that contains the table (e.g., public, sales, analytics).",
 			},
 			"insert_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Specifies the strategy used to insert events into the database",
+				Description:         "Specifies the strategy used to insert events into the database Defaults to \"insert\". Valid values: insert, upsert.",
+				MarkdownDescription: "Specifies the strategy used to insert events into the database Defaults to `insert`. Valid values: `insert`, `upsert`.",
 				Default:             stringdefault.StaticString("insert"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("insert", "upsert"),
@@ -111,6 +127,7 @@ func DestinationIcebergSchema() schema.Schema {
 			},
 			"iceberg_tables_default_id_columns": schema.StringAttribute{
 				Optional:            true,
+				Description:         "Optional. A comma-separated list of field names to use as record identifiers when key fields are not present in Kafka messages",
 				MarkdownDescription: "Optional. A comma-separated list of field names to use as record identifiers when key fields are not present in Kafka messages",
 			},
 		},

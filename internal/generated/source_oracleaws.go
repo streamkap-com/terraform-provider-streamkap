@@ -3,11 +3,9 @@
 package generated
 
 import (
-	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -15,46 +13,38 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// SourceSqlserverawsModel is the Terraform model for the sqlserveraws source.
-type SourceSqlserverawsModel struct {
+// SourceOracleawsModel is the Terraform model for the oracleaws source.
+type SourceOracleawsModel struct {
 	ID                                                 types.String `tfsdk:"id"`
 	Name                                               types.String `tfsdk:"name"`
 	Connector                                          types.String `tfsdk:"connector"`
 	DatabaseHostname                                   types.String `tfsdk:"database_hostname"`
 	DatabasePort                                       types.String `tfsdk:"database_port"`
-	DatabaseEncrypt                                    types.String `tfsdk:"database_encrypt"`
 	DatabaseUser                                       types.String `tfsdk:"database_user"`
 	DatabasePassword                                   types.String `tfsdk:"database_password"`
-	DatabaseNames                                      types.String `tfsdk:"database_names"`
+	DatabaseDbname                                     types.String `tfsdk:"database_dbname"`
 	SchemaIncludeList                                  types.String `tfsdk:"schema_include_list"`
 	TableIncludeList                                   types.String `tfsdk:"table_include_list"`
 	SignalDataCollectionSchemaOrDatabase               types.String `tfsdk:"signal_data_collection_schema_or_database"`
-	ColumnExcludeList                                  types.String `tfsdk:"column_exclude_list"`
 	HeartbeatEnabled                                   types.Bool   `tfsdk:"heartbeat_enabled"`
 	HeartbeatDataCollectionSchemaOrDatabase            types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
 	SchemaHistoryInternalStoreOnlyCapturedDatabasesDdl types.Bool   `tfsdk:"schema_history_internal_store_only_captured_databases_ddl"`
 	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool   `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
 	BinaryHandlingMode                                 types.String `tfsdk:"binary_handling_mode"`
-	StreamkapSnapshotParallelism                       types.Int64  `tfsdk:"streamkap_snapshot_parallelism"`
-	StreamkapSnapshotLargeTableThreshold               types.Int64  `tfsdk:"streamkap_snapshot_large_table_threshold"`
-	StreamkapSnapshotCustomTableConfig                 types.String `tfsdk:"streamkap_snapshot_custom_table_config"`
 	SSHEnabled                                         types.Bool   `tfsdk:"ssh_enabled"`
 	SSHHost                                            types.String `tfsdk:"ssh_host"`
 	SSHPort                                            types.String `tfsdk:"ssh_port"`
 	SSHUser                                            types.String `tfsdk:"ssh_user"`
-	TransformsInsertStaticKey1StaticField              types.String `tfsdk:"transforms_insert_static_key1_static_field"`
-	TransformsInsertStaticKey1StaticValue              types.String `tfsdk:"transforms_insert_static_key1_static_value"`
-	TransformsInsertStaticValue1StaticField            types.String `tfsdk:"transforms_insert_static_value1_static_field"`
-	TransformsInsertStaticValue1StaticValue            types.String `tfsdk:"transforms_insert_static_value1_static_value"`
 	SSHPublicKey                                       types.String `tfsdk:"ssh_public_key"`
+	ColumnExcludeList                                  types.String `tfsdk:"column_exclude_list"`
 }
 
-// SourceSqlserverawsSchema returns the Terraform schema for the sqlserveraws source.
-func SourceSqlserverawsSchema() schema.Schema {
+// SourceOracleawsSchema returns the Terraform schema for the oracleaws source.
+func SourceOracleawsSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a SQL Server source connector.",
-		MarkdownDescription: "Manages a **SQL Server source connector**.\n\n" +
-			"This resource creates and manages a SQL Server source for Streamkap data pipelines.\n\n" +
+		Description: "Manages a Oracle RDS source connector.",
+		MarkdownDescription: "Manages a **Oracle RDS source connector**.\n\n" +
+			"This resource creates and manages a Oracle RDS source for Streamkap data pipelines.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -80,25 +70,15 @@ func SourceSqlserverawsSchema() schema.Schema {
 			},
 			"database_hostname": schema.StringAttribute{
 				Required:            true,
-				Description:         "The Endpoint of the SQL Server database server. For example, sqlserverdb.abcdefgh.us-west-2.rds.amazonaws.com",
-				MarkdownDescription: "The Endpoint of the SQL Server database server. For example, sqlserverdb.abcdefgh.us-west-2.rds.amazonaws.com",
+				Description:         "Oracle Hostname Or IP address",
+				MarkdownDescription: "Oracle Hostname Or IP address",
 			},
 			"database_port": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "SQL Server Port. For example, 1433 Defaults to \"1433\".",
-				MarkdownDescription: "SQL Server Port. For example, 1433 Defaults to `1433`.",
-				Default:             stringdefault.StaticString("1433"),
-			},
-			"database_encrypt": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Use TLS encryption with the SQL Server? Defaults to \"true\". Valid values: true, false.",
-				MarkdownDescription: "Use TLS encryption with the SQL Server? Defaults to `true`. Valid values: `true`, `false`.",
-				Default:             stringdefault.StaticString("true"),
-				Validators: []validator.String{
-					stringvalidator.OneOf("true", "false"),
-				},
+				Description:         "Oracle Port. For example, 1521 Defaults to \"1521\".",
+				MarkdownDescription: "Oracle Port. For example, 1521 Defaults to `1521`.",
+				Default:             stringdefault.StaticString("1521"),
 			},
 			"database_user": schema.StringAttribute{
 				Required:            true,
@@ -111,10 +91,10 @@ func SourceSqlserverawsSchema() schema.Schema {
 				Description:         "Password to access the database This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "Password to access the database\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
-			"database_names": schema.StringAttribute{
+			"database_dbname": schema.StringAttribute{
 				Required:            true,
-				Description:         "Database to stream from.",
-				MarkdownDescription: "Database to stream from.",
+				Description:         "Database from which to stream data.",
+				MarkdownDescription: "Database from which to stream data.",
 			},
 			"schema_include_list": schema.StringAttribute{
 				Required:            true,
@@ -127,16 +107,9 @@ func SourceSqlserverawsSchema() schema.Schema {
 				MarkdownDescription: "Source tables to sync.",
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here. Defaults to \"streamkap\".",
-				MarkdownDescription: "Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here. Defaults to `streamkap`.",
-				Default:             stringdefault.StaticString("streamkap"),
-			},
-			"column_exclude_list": schema.StringAttribute{
-				Optional:            true,
-				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
-				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
+				Required:            true,
+				Description:         "Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here.",
+				MarkdownDescription: "Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here.",
 			},
 			"heartbeat_enabled": schema.BoolAttribute{
 				Optional:            true,
@@ -146,11 +119,9 @@ func SourceSqlserverawsSchema() schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'. Defaults to \"streamkap\".",
-				MarkdownDescription: "Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'. Defaults to `streamkap`.",
-				Default:             stringdefault.StaticString("streamkap"),
+				Required:            true,
+				Description:         "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
+				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
 			},
 			"schema_history_internal_store_only_captured_databases_ddl": schema.BoolAttribute{
 				Optional:            true,
@@ -175,31 +146,6 @@ func SourceSqlserverawsSchema() schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.OneOf("bytes", "base64", "base64-url-safe", "hex"),
 				},
-			},
-			"streamkap_snapshot_parallelism": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "How many parallel chunk requests to send to the source DB. Defaults to 1.",
-				MarkdownDescription: "How many parallel chunk requests to send to the source DB. Defaults to `1`.",
-				Default:             int64default.StaticInt64(1),
-				Validators: []validator.Int64{
-					int64validator.Between(1, 10),
-				},
-			},
-			"streamkap_snapshot_large_table_threshold": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to 20000.",
-				MarkdownDescription: "The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to `20000`.",
-				Default:             int64default.StaticInt64(20000),
-				Validators: []validator.Int64{
-					int64validator.Between(1, 64000),
-				},
-			},
-			"streamkap_snapshot_custom_table_config": schema.StringAttribute{
-				Optional:            true,
-				Description:         "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.",
-				MarkdownDescription: "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.",
 			},
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
@@ -227,26 +173,6 @@ func SourceSqlserverawsSchema() schema.Schema {
 				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
-			"transforms_insert_static_key1_static_field": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The name of the static field to be added to the message key.",
-				MarkdownDescription: "The name of the static field to be added to the message key.",
-			},
-			"transforms_insert_static_key1_static_value": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The value of the static field to be added to the message key.",
-				MarkdownDescription: "The value of the static field to be added to the message key.",
-			},
-			"transforms_insert_static_value1_static_field": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The name of the static field to be added to the message value.",
-				MarkdownDescription: "The name of the static field to be added to the message value.",
-			},
-			"transforms_insert_static_value1_static_value": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The value of the static field to be added to the message value.",
-				MarkdownDescription: "The value of the static field to be added to the message value.",
-			},
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -254,37 +180,34 @@ func SourceSqlserverawsSchema() schema.Schema {
 				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
+			"column_exclude_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
+				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
+			},
 		},
 	}
 }
 
-// SourceSqlserverawsFieldMappings maps Terraform attribute names to API field names.
-var SourceSqlserverawsFieldMappings = map[string]string{
+// SourceOracleawsFieldMappings maps Terraform attribute names to API field names.
+var SourceOracleawsFieldMappings = map[string]string{
 	"database_hostname":                            "database.hostname.user.defined",
 	"database_port":                                "database.port.user.defined",
-	"database_encrypt":                             "database.encrypt",
 	"database_user":                                "database.user",
 	"database_password":                            "database.password",
-	"database_names":                               "database.names",
+	"database_dbname":                              "database.dbname",
 	"schema_include_list":                          "schema.include.list",
 	"table_include_list":                           "table.include.list.user.defined",
 	"signal_data_collection_schema_or_database":    "signal.data.collection.schema.or.database",
-	"column_exclude_list":                          "column.exclude.list.user.defined",
 	"heartbeat_enabled":                            "heartbeat.enabled",
 	"heartbeat_data_collection_schema_or_database": "heartbeat.data.collection.schema.or.database",
 	"schema_history_internal_store_only_captured_databases_ddl": "schema.history.internal.store.only.captured.databases.ddl",
 	"schema_history_internal_store_only_captured_tables_ddl":    "schema.history.internal.store.only.captured.tables.ddl",
-	"binary_handling_mode":                         "binary.handling.mode",
-	"streamkap_snapshot_parallelism":               "streamkap.snapshot.parallelism",
-	"streamkap_snapshot_large_table_threshold":     "streamkap.snapshot.large.table.threshold",
-	"streamkap_snapshot_custom_table_config":       "streamkap.snapshot.custom.table.config.user.defined",
-	"ssh_enabled":                                  "ssh.enabled",
-	"ssh_host":                                     "ssh.host",
-	"ssh_port":                                     "ssh.port",
-	"ssh_user":                                     "ssh.user",
-	"transforms_insert_static_key1_static_field":   "transforms.InsertStaticKey1.static.field",
-	"transforms_insert_static_key1_static_value":   "transforms.InsertStaticKey1.static.value",
-	"transforms_insert_static_value1_static_field": "transforms.InsertStaticValue1.static.field",
-	"transforms_insert_static_value1_static_value": "transforms.InsertStaticValue1.static.value",
-	"ssh_public_key":                               "ssh.public.key.user.displayed",
+	"binary_handling_mode": "binary.handling.mode",
+	"ssh_enabled":          "ssh.enabled",
+	"ssh_host":             "ssh.host",
+	"ssh_port":             "ssh.port",
+	"ssh_user":             "ssh.user",
+	"ssh_public_key":       "ssh.public.key.user.displayed",
+	"column_exclude_list":  "column.exclude.list.user.defined",
 }

@@ -27,10 +27,14 @@ type SourceKafkadirectModel struct {
 // SourceKafkadirectSchema returns the Terraform schema for the kafkadirect source.
 func SourceKafkadirectSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Kafka Direct source connector",
+		Description: "Manages a Kafka Direct source connector.",
+		MarkdownDescription: "Manages a **Kafka Direct source connector**.\n\n" +
+			"This resource creates and manages a Kafka Direct source for Streamkap data pipelines.\n\n" +
+			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Unique identifier for the source",
 				MarkdownDescription: "Unique identifier for the source",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -38,10 +42,12 @@ func SourceKafkadirectSchema() schema.Schema {
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
+				Description:         "Name of the source",
 				MarkdownDescription: "Name of the source",
 			},
 			"connector": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Connector type",
 				MarkdownDescription: "Connector type",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -49,16 +55,19 @@ func SourceKafkadirectSchema() schema.Schema {
 			},
 			"topic_prefix": schema.StringAttribute{
 				Required:            true,
+				Description:         "Prefix for the topic",
 				MarkdownDescription: "Prefix for the topic",
 			},
 			"topic_include_list": schema.StringAttribute{
 				Required:            true,
+				Description:         "Topics to sync",
 				MarkdownDescription: "Topics to sync",
 			},
 			"format": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The serialised format of the data written to the Kafka topic",
+				Description:         "The serialised format of the data written to the Kafka topic Defaults to \"string\". Valid values: json, string.",
+				MarkdownDescription: "The serialised format of the data written to the Kafka topic Defaults to `string`. Valid values: `json`, `string`.",
 				Default:             stringdefault.StaticString("string"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("json", "string"),
@@ -67,7 +76,8 @@ func SourceKafkadirectSchema() schema.Schema {
 			"schemas_enable": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "If untoggled (default), Streamkap attempts to infer schema from your data - depending on the Destination. Otherwise, Streamkap assumes the Kafka message key and value contain `schema` and `payload` structures",
+				Description:         "If untoggled (default), Streamkap attempts to infer schema from your data - depending on the Destination. Otherwise, Streamkap assumes the Kafka message key and value contain `schema` and `payload` structures Defaults to false.",
+				MarkdownDescription: "If untoggled (default), Streamkap attempts to infer schema from your data - depending on the Destination. Otherwise, Streamkap assumes the Kafka message key and value contain `schema` and `payload` structures Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 		},

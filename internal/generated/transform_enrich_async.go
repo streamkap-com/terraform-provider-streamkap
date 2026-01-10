@@ -31,10 +31,14 @@ type TransformEnrichAsyncModel struct {
 // TransformEnrichAsyncSchema returns the Terraform schema for the enrich_async transform.
 func TransformEnrichAsyncSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Enrich Async transform connector",
+		Description: "Manages a Enrich Async transform connector.",
+		MarkdownDescription: "Manages a **Enrich Async transform connector**.\n\n" +
+			"This resource creates and manages a Enrich Async transform for Streamkap data pipelines.\n\n" +
+			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Unique identifier for the transform",
 				MarkdownDescription: "Unique identifier for the transform",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -42,10 +46,12 @@ func TransformEnrichAsyncSchema() schema.Schema {
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
+				Description:         "Name of the transform",
 				MarkdownDescription: "Name of the transform",
 			},
 			"transform_type": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Transform type",
 				MarkdownDescription: "Transform type",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -54,7 +60,8 @@ func TransformEnrichAsyncSchema() schema.Schema {
 			"transforms_language": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Language of the datastream. Ex:Javascript or Python",
+				Description:         "Language of the datastream. Ex:Javascript or Python Defaults to \"JavaScript\". Valid values: JavaScript, Python.",
+				MarkdownDescription: "Language of the datastream. Ex:Javascript or Python Defaults to `JavaScript`. Valid values: `JavaScript`, `Python`.",
 				Default:             stringdefault.StaticString("JavaScript"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("JavaScript", "Python"),
@@ -63,13 +70,15 @@ func TransformEnrichAsyncSchema() schema.Schema {
 			"transforms_async_timeout_ms": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Timeout to wait for async operation to complete",
+				Description:         "Timeout to wait for async operation to complete Defaults to 1000.",
+				MarkdownDescription: "Timeout to wait for async operation to complete Defaults to `1000`.",
 				Default:             int64default.StaticInt64(1000),
 			},
 			"transforms_async_capacity": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "If one async call takes 10ms and the target throughput per task is 1000 records per second, then the capacity should be 1000 * 10ms = 10 parallel requests.",
+				Description:         "If one async call takes 10ms and the target throughput per task is 1000 records per second, then the capacity should be 1000 * 10ms = 10 parallel requests. Defaults to 10.",
+				MarkdownDescription: "If one async call takes 10ms and the target throughput per task is 1000 records per second, then the capacity should be 1000 * 10ms = 10 parallel requests. Defaults to `10`.",
 				Default:             int64default.StaticInt64(10),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 50),
@@ -78,19 +87,22 @@ func TransformEnrichAsyncSchema() schema.Schema {
 			"transforms_input_topic_pattern": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Regex pattern to search for the input topics",
+				Description:         "Regex pattern to search for the input topics Defaults to \"placeholder-input-topic-pattern-to-be-revised-during-implementation\".",
+				MarkdownDescription: "Regex pattern to search for the input topics Defaults to `placeholder-input-topic-pattern-to-be-revised-during-implementation`.",
 				Default:             stringdefault.StaticString("placeholder-input-topic-pattern-to-be-revised-during-implementation"),
 			},
 			"transforms_output_topic_pattern": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "String pattern to save the output topics",
+				Description:         "String pattern to save the output topics Defaults to \"placeholder-output-replacement-pattern-to-be-revised-during-implementation\".",
+				MarkdownDescription: "String pattern to save the output topics Defaults to `placeholder-output-replacement-pattern-to-be-revised-during-implementation`.",
 				Default:             stringdefault.StaticString("placeholder-output-replacement-pattern-to-be-revised-during-implementation"),
 			},
 			"transforms_input_serialization_format": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Format of the input topics",
+				Description:         "Format of the input topics Defaults to \"Any\". Valid values: Any, Avro, Json.",
+				MarkdownDescription: "Format of the input topics Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.",
 				Default:             stringdefault.StaticString("Any"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("Any", "Avro", "Json"),
@@ -99,7 +111,8 @@ func TransformEnrichAsyncSchema() schema.Schema {
 			"transforms_output_serialization_format": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Format of the output topics",
+				Description:         "Format of the output topics Defaults to \"Any\". Valid values: Any, Avro, Json.",
+				MarkdownDescription: "Format of the output topics Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.",
 				Default:             stringdefault.StaticString("Any"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("Any", "Avro", "Json"),

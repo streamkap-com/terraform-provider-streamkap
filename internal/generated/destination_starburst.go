@@ -12,8 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// DestinationS3Model is the Terraform model for the s3 destination.
-type DestinationS3Model struct {
+// DestinationStarburstModel is the Terraform model for the starburst destination.
+type DestinationStarburstModel struct {
 	ID                  types.String `tfsdk:"id"`
 	Name                types.String `tfsdk:"name"`
 	Connector           types.String `tfsdk:"connector"`
@@ -28,12 +28,12 @@ type DestinationS3Model struct {
 	FormatOutputFields  types.List   `tfsdk:"format_output_fields"`
 }
 
-// DestinationS3Schema returns the Terraform schema for the s3 destination.
-func DestinationS3Schema() schema.Schema {
+// DestinationStarburstSchema returns the Terraform schema for the starburst destination.
+func DestinationStarburstSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a S3 destination connector.",
-		MarkdownDescription: "Manages a **S3 destination connector**.\n\n" +
-			"This resource creates and manages a S3 destination for Streamkap data pipelines.\n\n" +
+		Description: "Manages a Starburst destination connector.",
+		MarkdownDescription: "Manages a **Starburst destination connector**.\n\n" +
+			"This resource creates and manages a Starburst destination for Streamkap data pipelines.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -59,14 +59,14 @@ func DestinationS3Schema() schema.Schema {
 			},
 			"aws_access_key_id": schema.StringAttribute{
 				Optional:            true,
-				Description:         "The AWS Access Key ID used to connect to S3.",
-				MarkdownDescription: "The AWS Access Key ID used to connect to S3.",
+				Description:         "The AWS Access Key ID used to connect to Starburst.",
+				MarkdownDescription: "The AWS Access Key ID used to connect to Starburst.",
 			},
 			"aws_secret_access_key": schema.StringAttribute{
 				Optional:            true,
 				Sensitive:           true,
-				Description:         "The AWS Secret Access Key used to connect to S3. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "The AWS Secret Access Key used to connect to S3.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "The AWS Secret Access Key used to connect to Starburst. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The AWS Secret Access Key used to connect to Starburst.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"aws_s3_region": schema.StringAttribute{
 				Optional:            true,
@@ -80,17 +80,17 @@ func DestinationS3Schema() schema.Schema {
 			},
 			"aws_s3_bucket_name": schema.StringAttribute{
 				Optional:            true,
-				Description:         "The S3 Bucket to use.",
-				MarkdownDescription: "The S3 Bucket to use.",
+				Description:         "The Bucket to use.",
+				MarkdownDescription: "The Bucket to use.",
 			},
 			"format": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The format to use when writing data to the store. Defaults to \"JSON Array\". Valid values: JSON Lines, JSON Array, Parquet.",
-				MarkdownDescription: "The format to use when writing data to the store. Defaults to `JSON Array`. Valid values: `JSON Lines`, `JSON Array`, `Parquet`.",
-				Default:             stringdefault.StaticString("JSON Array"),
+				Description:         "The format to use when writing data to the store. Defaults to \"CSV\". Valid values: CSV, JSON Lines, JSON Array, Parquet.",
+				MarkdownDescription: "The format to use when writing data to the store. Defaults to `CSV`. Valid values: `CSV`, `JSON Lines`, `JSON Array`, `Parquet`.",
+				Default:             stringdefault.StaticString("CSV"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("JSON Lines", "JSON Array", "Parquet"),
+					stringvalidator.OneOf("CSV", "JSON Lines", "JSON Array", "Parquet"),
 				},
 			},
 			"file_name_template": schema.StringAttribute{
@@ -108,8 +108,8 @@ func DestinationS3Schema() schema.Schema {
 			"file_compression_type": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Compression type for files written to S3. Defaults to \"gzip\". Valid values: none, gzip, snappy, zstd.",
-				MarkdownDescription: "Compression type for files written to S3. Defaults to `gzip`. Valid values: `none`, `gzip`, `snappy`, `zstd`.",
+				Description:         "Compression type for files written to Starburst. Defaults to \"gzip\". Valid values: none, gzip, snappy, zstd.",
+				MarkdownDescription: "Compression type for files written to Starburst. Defaults to `gzip`. Valid values: `none`, `gzip`, `snappy`, `zstd`.",
 				Default:             stringdefault.StaticString("gzip"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("none", "gzip", "snappy", "zstd"),
@@ -126,8 +126,8 @@ func DestinationS3Schema() schema.Schema {
 	}
 }
 
-// DestinationS3FieldMappings maps Terraform attribute names to API field names.
-var DestinationS3FieldMappings = map[string]string{
+// DestinationStarburstFieldMappings maps Terraform attribute names to API field names.
+var DestinationStarburstFieldMappings = map[string]string{
 	"aws_access_key_id":     "aws.access.key.id",
 	"aws_secret_access_key": "aws.secret.access.key",
 	"aws_s3_region":         "aws.s3.region",

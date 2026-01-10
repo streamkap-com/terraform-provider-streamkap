@@ -13,8 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// SourceMongodbModel is the Terraform model for the mongodb source.
-type SourceMongodbModel struct {
+// SourceMongodbhostedModel is the Terraform model for the mongodbhosted source.
+type SourceMongodbhostedModel struct {
 	ID                                      types.String `tfsdk:"id"`
 	Name                                    types.String `tfsdk:"name"`
 	Connector                               types.String `tfsdk:"connector"`
@@ -40,12 +40,12 @@ type SourceMongodbModel struct {
 	SSHPublicKey                            types.String `tfsdk:"ssh_public_key"`
 }
 
-// SourceMongodbSchema returns the Terraform schema for the mongodb source.
-func SourceMongodbSchema() schema.Schema {
+// SourceMongodbhostedSchema returns the Terraform schema for the mongodbhosted source.
+func SourceMongodbhostedSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a MongoDB Atlas source connector.",
-		MarkdownDescription: "Manages a **MongoDB Atlas source connector**.\n\n" +
-			"This resource creates and manages a MongoDB Atlas source for Streamkap data pipelines.\n\n" +
+		Description: "Manages a MongoDB source connector.",
+		MarkdownDescription: "Manages a **MongoDB source connector**.\n\n" +
+			"This resource creates and manages a MongoDB source for Streamkap data pipelines.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -194,8 +194,8 @@ func SourceMongodbSchema() schema.Schema {
 	}
 }
 
-// SourceMongodbFieldMappings maps Terraform attribute names to API field names.
-var SourceMongodbFieldMappings = map[string]string{
+// SourceMongodbhostedFieldMappings maps Terraform attribute names to API field names.
+var SourceMongodbhostedFieldMappings = map[string]string{
 	"mongodb_connection_string":                    "mongodb.connection.string.user.defined",
 	"transforms_unwrap_array_encoding":             "transforms.unwrap.array.encoding",
 	"transforms_unwrap_document_encoding":          "transforms.unwrap.document.encoding",

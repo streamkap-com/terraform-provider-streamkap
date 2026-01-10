@@ -3,11 +3,9 @@
 package generated
 
 import (
-	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -15,8 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// SourcePostgresqlModel is the Terraform model for the postgresql source.
-type SourcePostgresqlModel struct {
+// SourceSupabaseModel is the Terraform model for the supabase source.
+type SourceSupabaseModel struct {
 	ID                                      types.String `tfsdk:"id"`
 	Name                                    types.String `tfsdk:"name"`
 	Connector                               types.String `tfsdk:"connector"`
@@ -48,9 +46,6 @@ type SourcePostgresqlModel struct {
 	TransformsInsertStaticValue2StaticField types.String `tfsdk:"transforms_insert_static_value2_static_field"`
 	TransformsInsertStaticValue2StaticValue types.String `tfsdk:"transforms_insert_static_value2_static_value"`
 	PredicatesIsTopicToEnrichPattern        types.String `tfsdk:"predicates_is_topic_to_enrich_pattern"`
-	StreamkapSnapshotParallelism            types.Int64  `tfsdk:"streamkap_snapshot_parallelism"`
-	StreamkapSnapshotLargeTableThreshold    types.Int64  `tfsdk:"streamkap_snapshot_large_table_threshold"`
-	StreamkapSnapshotCustomTableConfig      types.String `tfsdk:"streamkap_snapshot_custom_table_config"`
 	SSHEnabled                              types.Bool   `tfsdk:"ssh_enabled"`
 	SSHHost                                 types.String `tfsdk:"ssh_host"`
 	SSHPort                                 types.String `tfsdk:"ssh_port"`
@@ -58,12 +53,12 @@ type SourcePostgresqlModel struct {
 	SSHPublicKey                            types.String `tfsdk:"ssh_public_key"`
 }
 
-// SourcePostgresqlSchema returns the Terraform schema for the postgresql source.
-func SourcePostgresqlSchema() schema.Schema {
+// SourceSupabaseSchema returns the Terraform schema for the supabase source.
+func SourceSupabaseSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a PostgreSQL source connector.",
-		MarkdownDescription: "Manages a **PostgreSQL source connector**.\n\n" +
-			"This resource creates and manages a PostgreSQL source for Streamkap data pipelines.\n\n" +
+		Description: "Manages a Supabase source connector.",
+		MarkdownDescription: "Manages a **Supabase source connector**.\n\n" +
+			"This resource creates and manages a Supabase source for Streamkap data pipelines.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -257,31 +252,6 @@ func SourcePostgresqlSchema() schema.Schema {
 				MarkdownDescription: "Regex pattern to match topics for enrichment. Defaults to `$^`.",
 				Default:             stringdefault.StaticString("$^"),
 			},
-			"streamkap_snapshot_parallelism": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "How many parallel chunk requests to send to the source DB. Defaults to 1.",
-				MarkdownDescription: "How many parallel chunk requests to send to the source DB. Defaults to `1`.",
-				Default:             int64default.StaticInt64(1),
-				Validators: []validator.Int64{
-					int64validator.Between(1, 10),
-				},
-			},
-			"streamkap_snapshot_large_table_threshold": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to 20000.",
-				MarkdownDescription: "The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to `20000`.",
-				Default:             int64default.StaticInt64(20000),
-				Validators: []validator.Int64{
-					int64validator.Between(1, 64000),
-				},
-			},
-			"streamkap_snapshot_custom_table_config": schema.StringAttribute{
-				Optional:            true,
-				Description:         "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.",
-				MarkdownDescription: "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.",
-			},
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -319,8 +289,8 @@ func SourcePostgresqlSchema() schema.Schema {
 	}
 }
 
-// SourcePostgresqlFieldMappings maps Terraform attribute names to API field names.
-var SourcePostgresqlFieldMappings = map[string]string{
+// SourceSupabaseFieldMappings maps Terraform attribute names to API field names.
+var SourceSupabaseFieldMappings = map[string]string{
 	"database_hostname":                            "database.hostname.user.defined",
 	"database_port":                                "database.port.user.defined",
 	"database_user":                                "database.user",
@@ -349,9 +319,6 @@ var SourcePostgresqlFieldMappings = map[string]string{
 	"transforms_insert_static_value2_static_field": "transforms.InsertStaticValue2.static.field",
 	"transforms_insert_static_value2_static_value": "transforms.InsertStaticValue2.static.value",
 	"predicates_is_topic_to_enrich_pattern":        "predicates.IsTopicToEnrich.pattern",
-	"streamkap_snapshot_parallelism":               "streamkap.snapshot.parallelism",
-	"streamkap_snapshot_large_table_threshold":     "streamkap.snapshot.large.table.threshold",
-	"streamkap_snapshot_custom_table_config":       "streamkap.snapshot.custom.table.config.user.defined",
 	"ssh_enabled":                                  "ssh.enabled",
 	"ssh_host":                                     "ssh.host",
 	"ssh_port":                                     "ssh.port",
