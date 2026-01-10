@@ -342,6 +342,12 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 		field.Validators = g.rangeValidator(entry)
 	}
 
+	// Add security note for sensitive fields
+	if field.Sensitive {
+		field.Description = field.Description + " This value is sensitive and will not appear in logs or CLI output."
+		field.MarkdownDescription = field.MarkdownDescription + "\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs."
+	}
+
 	return field
 }
 
