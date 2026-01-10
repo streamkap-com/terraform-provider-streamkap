@@ -52,7 +52,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.1.18"
+      version = ">= 2.0.0"
     }
   }
 }
@@ -195,6 +195,8 @@ go test -v ./cmd/tfgen/...
 - [Streamkap Provider on Terraform Registry](https://registry.terraform.io/providers/streamkap-com/streamkap)
 - [Streamkap Documentation](https://docs.streamkap.com)
 - [API Reference](https://api.streamkap.com/openapi.json)
+- [Changelog](CHANGELOG.md) - Version history and breaking changes
+- [Architecture](docs/ARCHITECTURE.md) - Provider design and code structure
 
 ## AI-Agent Compatibility
 
