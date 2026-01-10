@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -178,6 +180,13 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 				Default:             setdefault.StaticValue(defaultTagsWithDev),
 			},
 		},
+		Blocks: map[string]schema.Block{
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{
+				Create: true,
+				Update: true,
+				Delete: true,
+			}),
+		},
 	}
 }
 
@@ -210,6 +219,22 @@ func (r *PipelineResource) Create(ctx context.Context, req res.CreateRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// Get timeout from config
+	var timeoutsValue timeouts.Value
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("timeouts"), &timeoutsValue)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	createTimeout, diags := timeoutsValue.Create(ctx, helper.DefaultCreateTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	// If applicable, this is a great opportunity to initialize any necessary
 	// provider client data and make a call using it.
@@ -286,6 +311,22 @@ func (r *PipelineResource) Update(ctx context.Context, req res.UpdateRequest, re
 		return
 	}
 
+	// Get timeout from config
+	var timeoutsValue timeouts.Value
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("timeouts"), &timeoutsValue)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	updateTimeout, diags := timeoutsValue.Update(ctx, helper.DefaultUpdateTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
+
 	payload, err := r.model2API(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -324,6 +365,22 @@ func (r *PipelineResource) Delete(ctx context.Context, req res.DeleteRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// Get timeout from state
+	var timeoutsValue timeouts.Value
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("timeouts"), &timeoutsValue)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	deleteTimeout, diags := timeoutsValue.Delete(ctx, helper.DefaultDeleteTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
 
 	err := r.client.DeletePipeline(ctx, state.ID.ValueString())
 	if err != nil {
