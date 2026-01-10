@@ -258,3 +258,46 @@ resource "streamkap_source_postgresql" "test" {
 		},
 	})
 }
+
+func TestAccSourcePostgreSQLResource_WithTimeout(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: providerConfig + `
+variable "source_postgresql_hostname" {
+	type = string
+}
+variable "source_postgresql_password" {
+	type      = string
+	sensitive = true
+}
+resource "streamkap_source_postgresql" "test_timeout" {
+	name              = "test-source-postgresql-timeout"
+	database_hostname = var.source_postgresql_hostname
+	database_port     = "5432"
+	database_user     = "postgresql"
+	database_password = var.source_postgresql_password
+	database_dbname   = "postgres"
+	database_sslmode  = "require"
+	schema_include_list = "streamkap"
+	table_include_list  = "streamkap.customer"
+	signal_data_collection_schema_or_database = "streamkap"
+	slot_name         = "terraform_timeout_test_slot"
+	publication_name  = "terraform_timeout_test_pub"
+	ssh_enabled       = false
+
+	timeouts {
+		create = "30m"
+		update = "30m"
+		delete = "15m"
+	}
+}
+`,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test_timeout", "name", "test-source-postgresql-timeout"),
+				),
+			},
+		},
+	})
+}
