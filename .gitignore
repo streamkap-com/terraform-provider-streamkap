@@ -50,3 +50,6 @@ tfgen
 
 # Build artifacts
 internal/generated/internal/
+
+# Working plan documents
+docs/plans/
