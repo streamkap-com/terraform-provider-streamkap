@@ -11,4 +11,4 @@
 //	go run cmd/tfgen/main.go generate --backend-path=/path/to/python-be-streamkap
 package generated
 
-//go:generate go run ../../cmd/tfgen generate --backend-path=${STREAMKAP_BACKEND_PATH:-/Users/alexandrubodea/Documents/Repositories/python-be-streamkap}
+//go:generate go run ../../cmd/tfgen generate --backend-path=${STREAMKAP_BACKEND_PATH}

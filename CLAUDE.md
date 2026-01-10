@@ -8,11 +8,7 @@ Terraform provider for Streamkap (data streaming platform). Built with Terraform
 
 ## Related Backend
 
-This Terraform provider is built against the Streamkap Python FastAPI backend. Local backend repository:
-```
-/Users/alexandrubodea/Documents/Repositories/python-be-streamkap
-```
-Use this repository to validate API logic, understand endpoint behavior, check request/response schemas, and debug integration issues.
+This Terraform provider is built against the Streamkap Python FastAPI backend. Set the `STREAMKAP_BACKEND_PATH` environment variable to point to your local clone of the backend repository. Use this repository to validate API logic, understand endpoint behavior, check request/response schemas, and debug integration issues.
 
 **OpenAPI Specification**: https://api.streamkap.com/openapi.json — use this to explore available endpoints, request/response schemas, and API documentation.
 

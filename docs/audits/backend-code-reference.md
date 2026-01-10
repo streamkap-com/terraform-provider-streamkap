@@ -2,7 +2,7 @@
 
 This document provides a comprehensive reference to the Streamkap Python FastAPI backend codebase. Use this when debugging API integration issues, understanding endpoint behavior, or validating Terraform provider implementation.
 
-**Backend Repository**: `/Users/alexandrubodea/Documents/Repositories/python-be-streamkap`
+**Backend Repository**: Set via `STREAMKAP_BACKEND_PATH` environment variable
 **OpenAPI Specification**: `https://api.streamkap.com/openapi.json`
 
 ---

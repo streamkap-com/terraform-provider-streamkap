@@ -2,7 +2,7 @@
 
 This document provides a comprehensive audit of the `configuration.latest.json` schema structure used by Streamkap backend for sources, destinations, and transforms. This is the authoritative reference for the code generator when creating typed Terraform resource schemas.
 
-**Backend Repository**: `/Users/alexandrubodea/Documents/Repositories/python-be-streamkap`
+**Backend Repository**: Set via `STREAMKAP_BACKEND_PATH` environment variable
 
 ---
 
