@@ -228,6 +228,90 @@ resource "streamkap_source_myconnector" "example" {
 go generate ./...
 ```
 
+## Exposing Pre-Generated Connectors
+
+The provider has generated schemas for many more connectors than are currently exposed.
+To expose a new connector that already has a generated schema:
+
+### Prerequisites
+- Schema must exist in `internal/generated/` (e.g., `source_oracle.go`, `destination_bigquery.go`)
+
+### Steps
+
+1. **Create resource file** in `internal/resource/source/` or `internal/resource/destination/`:
+
+```go
+// internal/resource/source/oracle_generated.go
+package source
+
+import (
+    "github.com/hashicorp/terraform-plugin-framework/resource"
+    "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+
+    "github.com/streamkap-com/terraform-provider-streamkap/internal/generated"
+    "github.com/streamkap-com/terraform-provider-streamkap/internal/resource/connector"
+)
+
+type OracleConfig struct{}
+
+var _ connector.ConnectorConfig = (*OracleConfig)(nil)
+
+func (c *OracleConfig) GetSchema() schema.Schema {
+    return generated.SourceOracleSchema()
+}
+
+func (c *OracleConfig) GetFieldMappings() map[string]string {
+    return generated.SourceOracleFieldMappings
+}
+
+func (c *OracleConfig) GetConnectorType() connector.ConnectorType {
+    return connector.ConnectorTypeSource
+}
+
+func (c *OracleConfig) GetConnectorCode() string {
+    return "oracle"
+}
+
+func (c *OracleConfig) GetResourceName() string {
+    return "source_oracle"
+}
+
+func (c *OracleConfig) NewModelInstance() any {
+    return &generated.SourceOracleModel{}
+}
+
+func NewOracleResource() resource.Resource {
+    return connector.NewBaseConnectorResource(&OracleConfig{})
+}
+```
+
+2. **Register in provider** (`internal/provider/provider.go`):
+```go
+source.NewOracleResource,
+```
+
+3. **Create examples** in `examples/resources/streamkap_source_oracle/`:
+   - `basic.tf` - minimal required config
+   - `complete.tf` - all options with comments
+
+4. **Generate docs**:
+```bash
+go generate
+```
+
+5. **Test**:
+```bash
+go test -v ./internal/provider -run TestAccSourceOracle
+```
+
+### Available Schemas Not Yet Exposed
+
+**Sources (14):** alloydb, db2, documentdb, elasticsearch, mariadb, mongodbhosted,
+oracle, oracleaws, planetscale, redis, s3, supabase, vitess, webhook
+
+**Destinations (15):** azblob, bigquery, cockroachdb, db2, gcs, httpsink,
+kafkadirect, motherduck, mysql, oracle, r2, redis, redshift, sqlserver, starburst
+
 ## Running Tests
 
 ### Unit Tests
