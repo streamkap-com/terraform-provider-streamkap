@@ -37,10 +37,14 @@ type DestinationClickhouseModel struct {
 // DestinationClickhouseSchema returns the Terraform schema for the clickhouse destination.
 func DestinationClickhouseSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "ClickHouse destination connector",
+		Description: "Manages a ClickHouse destination connector.",
+		MarkdownDescription: "Manages a **ClickHouse destination connector**.\n\n" +
+			"This resource creates and manages a ClickHouse destination for Streamkap data pipelines.\n\n" +
+			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Unique identifier for the destination",
 				MarkdownDescription: "Unique identifier for the destination",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -48,10 +52,12 @@ func DestinationClickhouseSchema() schema.Schema {
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
+				Description:         "Name of the destination",
 				MarkdownDescription: "Name of the destination",
 			},
 			"connector": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Connector type",
 				MarkdownDescription: "Connector type",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -60,7 +66,8 @@ func DestinationClickhouseSchema() schema.Schema {
 			"ingestion_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Upsert or append modes are available",
+				Description:         "Upsert or append modes are available Defaults to \"upsert\". Valid values: upsert, append.",
+				MarkdownDescription: "Upsert or append modes are available Defaults to `upsert`. Valid values: `upsert`, `append`.",
 				Default:             stringdefault.StaticString("upsert"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("upsert", "append"),
@@ -69,13 +76,15 @@ func DestinationClickhouseSchema() schema.Schema {
 			"hard_delete": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)",
+				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only) Defaults to true.",
+				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only) Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The maximum number of active task",
+				Description:         "The maximum number of active task Defaults to 5.",
+				MarkdownDescription: "The maximum number of active task Defaults to `5`.",
 				Default:             int64default.StaticInt64(5),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 10),
@@ -83,45 +92,54 @@ func DestinationClickhouseSchema() schema.Schema {
 			},
 			"hostname": schema.StringAttribute{
 				Required:            true,
+				Description:         "ClickHouse Hostname Or IP address",
 				MarkdownDescription: "ClickHouse Hostname Or IP address",
 			},
 			"connection_username": schema.StringAttribute{
 				Required:            true,
+				Description:         "Username to access ClickHouse",
 				MarkdownDescription: "Username to access ClickHouse",
 			},
 			"connection_password": schema.StringAttribute{
 				Required:            true,
 				Sensitive:           true,
-				MarkdownDescription: "Password to access the ClickHouse",
+				Description:         "Password to access the ClickHouse This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Password to access the ClickHouse\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"port": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "ClickHouse Port. For example, 8443",
+				Description:         "ClickHouse Port. For example, 8443 Defaults to \"8443\".",
+				MarkdownDescription: "ClickHouse Port. For example, 8443 Defaults to `8443`.",
 				Default:             stringdefault.StaticString("8443"),
 			},
 			"database": schema.StringAttribute{
 				Optional:            true,
+				Description:         "ClickHouse database",
 				MarkdownDescription: "ClickHouse database",
 			},
 			"ssl": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Enable TLS for network connections",
+				Description:         "Enable TLS for network connections Defaults to true.",
+				MarkdownDescription: "Enable TLS for network connections Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"topics_config_map": schema.StringAttribute{
 				Optional:            true,
+				Description:         "Per topic configuration in JSON format",
 				MarkdownDescription: "Per topic configuration in JSON format",
 			},
 			"clickhouse_json_support": schema.StringAttribute{
 				Optional:            true,
+				Description:         "Allow JSON data type in ClickHouse, make sure the ClickHouse server supports it. If not set, the connector will use String type for JSON data.",
 				MarkdownDescription: "Allow JSON data type in ClickHouse, make sure the ClickHouse server supports it. If not set, the connector will use String type for JSON data.",
 			},
 			"schema_evolution": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`",
+				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to \"basic\". Valid values: basic, none.",
+				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.",
 				Default:             stringdefault.StaticString("basic"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("basic", "none"),

@@ -25,10 +25,14 @@ type TransformEnrichModel struct {
 // TransformEnrichSchema returns the Terraform schema for the enrich transform.
 func TransformEnrichSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Enrich transform connector",
+		Description: "Manages a Enrich transform connector.",
+		MarkdownDescription: "Manages a **Enrich transform connector**.\n\n" +
+			"This resource creates and manages a Enrich transform for Streamkap data pipelines.\n\n" +
+			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Unique identifier for the transform",
 				MarkdownDescription: "Unique identifier for the transform",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -36,10 +40,12 @@ func TransformEnrichSchema() schema.Schema {
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
+				Description:         "Name of the transform",
 				MarkdownDescription: "Name of the transform",
 			},
 			"transform_type": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Transform type",
 				MarkdownDescription: "Transform type",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -48,7 +54,8 @@ func TransformEnrichSchema() schema.Schema {
 			"transforms_language": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Language of the transform.",
+				Description:         "Language of the transform. Defaults to \"SQL\". Valid values: SQL.",
+				MarkdownDescription: "Language of the transform. Defaults to `SQL`. Valid values: `SQL`.",
 				Default:             stringdefault.StaticString("SQL"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("SQL"),
@@ -57,13 +64,15 @@ func TransformEnrichSchema() schema.Schema {
 			"transforms_input_topic_pattern": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Regex pattern to search for the input topics",
+				Description:         "Regex pattern to search for the input topics Defaults to \"placeholder-input-topic-pattern-to-be-revised-during-implementation\".",
+				MarkdownDescription: "Regex pattern to search for the input topics Defaults to `placeholder-input-topic-pattern-to-be-revised-during-implementation`.",
 				Default:             stringdefault.StaticString("placeholder-input-topic-pattern-to-be-revised-during-implementation"),
 			},
 			"transforms_output_topic_pattern": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "String pattern to save the output topics",
+				Description:         "String pattern to save the output topics Defaults to \"placeholder-output-replacement-pattern-to-be-revised-during-implementation\".",
+				MarkdownDescription: "String pattern to save the output topics Defaults to `placeholder-output-replacement-pattern-to-be-revised-during-implementation`.",
 				Default:             stringdefault.StaticString("placeholder-output-replacement-pattern-to-be-revised-during-implementation"),
 			},
 		},

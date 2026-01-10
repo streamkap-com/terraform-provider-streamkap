@@ -29,10 +29,14 @@ type DestinationKafkaModel struct {
 // DestinationKafkaSchema returns the Terraform schema for the kafka destination.
 func DestinationKafkaSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Kafka destination connector",
+		Description: "Manages a Kafka destination connector.",
+		MarkdownDescription: "Manages a **Kafka destination connector**.\n\n" +
+			"This resource creates and manages a Kafka destination for Streamkap data pipelines.\n\n" +
+			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Unique identifier for the destination",
 				MarkdownDescription: "Unique identifier for the destination",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -40,10 +44,12 @@ func DestinationKafkaSchema() schema.Schema {
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
+				Description:         "Name of the destination",
 				MarkdownDescription: "Name of the destination",
 			},
 			"connector": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Connector type",
 				MarkdownDescription: "Connector type",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -51,12 +57,14 @@ func DestinationKafkaSchema() schema.Schema {
 			},
 			"kafka_sink_bootstrap": schema.StringAttribute{
 				Required:            true,
+				Description:         "A comma-separated list of host and port pairs that are the addresses of the Destination Kafka brokers. This list should be in the form host1:port1,host2:port2,...",
 				MarkdownDescription: "A comma-separated list of host and port pairs that are the addresses of the Destination Kafka brokers. This list should be in the form host1:port1,host2:port2,...",
 			},
 			"destination_format": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The format to use when writing data to kafka",
+				Description:         "The format to use when writing data to kafka Defaults to \"json\". Valid values: avro, json.",
+				MarkdownDescription: "The format to use when writing data to kafka Defaults to `json`. Valid values: `avro`, `json`.",
 				Default:             stringdefault.StaticString("json"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("avro", "json"),
@@ -65,19 +73,23 @@ func DestinationKafkaSchema() schema.Schema {
 			"json_schema_enable": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Include schema in json message",
+				Description:         "Include schema in json message Defaults to false.",
+				MarkdownDescription: "Include schema in json message Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"schema_registry_url": schema.StringAttribute{
 				Optional:            true,
+				Description:         "Destination kafka schema registry url",
 				MarkdownDescription: "Destination kafka schema registry url",
 			},
 			"topic_prefix": schema.StringAttribute{
 				Optional:            true,
+				Description:         "Prefix for destination topics",
 				MarkdownDescription: "Prefix for destination topics",
 			},
 			"topic_suffix": schema.StringAttribute{
 				Optional:            true,
+				Description:         "Suffix for destination topics",
 				MarkdownDescription: "Suffix for destination topics",
 			},
 		},

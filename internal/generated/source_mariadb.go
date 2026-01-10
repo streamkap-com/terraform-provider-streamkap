@@ -13,8 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// SourceMysqlModel is the Terraform model for the mysql source.
-type SourceMysqlModel struct {
+// SourceMariadbModel is the Terraform model for the mariadb source.
+type SourceMariadbModel struct {
 	ID                                                 types.String `tfsdk:"id"`
 	Name                                               types.String `tfsdk:"name"`
 	Connector                                          types.String `tfsdk:"connector"`
@@ -25,9 +25,6 @@ type SourceMysqlModel struct {
 	DatabaseIncludeList                                types.String `tfsdk:"database_include_list"`
 	TableIncludeList                                   types.String `tfsdk:"table_include_list"`
 	SignalDataCollectionSchemaOrDatabase               types.String `tfsdk:"signal_data_collection_schema_or_database"`
-	ColumnIncludeListToggled                           types.Bool   `tfsdk:"column_include_list_toggled"`
-	ColumnIncludeList                                  types.String `tfsdk:"column_include_list"`
-	ColumnExcludeList                                  types.String `tfsdk:"column_exclude_list"`
 	HeartbeatEnabled                                   types.Bool   `tfsdk:"heartbeat_enabled"`
 	HeartbeatDataCollectionSchemaOrDatabase            types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
 	DatabaseConnectionTimeZone                         types.String `tfsdk:"database_connection_time_zone"`
@@ -35,28 +32,21 @@ type SourceMysqlModel struct {
 	SchemaHistoryInternalStoreOnlyCapturedDatabasesDdl types.Bool   `tfsdk:"schema_history_internal_store_only_captured_databases_ddl"`
 	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool   `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
 	BinaryHandlingMode                                 types.String `tfsdk:"binary_handling_mode"`
+	DatabaseSSLMode                                    types.String `tfsdk:"database_ssl_mode"`
 	SSHEnabled                                         types.Bool   `tfsdk:"ssh_enabled"`
 	SSHHost                                            types.String `tfsdk:"ssh_host"`
 	SSHPort                                            types.String `tfsdk:"ssh_port"`
 	SSHUser                                            types.String `tfsdk:"ssh_user"`
-	TransformsInsertStaticKey1StaticField              types.String `tfsdk:"transforms_insert_static_key1_static_field"`
-	TransformsInsertStaticKey1StaticValue              types.String `tfsdk:"transforms_insert_static_key1_static_value"`
-	TransformsInsertStaticValue1StaticField            types.String `tfsdk:"transforms_insert_static_value1_static_field"`
-	TransformsInsertStaticValue1StaticValue            types.String `tfsdk:"transforms_insert_static_value1_static_value"`
-	TransformsInsertStaticKey2StaticField              types.String `tfsdk:"transforms_insert_static_key2_static_field"`
-	TransformsInsertStaticKey2StaticValue              types.String `tfsdk:"transforms_insert_static_key2_static_value"`
-	TransformsInsertStaticValue2StaticField            types.String `tfsdk:"transforms_insert_static_value2_static_field"`
-	TransformsInsertStaticValue2StaticValue            types.String `tfsdk:"transforms_insert_static_value2_static_value"`
-	PredicatesIsTopicToEnrichPattern                   types.String `tfsdk:"predicates_is_topic_to_enrich_pattern"`
 	SSHPublicKey                                       types.String `tfsdk:"ssh_public_key"`
+	ColumnExcludeList                                  types.String `tfsdk:"column_exclude_list"`
 }
 
-// SourceMysqlSchema returns the Terraform schema for the mysql source.
-func SourceMysqlSchema() schema.Schema {
+// SourceMariadbSchema returns the Terraform schema for the mariadb source.
+func SourceMariadbSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a MySQL source connector.",
-		MarkdownDescription: "Manages a **MySQL source connector**.\n\n" +
-			"This resource creates and manages a MySQL source for Streamkap data pipelines.\n\n" +
+		Description: "Manages a MariaDB source connector.",
+		MarkdownDescription: "Manages a **MariaDB source connector**.\n\n" +
+			"This resource creates and manages a MariaDB source for Streamkap data pipelines.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -82,58 +72,41 @@ func SourceMysqlSchema() schema.Schema {
 			},
 			"database_hostname": schema.StringAttribute{
 				Required:            true,
-				Description:         "MySQL Hostname. For example, mysqldb.something.rds.amazonaws.com",
-				MarkdownDescription: "MySQL Hostname. For example, mysqldb.something.rds.amazonaws.com",
+				Description:         "The IP address or hostname of the MariaDB database server. For example, mariadb.something.rds.amazonaws.com",
+				MarkdownDescription: "The IP address or hostname of the MariaDB database server. For example, mariadb.something.rds.amazonaws.com",
 			},
 			"database_port": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "MySQL Port. For example, 3306 Defaults to \"3306\".",
-				MarkdownDescription: "MySQL Port. For example, 3306 Defaults to `3306`.",
+				Description:         "Port number of the MariaDB database server. For example, 3306 Defaults to \"3306\".",
+				MarkdownDescription: "Port number of the MariaDB database server. For example, 3306 Defaults to `3306`.",
 				Default:             stringdefault.StaticString("3306"),
 			},
 			"database_user": schema.StringAttribute{
 				Required:            true,
-				Description:         "Username to access the database",
-				MarkdownDescription: "Username to access the database",
+				Description:         "The name of the MariaDB user that the connector uses to connect to the MariaDB database server.",
+				MarkdownDescription: "The name of the MariaDB user that the connector uses to connect to the MariaDB database server.",
 			},
 			"database_password": schema.StringAttribute{
 				Required:            true,
 				Sensitive:           true,
-				Description:         "Password to access the database This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Password to access the database\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "The password of the MariaDB user that the connector uses to connect to the MariaDB database server. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The password of the MariaDB user that the connector uses to connect to the MariaDB database server.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"database_include_list": schema.StringAttribute{
 				Required:            true,
-				Description:         "Databases to include.",
-				MarkdownDescription: "Databases to include.",
+				Description:         "Databases to include. The connector does not capture changes in any database whose name is not included.",
+				MarkdownDescription: "Databases to include. The connector does not capture changes in any database whose name is not included.",
 			},
 			"table_include_list": schema.StringAttribute{
 				Required:            true,
-				Description:         "Source tables to sync.",
-				MarkdownDescription: "Source tables to sync.",
+				Description:         "Source tables to sync. The connector does not capture changes in any table that is not included.",
+				MarkdownDescription: "Source tables to sync. The connector does not capture changes in any table that is not included.",
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
 				Description:         "Streamkap will use a table in this database to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which database to use here.",
 				MarkdownDescription: "Streamkap will use a table in this database to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which database to use here.",
-			},
-			"column_include_list_toggled": schema.BoolAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to true.",
-				MarkdownDescription: "Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to `true`.",
-				Default:             booldefault.StaticBool(true),
-			},
-			"column_include_list": schema.StringAttribute{
-				Optional:            true,
-				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form schemaName[.]tableName[.](columnName1|columnName2)",
-				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form schemaName[.]tableName[.](columnName1|columnName2)",
-			},
-			"column_exclude_list": schema.StringAttribute{
-				Optional:            true,
-				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
-				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
 			},
 			"heartbeat_enabled": schema.BoolAttribute{
 				Optional:            true,
@@ -150,8 +123,8 @@ func SourceMysqlSchema() schema.Schema {
 			"database_connection_time_zone": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MySQL server session variables 'time_zone' or 'system_time_zone'  Defaults to \"SERVER\". Valid values: SERVER, UTC, Africa/Cairo,  Asia/Riyadh, Africa/Casablanca, Asia/Seoul, Africa/Harare, Asia/Shanghai, Africa/Monrovia, Asia/Singapore, Africa/Nairobi, Asia/Taipei, Africa/Tripoli, Asia/Tehran, Africa/Windhoek, Asia/Tokyo, America/Araguaina, Asia/Ulaanbaatar, America/Asuncion, Asia/Vladivostok, America/Bogota, Asia/Yakutsk, America/Buenos_Aires, Asia/Yerevan, America/Caracas, Atlantic/Azores, America/Chihuahua, Australia/Adelaide, America/Cuiaba, Australia/Brisbane, America/Denver, Australia/Darwin, America/Fortaleza, Australia/Hobart, America/Guatemala, Australia/Perth, America/Halifax, Australia/Sydney, America/Manaus, Brazil/East, America/Matamoros, Canada/Newfoundland, America/Monterrey, Canada/Saskatchewan, America/Montevideo, Canada/Yukon, America/Phoenix, Europe/Amsterdam, America/Santiago, Europe/Athens, America/Tijuana, Europe/Dublin, Asia/Amman, Europe/Helsinki, Asia/Ashgabat, Europe/Istanbul, Asia/Baghdad, Europe/Kaliningrad, Asia/Baku, Europe/Moscow, Asia/Bangkok, Europe/Paris, Asia/Beirut, Europe/Prague, Asia/Calcutta, Europe/Sarajevo, Asia/Damascus, Pacific/Auckland, Asia/Dhaka, Pacific/Fiji, Asia/Irkutsk, Pacific/Guam, Asia/Jerusalem, Pacific/Honolulu, Asia/Kabul, Pacific/Samoa, Asia/Karachi, US/Alaska, Asia/Kathmandu, US/Central, Asia/Krasnoyarsk, US/Eastern, Asia/Magadan, US/East-Indiana, Asia/Muscat, US/Pacific, Asia/Novosibirsk.",
-				MarkdownDescription: "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MySQL server session variables 'time_zone' or 'system_time_zone'  Defaults to `SERVER`. Valid values: `SERVER`, `UTC`, `Africa/Cairo`, ` Asia/Riyadh`, `Africa/Casablanca`, `Asia/Seoul`, `Africa/Harare`, `Asia/Shanghai`, `Africa/Monrovia`, `Asia/Singapore`, `Africa/Nairobi`, `Asia/Taipei`, `Africa/Tripoli`, `Asia/Tehran`, `Africa/Windhoek`, `Asia/Tokyo`, `America/Araguaina`, `Asia/Ulaanbaatar`, `America/Asuncion`, `Asia/Vladivostok`, `America/Bogota`, `Asia/Yakutsk`, `America/Buenos_Aires`, `Asia/Yerevan`, `America/Caracas`, `Atlantic/Azores`, `America/Chihuahua`, `Australia/Adelaide`, `America/Cuiaba`, `Australia/Brisbane`, `America/Denver`, `Australia/Darwin`, `America/Fortaleza`, `Australia/Hobart`, `America/Guatemala`, `Australia/Perth`, `America/Halifax`, `Australia/Sydney`, `America/Manaus`, `Brazil/East`, `America/Matamoros`, `Canada/Newfoundland`, `America/Monterrey`, `Canada/Saskatchewan`, `America/Montevideo`, `Canada/Yukon`, `America/Phoenix`, `Europe/Amsterdam`, `America/Santiago`, `Europe/Athens`, `America/Tijuana`, `Europe/Dublin`, `Asia/Amman`, `Europe/Helsinki`, `Asia/Ashgabat`, `Europe/Istanbul`, `Asia/Baghdad`, `Europe/Kaliningrad`, `Asia/Baku`, `Europe/Moscow`, `Asia/Bangkok`, `Europe/Paris`, `Asia/Beirut`, `Europe/Prague`, `Asia/Calcutta`, `Europe/Sarajevo`, `Asia/Damascus`, `Pacific/Auckland`, `Asia/Dhaka`, `Pacific/Fiji`, `Asia/Irkutsk`, `Pacific/Guam`, `Asia/Jerusalem`, `Pacific/Honolulu`, `Asia/Kabul`, `Pacific/Samoa`, `Asia/Karachi`, `US/Alaska`, `Asia/Kathmandu`, `US/Central`, `Asia/Krasnoyarsk`, `US/Eastern`, `Asia/Magadan`, `US/East-Indiana`, `Asia/Muscat`, `US/Pacific`, `Asia/Novosibirsk`.",
+				Description:         "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MariaDB server session variables 'time_zone' or 'system_time_zone'  Defaults to \"SERVER\". Valid values: SERVER, UTC, Africa/Cairo,  Asia/Riyadh, Africa/Casablanca, Asia/Seoul, Africa/Harare, Asia/Shanghai, Africa/Monrovia, Asia/Singapore, Africa/Nairobi, Asia/Taipei, Africa/Tripoli, Asia/Tehran, Africa/Windhoek, Asia/Tokyo, America/Araguaina, Asia/Ulaanbaatar, America/Asuncion, Asia/Vladivostok, America/Bogota, Asia/Yakutsk, America/Buenos_Aires, Asia/Yerevan, America/Caracas, Atlantic/Azores, America/Chihuahua, Australia/Adelaide, America/Cuiaba, Australia/Brisbane, America/Denver, Australia/Darwin, America/Fortaleza, Australia/Hobart, America/Guatemala, Australia/Perth, America/Halifax, Australia/Sydney, America/Manaus, Brazil/East, America/Matamoros, Canada/Newfoundland, America/Monterrey, Canada/Saskatchewan, America/Montevideo, Canada/Yukon, America/Phoenix, Europe/Amsterdam, America/Santiago, Europe/Athens, America/Tijuana, Europe/Dublin, Asia/Amman, Europe/Helsinki, Asia/Ashgabat, Europe/Istanbul, Asia/Baghdad, Europe/Kaliningrad, Asia/Baku, Europe/Moscow, Asia/Bangkok, Europe/Paris, Asia/Beirut, Europe/Prague, Asia/Calcutta, Europe/Sarajevo, Asia/Damascus, Pacific/Auckland, Asia/Dhaka, Pacific/Fiji, Asia/Irkutsk, Pacific/Guam, Asia/Jerusalem, Pacific/Honolulu, Asia/Kabul, Pacific/Samoa, Asia/Karachi, US/Alaska, Asia/Kathmandu, US/Central, Asia/Krasnoyarsk, US/Eastern, Asia/Magadan, US/East-Indiana, Asia/Muscat, US/Pacific, Asia/Novosibirsk.",
+				MarkdownDescription: "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MariaDB server session variables 'time_zone' or 'system_time_zone'  Defaults to `SERVER`. Valid values: `SERVER`, `UTC`, `Africa/Cairo`, ` Asia/Riyadh`, `Africa/Casablanca`, `Asia/Seoul`, `Africa/Harare`, `Asia/Shanghai`, `Africa/Monrovia`, `Asia/Singapore`, `Africa/Nairobi`, `Asia/Taipei`, `Africa/Tripoli`, `Asia/Tehran`, `Africa/Windhoek`, `Asia/Tokyo`, `America/Araguaina`, `Asia/Ulaanbaatar`, `America/Asuncion`, `Asia/Vladivostok`, `America/Bogota`, `Asia/Yakutsk`, `America/Buenos_Aires`, `Asia/Yerevan`, `America/Caracas`, `Atlantic/Azores`, `America/Chihuahua`, `Australia/Adelaide`, `America/Cuiaba`, `Australia/Brisbane`, `America/Denver`, `Australia/Darwin`, `America/Fortaleza`, `Australia/Hobart`, `America/Guatemala`, `Australia/Perth`, `America/Halifax`, `Australia/Sydney`, `America/Manaus`, `Brazil/East`, `America/Matamoros`, `Canada/Newfoundland`, `America/Monterrey`, `Canada/Saskatchewan`, `America/Montevideo`, `Canada/Yukon`, `America/Phoenix`, `Europe/Amsterdam`, `America/Santiago`, `Europe/Athens`, `America/Tijuana`, `Europe/Dublin`, `Asia/Amman`, `Europe/Helsinki`, `Asia/Ashgabat`, `Europe/Istanbul`, `Asia/Baghdad`, `Europe/Kaliningrad`, `Asia/Baku`, `Europe/Moscow`, `Asia/Bangkok`, `Europe/Paris`, `Asia/Beirut`, `Europe/Prague`, `Asia/Calcutta`, `Europe/Sarajevo`, `Asia/Damascus`, `Pacific/Auckland`, `Asia/Dhaka`, `Pacific/Fiji`, `Asia/Irkutsk`, `Pacific/Guam`, `Asia/Jerusalem`, `Pacific/Honolulu`, `Asia/Kabul`, `Pacific/Samoa`, `Asia/Karachi`, `US/Alaska`, `Asia/Kathmandu`, `US/Central`, `Asia/Krasnoyarsk`, `US/Eastern`, `Asia/Magadan`, `US/East-Indiana`, `Asia/Muscat`, `US/Pacific`, `Asia/Novosibirsk`.",
 				Default:             stringdefault.StaticString("SERVER"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("SERVER", "UTC", "Africa/Cairo", " Asia/Riyadh", "Africa/Casablanca", "Asia/Seoul", "Africa/Harare", "Asia/Shanghai", "Africa/Monrovia", "Asia/Singapore", "Africa/Nairobi", "Asia/Taipei", "Africa/Tripoli", "Asia/Tehran", "Africa/Windhoek", "Asia/Tokyo", "America/Araguaina", "Asia/Ulaanbaatar", "America/Asuncion", "Asia/Vladivostok", "America/Bogota", "Asia/Yakutsk", "America/Buenos_Aires", "Asia/Yerevan", "America/Caracas", "Atlantic/Azores", "America/Chihuahua", "Australia/Adelaide", "America/Cuiaba", "Australia/Brisbane", "America/Denver", "Australia/Darwin", "America/Fortaleza", "Australia/Hobart", "America/Guatemala", "Australia/Perth", "America/Halifax", "Australia/Sydney", "America/Manaus", "Brazil/East", "America/Matamoros", "Canada/Newfoundland", "America/Monterrey", "Canada/Saskatchewan", "America/Montevideo", "Canada/Yukon", "America/Phoenix", "Europe/Amsterdam", "America/Santiago", "Europe/Athens", "America/Tijuana", "Europe/Dublin", "Asia/Amman", "Europe/Helsinki", "Asia/Ashgabat", "Europe/Istanbul", "Asia/Baghdad", "Europe/Kaliningrad", "Asia/Baku", "Europe/Moscow", "Asia/Bangkok", "Europe/Paris", "Asia/Beirut", "Europe/Prague", "Asia/Calcutta", "Europe/Sarajevo", "Asia/Damascus", "Pacific/Auckland", "Asia/Dhaka", "Pacific/Fiji", "Asia/Irkutsk", "Pacific/Guam", "Asia/Jerusalem", "Pacific/Honolulu", "Asia/Kabul", "Pacific/Samoa", "Asia/Karachi", "US/Alaska", "Asia/Kathmandu", "US/Central", "Asia/Krasnoyarsk", "US/Eastern", "Asia/Magadan", "US/East-Indiana", "Asia/Muscat", "US/Pacific", "Asia/Novosibirsk"),
@@ -160,8 +133,8 @@ func SourceMysqlSchema() schema.Schema {
 			"snapshot_gtid": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Whether or not to use a read-only connection. Requires GTID mode to be enabled on the source database. Defaults to \"Yes\". Valid values: Yes, No.",
-				MarkdownDescription: "Whether or not to use a read-only connection. Requires GTID mode to be enabled on the source database. Defaults to `Yes`. Valid values: `Yes`, `No`.",
+				Description:         "Whether or not to use a read-only connection. MariaDB has GTID enabled by default, so no additional configuration is necessary. Defaults to \"Yes\". Valid values: Yes, No.",
+				MarkdownDescription: "Whether or not to use a read-only connection. MariaDB has GTID enabled by default, so no additional configuration is necessary. Defaults to `Yes`. Valid values: `Yes`, `No`.",
 				Default:             stringdefault.StaticString("Yes"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("Yes", "No"),
@@ -191,6 +164,16 @@ func SourceMysqlSchema() schema.Schema {
 					stringvalidator.OneOf("bytes", "base64", "base64-url-safe", "hex"),
 				},
 			},
+			"database_ssl_mode": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Enables SSL/TLS in a specific mode Defaults to \"required\". Valid values: required, disabled.",
+				MarkdownDescription: "Enables SSL/TLS in a specific mode Defaults to `required`. Valid values: `required`, `disabled`.",
+				Default:             stringdefault.StaticString("required"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("required", "disabled"),
+				},
+			},
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -217,53 +200,6 @@ func SourceMysqlSchema() schema.Schema {
 				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
-			"transforms_insert_static_key1_static_field": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The name of the static field to be added to the message key.",
-				MarkdownDescription: "The name of the static field to be added to the message key.",
-			},
-			"transforms_insert_static_key1_static_value": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The value of the static field to be added to the message key.",
-				MarkdownDescription: "The value of the static field to be added to the message key.",
-			},
-			"transforms_insert_static_value1_static_field": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The name of the static field to be added to the message value.",
-				MarkdownDescription: "The name of the static field to be added to the message value.",
-			},
-			"transforms_insert_static_value1_static_value": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The value of the static field to be added to the message value.",
-				MarkdownDescription: "The value of the static field to be added to the message value.",
-			},
-			"transforms_insert_static_key2_static_field": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The name of the static field to be added to the message key.",
-				MarkdownDescription: "The name of the static field to be added to the message key.",
-			},
-			"transforms_insert_static_key2_static_value": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The value of the static field to be added to the message key.",
-				MarkdownDescription: "The value of the static field to be added to the message key.",
-			},
-			"transforms_insert_static_value2_static_field": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The name of the static field to be added to the message value.",
-				MarkdownDescription: "The name of the static field to be added to the message value.",
-			},
-			"transforms_insert_static_value2_static_value": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The value of the static field to be added to the message value.",
-				MarkdownDescription: "The value of the static field to be added to the message value.",
-			},
-			"predicates_is_topic_to_enrich_pattern": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Regex pattern to match topics for enrichment. Defaults to \"$^\".",
-				MarkdownDescription: "Regex pattern to match topics for enrichment. Defaults to `$^`.",
-				Default:             stringdefault.StaticString("$^"),
-			},
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -271,12 +207,17 @@ func SourceMysqlSchema() schema.Schema {
 				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
+			"column_exclude_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
+				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
+			},
 		},
 	}
 }
 
-// SourceMysqlFieldMappings maps Terraform attribute names to API field names.
-var SourceMysqlFieldMappings = map[string]string{
+// SourceMariadbFieldMappings maps Terraform attribute names to API field names.
+var SourceMariadbFieldMappings = map[string]string{
 	"database_hostname":                            "database.hostname.user.defined",
 	"database_port":                                "database.port.user.defined",
 	"database_user":                                "database.user",
@@ -284,9 +225,6 @@ var SourceMysqlFieldMappings = map[string]string{
 	"database_include_list":                        "database.include.list.user.defined",
 	"table_include_list":                           "table.include.list.user.defined",
 	"signal_data_collection_schema_or_database":    "signal.data.collection.schema.or.database",
-	"column_include_list_toggled":                  "column.include.list.toggled",
-	"column_include_list":                          "column.include.list.user.defined",
-	"column_exclude_list":                          "column.exclude.list.user.defined",
 	"heartbeat_enabled":                            "heartbeat.enabled",
 	"heartbeat_data_collection_schema_or_database": "heartbeat.data.collection.schema.or.database",
 	"database_connection_time_zone":                "database.connectionTimeZone",
@@ -294,18 +232,11 @@ var SourceMysqlFieldMappings = map[string]string{
 	"schema_history_internal_store_only_captured_databases_ddl": "schema.history.internal.store.only.captured.databases.ddl",
 	"schema_history_internal_store_only_captured_tables_ddl":    "schema.history.internal.store.only.captured.tables.ddl",
 	"binary_handling_mode": "binary.handling.mode",
+	"database_ssl_mode":    "database.ssl.mode",
 	"ssh_enabled":          "ssh.enabled",
 	"ssh_host":             "ssh.host",
 	"ssh_port":             "ssh.port",
 	"ssh_user":             "ssh.user",
-	"transforms_insert_static_key1_static_field":   "transforms.InsertStaticKey1.static.field",
-	"transforms_insert_static_key1_static_value":   "transforms.InsertStaticKey1.static.value",
-	"transforms_insert_static_value1_static_field": "transforms.InsertStaticValue1.static.field",
-	"transforms_insert_static_value1_static_value": "transforms.InsertStaticValue1.static.value",
-	"transforms_insert_static_key2_static_field":   "transforms.InsertStaticKey2.static.field",
-	"transforms_insert_static_key2_static_value":   "transforms.InsertStaticKey2.static.value",
-	"transforms_insert_static_value2_static_field": "transforms.InsertStaticValue2.static.field",
-	"transforms_insert_static_value2_static_value": "transforms.InsertStaticValue2.static.value",
-	"predicates_is_topic_to_enrich_pattern":        "predicates.IsTopicToEnrich.pattern",
-	"ssh_public_key":                               "ssh.public.key.user.displayed",
+	"ssh_public_key":       "ssh.public.key.user.displayed",
+	"column_exclude_list":  "column.exclude.list.user.defined",
 }

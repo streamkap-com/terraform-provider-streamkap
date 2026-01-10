@@ -12,15 +12,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// DestinationS3Model is the Terraform model for the s3 destination.
-type DestinationS3Model struct {
+// DestinationGcsModel is the Terraform model for the gcs destination.
+type DestinationGcsModel struct {
 	ID                  types.String `tfsdk:"id"`
 	Name                types.String `tfsdk:"name"`
 	Connector           types.String `tfsdk:"connector"`
-	AWSAccessKeyID      types.String `tfsdk:"aws_access_key_id"`
-	AWSSecretAccessKey  types.String `tfsdk:"aws_secret_access_key"`
-	AWSS3Region         types.String `tfsdk:"aws_s3_region"`
-	AWSS3BucketName     types.String `tfsdk:"aws_s3_bucket_name"`
+	GcsCredentialsJson  types.String `tfsdk:"gcs_credentials_json"`
+	GcsBucketName       types.String `tfsdk:"gcs_bucket_name"`
 	Format              types.String `tfsdk:"format"`
 	FileNameTemplate    types.String `tfsdk:"file_name_template"`
 	FileNamePrefix      types.String `tfsdk:"file_name_prefix"`
@@ -28,12 +26,12 @@ type DestinationS3Model struct {
 	FormatOutputFields  types.List   `tfsdk:"format_output_fields"`
 }
 
-// DestinationS3Schema returns the Terraform schema for the s3 destination.
-func DestinationS3Schema() schema.Schema {
+// DestinationGcsSchema returns the Terraform schema for the gcs destination.
+func DestinationGcsSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a S3 destination connector.",
-		MarkdownDescription: "Manages a **S3 destination connector**.\n\n" +
-			"This resource creates and manages a S3 destination for Streamkap data pipelines.\n\n" +
+		Description: "Manages a GCS destination connector.",
+		MarkdownDescription: "Manages a **GCS destination connector**.\n\n" +
+			"This resource creates and manages a GCS destination for Streamkap data pipelines.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -57,40 +55,25 @@ func DestinationS3Schema() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"aws_access_key_id": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The AWS Access Key ID used to connect to S3.",
-				MarkdownDescription: "The AWS Access Key ID used to connect to S3.",
-			},
-			"aws_secret_access_key": schema.StringAttribute{
+			"gcs_credentials_json": schema.StringAttribute{
 				Optional:            true,
 				Sensitive:           true,
-				Description:         "The AWS Secret Access Key used to connect to S3. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "The AWS Secret Access Key used to connect to S3.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "GCP credentials as a JSON string with escaped quotes (\" into \\\").\n\\n in the private_key field should also be escaped as \\\\n.\nExample format: {\\\"type\\\": \\\"service_account\\\",\\\"project_id\\\": \\\"XXXXXX\\\", ...} This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "GCP credentials as a JSON string with escaped quotes (\" into \\\").\n\\n in the private_key field should also be escaped as \\\\n.\nExample format: {\\\"type\\\": \\\"service_account\\\",\\\"project_id\\\": \\\"XXXXXX\\\", ...}\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
-			"aws_s3_region": schema.StringAttribute{
+			"gcs_bucket_name": schema.StringAttribute{
 				Optional:            true,
-				Computed:            true,
-				Description:         "The AWS region to be used Defaults to \"us-west-2\". Valid values: ap-south-1, eu-west-2, eu-west-1, ap-northeast-2, ap-northeast-1, ca-central-1, sa-east-1, cn-north-1, us-gov-west-1, ap-southeast-1, ap-southeast-2, eu-central-1, us-east-1, us-east-2, us-west-1, us-west-2.",
-				MarkdownDescription: "The AWS region to be used Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.",
-				Default:             stringdefault.StaticString("us-west-2"),
-				Validators: []validator.String{
-					stringvalidator.OneOf("ap-south-1", "eu-west-2", "eu-west-1", "ap-northeast-2", "ap-northeast-1", "ca-central-1", "sa-east-1", "cn-north-1", "us-gov-west-1", "ap-southeast-1", "ap-southeast-2", "eu-central-1", "us-east-1", "us-east-2", "us-west-1", "us-west-2"),
-				},
-			},
-			"aws_s3_bucket_name": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The S3 Bucket to use.",
-				MarkdownDescription: "The S3 Bucket to use.",
+				Description:         "The GCS Bucket to use.",
+				MarkdownDescription: "The GCS Bucket to use.",
 			},
 			"format": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The format to use when writing data to the store. Defaults to \"JSON Array\". Valid values: JSON Lines, JSON Array, Parquet.",
-				MarkdownDescription: "The format to use when writing data to the store. Defaults to `JSON Array`. Valid values: `JSON Lines`, `JSON Array`, `Parquet`.",
-				Default:             stringdefault.StaticString("JSON Array"),
+				Description:         "The format to use when writing data to the store. Defaults to \"CSV\". Valid values: CSV, JSON Lines, JSON Array, Parquet.",
+				MarkdownDescription: "The format to use when writing data to the store. Defaults to `CSV`. Valid values: `CSV`, `JSON Lines`, `JSON Array`, `Parquet`.",
+				Default:             stringdefault.StaticString("CSV"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("JSON Lines", "JSON Array", "Parquet"),
+					stringvalidator.OneOf("CSV", "JSON Lines", "JSON Array", "Parquet"),
 				},
 			},
 			"file_name_template": schema.StringAttribute{
@@ -108,8 +91,8 @@ func DestinationS3Schema() schema.Schema {
 			"file_compression_type": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Compression type for files written to S3. Defaults to \"gzip\". Valid values: none, gzip, snappy, zstd.",
-				MarkdownDescription: "Compression type for files written to S3. Defaults to `gzip`. Valid values: `none`, `gzip`, `snappy`, `zstd`.",
+				Description:         "Compression type for files written to GCS. Defaults to \"gzip\". Valid values: none, gzip, snappy, zstd.",
+				MarkdownDescription: "Compression type for files written to GCS. Defaults to `gzip`. Valid values: `none`, `gzip`, `snappy`, `zstd`.",
 				Default:             stringdefault.StaticString("gzip"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("none", "gzip", "snappy", "zstd"),
@@ -126,12 +109,10 @@ func DestinationS3Schema() schema.Schema {
 	}
 }
 
-// DestinationS3FieldMappings maps Terraform attribute names to API field names.
-var DestinationS3FieldMappings = map[string]string{
-	"aws_access_key_id":     "aws.access.key.id",
-	"aws_secret_access_key": "aws.secret.access.key",
-	"aws_s3_region":         "aws.s3.region",
-	"aws_s3_bucket_name":    "aws.s3.bucket.name",
+// DestinationGcsFieldMappings maps Terraform attribute names to API field names.
+var DestinationGcsFieldMappings = map[string]string{
+	"gcs_credentials_json":  "gcs.credentials.json",
+	"gcs_bucket_name":       "gcs.bucket.name",
 	"format":                "format.user.defined",
 	"file_name_template":    "file.name.template",
 	"file_name_prefix":      "file.name.prefix",

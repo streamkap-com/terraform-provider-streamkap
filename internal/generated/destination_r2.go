@@ -12,14 +12,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// DestinationS3Model is the Terraform model for the s3 destination.
-type DestinationS3Model struct {
+// DestinationR2Model is the Terraform model for the r2 destination.
+type DestinationR2Model struct {
 	ID                  types.String `tfsdk:"id"`
 	Name                types.String `tfsdk:"name"`
 	Connector           types.String `tfsdk:"connector"`
+	R2Account           types.String `tfsdk:"r2_account"`
 	AWSAccessKeyID      types.String `tfsdk:"aws_access_key_id"`
 	AWSSecretAccessKey  types.String `tfsdk:"aws_secret_access_key"`
-	AWSS3Region         types.String `tfsdk:"aws_s3_region"`
 	AWSS3BucketName     types.String `tfsdk:"aws_s3_bucket_name"`
 	Format              types.String `tfsdk:"format"`
 	FileNameTemplate    types.String `tfsdk:"file_name_template"`
@@ -28,12 +28,12 @@ type DestinationS3Model struct {
 	FormatOutputFields  types.List   `tfsdk:"format_output_fields"`
 }
 
-// DestinationS3Schema returns the Terraform schema for the s3 destination.
-func DestinationS3Schema() schema.Schema {
+// DestinationR2Schema returns the Terraform schema for the r2 destination.
+func DestinationR2Schema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a S3 destination connector.",
-		MarkdownDescription: "Manages a **S3 destination connector**.\n\n" +
-			"This resource creates and manages a S3 destination for Streamkap data pipelines.\n\n" +
+		Description: "Manages a R2 destination connector.",
+		MarkdownDescription: "Manages a **R2 destination connector**.\n\n" +
+			"This resource creates and manages a R2 destination for Streamkap data pipelines.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -57,31 +57,26 @@ func DestinationS3Schema() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"r2_account": schema.StringAttribute{
+				Required:            true,
+				Description:         "your Cloudflare R2 account ID. This is the account ID you see in the Cloudflare dashboard.",
+				MarkdownDescription: "your Cloudflare R2 account ID. This is the account ID you see in the Cloudflare dashboard.",
+			},
 			"aws_access_key_id": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The AWS Access Key ID used to connect to S3.",
-				MarkdownDescription: "The AWS Access Key ID used to connect to S3.",
+				Required:            true,
+				Description:         "The Access Key ID used to connect to R2.",
+				MarkdownDescription: "The Access Key ID used to connect to R2.",
 			},
 			"aws_secret_access_key": schema.StringAttribute{
-				Optional:            true,
+				Required:            true,
 				Sensitive:           true,
-				Description:         "The AWS Secret Access Key used to connect to S3. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "The AWS Secret Access Key used to connect to S3.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
-			},
-			"aws_s3_region": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "The AWS region to be used Defaults to \"us-west-2\". Valid values: ap-south-1, eu-west-2, eu-west-1, ap-northeast-2, ap-northeast-1, ca-central-1, sa-east-1, cn-north-1, us-gov-west-1, ap-southeast-1, ap-southeast-2, eu-central-1, us-east-1, us-east-2, us-west-1, us-west-2.",
-				MarkdownDescription: "The AWS region to be used Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.",
-				Default:             stringdefault.StaticString("us-west-2"),
-				Validators: []validator.String{
-					stringvalidator.OneOf("ap-south-1", "eu-west-2", "eu-west-1", "ap-northeast-2", "ap-northeast-1", "ca-central-1", "sa-east-1", "cn-north-1", "us-gov-west-1", "ap-southeast-1", "ap-southeast-2", "eu-central-1", "us-east-1", "us-east-2", "us-west-1", "us-west-2"),
-				},
+				Description:         "The Secret Access Key used to connect to R2. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The Secret Access Key used to connect to R2.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"aws_s3_bucket_name": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The S3 Bucket to use.",
-				MarkdownDescription: "The S3 Bucket to use.",
+				Required:            true,
+				Description:         "The R2 Bucket to use.",
+				MarkdownDescription: "The R2 Bucket to use.",
 			},
 			"format": schema.StringAttribute{
 				Optional:            true,
@@ -126,11 +121,11 @@ func DestinationS3Schema() schema.Schema {
 	}
 }
 
-// DestinationS3FieldMappings maps Terraform attribute names to API field names.
-var DestinationS3FieldMappings = map[string]string{
+// DestinationR2FieldMappings maps Terraform attribute names to API field names.
+var DestinationR2FieldMappings = map[string]string{
+	"r2_account":            "r2.account.user.defined",
 	"aws_access_key_id":     "aws.access.key.id",
 	"aws_secret_access_key": "aws.secret.access.key",
-	"aws_s3_region":         "aws.s3.region",
 	"aws_s3_bucket_name":    "aws.s3.bucket.name",
 	"format":                "format.user.defined",
 	"file_name_template":    "file.name.template",

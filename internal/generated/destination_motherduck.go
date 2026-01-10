@@ -15,33 +15,29 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// DestinationDatabricksModel is the Terraform model for the databricks destination.
-type DestinationDatabricksModel struct {
+// DestinationMotherduckModel is the Terraform model for the motherduck destination.
+type DestinationMotherduckModel struct {
 	ID                                  types.String `tfsdk:"id"`
 	Name                                types.String `tfsdk:"name"`
 	Connector                           types.String `tfsdk:"connector"`
 	IngestionMode                       types.String `tfsdk:"ingestion_mode"`
-	DatabricksToken                     types.String `tfsdk:"databricks_token"`
-	ConnectionURL                       types.String `tfsdk:"connection_url"`
-	ConnectionTimeout                   types.Int64  `tfsdk:"connection_timeout"`
-	DatabricksCatalog                   types.String `tfsdk:"databricks_catalog"`
-	PartitionMode                       types.String `tfsdk:"partition_mode"`
+	MotherduckToken                     types.String `tfsdk:"motherduck_token"`
+	MotherduckCatalog                   types.String `tfsdk:"motherduck_catalog"`
 	SchemaEvolution                     types.String `tfsdk:"schema_evolution"`
 	TableNamePrefix                     types.String `tfsdk:"table_name_prefix"`
 	HardDelete                          types.Bool   `tfsdk:"hard_delete"`
 	TasksMax                            types.Int64  `tfsdk:"tasks_max"`
-	ConsumerWaitTimeForLargerBatchMs    types.Int64  `tfsdk:"consumer_wait_time_for_larger_batch_ms"`
 	Topic2tableMap                      types.Bool   `tfsdk:"topic2table_map"`
 	TransformsChangeTopicNameMatchRegex types.String `tfsdk:"transforms_change_topic_name_match_regex"`
 	TransformsChangeTopicNameMapping    types.String `tfsdk:"transforms_change_topic_name_mapping"`
 }
 
-// DestinationDatabricksSchema returns the Terraform schema for the databricks destination.
-func DestinationDatabricksSchema() schema.Schema {
+// DestinationMotherduckSchema returns the Terraform schema for the motherduck destination.
+func DestinationMotherduckSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Databricks destination connector.",
-		MarkdownDescription: "Manages a **Databricks destination connector**.\n\n" +
-			"This resource creates and manages a Databricks destination for Streamkap data pipelines.\n\n" +
+		Description: "Manages a Motherduck destination connector.",
+		MarkdownDescription: "Manages a **Motherduck destination connector**.\n\n" +
+			"This resource creates and manages a Motherduck destination for Streamkap data pipelines.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -75,40 +71,16 @@ func DestinationDatabricksSchema() schema.Schema {
 					stringvalidator.OneOf("upsert", "append"),
 				},
 			},
-			"databricks_token": schema.StringAttribute{
-				Optional:            true,
+			"motherduck_token": schema.StringAttribute{
+				Required:            true,
 				Sensitive:           true,
-				Description:         "Token This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Token\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "Motherduck Token This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Motherduck Token\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
-			"connection_url": schema.StringAttribute{
-				Optional:            true,
-				Description:         "JDBC URL",
-				MarkdownDescription: "JDBC URL",
-			},
-			"connection_timeout": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Connection Timeout Defaults to 0.",
-				MarkdownDescription: "Connection Timeout Defaults to `0`.",
-				Default:             int64default.StaticInt64(0),
-			},
-			"databricks_catalog": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "The name of the Databricks catalog to use. Defaults to \"hive_metastore\".",
-				MarkdownDescription: "The name of the Databricks catalog to use. Defaults to `hive_metastore`.",
-				Default:             stringdefault.StaticString("hive_metastore"),
-			},
-			"partition_mode": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Partition tables or not Defaults to \"by_topic\". Valid values: by_topic, by_partition, by_topic_and_partition.",
-				MarkdownDescription: "Partition tables or not Defaults to `by_topic`. Valid values: `by_topic`, `by_partition`, `by_topic_and_partition`.",
-				Default:             stringdefault.StaticString("by_topic"),
-				Validators: []validator.String{
-					stringvalidator.OneOf("by_topic", "by_partition", "by_topic_and_partition"),
-				},
+			"motherduck_catalog": schema.StringAttribute{
+				Required:            true,
+				Description:         "The name of the Motherduck database/catalog to use.",
+				MarkdownDescription: "The name of the Motherduck database/catalog to use.",
 			},
 			"schema_evolution": schema.StringAttribute{
 				Optional:            true,
@@ -137,21 +109,11 @@ func DestinationDatabricksSchema() schema.Schema {
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The maximum number of active tasks. NOTE: Increasing this value may increase parallelism and throughput but can also lead to higher costs on databricks side. Defaults to 5.",
-				MarkdownDescription: "The maximum number of active tasks. NOTE: Increasing this value may increase parallelism and throughput but can also lead to higher costs on databricks side. Defaults to `5`.",
+				Description:         "The maximum number of active tasks Defaults to 5.",
+				MarkdownDescription: "The maximum number of active tasks Defaults to `5`.",
 				Default:             int64default.StaticInt64(5),
 				Validators: []validator.Int64{
-					int64validator.Between(1, 100),
-				},
-			},
-			"consumer_wait_time_for_larger_batch_ms": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "The max wait time for larger batch size (in ms). The bigger the batch size, the the more cost effective loading will be on databricks but latency will grow as a trade-off. Defaults to 10000.",
-				MarkdownDescription: "The max wait time for larger batch size (in ms). The bigger the batch size, the the more cost effective loading will be on databricks but latency will grow as a trade-off. Defaults to `10000`.",
-				Default:             int64default.StaticInt64(10000),
-				Validators: []validator.Int64{
-					int64validator.Between(500, 300000),
+					int64validator.Between(1, 25),
 				},
 			},
 			"topic2table_map": schema.BoolAttribute{
@@ -175,20 +137,16 @@ func DestinationDatabricksSchema() schema.Schema {
 	}
 }
 
-// DestinationDatabricksFieldMappings maps Terraform attribute names to API field names.
-var DestinationDatabricksFieldMappings = map[string]string{
-	"ingestion_mode":                           "ingestion.mode",
-	"databricks_token":                         "databricks.token",
-	"connection_url":                           "connection.url.user.defined",
-	"connection_timeout":                       "connection.timeout.user.defined",
-	"databricks_catalog":                       "databricks.catalog.user.defined",
-	"partition_mode":                           "partition.mode",
-	"schema_evolution":                         "schema.evolution",
-	"table_name_prefix":                        "table.name.prefix",
-	"hard_delete":                              "hard.delete",
-	"tasks_max":                                "tasks.max",
-	"consumer_wait_time_for_larger_batch_ms":   "consumer.wait.time.for.larger.batch.ms",
-	"topic2table_map":                          "topic2table.map.user.defined",
+// DestinationMotherduckFieldMappings maps Terraform attribute names to API field names.
+var DestinationMotherduckFieldMappings = map[string]string{
+	"ingestion_mode":     "ingestion.mode",
+	"motherduck_token":   "motherduck.token",
+	"motherduck_catalog": "motherduck.catalog.user.defined",
+	"schema_evolution":   "schema.evolution",
+	"table_name_prefix":  "table.name.prefix",
+	"hard_delete":        "hard.delete",
+	"tasks_max":          "tasks.max",
+	"topic2table_map":    "topic2table.map.user.defined",
 	"transforms_change_topic_name_match_regex": "transforms.changeTopicName.match.regex.user.defined",
 	"transforms_change_topic_name_mapping":     "transforms.changeTopicName.mapping",
 }

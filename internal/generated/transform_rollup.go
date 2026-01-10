@@ -27,10 +27,14 @@ type TransformRollupModel struct {
 // TransformRollupSchema returns the Terraform schema for the rollup transform.
 func TransformRollupSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Rollup transform connector",
+		Description: "Manages a Rollup transform connector.",
+		MarkdownDescription: "Manages a **Rollup transform connector**.\n\n" +
+			"This resource creates and manages a Rollup transform for Streamkap data pipelines.\n\n" +
+			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Unique identifier for the transform",
 				MarkdownDescription: "Unique identifier for the transform",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -38,10 +42,12 @@ func TransformRollupSchema() schema.Schema {
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
+				Description:         "Name of the transform",
 				MarkdownDescription: "Name of the transform",
 			},
 			"transform_type": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Transform type",
 				MarkdownDescription: "Transform type",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -50,7 +56,8 @@ func TransformRollupSchema() schema.Schema {
 			"transforms_language": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Language of the transform.",
+				Description:         "Language of the transform. Defaults to \"SQL\". Valid values: SQL.",
+				MarkdownDescription: "Language of the transform. Defaults to `SQL`. Valid values: `SQL`.",
 				Default:             stringdefault.StaticString("SQL"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("SQL"),
@@ -59,19 +66,22 @@ func TransformRollupSchema() schema.Schema {
 			"transforms_input_topic_pattern": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Regex pattern to search for the input topics",
+				Description:         "Regex pattern to search for the input topics Defaults to \"placeholder-input-topic-pattern-to-be-revised-during-implementation\".",
+				MarkdownDescription: "Regex pattern to search for the input topics Defaults to `placeholder-input-topic-pattern-to-be-revised-during-implementation`.",
 				Default:             stringdefault.StaticString("placeholder-input-topic-pattern-to-be-revised-during-implementation"),
 			},
 			"transforms_output_topic_pattern": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "String pattern to save the output topics",
+				Description:         "String pattern to save the output topics Defaults to \"placeholder-output-replacement-pattern-to-be-revised-during-implementation\".",
+				MarkdownDescription: "String pattern to save the output topics Defaults to `placeholder-output-replacement-pattern-to-be-revised-during-implementation`.",
 				Default:             stringdefault.StaticString("placeholder-output-replacement-pattern-to-be-revised-during-implementation"),
 			},
 			"transforms_input_serialization_format": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Format of the input topics",
+				Description:         "Format of the input topics Defaults to \"Any\". Valid values: Any, Avro, Json.",
+				MarkdownDescription: "Format of the input topics Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.",
 				Default:             stringdefault.StaticString("Any"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("Any", "Avro", "Json"),
@@ -80,7 +90,8 @@ func TransformRollupSchema() schema.Schema {
 			"transforms_output_serialization_format": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Format of the output topics",
+				Description:         "Format of the output topics Defaults to \"Any\". Valid values: Any, Avro, Json.",
+				MarkdownDescription: "Format of the output topics Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.",
 				Default:             stringdefault.StaticString("Any"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("Any", "Avro", "Json"),

@@ -15,8 +15,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// DestinationPostgresqlModel is the Terraform model for the postgresql destination.
-type DestinationPostgresqlModel struct {
+// DestinationCockroachdbModel is the Terraform model for the cockroachdb destination.
+type DestinationCockroachdbModel struct {
 	ID                                  types.String `tfsdk:"id"`
 	Name                                types.String `tfsdk:"name"`
 	Connector                           types.String `tfsdk:"connector"`
@@ -25,10 +25,6 @@ type DestinationPostgresqlModel struct {
 	DatabaseDatabase                    types.String `tfsdk:"database_database"`
 	ConnectionUsername                  types.String `tfsdk:"connection_username"`
 	ConnectionPassword                  types.String `tfsdk:"connection_password"`
-	SSHEnabled                          types.Bool   `tfsdk:"ssh_enabled"`
-	SSHHost                             types.String `tfsdk:"ssh_host"`
-	SSHPort                             types.String `tfsdk:"ssh_port"`
-	SSHUser                             types.String `tfsdk:"ssh_user"`
 	TableNamePrefix                     types.String `tfsdk:"table_name_prefix"`
 	SchemaEvolution                     types.String `tfsdk:"schema_evolution"`
 	InsertMode                          types.String `tfsdk:"insert_mode"`
@@ -39,15 +35,14 @@ type DestinationPostgresqlModel struct {
 	Topic2tableMap                      types.Bool   `tfsdk:"topic2table_map"`
 	TransformsChangeTopicNameMatchRegex types.String `tfsdk:"transforms_change_topic_name_match_regex"`
 	TransformsChangeTopicNameMapping    types.String `tfsdk:"transforms_change_topic_name_mapping"`
-	SSHPublicKey                        types.String `tfsdk:"ssh_public_key"`
 }
 
-// DestinationPostgresqlSchema returns the Terraform schema for the postgresql destination.
-func DestinationPostgresqlSchema() schema.Schema {
+// DestinationCockroachdbSchema returns the Terraform schema for the cockroachdb destination.
+func DestinationCockroachdbSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a PostgreSQL destination connector.",
-		MarkdownDescription: "Manages a **PostgreSQL destination connector**.\n\n" +
-			"This resource creates and manages a PostgreSQL destination for Streamkap data pipelines.\n\n" +
+		Description: "Manages a CockroachDB destination connector.",
+		MarkdownDescription: "Manages a **CockroachDB destination connector**.\n\n" +
+			"This resource creates and manages a CockroachDB destination for Streamkap data pipelines.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -73,15 +68,15 @@ func DestinationPostgresqlSchema() schema.Schema {
 			},
 			"database_hostname": schema.StringAttribute{
 				Required:            true,
-				Description:         "PostgreSQL Hostname",
-				MarkdownDescription: "PostgreSQL Hostname",
+				Description:         "CockroachDB Hostname",
+				MarkdownDescription: "CockroachDB Hostname",
 			},
 			"database_port": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "PostgreSQL Port. For example, 5432 Defaults to \"5432\".",
-				MarkdownDescription: "PostgreSQL Port. For example, 5432 Defaults to `5432`.",
-				Default:             stringdefault.StaticString("5432"),
+				Description:         "CockroachDB Port. For example, 26257 Defaults to \"26257\".",
+				MarkdownDescription: "CockroachDB Port. For example, 26257 Defaults to `26257`.",
+				Default:             stringdefault.StaticString("26257"),
 			},
 			"database_database": schema.StringAttribute{
 				Optional:            true,
@@ -99,36 +94,12 @@ func DestinationPostgresqlSchema() schema.Schema {
 				Description:         "Password to access with the database This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "Password to access with the database\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
-			"ssh_enabled": schema.BoolAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to false.",
-				MarkdownDescription: "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.",
-				Default:             booldefault.StaticBool(false),
-			},
-			"ssh_host": schema.StringAttribute{
-				Optional:            true,
-				Description:         "Hostname of your SSH server",
-				MarkdownDescription: "Hostname of your SSH server",
-			},
-			"ssh_port": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Port of your SSH server Defaults to \"22\".",
-				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
-				Default:             stringdefault.StaticString("22"),
-			},
-			"ssh_user": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "User that allows Streamkap to connect to SSH server Defaults to \"streamkap\".",
-				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
-				Default:             stringdefault.StaticString("streamkap"),
-			},
 			"table_name_prefix": schema.StringAttribute{
-				Required:            true,
-				Description:         "Schema for the associated table name",
-				MarkdownDescription: "Schema for the associated table name",
+				Optional:            true,
+				Computed:            true,
+				Description:         "Schema for the associated table name Defaults to \"public\".",
+				MarkdownDescription: "Schema for the associated table name Defaults to `public`.",
+				Default:             stringdefault.StaticString("public"),
 			},
 			"schema_evolution": schema.StringAttribute{
 				Optional:            true,
@@ -199,37 +170,25 @@ func DestinationPostgresqlSchema() schema.Schema {
 				Description:         "Map source tables to specific destination tables. Input should be the format of `source_table_name:destination_table_name` separated by a new line",
 				MarkdownDescription: "Map source tables to specific destination tables. Input should be the format of `source_table_name:destination_table_name` separated by a new line",
 			},
-			"ssh_public_key": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Public key to add to SSH server Defaults to \"<SSH.PUBLIC.KEY>\".",
-				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
-				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
-			},
 		},
 	}
 }
 
-// DestinationPostgresqlFieldMappings maps Terraform attribute names to API field names.
-var DestinationPostgresqlFieldMappings = map[string]string{
-	"database_hostname":   "database.hostname.user.defined",
-	"database_port":       "database.port.user.defined",
-	"database_database":   "database.database.user.defined",
-	"connection_username": "connection.username",
-	"connection_password": "connection.password",
-	"ssh_enabled":         "ssh.enabled",
-	"ssh_host":            "ssh.host",
-	"ssh_port":            "ssh.port",
-	"ssh_user":            "ssh.user",
-	"table_name_prefix":   "table.name.prefix",
-	"schema_evolution":    "schema.evolution",
-	"insert_mode":         "insert.mode",
-	"delete_enabled":      "delete.enabled",
-	"primary_key_mode":    "primary.key.mode.user.defined",
-	"primary_key_fields":  "primary.key.fields",
-	"tasks_max":           "tasks.max",
-	"topic2table_map":     "topic2table.map.user.defined",
+// DestinationCockroachdbFieldMappings maps Terraform attribute names to API field names.
+var DestinationCockroachdbFieldMappings = map[string]string{
+	"database_hostname":                        "database.hostname.user.defined",
+	"database_port":                            "database.port.user.defined",
+	"database_database":                        "database.database.user.defined",
+	"connection_username":                      "connection.username",
+	"connection_password":                      "connection.password",
+	"table_name_prefix":                        "table.name.prefix",
+	"schema_evolution":                         "schema.evolution",
+	"insert_mode":                              "insert.mode",
+	"delete_enabled":                           "delete.enabled",
+	"primary_key_mode":                         "primary.key.mode.user.defined",
+	"primary_key_fields":                       "primary.key.fields",
+	"tasks_max":                                "tasks.max",
+	"topic2table_map":                          "topic2table.map.user.defined",
 	"transforms_change_topic_name_match_regex": "transforms.changeTopicName.match.regex.user.defined",
 	"transforms_change_topic_name_mapping":     "transforms.changeTopicName.mapping",
-	"ssh_public_key":                           "ssh.public.key.user.displayed",
 }

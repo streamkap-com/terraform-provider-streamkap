@@ -43,10 +43,14 @@ type DestinationSnowflakeModel struct {
 // DestinationSnowflakeSchema returns the Terraform schema for the snowflake destination.
 func DestinationSnowflakeSchema() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "Snowflake destination connector",
+		Description: "Manages a Snowflake destination connector.",
+		MarkdownDescription: "Manages a **Snowflake destination connector**.\n\n" +
+			"This resource creates and manages a Snowflake destination for Streamkap data pipelines.\n\n" +
+			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Unique identifier for the destination",
 				MarkdownDescription: "Unique identifier for the destination",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -54,10 +58,12 @@ func DestinationSnowflakeSchema() schema.Schema {
 			},
 			"name": schema.StringAttribute{
 				Required:            true,
+				Description:         "Name of the destination",
 				MarkdownDescription: "Name of the destination",
 			},
 			"connector": schema.StringAttribute{
 				Computed:            true,
+				Description:         "Connector type",
 				MarkdownDescription: "Connector type",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -65,58 +71,69 @@ func DestinationSnowflakeSchema() schema.Schema {
 			},
 			"snowflake_url_name": schema.StringAttribute{
 				Optional:            true,
+				Description:         "The URL for accessing your Snowflake account. This URL must include your account identifier. Note that the protocol (https://) and port number are optional.",
 				MarkdownDescription: "The URL for accessing your Snowflake account. This URL must include your account identifier. Note that the protocol (https://) and port number are optional.",
 			},
 			"snowflake_user_name": schema.StringAttribute{
 				Optional:            true,
+				Description:         "User login name for the Snowflake account.\n\n",
 				MarkdownDescription: "User login name for the Snowflake account.\n\n",
 			},
 			"snowflake_private_key": schema.StringAttribute{
 				Optional:            true,
 				Sensitive:           true,
-				MarkdownDescription: "The private key to authenticate the user. Include only the key, not the header or footer. If the key is split across multiple lines, remove the line breaks.",
+				Description:         "The private key to authenticate the user. Include only the key, not the header or footer. If the key is split across multiple lines, remove the line breaks. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The private key to authenticate the user. Include only the key, not the header or footer. If the key is split across multiple lines, remove the line breaks.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"snowflake_private_key_passphrase_secured": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "If checked (default), provide your SSH key's passphrase, otherwise, uncheck for SSH keys without passphrase.",
+				Description:         "If checked (default), provide your SSH key's passphrase, otherwise, uncheck for SSH keys without passphrase. Defaults to true.",
+				MarkdownDescription: "If checked (default), provide your SSH key's passphrase, otherwise, uncheck for SSH keys without passphrase. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"snowflake_private_key_passphrase": schema.StringAttribute{
 				Optional:            true,
 				Sensitive:           true,
-				MarkdownDescription: "The passphrase is used to decrypt the private key.",
+				Description:         "The passphrase is used to decrypt the private key. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The passphrase is used to decrypt the private key.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"sfwarehouse": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The name of the snowflake warehouse.",
+				Description:         "The name of the snowflake warehouse. Defaults to \"STREAMKAP_WH\".",
+				MarkdownDescription: "The name of the snowflake warehouse. Defaults to `STREAMKAP_WH`.",
 				Default:             stringdefault.StaticString("STREAMKAP_WH"),
 			},
 			"snowflake_database_name": schema.StringAttribute{
 				Optional:            true,
+				Description:         "The name of the database that contains the table to insert rows into.",
 				MarkdownDescription: "The name of the database that contains the table to insert rows into.",
 			},
 			"snowflake_schema_name": schema.StringAttribute{
 				Optional:            true,
+				Description:         "The name of the schema that contains the table to insert rows into.",
 				MarkdownDescription: "The name of the schema that contains the table to insert rows into.",
 			},
 			"create_schema_auto": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Automatically generates a Snowflake schema if it does not already exist.",
+				Description:         "Automatically generates a Snowflake schema if it does not already exist. Defaults to true.",
+				MarkdownDescription: "Automatically generates a Snowflake schema if it does not already exist. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"snowflake_role_name": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "The name of an existing role with necessary privileges (for Streamkap) assigned to the <Username>",
+				Description:         "The name of an existing role with necessary privileges (for Streamkap) assigned to the <Username> Defaults to \"STREAMKAP_ROLE\".",
+				MarkdownDescription: "The name of an existing role with necessary privileges (for Streamkap) assigned to the <Username> Defaults to `STREAMKAP_ROLE`.",
 				Default:             stringdefault.StaticString("STREAMKAP_ROLE"),
 			},
 			"ingestion_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "<span>Upsert or append modes are available. NOTE: when switching append to upsert, existing data must be deduplicated or deleted. <a href='https://docs.streamkap.com/docs/snowflake#upsert-mode' class='docs-url' target='_blank'>Read more about upsert mode</a> </span>",
+				Description:         "<span>Upsert or append modes are available. NOTE: when switching append to upsert, existing data must be deduplicated or deleted. <a href='https://docs.streamkap.com/docs/snowflake#upsert-mode' class='docs-url' target='_blank'>Read more about upsert mode</a> </span> Defaults to \"append\". Valid values: upsert, append.",
+				MarkdownDescription: "<span>Upsert or append modes are available. NOTE: when switching append to upsert, existing data must be deduplicated or deleted. <a href='https://docs.streamkap.com/docs/snowflake#upsert-mode' class='docs-url' target='_blank'>Read more about upsert mode</a> </span> Defaults to `append`. Valid values: `upsert`, `append`.",
 				Default:             stringdefault.StaticString("append"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("upsert", "append"),
@@ -128,13 +145,15 @@ func DestinationSnowflakeSchema() schema.Schema {
 			"hard_delete": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)",
+				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only) Defaults to true.",
+				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only) Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"schema_evolution": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`",
+				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to \"basic\". Valid values: basic, none.",
+				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.",
 				Default:             stringdefault.StaticString("basic"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("basic", "none"),
@@ -143,39 +162,46 @@ func DestinationSnowflakeSchema() schema.Schema {
 			"use_hybrid_tables": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Specifies whether the connector should create Hybrid Tables (applies to `upsert` only)",
+				Description:         "Specifies whether the connector should create Hybrid Tables (applies to `upsert` only) Defaults to false.",
+				MarkdownDescription: "Specifies whether the connector should create Hybrid Tables (applies to `upsert` only) Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"apply_dynamic_table_script": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only)",
+				Description:         "Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only) Defaults to false.",
+				MarkdownDescription: "Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only) Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"create_sql_execute": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "These template queries run for each table the first time a record is streamed for them.",
+				Description:         "These template queries run for each table the first time a record is streamed for them. Defaults to \"CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';\\nCREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);\\nALTER TASK {{table}}_CT RESUME\".",
+				MarkdownDescription: "These template queries run for each table the first time a record is streamed for them. Defaults to `CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';\nCREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);\nALTER TASK {{table}}_CT RESUME`.",
 				Default:             stringdefault.StaticString("CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';\nCREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);\nALTER TASK {{table}}_CT RESUME"),
 			},
 			"sql_table_name": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Can be used as <code>{{dynamicTableName}}</code> in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic.",
+				Description:         "Can be used as <code>{{dynamicTableName}}</code> in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic. Defaults to \"{{table}}_DT\".",
+				MarkdownDescription: "Can be used as <code>{{dynamicTableName}}</code> in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic. Defaults to `{{table}}_DT`.",
 				Default:             stringdefault.StaticString("{{table}}_DT"),
 			},
 			"create_sql_data": schema.StringAttribute{
 				Optional:            true,
+				Description:         "Use <code>{\"TABLE_DATA\": {\"{table_name}\": {\"{key}\": \"{value}\"}, ...}, ...}</code> to set table specific data. This data will be available in the custom SQL templates e.g. <code>SELECT {{key}}</code>.",
 				MarkdownDescription: "Use <code>{\"TABLE_DATA\": {\"{table_name}\": {\"{key}\": \"{value}\"}, ...}, ...}</code> to set table specific data. This data will be available in the custom SQL templates e.g. <code>SELECT {{key}}</code>.",
 			},
 			"auto_qa_dedupe_table_mapping": schema.StringAttribute{
 				Optional:            true,
+				Description:         "Mapping between the tables that store append-only data and the deduplicated tables. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
 				MarkdownDescription: "Mapping between the tables that store append-only data and the deduplicated tables. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
 			},
 			"snowflake_topic2table_map": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5</code> uses only the last segment as table name.",
+				Description:         "Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5</code> uses only the last segment as table name. Defaults to \"^([-\\\\w]+\\\\.)([-\\\\w]+\\\\.)?([-\\\\w]+\\\\.)?([-\\\\w]+\\\\.)?([-\\\\w]+):$5\".",
+				MarkdownDescription: "Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5</code> uses only the last segment as table name. Defaults to `^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5`.",
 				Default:             stringdefault.StaticString("^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5"),
 			},
 		},
