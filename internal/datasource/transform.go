@@ -43,41 +43,48 @@ func (d *TransformDataSource) Metadata(ctx context.Context, req ds.MetadataReque
 func (d *TransformDataSource) Schema(ctx context.Context, req ds.SchemaRequest, resp *ds.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "Tranform data source",
+		Description: "Retrieves information about a Streamkap transform by ID.",
+		MarkdownDescription: "Retrieves information about a **Streamkap transform** by ID.\n\n" +
+			"Use this data source to look up transform details including topic mappings.\n\n" +
+			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description:         "Transform identifier",
-				MarkdownDescription: "Transform identifier",
+				Description:         "The unique identifier of the transform to retrieve.",
+				MarkdownDescription: "The unique identifier of the transform to retrieve.",
 				Required:            true,
 			},
 			"name": schema.StringAttribute{
-				Description:         "Transform name",
-				MarkdownDescription: "Transform name",
+				Description:         "Display name of the transform.",
+				MarkdownDescription: "Display name of the transform.",
 				Computed:            true,
 			},
 			"start_time": schema.StringAttribute{
-				Description:         "Start time",
-				MarkdownDescription: "Start time",
+				Description:         "The start time of the transform.",
+				MarkdownDescription: "The start time of the transform.",
 				Computed:            true,
 			},
 			"topic_ids": schema.ListAttribute{
-				Description:         "List of topic identifiers",
-				MarkdownDescription: "List of topic identifiers",
+				Description:         "List of topic identifiers associated with this transform.",
+				MarkdownDescription: "List of topic identifiers associated with this transform.",
 				Computed:            true,
 				ElementType:         types.StringType,
 			},
 			"topic_map": schema.ListNestedAttribute{
+				Description:         "List of topic mappings showing input and output topics for this transform.",
+				MarkdownDescription: "List of topic mappings showing input and output topics for this transform.",
 				Computed:            true,
-				Description:         "List of topic object, with id and name for each topic",
-				MarkdownDescription: "List of topic object, with id and name for each topic",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
-							Computed: true,
+							Description:         "Topic mapping identifier.",
+							MarkdownDescription: "Topic mapping identifier.",
+							Computed:            true,
 						},
 						"name": schema.StringAttribute{
-							Computed: true,
+							Description:         "Topic name in the mapping.",
+							MarkdownDescription: "Topic name in the mapping.",
+							Computed:            true,
 						},
 					},
 				},
