@@ -32,3 +32,52 @@ provider "streamkap" {}
 - `client_id` (String) The Streamkap API client_id. If not set, Streamkap will use environment variable `STREAMKAP_CLIENT_ID`
 - `host` (String) The Streamkap API host. If not set, Streamkap will use environment variable `STREAMKAP_HOST`. Defaults to https://api.streamkap.com if both are not set.
 - `secret` (String, Sensitive) The Streamkap API secret. If not set, Streamkap will use environment variable `STREAMKAP_SECRET`
+
+## Operational Considerations
+
+### Timeouts
+
+Streamkap uses Kafka Connect under the hood, which can have variable response times
+depending on cluster load and connector complexity. All resources support configurable
+timeouts:
+
+```hcl
+resource "streamkap_source_postgresql" "example" {
+  # ... configuration
+
+  timeouts {
+    create = "30m"  # Default: 20m
+    update = "30m"  # Default: 20m
+    delete = "30m"  # Default: 20m
+  }
+}
+```
+
+### Retry Behavior
+
+The provider automatically retries transient errors with exponential backoff:
+- Gateway errors (502, 503, 504)
+- Connection timeouts
+- Kafka Connect rebalancing
+
+Validation errors and authentication failures are NOT retried.
+
+### Resource Dependencies
+
+Source connectors automatically create Kafka topics when they start streaming.
+If you need to reference topics in pipelines, ensure proper ordering:
+
+```hcl
+resource "streamkap_source_postgresql" "orders" {
+  name = "orders-source"
+  # ...
+}
+
+resource "streamkap_pipeline" "orders_pipeline" {
+  name = "orders-to-snowflake"
+  # ...
+
+  # Ensure source is created first
+  depends_on = [streamkap_source_postgresql.orders]
+}
+```
