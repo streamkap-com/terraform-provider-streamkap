@@ -297,6 +297,22 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 		if field.DefaultFunc != "" {
 			field.HasDefault = true
 			field.NeedsPlanMod = false // Fields with defaults don't need UseStateForUnknown
+
+			// Capture default value and enhance descriptions
+			switch entry.TerraformType() {
+			case TerraformTypeString:
+				defaultVal := entry.GetDefaultString()
+				field.Description = field.Description + fmt.Sprintf(" Defaults to %q.", defaultVal)
+				field.MarkdownDescription = field.MarkdownDescription + fmt.Sprintf(" Defaults to `%s`.", defaultVal)
+			case TerraformTypeInt64:
+				defaultVal := entry.GetDefaultInt64()
+				field.Description = field.Description + fmt.Sprintf(" Defaults to %d.", defaultVal)
+				field.MarkdownDescription = field.MarkdownDescription + fmt.Sprintf(" Defaults to `%d`.", defaultVal)
+			case TerraformTypeBool:
+				defaultVal := entry.GetDefaultBool()
+				field.Description = field.Description + fmt.Sprintf(" Defaults to %t.", defaultVal)
+				field.MarkdownDescription = field.MarkdownDescription + fmt.Sprintf(" Defaults to `%t`.", defaultVal)
+			}
 		}
 	} else {
 		field.Optional = true
