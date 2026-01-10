@@ -436,7 +436,7 @@ func {{ .SchemaFuncName }}() schema.Schema {
 		Description:         "Manages a {{ .DisplayName }} {{ .EntityType }} connector.",
 		MarkdownDescription: "Manages a **{{ .DisplayName }} {{ .EntityType }} connector**.\n\n" +
 			"This resource creates and manages a {{ .DisplayName }} {{ .EntityType }} for Streamkap data pipelines.\n\n" +
-			"[Documentation](https://docs.streamkap.com/{{ .EntityType }}s/{{ .ConnectorCode }})",
+			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 {{- range .Fields }}
 			"{{ .TfAttrName }}": {{ .SchemaAttrType }}{
