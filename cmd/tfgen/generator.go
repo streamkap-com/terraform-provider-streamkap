@@ -306,6 +306,18 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 	if entry.Value.Control == "one-select" && len(entry.GetRawValues()) > 0 {
 		field.HasValidators = true
 		field.Validators = g.oneOfValidator(entry)
+
+		// Enhance descriptions with valid values
+		values := entry.GetRawValues()
+		valuesStr := strings.Join(values, ", ")
+		field.Description = field.Description + " Valid values: " + valuesStr + "."
+
+		// Build markdown list for MarkdownDescription
+		var mdValues []string
+		for _, v := range values {
+			mdValues = append(mdValues, fmt.Sprintf("`%s`", v))
+		}
+		field.MarkdownDescription = field.MarkdownDescription + " Valid values: " + strings.Join(mdValues, ", ") + "."
 	}
 
 	// Handle slider validators (int64 range)
