@@ -4,28 +4,15 @@ Terraform provider for [Streamkap](https://streamkap.com) - a real-time data str
 
 ## Features
 
-### Source Connectors (6 available)
-- PostgreSQL
-- MySQL
-- MongoDB
-- SQL Server
-- DynamoDB
-- Kafka Direct
+### Source Connectors (20 available)
+- PostgreSQL, MySQL, MongoDB, SQL Server, DynamoDB, Kafka Direct
+- AlloyDB, DB2, DocumentDB, Elasticsearch, MariaDB, MongoDB Hosted
+- Oracle, Oracle AWS, PlanetScale, Redis, S3, Supabase, Vitess, Webhook
 
-> **Note:** Additional source connectors (Oracle, MariaDB, Elasticsearch, etc.)
-> have generated schemas and can be exposed on request. See [DEVELOPMENT.md](docs/DEVELOPMENT.md).
-
-### Destination Connectors (7 available)
-- Snowflake
-- ClickHouse
-- Databricks
-- PostgreSQL
-- S3
-- Iceberg
-- Kafka
-
-> **Note:** Additional destination connectors (BigQuery, Redshift, Azure Blob, etc.)
-> have generated schemas and can be exposed on request. See [DEVELOPMENT.md](docs/DEVELOPMENT.md).
+### Destination Connectors (22 available)
+- Snowflake, ClickHouse, Databricks, PostgreSQL, S3, Iceberg, Kafka
+- Azure Blob, BigQuery, CockroachDB, DB2, GCS, HTTP Sink, Kafka Direct
+- Motherduck, MySQL, Oracle, R2, Redis, Redshift, SQL Server, Starburst
 
 ### Transform Resources
 - Map Filter

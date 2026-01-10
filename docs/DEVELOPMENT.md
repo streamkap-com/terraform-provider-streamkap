@@ -304,13 +304,17 @@ go generate
 go test -v ./internal/provider -run TestAccSourceOracle
 ```
 
-### Available Schemas Not Yet Exposed
+### Connector Coverage
 
-**Sources (14):** alloydb, db2, documentdb, elasticsearch, mariadb, mongodbhosted,
+All generated connector schemas are now exposed in the provider:
+
+**Sources (20):** postgresql, mysql, mongodb, dynamodb, sqlserver, kafkadirect,
+alloydb, db2, documentdb, elasticsearch, mariadb, mongodbhosted,
 oracle, oracleaws, planetscale, redis, s3, supabase, vitess, webhook
 
-**Destinations (15):** azblob, bigquery, cockroachdb, db2, gcs, httpsink,
-kafkadirect, motherduck, mysql, oracle, r2, redis, redshift, sqlserver, starburst
+**Destinations (22):** snowflake, clickhouse, databricks, postgresql, s3, iceberg, kafka,
+azblob, bigquery, cockroachdb, db2, gcs, httpsink, kafkadirect,
+motherduck, mysql, oracle, r2, redis, redshift, sqlserver, starburst
 
 ## Running Tests
 
