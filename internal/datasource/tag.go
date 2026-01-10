@@ -38,39 +38,41 @@ func (d *TagDataSource) Metadata(ctx context.Context, req ds.MetadataRequest, re
 
 func (d *TagDataSource) Schema(ctx context.Context, req ds.SchemaRequest, resp *ds.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		// This description is used by the documentation generator and the language server.
-		MarkdownDescription: "Tag data source",
+		Description: "Retrieves information about a Streamkap tag by ID.",
+		MarkdownDescription: "Retrieves information about a **Streamkap tag** by ID.\n\n" +
+			"Use this data source to look up tag details for use in other resources.\n\n" +
+			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description:         "Tag identifier. Currently, we only have 2 tags: `Development` tag with ID `670e5ca40afe1d3983ce0c22` and `Production` tag with ID `670e5bab0d119c0d1f8cda9d`",
-				MarkdownDescription: "Tag identifier. Currently, we only have 2 tags: `Development` tag with ID `670e5ca40afe1d3983ce0c22` and `Production` tag with ID `670e5bab0d119c0d1f8cda9d`",
+				Description:         "The unique identifier of the tag to retrieve. Example: '670e5ca40afe1d3983ce0c22' for Development, '670e5bab0d119c0d1f8cda9d' for Production.",
+				MarkdownDescription: "The unique identifier of the tag to retrieve. Example: `670e5ca40afe1d3983ce0c22` for Development, `670e5bab0d119c0d1f8cda9d` for Production.",
 				Required:            true,
 			},
 			"name": schema.StringAttribute{
-				Description:         "Tag name",
-				MarkdownDescription: "Tag name",
+				Description:         "Display name of the tag. Example: 'Development' or 'Production'.",
+				MarkdownDescription: "Display name of the tag. Example: `Development` or `Production`.",
 				Computed:            true,
 			},
 			"type": schema.ListAttribute{
-				Description:         "List of tag types",
-				MarkdownDescription: "List of tag types",
+				Description:         "List of entity types this tag can be applied to (e.g., 'source', 'destination', 'pipeline').",
+				MarkdownDescription: "List of entity types this tag can be applied to (e.g., `source`, `destination`, `pipeline`).",
 				Computed:            true,
 				ElementType:         types.StringType,
 			},
 			"description": schema.StringAttribute{
-				Description:         "Tag description",
-				MarkdownDescription: "Tag description",
+				Description:         "Human-readable description of the tag's purpose.",
+				MarkdownDescription: "Human-readable description of the tag's purpose.",
 				Computed:            true,
 			},
 			"system": schema.BoolAttribute{
-				Description:         "Is the tag a system tag",
-				MarkdownDescription: "Is the tag a system tag",
+				Description:         "Whether this is a built-in system tag (true) or user-created (false).",
+				MarkdownDescription: "Whether this is a built-in system tag (`true`) or user-created (`false`).",
 				Computed:            true,
 			},
 			"custom": schema.BoolAttribute{
-				Description:         "Is the tag a custom tag",
-				MarkdownDescription: "Is the tag a custom tag",
+				Description:         "Whether this is a custom user-defined tag (true) or system-provided (false).",
+				MarkdownDescription: "Whether this is a custom user-defined tag (`true`) or system-provided (`false`).",
 				Computed:            true,
 			},
 		},
