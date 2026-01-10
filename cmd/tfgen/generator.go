@@ -191,52 +191,56 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 func (g *Generator) commonFields() []FieldData {
 	fields := []FieldData{
 		{
-			GoFieldName:    "ID",
-			GoType:         "types.String",
-			TfsdkTag:       "id",
-			TfAttrName:     "id",
-			SchemaAttrType: "schema.StringAttribute",
-			Computed:       true,
-			Description:    fmt.Sprintf("Unique identifier for the %s", g.entityType),
-			NeedsPlanMod:   true,
-			APIFieldName:   "", // ID is handled separately
+			GoFieldName:         "ID",
+			GoType:              "types.String",
+			TfsdkTag:            "id",
+			TfAttrName:          "id",
+			SchemaAttrType:      "schema.StringAttribute",
+			Computed:            true,
+			Description:         fmt.Sprintf("Unique identifier for the %s", g.entityType),
+			MarkdownDescription: fmt.Sprintf("Unique identifier for the %s", g.entityType),
+			NeedsPlanMod:        true,
+			APIFieldName:        "", // ID is handled separately
 		},
 		{
-			GoFieldName:    "Name",
-			GoType:         "types.String",
-			TfsdkTag:       "name",
-			TfAttrName:     "name",
-			SchemaAttrType: "schema.StringAttribute",
-			Required:       true,
-			Description:    fmt.Sprintf("Name of the %s", g.entityType),
-			APIFieldName:   "", // Name is handled separately
+			GoFieldName:         "Name",
+			GoType:              "types.String",
+			TfsdkTag:            "name",
+			TfAttrName:          "name",
+			SchemaAttrType:      "schema.StringAttribute",
+			Required:            true,
+			Description:         fmt.Sprintf("Name of the %s", g.entityType),
+			MarkdownDescription: fmt.Sprintf("Name of the %s", g.entityType),
+			APIFieldName:        "", // Name is handled separately
 		},
 	}
 
 	// For transforms, use "transform_type" instead of "connector"
 	if g.entityType == "transform" {
 		fields = append(fields, FieldData{
-			GoFieldName:    "TransformType",
-			GoType:         "types.String",
-			TfsdkTag:       "transform_type",
-			TfAttrName:     "transform_type",
-			SchemaAttrType: "schema.StringAttribute",
-			Computed:       true,
-			Description:    "Transform type",
-			NeedsPlanMod:   true,
-			APIFieldName:   "", // TransformType is handled separately
+			GoFieldName:         "TransformType",
+			GoType:              "types.String",
+			TfsdkTag:            "transform_type",
+			TfAttrName:          "transform_type",
+			SchemaAttrType:      "schema.StringAttribute",
+			Computed:            true,
+			Description:         "Transform type",
+			MarkdownDescription: "Transform type",
+			NeedsPlanMod:        true,
+			APIFieldName:        "", // TransformType is handled separately
 		})
 	} else {
 		fields = append(fields, FieldData{
-			GoFieldName:    "Connector",
-			GoType:         "types.String",
-			TfsdkTag:       "connector",
-			TfAttrName:     "connector",
-			SchemaAttrType: "schema.StringAttribute",
-			Computed:       true,
-			Description:    "Connector type",
-			NeedsPlanMod:   true,
-			APIFieldName:   "", // Connector is handled separately
+			GoFieldName:         "Connector",
+			GoType:              "types.String",
+			TfsdkTag:            "connector",
+			TfAttrName:          "connector",
+			SchemaAttrType:      "schema.StringAttribute",
+			Computed:            true,
+			Description:         "Connector type",
+			MarkdownDescription: "Connector type",
+			NeedsPlanMod:        true,
+			APIFieldName:        "", // Connector is handled separately
 		})
 	}
 
