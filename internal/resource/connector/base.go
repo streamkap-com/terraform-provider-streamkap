@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -81,7 +82,18 @@ func (r *BaseConnectorResource) Metadata(ctx context.Context, req resource.Metad
 
 // Schema returns the schema for this resource.
 func (r *BaseConnectorResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = r.config.GetSchema()
+	baseSchema := r.config.GetSchema()
+
+	// Add timeouts block to the schema
+	baseSchema.Blocks = map[string]schema.Block{
+		"timeouts": timeouts.Block(ctx, timeouts.Opts{
+			Create: true,
+			Update: true,
+			Delete: true,
+		}),
+	}
+
+	resp.Schema = baseSchema
 }
 
 // Configure sets the API client for this resource.
@@ -110,6 +122,23 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		)
 		return
 	}
+
+	// Get timeout from config
+	var timeoutsValue timeouts.Value
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("timeouts"), &timeoutsValue)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	createTimeout, diags := timeoutsValue.Create(ctx, helper.DefaultCreateTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(ctx, createTimeout)
+	defer cancel()
 
 	// Create a new model instance for this connector
 	model := r.config.NewModelInstance()
@@ -293,6 +322,23 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	// Get timeout from config
+	var timeoutsValue timeouts.Value
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("timeouts"), &timeoutsValue)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	updateTimeout, diags := timeoutsValue.Update(ctx, helper.DefaultUpdateTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
+	defer cancel()
+
 	// Create a new model instance for this connector
 	model := r.config.NewModelInstance()
 
@@ -384,6 +430,23 @@ func (r *BaseConnectorResource) Delete(ctx context.Context, req resource.DeleteR
 		)
 		return
 	}
+
+	// Get timeout from config
+	var timeoutsValue timeouts.Value
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("timeouts"), &timeoutsValue)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	deleteTimeout, diags := timeoutsValue.Delete(ctx, helper.DefaultDeleteTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(ctx, deleteTimeout)
+	defer cancel()
 
 	// Create a new model instance for this connector
 	model := r.config.NewModelInstance()
