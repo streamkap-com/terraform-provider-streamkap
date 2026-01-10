@@ -135,5 +135,5 @@ resource "streamkap_pipeline" "example" {
 }
 
 output "example-pipeline" {
-  value = streamkap_pipeline.example-pipeline.id
+  value = streamkap_pipeline.example.id
 }
