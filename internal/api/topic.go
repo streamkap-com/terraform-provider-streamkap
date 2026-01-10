@@ -40,7 +40,7 @@ func (s *streamkapAPI) UpdateTopic(ctx context.Context, topicID string, reqPaylo
 		payload,
 	))
 	var rep any
-	err = s.doRequest(ctx, req, &rep)
+	err = s.doRequestWithRetry(ctx, req, &rep)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (s *streamkapAPI) DeleteTopic(ctx context.Context, topicID string) error {
 		req.URL.String(),
 	))
 	var resp Topic
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return err
 	}

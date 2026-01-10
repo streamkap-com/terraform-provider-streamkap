@@ -82,7 +82,7 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload Pipeline) 
 		payload,
 	))
 	var resp Pipeline
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (s *streamkapAPI) DeletePipeline(ctx context.Context, pipelineID string) er
 		req.URL.String(),
 	))
 	var resp Pipeline
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (s *streamkapAPI) UpdatePipeline(ctx context.Context, pipelineID string, re
 		payload,
 	))
 	var resp Pipeline
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}

@@ -58,7 +58,7 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 		payload,
 	))
 	var resp Source
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func (s *streamkapAPI) DeleteSource(ctx context.Context, sourceID string) error 
 		req.URL.String(),
 	))
 	var resp Source
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (s *streamkapAPI) UpdateSource(ctx context.Context, sourceID string, reqPay
 		payload,
 	))
 	var resp Source
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}

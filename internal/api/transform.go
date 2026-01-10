@@ -96,7 +96,7 @@ func (s *streamkapAPI) CreateTransform(ctx context.Context, reqPayload CreateTra
 		payload,
 	))
 	var resp Transform
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (s *streamkapAPI) UpdateTransform(ctx context.Context, transformID string, 
 		payload,
 	))
 	var resp Transform
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +150,7 @@ func (s *streamkapAPI) DeleteTransform(ctx context.Context, transformID string) 
 		req.URL.String(),
 	))
 	var resp Transform
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return err
 	}
