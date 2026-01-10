@@ -41,18 +41,22 @@ func (r *TopicResource) Metadata(ctx context.Context, req res.MetadataRequest, r
 
 func (r *TopicResource) Schema(ctx context.Context, req res.SchemaRequest, resp *res.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description:         "Topic resource",
-		MarkdownDescription: "Topic resource",
+		Description: "Manages a Streamkap Kafka topic's partition count.",
+		MarkdownDescription: "Manages a **Streamkap Kafka topic's partition count**.\n\n" +
+			"This resource allows you to modify the partition count of an existing Kafka topic " +
+			"in your Streamkap cluster. Use this to scale topic throughput.\n\n" +
+			"**Note:** Partition count can only be increased, not decreased.\n\n" +
+			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"topic_id": schema.StringAttribute{
-				Description:         "Topic ID",
-				MarkdownDescription: "Topic ID",
+				Description:         "The Kafka topic identifier. Format: <source-id>.<schema>.<table> for CDC topics.",
+				MarkdownDescription: "The Kafka topic identifier. Format: `<source-id>.<schema>.<table>` for CDC topics.",
 				Required:            true,
 			},
 			"partition_count": schema.Int64Attribute{
 				Required:            true,
-				Description:         "Partition Count",
-				MarkdownDescription: "Partition Count",
+				Description:         "Number of partitions for the topic. Can only be increased, not decreased. Higher values allow more parallel consumers.",
+				MarkdownDescription: "Number of partitions for the topic. Can only be increased, not decreased. Higher values allow more parallel consumers.",
 			},
 		},
 	}
