@@ -8,15 +8,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **AI-Agent Compatibility (Terraform MCP Server)**
+  - All resources now have both `Description` (plain text) and `MarkdownDescription` (rich text)
+  - Enum fields list all valid values in descriptions
+  - Default values are documented in field descriptions
+  - Sensitive fields include security notes
+- Basic and complete example configurations for all resources
+  - `basic.tf` - minimal required configuration
+  - `complete.tf` - all available options with comments
+- Examples for all 6 transform types (previously missing)
+- Example for tag resource (previously missing)
+- Resource-level documentation with links to Streamkap docs
 - Configurable timeouts for all resources (create, update, delete operations)
 - Automatic retry with exponential backoff for transient errors
 - Unit tests for helper functions and retry logic
 
 ### Changed
+- Regenerated all connector schemas with comprehensive descriptions
+- Restructured examples directory with `basic.tf` and `complete.tf` patterns
 - Improved error handling with retry for transient failures
 - Default timeouts: create/update/delete 20m
 
+### Fixed
+- Fixed typo "Tranform" → "Transform" in transform data source
+- Fixed incorrect attribute names in destination examples (S3, Iceberg, PostgreSQL)
+- Fixed pipeline example output reference bug
+- Added missing `sensitive = true` to ClickHouse password variable
+
 ### Technical Details
+- tfgen code generator now outputs both Description and MarkdownDescription
 - Backend investigation confirmed KC timeout is 15s per server
 - Conservative retry strategy: 3 attempts, 10s minimum delay
 - Retry only on mutating operations (not reads)

@@ -190,6 +190,30 @@ go test -v ./cmd/tfgen/...
 - [Streamkap Documentation](https://docs.streamkap.com)
 - [API Reference](https://api.streamkap.com/openapi.json)
 
+## AI-Agent Compatibility
+
+This provider is optimized for use with AI assistants via the [Terraform MCP Server](https://github.com/hashicorp/terraform-mcp-server). AI agents can leverage:
+
+- **Rich Schema Descriptions**: All resources have detailed `MarkdownDescription` fields with valid values, defaults, and security notes
+- **Structured Examples**: Each resource includes `basic.tf` (minimal config) and `complete.tf` (all options) examples
+- **Semantic Documentation**: Enum fields list valid values, sensitive fields include security warnings
+
+### Using with AI Assistants
+
+When working with AI coding assistants (Claude, Copilot, etc.), the provider's enhanced schema descriptions enable:
+
+1. **Accurate code generation** - AI can suggest correct attribute names and valid values
+2. **Security awareness** - Sensitive fields are clearly marked
+3. **Default value knowledge** - AI knows what defaults are applied
+
+Example prompt for AI assistants:
+```
+Create a Streamkap PostgreSQL source connected to a Snowflake destination
+with CDC enabled and SSL required.
+```
+
+See [AI_AGENT_COMPATIBILITY.md](docs/AI_AGENT_COMPATIBILITY.md) for detailed AI integration guidelines.
+
 ## Upgrading
 
 See [MIGRATION.md](docs/MIGRATION.md) for guidance on upgrading from previous versions, including breaking changes and deprecated attributes.
