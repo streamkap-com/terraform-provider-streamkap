@@ -76,8 +76,9 @@ type FieldData struct {
 	Optional       bool
 	Computed       bool
 	Sensitive      bool
-	Description    string
-	HasDefault     bool
+	Description         string // Plain text description for CLI
+	MarkdownDescription string // Rich markdown description for docs/AI
+	HasDefault          bool
 	DefaultFunc    string // e.g., "stringdefault.StaticString(\"5432\")"
 	HasValidators  bool
 	Validators     string // e.g., "stringvalidator.OneOf(\"Yes\", \"No\")"
@@ -262,6 +263,9 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 	if field.Description == "" {
 		field.Description = entry.DisplayName
 	}
+
+	// Initialize MarkdownDescription from Description
+	field.MarkdownDescription = field.Description
 
 	// Determine schema attribute type
 	switch entry.TerraformType() {
