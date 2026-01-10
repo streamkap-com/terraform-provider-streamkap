@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Full Connector Coverage** - All 42 connectors now exposed:
+  - **14 new source connectors**: AlloyDB, DB2, DocumentDB, Elasticsearch, MariaDB, MongoDB Hosted, Oracle, Oracle AWS, PlanetScale, Redis, S3, Supabase, Vitess, Webhook
+  - **15 new destination connectors**: Azure Blob, BigQuery, CockroachDB, DB2, GCS, HTTP Sink, Kafka Direct, Motherduck, MySQL, Oracle, R2, Redis, Redshift, SQL Server, Starburst
+  - Total: 20 sources + 22 destinations
 - **AI-Agent Compatibility (Terraform MCP Server)**
   - All resources now have both `Description` (plain text) and `MarkdownDescription` (rich text)
   - Enum fields list all valid values in descriptions
