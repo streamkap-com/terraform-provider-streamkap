@@ -123,3 +123,56 @@ Three parameters (all support env vars as fallback):
 ### API Quirks
 - Source Create/Read operations use `?secret_returned=true` query parameter to include sensitive fields in response
 - Use `stringplanmodifier.UseStateForUnknown()` for computed fields to prevent spurious diffs
+
+## AI-Agent Description Standards
+
+This provider is optimized for the Terraform MCP Server. When adding or modifying resources, follow these patterns:
+
+### Schema-Level Descriptions
+Every resource/data source must have both `Description` and `MarkdownDescription`:
+
+```go
+Description: "Manages a PostgreSQL source connector.",
+MarkdownDescription: "Manages a **PostgreSQL source connector**.\n\n" +
+    "This resource creates and manages a PostgreSQL source for Streamkap data pipelines.\n\n" +
+    "[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
+```
+
+### Attribute Descriptions
+All attributes must include:
+
+1. **Enum fields** - List valid values:
+   ```go
+   Description: "Insert mode. Valid values: insert, upsert."
+   MarkdownDescription: "Insert mode. Valid values: `insert`, `upsert`."
+   ```
+
+2. **Fields with defaults** - Document the default:
+   ```go
+   Description: "Database port. Defaults to \"5432\"."
+   MarkdownDescription: "Database port. Defaults to `5432`."
+   ```
+
+3. **Sensitive fields** - Add security note:
+   ```go
+   Description: "Database password. This value is sensitive and will not appear in logs or CLI output."
+   MarkdownDescription: "Database password.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs."
+   ```
+
+### Example Files
+Each resource needs two example files:
+- `examples/resources/streamkap_<name>/basic.tf` - Minimal required configuration
+- `examples/resources/streamkap_<name>/complete.tf` - All available options with comments
+
+### tfgen Code Generator
+The `cmd/tfgen` tool automatically generates schemas with these patterns from backend `configuration.latest.json` files:
+
+```bash
+# Regenerate all schemas
+STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap go generate ./...
+
+# Generate specific connector
+go run ./cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH --entity-type sources --connector postgresql
+```
+
+See `docs/AI_AGENT_COMPATIBILITY.md` for complete AI integration guidelines.
