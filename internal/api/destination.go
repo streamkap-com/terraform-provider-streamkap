@@ -58,7 +58,7 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destina
 		payload,
 	))
 	var resp Destination
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func (s *streamkapAPI) DeleteDestination(ctx context.Context, destinationID stri
 		req.URL.String(),
 	))
 	var resp Destination
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (s *streamkapAPI) UpdateDestination(ctx context.Context, destinationID stri
 		payload,
 	))
 	var resp Destination
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}

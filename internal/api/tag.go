@@ -92,7 +92,7 @@ func (s *streamkapAPI) CreateTag(ctx context.Context, reqPayload Tag) (*Tag, err
 		payload,
 	))
 	var resp Tag
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (s *streamkapAPI) UpdateTag(ctx context.Context, tagID string, reqPayload T
 		payload,
 	))
 	var resp Tag
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (s *streamkapAPI) DeleteTag(ctx context.Context, tagID string) error {
 		req.URL.String(),
 	))
 	var resp Tag
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return err
 	}

@@ -1,10 +1,12 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -112,4 +114,29 @@ func (s *streamkapAPI) doRequest(ctx context.Context, req *http.Request, result 
 		return err
 	}
 	return nil
+}
+
+// doRequestWithRetry wraps doRequest with retry logic for transient errors.
+// Use this for Create/Update/Delete operations only, not for Read.
+func (s *streamkapAPI) doRequestWithRetry(ctx context.Context, req *http.Request, result any) error {
+	// Capture the request body for potential retries
+	var bodyBytes []byte
+	if req.Body != nil {
+		var err error
+		bodyBytes, err = io.ReadAll(req.Body)
+		if err != nil {
+			return fmt.Errorf("failed to read request body: %w", err)
+		}
+		req.Body.Close()
+	}
+
+	cfg := DefaultRetryConfig()
+
+	return RetryWithBackoff(ctx, cfg, func() error {
+		// Restore body for each attempt
+		if bodyBytes != nil {
+			req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+		}
+		return s.doRequest(ctx, req, result)
+	})
 }
