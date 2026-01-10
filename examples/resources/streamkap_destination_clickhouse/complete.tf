@@ -22,6 +22,7 @@ variable "destination_clickhouse_connection_username" {
 
 variable "destination_clickhouse_connection_password" {
   type        = string
+  sensitive   = true
   description = "The password to connect to the Clickhouse server"
 }
 
