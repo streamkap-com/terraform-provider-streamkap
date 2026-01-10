@@ -433,7 +433,10 @@ type {{ .ModelName }} struct {
 // {{ .SchemaFuncName }} returns the Terraform schema for the {{ .ConnectorCode }} {{ .EntityType }}.
 func {{ .SchemaFuncName }}() schema.Schema {
 	return schema.Schema{
-		MarkdownDescription: "{{ .DisplayName }} {{ .EntityType }} connector",
+		Description:         "Manages a {{ .DisplayName }} {{ .EntityType }} connector.",
+		MarkdownDescription: "Manages a **{{ .DisplayName }} {{ .EntityType }} connector**.\n\n" +
+			"This resource creates and manages a {{ .DisplayName }} {{ .EntityType }} for Streamkap data pipelines.\n\n" +
+			"[Documentation](https://docs.streamkap.com/{{ .EntityType }}s/{{ .ConnectorCode }})",
 		Attributes: map[string]schema.Attribute{
 {{- range .Fields }}
 			"{{ .TfAttrName }}": {{ .SchemaAttrType }}{
@@ -453,7 +456,8 @@ func {{ .SchemaFuncName }}() schema.Schema {
 				Sensitive:           true,
 {{- end }}
 {{- if .Description }}
-				MarkdownDescription: {{ printf "%q" .Description }},
+				Description:         {{ printf "%q" .Description }},
+				MarkdownDescription: {{ printf "%q" .MarkdownDescription }},
 {{- end }}
 {{- if .HasDefault }}
 				Default:             {{ .DefaultFunc }},
