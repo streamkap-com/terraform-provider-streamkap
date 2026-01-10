@@ -62,25 +62,51 @@ jobs:
 
       - name: Generate schemas
         run: |
+          set -e  # Exit on first error
           CONNECTOR_TYPE="${{ github.event.inputs.connector_type || 'all' }}"
+          ERRORS=0
 
           if [ "$CONNECTOR_TYPE" = "all" ] || [ "$CONNECTOR_TYPE" = "source" ]; then
             echo "Generating source schemas..."
-            for config in backend/app/sources/plugins/*/configuration.latest.json; do
-              connector=$(basename $(dirname "$config"))
-              echo "  - $connector"
-              ./tfgen generate --config "$config" --type source --output internal/generated/
-            done
+            shopt -s nullglob  # Handle empty globs gracefully
+            configs=(backend/app/sources/plugins/*/configuration.latest.json)
+            if [ ${#configs[@]} -eq 0 ]; then
+              echo "⚠️ No source configuration files found"
+            else
+              for config in "${configs[@]}"; do
+                connector=$(basename $(dirname "$config"))
+                echo "  - $connector"
+                if ! ./tfgen generate --config "$config" --type source --output internal/generated/; then
+                  echo "❌ Failed to generate schema for source: $connector"
+                  ERRORS=$((ERRORS + 1))
+                fi
+              done
+            fi
           fi
 
           if [ "$CONNECTOR_TYPE" = "all" ] || [ "$CONNECTOR_TYPE" = "destination" ]; then
             echo "Generating destination schemas..."
-            for config in backend/app/destinations/plugins/*/configuration.latest.json; do
-              connector=$(basename $(dirname "$config"))
-              echo "  - $connector"
-              ./tfgen generate --config "$config" --type destination --output internal/generated/
-            done
+            shopt -s nullglob  # Handle empty globs gracefully
+            configs=(backend/app/destinations/plugins/*/configuration.latest.json)
+            if [ ${#configs[@]} -eq 0 ]; then
+              echo "⚠️ No destination configuration files found"
+            else
+              for config in "${configs[@]}"; do
+                connector=$(basename $(dirname "$config"))
+                echo "  - $connector"
+                if ! ./tfgen generate --config "$config" --type destination --output internal/generated/; then
+                  echo "❌ Failed to generate schema for destination: $connector"
+                  ERRORS=$((ERRORS + 1))
+                fi
+              done
+            fi
           fi
+
+          if [ $ERRORS -gt 0 ]; then
+            echo "❌ Schema generation completed with $ERRORS error(s)"
+            exit 1
+          fi
+          echo "✅ Schema generation completed successfully"
 
       - name: Run tests
         run: go test -v -short ./...

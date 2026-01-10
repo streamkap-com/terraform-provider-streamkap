@@ -8,12 +8,16 @@ import (
 
 func TestParseConnectorConfig_PostgreSQL(t *testing.T) {
 	// This test requires access to the backend repository
-	backendPath := "/Users/alexandrubodea/Documents/Repositories/python-be-streamkap"
+	// Set STREAMKAP_BACKEND_PATH environment variable to your backend repo path
+	backendPath := os.Getenv("STREAMKAP_BACKEND_PATH")
+	if backendPath == "" {
+		t.Skip("STREAMKAP_BACKEND_PATH not set, skipping test")
+	}
 	configPath := filepath.Join(backendPath, "app/sources/plugins/postgresql/configuration.latest.json")
 
 	// Skip if backend is not available
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		t.Skip("Backend repository not available, skipping test")
+		t.Skip("Backend repository not available at STREAMKAP_BACKEND_PATH, skipping test")
 	}
 
 	config, err := ParseConnectorConfig(configPath)
@@ -121,12 +125,16 @@ func TestParseConnectorConfig_PostgreSQL(t *testing.T) {
 
 func TestParseConnectorConfig_Snowflake(t *testing.T) {
 	// This test requires access to the backend repository
-	backendPath := "/Users/alexandrubodea/Documents/Repositories/python-be-streamkap"
+	// Set STREAMKAP_BACKEND_PATH environment variable to your backend repo path
+	backendPath := os.Getenv("STREAMKAP_BACKEND_PATH")
+	if backendPath == "" {
+		t.Skip("STREAMKAP_BACKEND_PATH not set, skipping test")
+	}
 	configPath := filepath.Join(backendPath, "app/destinations/plugins/snowflake/configuration.latest.json")
 
 	// Skip if backend is not available
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		t.Skip("Backend repository not available, skipping test")
+		t.Skip("Backend repository not available at STREAMKAP_BACKEND_PATH, skipping test")
 	}
 
 	config, err := ParseConnectorConfig(configPath)
