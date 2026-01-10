@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Configurable timeouts for all resources (create, update, delete operations)
+- Automatic retry with exponential backoff for transient errors
+- Unit tests for helper functions and retry logic
+
+### Changed
+- Improved error handling with retry for transient failures
+- Default timeouts: create/update/delete 20m
+
+### Technical Details
+- Backend investigation confirmed KC timeout is 15s per server
+- Conservative retry strategy: 3 attempts, 10s minimum delay
+- Retry only on mutating operations (not reads)
+
 ## [2.0.0] - 2026-01-09
 
 ### Added
