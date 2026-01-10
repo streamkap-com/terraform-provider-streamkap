@@ -846,8 +846,10 @@ func TestEntryToFieldData(t *testing.T) {
 		if field.SchemaAttrType != "schema.Int64Attribute" {
 			t.Errorf("SchemaAttrType = %q, want %q", field.SchemaAttrType, "schema.Int64Attribute")
 		}
-		if field.Description != "Test description Defaults to 50." {
-			t.Errorf("Description = %q, want %q", field.Description, "Test description Defaults to 50.")
+		// Since Encrypt=true, the security note is appended to the description
+		expectedDesc := "Test description Defaults to 50. This value is sensitive and will not appear in logs or CLI output."
+		if field.Description != expectedDesc {
+			t.Errorf("Description = %q, want %q", field.Description, expectedDesc)
 		}
 		if !field.Sensitive {
 			t.Error("Sensitive should be true (encrypt=true)")
