@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -17,23 +18,24 @@ import (
 
 // DestinationMysqlModel is the Terraform model for the mysql destination.
 type DestinationMysqlModel struct {
-	ID                                  types.String `tfsdk:"id"`
-	Name                                types.String `tfsdk:"name"`
-	Connector                           types.String `tfsdk:"connector"`
-	DatabaseHostname                    types.String `tfsdk:"database_hostname"`
-	DatabasePort                        types.String `tfsdk:"database_port"`
-	DatabaseDatabase                    types.String `tfsdk:"database_database"`
-	ConnectionUsername                  types.String `tfsdk:"connection_username"`
-	ConnectionPassword                  types.String `tfsdk:"connection_password"`
-	SchemaEvolution                     types.String `tfsdk:"schema_evolution"`
-	InsertMode                          types.String `tfsdk:"insert_mode"`
-	DeleteEnabled                       types.Bool   `tfsdk:"delete_enabled"`
-	PrimaryKeyMode                      types.String `tfsdk:"primary_key_mode"`
-	PrimaryKeyFields                    types.String `tfsdk:"primary_key_fields"`
-	TasksMax                            types.Int64  `tfsdk:"tasks_max"`
-	Topic2tableMap                      types.Bool   `tfsdk:"topic2table_map"`
-	TransformsChangeTopicNameMatchRegex types.String `tfsdk:"transforms_change_topic_name_match_regex"`
-	TransformsChangeTopicNameMapping    types.String `tfsdk:"transforms_change_topic_name_mapping"`
+	ID                                  types.String   `tfsdk:"id"`
+	Name                                types.String   `tfsdk:"name"`
+	Connector                           types.String   `tfsdk:"connector"`
+	DatabaseHostname                    types.String   `tfsdk:"database_hostname"`
+	DatabasePort                        types.Int64    `tfsdk:"database_port"`
+	DatabaseDatabase                    types.String   `tfsdk:"database_database"`
+	ConnectionUsername                  types.String   `tfsdk:"connection_username"`
+	ConnectionPassword                  types.String   `tfsdk:"connection_password"`
+	SchemaEvolution                     types.String   `tfsdk:"schema_evolution"`
+	InsertMode                          types.String   `tfsdk:"insert_mode"`
+	DeleteEnabled                       types.Bool     `tfsdk:"delete_enabled"`
+	PrimaryKeyMode                      types.String   `tfsdk:"primary_key_mode"`
+	PrimaryKeyFields                    types.String   `tfsdk:"primary_key_fields"`
+	TasksMax                            types.Int64    `tfsdk:"tasks_max"`
+	Topic2tableMap                      types.Bool     `tfsdk:"topic2table_map"`
+	TransformsChangeTopicNameMatchRegex types.String   `tfsdk:"transforms_change_topic_name_match_regex"`
+	TransformsChangeTopicNameMapping    types.String   `tfsdk:"transforms_change_topic_name_mapping"`
+	Timeouts                            timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationMysqlSchema returns the Terraform schema for the mysql destination.
@@ -70,12 +72,12 @@ func DestinationMysqlSchema() schema.Schema {
 				Description:         "MySQL Hostname",
 				MarkdownDescription: "MySQL Hostname",
 			},
-			"database_port": schema.StringAttribute{
+			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "MySQL Port. For example, 3306 Defaults to \"3306\".",
+				Description:         "MySQL Port. For example, 3306 Defaults to 3306.",
 				MarkdownDescription: "MySQL Port. For example, 3306 Defaults to `3306`.",
-				Default:             stringdefault.StaticString("3306"),
+				Default:             int64default.StaticInt64(3306),
 			},
 			"database_database": schema.StringAttribute{
 				Optional:            true,

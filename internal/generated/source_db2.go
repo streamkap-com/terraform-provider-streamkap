@@ -3,8 +3,10 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -13,25 +15,26 @@ import (
 
 // SourceDb2Model is the Terraform model for the db2 source.
 type SourceDb2Model struct {
-	ID                                                 types.String `tfsdk:"id"`
-	Name                                               types.String `tfsdk:"name"`
-	Connector                                          types.String `tfsdk:"connector"`
-	DatabaseHostname                                   types.String `tfsdk:"database_hostname"`
-	DatabasePort                                       types.String `tfsdk:"database_port"`
-	DatabaseUser                                       types.String `tfsdk:"database_user"`
-	DatabasePassword                                   types.String `tfsdk:"database_password"`
-	DatabaseDbname                                     types.String `tfsdk:"database_dbname"`
-	SchemaIncludeList                                  types.String `tfsdk:"schema_include_list"`
-	TableIncludeList                                   types.String `tfsdk:"table_include_list"`
-	SignalDataCollectionSchemaOrDatabase               types.String `tfsdk:"signal_data_collection_schema_or_database"`
-	SchemaHistoryInternalStoreOnlyCapturedDatabasesDdl types.Bool   `tfsdk:"schema_history_internal_store_only_captured_databases_ddl"`
-	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool   `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
-	SSHEnabled                                         types.Bool   `tfsdk:"ssh_enabled"`
-	SSHHost                                            types.String `tfsdk:"ssh_host"`
-	SSHPort                                            types.String `tfsdk:"ssh_port"`
-	SSHUser                                            types.String `tfsdk:"ssh_user"`
-	SSHPublicKey                                       types.String `tfsdk:"ssh_public_key"`
-	ColumnExcludeList                                  types.String `tfsdk:"column_exclude_list"`
+	ID                                                 types.String   `tfsdk:"id"`
+	Name                                               types.String   `tfsdk:"name"`
+	Connector                                          types.String   `tfsdk:"connector"`
+	DatabaseHostname                                   types.String   `tfsdk:"database_hostname"`
+	DatabasePort                                       types.Int64    `tfsdk:"database_port"`
+	DatabaseUser                                       types.String   `tfsdk:"database_user"`
+	DatabasePassword                                   types.String   `tfsdk:"database_password"`
+	DatabaseDbname                                     types.String   `tfsdk:"database_dbname"`
+	SchemaIncludeList                                  types.String   `tfsdk:"schema_include_list"`
+	TableIncludeList                                   types.String   `tfsdk:"table_include_list"`
+	SignalDataCollectionSchemaOrDatabase               types.String   `tfsdk:"signal_data_collection_schema_or_database"`
+	SchemaHistoryInternalStoreOnlyCapturedDatabasesDdl types.Bool     `tfsdk:"schema_history_internal_store_only_captured_databases_ddl"`
+	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool     `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
+	SSHEnabled                                         types.Bool     `tfsdk:"ssh_enabled"`
+	SSHHost                                            types.String   `tfsdk:"ssh_host"`
+	SSHPort                                            types.Int64    `tfsdk:"ssh_port"`
+	SSHUser                                            types.String   `tfsdk:"ssh_user"`
+	SSHPublicKey                                       types.String   `tfsdk:"ssh_public_key"`
+	ColumnExcludeList                                  types.String   `tfsdk:"column_exclude_list"`
+	Timeouts                                           timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourceDb2Schema returns the Terraform schema for the db2 source.
@@ -68,12 +71,12 @@ func SourceDb2Schema() schema.Schema {
 				Description:         "IP address or hostname of the Db2 database server",
 				MarkdownDescription: "IP address or hostname of the Db2 database server",
 			},
-			"database_port": schema.StringAttribute{
+			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port number of the Db2 database server Defaults to \"50000\".",
+				Description:         "Port number of the Db2 database server Defaults to 50000.",
 				MarkdownDescription: "Port number of the Db2 database server Defaults to `50000`.",
-				Default:             stringdefault.StaticString("50000"),
+				Default:             int64default.StaticInt64(50000),
 			},
 			"database_user": schema.StringAttribute{
 				Required:            true,
@@ -132,12 +135,12 @@ func SourceDb2Schema() schema.Schema {
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
 			},
-			"ssh_port": schema.StringAttribute{
+			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to \"22\".",
+				Description:         "Port of your SSH server Defaults to 22.",
 				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
-				Default:             stringdefault.StaticString("22"),
+				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,

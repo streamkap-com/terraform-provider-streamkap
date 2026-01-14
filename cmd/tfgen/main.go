@@ -81,6 +81,17 @@ func runGenerate(backendPath, output, entityType, connector string) error {
 		return fmt.Errorf("backend path does not exist: %s", backendPath)
 	}
 
+	// Load override configuration
+	// The overrides file is located relative to the executable, find it using runtime
+	overridesPath := findOverridesPath()
+	overrides, err := LoadOverrides(overridesPath)
+	if err != nil {
+		return fmt.Errorf("failed to load overrides from %s: %w", overridesPath, err)
+	}
+	if len(overrides.FieldOverrides) > 0 {
+		fmt.Printf("Loaded %d field overrides from %s\n\n", len(overrides.FieldOverrides), overridesPath)
+	}
+
 	// Determine which entity types to process
 	entitiesToProcess := knownEntities
 	if entityType != "all" {
@@ -93,7 +104,7 @@ func runGenerate(backendPath, output, entityType, connector string) error {
 	// Process each entity type
 	var totalGenerated int
 	for _, entity := range entitiesToProcess {
-		count, err := processEntity(backendPath, output, entity, connector)
+		count, err := processEntity(backendPath, output, entity, connector, overrides)
 		if err != nil {
 			return fmt.Errorf("failed to process %s: %w", entity.Type, err)
 		}
@@ -102,6 +113,32 @@ func runGenerate(backendPath, output, entityType, connector string) error {
 
 	fmt.Printf("\nGeneration complete! Generated %d schema files.\n", totalGenerated)
 	return nil
+}
+
+// findOverridesPath locates the overrides.json file.
+// It searches in the following order:
+// 1. Current working directory
+// 2. Directory containing the executable
+// 3. cmd/tfgen directory (for development)
+func findOverridesPath() string {
+	candidates := []string{
+		"overrides.json",
+		"cmd/tfgen/overrides.json",
+	}
+
+	// Get executable directory
+	if exe, err := os.Executable(); err == nil {
+		candidates = append(candidates, filepath.Join(filepath.Dir(exe), "overrides.json"))
+	}
+
+	for _, path := range candidates {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+	}
+
+	// Default to current directory (LoadOverrides handles missing file gracefully)
+	return "overrides.json"
 }
 
 // filterEntities returns entities matching the given type filter.
@@ -119,7 +156,7 @@ func filterEntities(entityType string) []EntityConfig {
 }
 
 // processEntity processes all connectors for a given entity type.
-func processEntity(backendPath, output string, entity EntityConfig, specificConnector string) (int, error) {
+func processEntity(backendPath, output string, entity EntityConfig, specificConnector string, overrides *OverrideConfig) (int, error) {
 	pluginDir := filepath.Join(backendPath, entity.PluginDir)
 
 	// Check if plugin directory exists
@@ -134,7 +171,7 @@ func processEntity(backendPath, output string, entity EntityConfig, specificConn
 		return 0, fmt.Errorf("failed to read plugin directory %s: %w", pluginDir, err)
 	}
 
-	generator := NewGenerator(output, entity.Type)
+	generator := NewGeneratorWithOverrides(output, entity.Type, overrides)
 	var count int
 
 	for _, entry := range entries {

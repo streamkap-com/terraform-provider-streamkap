@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -17,20 +18,21 @@ import (
 
 // DestinationDb2Model is the Terraform model for the db2 destination.
 type DestinationDb2Model struct {
-	ID                 types.String `tfsdk:"id"`
-	Name               types.String `tfsdk:"name"`
-	Connector          types.String `tfsdk:"connector"`
-	DatabaseHostname   types.String `tfsdk:"database_hostname"`
-	DatabasePort       types.String `tfsdk:"database_port"`
-	DatabaseDatabase   types.String `tfsdk:"database_database"`
-	ConnectionUsername types.String `tfsdk:"connection_username"`
-	ConnectionPassword types.String `tfsdk:"connection_password"`
-	SchemaEvolution    types.String `tfsdk:"schema_evolution"`
-	InsertMode         types.String `tfsdk:"insert_mode"`
-	DeleteEnabled      types.Bool   `tfsdk:"delete_enabled"`
-	PrimaryKeyMode     types.String `tfsdk:"primary_key_mode"`
-	PrimaryKeyFields   types.String `tfsdk:"primary_key_fields"`
-	TasksMax           types.Int64  `tfsdk:"tasks_max"`
+	ID                 types.String   `tfsdk:"id"`
+	Name               types.String   `tfsdk:"name"`
+	Connector          types.String   `tfsdk:"connector"`
+	DatabaseHostname   types.String   `tfsdk:"database_hostname"`
+	DatabasePort       types.Int64    `tfsdk:"database_port"`
+	DatabaseDatabase   types.String   `tfsdk:"database_database"`
+	ConnectionUsername types.String   `tfsdk:"connection_username"`
+	ConnectionPassword types.String   `tfsdk:"connection_password"`
+	SchemaEvolution    types.String   `tfsdk:"schema_evolution"`
+	InsertMode         types.String   `tfsdk:"insert_mode"`
+	DeleteEnabled      types.Bool     `tfsdk:"delete_enabled"`
+	PrimaryKeyMode     types.String   `tfsdk:"primary_key_mode"`
+	PrimaryKeyFields   types.String   `tfsdk:"primary_key_fields"`
+	TasksMax           types.Int64    `tfsdk:"tasks_max"`
+	Timeouts           timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationDb2Schema returns the Terraform schema for the db2 destination.
@@ -67,12 +69,12 @@ func DestinationDb2Schema() schema.Schema {
 				Description:         "Db2 Hostname",
 				MarkdownDescription: "Db2 Hostname",
 			},
-			"database_port": schema.StringAttribute{
+			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Db2 Port. For example, 50000 Defaults to \"50000\".",
+				Description:         "Db2 Port. For example, 50000 Defaults to 50000.",
 				MarkdownDescription: "Db2 Port. For example, 50000 Defaults to `50000`.",
-				Default:             stringdefault.StaticString("50000"),
+				Default:             int64default.StaticInt64(50000),
 			},
 			"database_database": schema.StringAttribute{
 				Optional:            true,

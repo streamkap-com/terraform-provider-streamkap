@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"go/format"
 	"os"
@@ -18,6 +19,60 @@ import (
 type Generator struct {
 	outputDir  string
 	entityType string // "source", "destination", "transform"
+	overrides  *OverrideConfig
+}
+
+// OverrideConfig holds all field overrides for map types and other special cases.
+type OverrideConfig struct {
+	FieldOverrides []FieldOverride `json:"field_overrides"`
+}
+
+// FieldOverride represents an override configuration for a specific field.
+type FieldOverride struct {
+	Connector         string                 `json:"connector"`
+	EntityType        string                 `json:"entity_type"`
+	APIFieldName      string                 `json:"api_field_name"`
+	TerraformAttrName string                 `json:"terraform_attr_name"`
+	Type              string                 `json:"type"` // "map_string", "map_nested"
+	Optional          bool                   `json:"optional"`
+	Description       string                 `json:"description"`
+	NestedModelName   string                 `json:"nested_model_name,omitempty"`
+	NestedFields      []NestedFieldOverride  `json:"nested_fields,omitempty"`
+}
+
+// NestedFieldOverride represents a field within a nested map model.
+type NestedFieldOverride struct {
+	Name              string            `json:"name"`
+	TerraformAttrName string            `json:"terraform_attr_name"`
+	Type              string            `json:"type"` // "string", "int64", "bool"
+	Optional          bool              `json:"optional"`
+	Required          bool              `json:"required"`
+	Validators        []ValidatorConfig `json:"validators,omitempty"`
+}
+
+// ValidatorConfig represents a validator configuration.
+type ValidatorConfig struct {
+	Type  string `json:"type"`  // "int64_at_least", etc.
+	Value int64  `json:"value"` // validator value
+}
+
+// LoadOverrides loads the override configuration from a JSON file.
+func LoadOverrides(path string) (*OverrideConfig, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// Return empty config if file doesn't exist
+			return &OverrideConfig{}, nil
+		}
+		return nil, fmt.Errorf("failed to read overrides file %s: %w", path, err)
+	}
+
+	var config OverrideConfig
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, fmt.Errorf("failed to parse overrides file %s: %w", path, err)
+	}
+
+	return &config, nil
 }
 
 // NewGenerator creates a new Generator instance.
@@ -26,6 +81,33 @@ func NewGenerator(outputDir, entityType string) *Generator {
 		outputDir:  outputDir,
 		entityType: entityType,
 	}
+}
+
+// NewGeneratorWithOverrides creates a new Generator instance with override configuration.
+func NewGeneratorWithOverrides(outputDir, entityType string, overrides *OverrideConfig) *Generator {
+	return &Generator{
+		outputDir:  outputDir,
+		entityType: entityType,
+		overrides:  overrides,
+	}
+}
+
+// getOverridesForConnector returns all field overrides for a specific connector.
+func (g *Generator) getOverridesForConnector(connectorCode string) []FieldOverride {
+	if g.overrides == nil {
+		return nil
+	}
+
+	// Map entity type to match the JSON format (with 's' suffix)
+	entityTypePlural := g.entityType + "s"
+
+	var result []FieldOverride
+	for _, override := range g.overrides.FieldOverrides {
+		if override.Connector == connectorCode && override.EntityType == entityTypePlural {
+			result = append(result, override)
+		}
+	}
+	return result
 }
 
 // Generate creates Terraform schema files from a ConnectorConfig.
@@ -59,7 +141,47 @@ type TemplateData struct {
 	SchemaFuncName    string // e.g., "SourcePostgresqlSchema"
 	FieldMappingsName string // e.g., "SourcePostgresqlFieldMappings"
 	Fields            []FieldData
+	MapFields         []MapFieldData   // Map type fields from overrides
+	NestedModels      []NestedModelData // Nested model definitions for map fields
 	Imports           []string
+}
+
+// MapFieldData holds data for map type fields.
+type MapFieldData struct {
+	GoFieldName         string // e.g., "AutoQADedupeTableMapping"
+	GoType              string // e.g., "map[string]types.String" or "map[string]ModelName"
+	TfsdkTag            string // e.g., "auto_qa_dedupe_table_mapping"
+	TfAttrName          string // e.g., "auto_qa_dedupe_table_mapping"
+	Description         string
+	MarkdownDescription string
+	Optional            bool
+	IsNested            bool   // true if MapNestedAttribute, false if MapAttribute
+	NestedModelName     string // Name of the nested model type (for nested maps)
+	NestedAttributes    []NestedAttributeData // Attributes for nested model
+	APIFieldName        string // e.g., "auto.qa.dedupe.table.mapping"
+}
+
+// NestedAttributeData holds data for attributes within a nested map.
+type NestedAttributeData struct {
+	TfAttrName     string
+	SchemaAttrType string // "schema.StringAttribute", "schema.Int64Attribute", etc.
+	Optional       bool
+	Required       bool
+	HasValidators  bool
+	Validators     string
+}
+
+// NestedModelData holds data for generating nested model type definitions.
+type NestedModelData struct {
+	ModelName string
+	Fields    []NestedModelField
+}
+
+// NestedModelField holds data for a field within a nested model.
+type NestedModelField struct {
+	GoFieldName string
+	GoType      string
+	TfsdkTag    string
 }
 
 // FieldData holds data for a single field in the model and schema.
@@ -110,12 +232,20 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 
 	// Track which imports we need
 	imports := map[string]bool{
-		"github.com/hashicorp/terraform-plugin-framework/resource/schema": true,
-		"github.com/hashicorp/terraform-plugin-framework/types":           true,
+		"github.com/hashicorp/terraform-plugin-framework/resource/schema":             true,
+		"github.com/hashicorp/terraform-plugin-framework/types":                        true,
+		"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts": true,
 	}
 
 	// Add common fields first (id, name, connector/transform_type)
 	data.Fields = append(data.Fields, g.commonFields()...)
+
+	// Get overrides for this connector to skip fields that have custom handling
+	overrides := g.getOverridesForConnector(connectorCode)
+	overrideAPIFields := make(map[string]bool)
+	for _, override := range overrides {
+		overrideAPIFields[override.APIFieldName] = true
+	}
 
 	// Add user-defined fields from config
 	for _, entry := range config.UserDefinedEntries() {
@@ -124,12 +254,23 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 			continue
 		}
 
+		// Skip fields that have custom overrides (they'll be added separately)
+		if overrideAPIFields[entry.Name] {
+			continue
+		}
+
 		field := g.entryToFieldData(&entry)
 		data.Fields = append(data.Fields, field)
 
+		// Determine the effective type (port fields force Int64)
+		effectiveType := entry.TerraformType()
+		if isPortField(field.TfAttrName) {
+			effectiveType = TerraformTypeInt64
+		}
+
 		// Track required imports based on field properties
 		if field.HasDefault {
-			switch entry.TerraformType() {
+			switch effectiveType {
 			case TerraformTypeString:
 				imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"] = true
 			case TerraformTypeInt64:
@@ -142,7 +283,7 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 			imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"] = true
 		}
 		if field.NeedsPlanMod {
-			switch entry.TerraformType() {
+			switch effectiveType {
 			case TerraformTypeString:
 				imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"] = true
 			case TerraformTypeInt64:
@@ -152,7 +293,7 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 			}
 		}
 		if field.RequiresReplace {
-			switch entry.TerraformType() {
+			switch effectiveType {
 			case TerraformTypeString:
 				imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"] = true
 			case TerraformTypeInt64:
@@ -162,13 +303,39 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 			}
 		}
 		if field.HasValidators {
-			switch entry.TerraformType() {
+			switch effectiveType {
 			case TerraformTypeString:
 				imports["github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"] = true
 				imports["github.com/hashicorp/terraform-plugin-framework/schema/validator"] = true
 			case TerraformTypeInt64:
 				imports["github.com/hashicorp/terraform-plugin-framework-validators/int64validator"] = true
 				imports["github.com/hashicorp/terraform-plugin-framework/schema/validator"] = true
+			}
+		}
+	}
+
+	// Process map field overrides (overrides already loaded above)
+	for _, override := range overrides {
+		mapField := g.overrideToMapFieldData(&override)
+		data.MapFields = append(data.MapFields, mapField)
+
+		// Add nested model if this is a nested map
+		if override.Type == "map_nested" && len(override.NestedFields) > 0 {
+			nestedModel := g.overrideToNestedModelData(&override)
+			data.NestedModels = append(data.NestedModels, nestedModel)
+
+			// Add validator imports for nested fields
+			for _, nf := range override.NestedFields {
+				if len(nf.Validators) > 0 {
+					switch nf.Type {
+					case "int64":
+						imports["github.com/hashicorp/terraform-plugin-framework-validators/int64validator"] = true
+						imports["github.com/hashicorp/terraform-plugin-framework/schema/validator"] = true
+					case "string":
+						imports["github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"] = true
+						imports["github.com/hashicorp/terraform-plugin-framework/schema/validator"] = true
+					}
+				}
 			}
 		}
 	}
@@ -185,6 +352,110 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 	sort.Strings(data.Imports)
 
 	return data
+}
+
+// overrideToMapFieldData converts a FieldOverride to MapFieldData.
+func (g *Generator) overrideToMapFieldData(override *FieldOverride) MapFieldData {
+	goFieldName := toPascalCase(override.TerraformAttrName)
+
+	field := MapFieldData{
+		GoFieldName:         goFieldName,
+		TfsdkTag:            override.TerraformAttrName,
+		TfAttrName:          override.TerraformAttrName,
+		Description:         override.Description,
+		MarkdownDescription: override.Description,
+		Optional:            override.Optional,
+		APIFieldName:        override.APIFieldName,
+	}
+
+	switch override.Type {
+	case "map_string":
+		field.GoType = "map[string]types.String"
+		field.IsNested = false
+	case "map_nested":
+		// Use lowercase first letter for nested model type to match main branch convention
+		modelName := lowercaseFirst(override.NestedModelName)
+		field.GoType = fmt.Sprintf("map[string]%s", modelName)
+		field.IsNested = true
+		field.NestedModelName = modelName
+
+		// Convert nested fields to NestedAttributeData
+		for _, nf := range override.NestedFields {
+			attr := NestedAttributeData{
+				TfAttrName: nf.TerraformAttrName,
+				Optional:   nf.Optional,
+				Required:   nf.Required,
+			}
+
+			// Determine schema attribute type
+			switch nf.Type {
+			case "string":
+				attr.SchemaAttrType = "schema.StringAttribute"
+			case "int64":
+				attr.SchemaAttrType = "schema.Int64Attribute"
+			case "bool":
+				attr.SchemaAttrType = "schema.BoolAttribute"
+			}
+
+			// Add validators if present
+			if len(nf.Validators) > 0 {
+				attr.HasValidators = true
+				var validators []string
+				for _, v := range nf.Validators {
+					switch v.Type {
+					case "int64_at_least":
+						validators = append(validators, fmt.Sprintf("int64validator.AtLeast(%d)", v.Value))
+					}
+				}
+				attr.Validators = strings.Join(validators, ", ")
+			}
+
+			field.NestedAttributes = append(field.NestedAttributes, attr)
+		}
+	}
+
+	return field
+}
+
+// overrideToNestedModelData converts a FieldOverride to NestedModelData.
+func (g *Generator) overrideToNestedModelData(override *FieldOverride) NestedModelData {
+	// Use lowercase first letter for model name to match main branch convention
+	modelName := lowercaseFirst(override.NestedModelName)
+
+	model := NestedModelData{
+		ModelName: modelName,
+	}
+
+	for _, nf := range override.NestedFields {
+		goFieldName := toPascalCase(nf.TerraformAttrName)
+		var goType string
+		switch nf.Type {
+		case "string":
+			goType = "types.String"
+		case "int64":
+			goType = "types.Int64"
+		case "bool":
+			goType = "types.Bool"
+		}
+
+		model.Fields = append(model.Fields, NestedModelField{
+			GoFieldName: goFieldName,
+			GoType:      goType,
+			TfsdkTag:    nf.TerraformAttrName,
+		})
+	}
+
+	return model
+}
+
+// lowercaseFirst returns the string with the first letter lowercased.
+func lowercaseFirst(s string) string {
+	if s == "" {
+		return s
+	}
+	r := []rune(s)
+	r[0] = unicode.ToLower(r[0])
+	return string(r)
 }
 
 // commonFields returns the common fields present in all resources.
@@ -247,10 +518,20 @@ func (g *Generator) commonFields() []FieldData {
 	return fields
 }
 
+// isPortField returns true if the field name indicates it's a port field.
+// Port fields should use Int64 type for better UX.
+func isPortField(tfAttrName string) bool {
+	return tfAttrName == "port" ||
+		strings.HasSuffix(tfAttrName, "_port")
+}
+
 // entryToFieldData converts a ConfigEntry to FieldData.
 func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 	tfAttrName := entry.TerraformAttributeName()
 	goFieldName := toPascalCase(tfAttrName)
+
+	// Check if this is a port field that should be Int64
+	forceInt64 := isPortField(tfAttrName)
 
 	field := FieldData{
 		GoFieldName:    goFieldName,
@@ -263,6 +544,11 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 		RequiresReplace: entry.IsSetOnce(),
 	}
 
+	// Override type for port fields
+	if forceInt64 {
+		field.GoType = string(TerraformTypeInt64)
+	}
+
 	// Use display name as description if description is empty
 	if field.Description == "" {
 		field.Description = entry.DisplayName
@@ -271,18 +557,22 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 	// Initialize MarkdownDescription from Description
 	field.MarkdownDescription = field.Description
 
-	// Determine schema attribute type
-	switch entry.TerraformType() {
-	case TerraformTypeString:
-		field.SchemaAttrType = "schema.StringAttribute"
-	case TerraformTypeInt64:
+	// Determine schema attribute type (respecting port field override)
+	if forceInt64 {
 		field.SchemaAttrType = "schema.Int64Attribute"
-	case TerraformTypeBool:
-		field.SchemaAttrType = "schema.BoolAttribute"
-	case TerraformTypeList:
-		field.SchemaAttrType = "schema.ListAttribute"
-		field.GoType = "types.List"
-		field.IsListType = true // Flag for template to add ElementType
+	} else {
+		switch entry.TerraformType() {
+		case TerraformTypeString:
+			field.SchemaAttrType = "schema.StringAttribute"
+		case TerraformTypeInt64:
+			field.SchemaAttrType = "schema.Int64Attribute"
+		case TerraformTypeBool:
+			field.SchemaAttrType = "schema.BoolAttribute"
+		case TerraformTypeList:
+			field.SchemaAttrType = "schema.ListAttribute"
+			field.GoType = "types.List"
+			field.IsListType = true // Flag for template to add ElementType
+		}
 	}
 
 	// Determine Required/Optional/Computed
@@ -291,7 +581,7 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 	} else if entry.HasDefault() {
 		field.Optional = true
 		field.Computed = true
-		field.DefaultFunc = g.defaultFunc(entry)
+		field.DefaultFunc = g.defaultFunc(entry, forceInt64)
 		// Only set HasDefault if we actually have a default function
 		// (list types don't have simple defaults like strings/ints/bools)
 		if field.DefaultFunc != "" {
@@ -299,19 +589,26 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 			field.NeedsPlanMod = false // Fields with defaults don't need UseStateForUnknown
 
 			// Capture default value and enhance descriptions
-			switch entry.TerraformType() {
-			case TerraformTypeString:
-				defaultVal := entry.GetDefaultString()
-				field.Description = field.Description + fmt.Sprintf(" Defaults to %q.", defaultVal)
-				field.MarkdownDescription = field.MarkdownDescription + fmt.Sprintf(" Defaults to `%s`.", defaultVal)
-			case TerraformTypeInt64:
-				defaultVal := entry.GetDefaultInt64()
+			if forceInt64 {
+				// Port fields: parse string default as int64
+				defaultVal := entry.GetDefaultInt64FromString()
 				field.Description = field.Description + fmt.Sprintf(" Defaults to %d.", defaultVal)
 				field.MarkdownDescription = field.MarkdownDescription + fmt.Sprintf(" Defaults to `%d`.", defaultVal)
-			case TerraformTypeBool:
-				defaultVal := entry.GetDefaultBool()
-				field.Description = field.Description + fmt.Sprintf(" Defaults to %t.", defaultVal)
-				field.MarkdownDescription = field.MarkdownDescription + fmt.Sprintf(" Defaults to `%t`.", defaultVal)
+			} else {
+				switch entry.TerraformType() {
+				case TerraformTypeString:
+					defaultVal := entry.GetDefaultString()
+					field.Description = field.Description + fmt.Sprintf(" Defaults to %q.", defaultVal)
+					field.MarkdownDescription = field.MarkdownDescription + fmt.Sprintf(" Defaults to `%s`.", defaultVal)
+				case TerraformTypeInt64:
+					defaultVal := entry.GetDefaultInt64()
+					field.Description = field.Description + fmt.Sprintf(" Defaults to %d.", defaultVal)
+					field.MarkdownDescription = field.MarkdownDescription + fmt.Sprintf(" Defaults to `%d`.", defaultVal)
+				case TerraformTypeBool:
+					defaultVal := entry.GetDefaultBool()
+					field.Description = field.Description + fmt.Sprintf(" Defaults to %t.", defaultVal)
+					field.MarkdownDescription = field.MarkdownDescription + fmt.Sprintf(" Defaults to `%t`.", defaultVal)
+				}
 			}
 		}
 	} else {
@@ -352,7 +649,11 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 }
 
 // defaultFunc generates the default function call for a config entry.
-func (g *Generator) defaultFunc(entry *ConfigEntry) string {
+// If forceInt64 is true, treats the default as int64 even if backend stores it as string.
+func (g *Generator) defaultFunc(entry *ConfigEntry, forceInt64 bool) string {
+	if forceInt64 {
+		return fmt.Sprintf("int64default.StaticInt64(%d)", entry.GetDefaultInt64FromString())
+	}
 	switch entry.TerraformType() {
 	case TerraformTypeString:
 		return fmt.Sprintf("stringdefault.StaticString(%q)", entry.GetDefaultString())
@@ -437,7 +738,7 @@ func toPascalCase(s string) string {
 		}
 		// Handle common abbreviations
 		upper := strings.ToUpper(part)
-		if upper == "ID" || upper == "SSH" || upper == "SSL" || upper == "DB" || upper == "URL" || upper == "API" || upper == "AWS" || upper == "ARN" {
+		if upper == "ID" || upper == "SSH" || upper == "SSL" || upper == "DB" || upper == "URL" || upper == "API" || upper == "AWS" || upper == "ARN" || upper == "SQL" || upper == "QA" {
 			parts[i] = upper
 		} else {
 			parts[i] = capitalizeFirst(part)
@@ -457,11 +758,25 @@ import (
 {{- end }}
 )
 
+{{- /* Generate nested model types for map fields */ -}}
+{{- range .NestedModels }}
+
+type {{ .ModelName }} struct {
+{{- range .Fields }}
+	{{ .GoFieldName }} {{ .GoType }} ` + "`" + `tfsdk:"{{ .TfsdkTag }}"` + "`" + `
+{{- end }}
+}
+{{- end }}
+
 // {{ .ModelName }} is the Terraform model for the {{ .ConnectorCode }} {{ .EntityType }}.
 type {{ .ModelName }} struct {
 {{- range .Fields }}
 	{{ .GoFieldName }} {{ .GoType }} ` + "`" + `tfsdk:"{{ .TfsdkTag }}"` + "`" + `
 {{- end }}
+{{- range .MapFields }}
+	{{ .GoFieldName }} {{ .GoType }} ` + "`" + `tfsdk:"{{ .TfsdkTag }}"` + "`" + `
+{{- end }}
+	Timeouts timeouts.Value ` + "`" + `tfsdk:"timeouts"` + "`" + `
 }
 
 // {{ .SchemaFuncName }} returns the Terraform schema for the {{ .ConnectorCode }} {{ .EntityType }}.
@@ -502,7 +817,7 @@ func {{ .SchemaFuncName }}() schema.Schema {
 				},
 {{- end }}
 {{- if or .NeedsPlanMod .RequiresReplace }}
-				PlanModifiers: []planmodifier.{{ if eq .SchemaAttrType "schema.StringAttribute" }}String{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}Int64{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}Bool{{ end }}{
+				PlanModifiers: []planmodifier.{{ if eq .SchemaAttrType "schema.StringAttribute" }}String{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}Int64{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}boolplanmodifier{{ end }}{
 {{- if .NeedsPlanMod }}
 					{{ if eq .SchemaAttrType "schema.StringAttribute" }}stringplanmodifier{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}int64planmodifier{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}boolplanmodifier{{ end }}.UseStateForUnknown(),
 {{- end }}
@@ -513,6 +828,42 @@ func {{ .SchemaFuncName }}() schema.Schema {
 {{- end }}
 			},
 {{- end }}
+{{- /* Generate map field schema attributes */ -}}
+{{- range .MapFields }}
+{{- if .IsNested }}
+			"{{ .TfAttrName }}": schema.MapNestedAttribute{
+				Optional: {{ .Optional }},
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+{{- range .NestedAttributes }}
+						"{{ .TfAttrName }}": {{ .SchemaAttrType }}{
+{{- if .Optional }}
+							Optional: true,
+{{- end }}
+{{- if .Required }}
+							Required: true,
+{{- end }}
+{{- if .HasValidators }}
+							Validators: []validator.{{ if eq .SchemaAttrType "schema.StringAttribute" }}String{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}Int64{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}Bool{{ end }}{
+								{{ .Validators }},
+							},
+{{- end }}
+						},
+{{- end }}
+					},
+				},
+				Description:         {{ printf "%q" .Description }},
+				MarkdownDescription: {{ printf "%q" .MarkdownDescription }},
+			},
+{{- else }}
+			"{{ .TfAttrName }}": schema.MapAttribute{
+				Optional:            {{ .Optional }},
+				ElementType:         types.StringType,
+				Description:         {{ printf "%q" .Description }},
+				MarkdownDescription: {{ printf "%q" .MarkdownDescription }},
+			},
+{{- end }}
+{{- end }}
 		},
 	}
 }
@@ -520,6 +871,11 @@ func {{ .SchemaFuncName }}() schema.Schema {
 // {{ .FieldMappingsName }} maps Terraform attribute names to API field names.
 var {{ .FieldMappingsName }} = map[string]string{
 {{- range .Fields }}
+{{- if .APIFieldName }}
+	"{{ .TfAttrName }}": "{{ .APIFieldName }}",
+{{- end }}
+{{- end }}
+{{- range .MapFields }}
 {{- if .APIFieldName }}
 	"{{ .TfAttrName }}": "{{ .APIFieldName }}",
 {{- end }}

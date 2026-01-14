@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -14,18 +15,19 @@ import (
 
 // DestinationR2Model is the Terraform model for the r2 destination.
 type DestinationR2Model struct {
-	ID                  types.String `tfsdk:"id"`
-	Name                types.String `tfsdk:"name"`
-	Connector           types.String `tfsdk:"connector"`
-	R2Account           types.String `tfsdk:"r2_account"`
-	AWSAccessKeyID      types.String `tfsdk:"aws_access_key_id"`
-	AWSSecretAccessKey  types.String `tfsdk:"aws_secret_access_key"`
-	AWSS3BucketName     types.String `tfsdk:"aws_s3_bucket_name"`
-	Format              types.String `tfsdk:"format"`
-	FileNameTemplate    types.String `tfsdk:"file_name_template"`
-	FileNamePrefix      types.String `tfsdk:"file_name_prefix"`
-	FileCompressionType types.String `tfsdk:"file_compression_type"`
-	FormatOutputFields  types.List   `tfsdk:"format_output_fields"`
+	ID                  types.String   `tfsdk:"id"`
+	Name                types.String   `tfsdk:"name"`
+	Connector           types.String   `tfsdk:"connector"`
+	R2Account           types.String   `tfsdk:"r2_account"`
+	AWSAccessKeyID      types.String   `tfsdk:"aws_access_key_id"`
+	AWSSecretAccessKey  types.String   `tfsdk:"aws_secret_access_key"`
+	AWSS3BucketName     types.String   `tfsdk:"aws_s3_bucket_name"`
+	Format              types.String   `tfsdk:"format"`
+	FileNameTemplate    types.String   `tfsdk:"file_name_template"`
+	FileNamePrefix      types.String   `tfsdk:"file_name_prefix"`
+	FileCompressionType types.String   `tfsdk:"file_compression_type"`
+	FormatOutputFields  types.List     `tfsdk:"format_output_fields"`
+	Timeouts            timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationR2Schema returns the Terraform schema for the r2 destination.

@@ -16,12 +16,12 @@ var _ TransformConfig = (*SqlJoinConfig)(nil)
 
 // GetSchema returns the Terraform schema for sql_join transform.
 func (c *SqlJoinConfig) GetSchema() schema.Schema {
-	return generated.TransformSqlJoinSchema()
+	return generated.TransformSQLJoinSchema()
 }
 
 // GetFieldMappings returns the field mappings from Terraform attributes to API fields.
 func (c *SqlJoinConfig) GetFieldMappings() map[string]string {
-	return generated.TransformSqlJoinFieldMappings
+	return generated.TransformSQLJoinFieldMappings
 }
 
 // GetTransformType returns the transform type code for sql_join.
@@ -36,7 +36,7 @@ func (c *SqlJoinConfig) GetResourceName() string {
 
 // NewModelInstance returns a new instance of the sql_join model.
 func (c *SqlJoinConfig) NewModelInstance() any {
-	return &generated.TransformSqlJoinModel{}
+	return &generated.TransformSQLJoinModel{}
 }
 
 // NewSqlJoinResource creates a new sql_join transform resource.

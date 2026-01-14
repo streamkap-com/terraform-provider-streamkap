@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -15,13 +16,14 @@ import (
 
 // SourceKafkadirectModel is the Terraform model for the kafkadirect source.
 type SourceKafkadirectModel struct {
-	ID               types.String `tfsdk:"id"`
-	Name             types.String `tfsdk:"name"`
-	Connector        types.String `tfsdk:"connector"`
-	TopicPrefix      types.String `tfsdk:"topic_prefix"`
-	TopicIncludeList types.String `tfsdk:"topic_include_list"`
-	Format           types.String `tfsdk:"format"`
-	SchemasEnable    types.Bool   `tfsdk:"schemas_enable"`
+	ID               types.String   `tfsdk:"id"`
+	Name             types.String   `tfsdk:"name"`
+	Connector        types.String   `tfsdk:"connector"`
+	TopicPrefix      types.String   `tfsdk:"topic_prefix"`
+	TopicIncludeList types.String   `tfsdk:"topic_include_list"`
+	Format           types.String   `tfsdk:"format"`
+	SchemasEnable    types.Bool     `tfsdk:"schemas_enable"`
+	Timeouts         timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourceKafkadirectSchema returns the Terraform schema for the kafkadirect source.

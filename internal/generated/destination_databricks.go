@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -17,23 +18,24 @@ import (
 
 // DestinationDatabricksModel is the Terraform model for the databricks destination.
 type DestinationDatabricksModel struct {
-	ID                                  types.String `tfsdk:"id"`
-	Name                                types.String `tfsdk:"name"`
-	Connector                           types.String `tfsdk:"connector"`
-	IngestionMode                       types.String `tfsdk:"ingestion_mode"`
-	DatabricksToken                     types.String `tfsdk:"databricks_token"`
-	ConnectionURL                       types.String `tfsdk:"connection_url"`
-	ConnectionTimeout                   types.Int64  `tfsdk:"connection_timeout"`
-	DatabricksCatalog                   types.String `tfsdk:"databricks_catalog"`
-	PartitionMode                       types.String `tfsdk:"partition_mode"`
-	SchemaEvolution                     types.String `tfsdk:"schema_evolution"`
-	TableNamePrefix                     types.String `tfsdk:"table_name_prefix"`
-	HardDelete                          types.Bool   `tfsdk:"hard_delete"`
-	TasksMax                            types.Int64  `tfsdk:"tasks_max"`
-	ConsumerWaitTimeForLargerBatchMs    types.Int64  `tfsdk:"consumer_wait_time_for_larger_batch_ms"`
-	Topic2tableMap                      types.Bool   `tfsdk:"topic2table_map"`
-	TransformsChangeTopicNameMatchRegex types.String `tfsdk:"transforms_change_topic_name_match_regex"`
-	TransformsChangeTopicNameMapping    types.String `tfsdk:"transforms_change_topic_name_mapping"`
+	ID                                  types.String   `tfsdk:"id"`
+	Name                                types.String   `tfsdk:"name"`
+	Connector                           types.String   `tfsdk:"connector"`
+	IngestionMode                       types.String   `tfsdk:"ingestion_mode"`
+	DatabricksToken                     types.String   `tfsdk:"databricks_token"`
+	ConnectionURL                       types.String   `tfsdk:"connection_url"`
+	ConnectionTimeout                   types.Int64    `tfsdk:"connection_timeout"`
+	DatabricksCatalog                   types.String   `tfsdk:"databricks_catalog"`
+	PartitionMode                       types.String   `tfsdk:"partition_mode"`
+	SchemaEvolution                     types.String   `tfsdk:"schema_evolution"`
+	TableNamePrefix                     types.String   `tfsdk:"table_name_prefix"`
+	HardDelete                          types.Bool     `tfsdk:"hard_delete"`
+	TasksMax                            types.Int64    `tfsdk:"tasks_max"`
+	ConsumerWaitTimeForLargerBatchMs    types.Int64    `tfsdk:"consumer_wait_time_for_larger_batch_ms"`
+	Topic2tableMap                      types.Bool     `tfsdk:"topic2table_map"`
+	TransformsChangeTopicNameMatchRegex types.String   `tfsdk:"transforms_change_topic_name_match_regex"`
+	TransformsChangeTopicNameMapping    types.String   `tfsdk:"transforms_change_topic_name_mapping"`
+	Timeouts                            timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationDatabricksSchema returns the Terraform schema for the databricks destination.

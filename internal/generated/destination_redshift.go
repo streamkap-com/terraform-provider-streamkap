@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -16,18 +17,19 @@ import (
 
 // DestinationRedshiftModel is the Terraform model for the redshift destination.
 type DestinationRedshiftModel struct {
-	ID                  types.String `tfsdk:"id"`
-	Name                types.String `tfsdk:"name"`
-	Connector           types.String `tfsdk:"connector"`
-	TasksMax            types.Int64  `tfsdk:"tasks_max"`
-	AWSRedshiftDomain   types.String `tfsdk:"aws_redshift_domain"`
-	AWSRedshiftPort     types.String `tfsdk:"aws_redshift_port"`
-	AWSRedshiftDatabase types.String `tfsdk:"aws_redshift_database"`
-	ConnectionUsername  types.String `tfsdk:"connection_username"`
-	ConnectionPassword  types.String `tfsdk:"connection_password"`
-	PrimaryKeyFields    types.String `tfsdk:"primary_key_fields"`
-	SchemaEvolution     types.String `tfsdk:"schema_evolution"`
-	TableNamePrefix     types.String `tfsdk:"table_name_prefix"`
+	ID                  types.String   `tfsdk:"id"`
+	Name                types.String   `tfsdk:"name"`
+	Connector           types.String   `tfsdk:"connector"`
+	TasksMax            types.Int64    `tfsdk:"tasks_max"`
+	AWSRedshiftDomain   types.String   `tfsdk:"aws_redshift_domain"`
+	AWSRedshiftPort     types.Int64    `tfsdk:"aws_redshift_port"`
+	AWSRedshiftDatabase types.String   `tfsdk:"aws_redshift_database"`
+	ConnectionUsername  types.String   `tfsdk:"connection_username"`
+	ConnectionPassword  types.String   `tfsdk:"connection_password"`
+	PrimaryKeyFields    types.String   `tfsdk:"primary_key_fields"`
+	SchemaEvolution     types.String   `tfsdk:"schema_evolution"`
+	TableNamePrefix     types.String   `tfsdk:"table_name_prefix"`
+	Timeouts            timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationRedshiftSchema returns the Terraform schema for the redshift destination.
@@ -74,12 +76,12 @@ func DestinationRedshiftSchema() schema.Schema {
 				Description:         "Domain of the leader of the cluster",
 				MarkdownDescription: "Domain of the leader of the cluster",
 			},
-			"aws_redshift_port": schema.StringAttribute{
+			"aws_redshift_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port number for incoming connections to the leader Defaults to \"5439\".",
+				Description:         "Port number for incoming connections to the leader Defaults to 5439.",
 				MarkdownDescription: "Port number for incoming connections to the leader Defaults to `5439`.",
-				Default:             stringdefault.StaticString("5439"),
+				Default:             int64default.StaticInt64(5439),
 			},
 			"aws_redshift_database": schema.StringAttribute{
 				Optional:            true,

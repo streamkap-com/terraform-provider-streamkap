@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -17,27 +18,28 @@ import (
 
 // SourceRedisModel is the Terraform model for the redis source.
 type SourceRedisModel struct {
-	ID                       types.String `tfsdk:"id"`
-	Name                     types.String `tfsdk:"name"`
-	Connector                types.String `tfsdk:"connector"`
-	ConnectorClassType       types.String `tfsdk:"connector_class_type"`
-	RedisHost                types.String `tfsdk:"redis_host"`
-	RedisPort                types.String `tfsdk:"redis_port"`
-	RedisUsername            types.String `tfsdk:"redis_username"`
-	RedisPassword            types.String `tfsdk:"redis_password"`
-	SSLEnabled               types.Bool   `tfsdk:"ssl_enabled"`
-	RedisStreamName          types.String `tfsdk:"redis_stream_name"`
-	RedisStreamOffset        types.String `tfsdk:"redis_stream_offset"`
-	RedisStreamDelivery      types.String `tfsdk:"redis_stream_delivery"`
-	RedisStreamBlockSeconds  types.Int64  `tfsdk:"redis_stream_block_seconds"`
-	RedisStreamConsumerGroup types.String `tfsdk:"redis_stream_consumer_group"`
-	RedisStreamConsumerName  types.String `tfsdk:"redis_stream_consumer_name"`
-	RedisKeysPattern         types.String `tfsdk:"redis_keys_pattern"`
-	RedisKeysTimeoutSeconds  types.Int64  `tfsdk:"redis_keys_timeout_seconds"`
-	Mode                     types.String `tfsdk:"mode"`
-	TopicUseStreamName       types.Bool   `tfsdk:"topic_use_stream_name"`
-	Topic                    types.String `tfsdk:"topic"`
-	TasksMax                 types.Int64  `tfsdk:"tasks_max"`
+	ID                       types.String   `tfsdk:"id"`
+	Name                     types.String   `tfsdk:"name"`
+	Connector                types.String   `tfsdk:"connector"`
+	ConnectorClassType       types.String   `tfsdk:"connector_class_type"`
+	RedisHost                types.String   `tfsdk:"redis_host"`
+	RedisPort                types.Int64    `tfsdk:"redis_port"`
+	RedisUsername            types.String   `tfsdk:"redis_username"`
+	RedisPassword            types.String   `tfsdk:"redis_password"`
+	SSLEnabled               types.Bool     `tfsdk:"ssl_enabled"`
+	RedisStreamName          types.String   `tfsdk:"redis_stream_name"`
+	RedisStreamOffset        types.String   `tfsdk:"redis_stream_offset"`
+	RedisStreamDelivery      types.String   `tfsdk:"redis_stream_delivery"`
+	RedisStreamBlockSeconds  types.Int64    `tfsdk:"redis_stream_block_seconds"`
+	RedisStreamConsumerGroup types.String   `tfsdk:"redis_stream_consumer_group"`
+	RedisStreamConsumerName  types.String   `tfsdk:"redis_stream_consumer_name"`
+	RedisKeysPattern         types.String   `tfsdk:"redis_keys_pattern"`
+	RedisKeysTimeoutSeconds  types.Int64    `tfsdk:"redis_keys_timeout_seconds"`
+	Mode                     types.String   `tfsdk:"mode"`
+	TopicUseStreamName       types.Bool     `tfsdk:"topic_use_stream_name"`
+	Topic                    types.String   `tfsdk:"topic"`
+	TasksMax                 types.Int64    `tfsdk:"tasks_max"`
+	Timeouts                 timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourceRedisSchema returns the Terraform schema for the redis source.
@@ -84,12 +86,12 @@ func SourceRedisSchema() schema.Schema {
 				Description:         "Redis hostname (e.g., redis.example.com or 127.0.0.1)",
 				MarkdownDescription: "Redis hostname (e.g., redis.example.com or 127.0.0.1)",
 			},
-			"redis_port": schema.StringAttribute{
+			"redis_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Redis port number Defaults to \"6379\".",
+				Description:         "Redis port number Defaults to 6379.",
 				MarkdownDescription: "Redis port number Defaults to `6379`.",
-				Default:             stringdefault.StaticString("6379"),
+				Default:             int64default.StaticInt64(6379),
 			},
 			"redis_username": schema.StringAttribute{
 				Optional:            true,

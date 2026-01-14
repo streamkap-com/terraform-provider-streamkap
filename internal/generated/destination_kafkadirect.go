@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -11,11 +12,12 @@ import (
 
 // DestinationKafkadirectModel is the Terraform model for the kafkadirect destination.
 type DestinationKafkadirectModel struct {
-	ID           types.String `tfsdk:"id"`
-	Name         types.String `tfsdk:"name"`
-	Connector    types.String `tfsdk:"connector"`
-	Password     types.String `tfsdk:"password"`
-	WhitelistIps types.String `tfsdk:"whitelist_ips"`
+	ID           types.String   `tfsdk:"id"`
+	Name         types.String   `tfsdk:"name"`
+	Connector    types.String   `tfsdk:"connector"`
+	Password     types.String   `tfsdk:"password"`
+	WhitelistIps types.String   `tfsdk:"whitelist_ips"`
+	Timeouts     timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationKafkadirectSchema returns the Terraform schema for the kafkadirect destination.

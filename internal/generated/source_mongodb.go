@@ -3,9 +3,11 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -15,29 +17,30 @@ import (
 
 // SourceMongodbModel is the Terraform model for the mongodb source.
 type SourceMongodbModel struct {
-	ID                                      types.String `tfsdk:"id"`
-	Name                                    types.String `tfsdk:"name"`
-	Connector                               types.String `tfsdk:"connector"`
-	MongodbConnectionString                 types.String `tfsdk:"mongodb_connection_string"`
-	TransformsUnwrapArrayEncoding           types.String `tfsdk:"transforms_unwrap_array_encoding"`
-	TransformsUnwrapDocumentEncoding        types.String `tfsdk:"transforms_unwrap_document_encoding"`
-	DatabaseIncludeList                     types.String `tfsdk:"database_include_list"`
-	CollectionIncludeList                   types.String `tfsdk:"collection_include_list"`
-	SignalDataCollectionSchemaOrDatabase    types.String `tfsdk:"signal_data_collection_schema_or_database"`
-	TransformsInsertStaticKey1StaticField   types.String `tfsdk:"transforms_insert_static_key1_static_field"`
-	TransformsInsertStaticKey1StaticValue   types.String `tfsdk:"transforms_insert_static_key1_static_value"`
-	TransformsInsertStaticValue1StaticField types.String `tfsdk:"transforms_insert_static_value1_static_field"`
-	TransformsInsertStaticValue1StaticValue types.String `tfsdk:"transforms_insert_static_value1_static_value"`
-	TransformsInsertStaticKey2StaticField   types.String `tfsdk:"transforms_insert_static_key2_static_field"`
-	TransformsInsertStaticKey2StaticValue   types.String `tfsdk:"transforms_insert_static_key2_static_value"`
-	TransformsInsertStaticValue2StaticField types.String `tfsdk:"transforms_insert_static_value2_static_field"`
-	TransformsInsertStaticValue2StaticValue types.String `tfsdk:"transforms_insert_static_value2_static_value"`
-	PredicatesIsTopicToEnrichPattern        types.String `tfsdk:"predicates_is_topic_to_enrich_pattern"`
-	SSHEnabled                              types.Bool   `tfsdk:"ssh_enabled"`
-	SSHHost                                 types.String `tfsdk:"ssh_host"`
-	SSHPort                                 types.String `tfsdk:"ssh_port"`
-	SSHUser                                 types.String `tfsdk:"ssh_user"`
-	SSHPublicKey                            types.String `tfsdk:"ssh_public_key"`
+	ID                                      types.String   `tfsdk:"id"`
+	Name                                    types.String   `tfsdk:"name"`
+	Connector                               types.String   `tfsdk:"connector"`
+	MongodbConnectionString                 types.String   `tfsdk:"mongodb_connection_string"`
+	TransformsUnwrapArrayEncoding           types.String   `tfsdk:"transforms_unwrap_array_encoding"`
+	TransformsUnwrapDocumentEncoding        types.String   `tfsdk:"transforms_unwrap_document_encoding"`
+	DatabaseIncludeList                     types.String   `tfsdk:"database_include_list"`
+	CollectionIncludeList                   types.String   `tfsdk:"collection_include_list"`
+	SignalDataCollectionSchemaOrDatabase    types.String   `tfsdk:"signal_data_collection_schema_or_database"`
+	TransformsInsertStaticKey1StaticField   types.String   `tfsdk:"transforms_insert_static_key1_static_field"`
+	TransformsInsertStaticKey1StaticValue   types.String   `tfsdk:"transforms_insert_static_key1_static_value"`
+	TransformsInsertStaticValue1StaticField types.String   `tfsdk:"transforms_insert_static_value1_static_field"`
+	TransformsInsertStaticValue1StaticValue types.String   `tfsdk:"transforms_insert_static_value1_static_value"`
+	TransformsInsertStaticKey2StaticField   types.String   `tfsdk:"transforms_insert_static_key2_static_field"`
+	TransformsInsertStaticKey2StaticValue   types.String   `tfsdk:"transforms_insert_static_key2_static_value"`
+	TransformsInsertStaticValue2StaticField types.String   `tfsdk:"transforms_insert_static_value2_static_field"`
+	TransformsInsertStaticValue2StaticValue types.String   `tfsdk:"transforms_insert_static_value2_static_value"`
+	PredicatesIsTopicToEnrichPattern        types.String   `tfsdk:"predicates_is_topic_to_enrich_pattern"`
+	SSHEnabled                              types.Bool     `tfsdk:"ssh_enabled"`
+	SSHHost                                 types.String   `tfsdk:"ssh_host"`
+	SSHPort                                 types.Int64    `tfsdk:"ssh_port"`
+	SSHUser                                 types.String   `tfsdk:"ssh_user"`
+	SSHPublicKey                            types.String   `tfsdk:"ssh_public_key"`
+	Timeouts                                timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourceMongodbSchema returns the Terraform schema for the mongodb source.
@@ -169,12 +172,12 @@ func SourceMongodbSchema() schema.Schema {
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
 			},
-			"ssh_port": schema.StringAttribute{
+			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to \"22\".",
+				Description:         "Port of your SSH server Defaults to 22.",
 				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
-				Default:             stringdefault.StaticString("22"),
+				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,

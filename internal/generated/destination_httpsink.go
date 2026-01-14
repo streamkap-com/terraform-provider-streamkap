@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -16,32 +17,33 @@ import (
 
 // DestinationHttpsinkModel is the Terraform model for the httpsink destination.
 type DestinationHttpsinkModel struct {
-	ID                       types.String `tfsdk:"id"`
-	Name                     types.String `tfsdk:"name"`
-	Connector                types.String `tfsdk:"connector"`
-	HttpURL                  types.String `tfsdk:"http_url"`
-	HttpAuthorizationType    types.String `tfsdk:"http_authorization_type"`
-	HttpHeadersAuthorization types.String `tfsdk:"http_headers_authorization"`
-	Oauth2AccessTokenURL     types.String `tfsdk:"oauth2_access_token_url"`
-	Oauth2ClientID           types.String `tfsdk:"oauth2_client_id"`
-	Oauth2ClientSecret       types.String `tfsdk:"oauth2_client_secret"`
-	Oauth2Scope              types.String `tfsdk:"oauth2_scope"`
-	HttpHeadersContentType   types.String `tfsdk:"http_headers_content_type"`
-	HttpHeadersAdditional    types.String `tfsdk:"http_headers_additional"`
-	HttpProxyHost            types.String `tfsdk:"http_proxy_host"`
-	HttpProxyPort            types.String `tfsdk:"http_proxy_port"`
-	BatchingEnabled          types.Bool   `tfsdk:"batching_enabled"`
-	BatchMaxSize             types.Int64  `tfsdk:"batch_max_size"`
-	BatchBufferingEnabled    types.Bool   `tfsdk:"batch_buffering_enabled"`
-	BatchMaxTimeMs           types.Int64  `tfsdk:"batch_max_time_ms"`
-	BatchPrefix              types.String `tfsdk:"batch_prefix"`
-	BatchSuffix              types.String `tfsdk:"batch_suffix"`
-	BatchSeparator           types.String `tfsdk:"batch_separator"`
-	MaxRetries               types.Int64  `tfsdk:"max_retries"`
-	RetryBackoffMs           types.Int64  `tfsdk:"retry_backoff_ms"`
-	HttpTimeout              types.Int64  `tfsdk:"http_timeout"`
-	DecimalFormat            types.String `tfsdk:"decimal_format"`
-	ErrorsTolerance          types.String `tfsdk:"errors_tolerance"`
+	ID                       types.String   `tfsdk:"id"`
+	Name                     types.String   `tfsdk:"name"`
+	Connector                types.String   `tfsdk:"connector"`
+	HttpURL                  types.String   `tfsdk:"http_url"`
+	HttpAuthorizationType    types.String   `tfsdk:"http_authorization_type"`
+	HttpHeadersAuthorization types.String   `tfsdk:"http_headers_authorization"`
+	Oauth2AccessTokenURL     types.String   `tfsdk:"oauth2_access_token_url"`
+	Oauth2ClientID           types.String   `tfsdk:"oauth2_client_id"`
+	Oauth2ClientSecret       types.String   `tfsdk:"oauth2_client_secret"`
+	Oauth2Scope              types.String   `tfsdk:"oauth2_scope"`
+	HttpHeadersContentType   types.String   `tfsdk:"http_headers_content_type"`
+	HttpHeadersAdditional    types.String   `tfsdk:"http_headers_additional"`
+	HttpProxyHost            types.String   `tfsdk:"http_proxy_host"`
+	HttpProxyPort            types.Int64    `tfsdk:"http_proxy_port"`
+	BatchingEnabled          types.Bool     `tfsdk:"batching_enabled"`
+	BatchMaxSize             types.Int64    `tfsdk:"batch_max_size"`
+	BatchBufferingEnabled    types.Bool     `tfsdk:"batch_buffering_enabled"`
+	BatchMaxTimeMs           types.Int64    `tfsdk:"batch_max_time_ms"`
+	BatchPrefix              types.String   `tfsdk:"batch_prefix"`
+	BatchSuffix              types.String   `tfsdk:"batch_suffix"`
+	BatchSeparator           types.String   `tfsdk:"batch_separator"`
+	MaxRetries               types.Int64    `tfsdk:"max_retries"`
+	RetryBackoffMs           types.Int64    `tfsdk:"retry_backoff_ms"`
+	HttpTimeout              types.Int64    `tfsdk:"http_timeout"`
+	DecimalFormat            types.String   `tfsdk:"decimal_format"`
+	ErrorsTolerance          types.String   `tfsdk:"errors_tolerance"`
+	Timeouts                 timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationHttpsinkSchema returns the Terraform schema for the httpsink destination.
@@ -131,7 +133,7 @@ func DestinationHttpsinkSchema() schema.Schema {
 				Description:         "Proxy hostname.",
 				MarkdownDescription: "Proxy hostname.",
 			},
-			"http_proxy_port": schema.StringAttribute{
+			"http_proxy_port": schema.Int64Attribute{
 				Optional:            true,
 				Description:         "Proxy port.",
 				MarkdownDescription: "Proxy port.",

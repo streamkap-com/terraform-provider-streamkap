@@ -3,9 +3,11 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -15,30 +17,31 @@ import (
 
 // SourceMariadbModel is the Terraform model for the mariadb source.
 type SourceMariadbModel struct {
-	ID                                                 types.String `tfsdk:"id"`
-	Name                                               types.String `tfsdk:"name"`
-	Connector                                          types.String `tfsdk:"connector"`
-	DatabaseHostname                                   types.String `tfsdk:"database_hostname"`
-	DatabasePort                                       types.String `tfsdk:"database_port"`
-	DatabaseUser                                       types.String `tfsdk:"database_user"`
-	DatabasePassword                                   types.String `tfsdk:"database_password"`
-	DatabaseIncludeList                                types.String `tfsdk:"database_include_list"`
-	TableIncludeList                                   types.String `tfsdk:"table_include_list"`
-	SignalDataCollectionSchemaOrDatabase               types.String `tfsdk:"signal_data_collection_schema_or_database"`
-	HeartbeatEnabled                                   types.Bool   `tfsdk:"heartbeat_enabled"`
-	HeartbeatDataCollectionSchemaOrDatabase            types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
-	DatabaseConnectionTimeZone                         types.String `tfsdk:"database_connection_time_zone"`
-	SnapshotGtid                                       types.String `tfsdk:"snapshot_gtid"`
-	SchemaHistoryInternalStoreOnlyCapturedDatabasesDdl types.Bool   `tfsdk:"schema_history_internal_store_only_captured_databases_ddl"`
-	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool   `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
-	BinaryHandlingMode                                 types.String `tfsdk:"binary_handling_mode"`
-	DatabaseSSLMode                                    types.String `tfsdk:"database_ssl_mode"`
-	SSHEnabled                                         types.Bool   `tfsdk:"ssh_enabled"`
-	SSHHost                                            types.String `tfsdk:"ssh_host"`
-	SSHPort                                            types.String `tfsdk:"ssh_port"`
-	SSHUser                                            types.String `tfsdk:"ssh_user"`
-	SSHPublicKey                                       types.String `tfsdk:"ssh_public_key"`
-	ColumnExcludeList                                  types.String `tfsdk:"column_exclude_list"`
+	ID                                                 types.String   `tfsdk:"id"`
+	Name                                               types.String   `tfsdk:"name"`
+	Connector                                          types.String   `tfsdk:"connector"`
+	DatabaseHostname                                   types.String   `tfsdk:"database_hostname"`
+	DatabasePort                                       types.Int64    `tfsdk:"database_port"`
+	DatabaseUser                                       types.String   `tfsdk:"database_user"`
+	DatabasePassword                                   types.String   `tfsdk:"database_password"`
+	DatabaseIncludeList                                types.String   `tfsdk:"database_include_list"`
+	TableIncludeList                                   types.String   `tfsdk:"table_include_list"`
+	SignalDataCollectionSchemaOrDatabase               types.String   `tfsdk:"signal_data_collection_schema_or_database"`
+	HeartbeatEnabled                                   types.Bool     `tfsdk:"heartbeat_enabled"`
+	HeartbeatDataCollectionSchemaOrDatabase            types.String   `tfsdk:"heartbeat_data_collection_schema_or_database"`
+	DatabaseConnectionTimeZone                         types.String   `tfsdk:"database_connection_time_zone"`
+	SnapshotGtid                                       types.String   `tfsdk:"snapshot_gtid"`
+	SchemaHistoryInternalStoreOnlyCapturedDatabasesDdl types.Bool     `tfsdk:"schema_history_internal_store_only_captured_databases_ddl"`
+	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool     `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
+	BinaryHandlingMode                                 types.String   `tfsdk:"binary_handling_mode"`
+	DatabaseSSLMode                                    types.String   `tfsdk:"database_ssl_mode"`
+	SSHEnabled                                         types.Bool     `tfsdk:"ssh_enabled"`
+	SSHHost                                            types.String   `tfsdk:"ssh_host"`
+	SSHPort                                            types.Int64    `tfsdk:"ssh_port"`
+	SSHUser                                            types.String   `tfsdk:"ssh_user"`
+	SSHPublicKey                                       types.String   `tfsdk:"ssh_public_key"`
+	ColumnExcludeList                                  types.String   `tfsdk:"column_exclude_list"`
+	Timeouts                                           timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourceMariadbSchema returns the Terraform schema for the mariadb source.
@@ -75,12 +78,12 @@ func SourceMariadbSchema() schema.Schema {
 				Description:         "The IP address or hostname of the MariaDB database server. For example, mariadb.something.rds.amazonaws.com",
 				MarkdownDescription: "The IP address or hostname of the MariaDB database server. For example, mariadb.something.rds.amazonaws.com",
 			},
-			"database_port": schema.StringAttribute{
+			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port number of the MariaDB database server. For example, 3306 Defaults to \"3306\".",
+				Description:         "Port number of the MariaDB database server. For example, 3306 Defaults to 3306.",
 				MarkdownDescription: "Port number of the MariaDB database server. For example, 3306 Defaults to `3306`.",
-				Default:             stringdefault.StaticString("3306"),
+				Default:             int64default.StaticInt64(3306),
 			},
 			"database_user": schema.StringAttribute{
 				Required:            true,
@@ -186,12 +189,12 @@ func SourceMariadbSchema() schema.Schema {
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
 			},
-			"ssh_port": schema.StringAttribute{
+			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to \"22\".",
+				Description:         "Port of your SSH server Defaults to 22.",
 				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
-				Default:             stringdefault.StaticString("22"),
+				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -196,6 +197,31 @@ func (e *ConfigEntry) GetDefaultInt64() int64 {
 		return v
 	case int:
 		return int64(v)
+	default:
+		return 0
+	}
+}
+
+// GetDefaultInt64FromString returns the default value as int64, parsing from string if necessary.
+// This is useful for fields like ports where the backend stores the value as a string but
+// we want to use Int64 in Terraform for better UX.
+func (e *ConfigEntry) GetDefaultInt64FromString() int64 {
+	if e.Value.Default == nil {
+		return 0
+	}
+	switch v := e.Value.Default.(type) {
+	case float64:
+		return int64(v)
+	case int64:
+		return v
+	case int:
+		return int64(v)
+	case string:
+		// Parse string as int64
+		if val, err := strconv.ParseInt(v, 10, 64); err == nil {
+			return val
+		}
+		return 0
 	default:
 		return 0
 	}
