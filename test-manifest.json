@@ -1,0 +1,99 @@
+{
+  "provider": {
+    "name": "streamkap",
+    "registry": "registry.terraform.io/streamkap-com/streamkap",
+    "source": "streamkap-com/streamkap",
+    "protocol_version": "6.0",
+    "repository": "https://github.com/streamkap-com/terraform-provider-streamkap",
+    "current_version": "2.1.18",
+    "refactored_branch": "refactored-terraform"
+  },
+  "test_framework": {
+    "name": "terraform-plugin-testing",
+    "version": "1.14.0",
+    "runner": "gotestsum"
+  },
+  "environment": {
+    "required": [
+      {"name": "TF_ACC", "value": "1", "description": "Enable acceptance tests"},
+      {"name": "STREAMKAP_CLIENT_ID", "secret": true, "description": "OAuth2 client ID"},
+      {"name": "STREAMKAP_SECRET", "secret": true, "description": "OAuth2 client secret"}
+    ],
+    "optional": [
+      {"name": "STREAMKAP_HOST", "description": "API URL (default: https://api.streamkap.com)"},
+      {"name": "TF_LOG", "description": "Terraform log level (TRACE, DEBUG, INFO, WARN, ERROR)"},
+      {"name": "UPDATE_CASSETTES", "description": "Set to 1 to re-record VCR cassettes"},
+      {"name": "UPDATE_SNAPSHOTS", "description": "Set to 1 to update schema snapshots"}
+    ],
+    "test_data": [
+      {"name": "TF_VAR_source_postgresql_hostname", "secret": true},
+      {"name": "TF_VAR_source_postgresql_password", "secret": true},
+      {"name": "TF_VAR_source_postgresql_ssh_host", "secret": true},
+      {"name": "TF_VAR_destination_snowflake_url_name", "secret": false},
+      {"name": "TF_VAR_destination_snowflake_user_name", "secret": false},
+      {"name": "TF_VAR_destination_snowflake_private_key", "secret": true},
+      {"name": "TF_VAR_destination_snowflake_private_key_passphrase", "secret": true},
+      {"name": "TF_VAR_destination_snowflake_database_name", "secret": false},
+      {"name": "TF_VAR_destination_snowflake_schema_name", "secret": false}
+    ]
+  },
+  "test_categories": {
+    "unit": {
+      "pattern": "Test[^Acc]",
+      "requires_api": false,
+      "typical_duration": "5s",
+      "command": "go test -v -short ./...",
+      "includes": ["schema tests", "validator tests", "API client mocks"]
+    },
+    "schema_compat": {
+      "pattern": "TestSchemaBackwardsCompatibility",
+      "requires_api": false,
+      "typical_duration": "2s",
+      "command": "go test -v -run 'TestSchemaBackwardsCompatibility' ./internal/provider/...",
+      "notes": "Compares current schema against baseline snapshots to detect breaking changes"
+    },
+    "integration": {
+      "pattern": "TestIntegration_",
+      "requires_api": false,
+      "typical_duration": "30s",
+      "command": "go test -v -run 'TestIntegration_' ./internal/provider/...",
+      "notes": "Uses recorded cassettes, no real API calls"
+    },
+    "acceptance": {
+      "pattern": "TestAcc",
+      "requires_api": true,
+      "typical_duration": "15m",
+      "command": "TF_ACC=1 go test -v -timeout 120m -run 'TestAcc' ./internal/provider/..."
+    },
+    "migration": {
+      "pattern": "TestAcc.*Migration",
+      "requires_api": true,
+      "typical_duration": "30m",
+      "command": "TF_ACC=1 go test -v -timeout 180m -run 'TestAcc.*Migration' ./internal/provider/...",
+      "notes": "TEMPORARY: Validates old→new provider behavioral equivalence",
+      "legacy_provider_version": "2.1.18"
+    }
+  },
+  "resources": [
+    {"type": "streamkap_source_postgresql", "has_migration_test": true, "has_schema_test": true},
+    {"type": "streamkap_source_mysql", "has_migration_test": false, "has_schema_test": false},
+    {"type": "streamkap_source_mongodb", "has_migration_test": false, "has_schema_test": false},
+    {"type": "streamkap_source_dynamodb", "has_migration_test": false, "has_schema_test": false},
+    {"type": "streamkap_destination_snowflake", "has_migration_test": true, "has_schema_test": true},
+    {"type": "streamkap_destination_clickhouse", "has_migration_test": false, "has_schema_test": false},
+    {"type": "streamkap_pipeline", "has_migration_test": true, "has_schema_test": false},
+    {"type": "streamkap_topic", "has_migration_test": false, "has_schema_test": false}
+  ],
+  "structured_output": {
+    "json": "gotestsum --jsonfile results.json -- -v ./...",
+    "junit": "gotestsum --junitfile results.xml -- -v ./..."
+  },
+  "ai_tools": {
+    "test_generation": {
+      "tool": "gotests",
+      "install": "go install github.com/cweill/gotests/gotests@latest",
+      "usage": "gotests -all -w internal/provider/",
+      "notes": "Generates test stubs; review and enhance generated tests"
+    }
+  }
+}
