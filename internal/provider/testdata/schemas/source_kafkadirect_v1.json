@@ -1,0 +1,47 @@
+{
+  "version": "v3.0.0",
+  "attributes": {
+    "connector": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
+    "format": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
+    "name": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false
+    },
+    "schemas_enable": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "topic_include_list": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false
+    },
+    "topic_prefix": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false
+    }
+  }
+}
