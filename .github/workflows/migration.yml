@@ -1,0 +1,75 @@
+# Migration tests workflow - validates old→new provider equivalence
+# TEMPORARY: Delete this file after v3.0.0 release validation
+name: Migration Tests
+
+on:
+  push:
+    branches:
+      - main
+      - refactored-terraform
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migration-tests:
+    name: Migration Validation (v2.1.18 → New)
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    environment: staging
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.10.*'
+          terraform_wrapper: false
+
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
+
+      - name: Run Migration Tests
+        env:
+          TF_ACC: '1'
+          STREAMKAP_CLIENT_ID: ${{ secrets.STREAMKAP_CLIENT_ID }}
+          STREAMKAP_SECRET: ${{ secrets.STREAMKAP_SECRET }}
+          STREAMKAP_HOST: ${{ secrets.STREAMKAP_HOST }}
+          TF_VAR_source_postgresql_hostname: ${{ secrets.TF_VAR_SOURCE_POSTGRESQL_HOSTNAME }}
+          TF_VAR_source_postgresql_password: ${{ secrets.TF_VAR_SOURCE_POSTGRESQL_PASSWORD }}
+        run: |
+          gotestsum --jsonfile migration-results.json \
+            --junitfile migration-results.xml \
+            -- -v -timeout 180m \
+            -run 'TestAcc.*Migration' ./internal/provider/...
+
+      - name: Check for behavioral differences
+        if: failure()
+        run: |
+          echo "## Migration Test Failure" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The new provider produces different behavior than v2.1.18." >> $GITHUB_STEP_SUMMARY
+          echo "This indicates a potential breaking change." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Failed Tests:" >> $GITHUB_STEP_SUMMARY
+          jq -r '.[] | select(.Action == "fail") | "- \(.Test)"' migration-results.json >> $GITHUB_STEP_SUMMARY || true
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: migration-test-results
+          path: |
+            migration-results.json
+            migration-results.xml
