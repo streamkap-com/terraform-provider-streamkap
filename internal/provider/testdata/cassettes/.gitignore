@@ -1,0 +1,2 @@
+# Ensure no secrets in cassettes
+*.yaml.bak
