@@ -15,14 +15,14 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Resources                                   │
 ├──────────────────┬──────────────────┬──────────────────┬────────┤
-│  Sources (6)     │  Destinations (7)│  Transforms (6)  │ Other  │
-│  - PostgreSQL    │  - Snowflake     │  - MapFilter     │Pipeline│
-│  - MySQL         │  - ClickHouse    │  - Enrich        │ Topic  │
-│  - MongoDB       │  - Databricks    │  - EnrichAsync   │  Tag   │
-│  - DynamoDB      │  - PostgreSQL    │  - SQLJoin       │        │
-│  - SQLServer     │  - S3            │  - Rollup        │        │
-│  - KafkaDirect   │  - Iceberg       │  - FanOut        │        │
-│                  │  - Kafka         │                  │        │
+│  Sources (20)    │  Destinations(23)│  Transforms (8)  │ Other  │
+│  PostgreSQL      │  Snowflake       │  MapFilter       │Pipeline│
+│  MySQL, MongoDB  │  ClickHouse      │  Enrich          │ Topic  │
+│  DynamoDB        │  Databricks      │  EnrichAsync     │  Tag   │
+│  SQLServer       │  PostgreSQL, S3  │  SQLJoin         │        │
+│  KafkaDirect     │  Iceberg, Kafka  │  Rollup, FanOut  │        │
+│  Oracle, Redis   │  BigQuery, GCS   │  ToastHandling   │        │
+│  + 12 more...    │  + 15 more...    │  UnNesting       │        │
 └──────────────────┴──────────────────┴──────────────────┴────────┘
               │
               ▼
@@ -47,41 +47,236 @@
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Code Generation Flow
+## Code Generation Architecture
+
+The `tfgen` tool generates Terraform provider schemas from backend `configuration.latest.json` files.
+
+### Generation Flow
 
 ```
-┌──────────────────────────┐
-│  Backend Repository      │
-│  configuration.latest.json│
-└───────────┬──────────────┘
-            │
-            ▼
-┌──────────────────────────┐
-│  cmd/tfgen/parser.go     │
-│  - Parse JSON config     │
-│  - Extract field info    │
-│  - Map control types     │
-└───────────┬──────────────┘
-            │
-            ▼
-┌──────────────────────────┐
-│  cmd/tfgen/generator.go  │
-│  - Apply templates       │
-│  - Generate Go code      │
-│  - Create field mappings │
-└───────────┬──────────────┘
-            │
-            ▼
-┌──────────────────────────┐
-│  internal/generated/     │
-│  - source_*.go           │
-│  - destination_*.go      │
-│  Contains:               │
-│  - Schema function       │
-│  - Model struct          │
-│  - Field mappings        │
-└──────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│  Backend Repository (python-be-streamkap)                            │
+│  app/{sources,destinations,transforms}/plugins/*/configuration.latest.json │
+└───────────────────────────────┬──────────────────────────────────────┘
+                                │
+                                ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  cmd/tfgen/parser.go                                                 │
+│  - Parse JSON into ConfigEntry structs                               │
+│  - Extract: name, type, control, default, required, sensitive        │
+│  - Filter: user_defined=true fields only                             │
+└───────────────────────────────┬──────────────────────────────────────┘
+                                │
+                                ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  cmd/tfgen/generator.go                                              │
+│  - Load overrides from overrides.json                                │
+│  - Apply automatic type conversions (port fields → Int64)            │
+│  - Convert ConfigEntry → FieldData                                   │
+│  - Apply Go template to generate code                                │
+└───────────────────────────────┬──────────────────────────────────────┘
+                                │
+                                ▼
+┌──────────────────────────────────────────────────────────────────────┐
+│  internal/generated/{source,destination,transform}_*.go              │
+│  Generated code contains:                                            │
+│  - Nested model types (for map_nested overrides)                     │
+│  - Main model struct with tfsdk tags                                 │
+│  - Schema function returning schema.Schema                           │
+│  - Field mappings map[string]string                                  │
+└──────────────────────────────────────────────────────────────────────┘
 ```
+
+### Parser: Backend Config → ConfigEntry
+
+The parser reads `configuration.latest.json` and extracts field metadata:
+
+```go
+type ConfigEntry struct {
+    Name        string      // API field name: "database.hostname.user.defined"
+    Description string      // Field description
+    DisplayName string      // Human-readable name
+    UserDefined bool        // true = user-editable field
+    Value       ValueConfig // Type info, defaults, validation
+}
+
+type ValueConfig struct {
+    Control string      // UI control: string, password, number, boolean, one-select, etc.
+    Type    string      // raw, list
+    Default interface{} // Default value
+    Values  []string    // Enum values for one-select
+    Min     *float64    // Min for slider
+    Max     *float64    // Max for slider
+}
+```
+
+### Type Mapping: Control → Terraform Type
+
+| Backend Control | Terraform Type | Go Type | Schema Attribute |
+|-----------------|----------------|---------|------------------|
+| `string` | String | `types.String` | `schema.StringAttribute` |
+| `password` | String (sensitive) | `types.String` | `schema.StringAttribute` |
+| `textarea` | String | `types.String` | `schema.StringAttribute` |
+| `json` | String | `types.String` | `schema.StringAttribute` |
+| `datetime` | String | `types.String` | `schema.StringAttribute` |
+| `number` | Int64 | `types.Int64` | `schema.Int64Attribute` |
+| `slider` | Int64 | `types.Int64` | `schema.Int64Attribute` |
+| `boolean` | Bool | `types.Bool` | `schema.BoolAttribute` |
+| `toggle` | Bool | `types.Bool` | `schema.BoolAttribute` |
+| `one-select` | String | `types.String` | `schema.StringAttribute` |
+| `multi-select` | List[String] | `types.List` | `schema.ListAttribute` |
+
+### Automatic Type Conversions
+
+#### Port Fields → Int64
+
+Fields named `port` or ending in `_port` are automatically converted from String to Int64:
+
+```
+Backend: "ssh.port" with control="string", default="22"
+    ↓
+Generated: SSHPort types.Int64 with int64default.StaticInt64(22)
+```
+
+**Detection:** `tfAttrName == "port" || strings.HasSuffix(tfAttrName, "_port")`
+
+#### Go Abbreviation Handling
+
+Common abbreviations are preserved in uppercase per Go conventions:
+
+| Abbreviation | Example Input | Go Field Name |
+|--------------|---------------|---------------|
+| `ID` | `connector_id` | `ConnectorID` |
+| `SSH` | `ssh_port` | `SSHPort` |
+| `SSL` | `ssl_enabled` | `SSLEnabled` |
+| `SQL` | `delete_sql_execute` | `DeleteSQLExecute` |
+| `DB` | `db_name` | `DBName` |
+| `URL` | `api_url` | `APIURL` |
+| `API` | `api_key` | `APIKey` |
+| `AWS` | `aws_region` | `AWSRegion` |
+| `ARN` | `role_arn` | `RoleARN` |
+| `QA` | `auto_qa_dedupe` | `AutoQADedupe` |
+
+### Override System
+
+Some fields require special handling that can't be auto-generated. These are defined in `cmd/tfgen/overrides.json`.
+
+#### Override Types
+
+**`map_string`** - Simple string maps:
+```go
+// Generated model field:
+AutoQADedupeTableMapping map[string]types.String `tfsdk:"auto_qa_dedupe_table_mapping"`
+
+// Generated schema:
+"auto_qa_dedupe_table_mapping": schema.MapAttribute{
+    ElementType: types.StringType,
+    Optional:    true,
+}
+```
+
+**`map_nested`** - Nested object maps:
+```go
+// Generated nested model:
+type clickHouseTopicsConfigMapItemModel struct {
+    DeleteSQLExecute types.String `tfsdk:"delete_sql_execute"`
+}
+
+// Generated model field:
+TopicsConfigMap map[string]clickHouseTopicsConfigMapItemModel `tfsdk:"topics_config_map"`
+
+// Generated schema:
+"topics_config_map": schema.MapNestedAttribute{
+    Optional: true,
+    NestedObject: schema.NestedAttributeObject{
+        Attributes: map[string]schema.Attribute{
+            "delete_sql_execute": schema.StringAttribute{Optional: true},
+        },
+    },
+}
+```
+
+#### Current Overrides
+
+| Connector | Field | Type | Purpose |
+|-----------|-------|------|---------|
+| snowflake | `auto_qa_dedupe_table_mapping` | `map_string` | Table deduplication mapping |
+| clickhouse | `topics_config_map` | `map_nested` | Per-topic delete SQL config |
+| sqlserveraws | `snapshot_custom_table_config` | `map_nested` | Custom snapshot parallelism |
+
+#### Override Precedence
+
+When an `api_field_name` in overrides matches a field in the backend config, the override takes precedence and the backend field is skipped. This prevents duplicate fields.
+
+### Generated Code Structure
+
+Each generated file contains:
+
+```go
+// 1. Nested model types (if map_nested overrides exist)
+type clickHouseTopicsConfigMapItemModel struct {
+    DeleteSQLExecute types.String `tfsdk:"delete_sql_execute"`
+}
+
+// 2. Main model struct
+type DestinationClickhouseModel struct {
+    ID              types.String   `tfsdk:"id"`
+    Name            types.String   `tfsdk:"name"`
+    Connector       types.String   `tfsdk:"connector"`
+    // ... connector-specific fields
+    TopicsConfigMap map[string]clickHouseTopicsConfigMapItemModel `tfsdk:"topics_config_map"`
+    Timeouts        timeouts.Value `tfsdk:"timeouts"`
+}
+
+// 3. Schema function
+func DestinationClickhouseSchema() schema.Schema {
+    return schema.Schema{
+        Description: "Manages a ClickHouse destination connector.",
+        Attributes: map[string]schema.Attribute{
+            // ... all attributes with descriptions, defaults, validators
+        },
+    }
+}
+
+// 4. Field mappings
+var DestinationClickhouseFieldMappings = map[string]string{
+    "hostname": "connection.hostname",
+    "port":     "connection.port.user.defined",
+    // ... TF attribute → API field name
+}
+```
+
+### Validator Generation
+
+Validators are automatically generated based on backend config:
+
+| Backend Config | Generated Validator |
+|----------------|---------------------|
+| `control: "one-select"` with `values: ["a", "b"]` | `stringvalidator.OneOf("a", "b")` |
+| `control: "slider"` with `min: 1, max: 100` | `int64validator.Between(1, 100)` |
+
+### Sensitive Field Detection
+
+Fields are marked sensitive (`Sensitive: true`) when:
+- `control: "password"`
+- `encrypt: true` in backend config
+
+### Default Value Handling
+
+| Backend | Generated |
+|---------|-----------|
+| `default: "value"` | `stringdefault.StaticString("value")` |
+| `default: 5432` (on port field) | `int64default.StaticInt64(5432)` |
+| `default: true` | `booldefault.StaticBool(true)` |
+
+### Required/Optional/Computed Logic
+
+| Backend Config | Terraform Schema |
+|----------------|------------------|
+| `required: true`, no default | `Required: true` |
+| `required: true`, has default | `Optional: true, Computed: true` |
+| `required: false` | `Optional: true` |
+| `user_defined: false` | Field skipped (not user-editable) |
 
 ## BaseConnectorResource Design
 
@@ -300,3 +495,165 @@ resp.Diagnostics.AddError(
 - Sensitive fields use `Sensitive: true` in schema
 - Computed fields use `UseStateForUnknown()` plan modifier
 - Set-once fields use `RequiresReplace()` plan modifier
+
+## Testing Architecture
+
+### Test Types
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Test Pyramid                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│     ▲  Acceptance Tests (internal/provider/*_test.go)               │
+│    ╱ ╲   - Create real resources via API                            │
+│   ╱   ╲  - Verify state management                                  │
+│  ╱     ╲ - Test import functionality                                │
+│ ╱───────╲─────────────────────────────────────────────────────────  │
+│╱         ╲                                                           │
+│  Integration Tests (cmd/tfgen/*_test.go)                            │
+│    - Test full generation pipeline                                   │
+│    - Verify generated code compiles                                  │
+│    - Uses real backend configs when available                        │
+│ ────────────────────────────────────────────────────────────────── │
+│                                                                      │
+│  Unit Tests (cmd/tfgen/*_test.go, internal/*_test.go)               │
+│    - Test individual functions                                       │
+│    - Mock inputs, verify outputs                                     │
+│    - Fast, no external dependencies                                  │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Generator Tests (`cmd/tfgen/*_test.go`)
+
+**Unit tests** verify individual components:
+- `TestToPascalCase` - Attribute name to Go field name conversion
+- `TestFieldTypeMapping` - Control type → Terraform type mapping
+- `TestSensitiveFieldHandling` - Sensitive field detection
+- `TestDefaultValueHandling` - Default value generation
+- `TestValidatorGeneration` - Validator code generation
+
+**Integration tests** verify the full pipeline:
+- `TestGenerateFile_Integration` - Full file generation
+- `TestGeneratePostgreSQL_Integration` - Real connector generation
+- `TestGenerateSnowflake_Integration` - Connector with overrides
+
+```go
+// Example integration test
+func TestGeneratePostgreSQL_Integration(t *testing.T) {
+    backendPath := os.Getenv("STREAMKAP_BACKEND_PATH")
+    if backendPath == "" {
+        t.Skip("STREAMKAP_BACKEND_PATH not set")
+    }
+    // Parse real backend config
+    // Generate code
+    // Verify output compiles
+}
+```
+
+### Acceptance Tests (`internal/provider/*_test.go`)
+
+Acceptance tests create real resources in the Streamkap API:
+
+```go
+func TestAccSourcePostgreSQL_basic(t *testing.T) {
+    resource.Test(t, resource.TestCase{
+        ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+        Steps: []resource.TestStep{
+            // Step 1: Create
+            {
+                Config: testAccSourcePostgreSQLConfig("test-source"),
+                Check: resource.ComposeAggregateTestCheckFunc(
+                    resource.TestCheckResourceAttr(
+                        "streamkap_source_postgresql.test", "name", "test-source"),
+                    resource.TestCheckResourceAttrSet(
+                        "streamkap_source_postgresql.test", "id"),
+                ),
+            },
+            // Step 2: Import
+            {
+                ResourceName:      "streamkap_source_postgresql.test",
+                ImportState:       true,
+                ImportStateVerify: true,
+                ImportStateVerifyIgnore: []string{"database_password"},
+            },
+            // Step 3: Update
+            {
+                Config: testAccSourcePostgreSQLConfig("test-source-updated"),
+                Check: resource.TestCheckResourceAttr(
+                    "streamkap_source_postgresql.test", "name", "test-source-updated"),
+            },
+        },
+    })
+}
+```
+
+### Test Environment Variables
+
+| Variable | Purpose | Required For |
+|----------|---------|--------------|
+| `TF_ACC=1` | Enable acceptance tests | Acceptance tests |
+| `STREAMKAP_HOST` | API endpoint | Acceptance tests |
+| `STREAMKAP_CLIENT_ID` | OAuth client ID | Acceptance tests |
+| `STREAMKAP_SECRET` | OAuth secret | Acceptance tests |
+| `STREAMKAP_BACKEND_PATH` | Backend repo path | Generator integration tests |
+
+### Running Tests
+
+```bash
+# Unit tests only (fast, no external deps)
+go test -v -short ./...
+
+# Generator tests
+go test -v ./cmd/tfgen/...
+
+# Generator integration tests (requires backend)
+STREAMKAP_BACKEND_PATH=/path/to/backend go test -v ./cmd/tfgen/...
+
+# Acceptance tests (creates real resources)
+TF_ACC=1 STREAMKAP_HOST=https://api.streamkap.com \
+  STREAMKAP_CLIENT_ID=xxx STREAMKAP_SECRET=xxx \
+  go test -v ./internal/provider -timeout 30m
+
+# Single acceptance test
+go test -v ./internal/provider -run TestAccSourcePostgreSQL_basic
+```
+
+### Test Best Practices
+
+1. **Use unique resource names** - Include timestamp or random suffix to avoid conflicts
+2. **Clean up resources** - Tests should delete resources they create
+3. **Skip when credentials missing** - Use `t.Skip()` for optional tests
+4. **Verify import** - All resources should support import
+5. **Test updates** - Verify in-place updates work correctly
+
+## CI/CD Workflows
+
+### ci.yml - Continuous Integration
+
+Runs on every PR and push to main:
+1. Build - `go build ./...`
+2. Lint - `golangci-lint run`
+3. Unit Tests - `go test -short ./...`
+4. Generator Tests - `go test ./cmd/tfgen/...`
+
+### security.yml - Security Scanning
+
+Runs security scans:
+- **Trivy** - Vulnerability scanning
+- **Checkov** - Infrastructure-as-code security
+
+### regenerate.yml - Schema Regeneration
+
+Manual workflow to regenerate all connector schemas:
+1. Checkout backend repository
+2. Run `go run ./cmd/tfgen generate --backend-path=...`
+3. Create PR with changes
+
+### release.yml - Release Automation
+
+Triggered on version tags (`v*`):
+1. Run GoReleaser
+2. Build binaries for all platforms
+3. Publish to Terraform Registry

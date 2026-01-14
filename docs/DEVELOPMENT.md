@@ -63,31 +63,58 @@ Note: With dev_overrides, you don't need `terraform init`.
 
 ## Code Generation
 
-The provider uses code generation from backend `configuration.latest.json` files.
+The provider uses code generation from the Streamkap backend `configuration.latest.json` files. You need local access to the backend repository.
 
-### Generate a Single Connector
+### Backend Repository Setup
 
+1. Clone the Streamkap backend repository:
 ```bash
-go run cmd/tfgen/main.go generate \
-  --config /path/to/backend/app/sources/plugins/postgresql/configuration.latest.json \
-  --type source \
-  --output internal/generated/
+git clone <backend-repo-url> /path/to/python-be-streamkap
+```
+
+2. Set the environment variable (optional, for convenience):
+```bash
+export STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap
 ```
 
 ### Regenerate All Connectors
 
 ```bash
-# Sources
-for config in /path/to/backend/app/sources/plugins/*/configuration.latest.json; do
-  connector=$(basename $(dirname "$config"))
-  go run cmd/tfgen/main.go generate --config "$config" --type source --output internal/generated/
-done
+# Using environment variable
+go run ./cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH
 
-# Destinations
-for config in /path/to/backend/app/destinations/plugins/*/configuration.latest.json; do
-  connector=$(basename $(dirname "$config"))
-  go run cmd/tfgen/main.go generate --config "$config" --type destination --output internal/generated/
-done
+# Or with absolute path
+go run ./cmd/tfgen generate --backend-path=/path/to/python-be-streamkap
+```
+
+### Generate Specific Entity Type
+
+```bash
+# Generate only sources
+go run ./cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH --entity-type=sources
+
+# Generate only destinations
+go run ./cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH --entity-type=destinations
+
+# Generate only transforms
+go run ./cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH --entity-type=transforms
+```
+
+### Generate Single Connector
+
+```bash
+# Generate specific source
+go run ./cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH --entity-type=sources --connector=postgresql
+
+# Generate specific destination
+go run ./cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH --entity-type=destinations --connector=snowflake
+```
+
+### Using go generate
+
+You can also use `go generate` with the environment variable:
+```bash
+STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap go generate ./...
 ```
 
 ### Generated Files
@@ -96,28 +123,37 @@ done
 - `internal/generated/destination_<name>.go` - Schema and model for destination
 - `internal/generated/transform_<name>.go` - Schema and model for transform
 
+### Generator Documentation
+
+For detailed generator documentation including:
+- Automatic type conversions (port fields → Int64)
+- Field overrides for map types
+- Go abbreviation handling (SQL, QA, SSH, etc.)
+
+See: [`cmd/tfgen/README.md`](../cmd/tfgen/README.md)
+
 ## Adding a New Connector
 
 ### Step 1: Locate Backend Config
 
-Find the `configuration.latest.json` file:
+Verify the connector exists in the backend repository:
 ```
-backend/app/sources/plugins/<connector>/configuration.latest.json
-backend/app/destinations/plugins/<connector>/configuration.latest.json
-backend/app/transforms/plugins/<connector>/configuration.latest.json
+$STREAMKAP_BACKEND_PATH/app/sources/plugins/<connector>/configuration.latest.json
+$STREAMKAP_BACKEND_PATH/app/destinations/plugins/<connector>/configuration.latest.json
+$STREAMKAP_BACKEND_PATH/app/transforms/plugins/<connector>/configuration.latest.json
 ```
 
 ### Step 2: Generate Schema
 
 ```bash
 # For sources:
-go run cmd/tfgen/main.go generate \
-  --config /path/to/configuration.latest.json \
-  --type source \
-  --output internal/generated/
+go run ./cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH --entity-type=sources --connector=<connector>
 
-# For destinations, use --type destination
-# For transforms, use --type transform
+# For destinations:
+go run ./cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH --entity-type=destinations --connector=<connector>
+
+# For transforms:
+go run ./cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH --entity-type=transforms --connector=<connector>
 ```
 
 ### Step 3: Create Config Wrapper
