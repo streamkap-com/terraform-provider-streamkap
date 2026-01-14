@@ -1,0 +1,149 @@
+{
+  "version": "v3.0.0",
+  "attributes": {
+    "apply_dynamic_table_script": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "auto_qa_dedupe_table_mapping": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "auto_schema_creation": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "connector": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
+    "create_schema_auto": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "create_sql_data": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "create_sql_execute": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "hard_delete": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
+    "ingestion_mode": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "name": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false
+    },
+    "schema_evolution": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "sfwarehouse": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "snowflake_database_name": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "snowflake_private_key": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": true
+    },
+    "snowflake_private_key_passphrase": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": true
+    },
+    "snowflake_private_key_passphrase_secured": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "snowflake_role_name": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "snowflake_schema_name": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "snowflake_topic2table_map": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "snowflake_url_name": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "snowflake_user_name": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "sql_table_name": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "use_hybrid_tables": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    }
+  }
+}

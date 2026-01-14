@@ -1,0 +1,143 @@
+{
+  "version": "v3.0.0",
+  "attributes": {
+    "collection_include_list": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false
+    },
+    "connector": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
+    "database_include_list": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false
+    },
+    "id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
+    "mongodb_connection_string": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": true
+    },
+    "name": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false
+    },
+    "predicates_is_topic_to_enrich_pattern": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "signal_data_collection_schema_or_database": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false
+    },
+    "ssh_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "ssh_host": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "ssh_port": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "ssh_public_key": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "ssh_user": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_insert_static_key1_static_field": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_insert_static_key1_static_value": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_insert_static_key2_static_field": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_insert_static_key2_static_value": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_insert_static_value1_static_field": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_insert_static_value1_static_value": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_insert_static_value2_static_field": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_insert_static_value2_static_value": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_unwrap_array_encoding": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_unwrap_document_encoding": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    }
+  }
+}
