@@ -46,15 +46,7 @@ go generate              # Generate/update documentation
 ```
 
 ### Testing
-```bash
-make testacc            # Run acceptance tests (creates real resources)
-
-# Run tests with specific settings
-TF_ACC=1 STREAMKAP_HOST=https://api.streamkap.com STREAMKAP_CLIENT_ID=client_id STREAMKAP_SECRET=secret go test ./... -v -timeout 120m
-
-# Run single test
-go test ./internal/provider -v -run TestAccSourcePostgreSQL_basic
-```
+See the comprehensive [Testing](#testing) section below for all test commands and documentation.
 
 ### Local Development Setup
 Configure `~/.terraformrc` to use local build:
@@ -123,6 +115,92 @@ Three parameters (all support env vars as fallback):
 ### API Quirks
 - Source Create/Read operations use `?secret_returned=true` query parameter to include sensitive fields in response
 - Use `stringplanmodifier.UseStateForUnknown()` for computed fields to prevent spurious diffs
+
+## Testing
+
+### Test Commands
+
+```bash
+# Run all unit tests (fast, no API needed)
+go test -v -short ./...
+
+# Run schema compatibility tests
+go test -v -run 'TestSchemaBackwardsCompatibility' ./internal/provider/...
+
+# Run validator tests
+go test -v -run 'Test.*Validator' ./internal/provider/...
+
+# Run integration tests with recorded responses (VCR)
+go test -v -run 'TestIntegration_' ./internal/provider/...
+
+# Run acceptance tests (requires staging credentials)
+export TF_ACC=1
+export STREAMKAP_CLIENT_ID="..."
+export STREAMKAP_SECRET="..."
+go test -v -timeout 120m -run 'TestAcc' ./internal/provider/...
+
+# Run migration tests (validates old→new equivalence)
+TF_ACC=1 go test -v -timeout 180m -run 'TestAcc.*Migration' ./internal/provider/...
+
+# Run specific resource tests
+go test -v -run 'TestAccSourcePostgreSQL' ./internal/provider/...
+
+# Get structured JSON output
+go install gotest.tools/gotestsum@latest
+gotestsum --jsonfile results.json -- -v ./...
+
+# Update schema snapshots after intentional changes
+UPDATE_SNAPSHOTS=1 go test -v -run 'TestSchemaBackwardsCompatibility' ./internal/provider/...
+```
+
+### Test Tiers
+
+| Tier | Pattern | API Needed | Duration | When |
+|------|---------|------------|----------|------|
+| Unit | `Test[^Acc]` | No | ~5s | Every commit |
+| Schema Compat | `TestSchemaBackwardsCompatibility` | No | ~2s | Every PR |
+| Validators | `Test.*Validator` | No | ~2s | Every commit |
+| Integration | `TestIntegration_` | No | ~30s | Every PR |
+| Acceptance | `TestAcc` | Yes | ~15m | Nightly |
+| Migration | `TestAcc.*Migration` | Yes | ~30m | Pre-release |
+
+### Schema Backwards Compatibility
+
+Schema snapshots detect breaking changes:
+- Required attribute removed → **BREAKING**
+- Optional changed to required → **BREAKING**
+- Computed attribute removed → Warning (may break references)
+
+Update snapshots after intentional changes:
+```bash
+UPDATE_SNAPSHOTS=1 go test -v -run 'TestSchemaBackwardsCompatibility' ./internal/provider/...
+```
+
+### Migration Test Interpretation
+
+If `TestAcc.*Migration` tests fail with non-empty plan:
+- The new provider behaves differently than v2.1.18
+- Check the plan output for which attributes differ
+- This indicates a potential breaking change
+
+### Recording VCR Cassettes
+
+When the Streamkap API changes:
+```bash
+UPDATE_CASSETTES=1 go test -v -run 'TestIntegration_' ./internal/provider/...
+```
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `TF_ACC` | For acceptance | Set to `1` to enable |
+| `STREAMKAP_CLIENT_ID` | For acceptance | OAuth2 client ID |
+| `STREAMKAP_SECRET` | For acceptance | OAuth2 client secret |
+| `STREAMKAP_HOST` | Optional | Override API URL |
+| `UPDATE_CASSETTES` | Optional | Re-record HTTP cassettes |
+| `UPDATE_SNAPSHOTS` | Optional | Update schema snapshots |
+| `TF_LOG` | Optional | TRACE/DEBUG/INFO/WARN/ERROR |
 
 ## AI-Agent Description Standards
 
