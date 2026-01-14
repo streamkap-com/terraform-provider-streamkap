@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 const (
@@ -36,4 +37,31 @@ func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("STREAMKAP_SECRET"); v == "" {
 		t.Fatal("STREAMKAP_SECRET must be set for acceptance tests")
 	}
+}
+
+// legacyProviderConfig returns ExternalProvider config for the OLD provider (v2.1.18)
+// Used in migration tests to create state with old provider, then verify new provider
+// produces no planned changes.
+//
+// Requirements:
+// - v2.1.18 must be available in Terraform Registry
+// - If provider fetch fails, migration tests will error (not skip)
+// - Verify with: terraform providers mirror -platform=linux_amd64 /tmp/mirror
+//
+// TEMPORARY: Delete this after v3.0.0 release is validated.
+func legacyProviderConfig() map[string]resource.ExternalProvider {
+	return map[string]resource.ExternalProvider{
+		"streamkap": {
+			VersionConstraint: "2.1.18",
+			Source:            "streamkap-com/streamkap",
+		},
+	}
+}
+
+// skipIfLegacyProviderUnavailable is a helper for tests that need the legacy provider.
+// Call this at the start of migration tests to provide a clear skip message.
+func skipIfLegacyProviderUnavailable(t *testing.T) {
+	// The ExternalProviders mechanism will fail if the provider can't be downloaded.
+	// This helper documents the requirement but doesn't pre-check (Terraform does that).
+	t.Log("Migration test requires legacy provider v2.1.18 from registry.terraform.io/streamkap-com/streamkap")
 }
