@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -17,24 +18,25 @@ import (
 
 // DestinationSqlserverModel is the Terraform model for the sqlserver destination.
 type DestinationSqlserverModel struct {
-	ID                                  types.String `tfsdk:"id"`
-	Name                                types.String `tfsdk:"name"`
-	Connector                           types.String `tfsdk:"connector"`
-	DatabaseHostname                    types.String `tfsdk:"database_hostname"`
-	DatabasePort                        types.String `tfsdk:"database_port"`
-	DatabaseDatabase                    types.String `tfsdk:"database_database"`
-	ConnectionUsername                  types.String `tfsdk:"connection_username"`
-	ConnectionPassword                  types.String `tfsdk:"connection_password"`
-	TableNamePrefix                     types.String `tfsdk:"table_name_prefix"`
-	SchemaEvolution                     types.String `tfsdk:"schema_evolution"`
-	InsertMode                          types.String `tfsdk:"insert_mode"`
-	DeleteEnabled                       types.Bool   `tfsdk:"delete_enabled"`
-	PrimaryKeyMode                      types.String `tfsdk:"primary_key_mode"`
-	PrimaryKeyFields                    types.String `tfsdk:"primary_key_fields"`
-	TasksMax                            types.Int64  `tfsdk:"tasks_max"`
-	Topic2tableMap                      types.Bool   `tfsdk:"topic2table_map"`
-	TransformsChangeTopicNameMatchRegex types.String `tfsdk:"transforms_change_topic_name_match_regex"`
-	TransformsChangeTopicNameMapping    types.String `tfsdk:"transforms_change_topic_name_mapping"`
+	ID                                  types.String   `tfsdk:"id"`
+	Name                                types.String   `tfsdk:"name"`
+	Connector                           types.String   `tfsdk:"connector"`
+	DatabaseHostname                    types.String   `tfsdk:"database_hostname"`
+	DatabasePort                        types.Int64    `tfsdk:"database_port"`
+	DatabaseDatabase                    types.String   `tfsdk:"database_database"`
+	ConnectionUsername                  types.String   `tfsdk:"connection_username"`
+	ConnectionPassword                  types.String   `tfsdk:"connection_password"`
+	TableNamePrefix                     types.String   `tfsdk:"table_name_prefix"`
+	SchemaEvolution                     types.String   `tfsdk:"schema_evolution"`
+	InsertMode                          types.String   `tfsdk:"insert_mode"`
+	DeleteEnabled                       types.Bool     `tfsdk:"delete_enabled"`
+	PrimaryKeyMode                      types.String   `tfsdk:"primary_key_mode"`
+	PrimaryKeyFields                    types.String   `tfsdk:"primary_key_fields"`
+	TasksMax                            types.Int64    `tfsdk:"tasks_max"`
+	Topic2tableMap                      types.Bool     `tfsdk:"topic2table_map"`
+	TransformsChangeTopicNameMatchRegex types.String   `tfsdk:"transforms_change_topic_name_match_regex"`
+	TransformsChangeTopicNameMapping    types.String   `tfsdk:"transforms_change_topic_name_mapping"`
+	Timeouts                            timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationSqlserverSchema returns the Terraform schema for the sqlserver destination.
@@ -71,12 +73,12 @@ func DestinationSqlserverSchema() schema.Schema {
 				Description:         "SQL Server Hostname",
 				MarkdownDescription: "SQL Server Hostname",
 			},
-			"database_port": schema.StringAttribute{
+			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "SQL Server Port. For example, 1433 Defaults to \"1433\".",
+				Description:         "SQL Server Port. For example, 1433 Defaults to 1433.",
 				MarkdownDescription: "SQL Server Port. For example, 1433 Defaults to `1433`.",
-				Default:             stringdefault.StaticString("1433"),
+				Default:             int64default.StaticInt64(1433),
 			},
 			"database_database": schema.StringAttribute{
 				Optional:            true,

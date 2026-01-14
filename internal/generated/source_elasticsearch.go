@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -16,19 +17,20 @@ import (
 
 // SourceElasticsearchModel is the Terraform model for the elasticsearch source.
 type SourceElasticsearchModel struct {
-	ID                  types.String `tfsdk:"id"`
-	Name                types.String `tfsdk:"name"`
-	Connector           types.String `tfsdk:"connector"`
-	EsHost              types.String `tfsdk:"es_host"`
-	EsScheme            types.String `tfsdk:"es_scheme"`
-	EsPort              types.String `tfsdk:"es_port"`
-	HttpAuth            types.String `tfsdk:"http_auth"`
-	HttpAuthUser        types.String `tfsdk:"http_auth_user"`
-	HttpAuthPassword    types.String `tfsdk:"http_auth_password"`
-	EndpointIncludeList types.String `tfsdk:"endpoint_include_list"`
-	DatetimeFieldName   types.String `tfsdk:"datetime_field_name"`
-	DatetimeFieldValue  types.String `tfsdk:"datetime_field_value"`
-	TasksMax            types.Int64  `tfsdk:"tasks_max"`
+	ID                  types.String   `tfsdk:"id"`
+	Name                types.String   `tfsdk:"name"`
+	Connector           types.String   `tfsdk:"connector"`
+	EsHost              types.String   `tfsdk:"es_host"`
+	EsScheme            types.String   `tfsdk:"es_scheme"`
+	EsPort              types.Int64    `tfsdk:"es_port"`
+	HttpAuth            types.String   `tfsdk:"http_auth"`
+	HttpAuthUser        types.String   `tfsdk:"http_auth_user"`
+	HttpAuthPassword    types.String   `tfsdk:"http_auth_password"`
+	EndpointIncludeList types.String   `tfsdk:"endpoint_include_list"`
+	DatetimeFieldName   types.String   `tfsdk:"datetime_field_name"`
+	DatetimeFieldValue  types.String   `tfsdk:"datetime_field_value"`
+	TasksMax            types.Int64    `tfsdk:"tasks_max"`
+	Timeouts            timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourceElasticsearchSchema returns the Terraform schema for the elasticsearch source.
@@ -75,12 +77,12 @@ func SourceElasticsearchSchema() schema.Schema {
 					stringvalidator.OneOf("http", "https"),
 				},
 			},
-			"es_port": schema.StringAttribute{
+			"es_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port for ElasticSearch HTTP/HTTPS REST API. For example, 443 or 9200 Defaults to \"443\".",
+				Description:         "Port for ElasticSearch HTTP/HTTPS REST API. For example, 443 or 9200 Defaults to 443.",
 				MarkdownDescription: "Port for ElasticSearch HTTP/HTTPS REST API. For example, 443 or 9200 Defaults to `443`.",
-				Default:             stringdefault.StaticString("443"),
+				Default:             int64default.StaticInt64(443),
 			},
 			"http_auth": schema.StringAttribute{
 				Optional:            true,

@@ -3,9 +3,11 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -15,42 +17,43 @@ import (
 
 // SourceAlloydbModel is the Terraform model for the alloydb source.
 type SourceAlloydbModel struct {
-	ID                                      types.String `tfsdk:"id"`
-	Name                                    types.String `tfsdk:"name"`
-	Connector                               types.String `tfsdk:"connector"`
-	DatabaseHostname                        types.String `tfsdk:"database_hostname"`
-	DatabasePort                            types.String `tfsdk:"database_port"`
-	DatabaseUser                            types.String `tfsdk:"database_user"`
-	DatabasePassword                        types.String `tfsdk:"database_password"`
-	DatabaseDbname                          types.String `tfsdk:"database_dbname"`
-	SnapshotReadOnly                        types.String `tfsdk:"snapshot_read_only"`
-	SignalDataCollectionSchemaOrDatabase    types.String `tfsdk:"signal_data_collection_schema_or_database"`
-	ColumnIncludeListToggled                types.Bool   `tfsdk:"column_include_list_toggled"`
-	ColumnIncludeList                       types.String `tfsdk:"column_include_list"`
-	ColumnExcludeList                       types.String `tfsdk:"column_exclude_list"`
-	HeartbeatEnabled                        types.Bool   `tfsdk:"heartbeat_enabled"`
-	HeartbeatDataCollectionSchemaOrDatabase types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
-	SlotName                                types.String `tfsdk:"slot_name"`
-	PublicationName                         types.String `tfsdk:"publication_name"`
-	SchemaIncludeList                       types.String `tfsdk:"schema_include_list"`
-	TableIncludeList                        types.String `tfsdk:"table_include_list"`
-	DatabaseSslmode                         types.String `tfsdk:"database_sslmode"`
-	IncludeSourceDBNameInTableName          types.Bool   `tfsdk:"include_source_db_name_in_table_name"`
-	BinaryHandlingMode                      types.String `tfsdk:"binary_handling_mode"`
-	TransformsInsertStaticKey1StaticField   types.String `tfsdk:"transforms_insert_static_key1_static_field"`
-	TransformsInsertStaticKey1StaticValue   types.String `tfsdk:"transforms_insert_static_key1_static_value"`
-	TransformsInsertStaticValue1StaticField types.String `tfsdk:"transforms_insert_static_value1_static_field"`
-	TransformsInsertStaticValue1StaticValue types.String `tfsdk:"transforms_insert_static_value1_static_value"`
-	TransformsInsertStaticKey2StaticField   types.String `tfsdk:"transforms_insert_static_key2_static_field"`
-	TransformsInsertStaticKey2StaticValue   types.String `tfsdk:"transforms_insert_static_key2_static_value"`
-	TransformsInsertStaticValue2StaticField types.String `tfsdk:"transforms_insert_static_value2_static_field"`
-	TransformsInsertStaticValue2StaticValue types.String `tfsdk:"transforms_insert_static_value2_static_value"`
-	PredicatesIsTopicToEnrichPattern        types.String `tfsdk:"predicates_is_topic_to_enrich_pattern"`
-	SSHEnabled                              types.Bool   `tfsdk:"ssh_enabled"`
-	SSHHost                                 types.String `tfsdk:"ssh_host"`
-	SSHPort                                 types.String `tfsdk:"ssh_port"`
-	SSHUser                                 types.String `tfsdk:"ssh_user"`
-	SSHPublicKey                            types.String `tfsdk:"ssh_public_key"`
+	ID                                      types.String   `tfsdk:"id"`
+	Name                                    types.String   `tfsdk:"name"`
+	Connector                               types.String   `tfsdk:"connector"`
+	DatabaseHostname                        types.String   `tfsdk:"database_hostname"`
+	DatabasePort                            types.Int64    `tfsdk:"database_port"`
+	DatabaseUser                            types.String   `tfsdk:"database_user"`
+	DatabasePassword                        types.String   `tfsdk:"database_password"`
+	DatabaseDbname                          types.String   `tfsdk:"database_dbname"`
+	SnapshotReadOnly                        types.String   `tfsdk:"snapshot_read_only"`
+	SignalDataCollectionSchemaOrDatabase    types.String   `tfsdk:"signal_data_collection_schema_or_database"`
+	ColumnIncludeListToggled                types.Bool     `tfsdk:"column_include_list_toggled"`
+	ColumnIncludeList                       types.String   `tfsdk:"column_include_list"`
+	ColumnExcludeList                       types.String   `tfsdk:"column_exclude_list"`
+	HeartbeatEnabled                        types.Bool     `tfsdk:"heartbeat_enabled"`
+	HeartbeatDataCollectionSchemaOrDatabase types.String   `tfsdk:"heartbeat_data_collection_schema_or_database"`
+	SlotName                                types.String   `tfsdk:"slot_name"`
+	PublicationName                         types.String   `tfsdk:"publication_name"`
+	SchemaIncludeList                       types.String   `tfsdk:"schema_include_list"`
+	TableIncludeList                        types.String   `tfsdk:"table_include_list"`
+	DatabaseSslmode                         types.String   `tfsdk:"database_sslmode"`
+	IncludeSourceDBNameInTableName          types.Bool     `tfsdk:"include_source_db_name_in_table_name"`
+	BinaryHandlingMode                      types.String   `tfsdk:"binary_handling_mode"`
+	TransformsInsertStaticKey1StaticField   types.String   `tfsdk:"transforms_insert_static_key1_static_field"`
+	TransformsInsertStaticKey1StaticValue   types.String   `tfsdk:"transforms_insert_static_key1_static_value"`
+	TransformsInsertStaticValue1StaticField types.String   `tfsdk:"transforms_insert_static_value1_static_field"`
+	TransformsInsertStaticValue1StaticValue types.String   `tfsdk:"transforms_insert_static_value1_static_value"`
+	TransformsInsertStaticKey2StaticField   types.String   `tfsdk:"transforms_insert_static_key2_static_field"`
+	TransformsInsertStaticKey2StaticValue   types.String   `tfsdk:"transforms_insert_static_key2_static_value"`
+	TransformsInsertStaticValue2StaticField types.String   `tfsdk:"transforms_insert_static_value2_static_field"`
+	TransformsInsertStaticValue2StaticValue types.String   `tfsdk:"transforms_insert_static_value2_static_value"`
+	PredicatesIsTopicToEnrichPattern        types.String   `tfsdk:"predicates_is_topic_to_enrich_pattern"`
+	SSHEnabled                              types.Bool     `tfsdk:"ssh_enabled"`
+	SSHHost                                 types.String   `tfsdk:"ssh_host"`
+	SSHPort                                 types.Int64    `tfsdk:"ssh_port"`
+	SSHUser                                 types.String   `tfsdk:"ssh_user"`
+	SSHPublicKey                            types.String   `tfsdk:"ssh_public_key"`
+	Timeouts                                timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourceAlloydbSchema returns the Terraform schema for the alloydb source.
@@ -87,12 +90,12 @@ func SourceAlloydbSchema() schema.Schema {
 				Description:         "PostgreSQL Hostname.",
 				MarkdownDescription: "PostgreSQL Hostname.",
 			},
-			"database_port": schema.StringAttribute{
+			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "PostgreSQL Port. For example, 5432 Defaults to \"5432\".",
+				Description:         "PostgreSQL Port. For example, 5432 Defaults to 5432.",
 				MarkdownDescription: "PostgreSQL Port. For example, 5432 Defaults to `5432`.",
-				Default:             stringdefault.StaticString("5432"),
+				Default:             int64default.StaticInt64(5432),
 			},
 			"database_user": schema.StringAttribute{
 				Required:            true,
@@ -264,12 +267,12 @@ func SourceAlloydbSchema() schema.Schema {
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
 			},
-			"ssh_port": schema.StringAttribute{
+			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to \"22\".",
+				Description:         "Port of your SSH server Defaults to 22.",
 				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
-				Default:             stringdefault.StaticString("22"),
+				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,

@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -17,17 +18,18 @@ import (
 
 // DestinationRedisModel is the Terraform model for the redis destination.
 type DestinationRedisModel struct {
-	ID               types.String `tfsdk:"id"`
-	Name             types.String `tfsdk:"name"`
-	Connector        types.String `tfsdk:"connector"`
-	RedisHost        types.String `tfsdk:"redis_host"`
-	RedisPort        types.String `tfsdk:"redis_port"`
-	RedisUsername    types.String `tfsdk:"redis_username"`
-	RedisPassword    types.String `tfsdk:"redis_password"`
-	SSLEnabled       types.Bool   `tfsdk:"ssl_enabled"`
-	RedisKey         types.String `tfsdk:"redis_key"`
-	RedisKeyDataType types.String `tfsdk:"redis_key_data_type"`
-	TasksMax         types.Int64  `tfsdk:"tasks_max"`
+	ID               types.String   `tfsdk:"id"`
+	Name             types.String   `tfsdk:"name"`
+	Connector        types.String   `tfsdk:"connector"`
+	RedisHost        types.String   `tfsdk:"redis_host"`
+	RedisPort        types.Int64    `tfsdk:"redis_port"`
+	RedisUsername    types.String   `tfsdk:"redis_username"`
+	RedisPassword    types.String   `tfsdk:"redis_password"`
+	SSLEnabled       types.Bool     `tfsdk:"ssl_enabled"`
+	RedisKey         types.String   `tfsdk:"redis_key"`
+	RedisKeyDataType types.String   `tfsdk:"redis_key_data_type"`
+	TasksMax         types.Int64    `tfsdk:"tasks_max"`
+	Timeouts         timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationRedisSchema returns the Terraform schema for the redis destination.
@@ -64,12 +66,12 @@ func DestinationRedisSchema() schema.Schema {
 				Description:         "Redis Hostname",
 				MarkdownDescription: "Redis Hostname",
 			},
-			"redis_port": schema.StringAttribute{
+			"redis_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Redis Port. For example, 6379 Defaults to \"6379\".",
+				Description:         "Redis Port. For example, 6379 Defaults to 6379.",
 				MarkdownDescription: "Redis Port. For example, 6379 Defaults to `6379`.",
-				Default:             stringdefault.StaticString("6379"),
+				Default:             int64default.StaticInt64(6379),
 			},
 			"redis_username": schema.StringAttribute{
 				Required:            true,

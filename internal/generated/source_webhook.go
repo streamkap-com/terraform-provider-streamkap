@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -15,15 +16,16 @@ import (
 
 // SourceWebhookModel is the Terraform model for the webhook source.
 type SourceWebhookModel struct {
-	ID                                  types.String `tfsdk:"id"`
-	Name                                types.String `tfsdk:"name"`
-	Connector                           types.String `tfsdk:"connector"`
-	WebhookURL                          types.String `tfsdk:"webhook_url"`
-	APIKey                              types.String `tfsdk:"api_key"`
-	CamelSourceCamelMessageHeaderKey    types.String `tfsdk:"camel_source_camel_message_header_key"`
-	TopicIncludeList                    types.String `tfsdk:"topic_include_list"`
-	Format                              types.String `tfsdk:"format"`
-	TransformsInferSchemaAddDeleteField types.Bool   `tfsdk:"transforms_infer_schema_add_delete_field"`
+	ID                                  types.String   `tfsdk:"id"`
+	Name                                types.String   `tfsdk:"name"`
+	Connector                           types.String   `tfsdk:"connector"`
+	WebhookURL                          types.String   `tfsdk:"webhook_url"`
+	APIKey                              types.String   `tfsdk:"api_key"`
+	CamelSourceCamelMessageHeaderKey    types.String   `tfsdk:"camel_source_camel_message_header_key"`
+	TopicIncludeList                    types.String   `tfsdk:"topic_include_list"`
+	Format                              types.String   `tfsdk:"format"`
+	TransformsInferSchemaAddDeleteField types.Bool     `tfsdk:"transforms_infer_schema_add_delete_field"`
+	Timeouts                            timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourceWebhookSchema returns the Terraform schema for the webhook source.

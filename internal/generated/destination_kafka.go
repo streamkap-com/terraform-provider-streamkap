@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -15,15 +16,16 @@ import (
 
 // DestinationKafkaModel is the Terraform model for the kafka destination.
 type DestinationKafkaModel struct {
-	ID                 types.String `tfsdk:"id"`
-	Name               types.String `tfsdk:"name"`
-	Connector          types.String `tfsdk:"connector"`
-	KafkaSinkBootstrap types.String `tfsdk:"kafka_sink_bootstrap"`
-	DestinationFormat  types.String `tfsdk:"destination_format"`
-	JsonSchemaEnable   types.Bool   `tfsdk:"json_schema_enable"`
-	SchemaRegistryURL  types.String `tfsdk:"schema_registry_url"`
-	TopicPrefix        types.String `tfsdk:"topic_prefix"`
-	TopicSuffix        types.String `tfsdk:"topic_suffix"`
+	ID                 types.String   `tfsdk:"id"`
+	Name               types.String   `tfsdk:"name"`
+	Connector          types.String   `tfsdk:"connector"`
+	KafkaSinkBootstrap types.String   `tfsdk:"kafka_sink_bootstrap"`
+	DestinationFormat  types.String   `tfsdk:"destination_format"`
+	JsonSchemaEnable   types.Bool     `tfsdk:"json_schema_enable"`
+	SchemaRegistryURL  types.String   `tfsdk:"schema_registry_url"`
+	TopicPrefix        types.String   `tfsdk:"topic_prefix"`
+	TopicSuffix        types.String   `tfsdk:"topic_suffix"`
+	Timeouts           timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationKafkaSchema returns the Terraform schema for the kafka destination.

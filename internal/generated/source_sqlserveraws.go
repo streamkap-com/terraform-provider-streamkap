@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -15,38 +16,43 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type snapshotCustomTableConfigModel struct {
+	Chunks types.Int64 `tfsdk:"chunks"`
+}
+
 // SourceSqlserverawsModel is the Terraform model for the sqlserveraws source.
 type SourceSqlserverawsModel struct {
-	ID                                                 types.String `tfsdk:"id"`
-	Name                                               types.String `tfsdk:"name"`
-	Connector                                          types.String `tfsdk:"connector"`
-	DatabaseHostname                                   types.String `tfsdk:"database_hostname"`
-	DatabasePort                                       types.String `tfsdk:"database_port"`
-	DatabaseEncrypt                                    types.String `tfsdk:"database_encrypt"`
-	DatabaseUser                                       types.String `tfsdk:"database_user"`
-	DatabasePassword                                   types.String `tfsdk:"database_password"`
-	DatabaseNames                                      types.String `tfsdk:"database_names"`
-	SchemaIncludeList                                  types.String `tfsdk:"schema_include_list"`
-	TableIncludeList                                   types.String `tfsdk:"table_include_list"`
-	SignalDataCollectionSchemaOrDatabase               types.String `tfsdk:"signal_data_collection_schema_or_database"`
-	ColumnExcludeList                                  types.String `tfsdk:"column_exclude_list"`
-	HeartbeatEnabled                                   types.Bool   `tfsdk:"heartbeat_enabled"`
-	HeartbeatDataCollectionSchemaOrDatabase            types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
-	SchemaHistoryInternalStoreOnlyCapturedDatabasesDdl types.Bool   `tfsdk:"schema_history_internal_store_only_captured_databases_ddl"`
-	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool   `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
-	BinaryHandlingMode                                 types.String `tfsdk:"binary_handling_mode"`
-	StreamkapSnapshotParallelism                       types.Int64  `tfsdk:"streamkap_snapshot_parallelism"`
-	StreamkapSnapshotLargeTableThreshold               types.Int64  `tfsdk:"streamkap_snapshot_large_table_threshold"`
-	StreamkapSnapshotCustomTableConfig                 types.String `tfsdk:"streamkap_snapshot_custom_table_config"`
-	SSHEnabled                                         types.Bool   `tfsdk:"ssh_enabled"`
-	SSHHost                                            types.String `tfsdk:"ssh_host"`
-	SSHPort                                            types.String `tfsdk:"ssh_port"`
-	SSHUser                                            types.String `tfsdk:"ssh_user"`
-	TransformsInsertStaticKey1StaticField              types.String `tfsdk:"transforms_insert_static_key1_static_field"`
-	TransformsInsertStaticKey1StaticValue              types.String `tfsdk:"transforms_insert_static_key1_static_value"`
-	TransformsInsertStaticValue1StaticField            types.String `tfsdk:"transforms_insert_static_value1_static_field"`
-	TransformsInsertStaticValue1StaticValue            types.String `tfsdk:"transforms_insert_static_value1_static_value"`
-	SSHPublicKey                                       types.String `tfsdk:"ssh_public_key"`
+	ID                                                 types.String                              `tfsdk:"id"`
+	Name                                               types.String                              `tfsdk:"name"`
+	Connector                                          types.String                              `tfsdk:"connector"`
+	DatabaseHostname                                   types.String                              `tfsdk:"database_hostname"`
+	DatabasePort                                       types.Int64                               `tfsdk:"database_port"`
+	DatabaseEncrypt                                    types.String                              `tfsdk:"database_encrypt"`
+	DatabaseUser                                       types.String                              `tfsdk:"database_user"`
+	DatabasePassword                                   types.String                              `tfsdk:"database_password"`
+	DatabaseNames                                      types.String                              `tfsdk:"database_names"`
+	SchemaIncludeList                                  types.String                              `tfsdk:"schema_include_list"`
+	TableIncludeList                                   types.String                              `tfsdk:"table_include_list"`
+	SignalDataCollectionSchemaOrDatabase               types.String                              `tfsdk:"signal_data_collection_schema_or_database"`
+	ColumnExcludeList                                  types.String                              `tfsdk:"column_exclude_list"`
+	HeartbeatEnabled                                   types.Bool                                `tfsdk:"heartbeat_enabled"`
+	HeartbeatDataCollectionSchemaOrDatabase            types.String                              `tfsdk:"heartbeat_data_collection_schema_or_database"`
+	SchemaHistoryInternalStoreOnlyCapturedDatabasesDdl types.Bool                                `tfsdk:"schema_history_internal_store_only_captured_databases_ddl"`
+	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool                                `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
+	BinaryHandlingMode                                 types.String                              `tfsdk:"binary_handling_mode"`
+	StreamkapSnapshotParallelism                       types.Int64                               `tfsdk:"streamkap_snapshot_parallelism"`
+	StreamkapSnapshotLargeTableThreshold               types.Int64                               `tfsdk:"streamkap_snapshot_large_table_threshold"`
+	SSHEnabled                                         types.Bool                                `tfsdk:"ssh_enabled"`
+	SSHHost                                            types.String                              `tfsdk:"ssh_host"`
+	SSHPort                                            types.Int64                               `tfsdk:"ssh_port"`
+	SSHUser                                            types.String                              `tfsdk:"ssh_user"`
+	TransformsInsertStaticKey1StaticField              types.String                              `tfsdk:"transforms_insert_static_key1_static_field"`
+	TransformsInsertStaticKey1StaticValue              types.String                              `tfsdk:"transforms_insert_static_key1_static_value"`
+	TransformsInsertStaticValue1StaticField            types.String                              `tfsdk:"transforms_insert_static_value1_static_field"`
+	TransformsInsertStaticValue1StaticValue            types.String                              `tfsdk:"transforms_insert_static_value1_static_value"`
+	SSHPublicKey                                       types.String                              `tfsdk:"ssh_public_key"`
+	SnapshotCustomTableConfig                          map[string]snapshotCustomTableConfigModel `tfsdk:"snapshot_custom_table_config"`
+	Timeouts                                           timeouts.Value                            `tfsdk:"timeouts"`
 }
 
 // SourceSqlserverawsSchema returns the Terraform schema for the sqlserveraws source.
@@ -83,12 +89,12 @@ func SourceSqlserverawsSchema() schema.Schema {
 				Description:         "The Endpoint of the SQL Server database server. For example, sqlserverdb.abcdefgh.us-west-2.rds.amazonaws.com",
 				MarkdownDescription: "The Endpoint of the SQL Server database server. For example, sqlserverdb.abcdefgh.us-west-2.rds.amazonaws.com",
 			},
-			"database_port": schema.StringAttribute{
+			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "SQL Server Port. For example, 1433 Defaults to \"1433\".",
+				Description:         "SQL Server Port. For example, 1433 Defaults to 1433.",
 				MarkdownDescription: "SQL Server Port. For example, 1433 Defaults to `1433`.",
-				Default:             stringdefault.StaticString("1433"),
+				Default:             int64default.StaticInt64(1433),
 			},
 			"database_encrypt": schema.StringAttribute{
 				Optional:            true,
@@ -196,11 +202,6 @@ func SourceSqlserverawsSchema() schema.Schema {
 					int64validator.Between(1, 64000),
 				},
 			},
-			"streamkap_snapshot_custom_table_config": schema.StringAttribute{
-				Optional:            true,
-				Description:         "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.",
-				MarkdownDescription: "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.",
-			},
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -213,12 +214,12 @@ func SourceSqlserverawsSchema() schema.Schema {
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
 			},
-			"ssh_port": schema.StringAttribute{
+			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to \"22\".",
+				Description:         "Port of your SSH server Defaults to 22.",
 				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
-				Default:             stringdefault.StaticString("22"),
+				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,
@@ -254,6 +255,21 @@ func SourceSqlserverawsSchema() schema.Schema {
 				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
+			"snapshot_custom_table_config": schema.MapNestedAttribute{
+				Optional: true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"chunks": schema.Int64Attribute{
+							Required: true,
+							Validators: []validator.Int64{
+								int64validator.AtLeast(1),
+							},
+						},
+					},
+				},
+				Description:         "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",
+				MarkdownDescription: "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",
+			},
 		},
 	}
 }
@@ -274,17 +290,17 @@ var SourceSqlserverawsFieldMappings = map[string]string{
 	"heartbeat_data_collection_schema_or_database": "heartbeat.data.collection.schema.or.database",
 	"schema_history_internal_store_only_captured_databases_ddl": "schema.history.internal.store.only.captured.databases.ddl",
 	"schema_history_internal_store_only_captured_tables_ddl":    "schema.history.internal.store.only.captured.tables.ddl",
-	"binary_handling_mode":                         "binary.handling.mode",
-	"streamkap_snapshot_parallelism":               "streamkap.snapshot.parallelism",
-	"streamkap_snapshot_large_table_threshold":     "streamkap.snapshot.large.table.threshold",
-	"streamkap_snapshot_custom_table_config":       "streamkap.snapshot.custom.table.config.user.defined",
-	"ssh_enabled":                                  "ssh.enabled",
-	"ssh_host":                                     "ssh.host",
-	"ssh_port":                                     "ssh.port",
-	"ssh_user":                                     "ssh.user",
+	"binary_handling_mode":                     "binary.handling.mode",
+	"streamkap_snapshot_parallelism":           "streamkap.snapshot.parallelism",
+	"streamkap_snapshot_large_table_threshold": "streamkap.snapshot.large.table.threshold",
+	"ssh_enabled":                              "ssh.enabled",
+	"ssh_host":                                 "ssh.host",
+	"ssh_port":                                 "ssh.port",
+	"ssh_user":                                 "ssh.user",
 	"transforms_insert_static_key1_static_field":   "transforms.InsertStaticKey1.static.field",
 	"transforms_insert_static_key1_static_value":   "transforms.InsertStaticKey1.static.value",
 	"transforms_insert_static_value1_static_field": "transforms.InsertStaticValue1.static.field",
 	"transforms_insert_static_value1_static_value": "transforms.InsertStaticValue1.static.value",
-	"ssh_public_key":                               "ssh.public.key.user.displayed",
+	"ssh_public_key":               "ssh.public.key.user.displayed",
+	"snapshot_custom_table_config": "streamkap.snapshot.custom.table.config.user.defined",
 }

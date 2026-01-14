@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -17,23 +18,24 @@ import (
 
 // DestinationOracleModel is the Terraform model for the oracle destination.
 type DestinationOracleModel struct {
-	ID                                  types.String `tfsdk:"id"`
-	Name                                types.String `tfsdk:"name"`
-	Connector                           types.String `tfsdk:"connector"`
-	DatabaseHostname                    types.String `tfsdk:"database_hostname"`
-	DatabasePort                        types.String `tfsdk:"database_port"`
-	DatabaseDatabase                    types.String `tfsdk:"database_database"`
-	ConnectionUsername                  types.String `tfsdk:"connection_username"`
-	ConnectionPassword                  types.String `tfsdk:"connection_password"`
-	SchemaEvolution                     types.String `tfsdk:"schema_evolution"`
-	InsertMode                          types.String `tfsdk:"insert_mode"`
-	DeleteEnabled                       types.Bool   `tfsdk:"delete_enabled"`
-	PrimaryKeyMode                      types.String `tfsdk:"primary_key_mode"`
-	PrimaryKeyFields                    types.String `tfsdk:"primary_key_fields"`
-	TasksMax                            types.Int64  `tfsdk:"tasks_max"`
-	Topic2tableMap                      types.Bool   `tfsdk:"topic2table_map"`
-	TransformsChangeTopicNameMatchRegex types.String `tfsdk:"transforms_change_topic_name_match_regex"`
-	TransformsChangeTopicNameMapping    types.String `tfsdk:"transforms_change_topic_name_mapping"`
+	ID                                  types.String   `tfsdk:"id"`
+	Name                                types.String   `tfsdk:"name"`
+	Connector                           types.String   `tfsdk:"connector"`
+	DatabaseHostname                    types.String   `tfsdk:"database_hostname"`
+	DatabasePort                        types.Int64    `tfsdk:"database_port"`
+	DatabaseDatabase                    types.String   `tfsdk:"database_database"`
+	ConnectionUsername                  types.String   `tfsdk:"connection_username"`
+	ConnectionPassword                  types.String   `tfsdk:"connection_password"`
+	SchemaEvolution                     types.String   `tfsdk:"schema_evolution"`
+	InsertMode                          types.String   `tfsdk:"insert_mode"`
+	DeleteEnabled                       types.Bool     `tfsdk:"delete_enabled"`
+	PrimaryKeyMode                      types.String   `tfsdk:"primary_key_mode"`
+	PrimaryKeyFields                    types.String   `tfsdk:"primary_key_fields"`
+	TasksMax                            types.Int64    `tfsdk:"tasks_max"`
+	Topic2tableMap                      types.Bool     `tfsdk:"topic2table_map"`
+	TransformsChangeTopicNameMatchRegex types.String   `tfsdk:"transforms_change_topic_name_match_regex"`
+	TransformsChangeTopicNameMapping    types.String   `tfsdk:"transforms_change_topic_name_mapping"`
+	Timeouts                            timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationOracleSchema returns the Terraform schema for the oracle destination.
@@ -70,12 +72,12 @@ func DestinationOracleSchema() schema.Schema {
 				Description:         "Oracle Hostname",
 				MarkdownDescription: "Oracle Hostname",
 			},
-			"database_port": schema.StringAttribute{
+			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Oracle Port. For example, 1521 Defaults to \"1521\".",
+				Description:         "Oracle Port. For example, 1521 Defaults to 1521.",
 				MarkdownDescription: "Oracle Port. For example, 1521 Defaults to `1521`.",
-				Default:             stringdefault.StaticString("1521"),
+				Default:             int64default.StaticInt64(1521),
 			},
 			"database_database": schema.StringAttribute{
 				Optional:            true,

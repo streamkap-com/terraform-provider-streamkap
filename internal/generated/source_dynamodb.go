@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -15,25 +16,26 @@ import (
 
 // SourceDynamodbModel is the Terraform model for the dynamodb source.
 type SourceDynamodbModel struct {
-	ID                            types.String `tfsdk:"id"`
-	Name                          types.String `tfsdk:"name"`
-	Connector                     types.String `tfsdk:"connector"`
-	AWSRegion                     types.String `tfsdk:"aws_region"`
-	AWSAccessKeyID                types.String `tfsdk:"aws_access_key_id"`
-	AWSSecretKey                  types.String `tfsdk:"aws_secret_key"`
-	S3ExportBucketName            types.String `tfsdk:"s3_export_bucket_name"`
-	TableIncludeList              types.String `tfsdk:"table_include_list"`
-	BatchSize                     types.Int64  `tfsdk:"batch_size"`
-	DynamodbServiceEndpoint       types.String `tfsdk:"dynamodb_service_endpoint"`
-	TasksMax                      types.Int64  `tfsdk:"tasks_max"`
-	SnapshotParallelTimeOffset    types.Int64  `tfsdk:"snapshot_parallel_time_offset"`
-	PollTimeoutMs                 types.Int64  `tfsdk:"poll_timeout_ms"`
-	IncrementalSnapshotChunkSize  types.Int64  `tfsdk:"incremental_snapshot_chunk_size"`
-	IncrementalSnapshotMaxThreads types.Int64  `tfsdk:"incremental_snapshot_max_threads"`
-	FullExportExpirationTimeMs    types.Int64  `tfsdk:"full_export_expiration_time_ms"`
-	SignalKafkaPollTimeoutMs      types.Int64  `tfsdk:"signal_kafka_poll_timeout_ms"`
-	ArrayEncodingJson             types.Bool   `tfsdk:"array_encoding_json"`
-	StructEncodingJson            types.Bool   `tfsdk:"struct_encoding_json"`
+	ID                            types.String   `tfsdk:"id"`
+	Name                          types.String   `tfsdk:"name"`
+	Connector                     types.String   `tfsdk:"connector"`
+	AWSRegion                     types.String   `tfsdk:"aws_region"`
+	AWSAccessKeyID                types.String   `tfsdk:"aws_access_key_id"`
+	AWSSecretKey                  types.String   `tfsdk:"aws_secret_key"`
+	S3ExportBucketName            types.String   `tfsdk:"s3_export_bucket_name"`
+	TableIncludeList              types.String   `tfsdk:"table_include_list"`
+	BatchSize                     types.Int64    `tfsdk:"batch_size"`
+	DynamodbServiceEndpoint       types.String   `tfsdk:"dynamodb_service_endpoint"`
+	TasksMax                      types.Int64    `tfsdk:"tasks_max"`
+	SnapshotParallelTimeOffset    types.Int64    `tfsdk:"snapshot_parallel_time_offset"`
+	PollTimeoutMs                 types.Int64    `tfsdk:"poll_timeout_ms"`
+	IncrementalSnapshotChunkSize  types.Int64    `tfsdk:"incremental_snapshot_chunk_size"`
+	IncrementalSnapshotMaxThreads types.Int64    `tfsdk:"incremental_snapshot_max_threads"`
+	FullExportExpirationTimeMs    types.Int64    `tfsdk:"full_export_expiration_time_ms"`
+	SignalKafkaPollTimeoutMs      types.Int64    `tfsdk:"signal_kafka_poll_timeout_ms"`
+	ArrayEncodingJson             types.Bool     `tfsdk:"array_encoding_json"`
+	StructEncodingJson            types.Bool     `tfsdk:"struct_encoding_json"`
+	Timeouts                      timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourceDynamodbSchema returns the Terraform schema for the dynamodb source.

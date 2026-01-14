@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -14,16 +15,17 @@ import (
 
 // DestinationGcsModel is the Terraform model for the gcs destination.
 type DestinationGcsModel struct {
-	ID                  types.String `tfsdk:"id"`
-	Name                types.String `tfsdk:"name"`
-	Connector           types.String `tfsdk:"connector"`
-	GcsCredentialsJson  types.String `tfsdk:"gcs_credentials_json"`
-	GcsBucketName       types.String `tfsdk:"gcs_bucket_name"`
-	Format              types.String `tfsdk:"format"`
-	FileNameTemplate    types.String `tfsdk:"file_name_template"`
-	FileNamePrefix      types.String `tfsdk:"file_name_prefix"`
-	FileCompressionType types.String `tfsdk:"file_compression_type"`
-	FormatOutputFields  types.List   `tfsdk:"format_output_fields"`
+	ID                  types.String   `tfsdk:"id"`
+	Name                types.String   `tfsdk:"name"`
+	Connector           types.String   `tfsdk:"connector"`
+	GcsCredentialsJson  types.String   `tfsdk:"gcs_credentials_json"`
+	GcsBucketName       types.String   `tfsdk:"gcs_bucket_name"`
+	Format              types.String   `tfsdk:"format"`
+	FileNameTemplate    types.String   `tfsdk:"file_name_template"`
+	FileNamePrefix      types.String   `tfsdk:"file_name_prefix"`
+	FileCompressionType types.String   `tfsdk:"file_compression_type"`
+	FormatOutputFields  types.List     `tfsdk:"format_output_fields"`
+	Timeouts            timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationGcsSchema returns the Terraform schema for the gcs destination.

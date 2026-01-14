@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -16,19 +17,20 @@ import (
 
 // DestinationAzblobModel is the Terraform model for the azblob destination.
 type DestinationAzblobModel struct {
-	ID                     types.String `tfsdk:"id"`
-	Name                   types.String `tfsdk:"name"`
-	Connector              types.String `tfsdk:"connector"`
-	AzblobConnectionString types.String `tfsdk:"azblob_connection_string"`
-	AzblobContainerName    types.String `tfsdk:"azblob_container_name"`
-	Format                 types.String `tfsdk:"format"`
-	FormatCsvWriteHeaders  types.Bool   `tfsdk:"format_csv_write_headers"`
-	TopicsDir              types.String `tfsdk:"topics_dir"`
-	FileNameTemplate       types.String `tfsdk:"file_name_template"`
-	FlushSize              types.Int64  `tfsdk:"flush_size"`
-	FileSize               types.Int64  `tfsdk:"file_size"`
-	RotateIntervalMs       types.Int64  `tfsdk:"rotate_interval_ms"`
-	Compression            types.String `tfsdk:"compression"`
+	ID                     types.String   `tfsdk:"id"`
+	Name                   types.String   `tfsdk:"name"`
+	Connector              types.String   `tfsdk:"connector"`
+	AzblobConnectionString types.String   `tfsdk:"azblob_connection_string"`
+	AzblobContainerName    types.String   `tfsdk:"azblob_container_name"`
+	Format                 types.String   `tfsdk:"format"`
+	FormatCsvWriteHeaders  types.Bool     `tfsdk:"format_csv_write_headers"`
+	TopicsDir              types.String   `tfsdk:"topics_dir"`
+	FileNameTemplate       types.String   `tfsdk:"file_name_template"`
+	FlushSize              types.Int64    `tfsdk:"flush_size"`
+	FileSize               types.Int64    `tfsdk:"file_size"`
+	RotateIntervalMs       types.Int64    `tfsdk:"rotate_interval_ms"`
+	Compression            types.String   `tfsdk:"compression"`
+	Timeouts               timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationAzblobSchema returns the Terraform schema for the azblob destination.

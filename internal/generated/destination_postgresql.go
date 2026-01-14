@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -17,29 +18,30 @@ import (
 
 // DestinationPostgresqlModel is the Terraform model for the postgresql destination.
 type DestinationPostgresqlModel struct {
-	ID                                  types.String `tfsdk:"id"`
-	Name                                types.String `tfsdk:"name"`
-	Connector                           types.String `tfsdk:"connector"`
-	DatabaseHostname                    types.String `tfsdk:"database_hostname"`
-	DatabasePort                        types.String `tfsdk:"database_port"`
-	DatabaseDatabase                    types.String `tfsdk:"database_database"`
-	ConnectionUsername                  types.String `tfsdk:"connection_username"`
-	ConnectionPassword                  types.String `tfsdk:"connection_password"`
-	SSHEnabled                          types.Bool   `tfsdk:"ssh_enabled"`
-	SSHHost                             types.String `tfsdk:"ssh_host"`
-	SSHPort                             types.String `tfsdk:"ssh_port"`
-	SSHUser                             types.String `tfsdk:"ssh_user"`
-	TableNamePrefix                     types.String `tfsdk:"table_name_prefix"`
-	SchemaEvolution                     types.String `tfsdk:"schema_evolution"`
-	InsertMode                          types.String `tfsdk:"insert_mode"`
-	DeleteEnabled                       types.Bool   `tfsdk:"delete_enabled"`
-	PrimaryKeyMode                      types.String `tfsdk:"primary_key_mode"`
-	PrimaryKeyFields                    types.String `tfsdk:"primary_key_fields"`
-	TasksMax                            types.Int64  `tfsdk:"tasks_max"`
-	Topic2tableMap                      types.Bool   `tfsdk:"topic2table_map"`
-	TransformsChangeTopicNameMatchRegex types.String `tfsdk:"transforms_change_topic_name_match_regex"`
-	TransformsChangeTopicNameMapping    types.String `tfsdk:"transforms_change_topic_name_mapping"`
-	SSHPublicKey                        types.String `tfsdk:"ssh_public_key"`
+	ID                                  types.String   `tfsdk:"id"`
+	Name                                types.String   `tfsdk:"name"`
+	Connector                           types.String   `tfsdk:"connector"`
+	DatabaseHostname                    types.String   `tfsdk:"database_hostname"`
+	DatabasePort                        types.Int64    `tfsdk:"database_port"`
+	DatabaseDatabase                    types.String   `tfsdk:"database_database"`
+	ConnectionUsername                  types.String   `tfsdk:"connection_username"`
+	ConnectionPassword                  types.String   `tfsdk:"connection_password"`
+	SSHEnabled                          types.Bool     `tfsdk:"ssh_enabled"`
+	SSHHost                             types.String   `tfsdk:"ssh_host"`
+	SSHPort                             types.Int64    `tfsdk:"ssh_port"`
+	SSHUser                             types.String   `tfsdk:"ssh_user"`
+	TableNamePrefix                     types.String   `tfsdk:"table_name_prefix"`
+	SchemaEvolution                     types.String   `tfsdk:"schema_evolution"`
+	InsertMode                          types.String   `tfsdk:"insert_mode"`
+	DeleteEnabled                       types.Bool     `tfsdk:"delete_enabled"`
+	PrimaryKeyMode                      types.String   `tfsdk:"primary_key_mode"`
+	PrimaryKeyFields                    types.String   `tfsdk:"primary_key_fields"`
+	TasksMax                            types.Int64    `tfsdk:"tasks_max"`
+	Topic2tableMap                      types.Bool     `tfsdk:"topic2table_map"`
+	TransformsChangeTopicNameMatchRegex types.String   `tfsdk:"transforms_change_topic_name_match_regex"`
+	TransformsChangeTopicNameMapping    types.String   `tfsdk:"transforms_change_topic_name_mapping"`
+	SSHPublicKey                        types.String   `tfsdk:"ssh_public_key"`
+	Timeouts                            timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationPostgresqlSchema returns the Terraform schema for the postgresql destination.
@@ -76,12 +78,12 @@ func DestinationPostgresqlSchema() schema.Schema {
 				Description:         "PostgreSQL Hostname",
 				MarkdownDescription: "PostgreSQL Hostname",
 			},
-			"database_port": schema.StringAttribute{
+			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "PostgreSQL Port. For example, 5432 Defaults to \"5432\".",
+				Description:         "PostgreSQL Port. For example, 5432 Defaults to 5432.",
 				MarkdownDescription: "PostgreSQL Port. For example, 5432 Defaults to `5432`.",
-				Default:             stringdefault.StaticString("5432"),
+				Default:             int64default.StaticInt64(5432),
 			},
 			"database_database": schema.StringAttribute{
 				Optional:            true,
@@ -111,12 +113,12 @@ func DestinationPostgresqlSchema() schema.Schema {
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
 			},
-			"ssh_port": schema.StringAttribute{
+			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to \"22\".",
+				Description:         "Port of your SSH server Defaults to 22.",
 				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
-				Default:             stringdefault.StaticString("22"),
+				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,

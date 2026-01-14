@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -17,19 +18,20 @@ import (
 
 // DestinationMotherduckModel is the Terraform model for the motherduck destination.
 type DestinationMotherduckModel struct {
-	ID                                  types.String `tfsdk:"id"`
-	Name                                types.String `tfsdk:"name"`
-	Connector                           types.String `tfsdk:"connector"`
-	IngestionMode                       types.String `tfsdk:"ingestion_mode"`
-	MotherduckToken                     types.String `tfsdk:"motherduck_token"`
-	MotherduckCatalog                   types.String `tfsdk:"motherduck_catalog"`
-	SchemaEvolution                     types.String `tfsdk:"schema_evolution"`
-	TableNamePrefix                     types.String `tfsdk:"table_name_prefix"`
-	HardDelete                          types.Bool   `tfsdk:"hard_delete"`
-	TasksMax                            types.Int64  `tfsdk:"tasks_max"`
-	Topic2tableMap                      types.Bool   `tfsdk:"topic2table_map"`
-	TransformsChangeTopicNameMatchRegex types.String `tfsdk:"transforms_change_topic_name_match_regex"`
-	TransformsChangeTopicNameMapping    types.String `tfsdk:"transforms_change_topic_name_mapping"`
+	ID                                  types.String   `tfsdk:"id"`
+	Name                                types.String   `tfsdk:"name"`
+	Connector                           types.String   `tfsdk:"connector"`
+	IngestionMode                       types.String   `tfsdk:"ingestion_mode"`
+	MotherduckToken                     types.String   `tfsdk:"motherduck_token"`
+	MotherduckCatalog                   types.String   `tfsdk:"motherduck_catalog"`
+	SchemaEvolution                     types.String   `tfsdk:"schema_evolution"`
+	TableNamePrefix                     types.String   `tfsdk:"table_name_prefix"`
+	HardDelete                          types.Bool     `tfsdk:"hard_delete"`
+	TasksMax                            types.Int64    `tfsdk:"tasks_max"`
+	Topic2tableMap                      types.Bool     `tfsdk:"topic2table_map"`
+	TransformsChangeTopicNameMatchRegex types.String   `tfsdk:"transforms_change_topic_name_match_regex"`
+	TransformsChangeTopicNameMapping    types.String   `tfsdk:"transforms_change_topic_name_mapping"`
+	Timeouts                            timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationMotherduckSchema returns the Terraform schema for the motherduck destination.

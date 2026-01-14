@@ -3,9 +3,11 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -15,26 +17,27 @@ import (
 
 // SourceVitessModel is the Terraform model for the vitess source.
 type SourceVitessModel struct {
-	ID                   types.String `tfsdk:"id"`
-	Name                 types.String `tfsdk:"name"`
-	Connector            types.String `tfsdk:"connector"`
-	DatabaseHostname     types.String `tfsdk:"database_hostname"`
-	DatabasePort         types.String `tfsdk:"database_port"`
-	DatabaseUser         types.String `tfsdk:"database_user"`
-	DatabasePassword     types.String `tfsdk:"database_password"`
-	VitessKeyspace       types.String `tfsdk:"vitess_keyspace"`
-	VitessTabletType     types.String `tfsdk:"vitess_tablet_type"`
-	VitessVtctldHost     types.String `tfsdk:"vitess_vtctld_host"`
-	VitessVtctldPort     types.String `tfsdk:"vitess_vtctld_port"`
-	VitessVtctldUser     types.String `tfsdk:"vitess_vtctld_user"`
-	VitessVtctldPassword types.String `tfsdk:"vitess_vtctld_password"`
-	TableIncludeList     types.String `tfsdk:"table_include_list"`
-	SSHEnabled           types.Bool   `tfsdk:"ssh_enabled"`
-	SSHHost              types.String `tfsdk:"ssh_host"`
-	SSHPort              types.String `tfsdk:"ssh_port"`
-	SSHUser              types.String `tfsdk:"ssh_user"`
-	SSHPublicKey         types.String `tfsdk:"ssh_public_key"`
-	ColumnExcludeList    types.String `tfsdk:"column_exclude_list"`
+	ID                   types.String   `tfsdk:"id"`
+	Name                 types.String   `tfsdk:"name"`
+	Connector            types.String   `tfsdk:"connector"`
+	DatabaseHostname     types.String   `tfsdk:"database_hostname"`
+	DatabasePort         types.Int64    `tfsdk:"database_port"`
+	DatabaseUser         types.String   `tfsdk:"database_user"`
+	DatabasePassword     types.String   `tfsdk:"database_password"`
+	VitessKeyspace       types.String   `tfsdk:"vitess_keyspace"`
+	VitessTabletType     types.String   `tfsdk:"vitess_tablet_type"`
+	VitessVtctldHost     types.String   `tfsdk:"vitess_vtctld_host"`
+	VitessVtctldPort     types.Int64    `tfsdk:"vitess_vtctld_port"`
+	VitessVtctldUser     types.String   `tfsdk:"vitess_vtctld_user"`
+	VitessVtctldPassword types.String   `tfsdk:"vitess_vtctld_password"`
+	TableIncludeList     types.String   `tfsdk:"table_include_list"`
+	SSHEnabled           types.Bool     `tfsdk:"ssh_enabled"`
+	SSHHost              types.String   `tfsdk:"ssh_host"`
+	SSHPort              types.Int64    `tfsdk:"ssh_port"`
+	SSHUser              types.String   `tfsdk:"ssh_user"`
+	SSHPublicKey         types.String   `tfsdk:"ssh_public_key"`
+	ColumnExcludeList    types.String   `tfsdk:"column_exclude_list"`
+	Timeouts             timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourceVitessSchema returns the Terraform schema for the vitess source.
@@ -71,12 +74,12 @@ func SourceVitessSchema() schema.Schema {
 				Description:         "IP address or hostname of the Vitess database server (VTGate).",
 				MarkdownDescription: "IP address or hostname of the Vitess database server (VTGate).",
 			},
-			"database_port": schema.StringAttribute{
+			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Integer port number of the Vitess database server (VTGate). Defaults to \"15991\".",
+				Description:         "Integer port number of the Vitess database server (VTGate). Defaults to 15991.",
 				MarkdownDescription: "Integer port number of the Vitess database server (VTGate). Defaults to `15991`.",
-				Default:             stringdefault.StaticString("15991"),
+				Default:             int64default.StaticInt64(15991),
 			},
 			"database_user": schema.StringAttribute{
 				Optional:            true,
@@ -109,12 +112,12 @@ func SourceVitessSchema() schema.Schema {
 				Description:         "IP address or hostname of the VTCtld server.",
 				MarkdownDescription: "IP address or hostname of the VTCtld server.",
 			},
-			"vitess_vtctld_port": schema.StringAttribute{
+			"vitess_vtctld_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Integer port number of the VTCtld server. Defaults to \"15999\".",
+				Description:         "Integer port number of the VTCtld server. Defaults to 15999.",
 				MarkdownDescription: "Integer port number of the VTCtld server. Defaults to `15999`.",
-				Default:             stringdefault.StaticString("15999"),
+				Default:             int64default.StaticInt64(15999),
 			},
 			"vitess_vtctld_user": schema.StringAttribute{
 				Required:            true,
@@ -144,12 +147,12 @@ func SourceVitessSchema() schema.Schema {
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
 			},
-			"ssh_port": schema.StringAttribute{
+			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to \"22\".",
+				Description:         "Port of your SSH server Defaults to 22.",
 				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
-				Default:             stringdefault.StaticString("22"),
+				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,

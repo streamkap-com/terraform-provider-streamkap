@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -14,14 +15,15 @@ import (
 
 // TransformFanOutModel is the Terraform model for the fan_out transform.
 type TransformFanOutModel struct {
-	ID                                  types.String `tfsdk:"id"`
-	Name                                types.String `tfsdk:"name"`
-	TransformType                       types.String `tfsdk:"transform_type"`
-	TransformsLanguage                  types.String `tfsdk:"transforms_language"`
-	TransformsInputTopicPattern         types.String `tfsdk:"transforms_input_topic_pattern"`
-	TransformsOutputTopicPattern        types.String `tfsdk:"transforms_output_topic_pattern"`
-	TransformsInputSerializationFormat  types.String `tfsdk:"transforms_input_serialization_format"`
-	TransformsOutputSerializationFormat types.String `tfsdk:"transforms_output_serialization_format"`
+	ID                                  types.String   `tfsdk:"id"`
+	Name                                types.String   `tfsdk:"name"`
+	TransformType                       types.String   `tfsdk:"transform_type"`
+	TransformsLanguage                  types.String   `tfsdk:"transforms_language"`
+	TransformsInputTopicPattern         types.String   `tfsdk:"transforms_input_topic_pattern"`
+	TransformsOutputTopicPattern        types.String   `tfsdk:"transforms_output_topic_pattern"`
+	TransformsInputSerializationFormat  types.String   `tfsdk:"transforms_input_serialization_format"`
+	TransformsOutputSerializationFormat types.String   `tfsdk:"transforms_output_serialization_format"`
+	Timeouts                            timeouts.Value `tfsdk:"timeouts"`
 }
 
 // TransformFanOutSchema returns the Terraform schema for the fan_out transform.

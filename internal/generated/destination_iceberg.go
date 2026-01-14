@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -14,20 +15,21 @@ import (
 
 // DestinationIcebergModel is the Terraform model for the iceberg destination.
 type DestinationIcebergModel struct {
-	ID                                types.String `tfsdk:"id"`
-	Name                              types.String `tfsdk:"name"`
-	Connector                         types.String `tfsdk:"connector"`
-	IcebergCatalogType                types.String `tfsdk:"iceberg_catalog_type"`
-	IcebergCatalogName                types.String `tfsdk:"iceberg_catalog_name"`
-	IcebergCatalogClientAssumeRoleARN types.String `tfsdk:"iceberg_catalog_client_assume_role_arn"`
-	IcebergCatalogUri                 types.String `tfsdk:"iceberg_catalog_uri"`
-	IcebergCatalogS3AccessKeyID       types.String `tfsdk:"iceberg_catalog_s3_access_key_id"`
-	IcebergCatalogS3SecretAccessKey   types.String `tfsdk:"iceberg_catalog_s3_secret_access_key"`
-	IcebergCatalogClientRegion        types.String `tfsdk:"iceberg_catalog_client_region"`
-	IcebergCatalogWarehouse           types.String `tfsdk:"iceberg_catalog_warehouse"`
-	TableNamePrefix                   types.String `tfsdk:"table_name_prefix"`
-	InsertMode                        types.String `tfsdk:"insert_mode"`
-	IcebergTablesDefaultIDColumns     types.String `tfsdk:"iceberg_tables_default_id_columns"`
+	ID                                types.String   `tfsdk:"id"`
+	Name                              types.String   `tfsdk:"name"`
+	Connector                         types.String   `tfsdk:"connector"`
+	IcebergCatalogType                types.String   `tfsdk:"iceberg_catalog_type"`
+	IcebergCatalogName                types.String   `tfsdk:"iceberg_catalog_name"`
+	IcebergCatalogClientAssumeRoleARN types.String   `tfsdk:"iceberg_catalog_client_assume_role_arn"`
+	IcebergCatalogUri                 types.String   `tfsdk:"iceberg_catalog_uri"`
+	IcebergCatalogS3AccessKeyID       types.String   `tfsdk:"iceberg_catalog_s3_access_key_id"`
+	IcebergCatalogS3SecretAccessKey   types.String   `tfsdk:"iceberg_catalog_s3_secret_access_key"`
+	IcebergCatalogClientRegion        types.String   `tfsdk:"iceberg_catalog_client_region"`
+	IcebergCatalogWarehouse           types.String   `tfsdk:"iceberg_catalog_warehouse"`
+	TableNamePrefix                   types.String   `tfsdk:"table_name_prefix"`
+	InsertMode                        types.String   `tfsdk:"insert_mode"`
+	IcebergTablesDefaultIDColumns     types.String   `tfsdk:"iceberg_tables_default_id_columns"`
+	Timeouts                          timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationIcebergSchema returns the Terraform schema for the iceberg destination.

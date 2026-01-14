@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -14,12 +15,13 @@ import (
 
 // TransformEnrichModel is the Terraform model for the enrich transform.
 type TransformEnrichModel struct {
-	ID                           types.String `tfsdk:"id"`
-	Name                         types.String `tfsdk:"name"`
-	TransformType                types.String `tfsdk:"transform_type"`
-	TransformsLanguage           types.String `tfsdk:"transforms_language"`
-	TransformsInputTopicPattern  types.String `tfsdk:"transforms_input_topic_pattern"`
-	TransformsOutputTopicPattern types.String `tfsdk:"transforms_output_topic_pattern"`
+	ID                           types.String   `tfsdk:"id"`
+	Name                         types.String   `tfsdk:"name"`
+	TransformType                types.String   `tfsdk:"transform_type"`
+	TransformsLanguage           types.String   `tfsdk:"transforms_language"`
+	TransformsInputTopicPattern  types.String   `tfsdk:"transforms_input_topic_pattern"`
+	TransformsOutputTopicPattern types.String   `tfsdk:"transforms_output_topic_pattern"`
+	Timeouts                     timeouts.Value `tfsdk:"timeouts"`
 }
 
 // TransformEnrichSchema returns the Terraform schema for the enrich transform.

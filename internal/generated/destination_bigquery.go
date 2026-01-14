@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -17,16 +18,17 @@ import (
 
 // DestinationBigqueryModel is the Terraform model for the bigquery destination.
 type DestinationBigqueryModel struct {
-	ID                           types.String `tfsdk:"id"`
-	Name                         types.String `tfsdk:"name"`
-	Connector                    types.String `tfsdk:"connector"`
-	BigqueryJson                 types.String `tfsdk:"bigquery_json"`
-	TableNamePrefix              types.String `tfsdk:"table_name_prefix"`
-	BigqueryRegion               types.String `tfsdk:"bigquery_region"`
-	CustomBigqueryClusterField   types.String `tfsdk:"custom_bigquery_cluster_field"`
-	CustomBigqueryPartitionField types.String `tfsdk:"custom_bigquery_partition_field"`
-	BigqueryTimeBasedPartition   types.Bool   `tfsdk:"bigquery_time_based_partition"`
-	TasksMax                     types.Int64  `tfsdk:"tasks_max"`
+	ID                           types.String   `tfsdk:"id"`
+	Name                         types.String   `tfsdk:"name"`
+	Connector                    types.String   `tfsdk:"connector"`
+	BigqueryJson                 types.String   `tfsdk:"bigquery_json"`
+	TableNamePrefix              types.String   `tfsdk:"table_name_prefix"`
+	BigqueryRegion               types.String   `tfsdk:"bigquery_region"`
+	CustomBigqueryClusterField   types.String   `tfsdk:"custom_bigquery_cluster_field"`
+	CustomBigqueryPartitionField types.String   `tfsdk:"custom_bigquery_partition_field"`
+	BigqueryTimeBasedPartition   types.Bool     `tfsdk:"bigquery_time_based_partition"`
+	TasksMax                     types.Int64    `tfsdk:"tasks_max"`
+	Timeouts                     timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationBigquerySchema returns the Terraform schema for the bigquery destination.

@@ -712,7 +712,7 @@ func TestDefaultFunc(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := g.defaultFunc(tt.entry)
+			result := g.defaultFunc(tt.entry, false)
 			if result != tt.expected {
 				t.Errorf("defaultFunc() = %q, want %q", result, tt.expected)
 			}
@@ -994,7 +994,7 @@ func TestGenerateFile_Integration(t *testing.T) {
 		"Name ", "`tfsdk:\"name\"`",
 		"Connector ", "`tfsdk:\"connector\"`",
 		"DatabaseHostname ", "`tfsdk:\"database_hostname\"`",
-		"DatabasePort ", "`tfsdk:\"database_port\"`",
+		"DatabasePort ", "types.Int64", "`tfsdk:\"database_port\"`", // Port fields are Int64
 		"DatabasePassword ", "`tfsdk:\"database_password\"`",
 		"SnapshotMode ", "`tfsdk:\"snapshot_mode\"`",
 		"Parallelism ", "types.Int64", "`tfsdk:\"parallelism\"`",
@@ -1004,8 +1004,8 @@ func TestGenerateFile_Integration(t *testing.T) {
 		"Optional:", "true",
 		"Computed:", "true",
 		"Sensitive:", "true",
-		// Defaults and validators
-		`stringdefault.StaticString("5432")`,
+		// Defaults and validators (port fields use Int64)
+		`int64default.StaticInt64(5432)`,
 		`stringvalidator.OneOf("initial", "never", "always")`,
 		"int64validator.Between(1, 10)",
 		"booldefault.StaticBool(false)",

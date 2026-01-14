@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -16,19 +17,20 @@ import (
 
 // SourceS3Model is the Terraform model for the s3 source.
 type SourceS3Model struct {
-	ID                   types.String `tfsdk:"id"`
-	Name                 types.String `tfsdk:"name"`
-	Connector            types.String `tfsdk:"connector"`
-	Format               types.String `tfsdk:"format"`
-	TopicPostfix         types.String `tfsdk:"topic_postfix"`
-	AWSAccessKeyID       types.String `tfsdk:"aws_access_key_id"`
-	AWSSecretAccessKey   types.String `tfsdk:"aws_secret_access_key"`
-	AWSS3Region          types.String `tfsdk:"aws_s3_region"`
-	AWSS3BucketName      types.String `tfsdk:"aws_s3_bucket_name"`
-	AWSS3ObjectPrefix    types.String `tfsdk:"aws_s3_object_prefix"`
-	FsScanIntervalMs     types.Int64  `tfsdk:"fs_scan_interval_ms"`
-	FsCleanupPolicyClass types.String `tfsdk:"fs_cleanup_policy_class"`
-	TasksMax             types.Int64  `tfsdk:"tasks_max"`
+	ID                   types.String   `tfsdk:"id"`
+	Name                 types.String   `tfsdk:"name"`
+	Connector            types.String   `tfsdk:"connector"`
+	Format               types.String   `tfsdk:"format"`
+	TopicPostfix         types.String   `tfsdk:"topic_postfix"`
+	AWSAccessKeyID       types.String   `tfsdk:"aws_access_key_id"`
+	AWSSecretAccessKey   types.String   `tfsdk:"aws_secret_access_key"`
+	AWSS3Region          types.String   `tfsdk:"aws_s3_region"`
+	AWSS3BucketName      types.String   `tfsdk:"aws_s3_bucket_name"`
+	AWSS3ObjectPrefix    types.String   `tfsdk:"aws_s3_object_prefix"`
+	FsScanIntervalMs     types.Int64    `tfsdk:"fs_scan_interval_ms"`
+	FsCleanupPolicyClass types.String   `tfsdk:"fs_cleanup_policy_class"`
+	TasksMax             types.Int64    `tfsdk:"tasks_max"`
+	Timeouts             timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourceS3Schema returns the Terraform schema for the s3 source.
