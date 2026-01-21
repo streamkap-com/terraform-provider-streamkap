@@ -22,6 +22,7 @@
 11. [Migration Tests](#migration-tests)
 12. [Code Generator Parser](#code-generator-parser)
 13. [Code Generator Type Mapping](#code-generator-type-mapping)
+14. [Override and Deprecation System](#override-and-deprecation-system)
 
 ---
 
@@ -2004,6 +2005,198 @@ func (g *Generator) rangeValidator(entry *ConfigEntry) string {
 | `number` → `types.Int64` | ✅ Verified | `parser.go:249-251` |
 | `boolean` → `types.Bool` | ✅ Verified | `parser.go:252-253` |
 | `encrypt=true` → `Sensitive=true` | ✅ Verified | `parser.go:123`, `generator.go:644` |
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## Override and Deprecation System
+
+This section documents the JSON-based configuration files that control field overrides and deprecations in the code generation system.
+
+### Overview
+
+The code generator uses two JSON configuration files to handle cases that cannot be automatically inferred from backend `configuration.latest.json` files:
+
+| File | Purpose | Location |
+|------|---------|----------|
+| `overrides.json` | Defines complex field types (map_string, map_nested) | `cmd/tfgen/overrides.json` |
+| `deprecations.json` | Defines deprecated field aliases | `cmd/tfgen/deprecations.json` |
+
+### overrides.json Structure
+
+**Location**: `cmd/tfgen/overrides.json`
+
+The overrides file contains **3 field overrides** for complex types that the generator cannot automatically infer:
+
+```json
+{
+  "field_overrides": [
+    {
+      "connector": "<connector_name>",
+      "entity_type": "<sources|destinations>",
+      "api_field_name": "<backend.field.name>",
+      "terraform_attr_name": "<terraform_attribute>",
+      "type": "<map_string|map_nested>",
+      "optional": true,
+      "description": "<field description>",
+      "nested_model_name": "<ModelName>",  // For map_nested only
+      "nested_fields": [...]               // For map_nested only
+    }
+  ]
+}
+```
+
+### Override Types
+
+#### map_string Override
+
+Used for fields that map string keys to string values.
+
+**Example**: Snowflake `auto_qa_dedupe_table_mapping`
+
+| Property | Value |
+|----------|-------|
+| **connector** | `snowflake` |
+| **entity_type** | `destinations` |
+| **api_field_name** | `auto.qa.dedupe.table.mapping` |
+| **terraform_attr_name** | `auto_qa_dedupe_table_mapping` |
+| **type** | `map_string` |
+| **optional** | `true` |
+
+**Verification**: ✅ At least one `map_string` override exists (Snowflake destination)
+
+#### map_nested Override
+
+Used for fields that map string keys to nested object values.
+
+**Example 1**: ClickHouse `topics_config_map`
+
+| Property | Value |
+|----------|-------|
+| **connector** | `clickhouse` |
+| **entity_type** | `destinations` |
+| **api_field_name** | `topics.config.map` |
+| **terraform_attr_name** | `topics_config_map` |
+| **type** | `map_nested` |
+| **nested_model_name** | `ClickHouseTopicsConfigMapItemModel` |
+| **nested_fields** | `[{name: "delete_sql_execute", type: "string", optional: true}]` |
+
+**Example 2**: SQL Server `snapshot_custom_table_config`
+
+| Property | Value |
+|----------|-------|
+| **connector** | `sqlserveraws` |
+| **entity_type** | `sources` |
+| **api_field_name** | `streamkap.snapshot.custom.table.config.user.defined` |
+| **terraform_attr_name** | `snapshot_custom_table_config` |
+| **type** | `map_nested` |
+| **nested_model_name** | `SnapshotCustomTableConfigModel` |
+| **nested_fields** | `[{name: "chunks", type: "int64", required: true, validators: [{type: "int64_at_least", value: 1}]}]` |
+
+**Verification**: ✅ At least one `map_nested` override exists (ClickHouse and SQL Server)
+
+### Override Registry Summary
+
+| Connector | Entity Type | Override Type | Field |
+|-----------|-------------|---------------|-------|
+| Snowflake | destinations | map_string | `auto_qa_dedupe_table_mapping` |
+| ClickHouse | destinations | map_nested | `topics_config_map` |
+| SQL Server | sources | map_nested | `snapshot_custom_table_config` |
+
+### deprecations.json Structure
+
+**Location**: `cmd/tfgen/deprecations.json`
+
+The deprecations file contains **10 deprecated field definitions** for backward compatibility:
+
+```json
+{
+  "deprecated_fields": [
+    {
+      "connector": "<connector_name>",
+      "entity_type": "<sources|destinations>",
+      "deprecated_attr": "<old_attribute_name>",
+      "new_attr": "<new_attribute_name>",
+      "type": "<string|bool|int64>"
+    }
+  ]
+}
+```
+
+### Deprecation Registry Summary
+
+#### PostgreSQL Source (9 deprecated fields)
+
+| Deprecated Attribute | New Attribute | Type |
+|---------------------|---------------|------|
+| `insert_static_key_field_1` | `transforms_insert_static_key1_static_field` | string |
+| `insert_static_key_value_1` | `transforms_insert_static_key1_static_value` | string |
+| `insert_static_value_field_1` | `transforms_insert_static_value1_static_field` | string |
+| `insert_static_value_1` | `transforms_insert_static_value1_static_value` | string |
+| `insert_static_key_field_2` | `transforms_insert_static_key2_static_field` | string |
+| `insert_static_key_value_2` | `transforms_insert_static_key2_static_value` | string |
+| `insert_static_value_field_2` | `transforms_insert_static_value2_static_field` | string |
+| `insert_static_value_2` | `transforms_insert_static_value2_static_value` | string |
+| `predicates_istopictoenrich_pattern` | `predicates_is_topic_to_enrich_pattern` | string |
+
+#### Snowflake Destination (1 deprecated field)
+
+| Deprecated Attribute | New Attribute | Type |
+|---------------------|---------------|------|
+| `auto_schema_creation` | `create_schema_auto` | bool |
+
+### How Overrides and Deprecations Are Applied
+
+The JSON configuration files are processed during code generation:
+
+1. **Generator Initialization**: `cmd/tfgen/generator.go` loads both JSON files at startup
+2. **Override Application**: For each connector, overrides are merged with auto-generated fields
+3. **Deprecation Application**: Deprecated attributes are added to wrapper files with `DeprecationMessage`
+4. **Field Mapping**: Both deprecated and new attributes map to the same API field name
+
+```
+┌─────────────────────────┐     ┌──────────────────────────┐
+│ configuration.latest.json │     │ overrides.json           │
+│ (backend config)         │     │ (complex type overrides) │
+└───────────┬─────────────┘     └───────────┬──────────────┘
+            │                               │
+            ▼                               ▼
+┌─────────────────────────────────────────────────────────┐
+│                   Code Generator (tfgen)                 │
+│  - Parses backend config                                │
+│  - Applies type overrides                               │
+│  - Generates schemas, models, mappings                  │
+└───────────┬─────────────────────────────────────────────┘
+            │
+            ▼
+┌─────────────────────────────────────────────────────────┐
+│                   Wrapper Files                          │
+│  - Extend generated schemas with deprecated fields      │
+│  - Add DeprecationMessage for old attribute names       │
+│  - Map deprecated + new attrs to same API field         │
+└─────────────────────────────────────────────────────────┘
+            │
+            │     ┌──────────────────────────┐
+            └────►│ deprecations.json        │
+                  │ (deprecated field aliases)│
+                  └──────────────────────────┘
+```
+
+### Key Design Benefits
+
+| Benefit | Description |
+|---------|-------------|
+| **Centralized Configuration** | All overrides and deprecations in two JSON files for easy audit |
+| **Version Control Friendly** | JSON changes are easy to review in PRs |
+| **Separation of Concerns** | Generator logic separate from configuration data |
+| **Extensibility** | Adding new overrides/deprecations requires only JSON changes |
+| **Type Safety** | Nested field validators in overrides support full validation rules |
 
 ### Typecheck Verification
 
