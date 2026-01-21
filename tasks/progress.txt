@@ -1355,3 +1355,21 @@
   - Topic cassette recording: `UPDATE_CASSETTES=1 go test -v -run 'TestAccTopic' ./internal/provider/...`
   - Cassettes directory: `internal/provider/testdata/cassettes/` (empty, awaiting recording)
 ---
+
+## 2026-01-21 - US-062
+- What was implemented:
+  - Updated CHANGELOG.md [Unreleased] section with comprehensive audit additions
+  - Added "Comprehensive Test Suite" section documenting all new tests
+  - Added "Documentation" section listing new documentation files
+  - Added "Examples" section listing new example directories
+  - Added "API Client Enhancements" section documenting new List methods
+  - Updated "Changed" section with architecture documentation and GoDoc improvements
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `CHANGELOG.md`
+- **Learnings for future iterations:**
+  - CHANGELOG.md follows Keep a Changelog format
+  - [Unreleased] section captures changes not yet released
+  - Subsections: Added, Changed, Fixed, Deprecated, Removed, Security
+  - Important to document test additions, not just feature changes
+---

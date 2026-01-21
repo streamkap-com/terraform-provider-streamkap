@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Comprehensive Test Suite**
+  - Acceptance tests for all 14 new source connectors (AlloyDB, DB2, DocumentDB, Elasticsearch, MariaDB, MongoDB Hosted, Oracle, Oracle AWS, PlanetScale, Redis, S3, Supabase, Vitess, Webhook)
+  - Acceptance tests for all 15 new destination connectors (Azure Blob, BigQuery, CockroachDB, DB2, GCS, HTTP Sink, Kafka Direct, Motherduck, MySQL, Oracle, R2, Redis, Redshift, SQL Server, Starburst)
+  - Acceptance tests for 3 additional transforms (EnrichAsync, FanOut, Rollup)
+  - Migration tests for backward compatibility validation
+  - Smoke tests for connectors without live credentials (Oracle, BigQuery, Redshift, Starburst, Motherduck)
+  - Negative tests for API error handling (401, 404, 422, 5xx)
+  - Schema validation tests for required fields, enums, and sliders
+  - State conflict tests for drift detection and external modifications
+  - Test sweepers for sources, destinations, transforms, and pipelines
+- **Documentation**
+  - Comprehensive testing documentation (`docs/TESTING.md`)
+  - Code generator documentation (`docs/CODE_GENERATOR.md`)
+  - Architecture comparison audit report (`docs/audits/architecture-comparison-report.md`)
+  - Entity config schema audit (`docs/audits/entity-config-schema-audit.md`)
+  - Backend code reference guide (`docs/audits/backend-code-reference.md`)
+- **Examples**
+  - Examples for ToastHandling and UnNesting transforms
+  - Examples for Weaviate destination
+  - All 20 sources, 23 destinations, and 8 transforms now have basic.tf and complete.tf examples
+- **API Client Enhancements**
+  - ListSources, ListDestinations, ListTransforms, ListPipelines methods for sweepers
 - **Full Connector Coverage** - All 42 connectors now exposed:
   - **14 new source connectors**: AlloyDB, DB2, DocumentDB, Elasticsearch, MariaDB, MongoDB Hosted, Oracle, Oracle AWS, PlanetScale, Redis, S3, Supabase, Vitess, Webhook
   - **15 new destination connectors**: Azure Blob, BigQuery, CockroachDB, DB2, GCS, HTTP Sink, Kafka Direct, Motherduck, MySQL, Oracle, R2, Redis, Redshift, SQL Server, Starburst
@@ -28,6 +50,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unit tests for helper functions and retry logic
 
 ### Changed
+- Updated inline GoDoc comments in `internal/resource/connector/base.go`, `cmd/tfgen/parser.go`, `cmd/tfgen/generator.go`
+- Added comprehensive architecture documentation for three-layer pattern (Generated Schemas → Thin Wrappers → Shared Base Resource)
+- Improved README with accurate connector counts (20 sources, 23 destinations, 8 transforms)
 - Regenerated all connector schemas with comprehensive descriptions
 - Restructured examples directory with `basic.tf` and `complete.tf` patterns
 - Improved error handling with retry for transient failures
