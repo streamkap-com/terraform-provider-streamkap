@@ -16,6 +16,7 @@
    - [Retry Logic](#retry-logic)
 6. [Architectural Decisions](#architectural-decisions)
 7. [Helper Functions](#helper-functions)
+8. [Base Resource](#base-resource)
 
 ---
 
@@ -1066,6 +1067,224 @@ All helper functions safely handle `nil` maps by returning appropriate null/zero
 | `GetTfCfgInt64` | `types.Int64Null()` |
 | `GetTfCfgBool` | `types.BoolNull()` |
 | `GetTfCfgListString` | `types.ListNull(types.StringType)` |
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## Base Resource
+
+This section documents the base connector resource implementation that provides shared CRUD logic for all connectors.
+
+### Overview
+
+**Location**: `internal/resource/connector/base.go` (701 lines)
+
+The `BaseConnectorResource` is the central component of the refactored architecture, providing generic CRUD operations for all source and destination connectors. It implements the Terraform Plugin Framework interfaces and uses reflection for model-to-config conversion.
+
+### Interface Implementation
+
+The base resource implements three Terraform Plugin Framework interfaces:
+
+```go
+var (
+    _ resource.Resource                = &BaseConnectorResource{}
+    _ resource.ResourceWithConfigure   = &BaseConnectorResource{}
+    _ resource.ResourceWithImportState = &BaseConnectorResource{}
+)
+```
+
+| Interface | Purpose |
+|-----------|---------|
+| `resource.Resource` | Core CRUD operations (Create, Read, Update, Delete) |
+| `resource.ResourceWithConfigure` | API client injection from provider |
+| `resource.ResourceWithImportState` | Resource import capability |
+
+### Model-Config Conversion Functions
+
+The base resource uses two reflection-based functions for converting between Terraform models and API config maps:
+
+#### modelToConfigMap (lines 501-542)
+
+Converts a Terraform model struct to an API configuration map:
+
+```go
+func (r *BaseConnectorResource) modelToConfigMap(ctx context.Context, model any) (map[string]any, error) {
+    configMap := make(map[string]any)
+    mappings := r.config.GetFieldMappings()
+
+    // Get reflect value (dereference if pointer)
+    v := reflect.ValueOf(model)
+    if v.Kind() == reflect.Ptr {
+        v = v.Elem()
+    }
+
+    // Build tfsdk tag to field index mapping
+    tfsdkToField := make(map[string]int)
+    for i := 0; i < t.NumField(); i++ {
+        field := t.Field(i)
+        tag := field.Tag.Get("tfsdk")
+        if tag != "" && tag != "-" {
+            tfsdkToField[tag] = i
+        }
+    }
+
+    // Extract values using field mappings
+    for tfAttr, apiField := range mappings {
+        fieldIdx, ok := tfsdkToField[tfAttr]
+        if !ok { continue }
+        apiValue := r.extractTerraformValue(ctx, v.Field(fieldIdx))
+        if apiValue != nil {
+            configMap[apiField] = apiValue
+        }
+    }
+    return configMap, nil
+}
+```
+
+**Key Features**:
+- Uses `tfsdk` struct tags for field identification
+- Filters out nil/unknown values
+- Maps Terraform attribute names to API field names via `GetFieldMappings()`
+
+#### configMapToModel (lines 544-581)
+
+Updates a Terraform model struct from an API configuration map:
+
+```go
+func (r *BaseConnectorResource) configMapToModel(ctx context.Context, cfg map[string]any, model any) {
+    mappings := r.config.GetFieldMappings()
+
+    // Get reflect value (dereference if pointer)
+    v := reflect.ValueOf(model)
+    if v.Kind() == reflect.Ptr {
+        v = v.Elem()
+    }
+
+    // Build tfsdk tag to field index mapping
+    tfsdkToField := make(map[string]int)
+    // ... same pattern as modelToConfigMap
+
+    // Set values using field mappings + helper functions
+    for tfAttr, apiField := range mappings {
+        fieldIdx, ok := tfsdkToField[tfAttr]
+        if !ok { continue }
+        r.setTerraformValue(ctx, cfg, apiField, v.Field(fieldIdx))
+    }
+}
+```
+
+**Key Features**:
+- Uses helper functions (`helper.GetTfCfgString`, etc.) for type conversion
+- Handles all supported Terraform types: `types.String`, `types.Int64`, `types.Bool`, `types.Float64`, `types.List`
+- Gracefully handles missing fields in API response
+
+### Timeout Context in CRUD Methods
+
+All CRUD methods (Create, Update, Delete) implement timeout handling using the Terraform Plugin Framework timeouts block:
+
+| Method | Lines | Timeout Source | Default |
+|--------|-------|----------------|---------|
+| `Create()` | 126-141 | `helper.DefaultCreateTimeout` | Configurable |
+| `Update()` | 325-340 | `helper.DefaultUpdateTimeout` | Configurable |
+| `Delete()` | 434-449 | `helper.DefaultDeleteTimeout` | Configurable |
+
+**Implementation Pattern** (from Create, lines 126-141):
+
+```go
+// Get timeout from config
+var timeoutsValue timeouts.Value
+resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("timeouts"), &timeoutsValue)...)
+
+createTimeout, diags := timeoutsValue.Create(ctx, helper.DefaultCreateTimeout)
+resp.Diagnostics.Append(diags...)
+
+// Create context with timeout
+ctx, cancel := context.WithTimeout(ctx, createTimeout)
+defer cancel()
+```
+
+**Key Features**:
+- Supports user-configurable timeouts via `timeouts {}` block in Terraform config
+- Falls back to default values when not specified
+- Uses `context.WithTimeout` for cancellation support
+- Properly defers `cancel()` to prevent context leaks
+
+### Import State Passthrough
+
+**Location**: Lines 496-499
+
+The base resource implements standard ID-based import using the Terraform Plugin Framework's passthrough helper:
+
+```go
+func (r *BaseConnectorResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+    resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+```
+
+**Behavior**:
+- Accepts resource ID as import argument
+- Sets the `id` attribute in state
+- Subsequent `Read()` operation fetches full resource state from API
+
+**Usage Example**:
+```bash
+terraform import streamkap_source_postgresql.example <connector-id>
+```
+
+### Type Extraction and Setting
+
+The base resource includes helper methods for extracting and setting Terraform type values:
+
+#### extractTerraformValue (lines 583-628)
+
+Extracts Go values from Terraform types:
+
+| Terraform Type | Returns | Null/Unknown Handling |
+|---------------|---------|----------------------|
+| `types.String` | `string` | Returns `nil` |
+| `types.Int64` | `int64` | Returns `nil` |
+| `types.Bool` | `bool` | Returns `nil` |
+| `types.Float64` | `float64` | Returns `nil` |
+| `types.List` | `[]string` | Returns `nil` |
+
+#### setTerraformValue (lines 630-666)
+
+Sets Terraform type values from API response:
+
+| Field Type | Helper Used |
+|-----------|-------------|
+| `types.String` | `helper.GetTfCfgString()` |
+| `types.Int64` | `helper.GetTfCfgInt64()` |
+| `types.Bool` | `helper.GetTfCfgBool()` |
+| `types.Float64` | Inline handling |
+| `types.List` | `helper.GetTfCfgListString()` |
+
+### String Field Helpers
+
+Two specialized helpers for accessing common string fields (ID, Name, Connector):
+
+| Helper | Purpose | Lines |
+|--------|---------|-------|
+| `getStringField(model, fieldName)` | Get `types.String` value by field name | 669-686 |
+| `setStringField(model, fieldName, value)` | Set `types.String` value by field name | 688-701 |
+
+These are used for accessing standard fields like `ID`, `Name`, and `Connector` that exist on all connector models.
+
+### CRUD Method Summary
+
+| Method | Lines | API Operations | Key Features |
+|--------|-------|----------------|--------------|
+| `Create()` | 116-226 | `CreateSource` or `CreateDestination` | Timeout, modelToConfigMap, configMapToModel |
+| `Read()` | 228-313 | `GetSource` or `GetDestination` | configMapToModel, nil check for deleted resources |
+| `Update()` | 315-422 | `UpdateSource` or `UpdateDestination` | Timeout, modelToConfigMap, configMapToModel |
+| `Delete()` | 424-494 | `DeleteSource` or `DeleteDestination` | Timeout, ID validation |
+| `ImportState()` | 496-499 | None | Passthrough ID |
 
 ### Typecheck Verification
 
