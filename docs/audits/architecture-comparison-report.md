@@ -664,6 +664,66 @@ $ go build ./...
 # Completed with no errors
 ```
 
+### Error Handling
+
+**Location**: `internal/api/client.go:55-110`
+
+The API client extracts error details from the `detail` field in API error responses:
+
+```go
+type APIErrorResponse struct {
+    Detail string `json:"detail"`
+}
+
+func (s *streamkapAPI) doRequest(ctx context.Context, req *http.Request, result interface{}) error {
+    // ...
+    if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+        var apiErr APIErrorResponse
+        if err := respBodyDecoder.Decode(&apiErr); err != nil {
+            tflog.Debug(ctx, fmt.Sprintf("...Failed to parse API error response: %v", err))
+            return err
+        } else {
+            return errors.New(apiErr.Detail)  // Extract detail field
+        }
+    }
+    // ...
+}
+```
+
+**Verification**: ✅ API `detail` field errors extracted at `client.go:96-110`
+
+### Resource Origin Tracking (created_from)
+
+**Location**: All Create operations in `source.go`, `destination.go`, `transform.go`, `pipeline.go`, `tag.go`
+
+All resource creation operations inject `created_from: terraform` to track resource origin in the backend:
+
+| API File | Function | Line | Pattern |
+|----------|----------|------|---------|
+| `source.go` | `CreateSource()` | 40 | `payloadMap["created_from"] = constants.TERRAFORM` |
+| `destination.go` | `CreateDestination()` | 40 | `payloadMap["created_from"] = constants.TERRAFORM` |
+| `transform.go` | `CreateTransform()` | 77-78 | `reqPayload.CreatedFrom = constants.TERRAFORM` |
+| `pipeline.go` | `CreatePipeline()` | 64 | `payloadMap["created_from"] = constants.TERRAFORM` |
+| `tag.go` | `CreateTag()` | 74 | `payloadMap["created_from"] = constants.TERRAFORM` |
+
+**Verification**: ✅ `created_from: terraform` injected on all 5 resource type create operations
+
+### API Unit Test Results
+
+**Command**: `go test -v -short ./internal/api/...`
+
+**Results**: All 21 tests passed (1.158s)
+
+| Test Category | Tests | Status |
+|---------------|-------|--------|
+| Source CRUD | `TestGetSource_Success`, `TestGetSource_NotFound`, `TestGetSource_APIError`, `TestCreateSource_Success`, `TestCreateSource_ValidationError`, `TestCreateSource_Unauthorized`, `TestDeleteSource_Success`, `TestDeleteSource_NotFound`, `TestUpdateSource_Success` | ✅ 9 PASS |
+| Authentication | `TestGetAccessToken_Success`, `TestGetAccessToken_InvalidCredentials`, `TestSetToken`, `TestNewClient` | ✅ 4 PASS |
+| Retry Logic | `TestIsRetryableError` (16 sub-tests), `TestRetryWithBackoff_SucceedsOnFirstTry`, `TestRetryWithBackoff_RetriesOnTransientError`, `TestRetryWithBackoff_FailsImmediatelyOnNonRetryable`, `TestRetryWithBackoff_ContextCancellation`, `TestRetryWithBackoff_MaxRetriesExhausted`, `TestDefaultRetryConfig` | ✅ 8 PASS |
+
+**Noteworthy Tests**:
+- `TestCreateSource_Success`: Verifies `created_from: terraform` is included in request body (line 161-165)
+- `TestIsRetryableError`: Verifies retry logic for 502, 503, 504 status codes and transient errors
+
 ---
 
 ## Architectural Decisions
