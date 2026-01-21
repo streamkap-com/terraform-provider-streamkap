@@ -824,3 +824,23 @@
   - Transform tests don't require skip logic for credentials - they work like the Webhook source (no external dependencies)
   - All 6 required transform types now have acceptance tests: Enrich, EnrichAsync, FanOut, MapFilter, Rollup, SqlJoin
 ---
+
+## 2026-01-21 - US-041
+- What was implemented:
+  - Verified 16 schema snapshot files exist in `internal/provider/testdata/schemas/` directory
+  - Ran schema compatibility tests: all 16 tests pass with 298 total attributes tracked
+  - Documented snapshot inventory, statistics, and test results in audit report
+  - Added "Schema Snapshots" section (section 27) to `docs/audits/architecture-comparison-report.md`
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md` (+140 lines - Schema Snapshots section)
+  - Modified: `tasks/prd.json` (marked US-041 as passes: true)
+- **Learnings for future iterations:**
+  - Schema snapshots are in `internal/provider/testdata/schemas/` directory (not `testdata/snapshots/`)
+  - 16 snapshot files: 6 sources, 7 destinations, 3 transforms covering 298 total attributes
+  - `UPDATE_SNAPSHOTS=1` environment variable triggers snapshot regeneration
+  - macOS `com.apple.provenance` extended attribute can prevent file writes; use `xattr -c` to clear
+  - SQL Server source has 1 new additive attribute (`snapshot_custom_table_config`) - backward-compatible
+  - Schema compatibility test pattern: `TestSchemaBackwardsCompatibility_{Source|Destination|Transform}{ConnectorName}`
+---
