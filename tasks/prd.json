@@ -891,8 +891,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 60,
-      "passes": false,
-      "notes": "Story passes if skipped."
+      "passes": true,
+      "notes": "SKIPPED - No credentials available. Added Destination Cassettes subsection to VCR Cassette Recording section."
     },
     {
       "id": "US-061",

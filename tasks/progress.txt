@@ -1324,3 +1324,17 @@
   - To record cassettes: `UPDATE_CASSETTES=1 go test -v -run 'TestAccSource' ./internal/provider/...`
   - Cassettes are useful for CI - allows tests to run without live API credentials
 ---
+
+## 2026-01-21 - US-060
+- What was implemented:
+  - Credentials check: STREAMKAP_CLIENT_ID and STREAMKAP_SECRET are NOT set
+  - Added "Destination Cassettes" subsection to VCR Cassette Recording section
+  - Documented "Destination Cassettes: SKIPPED - No credentials available"
+  - Added prerequisites and command for recording destination cassettes
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md`
+- **Learnings for future iterations:**
+  - Destination cassette recording command: `UPDATE_CASSETTES=1 go test -v -run 'TestAccDestination' ./internal/provider/...`
+  - Same credentials as source cassettes required
+---

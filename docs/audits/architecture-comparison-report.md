@@ -3992,3 +3992,35 @@ $ go build ./...
 ```
 
 ---
+
+### Destination Cassettes
+
+**Status:** SKIPPED - No credentials available
+
+The VCR cassette recording for destination acceptance tests was skipped because the required environment variables (`STREAMKAP_CLIENT_ID` and `STREAMKAP_SECRET`) are not set.
+
+#### Prerequisites for Recording
+
+To record VCR cassettes for destination tests, set the following environment variables:
+
+```bash
+export STREAMKAP_CLIENT_ID="your-client-id"
+export STREAMKAP_SECRET="your-secret"
+export TF_ACC=1
+```
+
+Then run:
+
+```bash
+UPDATE_CASSETTES=1 go test -v -run 'TestAccDestination' ./internal/provider/...
+```
+
+#### Verification
+
+```bash
+$ echo "CLIENT_ID: ${STREAMKAP_CLIENT_ID:+set}" && echo "SECRET: ${STREAMKAP_SECRET:+set}"
+CLIENT_ID: 
+SECRET: 
+# No credentials available - skipping destination cassette recording
+```
+
