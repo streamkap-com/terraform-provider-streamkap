@@ -771,8 +771,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 52,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created missing Weaviate destination example directory. All 23 destination examples now exist matching 23 destination connectors."
     },
     {
       "id": "US-053",

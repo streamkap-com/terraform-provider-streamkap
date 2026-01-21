@@ -1148,3 +1148,28 @@
   - Example files follow consistent naming pattern: `examples/resources/streamkap_source_{connector}/`
   - Terraform fmt may not be installed in all environments - example files should be pre-formatted
 ---
+
+## 2026-01-21 - US-052
+- What was implemented:
+  - Verified 22 destination example directories already exist in `examples/resources/streamkap_destination_*`
+  - Identified 1 missing destination example directory: Weaviate
+  - Created `examples/resources/streamkap_destination_weaviate/` with basic.tf, complete.tf, and import.sh
+  - basic.tf: Minimal config with name and connection URL/gRPC URL
+  - complete.tf: Full config with all available options (auth, schema evolution, document ID, vector, batch, retry settings)
+  - import.sh: Import command example
+  - Terraform fmt skipped (terraform CLI not installed) - example files are pre-formatted
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `examples/resources/streamkap_destination_weaviate/basic.tf`
+  - Created: `examples/resources/streamkap_destination_weaviate/complete.tf`
+  - Created: `examples/resources/streamkap_destination_weaviate/import.sh`
+  - Modified: `tasks/prd.json` (marked US-052 as passes: true)
+- **Learnings for future iterations:**
+  - All 23 destination example directories now exist, matching the 23 destination connectors in internal/generated/
+  - Weaviate is a vector database destination with unique settings: document_id_strategy, vector_strategy, consistency_level
+  - Weaviate auth schemes: NONE, API_KEY, OIDC_CLIENT_CREDENTIALS
+  - Weaviate document ID strategies: None, Kafka ID, Field ID
+  - Weaviate vector strategies: None, Field Vector
+  - Weaviate consistency levels: ALL, ONE, QUORUM
+  - Example directory structure: basic.tf (minimal config), complete.tf (all options), import.sh (import command)
+---
