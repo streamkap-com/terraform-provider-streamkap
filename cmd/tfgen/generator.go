@@ -17,9 +17,24 @@ import (
 
 // Generator generates Terraform schema code from ConnectorConfig.
 type Generator struct {
-	outputDir  string
-	entityType string // "source", "destination", "transform"
-	overrides  *OverrideConfig
+	outputDir    string
+	entityType   string // "source", "destination", "transform"
+	overrides    *OverrideConfig
+	deprecations *DeprecationConfig
+}
+
+// DeprecationConfig holds all deprecated field definitions.
+type DeprecationConfig struct {
+	DeprecatedFields []DeprecatedField `json:"deprecated_fields"`
+}
+
+// DeprecatedField represents a deprecated field alias.
+type DeprecatedField struct {
+	Connector      string `json:"connector"`
+	EntityType     string `json:"entity_type"`
+	DeprecatedAttr string `json:"deprecated_attr"` // The old/deprecated attribute name
+	NewAttr        string `json:"new_attr"`        // The new attribute name it maps to
+	Type           string `json:"type"`            // "string", "int64", "bool"
 }
 
 // OverrideConfig holds all field overrides for map types and other special cases.
@@ -75,6 +90,25 @@ func LoadOverrides(path string) (*OverrideConfig, error) {
 	return &config, nil
 }
 
+// LoadDeprecations loads the deprecation configuration from a JSON file.
+func LoadDeprecations(path string) (*DeprecationConfig, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// Return empty config if file doesn't exist
+			return &DeprecationConfig{}, nil
+		}
+		return nil, fmt.Errorf("failed to read deprecations file %s: %w", path, err)
+	}
+
+	var config DeprecationConfig
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, fmt.Errorf("failed to parse deprecations file %s: %w", path, err)
+	}
+
+	return &config, nil
+}
+
 // NewGenerator creates a new Generator instance.
 func NewGenerator(outputDir, entityType string) *Generator {
 	return &Generator{
@@ -92,6 +126,16 @@ func NewGeneratorWithOverrides(outputDir, entityType string, overrides *Override
 	}
 }
 
+// NewGeneratorWithConfig creates a new Generator instance with both overrides and deprecations.
+func NewGeneratorWithConfig(outputDir, entityType string, overrides *OverrideConfig, deprecations *DeprecationConfig) *Generator {
+	return &Generator{
+		outputDir:    outputDir,
+		entityType:   entityType,
+		overrides:    overrides,
+		deprecations: deprecations,
+	}
+}
+
 // getOverridesForConnector returns all field overrides for a specific connector.
 func (g *Generator) getOverridesForConnector(connectorCode string) []FieldOverride {
 	if g.overrides == nil {
@@ -105,6 +149,24 @@ func (g *Generator) getOverridesForConnector(connectorCode string) []FieldOverri
 	for _, override := range g.overrides.FieldOverrides {
 		if override.Connector == connectorCode && override.EntityType == entityTypePlural {
 			result = append(result, override)
+		}
+	}
+	return result
+}
+
+// getDeprecationsForConnector returns all deprecated field definitions for a specific connector.
+func (g *Generator) getDeprecationsForConnector(connectorCode string) []DeprecatedField {
+	if g.deprecations == nil {
+		return nil
+	}
+
+	// Map entity type to match the JSON format (with 's' suffix)
+	entityTypePlural := g.entityType + "s"
+
+	var result []DeprecatedField
+	for _, dep := range g.deprecations.DeprecatedFields {
+		if dep.Connector == connectorCode && dep.EntityType == entityTypePlural {
+			result = append(result, dep)
 		}
 	}
 	return result
@@ -141,9 +203,19 @@ type TemplateData struct {
 	SchemaFuncName    string // e.g., "SourcePostgresqlSchema"
 	FieldMappingsName string // e.g., "SourcePostgresqlFieldMappings"
 	Fields            []FieldData
-	MapFields         []MapFieldData   // Map type fields from overrides
-	NestedModels      []NestedModelData // Nested model definitions for map fields
+	MapFields         []MapFieldData      // Map type fields from overrides
+	NestedModels      []NestedModelData   // Nested model definitions for map fields
+	DeprecatedFields  []DeprecatedFieldData // Deprecated field aliases (model-only, no schema)
 	Imports           []string
+}
+
+// DeprecatedFieldData holds data for generating deprecated field aliases in the model.
+// These fields are added to the Model struct only, not to the schema or field mappings.
+// The schema and field mappings for deprecated fields are added by the wrapper files.
+type DeprecatedFieldData struct {
+	GoFieldName string // e.g., "InsertStaticKeyField1"
+	GoType      string // e.g., "types.String"
+	TfsdkTag    string // e.g., "insert_static_key_field_1"
 }
 
 // MapFieldData holds data for map type fields.
@@ -344,6 +416,13 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 	imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"] = true
 	imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"] = true
 
+	// Process deprecated field aliases (add to model only, not schema or field mappings)
+	deprecations := g.getDeprecationsForConnector(connectorCode)
+	for _, dep := range deprecations {
+		depField := g.deprecationToFieldData(&dep)
+		data.DeprecatedFields = append(data.DeprecatedFields, depField)
+	}
+
 	// Convert imports map to sorted slice
 	data.Imports = make([]string, 0, len(imports))
 	for imp := range imports {
@@ -352,6 +431,29 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 	sort.Strings(data.Imports)
 
 	return data
+}
+
+// deprecationToFieldData converts a DeprecatedField to DeprecatedFieldData.
+func (g *Generator) deprecationToFieldData(dep *DeprecatedField) DeprecatedFieldData {
+	goFieldName := toPascalCase(dep.DeprecatedAttr)
+
+	var goType string
+	switch dep.Type {
+	case "string":
+		goType = "types.String"
+	case "int64":
+		goType = "types.Int64"
+	case "bool":
+		goType = "types.Bool"
+	default:
+		goType = "types.String" // default to string
+	}
+
+	return DeprecatedFieldData{
+		GoFieldName: goFieldName,
+		GoType:      goType,
+		TfsdkTag:    dep.DeprecatedAttr,
+	}
 }
 
 // overrideToMapFieldData converts a FieldOverride to MapFieldData.
@@ -775,6 +877,12 @@ type {{ .ModelName }} struct {
 {{- end }}
 {{- range .MapFields }}
 	{{ .GoFieldName }} {{ .GoType }} ` + "`" + `tfsdk:"{{ .TfsdkTag }}"` + "`" + `
+{{- end }}
+{{- if .DeprecatedFields }}
+	// Deprecated fields - kept for backward compatibility
+{{- range .DeprecatedFields }}
+	{{ .GoFieldName }} {{ .GoType }} ` + "`" + `tfsdk:"{{ .TfsdkTag }}"` + "`" + `
+{{- end }}
 {{- end }}
 	Timeouts timeouts.Value ` + "`" + `tfsdk:"timeouts"` + "`" + `
 }

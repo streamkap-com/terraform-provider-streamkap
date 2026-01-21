@@ -39,7 +39,9 @@ type DestinationSnowflakeModel struct {
 	CreateSQLData                        types.String            `tfsdk:"create_sql_data"`
 	SnowflakeTopic2tableMap              types.String            `tfsdk:"snowflake_topic2table_map"`
 	AutoQADedupeTableMapping             map[string]types.String `tfsdk:"auto_qa_dedupe_table_mapping"`
-	Timeouts                             timeouts.Value          `tfsdk:"timeouts"`
+	// Deprecated fields - kept for backward compatibility
+	AutoSchemaCreation types.Bool     `tfsdk:"auto_schema_creation"`
+	Timeouts           timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationSnowflakeSchema returns the Terraform schema for the snowflake destination.
