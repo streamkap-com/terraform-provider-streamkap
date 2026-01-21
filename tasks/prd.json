@@ -786,8 +786,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 53,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created missing ToastHandling and UnNesting example directories. All 8 transform examples now exist matching all 8 transform schemas."
     },
     {
       "id": "US-054",
