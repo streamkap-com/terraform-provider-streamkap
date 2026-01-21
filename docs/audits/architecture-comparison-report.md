@@ -38,6 +38,7 @@
 27. [Schema Snapshots](#schema-snapshots)
 28. [Smoke Tests](#smoke-tests)
 29. [AI-Agent Descriptions](#ai-agent-descriptions)
+30. [Core Documentation](#core-documentation)
 
 ---
 
@@ -3623,6 +3624,209 @@ All attributes include both `Description` and `MarkdownDescription`:
 | Sensitive field security notes | ✅ PASS | All sensitive fields have notes |
 
 ### AI-Agent Descriptions Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## Core Documentation
+
+This section verifies the existence and accuracy of core documentation files in the Terraform provider repository.
+
+### Documentation Files Verified
+
+| File | Status | Lines | Purpose |
+|------|--------|-------|---------|
+| `CLAUDE.md` | ✅ EXISTS | 277 | AI assistant guidance for working with the codebase |
+| `README.md` | ✅ EXISTS | 219 | User-facing overview and quick start guide |
+| `docs/ARCHITECTURE.md` | ✅ EXISTS | 660 | Detailed architecture and code generation documentation |
+| `docs/DEVELOPMENT.md` | ✅ EXISTS | 418 | Developer guide for local setup and contribution |
+
+### CLAUDE.md Verification
+
+**Location:** Root of repository (`/CLAUDE.md`)
+
+**Contents verified:**
+- ✅ Overview section with provider address and Go version
+- ✅ Related Backend section with OpenAPI reference
+- ✅ Key Backend Files section for debugging connectors
+- ✅ Plugin Structure documentation
+- ✅ Connector Status Values enumeration
+- ✅ Links to detailed audit documents in `docs/audits/`
+- ✅ Build and Install commands
+- ✅ Testing section with comprehensive test commands
+- ✅ Test Tiers table (Unit, Schema Compat, Validators, Integration, Acceptance, Migration)
+- ✅ Architecture section documenting core components
+- ✅ Transform API documentation
+- ✅ Deprecated Attributes reference to MIGRATION.md
+- ✅ Helpers documentation
+- ✅ API Client Pattern documentation
+- ✅ Resource Implementation Pattern
+- ✅ Provider Configuration documentation
+- ✅ Adding New Resources guide
+- ✅ Code Generation Architecture section
+- ✅ API Quirks documentation
+- ✅ Schema Backwards Compatibility section
+- ✅ Migration Test Interpretation
+- ✅ Recording VCR Cassettes guide
+- ✅ Test Sweepers documentation
+- ✅ Environment Variables table
+- ✅ AI-Agent Description Standards section
+- ✅ tfgen Code Generator documentation
+
+**Accuracy Assessment:** CLAUDE.md accurately reflects the current three-layer architecture (generated schemas → thin wrappers → base resource) and provides comprehensive guidance for both human developers and AI assistants.
+
+### README.md Verification
+
+**Location:** Root of repository (`/README.md`)
+
+**Contents verified:**
+- ✅ Project title and description
+- ✅ Features section listing:
+  - 20 Source Connectors (accurate count)
+  - 22 Destination Connectors (note: actual count is 23 including Weaviate)
+  - 6 Transform Resources (note: actual count is 8 including ToastHandling, UnNesting)
+  - Other Resources: Pipelines, Topics, Tags
+- ✅ Requirements section (Terraform >= 1.0, Go >= 1.21)
+- ✅ Installation block with provider source
+- ✅ Authentication section with env var and provider block examples
+- ✅ Example Usage with PostgreSQL source, Snowflake destination, Pipeline
+- ✅ Development section with build and test commands
+- ✅ Local Development setup with terraformrc example
+- ✅ Code Generation section
+- ✅ Project Structure directory tree
+- ✅ Documentation links to Registry, Docs, API, Changelog, Architecture
+- ✅ AI-Agent Compatibility section
+- ✅ Upgrading reference to MIGRATION.md
+- ✅ License (Mozilla Public License 2.0)
+
+**Minor Discrepancy Found:**
+- README lists "22 Destination Connectors" but actual count is 23 (includes Weaviate)
+- README lists "6 Transform Resources" but actual count is 8 (includes ToastHandling, UnNesting)
+
+These minor discrepancies in feature counts don't affect usability but could be updated for accuracy.
+
+### docs/ARCHITECTURE.md Verification
+
+**Location:** `docs/ARCHITECTURE.md` (660 lines)
+
+**Contents verified:**
+- ✅ High-Level Design ASCII diagram showing:
+  - Terraform Provider layer with provider.go
+  - Resources layer (Sources 20, Destinations 23, Transforms 8, Other)
+  - BaseConnectorResource layer
+  - API Client layer
+  - Streamkap API external service
+- ✅ Code Generation Architecture section with:
+  - Generation Flow diagram
+  - Parser documentation (ConfigEntry struct, ValueConfig struct)
+  - Type Mapping table (Backend Control → Terraform Type)
+  - Automatic Type Conversions (port fields, Go abbreviation handling)
+  - Override System (map_string, map_nested)
+  - Current Overrides table
+  - Override Precedence rules
+  - Generated Code Structure examples
+  - Validator Generation rules
+  - Sensitive Field Detection
+  - Default Value Handling
+  - Required/Optional/Computed Logic
+- ✅ BaseConnectorResource Design section with:
+  - ConnectorConfig Interface documentation
+  - CRUD Flow documentation
+- ✅ Field Mappings section with examples
+- ✅ Reflection-Based Marshaling section with:
+  - ModelToAPIConfig function documentation
+  - APIConfigToModel function documentation
+- ✅ Directory Structure tree (accurate and comprehensive)
+- ✅ Authentication Flow documentation
+- ✅ Error Handling documentation
+- ✅ State Management documentation
+- ✅ Testing Architecture section with:
+  - Test Pyramid diagram
+  - Generator Tests documentation
+  - Acceptance Tests documentation
+  - Test Environment Variables table
+  - Running Tests commands
+  - Test Best Practices
+- ✅ CI/CD Workflows section with:
+  - ci.yml, security.yml, regenerate.yml, release.yml
+
+**Accuracy Assessment:** ARCHITECTURE.md is comprehensive and accurately documents the three-layer code generation architecture, reflection-based marshaling, field mappings, and testing strategy.
+
+### docs/DEVELOPMENT.md Verification
+
+**Location:** `docs/DEVELOPMENT.md` (418 lines)
+
+**Contents verified:**
+- ✅ Prerequisites section (Go 1.21+, Terraform 1.0+, Streamkap credentials, Backend repo)
+- ✅ Quick Start guide with clone, env setup, build, test commands
+- ✅ Local Development Setup section with:
+  - Terraform Dev Overrides configuration
+  - Build and Install commands
+  - Test with Terraform commands
+- ✅ Code Generation section with:
+  - Backend Repository Setup
+  - Regenerate All Connectors command
+  - Generate Specific Entity Type commands
+  - Generate Single Connector commands
+  - Using go generate
+  - Generated Files listing
+  - Generator Documentation reference
+- ✅ Adding a New Connector guide with 7 steps:
+  - Step 1: Locate Backend Config
+  - Step 2: Generate Schema
+  - Step 3: Create Config Wrapper
+  - Step 4: Register in Provider
+  - Step 5: Add Acceptance Test
+  - Step 6: Add Example
+  - Step 7: Generate Documentation
+- ✅ Exposing Pre-Generated Connectors section with:
+  - Prerequisites
+  - Steps with code examples
+  - Connector Coverage (Sources 20, Destinations 22)
+- ✅ Running Tests section with commands
+- ✅ Code Style section (go fmt, golangci-lint, pre-commit)
+- ✅ Troubleshooting section with common issues:
+  - "Resource type not found"
+  - "Unknown attribute"
+  - API Errors with TF_LOG debug tip
+- ✅ CI/CD Workflows reference
+
+**Minor Discrepancy Found:**
+- Connector Coverage lists "Destinations (22)" but actual count is 23 (includes Weaviate)
+
+**Accuracy Assessment:** DEVELOPMENT.md provides a comprehensive developer guide with accurate step-by-step instructions for local development, code generation, and adding new connectors.
+
+### Documentation Quality Summary
+
+| Document | Coverage | Accuracy | Completeness |
+|----------|----------|----------|--------------|
+| CLAUDE.md | AI assistant guidance | ✅ Accurate | ✅ Complete |
+| README.md | User overview | ⚠️ Minor counts outdated | ✅ Complete |
+| ARCHITECTURE.md | Technical design | ✅ Accurate | ✅ Complete |
+| DEVELOPMENT.md | Developer guide | ⚠️ Minor count outdated | ✅ Complete |
+
+### Documentation Cross-References
+
+All core documentation files properly cross-reference each other:
+- CLAUDE.md → docs/ARCHITECTURE.md, docs/MIGRATION.md, docs/AI_AGENT_COMPATIBILITY.md
+- README.md → docs/ARCHITECTURE.md, docs/MIGRATION.md, docs/AI_AGENT_COMPATIBILITY.md, CHANGELOG.md
+- ARCHITECTURE.md → docs/DEVELOPMENT.md, cmd/tfgen/README.md
+- DEVELOPMENT.md → cmd/tfgen/README.md
+
+### Recommendations
+
+1. **Update connector counts in README.md:**
+   - Change "22 Destination Connectors" to "23 Destination Connectors" (add Weaviate)
+   - Change "6 Transform Resources" to "8 Transform Resources" (add ToastHandling, UnNesting)
+
+2. **Update connector counts in DEVELOPMENT.md:**
+   - Change "Destinations (22)" to "Destinations (23)" in Connector Coverage section
+
+### Core Documentation Typecheck Verification
 
 ```bash
 $ go build ./...
