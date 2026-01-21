@@ -20,6 +20,7 @@
 9. [Schema Backward Compatibility Tests](#schema-backward-compatibility-tests)
 10. [Deprecated Fields](#deprecated-fields)
 11. [Migration Tests](#migration-tests)
+12. [Code Generator Parser](#code-generator-parser)
 
 ---
 
@@ -1551,6 +1552,228 @@ export STREAMKAP_CLIENT_ID="<your-client-id>"
 export STREAMKAP_SECRET="<your-secret>"
 go test -v -timeout 30m -run 'TestAcc.*Migration' ./internal/provider/... -count=1
 ```
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## Code Generator Parser
+
+This section documents the code generator parser implementation, which reads backend `configuration.latest.json` files and extracts field metadata for Terraform schema generation.
+
+### Overview
+
+**Location**: `cmd/tfgen/parser.go` (429 lines)
+
+The parser is the first stage of the code generation pipeline. It reads backend configuration files and transforms them into structured Go types that the generator can use to create Terraform schemas.
+
+### ParseConnectorConfig Function
+
+**Location**: Lines 100-113
+
+The `ParseConnectorConfig()` function reads and parses `configuration.latest.json` files:
+
+```go
+func ParseConnectorConfig(filepath string) (*ConnectorConfig, error) {
+    data, err := os.ReadFile(filepath)
+    if err != nil {
+        return nil, fmt.Errorf("failed to read config file %s: %w", filepath, err)
+    }
+
+    var config ConnectorConfig
+    if err := json.Unmarshal(data, &config); err != nil {
+        return nil, fmt.Errorf("failed to parse config file %s: %w", filepath, err)
+    }
+
+    return &config, nil
+}
+```
+
+**Verification**: ✅ Function reads `configuration.latest.json` format via `os.ReadFile()` and `json.Unmarshal()`
+
+### User-Defined Filter Logic
+
+**Location**: Lines 117-119, 368-376
+
+The parser filters configuration entries to only expose user-editable fields in Terraform schemas:
+
+#### IsUserDefined Method (lines 117-119)
+
+```go
+// IsUserDefined returns true if this config entry should become a Terraform attribute.
+// Only fields with user_defined=true should be exposed in the Terraform schema.
+func (e *ConfigEntry) IsUserDefined() bool {
+    return e.UserDefined
+}
+```
+
+#### UserDefinedEntries Method (lines 368-376)
+
+```go
+// UserDefinedEntries returns only the config entries that should become Terraform attributes.
+// These are entries where user_defined=true.
+func (c *ConnectorConfig) UserDefinedEntries() []ConfigEntry {
+    var entries []ConfigEntry
+    for _, entry := range c.Config {
+        if entry.IsUserDefined() {
+            entries = append(entries, entry)
+        }
+    }
+    return entries
+}
+```
+
+**Verification**: ✅ `user_defined: true` filter logic exists and is used to filter configuration entries
+
+### Field Metadata Extraction
+
+The parser extracts comprehensive field metadata from the backend configuration:
+
+#### ConfigEntry Structure (lines 38-61)
+
+```go
+type ConfigEntry struct {
+    Name                 string       `json:"name"`
+    Description          string       `json:"description,omitempty"`
+    UserDefined          bool         `json:"user_defined"`
+    Required             *bool        `json:"required,omitempty"`
+    OrderOfDisplay       *int         `json:"order_of_display,omitempty"`
+    DisplayName          string       `json:"display_name,omitempty"`
+    Value                ValueObject  `json:"value"`
+    Tab                  string       `json:"tab,omitempty"`
+    Encrypt              bool         `json:"encrypt,omitempty"`
+    // ... additional fields
+}
+```
+
+#### ValueObject Structure (lines 63-81)
+
+```go
+type ValueObject struct {
+    Control       string   `json:"control,omitempty"`
+    Type          string   `json:"type,omitempty"`          // "raw" or "dynamic"
+    Default       any      `json:"default,omitempty"`       // Can be string, int, bool, etc.
+    RawValues     []any    `json:"raw_values,omitempty"`    // Options for select controls
+    Max           *float64 `json:"max,omitempty"`           // Slider: maximum value
+    Min           *float64 `json:"min,omitempty"`           // Slider: minimum value
+    Step          *float64 `json:"step,omitempty"`          // Slider: step increment
+    // ... additional fields
+}
+```
+
+### Metadata Accessor Methods
+
+| Metadata Field | Accessor Method | Lines | Return Type |
+|----------------|-----------------|-------|-------------|
+| **control** | `e.Value.Control` | 65 | `string` |
+| **type** | `e.Value.Type`, `IsDynamic()` | 66, 147-149 | `string` / `bool` |
+| **default** | `GetDefault()`, `GetDefaultString()`, `GetDefaultInt64()`, `GetDefaultBool()` | 163-241 | `any` / `string` / `int64` / `bool` |
+| **required** | `IsRequired()` | 128-133 | `bool` |
+| **encrypt** | `IsSensitive()` | 123-125 | `bool` |
+| **raw_values** | `GetRawValues()` | 321-340 | `[]string` |
+| **min/max/step** | `GetSliderMin()`, `GetSliderMax()`, `GetSliderStep()` | 343-364 | `int64` |
+
+**Verification**: ✅ Field metadata extraction implemented for control, type, default, required, and all other relevant fields
+
+### TerraformType Mapping
+
+**Location**: Lines 245-264
+
+The parser maps backend control types to Terraform types:
+
+```go
+func (e *ConfigEntry) TerraformType() TerraformType {
+    switch e.Value.Control {
+    case "string", "password", "textarea", "json", "datetime":
+        return TerraformTypeString
+    case "number":
+        return TerraformTypeInt64
+    case "boolean", "toggle":
+        return TerraformTypeBool
+    case "one-select":
+        return TerraformTypeString
+    case "multi-select":
+        return TerraformTypeList
+    case "slider":
+        return TerraformTypeInt64
+    default:
+        return TerraformTypeString
+    }
+}
+```
+
+| Backend Control | Terraform Type |
+|-----------------|----------------|
+| `string`, `password`, `textarea`, `json`, `datetime` | `types.String` |
+| `number` | `types.Int64` |
+| `boolean`, `toggle` | `types.Bool` |
+| `one-select` | `types.String` |
+| `multi-select` | `types.List[types.String]` |
+| `slider` | `types.Int64` |
+
+### Terraform Attribute Name Conversion
+
+**Location**: Lines 271-286
+
+The parser converts backend field names to Terraform-friendly attribute names:
+
+```go
+func (e *ConfigEntry) TerraformAttributeName() string {
+    name := e.Name
+
+    // Remove common suffixes that indicate user-facing fields
+    name = strings.TrimSuffix(name, ".user.defined")
+    name = strings.TrimSuffix(name, ".user.displayed")
+
+    // Replace dots and hyphens with underscores
+    name = strings.ReplaceAll(name, ".", "_")
+    name = strings.ReplaceAll(name, "-", "_")
+
+    // Convert camelCase to snake_case
+    name = camelToSnake(name)
+
+    return strings.ToLower(name)
+}
+```
+
+**Example Transformations**:
+- `database.hostname.user.defined` → `database_hostname`
+- `ssl-mode` → `ssl_mode`
+- `sslMode` → `ssl_mode`
+
+### Condition Handling
+
+**Location**: Lines 83-88, 152-154, 389-428
+
+The parser supports conditional field visibility based on other field values:
+
+```go
+type Condition struct {
+    Operator string `json:"operator"` // "EQ", "NE", "IN"
+    Config   string `json:"config"`   // The config field to check
+    Value    any    `json:"value"`    // The value to compare against
+}
+
+func (e *ConfigEntry) IsConditional() bool {
+    return len(e.Conditions) > 0
+}
+```
+
+### Key Design Characteristics
+
+| Characteristic | Implementation |
+|----------------|----------------|
+| **JSON Unmarshaling** | Standard library `encoding/json` with struct tags |
+| **Optional Fields** | Pointer types (`*bool`, `*int`) for optional JSON fields |
+| **Type Flexibility** | `any` type for fields with multiple possible types (`default`, `value`) |
+| **Suffix Handling** | Strips `.user.defined` and `.user.displayed` suffixes |
+| **Case Conversion** | Custom `camelToSnake()` function for consistent naming |
+| **Null Safety** | All accessor methods handle nil values gracefully |
 
 ### Typecheck Verification
 
