@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - main
-      - refactored-terraform
+      - ralph-refactored-terraform
   pull_request:
     branches:
       - main

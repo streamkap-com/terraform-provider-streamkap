@@ -1,0 +1,1006 @@
+{
+  "project": "terraform-provider-streamkap",
+  "branchName": "ralph/terraform-provider-audit",
+  "description": "Comprehensive Terraform Provider Audit & Verification - validates architecture, implementation, backward compatibility, and achieves full test coverage for all 53 resources. IMPORTANT: Only use Opus 4.5 model for all tasks, agents, and skills.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create audit report file structure",
+      "description": "As a developer, I need to create the audit report file with proper structure.",
+      "acceptanceCriteria": [
+        "Create directory docs/audits/ if it doesn't exist",
+        "Create file docs/audits/architecture-comparison-report.md",
+        "Add document header with title and date",
+        "Add empty sections: Main Branch Architecture, Refactored Architecture, Comparison Matrix, Trade-offs",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "IMPORTANT: Use only Opus 4.5 for this and all subsequent tasks."
+    },
+    {
+      "id": "US-002",
+      "title": "Document main branch architecture pattern",
+      "description": "As a developer, I need to document the main branch architecture.",
+      "acceptanceCriteria": [
+        "Read 2 representative connector files from main branch pattern (if accessible via git)",
+        "Add 'Main Branch Architecture' section to audit report",
+        "Document: manual schemas, inline CRUD, ~500 LOC per connector pattern",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Document refactored three-layer architecture",
+      "description": "As a developer, I need to document the refactored architecture pattern.",
+      "acceptanceCriteria": [
+        "Verify internal/generated/*.go files have DO NOT EDIT markers (check 3 files)",
+        "Count generated schema files: ls internal/generated/*.go | wc -l",
+        "Add 'Refactored Architecture' section documenting three-layer pattern",
+        "Document file counts for each layer",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Verify layer separation and wrapper files",
+      "description": "As a developer, I need to verify layers are properly separated.",
+      "acceptanceCriteria": [
+        "Verify wrapper files exist in internal/resource/source/ and internal/resource/destination/",
+        "Verify wrapper files implement ConnectorConfig interface (spot check 2 files)",
+        "Verify internal/resource/connector/base.go contains shared CRUD logic",
+        "Confirm no business logic in generated files",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create architecture comparison matrix",
+      "description": "As a developer, I need a comparison table.",
+      "acceptanceCriteria": [
+        "Add markdown comparison table to audit report",
+        "Columns: Aspect, Main Branch, Refactored Branch",
+        "Rows: LOC per connector, Schema definition, CRUD location, Type conversion, Deprecation handling",
+        "Add 'Trade-offs' subsection",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Document architectural decision rationales",
+      "description": "As a developer, I need to document why decisions were made.",
+      "acceptanceCriteria": [
+        "Add 'Architectural Decisions' section to audit report",
+        "Document rationale for code generation approach",
+        "Document rationale for reflection-based marshaling",
+        "Document rationale for thin wrapper pattern",
+        "Document rationale for JSON-based deprecations/overrides",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Verify API client authentication",
+      "description": "As a developer, I need to verify API client auth works.",
+      "acceptanceCriteria": [
+        "Read internal/api/client.go",
+        "Verify OAuth2 token exchange function exists",
+        "Verify Authorization header set in request methods",
+        "Verify ?secret_returned=true for source operations",
+        "Add 'API Client' section to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Verify API client error handling and created_from",
+      "description": "As a developer, I need to verify error handling and tracking.",
+      "acceptanceCriteria": [
+        "Verify API detail field errors extracted in client.go",
+        "Verify created_from: terraform injected on create operations",
+        "Run: go test -v -short ./internal/api/...",
+        "Document test results in audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Verify retry logic implementation",
+      "description": "As a developer, I need to verify retry logic.",
+      "acceptanceCriteria": [
+        "Read internal/api/retry.go",
+        "Verify retry for status codes 502, 503, 504",
+        "Verify exponential backoff implementation",
+        "Add 'Retry Logic' subsection to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Verify helper functions",
+      "description": "As a developer, I need to verify helper functions work.",
+      "acceptanceCriteria": [
+        "Run: go test -v ./internal/helper/...",
+        "Document test results (pass/fail count) in audit report",
+        "If any failures: document specific failures",
+        "Add 'Helper Functions' section to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Verify base resource implementation",
+      "description": "As a developer, I need to verify base connector works.",
+      "acceptanceCriteria": [
+        "Read internal/resource/connector/base.go",
+        "Verify modelToConfigMap function exists",
+        "Verify configMapToModel function exists",
+        "Verify timeout context in CRUD methods",
+        "Verify import state passthrough",
+        "Add 'Base Resource' section to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Run schema backward compatibility tests",
+      "description": "As a developer, I need to run schema compatibility tests.",
+      "acceptanceCriteria": [
+        "Run: go test -v -run 'TestSchemaBackwardsCompatibility' ./internal/provider/...",
+        "Document pass/fail results in audit report",
+        "Verify no 'required attribute removed' errors",
+        "Verify no 'optional changed to required' errors",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Verify deprecated field handling",
+      "description": "As a developer, I need to verify deprecated fields work.",
+      "acceptanceCriteria": [
+        "Read cmd/tfgen/deprecations.json and count entries",
+        "Spot check 2 PostgreSQL deprecated fields for DeprecationMessage",
+        "Spot check Snowflake auto_schema_creation deprecation",
+        "Add 'Deprecated Fields' section to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Run migration tests if credentials available",
+      "description": "As a developer, I need to run migration tests.",
+      "acceptanceCriteria": [
+        "Check env: echo $STREAMKAP_CLIENT_ID $STREAMKAP_SECRET",
+        "If empty: add 'Migration Tests: SKIPPED - no credentials' to audit report, mark PASSED",
+        "If set: run TF_ACC=1 go test -v -timeout 30m -run 'TestAcc.*Migration' ./internal/provider/... -count=1",
+        "Document pass/fail count in audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": "Story passes even if skipped due to missing credentials."
+    },
+    {
+      "id": "US-015",
+      "title": "Verify code generator parser",
+      "description": "As a developer, I need to verify parser works.",
+      "acceptanceCriteria": [
+        "Read cmd/tfgen/parser.go",
+        "Verify function reads configuration.latest.json format",
+        "Verify user_defined: true filter logic exists",
+        "Verify field metadata extraction (control, type, default, required)",
+        "Add 'Code Generator Parser' section to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Verify code generator type mapping",
+      "description": "As a developer, I need to verify type mapping.",
+      "acceptanceCriteria": [
+        "Read cmd/tfgen/generator.go",
+        "Verify string->types.String mapping",
+        "Verify password->types.String(sensitive) mapping",
+        "Verify number->types.Int64, boolean->types.Bool mapping",
+        "Verify encrypt=true generates Sensitive=true",
+        "Add 'Type Mapping' section to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Verify override and deprecation JSON systems",
+      "description": "As a developer, I need to verify JSON config files work.",
+      "acceptanceCriteria": [
+        "Read cmd/tfgen/overrides.json and verify structure",
+        "Read cmd/tfgen/deprecations.json and verify structure",
+        "Verify at least one map_string override exists",
+        "Verify at least one map_nested override exists",
+        "Add 'Override/Deprecation System' section to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Run regeneration test if backend available",
+      "description": "As a developer, I need to verify regeneration is stable.",
+      "acceptanceCriteria": [
+        "Check env: echo $STREAMKAP_BACKEND_PATH",
+        "If empty: add 'Regeneration: SKIPPED - no backend path' to audit report, mark PASSED",
+        "If set: run go generate ./... && git diff --stat internal/generated/",
+        "Document diff (should be empty or whitespace only)",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": "Story passes even if skipped."
+    },
+    {
+      "id": "US-019",
+      "title": "Audit environment variables",
+      "description": "As a developer, I need env var documentation.",
+      "acceptanceCriteria": [
+        "Read existing .env.example if exists",
+        "Create or update .env.example with: STREAMKAP_CLIENT_ID, STREAMKAP_SECRET, STREAMKAP_HOST, STREAMKAP_BACKEND_PATH, TF_ACC",
+        "Add connector-specific placeholder vars",
+        "Add 'Environment Variables' section to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Verify dynamic field exclusion",
+      "description": "As a developer, I need to verify computed fields NOT in schemas.",
+      "acceptanceCriteria": [
+        "Search generated schemas for 'database.hostname' - should NOT be found as user field",
+        "Search for 'database.port' computed field - should NOT be user-editable",
+        "Search for 'connection.url' - should NOT be user-editable",
+        "Verify only *.user.defined variants exposed to users",
+        "Add 'Dynamic Field Exclusion' section to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "Verify source connector schemas (batch 1: 5)",
+      "description": "As a developer, I need to verify first 5 source schemas exist.",
+      "acceptanceCriteria": [
+        "Verify schema exists for: AlloyDB, DB2, DocumentDB, DynamoDB, Elasticsearch",
+        "Run: ls internal/generated/source_*.go | head -10",
+        "Add 'Source Schemas Batch 1' table to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "Verify source connector schemas (batch 2: 5)",
+      "description": "As a developer, I need to verify next 5 source schemas exist.",
+      "acceptanceCriteria": [
+        "Verify schema exists for: KafkaDirect, MariaDB, MongoDB, MongoDBHosted, MySQL",
+        "Add 'Source Schemas Batch 2' table to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "Verify source connector schemas (batch 3: 5)",
+      "description": "As a developer, I need to verify next 5 source schemas exist.",
+      "acceptanceCriteria": [
+        "Verify schema exists for: Oracle, OracleAWS, PlanetScale, PostgreSQL, Redis",
+        "Add 'Source Schemas Batch 3' table to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-024",
+      "title": "Verify source connector schemas (batch 4: 5)",
+      "description": "As a developer, I need to verify final 5 source schemas exist.",
+      "acceptanceCriteria": [
+        "Verify schema exists for: S3, SQLServer, Supabase, Vitess, Webhook",
+        "Add 'Source Schemas Batch 4' table to audit report",
+        "Add summary: 'All 20 source schemas verified' or list missing",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-025",
+      "title": "Verify destination connector schemas (batch 1: 6)",
+      "description": "As a developer, I need to verify first 6 destination schemas.",
+      "acceptanceCriteria": [
+        "Verify schema exists for: AzBlob, BigQuery, ClickHouse, CockroachDB, Databricks, DB2",
+        "Add 'Destination Schemas Batch 1' table to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-026",
+      "title": "Verify destination connector schemas (batch 2: 6)",
+      "description": "As a developer, I need to verify next 6 destination schemas.",
+      "acceptanceCriteria": [
+        "Verify schema exists for: GCS, HTTPSink, Iceberg, Kafka, KafkaDirect, Motherduck",
+        "Add 'Destination Schemas Batch 2' table to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 26,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-027",
+      "title": "Verify destination connector schemas (batch 3: 5)",
+      "description": "As a developer, I need to verify next 5 destination schemas.",
+      "acceptanceCriteria": [
+        "Verify schema exists for: MySQL, Oracle, PostgreSQL, R2, Redis",
+        "Add 'Destination Schemas Batch 3' table to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 27,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-028",
+      "title": "Verify destination connector schemas (batch 4: 5)",
+      "description": "As a developer, I need to verify final 5 destination schemas.",
+      "acceptanceCriteria": [
+        "Verify schema exists for: Redshift, S3, Snowflake, SQLServer, Starburst",
+        "Add 'Destination Schemas Batch 4' table to audit report",
+        "Add summary: 'All 22 destination schemas verified' or list missing",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 28,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-029",
+      "title": "Verify transform resource schemas",
+      "description": "As a developer, I need to verify all 6 transform schemas.",
+      "acceptanceCriteria": [
+        "Verify schema exists for: Enrich, EnrichAsync, FanOut, MapFilter, Rollup, SqlJoin",
+        "Add 'Transform Schemas' table to audit report",
+        "Add summary: 'All 6 transform schemas verified' or list missing",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 29,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-030",
+      "title": "Write source acceptance tests (batch 1: 3)",
+      "description": "As a developer, I need tests for first 3 untested sources.",
+      "acceptanceCriteria": [
+        "Write TestAccSourceAlloyDB with basic CRUD",
+        "Write TestAccSourceDB2 with basic CRUD",
+        "Write TestAccSourceDocumentDB with basic CRUD",
+        "Each test uses tf-acc-test- prefix and has t.Skip() for missing env vars",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 30,
+      "passes": false,
+      "notes": "Tests compile and skip gracefully without credentials."
+    },
+    {
+      "id": "US-031",
+      "title": "Write source acceptance tests (batch 2: 3)",
+      "description": "As a developer, I need tests for next 3 untested sources.",
+      "acceptanceCriteria": [
+        "Write TestAccSourceElasticsearch with basic CRUD",
+        "Write TestAccSourceMariaDB with basic CRUD",
+        "Write TestAccSourceMongoDBHosted with basic CRUD",
+        "Each test has skip logic for missing credentials",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 31,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-032",
+      "title": "Write source acceptance tests (batch 3: 3)",
+      "description": "As a developer, I need tests for next 3 untested sources.",
+      "acceptanceCriteria": [
+        "Write TestAccSourceOracle with basic CRUD",
+        "Write TestAccSourceOracleAWS with basic CRUD",
+        "Write TestAccSourcePlanetScale with basic CRUD",
+        "Each test has skip logic",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 32,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-033",
+      "title": "Write source acceptance tests (batch 4: 3)",
+      "description": "As a developer, I need tests for next 3 untested sources.",
+      "acceptanceCriteria": [
+        "Write TestAccSourceRedis with basic CRUD",
+        "Write TestAccSourceS3 with basic CRUD",
+        "Write TestAccSourceSupabase with basic CRUD",
+        "Each test has skip logic",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 33,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-034",
+      "title": "Write source acceptance tests (batch 5: 2)",
+      "description": "As a developer, I need tests for final 2 untested sources.",
+      "acceptanceCriteria": [
+        "Write TestAccSourceVitess with basic CRUD",
+        "Write TestAccSourceWebhook with basic CRUD",
+        "Each test has skip logic",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 34,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-035",
+      "title": "Write destination acceptance tests (batch 1: 3)",
+      "description": "As a developer, I need tests for first 3 untested destinations.",
+      "acceptanceCriteria": [
+        "Write TestAccDestinationAzBlob with basic CRUD",
+        "Write TestAccDestinationBigQuery with basic CRUD",
+        "Write TestAccDestinationCockroachDB with basic CRUD",
+        "Each test has skip logic",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 35,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-036",
+      "title": "Write destination acceptance tests (batch 2: 3)",
+      "description": "As a developer, I need tests for next 3 untested destinations.",
+      "acceptanceCriteria": [
+        "Write TestAccDestinationDB2 with basic CRUD",
+        "Write TestAccDestinationGCS with basic CRUD",
+        "Write TestAccDestinationHTTPSink with basic CRUD",
+        "Each test has skip logic",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 36,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-037",
+      "title": "Write destination acceptance tests (batch 3: 3)",
+      "description": "As a developer, I need tests for next 3 untested destinations.",
+      "acceptanceCriteria": [
+        "Write TestAccDestinationKafkaDirect with basic CRUD",
+        "Write TestAccDestinationMotherduck with basic CRUD",
+        "Write TestAccDestinationMySQL with basic CRUD",
+        "Each test has skip logic",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 37,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-038",
+      "title": "Write destination acceptance tests (batch 4: 3)",
+      "description": "As a developer, I need tests for next 3 untested destinations.",
+      "acceptanceCriteria": [
+        "Write TestAccDestinationOracle with basic CRUD",
+        "Write TestAccDestinationR2 with basic CRUD",
+        "Write TestAccDestinationRedis with basic CRUD",
+        "Each test has skip logic",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 38,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-039",
+      "title": "Write destination acceptance tests (batch 5: 3)",
+      "description": "As a developer, I need tests for final 3 untested destinations.",
+      "acceptanceCriteria": [
+        "Write TestAccDestinationRedshift with basic CRUD",
+        "Write TestAccDestinationSQLServer with basic CRUD",
+        "Write TestAccDestinationStarburst with basic CRUD",
+        "Each test has skip logic",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 39,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-040",
+      "title": "Write transform acceptance tests",
+      "description": "As a developer, I need tests for 3 untested transforms.",
+      "acceptanceCriteria": [
+        "Write TestAccTransformEnrichAsync with basic CRUD",
+        "Write TestAccTransformFanOut with basic CRUD",
+        "Write TestAccTransformRollup with basic CRUD",
+        "Each test has skip logic",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 40,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-041",
+      "title": "Create schema snapshots",
+      "description": "As a developer, I need schema snapshots for compatibility.",
+      "acceptanceCriteria": [
+        "Run: UPDATE_SNAPSHOTS=1 go test -v -run 'TestSchemaBackwardsCompatibility' ./internal/provider/...",
+        "Verify testdata/snapshots/ directory has files",
+        "Count snapshot files and document in audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 41,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-042",
+      "title": "Implement source test sweeper",
+      "description": "As a developer, I need sweeper for orphaned sources.",
+      "acceptanceCriteria": [
+        "Create or update internal/provider/sweep_test.go",
+        "Implement sweepSources function that lists sources via API",
+        "Sweeper deletes resources matching tf-acc-test- prefix",
+        "Add init() to register sweeper",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 42,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-043",
+      "title": "Implement destination test sweeper",
+      "description": "As a developer, I need sweeper for orphaned destinations.",
+      "acceptanceCriteria": [
+        "Add sweepDestinations function to sweep_test.go",
+        "Sweeper lists destinations via API",
+        "Sweeper deletes resources matching tf-acc-test- prefix",
+        "Register in init()",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 43,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-044",
+      "title": "Implement transform and pipeline sweepers",
+      "description": "As a developer, I need sweepers for transforms and pipelines.",
+      "acceptanceCriteria": [
+        "Add sweepTransforms function to sweep_test.go",
+        "Add sweepPipelines function to sweep_test.go",
+        "Both delete resources matching tf-acc-test- prefix",
+        "Register both in init()",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 44,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-045",
+      "title": "Write smoke tests for connectors without credentials",
+      "description": "As a developer, I need smoke tests for untestable connectors.",
+      "acceptanceCriteria": [
+        "Identify 3-5 connectors likely missing credentials (Oracle, BigQuery, etc.)",
+        "Create TestSmoke* tests that verify schema compiles",
+        "Verify model conversion works (no runtime errors)",
+        "Document smoke-tested connectors in audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 45,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-046",
+      "title": "Write negative tests for API errors (401, 404)",
+      "description": "As a developer, I need tests for error handling.",
+      "acceptanceCriteria": [
+        "Create internal/provider/error_handling_test.go",
+        "Write TestAPIError401 for unauthorized handling",
+        "Write TestAPIError404 for not found handling",
+        "Verify error messages propagate correctly",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 46,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-047",
+      "title": "Write negative tests for API errors (422, 5xx)",
+      "description": "As a developer, I need tests for validation and server errors.",
+      "acceptanceCriteria": [
+        "Write TestAPIError422 for validation errors",
+        "Write TestAPIError5xx for server errors and retry",
+        "Verify error messages propagate correctly",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 47,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-048",
+      "title": "Write negative tests for schema validation",
+      "description": "As a developer, I need tests for validators.",
+      "acceptanceCriteria": [
+        "Write test for missing required field rejection",
+        "Write test for invalid enum value rejection",
+        "Write test for out-of-range slider rejection",
+        "Verify helpful error messages",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 48,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-049",
+      "title": "Write negative tests for state conflicts",
+      "description": "As a developer, I need tests for drift handling.",
+      "acceptanceCriteria": [
+        "Write test for resource modified externally (drift detection)",
+        "Write test for resource deleted externally",
+        "Write test for import of non-existent resource",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 49,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-050",
+      "title": "Audit AI-agent description quality",
+      "description": "As a developer, I need to verify descriptions meet standards.",
+      "acceptanceCriteria": [
+        "Spot check 3 source schemas for Description and MarkdownDescription",
+        "Spot check 3 destination schemas",
+        "Verify 2 enum fields document 'Valid values:'",
+        "Verify 2 fields with defaults document 'Defaults to'",
+        "Add 'AI-Agent Descriptions' section to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 50,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-051",
+      "title": "Verify and create source example files",
+      "description": "As a developer, I need example files for sources.",
+      "acceptanceCriteria": [
+        "List examples/resources/streamkap_source_* directories",
+        "Identify up to 3 missing source example directories",
+        "Create missing directories with basic.tf",
+        "Run: terraform fmt examples/",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 51,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-052",
+      "title": "Verify and create destination example files",
+      "description": "As a developer, I need example files for destinations.",
+      "acceptanceCriteria": [
+        "List examples/resources/streamkap_destination_* directories",
+        "Identify up to 3 missing destination example directories",
+        "Create missing directories with basic.tf",
+        "Run: terraform fmt examples/",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 52,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-053",
+      "title": "Verify and create transform example files",
+      "description": "As a developer, I need example files for transforms.",
+      "acceptanceCriteria": [
+        "List examples/resources/streamkap_transform_* directories",
+        "Identify any missing transform example directories",
+        "Create missing directories with basic.tf",
+        "Run: terraform fmt examples/",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 53,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-054",
+      "title": "Verify core documentation files",
+      "description": "As a developer, I need to verify core docs are accurate.",
+      "acceptanceCriteria": [
+        "Verify CLAUDE.md exists and reflects current architecture",
+        "Verify docs/ARCHITECTURE.md exists or note if missing",
+        "Verify docs/DEVELOPMENT.md exists or note if missing",
+        "Verify README.md has accurate overview",
+        "Add 'Core Documentation' section to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 54,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-055",
+      "title": "Verify audit reference documents",
+      "description": "As a developer, I need to verify audit docs are accurate.",
+      "acceptanceCriteria": [
+        "Verify docs/audits/entity-config-schema-audit.md exists and is current",
+        "Verify docs/audits/backend-code-reference.md exists and is current",
+        "Check for TODOs or placeholders in these docs",
+        "Add 'Audit Documents' section to report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 55,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-056",
+      "title": "Create test documentation",
+      "description": "As a developer, I need test documentation.",
+      "acceptanceCriteria": [
+        "Create docs/TESTING.md if it doesn't exist",
+        "Add sections: Unit Tests, Schema Tests, Acceptance Tests",
+        "Add section: Migration Tests, VCR Cassettes",
+        "Add section: Test Sweepers, Environment Variables",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 56,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-057",
+      "title": "Create code generator documentation",
+      "description": "As a developer, I need code generator docs.",
+      "acceptanceCriteria": [
+        "Create docs/CODE_GENERATOR.md if it doesn't exist",
+        "Add sections: Overview, CLI Usage, Type Mapping",
+        "Add sections: overrides.json, deprecations.json",
+        "Add section: Adding a New Connector",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 57,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-058",
+      "title": "Update inline code comments",
+      "description": "As a developer, I need comments for complex logic.",
+      "acceptanceCriteria": [
+        "Add/update package GoDoc in internal/resource/connector/base.go",
+        "Add/update package GoDoc in cmd/tfgen/parser.go",
+        "Add/update package GoDoc in cmd/tfgen/generator.go",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 58,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-059",
+      "title": "Record VCR cassettes for source tests if credentials available",
+      "description": "As a developer, I need VCR cassettes for CI.",
+      "acceptanceCriteria": [
+        "Check if credentials available",
+        "If not: add 'VCR Source Cassettes: SKIPPED - no credentials' to report, mark PASSED",
+        "If yes: run UPDATE_CASSETTES=1 go test -v -run 'TestAccSource' ./internal/provider/...",
+        "Verify testdata/cassettes/sources/ exists",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 59,
+      "passes": false,
+      "notes": "Story passes if skipped due to missing credentials."
+    },
+    {
+      "id": "US-060",
+      "title": "Record VCR cassettes for destination tests if credentials available",
+      "description": "As a developer, I need VCR cassettes for destinations.",
+      "acceptanceCriteria": [
+        "Check if credentials available",
+        "If not: add 'VCR Destination Cassettes: SKIPPED' to report, mark PASSED",
+        "If yes: run UPDATE_CASSETTES=1 go test -v -run 'TestAccDestination' ./internal/provider/...",
+        "Verify testdata/cassettes/destinations/ exists",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 60,
+      "passes": false,
+      "notes": "Story passes if skipped."
+    },
+    {
+      "id": "US-061",
+      "title": "Record VCR cassettes for transform tests if credentials available",
+      "description": "As a developer, I need VCR cassettes for transforms.",
+      "acceptanceCriteria": [
+        "Check if credentials available",
+        "If not: add 'VCR Transform Cassettes: SKIPPED' to report, mark PASSED",
+        "If yes: record cassettes for transform, pipeline, topic tests",
+        "Verify testdata/cassettes/ has appropriate subdirectories",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 61,
+      "passes": false,
+      "notes": "Story passes if skipped."
+    },
+    {
+      "id": "US-062",
+      "title": "Update CHANGELOG",
+      "description": "As a developer, I need CHANGELOG updated.",
+      "acceptanceCriteria": [
+        "Open CHANGELOG.md",
+        "Add or update [Unreleased] section",
+        "Add subsections: Added, Changed, Fixed",
+        "Document new tests added",
+        "Document bug fixes made during audit",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 62,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-063",
+      "title": "Update README with quick start",
+      "description": "As a developer, I need README quick start section.",
+      "acceptanceCriteria": [
+        "Open README.md",
+        "Add 'Quick Start' section if missing",
+        "Include provider config example",
+        "Include one source resource example",
+        "Include one destination resource example",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 63,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-064",
+      "title": "Create GitHub issues for audit findings",
+      "description": "As a developer, I need findings tracked as issues.",
+      "acceptanceCriteria": [
+        "Review documented discrepancies in audit report",
+        "Create issues for critical bugs found (if any)",
+        "Create issues for missing test coverage gaps",
+        "Create issues for documentation improvements",
+        "Add 'GitHub Issues Created' section to audit report",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 64,
+      "passes": false,
+      "notes": "Can use gh CLI or document for manual creation."
+    },
+    {
+      "id": "US-065",
+      "title": "Create audit report executive summary",
+      "description": "As a developer, I need to compile final summary.",
+      "acceptanceCriteria": [
+        "Add 'Executive Summary' section at TOP of audit report",
+        "Add 'Entity Coverage Matrix' section listing all 53 resources",
+        "Add 'Test Coverage Summary' with counts",
+        "Add 'Recommendations' section",
+        "Typecheck passes: go build ./..."
+      ],
+      "priority": 65,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-066",
+      "title": "Final verification",
+      "description": "As a developer, I need final verification audit is complete.",
+      "acceptanceCriteria": [
+        "Run: go build ./... (must pass)",
+        "Run: go test -v -short ./... (document count)",
+        "Run: go test -v -run 'TestSchemaBackwardsCompatibility' ./internal/provider/...",
+        "Verify docs/audits/architecture-comparison-report.md has all sections",
+        "Verify CHANGELOG.md has [Unreleased] section",
+        "Typecheck passes"
+      ],
+      "priority": 66,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-067",
+      "title": "Commit all audit changes",
+      "description": "As a developer, I need to commit all audit work.",
+      "acceptanceCriteria": [
+        "Run: git add -A",
+        "Run: git status to review changes",
+        "Commit with message: 'chore: comprehensive terraform provider audit'",
+        "Verify commit succeeded"
+      ],
+      "priority": 67,
+      "passes": false,
+      "notes": "FINAL STORY. Audit complete. Do not continue past this point."
+    }
+  ]
+}

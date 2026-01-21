@@ -6,7 +6,7 @@
     "protocol_version": "6.0",
     "repository": "https://github.com/streamkap-com/terraform-provider-streamkap",
     "current_version": "2.1.18",
-    "refactored_branch": "refactored-terraform"
+    "refactored_branch": "ralph-refactored-terraform"
   },
   "test_framework": {
     "name": "terraform-plugin-testing",
