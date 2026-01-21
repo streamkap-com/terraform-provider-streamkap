@@ -938,8 +938,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 63,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added Quick Start section with 3-step guide: Configure Provider, Create a Source (PostgreSQL), Create a Destination (Snowflake with pipeline)."
     },
     {
       "id": "US-064",
