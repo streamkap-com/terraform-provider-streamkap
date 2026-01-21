@@ -1222,3 +1222,20 @@
   - DEVELOPMENT.md has step-by-step guides for adding new connectors and running tests
   - Minor feature count discrepancies don't affect usability but should be updated
 ---
+
+## 2026-01-21 - US-055
+- What was implemented:
+  - Verified `docs/audits/entity-config-schema-audit.md` exists and is current (868 lines, ~27 KB)
+  - Verified `docs/audits/backend-code-reference.md` exists and is current (751 lines, ~21 KB)
+  - Checked for TODOs/placeholders - only valid documentation references found (UI placeholder text and CRUD flow comments)
+  - Added comprehensive "Audit Documents" section to `docs/audits/architecture-comparison-report.md`
+  - Section includes: Available Audit Documents, Entity Config Schema Audit, Backend Code Reference Guide, TODOs and Placeholders Check, Cross-Reference Verification, Currency Verification, Summary table
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md` (+103 lines)
+- **Learnings for future iterations:**
+  - entity-config-schema-audit.md covers 12 sections + 2 appendices: full JSON schema spec, control types, Terraform mappings
+  - backend-code-reference.md covers 10 sections + 2 appendices: API endpoints, entity models, plugin architecture, CRUD flows
+  - Both documents generated on 2026-01-09 as part of Terraform Provider Refactor Design v1.0
+  - Documents accurately reflect 20 sources, 23 destinations, 8 transforms
+  - CLAUDE.md references both audit documents in its "Detailed Reference Documents" section
+---
