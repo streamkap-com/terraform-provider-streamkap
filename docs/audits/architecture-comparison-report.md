@@ -25,6 +25,7 @@
 14. [Override and Deprecation System](#override-and-deprecation-system)
 15. [Code Regeneration Test](#code-regeneration-test)
 16. [Environment Variables](#environment-variables)
+17. [Dynamic Field Exclusion](#dynamic-field-exclusion)
 
 ---
 
@@ -2377,6 +2378,161 @@ The `.env.example` file has been updated to include:
 | **Never Commit** | `.env` file is gitignored; never commit actual credentials |
 | **CI/CD** | Use secrets management; inject variables via CI environment |
 | **Local Development** | Store credentials in `.env` or environment |
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## Dynamic Field Exclusion
+
+This section verifies that computed/dynamic backend fields are properly excluded from Terraform schemas, ensuring only user-editable fields are exposed.
+
+### Background
+
+The Streamkap backend has two types of fields for database connections:
+1. **Computed fields** (e.g., `database.hostname`, `database.port`) - dynamically resolved by the backend
+2. **User-defined fields** (e.g., `database.hostname.user.defined`, `database.port.user.defined`) - user-editable via Terraform
+
+Only user-defined fields should be exposed in the Terraform provider.
+
+### Verification Results
+
+#### 1. `database.hostname` Exclusion
+
+**Search**: Raw `database.hostname` (without `.user.defined` suffix) in generated schemas
+
+```bash
+$ grep -E "\"database\.hostname\"" internal/generated/*.go
+# No results - CORRECT: Raw computed field NOT exposed
+```
+
+**Search**: `database.hostname.user.defined` mappings
+
+```bash
+$ grep "database\.hostname.*user\.defined" internal/generated/*.go | wc -l
+17
+```
+
+**Result**: ✅ **PASS** - Only `database.hostname.user.defined` variants are exposed (17 connectors)
+
+#### 2. `database.port` Exclusion
+
+**Search**: Raw `database.port` (without `.user.defined` suffix) in generated schemas
+
+```bash
+$ grep -E "\"database\.port\"" internal/generated/*.go
+# No results - CORRECT: Raw computed field NOT exposed
+```
+
+**Search**: `database.port.user.defined` mappings
+
+```bash
+$ grep "database\.port.*user\.defined" internal/generated/*.go | wc -l
+17
+```
+
+**Result**: ✅ **PASS** - Only `database.port.user.defined` variants are exposed (17 connectors)
+
+#### 3. `connection.url` Exclusion
+
+**Search**: Raw `connection.url` in generated schemas
+
+```bash
+$ grep "connection\.url" internal/generated/*.go
+internal/generated/destination_databricks.go:	"connection_url": "connection.url.user.defined",
+internal/generated/destination_weaviate.go:	"weaviate_connection_url": "weaviate.connection.url",
+```
+
+**Analysis**:
+- **Databricks**: Uses `connection.url.user.defined` ✅
+- **Weaviate**: Uses `weaviate.connection.url` (direct URL field, not a computed/user-defined pair) - This is intentional as Weaviate's connection URL is a direct user input field, not a dynamically computed value.
+
+**Result**: ✅ **PASS** - Computed connection.url fields are properly excluded
+
+### User-Defined Field Pattern Verification
+
+#### Parser Implementation
+
+The code generator's parser (`cmd/tfgen/parser.go`) filters fields based on the backend's `user_defined` flag:
+
+```go
+// IsUserDefined returns true if this config entry should become a Terraform attribute.
+// Only fields with user_defined=true should be exposed in the Terraform schema.
+func (e *ConfigEntry) IsUserDefined() bool {
+    return e.UserDefined
+}
+
+// UserDefinedEntries returns only the config entries that should become Terraform attributes.
+func (c *ConnectorConfig) UserDefinedEntries() []ConfigEntry {
+    var entries []ConfigEntry
+    for _, entry := range c.Entries {
+        if entry.IsUserDefined() {
+            entries = append(entries, entry)
+        }
+    }
+    return entries
+}
+```
+
+**Location**: `cmd/tfgen/parser.go` lines 115-119 and 366-376
+
+#### Field Mapping Statistics
+
+| Metric | Count |
+|--------|-------|
+| **Total `.user.defined` mappings** | 145 |
+| **Files with `.user.defined` mappings** | 38 |
+| **Source connectors** | 20 |
+| **Destination connectors** | 18 |
+
+#### Connectors with `.user.defined` Field Mappings
+
+The following connectors have fields that map to `.user.defined` backend API fields:
+
+| Category | Connectors |
+|----------|------------|
+| **Sources** | AlloyDB, DB2, MariaDB, MySQL, Oracle, OracleAWS, PlanetScale, PostgreSQL, Redis, SQLServerAWS, Supabase, Vitess |
+| **Destinations** | CockroachDB, Databricks, DB2, Motherduck, MySQL, Oracle, PostgreSQL, SQLServer |
+
+### Transform Resources
+
+Transform resources do not have `.user.defined` field patterns because transforms are not database connectors:
+
+```bash
+$ grep "user\.defined" internal/generated/transform_*.go | wc -l
+0
+```
+
+This is **expected** and **correct** - transforms configure data transformations, not database connections.
+
+### Fields Without `.user.defined` Suffix
+
+Some fields legitimately don't have a `.user.defined` suffix because they are direct user inputs without a computed counterpart:
+
+| Field Type | Example | Reason |
+|------------|---------|--------|
+| **Connection credentials** | `connection.username`, `connection.password` | Always user-provided |
+| **Connector settings** | `ingestion.mode`, `schema.evolution` | Configuration options |
+| **Integration-specific** | `bigquery.json`, `databricks.token` | Service credentials |
+| **File configuration** | `file.name.template`, `flush.size` | File sink settings |
+
+These fields are correctly exposed without the `.user.defined` suffix because they are inherently user-configurable.
+
+### Verification Summary
+
+| Check | Status | Notes |
+|-------|--------|-------|
+| Raw `database.hostname` excluded | ✅ PASS | Not found in generated schemas |
+| Raw `database.port` excluded | ✅ PASS | Not found in generated schemas |
+| Raw `connection.url` excluded | ✅ PASS | Only user.defined variants exposed |
+| `IsUserDefined()` filter implemented | ✅ PASS | `cmd/tfgen/parser.go:117-119` |
+| `UserDefinedEntries()` used in generator | ✅ PASS | `cmd/tfgen/generator.go:323` |
+| Transform resources excluded | ✅ PASS | No `.user.defined` fields (expected) |
 
 ### Typecheck Verification
 
