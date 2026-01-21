@@ -265,3 +265,22 @@
   - Schema backward compatibility tests provide confidence even without credentials
   - Migration tests verify no unexpected plan changes when upgrading from v2.1.18 to refactored provider
 ---
+
+## 2026-01-21 - US-015
+- What was implemented:
+  - Read `cmd/tfgen/parser.go` (429 lines) to verify code generator parser implementation
+  - Verified `ParseConnectorConfig()` function reads `configuration.latest.json` format (lines 100-113)
+  - Verified `user_defined: true` filter logic exists via `IsUserDefined()` (lines 117-119) and `UserDefinedEntries()` (lines 368-376)
+  - Verified field metadata extraction: control (line 65), type (line 66), default (lines 163-241), required (lines 128-133)
+  - Added comprehensive "Code Generator Parser" section to `docs/audits/architecture-comparison-report.md`
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md` (+223 lines)
+- **Learnings for future iterations:**
+  - Parser is in `cmd/tfgen/parser.go`, generator is in `cmd/tfgen/generator.go`
+  - `ValueObject` struct (lines 63-81) contains all value-related metadata: control, type, default, raw_values, min/max/step
+  - `TerraformType()` method (lines 245-264) maps backend controls to Terraform types (string→types.String, number→types.Int64, etc.)
+  - `TerraformAttributeName()` method converts backend names to Terraform-friendly names (removes `.user.defined` suffix, replaces dots/hyphens with underscores)
+  - Parser supports conditional fields via `Condition` struct and `IsConditional()` method
+---
