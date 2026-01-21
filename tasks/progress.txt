@@ -188,3 +188,43 @@
   - All helper functions return appropriate null/zero values for nil maps (safe defaults)
   - Test files: `internal/helper/helper_test.go` and `internal/helper/deprecated_test.go`
 ---
+
+## 2026-01-21 - US-011
+- What was implemented:
+  - Read `internal/resource/connector/base.go` (701 lines)
+  - Verified `modelToConfigMap()` function exists at lines 501-542 (reflection-based model → config map conversion)
+  - Verified `configMapToModel()` function exists at lines 544-581 (reflection-based config map → model conversion)
+  - Verified timeout context in all CRUD methods: Create (126-141), Update (325-340), Delete (434-449)
+  - Verified import state passthrough at lines 496-499 using `resource.ImportStatePassthroughID`
+  - Added comprehensive "Base Resource" section to `docs/audits/architecture-comparison-report.md`
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md`
+- **Learnings for future iterations:**
+  - Base resource implements 3 interfaces: resource.Resource, ResourceWithConfigure, ResourceWithImportState
+  - Timeouts use `helper.DefaultCreateTimeout`, `helper.DefaultUpdateTimeout`, `helper.DefaultDeleteTimeout`
+  - Type extraction handled by `extractTerraformValue()` (lines 583-628) supporting String, Int64, Bool, Float64, List
+  - Type setting handled by `setTerraformValue()` (lines 630-666) using helper functions
+  - String field helpers: `getStringField()` (669-686) and `setStringField()` (688-701) for ID/Name/Connector fields
+---
+
+## 2026-01-21 - US-012
+- What was implemented:
+  - Ran `go test -v -run 'TestSchemaBackwardsCompatibility' ./internal/provider/...` - all 16 tests passed (0.862s)
+  - Verified no "required attribute removed" errors in any test
+  - Verified no "optional changed to required" errors in any test
+  - Added comprehensive "Schema Backward Compatibility Tests" section to `docs/audits/architecture-comparison-report.md`
+  - Documented all 16 test results with baseline/current attribute counts
+  - Documented that SQL Server source has 1 new additive attribute (backward-compatible)
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md`
+- **Learnings for future iterations:**
+  - Schema compatibility tests are in `internal/provider/schema_compat_test.go`
+  - Tests compare baseline v2.1.18 schemas against current refactored schemas
+  - Test naming: `TestSchemaBackwardsCompatibility_{Source|Destination|Transform}{ConnectorName}`
+  - Tests verify 298 total attributes across 6 sources, 7 destinations, and 3 transforms
+  - New additive attributes are allowed (INFO log), removed/changed-to-required attributes fail
+---
