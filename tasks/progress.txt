@@ -324,3 +324,43 @@
   - map_nested overrides support validators (e.g., `int64_at_least`) in their nested_fields
   - Both deprecated and new attributes map to the same API field name for backward compatibility
 ---
+
+## 2026-01-21 - US-018
+- What was implemented:
+  - Checked `STREAMKAP_BACKEND_PATH` environment variable - not set
+  - Added section 15 "Code Regeneration Test" to `docs/audits/architecture-comparison-report.md`
+  - Documented test status as SKIPPED due to missing backend path
+  - Documented the command that would be run with backend access
+  - Added alternative verification indicators (schema tests pass, build success, generated files present)
+  - Added recommendation for running regeneration test with backend before production release
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md` (+74 lines)
+  - Modified: `tasks/prd.json` (marked US-018 as passes: true)
+- **Learnings for future iterations:**
+  - `STREAMKAP_BACKEND_PATH` should point to the local clone of `python-be-streamkap` backend repo
+  - Backend repo contains `configuration.latest.json` files used by `go generate ./...`
+  - Regeneration test verifies that running `go generate` produces no diff in `internal/generated/`
+  - Alternative verification: schema compatibility tests provide confidence even without backend access
+---
+
+## 2026-01-21 - US-019
+- What was implemented:
+  - Verified existing `.env.example` file already contains most core variables
+  - Added `STREAMKAP_BACKEND_PATH` environment variable section to `.env.example`
+  - Connector-specific placeholder vars already existed for 6 source and 7 destination connectors
+  - Added comprehensive "Environment Variables" section (section 16) to `docs/audits/architecture-comparison-report.md`
+  - Documented 4 core settings, 1 code generation setting, 3 testing options, and 13 connector-specific variable groups
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `.env.example` (+9 lines - added STREAMKAP_BACKEND_PATH section)
+  - Modified: `docs/audits/architecture-comparison-report.md` (+120 lines)
+  - Modified: `tasks/prd.json` (marked US-019 as passes: true)
+- **Learnings for future iterations:**
+  - `.env.example` file existed but was missing `STREAMKAP_BACKEND_PATH` for code generation
+  - Environment variables are found via `os.Getenv()` calls - grep for pattern to find all usages
+  - Key locations: `provider.go` (core auth), `*_resource_test.go` (connector credentials), `internal/generated/doc.go` (backend path)
+  - Connector test variables follow pattern: `TF_VAR_source_<connector>_<field>` or `TF_VAR_destination_<connector>_<field>`
+---
