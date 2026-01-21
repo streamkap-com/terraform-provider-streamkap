@@ -151,7 +151,7 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
