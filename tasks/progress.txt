@@ -1373,3 +1373,21 @@
   - Subsections: Added, Changed, Fixed, Deprecated, Removed, Security
   - Important to document test additions, not just feature changes
 ---
+
+## 2026-01-21 - US-063
+- What was implemented:
+  - Added "Quick Start" section to README.md
+  - 3-step guide: Configure Provider, Create a Source, Create a Destination
+  - Provider config example with environment variables
+  - PostgreSQL source resource example
+  - Snowflake destination resource example with pipeline connection
+  - Link to examples directory for all 42 connectors
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `README.md`
+- **Learnings for future iterations:**
+  - Quick Start sections should be at the top for new users
+  - Include complete working examples, not just snippets
+  - Reference the examples directory for comprehensive configs
+  - Show the full workflow: provider → source → destination → pipeline
+---

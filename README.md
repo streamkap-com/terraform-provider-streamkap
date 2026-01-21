@@ -27,6 +27,72 @@ Terraform provider for [Streamkap](https://streamkap.com) - a real-time data str
 - Topics
 - Tags
 
+## Quick Start
+
+Get up and running with Streamkap in 3 steps:
+
+### 1. Configure Provider
+
+```hcl
+terraform {
+  required_providers {
+    streamkap = {
+      source  = "streamkap-com/streamkap"
+      version = ">= 2.0.0"
+    }
+  }
+}
+
+provider "streamkap" {
+  # Credentials from environment variables (recommended)
+}
+```
+
+Set your credentials:
+```bash
+export STREAMKAP_CLIENT_ID="your-client-id"
+export STREAMKAP_SECRET="your-secret"
+```
+
+### 2. Create a Source
+
+```hcl
+resource "streamkap_source_postgresql" "my_source" {
+  name              = "production-postgres"
+  database_hostname = "db.example.com"
+  database_port     = "5432"
+  database_user     = "streamkap"
+  database_password = var.db_password
+  database_dbname   = "mydb"
+}
+```
+
+### 3. Create a Destination
+
+```hcl
+resource "streamkap_destination_snowflake" "my_dest" {
+  name                    = "analytics-snowflake"
+  snowflake_url_name      = "account.snowflakecomputing.com"
+  snowflake_user_name     = "streamkap"
+  snowflake_private_key   = file("~/.ssh/snowflake_key.pem")
+  snowflake_database_name = "STREAMKAP_DB"
+  snowflake_schema_name   = "PUBLIC"
+}
+
+# Connect them with a pipeline
+resource "streamkap_pipeline" "my_pipeline" {
+  name           = "postgres-to-snowflake"
+  source_id      = streamkap_source_postgresql.my_source.id
+  destination_id = streamkap_destination_snowflake.my_dest.id
+}
+```
+
+Run `terraform apply` and your data pipeline is ready.
+
+See [examples/](./examples/) for complete configurations for all 42 connectors.
+
+---
+
 ## Requirements
 
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
