@@ -18,3 +18,19 @@
   - The `docs/audits/` directory already existed with `backend-code-reference.md` and `entity-config-schema-audit.md`
   - These existing docs are useful references for understanding the backend and config schema
 ---
+
+## 2026-01-21 - US-002
+- What was implemented:
+  - Documented main branch architecture pattern in `docs/audits/architecture-comparison-report.md`
+  - Read 2 representative connectors via git: `postgresql.go` (589 LOC) and `snowflake.go` (503 LOC)
+  - Documented manual schemas, inline CRUD, ~400-600 LOC per connector pattern
+  - Documented type conversion methods: `model2ConfigMap` and `configMap2Model`
+  - Added code examples and summary table
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md`
+- **Learnings for future iterations:**
+  - Main branch connectors can be accessed via `git show main:path/to/file`
+  - Each main branch connector is ~400-600 LOC with significant code duplication
+  - Key components: Resource model struct, Schema definition, CRUD operations, Type conversion methods
+  - Connectors use `helper.GetTfCfgString/Int64/Bool` for type conversion from API response
+---

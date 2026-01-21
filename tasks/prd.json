@@ -15,7 +15,7 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "IMPORTANT: Use only Opus 4.5 for this and all subsequent tasks."
     },
     {
@@ -29,7 +29,7 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
