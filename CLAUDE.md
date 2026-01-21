@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Terraform provider for Streamkap (data streaming platform). Built with Terraform Plugin Framework. Provider address: `github.com/streamkap-com/streamkap`
+Terraform provider for Streamkap (data streaming platform). Built with Terraform Plugin Framework (Go 1.24+). Provider address: `github.com/streamkap-com/streamkap`
 
 ## Related Backend
 
@@ -32,10 +32,6 @@ The `connector_status` field (read-only, computed) can be: `Active`, `Paused`, `
 For in-depth understanding of backend patterns, see the audit documents in `docs/audits/`:
 - **Entity Configuration Schema Audit** (`docs/audits/entity-config-schema-audit.md`) — Complete reference for `configuration.latest.json` schema structure, control types, value objects, conditional logic, and Terraform mapping rules
 - **Backend Code Reference Guide** (`docs/audits/backend-code-reference.md`) — API endpoints, Pydantic models, CRUD flows, dynamic resolution, multi-tenancy, and debugging guide
-
-## Provider Refactor Plan
-For the ongoing architecture refactor (config-driven code generation), see:
-- **Design Document** (`docs/plans/2026-01-08-provider-refactor-design.md`) — Full refactor plan with best practices, implementation tasks, and success metrics
 
 ## Commands
 
@@ -78,13 +74,18 @@ The API client provides CRUD operations for Transform resources:
 
 ### Deprecated Attributes
 Some attribute names have been deprecated but still work with backward compatibility. See [MIGRATION.md](docs/MIGRATION.md) for the full list of deprecated attributes and migration guidance.
-- **Helpers** (`internal/helper/helper.go`): Type conversion between API responses and Terraform types
+
+### Helpers
+- **`internal/helper/helper.go`**: Type conversion between API responses and Terraform types
+- **`internal/helper/deprecated.go`**: Deprecation handling utilities
+- **`internal/helper/timeouts.go`**: Timeout configuration helpers
 
 ### API Client Pattern
 All API operations go through `streamkapAPI.doRequest()` which:
 - Adds `Authorization: Bearer <token>` header
 - Handles errors from API `detail` field
 - All Create operations inject `created_from: constants.TERRAFORM` to track resource origin
+- Includes retry logic with exponential backoff for transient failures (`internal/api/retry.go`)
 
 ### Resource Implementation Pattern
 Each resource (source/destination):
@@ -111,6 +112,14 @@ Three parameters (all support env vars as fallback):
 5. Register in `internal/provider/provider.go` Resources() list
 6. Add example to `examples/resources/streamkap_<name>/`
 7. Add test in `internal/provider/<name>_resource_test.go`
+
+### Code Generation Architecture
+The `cmd/tfgen` tool generates Terraform provider schemas from backend `configuration.latest.json` files:
+- **Parser** (`cmd/tfgen/parser.go`): Reads JSON config, extracts field metadata (name, type, control, default, required, sensitive)
+- **Generator** (`cmd/tfgen/generator.go`): Converts config entries to Go code with schema attributes, validators, defaults
+- **Generated Output** (`internal/generated/`): Schema functions, model structs, field mappings (DO NOT EDIT directly)
+
+For detailed architecture, see `docs/ARCHITECTURE.md`.
 
 ### API Quirks
 - Source Create/Read operations use `?secret_returned=true` query parameter to include sensitive fields in response
@@ -189,6 +198,18 @@ When the Streamkap API changes:
 ```bash
 UPDATE_CASSETTES=1 go test -v -run 'TestIntegration_' ./internal/provider/...
 ```
+
+VCR cassettes are stored alongside test files and record HTTP interactions for replay during CI without API access.
+
+### Test Sweepers
+
+Test sweepers clean up orphaned resources from failed test runs:
+```bash
+# Run sweepers to clean up test resources (uses naming convention prefix)
+go test -v -run 'TestSweep' ./internal/provider/...
+```
+
+See `internal/provider/sweep_test.go` for sweeper implementation.
 
 ### Environment Variables
 

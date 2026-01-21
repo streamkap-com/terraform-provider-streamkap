@@ -1,0 +1,20 @@
+## Codebase Patterns
+- The `docs/audits/` directory already exists with reference documentation files
+- Go build command: `go build ./...` for typechecking
+- Branch naming: PRD specifies `ralph/terraform-provider-audit` branch for audit work
+
+---
+
+## 2026-01-21 - US-001
+- What was implemented:
+  - Created `docs/audits/architecture-comparison-report.md` with proper structure
+  - Added document header with title, date, auditor info
+  - Added Table of Contents with 4 main sections
+  - Added empty placeholder sections: Main Branch Architecture, Refactored Architecture, Comparison Matrix, Trade-offs
+- Files changed:
+  - Created: `docs/audits/architecture-comparison-report.md`
+  - Created: `tasks/progress.txt`
+- **Learnings for future iterations:**
+  - The `docs/audits/` directory already existed with `backend-code-reference.md` and `entity-config-schema-audit.md`
+  - These existing docs are useful references for understanding the backend and config schema
+---
