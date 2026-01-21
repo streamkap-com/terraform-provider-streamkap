@@ -550,3 +550,120 @@
   - Two additional transforms beyond required 6: ToastHandling (PostgreSQL TOAST column handling), UnNesting (array/nested record flattening)
   - Total entity count: 20 sources + 23 destinations + 8 transforms = 51 generated schemas
 ---
+
+## 2026-01-21 - US-030
+- What was implemented:
+  - Created acceptance test for AlloyDB source: `TestAccSourceAlloyDBResource` in `source_alloydb_resource_test.go`
+  - Created acceptance test for DB2 source: `TestAccSourceDB2Resource` in `source_db2_resource_test.go`
+  - Created acceptance test for DocumentDB source: `TestAccSourceDocumentDBResource` in `source_documentdb_resource_test.go`
+  - All tests implement basic CRUD operations: Create/Read, ImportState, Update/Read, Delete (automatic)
+  - All tests use `tf-acc-test-` prefix for resource names (e.g., "tf-acc-test-source-alloydb")
+  - All tests include `t.Skip()` for graceful handling when credentials not set
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `internal/provider/source_alloydb_resource_test.go` (~115 lines)
+  - Created: `internal/provider/source_db2_resource_test.go` (~100 lines)
+  - Created: `internal/provider/source_documentdb_resource_test.go` (~93 lines)
+  - Modified: `tasks/prd.json` (marked US-030 as passes: true)
+- **Learnings for future iterations:**
+  - Acceptance test pattern: Use `os.Getenv()` at package level for env vars, `t.Skip()` at test start
+  - AlloyDB is PostgreSQL-compatible (Google Cloud), uses same schema fields as PostgreSQL
+  - DB2 uses port 50000 by default, schemas are uppercase (e.g., "STREAMKAP")
+  - DocumentDB uses connection string pattern similar to MongoDB, with array/document encoding options
+  - Test variable naming convention: `TF_VAR_source_{connector}_{field}` (e.g., `TF_VAR_source_alloydb_hostname`)
+  - Existing tests (e.g., DynamoDB, PostgreSQL) didn't have skip logic - added skip pattern for new tests
+---
+
+## 2026-01-21 - US-031
+- What was implemented:
+  - Created acceptance test for Elasticsearch source: `TestAccSourceElasticsearchResource` in `source_elasticsearch_resource_test.go`
+  - Created acceptance test for MariaDB source: `TestAccSourceMariaDBResource` in `source_mariadb_resource_test.go`
+  - Created acceptance test for MongoDB Hosted source: `TestAccSourceMongoDBHostedResource` in `source_mongodbhosted_resource_test.go`
+  - All tests implement basic CRUD operations: Create/Read, ImportState, Update/Read, Delete (automatic)
+  - All tests use `tf-acc-test-` prefix for resource names
+  - All tests include `t.Skip()` for graceful handling when credentials not set
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `internal/provider/source_elasticsearch_resource_test.go` (~95 lines)
+  - Created: `internal/provider/source_mariadb_resource_test.go` (~105 lines)
+  - Created: `internal/provider/source_mongodbhosted_resource_test.go` (~85 lines)
+  - Modified: `tasks/prd.json` (marked US-031 as passes: true)
+- **Learnings for future iterations:**
+  - Elasticsearch source uses `es_host`, `es_scheme`, `es_port` naming convention (es prefix)
+  - MariaDB is similar to MySQL but uses `snapshot_gtid` instead of `snapshot_mode` for GTID configuration
+  - MongoDB Hosted uses `mongodb_connection_string` (single connection string) vs MongoDB self-hosted which uses separate host/port
+  - Test environment variables: `TF_VAR_source_elasticsearch_host`, `TF_VAR_source_mariadb_hostname`, `TF_VAR_source_mongodbhosted_connection_string`
+---
+
+## 2026-01-21 - US-032
+- What was implemented:
+  - Created acceptance test for Oracle source: `TestAccSourceOracleResource` in `source_oracle_resource_test.go`
+  - Created acceptance test for Oracle AWS (RDS) source: `TestAccSourceOracleAWSResource` in `source_oracleaws_resource_test.go`
+  - Created acceptance test for PlanetScale source: `TestAccSourcePlanetScaleResource` in `source_planetscale_resource_test.go`
+  - All tests implement basic CRUD operations: Create/Read, ImportState, Update/Read, Delete (automatic)
+  - All tests use `tf-acc-test-` prefix for resource names
+  - All tests include `t.Skip()` for graceful handling when credentials not set
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `internal/provider/source_oracle_resource_test.go` (~105 lines)
+  - Created: `internal/provider/source_oracleaws_resource_test.go` (~105 lines)
+  - Created: `internal/provider/source_planetscale_resource_test.go` (~95 lines)
+  - Modified: `tasks/prd.json` (marked US-032 as passes: true)
+- **Learnings for future iterations:**
+  - Oracle self-hosted requires `database_pdb_name` for container databases (CDB), OracleAWS does not have this field
+  - Oracle uses uppercase schema names by convention (e.g., "STREAMKAP" not "streamkap")
+  - Both Oracle connectors require `signal_data_collection_schema_or_database` and `heartbeat_data_collection_schema_or_database` fields
+  - PlanetScale is Vitess-based, uses `vitess_keyspace` and `vitess_tablet_type` (MASTER/REPLICA/RDONLY)
+  - PlanetScale default port is 443 (HTTPS) not 3306
+  - Test variable naming: `TF_VAR_source_oracle_hostname`, `TF_VAR_source_oracleaws_hostname`, `TF_VAR_source_planetscale_hostname`
+---
+
+## 2026-01-21 - US-033
+- What was implemented:
+  - Created acceptance test for Redis source: `TestAccSourceRedisResource` in `source_redis_resource_test.go`
+  - Created acceptance test for S3 source: `TestAccSourceS3Resource` in `source_s3_resource_test.go`
+  - Created acceptance test for Supabase source: `TestAccSourceSupabaseResource` in `source_supabase_resource_test.go`
+  - All tests implement basic CRUD operations: Create/Read, ImportState, Update/Read, Delete (automatic)
+  - All tests use `tf-acc-test-` prefix for resource names
+  - All tests include `t.Skip()` for graceful handling when credentials not set
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `internal/provider/source_redis_resource_test.go` (~120 lines)
+  - Created: `internal/provider/source_s3_resource_test.go` (~115 lines)
+  - Created: `internal/provider/source_supabase_resource_test.go` (~130 lines)
+  - Modified: `tasks/prd.json` (marked US-033 as passes: true)
+- **Learnings for future iterations:**
+  - Redis source uses `redis_host`, `redis_port`, `redis_password` naming convention
+  - Redis supports two connector class types: "Stream" (Redis Streams) and "Keys" (key-based monitoring)
+  - Redis Stream has delivery modes: "At Least Once" and "At Most Once"
+  - S3 source uses `aws_access_key_id`, `aws_secret_access_key`, `aws_s3_bucket_name` for AWS credentials
+  - S3 has file formats: json, csv, avro
+  - S3 has cleanup policies: LogCleanupPolicy (just log) and DeleteCleanupPolicy (delete after processing)
+  - Supabase is PostgreSQL-based (uses same schema as AlloyDB/PostgreSQL with different defaults)
+  - Supabase has `snapshot_read_only` default "Yes" for read replica support
+  - Test environment variables: `TF_VAR_source_redis_host`, `TF_VAR_source_s3_bucket_name`, `TF_VAR_source_supabase_hostname`
+---
+
+## 2026-01-21 - US-034
+- What was implemented:
+  - Created acceptance test for Vitess source: `TestAccSourceVitessResource` in `source_vitess_resource_test.go`
+  - Created acceptance test for Webhook source: `TestAccSourceWebhookResource` in `source_webhook_resource_test.go`
+  - Vitess test implements full CRUD with VTGate and VTCtld configuration
+  - Webhook test implements full CRUD with no external credentials required (generates webhook_url and api_key on create)
+  - All tests use `tf-acc-test-` prefix for resource names
+  - Vitess test includes `t.Skip()` for graceful handling when credentials not set
+  - Webhook test runs without skip since it has no external dependencies
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `internal/provider/source_vitess_resource_test.go` (~105 lines)
+  - Created: `internal/provider/source_webhook_resource_test.go` (~65 lines)
+  - Modified: `tasks/prd.json` (marked US-034 as passes: true)
+- **Learnings for future iterations:**
+  - Vitess source has two connection points: VTGate (database_hostname:15991) and VTCtld (vitess_vtctld_host:15999)
+  - Vitess and PlanetScale share similar schema (vitess_keyspace, vitess_tablet_type) but PlanetScale doesn't have VTCtld fields
+  - Webhook source is unique - only requires `name` field, all other fields are optional/computed
+  - Webhook generates `webhook_url` and `api_key` after creation (server-side generated)
+  - Webhook has no external credentials, making it the simplest source to test
+  - Vitess requires 3 env vars: `TF_VAR_source_vitess_hostname`, `TF_VAR_source_vitess_vtctld_host`, `TF_VAR_source_vitess_vtctld_password`
+  - All 20 source acceptance tests are now complete (AlloyDB, DB2, DocumentDB, DynamoDB, Elasticsearch, KafkaDirect, MariaDB, MongoDB, MongoDBHosted, MySQL, Oracle, OracleAWS, PlanetScale, PostgreSQL, Redis, S3, SQLServer, Supabase, Vitess, Webhook)
+---

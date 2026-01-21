@@ -444,7 +444,7 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 30,
-      "passes": false,
+      "passes": true,
       "notes": "Tests compile and skip gracefully without credentials."
     },
     {
@@ -459,8 +459,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 31,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Tests compile and skip gracefully without credentials."
     },
     {
       "id": "US-032",
@@ -474,8 +474,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 32,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Tests compile and skip gracefully without credentials."
     },
     {
       "id": "US-033",
@@ -489,8 +489,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 33,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Tests compile and skip gracefully without credentials."
     },
     {
       "id": "US-034",
@@ -503,8 +503,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 34,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Tests compile and skip gracefully. Vitess requires 3 env vars (hostname, vtctld_host, vtctld_password). Webhook has no external credentials - all fields are optional/computed."
     },
     {
       "id": "US-035",
