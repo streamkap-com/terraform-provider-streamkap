@@ -73,3 +73,43 @@
   - Reflection helpers: extractTerraformValue(), setTerraformValue(), getStringField(), setStringField()
   - Generated files contain only: Model struct with tfsdk tags, Schema() function, FieldMappings map
 ---
+
+## 2026-01-21 - US-005
+- What was implemented:
+  - Added comprehensive "Comparison Matrix" section to `docs/audits/architecture-comparison-report.md`
+  - Created Architecture Comparison Table with 14 aspects compared (LOC, Schema definition, CRUD, Type conversion, etc.)
+  - Added Quantitative Comparison table showing ~48% LOC reduction per connector
+  - Added Feature Comparison table (sensitive fields, defaults, validators, enum handling, etc.)
+  - Added detailed "Trade-offs" section with advantages (6 items) and disadvantages (6 items)
+  - Added Risk Assessment table with likelihood, impact, and mitigation strategies
+  - Added final Recommendation section with rationale
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md`
+- **Learnings for future iterations:**
+  - Key metrics: ~48% LOC reduction per connector, ~88% reduction in unique code per connector
+  - Refactored architecture adds ~500 LOC of shared infrastructure (base.go) but saves ~4,000+ LOC across all connectors
+  - Main trade-off: Reflection complexity vs. code duplication reduction
+  - Primary mitigations for reflection risks: compile-time interface checks, schema backward compatibility tests, acceptance tests with VCR
+---
+
+## 2026-01-21 - US-006
+- What was implemented:
+  - Added comprehensive "Architectural Decisions" section to `docs/audits/architecture-comparison-report.md`
+  - Documented 4 key architectural decisions with full rationale:
+    1. Code Generation Approach - using `cmd/tfgen` to generate schemas from backend config
+    2. Reflection-Based Marshaling - generic `modelToConfigMap()`/`configMapToModel()` in `base.go`
+    3. Thin Wrapper Pattern - ~55 LOC wrapper files implementing `ConnectorConfig` interface
+    4. JSON-Based Deprecations/Overrides - `deprecations.json` and `overrides.json` configuration
+  - Each decision includes: Context, Decision, Rationale (4+ points), Trade-offs Accepted
+  - Added code examples and implementation details
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md`
+- **Learnings for future iterations:**
+  - `deprecations.json` contains 10 deprecated field definitions (9 PostgreSQL source, 1 Snowflake destination)
+  - `overrides.json` contains 3 field overrides for complex map types (Snowflake map_string, ClickHouse map_nested, SQL Server map_nested)
+  - Generator infrastructure is ~1,500 LOC in `cmd/tfgen/`
+  - Key mitigations for reflection risks: compile-time interface checks (`var _ Interface = (*Impl)(nil)`)
+---
