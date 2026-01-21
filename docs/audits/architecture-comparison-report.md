@@ -24,6 +24,7 @@
 13. [Code Generator Type Mapping](#code-generator-type-mapping)
 14. [Override and Deprecation System](#override-and-deprecation-system)
 15. [Code Regeneration Test](#code-regeneration-test)
+16. [Environment Variables](#environment-variables)
 
 ---
 
@@ -2271,6 +2272,111 @@ go generate ./... && git diff --stat internal/generated/
 
 # If any differences, review them to ensure they are expected
 ```
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## Environment Variables
+
+This section documents all environment variables used by the Terraform provider and its testing infrastructure.
+
+### Environment File Template
+
+The project includes a `.env.example` file that documents all available environment variables. Developers should:
+1. Copy `.env.example` to `.env`
+2. Fill in appropriate values for their environment
+3. Never commit `.env` (it's gitignored)
+
+### Core Settings (Required for Tests)
+
+| Variable | Required | Description | Default |
+|----------|----------|-------------|---------|
+| `TF_ACC` | Yes (for acceptance tests) | Enable acceptance tests | N/A |
+| `STREAMKAP_CLIENT_ID` | Yes | OAuth2 client ID for API authentication | N/A |
+| `STREAMKAP_SECRET` | Yes | OAuth2 client secret for API authentication | N/A |
+| `STREAMKAP_HOST` | No | API endpoint URL | `https://api.streamkap.com` |
+
+### Code Generation Settings
+
+| Variable | Required | Description | Default |
+|----------|----------|-------------|---------|
+| `STREAMKAP_BACKEND_PATH` | Yes (for code generation) | Path to local `python-be-streamkap` repository | N/A |
+
+The backend path is required for:
+- Running `go generate ./...`
+- Running `cmd/tfgen` code generator
+- Accessing `configuration.latest.json` files for schema generation
+
+### Testing Options
+
+| Variable | Required | Description | Default |
+|----------|----------|-------------|---------|
+| `UPDATE_CASSETTES` | No | Re-record VCR HTTP cassettes | Empty (disabled) |
+| `UPDATE_SNAPSHOTS` | No | Update schema compatibility snapshots | Empty (disabled) |
+| `TF_LOG` | No | Terraform log level | Empty (no logging) |
+
+Valid `TF_LOG` values: `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`
+
+### Connector-Specific Variables
+
+#### Source Connectors
+
+| Connector | Variables |
+|-----------|-----------|
+| **PostgreSQL** | `TF_VAR_source_postgresql_hostname`, `TF_VAR_source_postgresql_password`, `TF_VAR_source_postgresql_ssh_host` |
+| **MySQL** | `TF_VAR_source_mysql_hostname`, `TF_VAR_source_mysql_password`, `TF_VAR_source_mysql_ssh_host` |
+| **MongoDB** | `TF_VAR_source_mongodb_connection_string`, `TF_VAR_source_mongodb_ssh_host` |
+| **SQL Server** | `TF_VAR_source_sqlserver_hostname`, `TF_VAR_source_sqlserver_password`, `TF_VAR_source_sqlserver_ssh_host` |
+| **DynamoDB** | `TF_VAR_source_dynamodb_aws_region`, `TF_VAR_source_dynamodb_aws_access_key_id`, `TF_VAR_source_dynamodb_aws_secret_key` |
+| **KafkaDirect** | `TF_VAR_source_kafkadirect_bootstrap_servers`, `TF_VAR_source_kafkadirect_topic` |
+
+#### Destination Connectors
+
+| Connector | Variables |
+|-----------|-----------|
+| **Snowflake** | `TF_VAR_destination_snowflake_url_name`, `TF_VAR_destination_snowflake_private_key`, `TF_VAR_destination_snowflake_key_passphrase`, `TF_VAR_destination_snowflake_private_key_nocrypt` |
+| **ClickHouse** | `TF_VAR_destination_clickhouse_hostname`, `TF_VAR_destination_clickhouse_connection_username`, `TF_VAR_destination_clickhouse_connection_password` |
+| **Databricks** | `TF_VAR_destination_databricks_connection_url`, `TF_VAR_destination_databricks_token` |
+| **PostgreSQL** | `TF_VAR_destination_postgresql_hostname`, `TF_VAR_destination_postgresql_password` |
+| **S3** | `TF_VAR_s3_aws_access_key`, `TF_VAR_s3_aws_secret_key` |
+| **Iceberg** | `TF_VAR_iceberg_aws_access_key`, `TF_VAR_iceberg_aws_secret_key` |
+| **Kafka** | `TF_VAR_destination_kafka_bootstrap_servers`, `TF_VAR_destination_kafka_security_protocol`, `TF_VAR_destination_kafka_sasl_mechanism`, `TF_VAR_destination_kafka_sasl_username`, `TF_VAR_destination_kafka_sasl_password` |
+
+### Variable Usage Locations
+
+| Location | Variables Used |
+|----------|----------------|
+| `internal/provider/provider.go` | `STREAMKAP_HOST`, `STREAMKAP_CLIENT_ID`, `STREAMKAP_SECRET` |
+| `internal/provider/provider_test.go` | `STREAMKAP_CLIENT_ID`, `STREAMKAP_SECRET` |
+| `internal/provider/sweep_test.go` | `STREAMKAP_CLIENT_ID`, `STREAMKAP_SECRET`, `STREAMKAP_HOST` |
+| `internal/provider/schema_compat_test.go` | `UPDATE_SNAPSHOTS` |
+| `internal/provider/vcr_test.go` | `UPDATE_CASSETTES`, `TF_ACC` |
+| `internal/generated/doc.go` | `STREAMKAP_BACKEND_PATH` |
+| `internal/provider/*_resource_test.go` | Connector-specific `TF_VAR_*` variables |
+
+### .env.example Summary
+
+The `.env.example` file has been updated to include:
+
+- **Core Settings**: `TF_ACC`, `STREAMKAP_CLIENT_ID`, `STREAMKAP_SECRET`, `STREAMKAP_HOST`
+- **Code Generation**: `STREAMKAP_BACKEND_PATH` (newly added)
+- **Testing Options**: `UPDATE_CASSETTES`, `UPDATE_SNAPSHOTS`, `TF_LOG`
+- **Connector Variables**: All 6 source connectors and 7 destination connectors currently with acceptance tests
+
+### Security Considerations
+
+| Category | Guideline |
+|----------|-----------|
+| **Sensitive Variables** | `STREAMKAP_SECRET`, all `password` and `private_key` variables |
+| **Never Commit** | `.env` file is gitignored; never commit actual credentials |
+| **CI/CD** | Use secrets management; inject variables via CI environment |
+| **Local Development** | Store credentials in `.env` or environment |
 
 ### Typecheck Verification
 

@@ -277,7 +277,7 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 18,
-      "passes": false,
+      "passes": true,
       "notes": "Story passes even if skipped."
     },
     {
@@ -292,7 +292,7 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 19,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
