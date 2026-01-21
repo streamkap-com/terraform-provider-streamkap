@@ -1338,3 +1338,20 @@
   - Destination cassette recording command: `UPDATE_CASSETTES=1 go test -v -run 'TestAccDestination' ./internal/provider/...`
   - Same credentials as source cassettes required
 ---
+
+## 2026-01-21 - US-061
+- What was implemented:
+  - Credentials check: STREAMKAP_CLIENT_ID and STREAMKAP_SECRET are NOT set
+  - Added "Transform, Pipeline, and Topic Cassettes" subsection to VCR Cassette Recording section
+  - Added VCR Cassette Summary table showing all resource types SKIPPED
+  - Documented recording commands for transforms, pipelines, and topics
+  - Documented cassettes directory structure
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md`
+- **Learnings for future iterations:**
+  - Transform cassette recording: `UPDATE_CASSETTES=1 go test -v -run 'TestAccTransform' ./internal/provider/...`
+  - Pipeline cassette recording: `UPDATE_CASSETTES=1 go test -v -run 'TestAccPipeline' ./internal/provider/...`
+  - Topic cassette recording: `UPDATE_CASSETTES=1 go test -v -run 'TestAccTopic' ./internal/provider/...`
+  - Cassettes directory: `internal/provider/testdata/cassettes/` (empty, awaiting recording)
+---

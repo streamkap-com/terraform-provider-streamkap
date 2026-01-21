@@ -906,8 +906,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 61,
-      "passes": false,
-      "notes": "Story passes if skipped."
+      "passes": true,
+      "notes": "SKIPPED - No credentials available. Added Transform/Pipeline/Topic Cassettes subsection with VCR Cassette Summary table."
     },
     {
       "id": "US-062",
