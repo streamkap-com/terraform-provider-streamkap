@@ -406,12 +406,140 @@ $ go build ./...
 
 ## Comparison Matrix
 
-*Section to be completed in US-005*
+### Architecture Comparison Table
+
+| Aspect | Main Branch | Refactored Branch |
+|--------|-------------|-------------------|
+| **LOC per connector** | ~400-600 (all inline) | ~235 (55 wrapper + 180 generated) |
+| **Schema definition** | Manual, inline in `Schema()` method | Auto-generated from backend `configuration.latest.json` |
+| **CRUD location** | Inline in each connector file | Shared in `base.go` (701 LOC total) |
+| **Type conversion** | Manual `model2ConfigMap`/`configMap2Model` per connector | Reflection-based generic conversion in `base.go` |
+| **Deprecation handling** | Manual per-connector with inline definitions | JSON-driven (`deprecations.json`) + wrapper layer |
+| **Model struct** | Manual, ~30-50 LOC per connector | Auto-generated with `tfsdk` tags |
+| **Field mappings** | Embedded in conversion methods | Explicit `FieldMappings` map (generated) |
+| **Validators** | Manual inline definitions | Auto-generated from backend constraints |
+| **Adding new connector** | Copy/paste ~500 LOC, modify all fields | Run tfgen, create ~55 LOC wrapper |
+| **Backend schema changes** | Manual update: model + schema + 2 conversion methods | Re-run generator, verify wrapper |
+| **Code duplication** | High (CRUD, validation, error handling repeated) | Low (shared in base.go) |
+| **Customization flexibility** | High (direct inline access) | Medium (wrapper layer + override system) |
+| **Compile-time safety** | Explicit type checking | Reflection-based (runtime errors possible) |
+| **Test coverage** | Per-connector tests needed | Shared base tests + per-connector acceptance |
+
+### Quantitative Comparison
+
+| Metric | Main Branch | Refactored Branch | Difference |
+|--------|-------------|-------------------|------------|
+| Total connector files | 42 | 42 wrappers + 51 generated | +51 files |
+| Total LOC (connectors) | ~18,900 | ~12,100 | -36% |
+| LOC per connector (avg) | ~450 | ~235 | -48% |
+| Shared infrastructure | ~200 (helpers) | ~700 (base.go) | +500 |
+| Code generation tooling | N/A | ~1,500 (tfgen) | New |
+| Unique code per connector | ~450 | ~55 | -88% |
+
+### Feature Comparison
+
+| Feature | Main Branch | Refactored Branch |
+|---------|-------------|-------------------|
+| **Sensitive field handling** | Manual `Sensitive: true` | Auto from `encrypt: true` in config |
+| **Default values** | Manual `Default: stringdefault.StaticString(...)` | Auto from `default` in config |
+| **Required field detection** | Manual `Required: true` | Auto from `required: true` in config |
+| **Enum validators** | Manual `stringvalidator.OneOf(...)` | Auto from `options` in config |
+| **Range validators** | Manual slider validators | Auto from `min`/`max` in config |
+| **Description generation** | Manual text | Auto from `description` + markdown enhancement |
+| **Computed fields** | Manual `Computed: true` | Auto from `user_defined: false` |
+| **Plan modifiers** | Manual per-field | Auto `UseStateForUnknown()` for computed |
 
 ---
 
 ## Trade-offs
 
-*Section to be completed in US-005*
+### Advantages of Refactored Architecture
+
+1. **Reduced Code Duplication**
+   - CRUD operations centralized in `base.go` (701 LOC vs ~100-150 LOC × 42 connectors)
+   - Estimated ~4,000+ LOC saved across all connectors
+   - Bug fixes in base apply to all connectors automatically
+
+2. **Backend Schema Synchronization**
+   - Schemas generated directly from `configuration.latest.json`
+   - Ensures Terraform matches backend validation rules
+   - Field descriptions stay synchronized with backend docs
+
+3. **Consistent Behavior**
+   - All connectors use identical CRUD patterns
+   - Error handling, timeouts, logging standardized
+   - Reduces behavioral drift between connectors
+
+4. **Faster Connector Development**
+   - New connector: run tfgen + create 55-line wrapper
+   - vs. Main branch: copy/paste/modify 500+ lines
+   - Estimated 90% time reduction for new connectors
+
+5. **Systematic Deprecation Handling**
+   - `deprecations.json` tracks all deprecated fields centrally
+   - Deprecation messages auto-applied at generation
+   - Easy to audit backward compatibility status
+
+6. **AI-Agent Friendly**
+   - Generated schemas have consistent description patterns
+   - `MarkdownDescription` with links auto-generated
+   - Enum values documented as "Valid values: ..."
+
+### Disadvantages of Refactored Architecture
+
+1. **Reflection Complexity**
+   - `modelToConfigMap()` and `configMapToModel()` use reflection
+   - Runtime errors possible if struct tags mismatch
+   - Harder to debug type conversion issues
+
+2. **Indirection Layers**
+   - Three files involved per connector vs. one
+   - Developer must understand layer responsibilities
+   - Stack traces span multiple files
+
+3. **Generated Code Volume**
+   - 51 generated files (9,266 LOC) that shouldn't be edited
+   - IDE may show warnings about generated files
+   - Must remember to regenerate after backend changes
+
+4. **Code Generator Maintenance**
+   - `cmd/tfgen` is new infrastructure (~1,500 LOC)
+   - Team must understand generator to fix edge cases
+   - Backend config format changes require generator updates
+
+5. **Limited Per-Connector Customization**
+   - Custom validation logic harder to add
+   - Must fit within wrapper + override system
+   - Some edge cases may require generator changes
+
+6. **Build Dependencies**
+   - Requires `STREAMKAP_BACKEND_PATH` for regeneration
+   - CI must have access to backend configs
+   - Version sync between repos needed
+
+### Risk Assessment
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| Reflection runtime error | Low | Medium | Comprehensive acceptance tests |
+| Generator bug | Low | High | Generator unit tests + VCR cassettes |
+| Backend config format change | Medium | Medium | Versioned config schemas |
+| Regeneration forgotten | Medium | Low | CI check for clean `git diff` |
+| Deprecation message missing | Low | Low | `deprecations.json` audit |
+| Type mismatch | Low | Medium | Schema backward compatibility tests |
+
+### Recommendation
+
+The refactored architecture is recommended for the following reasons:
+
+1. **Maintainability**: Single point of change for CRUD logic, error handling, and common patterns
+2. **Scalability**: Adding new connectors is significantly faster
+3. **Correctness**: Schemas derived from backend ensure validation consistency
+4. **Quality**: Centralized testing covers all connectors
+
+The primary trade-off (reflection complexity) is mitigated by:
+- Compile-time interface checks (`var _ ConnectorConfig = (*Config)(nil)`)
+- Schema backward compatibility tests
+- Acceptance tests with VCR cassettes
 
 ---
