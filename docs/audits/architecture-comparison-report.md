@@ -31,6 +31,7 @@
 20. [Source Connector Schema Verification (Batch 3)](#source-connector-schema-verification-batch-3)
 21. [Source Connector Schema Verification (Batch 4)](#source-connector-schema-verification-batch-4)
 22. [Destination Connector Schema Verification (Batch 1)](#destination-connector-schema-verification-batch-1)
+23. [Destination Connector Schema Verification (Batch 2)](#destination-connector-schema-verification-batch-2)
 
 ---
 
@@ -2840,6 +2841,74 @@ $ wc -l internal/generated/destination_*.go | tail -1
 ```
 
 There are **23 destination connector schema files** with a total of **3,889 lines of generated code**.
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## Destination Connector Schema Verification (Batch 2)
+
+This section verifies the existence and completeness of the second batch of destination connector schemas.
+
+### Acceptance Criteria
+- [x] Verify schema exists for: GCS, HTTPSink, Iceberg, Kafka, KafkaDirect, Motherduck
+- [x] Add 'Destination Schemas Batch 2' table to audit report
+- [x] Typecheck passes: `go build ./...`
+
+### Batch 2 Schema Verification
+
+| Connector | Generated File | Lines of Code | Status |
+|-----------|---------------|---------------|--------|
+| GCS | `destination_gcs.go` | 123 | ✅ Verified |
+| HTTPSink | `destination_httpsink.go` | 260 | ✅ Verified |
+| Iceberg | `destination_iceberg.go` | 152 | ✅ Verified |
+| Kafka | `destination_kafka.go` | 109 | ✅ Verified |
+| KafkaDirect | `destination_kafkadirect.go` | 71 | ✅ Verified |
+| Motherduck | `destination_motherduck.go` | 154 | ✅ Verified |
+| **Batch 2 Total** | **6 files** | **869** | **All Verified** |
+
+### Generated Destination Files (Batch 2)
+
+```bash
+$ ls internal/generated/destination_{gcs,httpsink,iceberg,kafka,kafkadirect,motherduck}.go
+internal/generated/destination_gcs.go
+internal/generated/destination_httpsink.go
+internal/generated/destination_iceberg.go
+internal/generated/destination_kafka.go
+internal/generated/destination_kafkadirect.go
+internal/generated/destination_motherduck.go
+```
+
+### Batch 2 Summary
+
+- **GCS** (123 LOC): Google Cloud Storage destination for data lake exports
+- **HTTPSink** (260 LOC): HTTP webhook destination for real-time event delivery (largest in batch)
+- **Iceberg** (152 LOC): Apache Iceberg table format destination for data lakehouse
+- **Kafka** (109 LOC): Apache Kafka destination with schema registry integration
+- **KafkaDirect** (71 LOC): Direct Kafka destination without schema registry (smallest in batch)
+- **Motherduck** (154 LOC): Motherduck serverless analytics destination
+
+All 6 destination schemas in Batch 2 are verified present with generated code.
+
+### Cumulative Destination Progress
+
+| Batch | Connectors | Total LOC |
+|-------|------------|-----------|
+| Batch 1 | AzBlob, BigQuery, ClickHouse, CockroachDB, Databricks, DB2 | 1,006 |
+| Batch 2 | GCS, HTTPSink, Iceberg, Kafka, KafkaDirect, Motherduck | 869 |
+| **Running Total** | **12 destination connectors** | **1,875** |
+
+### Remaining Destination Connectors
+
+After Batch 2, the following 11 destination connectors remain to be verified:
+- Batch 3: MySQL, Oracle, PostgreSQL, R2, Redis (5 connectors)
+- Batch 4: Redshift, S3, Snowflake, SQLServer, Starburst (5 connectors)
+- Additional: Weaviate (1 connector)
 
 ### Typecheck Verification
 

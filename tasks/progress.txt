@@ -456,3 +456,39 @@
   - SQL Server connector is named `sqlserveraws` (AWS variant) not just `sqlserver`
   - Complete source schema coverage: AlloyDB, DB2, DocumentDB, DynamoDB, Elasticsearch, KafkaDirect, MariaDB, MongoDB, MongoDBHosted, MySQL, Oracle, OracleAWS, PlanetScale, PostgreSQL, Redis, S3, SQLServerAWS, Supabase, Vitess, Webhook
 ---
+
+## 2026-01-21 - US-025
+- What was implemented:
+  - Verified 6 destination connector schemas exist: AzBlob, BigQuery, ClickHouse, CockroachDB, Databricks, DB2
+  - Line counts: AzBlob (147), BigQuery (124), ClickHouse (179), CockroachDB (196), Databricks (196), DB2 (164) = 1,006 total
+  - Added "Destination Connector Schema Verification (Batch 1)" section (section 22) to audit report
+  - Documented total destination files: 23 files with 3,889 LOC total
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md` (+68 lines)
+  - Modified: `tasks/prd.json` (marked US-025 as passes: true)
+- **Learnings for future iterations:**
+  - All 23 destination connector generated files are in `internal/generated/destination_*.go`
+  - Generated file naming convention: `destination_<connectorname>.go` (all lowercase)
+  - Destination schemas range from ~71 LOC (simple like KafkaDirect) to ~278 LOC (complex like Weaviate)
+  - Total destination LOC: 3,889 vs source LOC: 4,477
+---
+
+## 2026-01-21 - US-026
+- What was implemented:
+  - Verified 6 destination connector schemas exist: GCS, HTTPSink, Iceberg, Kafka, KafkaDirect, Motherduck
+  - Line counts: GCS (123), HTTPSink (260), Iceberg (152), Kafka (109), KafkaDirect (71), Motherduck (154) = 869 total
+  - HTTPSink has highest LOC (260) in batch - complex HTTP webhook configuration
+  - KafkaDirect has lowest LOC (71) - minimal schema without schema registry
+  - Added "Destination Connector Schema Verification (Batch 2)" section (section 23) to audit report
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md` (+68 lines)
+  - Modified: `tasks/prd.json` (marked US-026 as passes: true)
+- **Learnings for future iterations:**
+  - Cumulative destination progress: 12/23 destination connectors verified (1,875 LOC total)
+  - Remaining batches: Batch 3 (MySQL, Oracle, PostgreSQL, R2, Redis) and Batch 4 (Redshift, S3, Snowflake, SQLServer, Starburst) + Weaviate
+  - HTTPSink destination is for real-time webhook event delivery, has extensive configuration options
+---
