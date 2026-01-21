@@ -910,3 +910,99 @@
   - Pipeline sweeper now depends on transforms in addition to sources and destinations
   - All four sweepers (sources, destinations, transforms, pipelines) are now fully implemented with API calls
 ---
+
+## 2026-01-21 - US-045
+- What was implemented:
+  - Created `internal/provider/smoke_test.go` with smoke tests for connectors without credentials
+  - Identified 5 connectors likely missing test credentials: Oracle (source), BigQuery, Redshift, Starburst, Motherduck (destinations)
+  - Created individual `TestSmoke*` tests for each of the 5 connectors
+  - Each smoke test verifies: Schema compilation, Model instantiation, Field mappings validity
+  - Created `TestSmokeAllConnectorSchemas` that validates all 51 registered resources in the provider
+  - Documented all smoke-tested connectors in `docs/audits/architecture-comparison-report.md`
+  - Added section 28 "Smoke Tests" to audit report with detailed results
+  - Typecheck passed: `go build ./...`
+  - All smoke tests pass: `go test -v -run 'TestSmoke' ./internal/provider/...`
+- Files changed:
+  - Created: `internal/provider/smoke_test.go` (+275 lines)
+  - Modified: `docs/audits/architecture-comparison-report.md` (+145 lines - Smoke Tests section)
+  - Modified: `tasks/prd.json` (marked US-045 as passes: true)
+- **Learnings for future iterations:**
+  - Smoke tests provide confidence in generated code without needing API access
+  - Use `reflect.TypeOf(model).Elem()` to get struct type from pointer for field inspection
+  - `resource.MetadataResponse` contains `TypeName` which gives the full Terraform resource name
+  - All 51 resources can be retrieved from provider's `Resources()` method
+  - Schema smoke tests verify: computed `id`/`connector` fields exist, required `name` field exists
+  - Model smoke tests verify: model is a pointer to struct, has `tfsdk` tags
+  - Field mapping smoke tests verify: mappings are non-nil, non-empty, all keys/values non-empty
+---
+
+## 2026-01-21 - US-046
+- What was implemented:
+  - Created `internal/provider/error_handling_test.go` with comprehensive API error tests
+  - Implemented 6 tests for 401 Unauthorized errors:
+    - `TestAPIError401_MissingToken` - requests without token
+    - `TestAPIError401_ExpiredToken` - expired token handling
+    - `TestAPIError401_InvalidCredentials` - invalid client credentials
+    - `TestAPIError401_CreateSource` - 401 on create operations
+    - `TestAPIError401_UpdateDestination` - 401 on update operations
+    - `TestAPIError401_DeleteTransform` - 401 on delete operations
+  - Implemented 9 tests for 404 Not Found errors:
+    - `TestAPIError404_GetSource`, `TestAPIError404_GetDestination`, `TestAPIError404_GetPipeline`
+    - `TestAPIError404_GetTransform`, `TestAPIError404_GetTag`, `TestAPIError404_GetTopic`
+    - `TestAPIError404_DeleteSource`, `TestAPIError404_UpdateSource`, `TestAPIError404_DeleteDestination`
+  - Implemented 2 error message propagation tests:
+    - `TestErrorMessagePropagation_DetailField` - table-driven test with 4 sub-tests
+    - `TestErrorMessagePropagation_401vs404` - verifies distinct error messages
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `internal/provider/error_handling_test.go` (~597 lines)
+  - Modified: `tasks/prd.json` (marked US-046 as passes: true)
+- **Learnings for future iterations:**
+  - API endpoints have different URL patterns:
+    - Sources/Destinations: `GET /resources/{id}?secret_returned=true`
+    - Transforms GET: `GET /transforms/{id}?secret_returned=true&unwind_topics=false`
+    - Transforms DELETE: `DELETE /transforms?id={id}` (query param, not path param)
+    - Tags: `GET /tags?tag_ids={id}` (no secret_returned)
+    - Topics: `GET /topics/{id}` (no secret_returned)
+  - Use `httpmock` package for API mocking in tests
+  - `api.APIErrorResponse.Detail` field is extracted for all non-2xx responses
+  - Tests without credentials can use the `api.NewClient(&api.Config{BaseURL: baseURL})` pattern
+---
+
+## 2026-01-21 - US-047
+- What was implemented:
+  - Added 9 tests for 422 Unprocessable Entity (validation error) handling:
+    - `TestAPIError422_MissingRequiredField` - missing required field validation
+    - `TestAPIError422_InvalidEnumValue` - invalid enum value rejection
+    - `TestAPIError422_InvalidPortRange` - port out of valid range rejection
+    - `TestAPIError422_InvalidFieldType` - type mismatch validation
+    - `TestAPIError422_UpdateValidation` - validation on update operations
+    - `TestAPIError422_DuplicateName` - duplicate resource name rejection
+    - `TestAPIError422_TransformInvalidConfig` - transform-specific validation
+    - `TestAPIError422_PipelineInvalidReferences` - invalid source/destination references
+    - `TestAPIError422_NoRetry` - verifies 422 errors are NOT retried (single request)
+  - Added 11 tests for 5xx server error handling:
+    - `TestAPIError500_InternalServerError` - 500 handling
+    - `TestAPIError502_BadGateway` - 502 Bad Gateway (retryable)
+    - `TestAPIError503_ServiceUnavailable` - 503 Service Unavailable (retryable)
+    - `TestAPIError504_GatewayTimeout` - 504 Gateway Timeout (retryable)
+    - `TestAPIError5xx_CreateOperation` - 5xx on create operations
+    - `TestAPIError5xx_UpdateOperation` - 5xx on update operations
+    - `TestAPIError5xx_DeleteOperation` - 5xx on delete operations
+    - `TestAPIError5xx_KafkaConnectTimeout` - Kafka Connect specific timeout
+    - `TestAPIError5xx_RetryBehavior` - 8 sub-tests verifying `IsRetryableError()` logic
+    - `TestAPIError5xx_NoResponseBody` - 5xx with unparseable response body
+  - All tests use `httpmock` for API mocking without real credentials
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `internal/provider/error_handling_test.go` (+669 lines)
+  - Modified: `tasks/prd.json` (marked US-047 as passes: true)
+- **Learnings for future iterations:**
+  - 422 Unprocessable Entity is used for validation errors (missing required fields, invalid enums, type mismatches)
+  - 422 errors are NOT retryable - they fail immediately (validation errors won't fix themselves on retry)
+  - 5xx errors have different retryability: 502/503/504 are retryable, 500 is NOT retryable
+  - `api.IsRetryableError()` checks for specific patterns: "502", "503", "504", "bad gateway", "service unavailable", "gateway timeout", "kafkaconnecttimeout"
+  - `api.CreateTransformRequest` uses `Transform` field (not `Name`) - name goes in Config map
+  - `api.Pipeline` uses nested `Source` and `Destination` structs with ID, Name, Connector fields
+  - When server returns unparseable body, JSON decode error is returned (not the HTTP status code error)
+---

@@ -667,8 +667,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 45,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented smoke tests for Oracle, BigQuery, Redshift, Starburst, Motherduck. Also added TestSmokeAllConnectorSchemas to validate all 51 resources."
     },
     {
       "id": "US-046",
@@ -682,8 +682,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 46,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created error_handling_test.go with 17 tests: 6 for 401 Unauthorized, 9 for 404 Not Found, and 2 for error message propagation validation."
     },
     {
       "id": "US-047",
@@ -696,8 +696,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 47,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added 9 tests for 422 validation errors (missing required field, invalid enum, invalid port range, invalid type, update validation, duplicate name, transform invalid config, pipeline invalid references, no retry). Added 11 tests for 5xx server errors (500 internal, 502 bad gateway, 503 unavailable, 504 timeout, create/update/delete operations, KafkaConnectTimeout, retry behavior with 8 sub-tests, no response body)."
     },
     {
       "id": "US-048",
