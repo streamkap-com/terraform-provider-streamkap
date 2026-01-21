@@ -92,6 +92,16 @@ func runGenerate(backendPath, output, entityType, connector string) error {
 		fmt.Printf("Loaded %d field overrides from %s\n\n", len(overrides.FieldOverrides), overridesPath)
 	}
 
+	// Load deprecation configuration
+	deprecationsPath := findDeprecationsPath()
+	deprecations, err := LoadDeprecations(deprecationsPath)
+	if err != nil {
+		return fmt.Errorf("failed to load deprecations from %s: %w", deprecationsPath, err)
+	}
+	if len(deprecations.DeprecatedFields) > 0 {
+		fmt.Printf("Loaded %d deprecated field definitions from %s\n\n", len(deprecations.DeprecatedFields), deprecationsPath)
+	}
+
 	// Determine which entity types to process
 	entitiesToProcess := knownEntities
 	if entityType != "all" {
@@ -104,7 +114,7 @@ func runGenerate(backendPath, output, entityType, connector string) error {
 	// Process each entity type
 	var totalGenerated int
 	for _, entity := range entitiesToProcess {
-		count, err := processEntity(backendPath, output, entity, connector, overrides)
+		count, err := processEntity(backendPath, output, entity, connector, overrides, deprecations)
 		if err != nil {
 			return fmt.Errorf("failed to process %s: %w", entity.Type, err)
 		}
@@ -141,6 +151,32 @@ func findOverridesPath() string {
 	return "overrides.json"
 }
 
+// findDeprecationsPath locates the deprecations.json file.
+// It searches in the following order:
+// 1. Current working directory
+// 2. Directory containing the executable
+// 3. cmd/tfgen directory (for development)
+func findDeprecationsPath() string {
+	candidates := []string{
+		"deprecations.json",
+		"cmd/tfgen/deprecations.json",
+	}
+
+	// Get executable directory
+	if exe, err := os.Executable(); err == nil {
+		candidates = append(candidates, filepath.Join(filepath.Dir(exe), "deprecations.json"))
+	}
+
+	for _, path := range candidates {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+	}
+
+	// Default to current directory (LoadDeprecations handles missing file gracefully)
+	return "deprecations.json"
+}
+
 // filterEntities returns entities matching the given type filter.
 func filterEntities(entityType string) []EntityConfig {
 	// Normalize plural forms
@@ -156,7 +192,7 @@ func filterEntities(entityType string) []EntityConfig {
 }
 
 // processEntity processes all connectors for a given entity type.
-func processEntity(backendPath, output string, entity EntityConfig, specificConnector string, overrides *OverrideConfig) (int, error) {
+func processEntity(backendPath, output string, entity EntityConfig, specificConnector string, overrides *OverrideConfig, deprecations *DeprecationConfig) (int, error) {
 	pluginDir := filepath.Join(backendPath, entity.PluginDir)
 
 	// Check if plugin directory exists
@@ -171,7 +207,7 @@ func processEntity(backendPath, output string, entity EntityConfig, specificConn
 		return 0, fmt.Errorf("failed to read plugin directory %s: %w", pluginDir, err)
 	}
 
-	generator := NewGeneratorWithOverrides(output, entity.Type, overrides)
+	generator := NewGeneratorWithConfig(output, entity.Type, overrides, deprecations)
 	var count int
 
 	for _, entry := range entries {
