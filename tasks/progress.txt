@@ -530,3 +530,23 @@
   - Weaviate has highest LOC (278) among destinations - vector DB with complex configuration
   - Snowflake destination (238 LOC) has extensive options for data warehouse integration
 ---
+
+## 2026-01-21 - US-029
+- What was implemented:
+  - Verified all 6 required transform schemas exist: Enrich, EnrichAsync, FanOut, MapFilter, Rollup, SqlJoin
+  - Discovered 2 additional transform schemas: ToastHandling, UnNesting (total 8 transform schemas)
+  - Added comprehensive "Transform Resource Schema Verification" section (section 26) to audit report
+  - Documented line counts: Required transforms 686 LOC, all transforms 900 LOC
+  - Updated Complete Entity Schema Summary: 51 entities with 9,266 LOC total
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md` (+114 lines)
+  - Modified: `tasks/prd.json` (marked US-029 as passes: true)
+- **Learnings for future iterations:**
+  - Transform schemas are in `internal/generated/transform_*.go` (8 files total)
+  - All transform schemas have similar LOC (~100-136) indicating consistent complexity
+  - EnrichAsync is largest transform (136 LOC), Enrich is smallest (89 LOC)
+  - Two additional transforms beyond required 6: ToastHandling (PostgreSQL TOAST column handling), UnNesting (array/nested record flattening)
+  - Total entity count: 20 sources + 23 destinations + 8 transforms = 51 generated schemas
+---
