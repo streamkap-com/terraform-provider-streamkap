@@ -847,8 +847,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 57,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created comprehensive docs/CODE_GENERATOR.md (766 lines) with sections: Overview, CLI Usage, Type Mapping, overrides.json, deprecations.json, Adding a New Connector, Generated Code Structure, Troubleshooting."
     },
     {
       "id": "US-058",
