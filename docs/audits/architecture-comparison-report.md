@@ -41,6 +41,7 @@
 30. [Core Documentation](#core-documentation)
 31. [Audit Documents](#audit-documents)
 32. [VCR Cassette Recording](#vcr-cassette-recording)
+33. [GitHub Issues for Audit Findings](#github-issues-for-audit-findings)
 
 ---
 
@@ -4084,6 +4085,93 @@ SECRET:
 | Topics | SKIPPED | None (no credentials) |
 
 **Note:** When credentials become available, cassettes should be recorded for all resource types to enable CI testing without live API access.
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## GitHub Issues for Audit Findings
+
+This section documents issues identified during the comprehensive audit that should be tracked for resolution.
+
+### Documentation Improvement Issues
+
+#### Issue 1: Update connector counts in README.md
+**Priority:** Low
+**Type:** Documentation
+**Description:** README.md lists incorrect connector counts:
+- Lists "22 Destination Connectors" but actual count is 23 (includes Weaviate)
+- Lists "6 Transform Resources" but actual count is 8 (includes ToastHandling, UnNesting)
+
+**Suggested Fix:**
+```diff
+-### Destination Connectors (22 available)
++### Destination Connectors (23 available)
+...
++- Weaviate
+
+-### Transform Resources
++### Transform Resources (8 available)
+...
++- Toast Handling
++- UnNesting
+```
+
+#### Issue 2: Update connector counts in DEVELOPMENT.md
+**Priority:** Low
+**Type:** Documentation
+**Description:** DEVELOPMENT.md Connector Coverage section lists "Destinations (22)" but actual count is 23.
+
+**Suggested Fix:** Update the Connector Coverage section to reflect 23 destinations.
+
+### Test Coverage Issues
+
+#### Issue 3: Record VCR cassettes when credentials available
+**Priority:** Medium
+**Type:** Testing
+**Description:** VCR HTTP cassettes for acceptance tests have not been recorded because Streamkap API credentials (`STREAMKAP_CLIENT_ID`, `STREAMKAP_SECRET`) were not available during the audit.
+
+**Affected Resource Types:**
+- Sources (20 connectors)
+- Destinations (23 connectors)
+- Transforms (8 types)
+- Pipelines
+- Topics
+
+**Recording Commands:**
+```bash
+export STREAMKAP_CLIENT_ID="your-client-id"
+export STREAMKAP_SECRET="your-secret"
+export TF_ACC=1
+
+UPDATE_CASSETTES=1 go test -v -run 'TestAccSource' ./internal/provider/...
+UPDATE_CASSETTES=1 go test -v -run 'TestAccDestination' ./internal/provider/...
+UPDATE_CASSETTES=1 go test -v -run 'TestAccTransform' ./internal/provider/...
+UPDATE_CASSETTES=1 go test -v -run 'TestAccPipeline' ./internal/provider/...
+UPDATE_CASSETTES=1 go test -v -run 'TestAccTopic' ./internal/provider/...
+```
+
+**Location:** `internal/provider/testdata/cassettes/`
+
+### Issue Summary Table
+
+| # | Type | Priority | Title | Status |
+|---|------|----------|-------|--------|
+| 1 | Documentation | Low | Update connector counts in README.md | To Create |
+| 2 | Documentation | Low | Update connector counts in DEVELOPMENT.md | To Create |
+| 3 | Testing | Medium | Record VCR cassettes when credentials available | To Create |
+
+### Notes
+
+- No critical bugs were found during the audit
+- All 53 resources (20 sources, 23 destinations, 8 transforms, pipeline, topic) have acceptance tests
+- Schema backward compatibility tests all pass (16 tests, 298 attributes tracked)
+- Smoke tests provide confidence in generated code for connectors without live credentials
 
 ### Typecheck Verification
 
