@@ -15,6 +15,7 @@
 5. [API Client](#api-client)
    - [Retry Logic](#retry-logic)
 6. [Architectural Decisions](#architectural-decisions)
+7. [Helper Functions](#helper-functions)
 
 ---
 
@@ -966,5 +967,111 @@ func (c *PostgreSQLConfig) GetSchema() schema.Schema {
 - JSON must stay synchronized with actual field usage
 - Generator must parse and apply JSON correctly
 - Additional configuration files to maintain
+
+---
+
+## Helper Functions
+
+This section documents the helper function implementations and their test coverage.
+
+### Helper Package Overview
+
+**Location**: `internal/helper/`
+
+The helper package provides utility functions for:
+1. **Type Conversion**: Converting API response `map[string]any` to Terraform types
+2. **Deprecated Field Migration**: Handling deprecated attribute names
+
+### Test Results
+
+**Command**: `go test -v ./internal/helper/...`
+
+**Results**: All 10 tests passed with 50+ sub-tests (0.704s)
+
+| Test | Sub-tests | Status |
+|------|-----------|--------|
+| `TestMigrateDeprecatedValues` | 4 | ✅ PASS |
+| `TestPostgreSQLDeprecatedAliases` | - | ✅ PASS |
+| `TestSnowflakeDeprecatedAliases` | - | ✅ PASS |
+| `TestGetTfCfgString` | 10 | ✅ PASS |
+| `TestGetTfCfgInt64` | 13 | ✅ PASS |
+| `TestGetTfCfgBool` | 7 | ✅ PASS |
+| `TestGetTfCfgListString` | 10 | ✅ PASS |
+| `TestGetTfCfgStringNilMap` | - | ✅ PASS |
+| `TestGetTfCfgInt64NilMap` | - | ✅ PASS |
+| `TestGetTfCfgBoolNilMap` | - | ✅ PASS |
+| `TestGetTfCfgListStringNilMap` | - | ✅ PASS |
+
+### Type Conversion Functions
+
+The helper package provides four primary type conversion functions used by both main branch and refactored connectors:
+
+| Function | Input Type(s) | Output | Purpose |
+|----------|--------------|--------|---------|
+| `GetTfCfgString(cfg, key)` | `string` | `types.String` | Extract string values |
+| `GetTfCfgInt64(cfg, key)` | `float64`, `string` | `types.Int64` | Extract integer values (handles JSON number encoding) |
+| `GetTfCfgBool(cfg, key)` | `bool` | `types.Bool` | Extract boolean values |
+| `GetTfCfgListString(ctx, cfg, key)` | `[]interface{}` | `types.List` | Extract string list values |
+
+### Key Test Coverage
+
+#### GetTfCfgString
+- Valid string values (including unicode, special characters)
+- Empty strings
+- Missing keys
+- `nil` values
+- Type coercion from non-string types
+
+#### GetTfCfgInt64
+- `float64` values (JSON number encoding)
+- String integer values
+- Negative numbers
+- Decimal truncation
+- Invalid string handling (returns zero)
+
+#### GetTfCfgBool
+- `true`/`false` values
+- Missing keys (returns `types.BoolNull()`)
+- Non-bool types (returns `types.BoolValue(false)`)
+
+#### GetTfCfgListString
+- Valid lists with elements
+- Empty lists
+- Missing keys (returns null list)
+- List element type verification
+
+### Deprecated Field Migration
+
+The `MigrateDeprecatedValues()` function handles backward compatibility for renamed fields:
+
+```go
+func MigrateDeprecatedValues(model any, deprecatedField, newField string) {
+    // If new field is null/empty and deprecated field has value,
+    // copy deprecated value to new field
+}
+```
+
+**Test Coverage**:
+- Migrates value when new field not set
+- Does not overwrite existing new values
+- Handles `nil` and empty deprecated values
+
+### Nil Map Safety
+
+All helper functions safely handle `nil` maps by returning appropriate null/zero values:
+
+| Function | Nil Map Return |
+|----------|---------------|
+| `GetTfCfgString` | `types.StringNull()` |
+| `GetTfCfgInt64` | `types.Int64Null()` |
+| `GetTfCfgBool` | `types.BoolNull()` |
+| `GetTfCfgListString` | `types.ListNull(types.StringType)` |
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
 
 ---
