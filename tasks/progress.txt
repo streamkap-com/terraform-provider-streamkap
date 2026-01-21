@@ -692,3 +692,55 @@
   - Test environment variables: `TF_VAR_destination_azblob_connection_string`, `TF_VAR_destination_bigquery_json`, `TF_VAR_destination_cockroachdb_hostname`
   - First batch of 3 destination acceptance tests complete (AzBlob, BigQuery, CockroachDB)
 ---
+
+## 2026-01-21 - US-036
+- What was implemented:
+  - Created acceptance test for DB2 destination: `TestAccDestinationDb2Resource` in `destination_db2_resource_test.go`
+  - Created acceptance test for GCS destination: `TestAccDestinationGcsResource` in `destination_gcs_resource_test.go`
+  - Created acceptance test for HTTP Sink destination: `TestAccDestinationHttpsinkResource` in `destination_httpsink_resource_test.go`
+  - All tests implement basic CRUD operations: Create/Read, ImportState, Update/Read, Delete (automatic)
+  - All tests use `tf-acc-test-` prefix for resource names
+  - All tests include `t.Skip()` for graceful handling when credentials not set
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `internal/provider/destination_db2_resource_test.go` (~114 lines)
+  - Created: `internal/provider/destination_gcs_resource_test.go` (~90 lines)
+  - Created: `internal/provider/destination_httpsink_resource_test.go` (~105 lines)
+  - Modified: `tasks/prd.json` (marked US-036 as passes: true)
+- **Learnings for future iterations:**
+  - DB2 destination uses default port 50000 (standard for DB2)
+  - DB2 has `schema_evolution` (basic/none), `insert_mode` (insert/upsert), and `primary_key_mode` (none/record_key/record_value)
+  - GCS destination uses `gcs_credentials_json` (service account JSON with escaped quotes) and `gcs_bucket_name`
+  - GCS has file format options: CSV, JSON Lines, JSON Array, Parquet (note: uppercase "CSV" not "csv")
+  - GCS has compression options: none, gzip, snappy, zstd
+  - HTTP Sink has extensive batching configuration: `batching_enabled`, `batch_max_size`, `batch_buffering_enabled`, `batch_max_time_ms`
+  - HTTP Sink supports three authorization types: none, static (with `http_headers_authorization`), oauth2 (with oauth2_* fields)
+  - HTTP Sink `errors_tolerance` cannot be used when batching is enabled (documented in schema description)
+  - Test environment variables: `TF_VAR_destination_db2_hostname`, `TF_VAR_destination_gcs_credentials_json`, `TF_VAR_destination_httpsink_url`
+  - Second batch of 3 destination acceptance tests complete (DB2, GCS, HTTPSink)
+---
+
+## 2026-01-21 - US-037
+- What was implemented:
+  - Created acceptance test for Kafka Direct destination: `TestAccDestinationKafkadirectResource` in `destination_kafkadirect_resource_test.go`
+  - Created acceptance test for Motherduck destination: `TestAccDestinationMotherduckResource` in `destination_motherduck_resource_test.go`
+  - Created acceptance test for MySQL destination: `TestAccDestinationMysqlResource` in `destination_mysql_resource_test.go`
+  - All tests implement basic CRUD operations: Create/Read, ImportState, Update/Read, Delete (automatic)
+  - All tests use `tf-acc-test-` prefix for resource names
+  - All tests include `t.Skip()` for graceful handling when credentials not set
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `internal/provider/destination_kafkadirect_resource_test.go` (~80 lines)
+  - Created: `internal/provider/destination_motherduck_resource_test.go` (~95 lines)
+  - Created: `internal/provider/destination_mysql_resource_test.go` (~115 lines)
+  - Modified: `tasks/prd.json` (marked US-037 as passes: true)
+- **Learnings for future iterations:**
+  - Kafka Direct destination is minimal: only requires `name`, `password`, and `whitelist_ips` fields
+  - Kafka Direct has no schema registry configuration - it's for direct Kafka integration
+  - Motherduck is a serverless DuckDB cloud platform; uses `motherduck_token` and `motherduck_catalog`
+  - Motherduck has `ingestion_mode` (upsert/append), `hard_delete`, and topic name transformation fields
+  - MySQL destination uses standard database fields: `database_hostname`, `database_port`, `connection_username`, `connection_password`
+  - MySQL destination has `tasks_max` range 1-10 (unlike other destinations with 1-25)
+  - Test environment variables: `TF_VAR_destination_kafkadirect_password`, `TF_VAR_destination_motherduck_token`, `TF_VAR_destination_mysql_hostname`
+  - Third batch of 3 destination acceptance tests complete (KafkaDirect, Motherduck, MySQL)
+---
