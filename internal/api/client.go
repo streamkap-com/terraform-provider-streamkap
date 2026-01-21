@@ -27,6 +27,7 @@ type StreamkapAPI interface {
 	CreateDestination(ctx context.Context, reqPayload Destination) (*Destination, error)
 	UpdateDestination(ctx context.Context, destinationID string, reqPayload Destination) (*Destination, error)
 	GetDestination(ctx context.Context, destinationID string) (*Destination, error)
+	ListDestinations(ctx context.Context) ([]Destination, error)
 	DeleteDestination(ctx context.Context, destinationID string) error
 
 	// Pipeline APIs
