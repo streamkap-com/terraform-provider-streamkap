@@ -1006,3 +1006,107 @@
   - `api.Pipeline` uses nested `Source` and `Destination` structs with ID, Name, Connector fields
   - When server returns unparseable body, JSON decode error is returned (not the HTTP status code error)
 ---
+
+## 2026-01-21 - US-048
+- What was implemented:
+  - Created comprehensive `internal/provider/schema_validation_test.go` with negative tests for schema validation
+  - Tests for missing required field rejection:
+    - `TestSchemaValidation_MissingRequiredField_AzBlob` - tests azblob_connection_string (required), name (required), azblob_container_name (optional)
+    - `TestSchemaValidation_MissingRequiredField_BigQuery` - tests name, bigquery_json, table_name_prefix (required), bigquery_region (optional)
+    - `TestSchemaValidation_MissingRequiredField_ClickHouse` - tests name, hostname, connection_username, connection_password (required), database (optional)
+    - `TestSchemaValidation_MissingRequiredField_Elasticsearch` - tests name, es_host (required), es_port (optional)
+    - `TestSchemaValidation_MissingRequiredField_Transform` - tests name (required), transforms_language (optional)
+    - `TestSchemaValidation_MissingRequiredField_Oracle` - tests name (required)
+    - `TestSchemaValidation_MissingRequiredField_PostgreSQLSource` - tests name (required)
+  - Tests for invalid enum value rejection (OneOf validator):
+    - `TestSchemaValidation_InvalidEnum_InsertMode` - valid: insert, upsert; invalid: append, replace, merge, empty, case-sensitive
+    - `TestSchemaValidation_InvalidEnum_SchemaEvolution` - valid: basic, none; invalid: advanced, full, auto, empty
+    - `TestSchemaValidation_InvalidEnum_IngestionMode` - valid: upsert, append; invalid: insert, overwrite, empty
+    - `TestSchemaValidation_InvalidEnum_FileFormat` - valid: json, csv, avro, parquet; invalid: xml, orc, empty, uppercase
+    - `TestSchemaValidation_InvalidEnum_TransformLanguage` - valid: Javascript; invalid: python, sql, lowercase, empty
+    - `TestSchemaValidation_InvalidEnum_Compression` - valid: none, gzip, snappy, zstd; invalid: lz4, brotli, empty
+    - `TestSchemaValidation_InvalidEnum_SSLMode` - valid: require, disable; invalid: verify-ca, verify-full, prefer, empty
+    - `TestSchemaValidation_InvalidEnum_CatalogType` - valid: rest, hive, glue; invalid: jdbc, nessie, empty
+    - `TestSchemaValidation_InvalidEnum_SerializationFormat` - valid: Any, Avro, Json; invalid: protobuf, xml, empty
+  - Tests for out-of-range slider (Between validator) rejection:
+    - `TestSchemaValidation_OutOfRange_TasksMax` - range 1-10, tests 0 (below), 11 (above)
+    - `TestSchemaValidation_OutOfRange_DatabricksTasksMax` - range 1-100, tests 0, 101
+    - `TestSchemaValidation_OutOfRange_DynamoDBParallelism` - range 1-40, tests 0, 41
+    - `TestSchemaValidation_OutOfRange_ConsumerWaitTime` - range 500-300000, tests 499, 300001
+    - `TestSchemaValidation_OutOfRange_SnapshotParallelism` - range 1-10, tests 0, 11
+    - `TestSchemaValidation_OutOfRange_LargeTableThreshold` - range 1-64000, tests 0, 64001
+    - `TestSchemaValidation_OutOfRange_StreamDelayMs` - range 0-604800000, tests -1, 604800001
+    - `TestSchemaValidation_OutOfRange_MotherduckTasksMax` - range 1-100, tests 0, 101
+  - Tests for helpful error messages:
+    - `TestSchemaValidation_ErrorMessage_OneOf` - verifies error mentions "must be one of:" and valid values
+    - `TestSchemaValidation_ErrorMessage_Between` - verifies error mentions "must be between" and range
+    - `TestSchemaValidation_ValidatorDescription` - verifies descriptions list valid values
+    - `TestSchemaValidation_ValidatorMarkdownDescription` - verifies markdown descriptions use backticks
+    - `TestSchemaValidation_Int64ValidatorDescription` - verifies int64 validator descriptions
+  - Additional validation tests:
+    - `TestSchemaValidation_BoundaryValues` - tests exact min/max boundary values
+    - `TestSchemaValidation_ConfigValueTypes` - tests null and unknown value handling
+    - `TestSchemaValidation_StateUpgrade` - verifies validators skip null/unknown values
+    - `TestSchemaValidation_AllGeneratedSchemasHaveNameRequired` - validates name is required across multiple schemas
+    - `TestSchemaValidation_SensitiveFieldsNotInPlaintext` - validates sensitive fields are marked appropriately
+    - `TestSchemaValidation_ConfigWithInvalidTerraformType` - tests empty string and zero value handling
+  - All tests pass: `go test -v -run 'TestSchemaValidation' ./internal/provider/...`
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `internal/provider/schema_validation_test.go` (+1442 lines)
+  - Modified: `tasks/prd.json` (marked US-048 as passes: true)
+- **Learnings for future iterations:**
+  - Generated schema field names may differ from intuitive names (e.g., ClickHouse uses `connection_password` not `clickhouse_password`)
+  - Many "required" fields are actually optional with defaults - check actual schema before writing tests
+  - Test validators directly using `validator.StringRequest`/`validator.Int64Request` for unit-style tests
+  - Use `require.True(t, attr.IsRequired())` to verify attribute is required
+  - Use `require.True(t, attr.IsOptional())` to verify attribute is optional (has default)
+  - Use `require.True(t, attr.IsSensitive())` to verify sensitive fields
+  - `stringvalidator.OneOf()` error messages include "must be one of:" with valid values
+  - `int64validator.Between()` error messages include "must be between" with min/max range
+---
+
+## 2026-01-21 - US-049
+- What was implemented:
+  - Created comprehensive `internal/provider/state_conflict_test.go` with 27 tests covering state conflicts
+  - **Drift Detection Tests (5 tests):**
+    - `TestDriftDetection_SourceModifiedExternally` - tests source drift detection with name and config changes
+    - `TestDriftDetection_DestinationModifiedExternally` - tests destination drift with user/tasks_max/schema_evolution changes
+    - `TestDriftDetection_TransformModifiedExternally` - tests transform drift with topic pattern changes
+    - `TestDriftDetection_PipelineModifiedExternally` - tests pipeline drift with name and source ID changes
+    - `TestDriftDetection_MultipleFieldsDrifted` - tests detection of 7 fields changed simultaneously
+  - **External Deletion Tests (7 tests):**
+    - `TestExternalDeletion_SourceDeletedExternally` - tests source returns nil after external deletion
+    - `TestExternalDeletion_Source404Response` - tests 404 error handling for deleted source
+    - `TestExternalDeletion_DestinationDeletedExternally` - tests destination returns nil after deletion
+    - `TestExternalDeletion_TransformDeletedExternally` - tests transform returns nil after deletion
+    - `TestExternalDeletion_PipelineDeletedExternally` - tests pipeline returns nil after deletion
+    - `TestExternalDeletion_UpdateAfterDelete` - tests update fails with 404 after external delete
+    - `TestExternalDeletion_DeleteAfterDelete` - tests delete fails with 404 when already deleted
+  - **Import Non-Existent Tests (12 tests):**
+    - `TestImportNonExistent_Source` - tests 404 for non-existent source ID
+    - `TestImportNonExistent_Destination` - tests 404 for non-existent destination ID
+    - `TestImportNonExistent_Transform` - tests 404 for non-existent transform ID
+    - `TestImportNonExistent_Pipeline` - tests 404 for non-existent pipeline ID
+    - `TestImportNonExistent_Topic` - tests 404 for non-existent topic ID
+    - `TestImportNonExistent_Tag` - tests empty result (not error) for non-existent tag
+    - `TestImportNonExistent_EmptyID` - tests error handling for empty ID
+    - `TestImportNonExistent_InvalidIDFormat` - 3 subtests for special chars, unicode, very long ID
+  - **Schema Verification Tests (3 tests):**
+    - `TestStateConflict_ImportStatePassthrough` - verifies resources implement ImportState
+    - `TestStateConflict_ReadAfterDeleteReturnsNil` - verifies API client returns nil for empty results
+    - `TestStateConflict_ConfigMapDriftDetection` - tests detailed config map comparison logic
+  - All tests pass using httpmock for HTTP response mocking
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `internal/provider/state_conflict_test.go` (+1073 lines)
+  - Modified: `tasks/prd.json` (marked US-049 as passes: true)
+- **Learnings for future iterations:**
+  - API Transform struct uses `Name` field, not `Transform` - check struct definitions in `internal/api/`
+  - Pipeline uses `PipelineSource`/`PipelineDestination` types, not `PipelineEntity`
+  - Tag API uses `GetTagResponse` (not `GetTagsResponse`) with `Tags []Tag` field
+  - Tags endpoint returns empty result (not 404) for non-existent tags - different from other resources
+  - Use `httpmock.Activate()/DeactivateAndReset()` for mock HTTP tests
+  - Call count patterns useful for simulating drift (first call = original, second call = modified)
+  - `newTestAPIClient()` helper in error_handling_test.go can be reused
+---
