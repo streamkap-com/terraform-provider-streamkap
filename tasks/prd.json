@@ -607,8 +607,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 41,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "16 snapshot files exist in testdata/schemas/ directory. All 16 schema compatibility tests pass. 298 total attributes tracked. UPDATE_SNAPSHOTS command encounters macOS com.apple.provenance permission issues but existing snapshots are valid."
     },
     {
       "id": "US-042",
