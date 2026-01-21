@@ -2,6 +2,8 @@
 - The `docs/audits/` directory already exists with reference documentation files
 - Go build command: `go build ./...` for typechecking
 - Branch naming: PRD specifies `ralph/terraform-provider-audit` branch for audit work
+- API client files are in `internal/api/`: auth.go (token), client.go (interface + doRequest), source.go, destination.go, etc.
+- All API operations use `?secret_returned=true` to get sensitive fields in responses
 
 ---
 
@@ -112,4 +114,59 @@
   - `overrides.json` contains 3 field overrides for complex map types (Snowflake map_string, ClickHouse map_nested, SQL Server map_nested)
   - Generator infrastructure is ~1,500 LOC in `cmd/tfgen/`
   - Key mitigations for reflection risks: compile-time interface checks (`var _ Interface = (*Impl)(nil)`)
+---
+
+## 2026-01-21 - US-007
+- What was implemented:
+  - Added comprehensive "API Client" section to `docs/audits/architecture-comparison-report.md`
+  - Documented OAuth2 token exchange function in `internal/api/auth.go` (lines 22-45)
+  - Documented Authorization header set in `doRequest()` at `client.go:84-86`
+  - Verified `?secret_returned=true` parameter used across all API operations
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md`
+- **Learnings for future iterations:**
+  - API client uses `StreamkapAPI` interface (client.go:15-53) for all operations
+  - Token structure: AccessToken, Expires, ExpiresIn, RefreshToken
+  - `?secret_returned=true` is used in all CRUD operations for sources, destinations, transforms, and pipelines (15 endpoints total)
+  - doRequest() sets Content-Type, Accept, and Authorization headers automatically
+  - doRequestWithRetry() wraps doRequest with retry logic for transient errors
+---
+
+## 2026-01-21 - US-008
+- What was implemented:
+  - Verified API `detail` field errors extracted in `client.go:96-110` via `APIErrorResponse` struct
+  - Verified `created_from: terraform` injected on all 5 create operations (source, destination, transform, pipeline, tag)
+  - Ran API unit tests: `go test -v -short ./internal/api/...` - all 21 tests passed (1.158s)
+  - Added "Error Handling" section to audit report documenting error extraction pattern
+  - Added "Resource Origin Tracking (created_from)" section with table of all injection points
+  - Added "API Unit Test Results" section with detailed test categories and counts
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md`
+- **Learnings for future iterations:**
+  - `APIErrorResponse.Detail` is extracted for all non-2xx responses in `doRequest()`
+  - `created_from` uses `constants.TERRAFORM` constant defined in the constants package
+  - API tests cover Source CRUD (9 tests), Authentication (4 tests), and Retry Logic (8 tests including 16 sub-tests)
+  - `TestCreateSource_Success` specifically verifies `created_from: terraform` in request body
+---
+
+## 2026-01-21 - US-009
+- What was implemented:
+  - Read `internal/api/retry.go` (121 lines)
+  - Verified retry for status codes 502, 503, 504 in `gatewayPatterns` (line 31)
+  - Verified exponential backoff implementation via `delay = min(delay*2, cfg.MaxDelay)` (line 116)
+  - Added comprehensive "Retry Logic" subsection to audit report under API Client section
+  - Documented: IsRetryableError() with 4 error categories, RetryWithBackoff() implementation, DefaultRetryConfig()
+  - Updated Table of Contents with Retry Logic subsection
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md`
+- **Learnings for future iterations:**
+  - Retry logic is in `internal/api/retry.go` (not client.go)
+  - Four categories of retryable errors: Backend Timeout, Gateway Errors (502/503/504), Network Errors, Kafka Transient
+  - Default retry config: MaxRetries=3, MinDelay=10s, MaxDelay=60s
+  - `doRequestWithRetry()` wraps `doRequest()` with `RetryWithBackoff()` for automatic retry handling
+  - Conservative delays account for backend's internal Kafka Connect server retries
 ---

@@ -13,6 +13,7 @@
 3. [Comparison Matrix](#comparison-matrix)
 4. [Trade-offs](#trade-offs)
 5. [API Client](#api-client)
+   - [Retry Logic](#retry-logic)
 6. [Architectural Decisions](#architectural-decisions)
 
 ---
@@ -723,6 +724,91 @@ All resource creation operations inject `created_from: terraform` to track resou
 **Noteworthy Tests**:
 - `TestCreateSource_Success`: Verifies `created_from: terraform` is included in request body (line 161-165)
 - `TestIsRetryableError`: Verifies retry logic for 502, 503, 504 status codes and transient errors
+
+### Retry Logic
+
+**Location**: `internal/api/retry.go` (121 lines)
+
+The API client implements retry logic with exponential backoff for transient errors. This ensures resilience against temporary infrastructure issues and backend exhaustion of internal retries.
+
+#### Retryable Error Detection
+
+The `IsRetryableError()` function (lines 12-63) determines whether an error should trigger a retry. It checks for four categories of transient errors:
+
+| Category | Patterns | Description |
+|----------|----------|-------------|
+| **Backend Timeout** | `kafkaconnecttimeout`, `request timed out`, `sockettimeoutexception` | Backend exhausted internal KC server retries |
+| **Gateway Errors** | `502`, `503`, `504`, `bad gateway`, `service unavailable`, `gateway timeout` | Infrastructure/load balancer issues |
+| **Network Errors** | `connection refused`, `connection reset`, `no such host`, `network unreachable`, `i/o timeout` | Network connectivity problems |
+| **Kafka Transient** | `rebalance_in_progress`, `leader_not_available`, `not_leader_for_partition` | Kafka cluster instability |
+
+**Verification**: ✅ Status codes 502, 503, 504 included in `gatewayPatterns` at line 31
+
+#### Exponential Backoff Implementation
+
+The `RetryWithBackoff()` function (lines 82-120) implements the retry mechanism:
+
+```go
+func RetryWithBackoff(ctx context.Context, cfg RetryConfig, operation func() error) error {
+    var lastErr error
+    delay := cfg.MinDelay
+
+    for attempt := 0; attempt <= cfg.MaxRetries; attempt++ {
+        lastErr = operation()
+        if lastErr == nil {
+            return nil
+        }
+
+        if !IsRetryableError(lastErr) {
+            return lastErr // Non-retryable, fail immediately
+        }
+
+        // Wait with context cancellation support
+        select {
+        case <-ctx.Done():
+            return ctx.Err()
+        case <-time.After(delay):
+        }
+
+        // Exponential backoff with cap
+        delay = min(delay*2, cfg.MaxDelay)
+    }
+    return lastErr
+}
+```
+
+**Verification**: ✅ Exponential backoff implemented via `delay = min(delay*2, cfg.MaxDelay)` at line 116
+
+#### Default Configuration
+
+The `DefaultRetryConfig()` function (lines 72-80) provides conservative defaults:
+
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| `MaxRetries` | 3 | Reasonable limit before giving up |
+| `MinDelay` | 10 seconds | Conservative: backend may be retrying internally |
+| `MaxDelay` | 60 seconds | Cap to avoid excessive waits |
+
+#### Key Characteristics
+
+1. **Context-Aware**: Supports cancellation via `ctx.Done()` channel
+2. **Non-Retryable Fast-Fail**: Validation/auth errors fail immediately without retry
+3. **Logging**: Debug-level logging of retry attempts with delay and error info
+4. **Backend-Aware**: Conservative delays account for backend's internal KC server retries
+
+#### Usage in API Client
+
+The retry logic is integrated via `doRequestWithRetry()` in `client.go` which wraps `doRequest()`:
+
+```go
+func (s *streamkapAPI) doRequestWithRetry(ctx context.Context, req *http.Request, result interface{}) error {
+    return RetryWithBackoff(ctx, DefaultRetryConfig(), func() error {
+        return s.doRequest(ctx, req, result)
+    })
+}
+```
+
+This ensures all API operations automatically benefit from retry handling without per-operation configuration.
 
 ---
 
