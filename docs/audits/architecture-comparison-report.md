@@ -36,6 +36,7 @@
 25. [Destination Connector Schema Verification (Batch 4)](#destination-connector-schema-verification-batch-4)
 26. [Transform Resource Schema Verification](#transform-resource-schema-verification)
 27. [Schema Snapshots](#schema-snapshots)
+28. [Smoke Tests](#smoke-tests)
 
 ---
 
@@ -3339,6 +3340,152 @@ UPDATE_SNAPSHOTS=1 go test -v -run 'TestSchemaBackwardsCompatibility' ./internal
 ```bash
 xattr -c internal/provider/testdata/schemas/*.json
 chmod 644 internal/provider/testdata/schemas/*.json
+```
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## Smoke Tests
+
+**Story:** US-045 - Write smoke tests for connectors without credentials
+**Status:** ✅ PASSED
+
+### Acceptance Criteria
+
+- [x] Identify 3-5 connectors likely missing credentials (Oracle, BigQuery, etc.)
+- [x] Create `TestSmoke*` tests that verify schema compiles
+- [x] Verify model conversion works (no runtime errors)
+- [x] Document smoke-tested connectors in audit report
+- [x] Typecheck passes: `go build ./...`
+
+### Overview
+
+Smoke tests provide validation of generated schemas and model structures without requiring API credentials or external infrastructure. These tests verify:
+
+1. **Schema Compilation** - Resource schemas compile without errors and have valid structure
+2. **Model Instantiation** - Generated model structs can be created and have proper `tfsdk` tags
+3. **Field Mappings** - Terraform-to-API field mappings are valid and non-empty
+
+### Test File Location
+
+```
+internal/provider/smoke_test.go
+```
+
+### Connectors Identified as Likely Missing Credentials
+
+These connectors were selected for individual smoke tests because they require specialized infrastructure or paid services that are typically unavailable in test environments:
+
+| # | Connector | Type | Rationale |
+|---|-----------|------|-----------|
+| 1 | Oracle | Source | Enterprise database requiring licensing |
+| 2 | BigQuery | Destination | Google Cloud service requiring GCP account |
+| 3 | Redshift | Destination | AWS data warehouse requiring AWS infrastructure |
+| 4 | Starburst | Destination | Enterprise analytics platform |
+| 5 | Motherduck | Destination | Serverless DuckDB cloud service |
+
+### Individual Smoke Test Results
+
+```bash
+$ go test -v -run 'TestSmoke' ./internal/provider/...
+
+=== RUN   TestSmokeSourceOracle
+=== RUN   TestSmokeSourceOracle/Schema
+    smoke_test.go: Schema smoke test passed for source_oracle: 23 attributes
+=== RUN   TestSmokeSourceOracle/Model
+    smoke_test.go: Model smoke test passed for source_oracle: 24 fields with tfsdk tags
+=== RUN   TestSmokeSourceOracle/FieldMappings
+    smoke_test.go: Field mappings smoke test passed for source_oracle: 20 mappings
+--- PASS: TestSmokeSourceOracle (0.00s)
+
+=== RUN   TestSmokeDestinationBigQuery
+=== RUN   TestSmokeDestinationBigQuery/Schema
+    smoke_test.go: Schema smoke test passed for destination_bigquery: 10 attributes
+=== RUN   TestSmokeDestinationBigQuery/Model
+    smoke_test.go: Model smoke test passed for destination_bigquery: 11 fields with tfsdk tags
+=== RUN   TestSmokeDestinationBigQuery/FieldMappings
+    smoke_test.go: Field mappings smoke test passed for destination_bigquery: 7 mappings
+--- PASS: TestSmokeDestinationBigQuery (0.00s)
+
+=== RUN   TestSmokeDestinationRedshift
+--- PASS: TestSmokeDestinationRedshift (0.00s)
+
+=== RUN   TestSmokeDestinationStarburst
+--- PASS: TestSmokeDestinationStarburst (0.00s)
+
+=== RUN   TestSmokeDestinationMotherduck
+--- PASS: TestSmokeDestinationMotherduck (0.00s)
+```
+
+### Comprehensive Schema Smoke Test
+
+The `TestSmokeAllConnectorSchemas` test validates ALL registered resources in the provider:
+
+```bash
+=== RUN   TestSmokeAllConnectorSchemas
+    smoke_test.go: All 51 connector schemas validated
+--- PASS: TestSmokeAllConnectorSchemas (0.00s)
+```
+
+### All 51 Resources Validated
+
+| Category | Count | Validated |
+|----------|-------|-----------|
+| Source Connectors | 20 | ✅ All pass |
+| Destination Connectors | 22 | ✅ All pass |
+| Transform Resources | 6 | ✅ All pass |
+| Pipeline | 1 | ✅ Pass |
+| Topic | 1 | ✅ Pass |
+| Tag | 1 | ✅ Pass |
+| **Total** | **51** | **✅ All pass** |
+
+### What Smoke Tests Verify
+
+1. **Schema Request Handling**
+   - `res.Schema()` method completes without errors
+   - Schema has non-nil attributes map
+   - At least one attribute exists
+
+2. **Required Fields**
+   - `id` field exists and is computed
+   - `connector` field exists and is computed
+   - `name` field exists and is required
+
+3. **Model Structure**
+   - Model factory returns non-nil instance
+   - Model is a pointer to a struct
+   - Model has `tfsdk` tags on fields
+
+4. **Field Mappings**
+   - Field mappings map is non-nil
+   - At least one mapping exists
+   - All keys and values are non-empty strings
+
+### Benefits of Smoke Tests
+
+1. **No API Required** - Tests run without credentials or external services
+2. **Fast Execution** - All 51 schemas validate in < 0.5 seconds
+3. **Regression Detection** - Catches schema generation bugs immediately
+4. **Model Validation** - Ensures reflection-based marshaling will work
+5. **CI/CD Friendly** - Can run in any environment
+
+### Running Smoke Tests
+
+```bash
+# Run all smoke tests
+go test -v -run 'TestSmoke' ./internal/provider/...
+
+# Run individual connector smoke test
+go test -v -run 'TestSmokeSourceOracle' ./internal/provider/...
+
+# Run comprehensive schema validation
+go test -v -run 'TestSmokeAllConnectorSchemas' ./internal/provider/...
 ```
 
 ### Typecheck Verification
