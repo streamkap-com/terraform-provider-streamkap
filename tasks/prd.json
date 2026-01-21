@@ -198,7 +198,7 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -213,7 +213,7 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": "Story passes even if skipped due to missing credentials."
     },
     {

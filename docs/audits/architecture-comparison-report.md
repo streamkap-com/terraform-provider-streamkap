@@ -19,6 +19,7 @@
 8. [Base Resource](#base-resource)
 9. [Schema Backward Compatibility Tests](#schema-backward-compatibility-tests)
 10. [Deprecated Fields](#deprecated-fields)
+11. [Migration Tests](#migration-tests)
 
 ---
 
@@ -1485,6 +1486,71 @@ Deprecated fields are handled at the **wrapper layer** (Layer 2 of the three-lay
 | **Schema Validation** | Both deprecated and new fields work in Terraform configs |
 | **Description Clarity** | Description explicitly states "DEPRECATED: Use 'X' instead." |
 | **Centralized Registry** | All deprecations tracked in `deprecations.json` for audit |
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## Migration Tests
+
+This section documents the migration testing status, which verifies that resources can be migrated between provider versions without unexpected changes.
+
+### Test Status
+
+**Status**: ⚠️ SKIPPED - No credentials available
+
+**Reason**: The environment variables `STREAMKAP_CLIENT_ID` and `STREAMKAP_SECRET` are not set. Migration tests require active Streamkap API credentials to:
+1. Create resources using the baseline provider version (v2.1.18)
+2. Apply the refactored provider to verify migration compatibility
+3. Confirm no unexpected plan changes occur
+
+### Required Environment Variables
+
+| Variable | Status | Purpose |
+|----------|--------|---------|
+| `STREAMKAP_CLIENT_ID` | ❌ Not set | OAuth2 client ID for API authentication |
+| `STREAMKAP_SECRET` | ❌ Not set | OAuth2 client secret for API authentication |
+| `TF_ACC` | ❌ Not set | Flag to enable acceptance tests |
+
+### Command (Skipped)
+
+```bash
+TF_ACC=1 go test -v -timeout 30m -run 'TestAcc.*Migration' ./internal/provider/... -count=1
+```
+
+### Workaround for Credential-less Verification
+
+While migration tests could not be executed, the following alternative verifications provide confidence in migration compatibility:
+
+1. **Schema Backward Compatibility Tests**: All 16 tests passed (see [Schema Backward Compatibility Tests](#schema-backward-compatibility-tests))
+   - Verified all 298 attributes across 16 resources match baseline v2.1.18
+   - No required attributes removed
+   - No optional attributes changed to required
+
+2. **Deprecated Field Handling**: All 10 deprecated fields verified with proper `DeprecationMessage` (see [Deprecated Fields](#deprecated-fields))
+   - Both deprecated and new attribute names work correctly
+   - Map to same API field names
+
+3. **API Client Tests**: All 21 tests passed
+   - Verified authentication flow
+   - Verified error handling
+   - Verified `created_from` tracking
+
+### Recommendation
+
+Migration tests should be run manually before production release using:
+
+```bash
+export TF_ACC=1
+export STREAMKAP_CLIENT_ID="<your-client-id>"
+export STREAMKAP_SECRET="<your-secret>"
+go test -v -timeout 30m -run 'TestAcc.*Migration' ./internal/provider/... -count=1
+```
 
 ### Typecheck Verification
 
