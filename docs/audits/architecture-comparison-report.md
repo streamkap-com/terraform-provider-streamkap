@@ -2542,3 +2542,53 @@ $ go build ./...
 ```
 
 ---
+
+## Source Connector Schema Verification (Batch 1)
+
+This section verifies that generated schema files exist for the first batch of 5 source connectors: AlloyDB, DB2, DocumentDB, DynamoDB, and Elasticsearch.
+
+### Verification Results
+
+| Connector | Generated File | Status | Lines of Code |
+|-----------|---------------|--------|---------------|
+| **AlloyDB** | `internal/generated/source_alloydb.go` | ✅ EXISTS | 330 |
+| **DB2** | `internal/generated/source_db2.go` | ✅ EXISTS | 186 |
+| **DocumentDB** | `internal/generated/source_documentdb.go` | ✅ EXISTS | 157 |
+| **DynamoDB** | `internal/generated/source_dynamodb.go` | ✅ EXISTS | 196 |
+| **Elasticsearch** | `internal/generated/source_elasticsearch.go` | ✅ EXISTS | 149 |
+| **Total** | 5 files | **All Present** | 1,018 |
+
+### Generated Source Files Listing
+
+```bash
+$ ls internal/generated/source_*.go | head -10
+internal/generated/source_alloydb.go
+internal/generated/source_db2.go
+internal/generated/source_documentdb.go
+internal/generated/source_dynamodb.go
+internal/generated/source_elasticsearch.go
+internal/generated/source_kafkadirect.go
+internal/generated/source_mariadb.go
+internal/generated/source_mongodb.go
+internal/generated/source_mongodbhosted.go
+internal/generated/source_mysql.go
+```
+
+### Batch 1 Summary
+
+- **AlloyDB** (330 LOC): PostgreSQL-compatible Google Cloud database source
+- **DB2** (186 LOC): IBM DB2 database source
+- **DocumentDB** (157 LOC): AWS DocumentDB (MongoDB-compatible) source
+- **DynamoDB** (196 LOC): AWS DynamoDB NoSQL database source
+- **Elasticsearch** (149 LOC): Elasticsearch search engine source
+
+All 5 source schemas in Batch 1 are verified present with generated code.
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
