@@ -844,3 +844,24 @@
   - SQL Server source has 1 new additive attribute (`snapshot_custom_table_config`) - backward-compatible
   - Schema compatibility test pattern: `TestSchemaBackwardsCompatibility_{Source|Destination|Transform}{ConnectorName}`
 ---
+
+## 2026-01-21 - US-042
+- What was implemented:
+  - Added `ListSources` method to `StreamkapAPI` interface in `internal/api/client.go`
+  - Implemented `ListSources` function in `internal/api/source.go` (calls GET /sources?secret_returned=true)
+  - Updated `sweepSources` function in `internal/provider/sweep_test.go` to use actual API calls
+  - Sweeper lists all sources and deletes those matching test resource prefixes
+  - Uses existing `isTestResource()` helper that checks: tf-acc-test-, tf-migration-test-, test-source-, test-destination-
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `internal/api/client.go` (+1 line - interface method)
+  - Modified: `internal/api/source.go` (+21 lines - ListSources implementation)
+  - Modified: `internal/provider/sweep_test.go` (+23 lines, -4 lines - sweepSources implementation)
+  - Modified: `tasks/prd.json` (marked US-042 as passes: true)
+- **Learnings for future iterations:**
+  - API list endpoints use same response structure as get-by-id (GetSourceResponse with pagination)
+  - `GET /sources` without ID returns paginated list of all sources
+  - Sweep tests use `//go:build sweep` build tag, run with `go test -tags=sweep`
+  - `isTestResource()` helper already handles multiple test prefixes for robustness
+  - Error handling in sweeper collects all errors rather than failing on first error
+---
