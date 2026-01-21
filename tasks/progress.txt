@@ -865,3 +865,48 @@
   - `isTestResource()` helper already handles multiple test prefixes for robustness
   - Error handling in sweeper collects all errors rather than failing on first error
 ---
+
+## 2026-01-21 - US-043
+- What was implemented:
+  - Added `ListDestinations` method to `StreamkapAPI` interface in `internal/api/client.go`
+  - Implemented `ListDestinations` function in `internal/api/destination.go` (calls GET /destinations?secret_returned=true)
+  - Updated `sweepDestinations` function in `internal/provider/sweep_test.go` to use actual API calls
+  - Sweeper lists all destinations and deletes those matching test resource prefixes
+  - Uses existing `isTestResource()` helper that checks: tf-acc-test-, tf-migration-test-, test-source-, test-destination-
+  - Typecheck passed: `go build ./...` and `go build -tags=sweep ./...`
+- Files changed:
+  - Modified: `internal/api/client.go` (+1 line - interface method)
+  - Modified: `internal/api/destination.go` (+21 lines - ListDestinations implementation)
+  - Modified: `internal/provider/sweep_test.go` (+28 lines, -1 line - sweepDestinations implementation)
+  - Modified: `tasks/prd.json` (marked US-043 as passes: true)
+- **Learnings for future iterations:**
+  - Destination API follows identical pattern to Source API (GetDestinationResponse with same pagination structure)
+  - `GET /destinations` without ID returns paginated list of all destinations
+  - Sweeper already registered in init() - only implementation was placeholder
+  - All three sweepers (sources, destinations, pipelines) are registered with dependencies: pipelines depends on sources and destinations
+---
+
+## 2026-01-21 - US-044
+- What was implemented:
+  - Added `ListTransforms` method to `StreamkapAPI` interface in `internal/api/client.go`
+  - Implemented `ListTransforms` function in `internal/api/transform.go` (calls GET /transforms?secret_returned=true)
+  - Added `ListPipelines` method to `StreamkapAPI` interface in `internal/api/client.go`
+  - Implemented `ListPipelines` function in `internal/api/pipeline.go` (calls GET /pipelines?secret_returned=true)
+  - Implemented `sweepTransforms` function in `internal/provider/sweep_test.go`
+  - Updated `sweepPipelines` function to use actual API calls (was placeholder before)
+  - Registered `streamkap_transform` sweeper in init()
+  - Updated pipeline sweeper dependencies to include transforms
+  - Typecheck passed: `go build ./...` and `go build -tags=sweep ./...`
+- Files changed:
+  - Modified: `internal/api/client.go` (+2 lines - interface methods)
+  - Modified: `internal/api/transform.go` (+21 lines - ListTransforms implementation)
+  - Modified: `internal/api/pipeline.go` (+21 lines - ListPipelines implementation)
+  - Modified: `internal/provider/sweep_test.go` (+70 lines, -2 lines - sweepTransforms and sweepPipelines)
+  - Modified: `tasks/prd.json` (marked US-044 as passes: true)
+- **Learnings for future iterations:**
+  - Transform API uses same paginated response pattern: `GetTransformResponse` with Total, PageSize, Page, Result fields
+  - Pipeline API uses same paginated response pattern: `GetPipelineResponse` with Total, PageSize, Page, Result fields
+  - `GET /transforms` and `GET /pipelines` without ID return paginated list of all resources
+  - Pipeline sweeper now depends on transforms in addition to sources and destinations
+  - All four sweepers (sources, destinations, transforms, pipelines) are now fully implemented with API calls
+---

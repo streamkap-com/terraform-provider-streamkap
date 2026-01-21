@@ -115,6 +115,27 @@ func (s *streamkapAPI) GetPipeline(ctx context.Context, pipelineID string) (*Pip
 	return &resp.Result[0], nil
 }
 
+func (s *streamkapAPI) ListPipelines(ctx context.Context) ([]Pipeline, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/pipelines?secret_returned=true", http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"ListPipelines request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n",
+		req.Method,
+		req.URL.String(),
+	))
+	var resp GetPipelineResponse
+	err = s.doRequest(ctx, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Result, nil
+}
+
 func (s *streamkapAPI) DeletePipeline(ctx context.Context, pipelineID string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/pipelines/"+pipelineID+"?secret_returned=true", http.NoBody)
 	if err != nil {

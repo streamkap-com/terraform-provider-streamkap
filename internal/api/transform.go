@@ -73,6 +73,27 @@ func (s *streamkapAPI) GetTransform(ctx context.Context, TransformID string) (*T
 	return &resp.Result[0], nil
 }
 
+func (s *streamkapAPI) ListTransforms(ctx context.Context) ([]Transform, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/transforms?secret_returned=true", http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"ListTransforms request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n",
+		req.Method,
+		req.URL.String(),
+	))
+	var resp GetTransformResponse
+	err = s.doRequest(ctx, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Result, nil
+}
+
 func (s *streamkapAPI) CreateTransform(ctx context.Context, reqPayload CreateTransformRequest) (*Transform, error) {
 	// Set created_from to terraform
 	reqPayload.CreatedFrom = constants.TERRAFORM
