@@ -18,6 +18,7 @@
 7. [Helper Functions](#helper-functions)
 8. [Base Resource](#base-resource)
 9. [Schema Backward Compatibility Tests](#schema-backward-compatibility-tests)
+10. [Deprecated Fields](#deprecated-fields)
 
 ---
 
@@ -1357,6 +1358,133 @@ The tests verify that:
 | Destinations | 114 |
 | Transforms | 23 |
 | **Total** | **298** |
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## Deprecated Fields
+
+This section documents the deprecated field handling implementation, which maintains backward compatibility with existing Terraform configurations while guiding users toward new attribute names.
+
+### Deprecations Registry
+
+**Location**: `cmd/tfgen/deprecations.json`
+
+The deprecations registry contains **10 deprecated field definitions** across 2 connectors:
+
+| Connector | Entity Type | Count | Description |
+|-----------|-------------|-------|-------------|
+| PostgreSQL | sources | 9 | Static field transforms and topic pattern |
+| Snowflake | destinations | 1 | Schema creation toggle |
+
+### Deprecated Field Mappings
+
+#### PostgreSQL Source (9 fields)
+
+| Deprecated Attribute | New Attribute | Type |
+|---------------------|---------------|------|
+| `insert_static_key_field_1` | `transforms_insert_static_key1_static_field` | string |
+| `insert_static_key_value_1` | `transforms_insert_static_key1_static_value` | string |
+| `insert_static_value_field_1` | `transforms_insert_static_value1_static_field` | string |
+| `insert_static_value_1` | `transforms_insert_static_value1_static_value` | string |
+| `insert_static_key_field_2` | `transforms_insert_static_key2_static_field` | string |
+| `insert_static_key_value_2` | `transforms_insert_static_key2_static_value` | string |
+| `insert_static_value_field_2` | `transforms_insert_static_value2_static_field` | string |
+| `insert_static_value_2` | `transforms_insert_static_value2_static_value` | string |
+| `predicates_istopictoenrich_pattern` | `predicates_is_topic_to_enrich_pattern` | string |
+
+#### Snowflake Destination (1 field)
+
+| Deprecated Attribute | New Attribute | Type |
+|---------------------|---------------|------|
+| `auto_schema_creation` | `create_schema_auto` | bool |
+
+### DeprecationMessage Verification
+
+Verified that deprecated fields include proper `DeprecationMessage` in their schema definitions:
+
+#### PostgreSQL Source (spot check)
+
+**File**: `internal/resource/source/postgresql_generated.go`
+
+| Field | Line | DeprecationMessage |
+|-------|------|--------------------|
+| `insert_static_key_field_1` | 41-46 | ✅ `"Use 'transforms_insert_static_key1_static_field' instead."` |
+| `insert_static_key_value_1` | 47-51 | ✅ `"Use 'transforms_insert_static_key1_static_value' instead."` |
+
+**Example Implementation** (lines 41-46):
+```go
+s.Attributes["insert_static_key_field_1"] = schema.StringAttribute{
+    Optional:           true,
+    Computed:           true,
+    DeprecationMessage: "Use 'transforms_insert_static_key1_static_field' instead.",
+    Description:        "DEPRECATED: Use 'transforms_insert_static_key1_static_field' instead.",
+}
+```
+
+#### Snowflake Destination (spot check)
+
+**File**: `internal/resource/destination/snowflake_generated.go`
+
+| Field | Line | DeprecationMessage |
+|-------|------|--------------------|
+| `auto_schema_creation` | 33-37 | ✅ `"Use 'create_schema_auto' instead."` |
+
+**Example Implementation** (lines 33-37):
+```go
+s.Attributes["auto_schema_creation"] = schema.BoolAttribute{
+    Optional:           true,
+    Computed:           true,
+    DeprecationMessage: "Use 'create_schema_auto' instead.",
+    Description:        "DEPRECATED: Use 'create_schema_auto' instead.",
+}
+```
+
+### Implementation Architecture
+
+Deprecated fields are handled at the **wrapper layer** (Layer 2 of the three-layer architecture):
+
+1. **Field Mappings Extended**: Wrapper files extend generated field mappings with deprecated aliases
+   ```go
+   // From postgresql_generated.go
+   var postgresqlFieldMappings = func() map[string]string {
+       mappings := make(map[string]string)
+       for k, v := range generated.SourcePostgresqlFieldMappings {
+           mappings[k] = v
+       }
+       // Deprecated aliases - map to same API fields
+       mappings["insert_static_key_field_1"] = "transforms.InsertStaticKey1.static.field"
+       // ...
+   }()
+   ```
+
+2. **Schema Attributes Added**: `GetSchema()` adds deprecated attributes to the generated schema
+   ```go
+   func (c *PostgreSQLConfig) GetSchema() schema.Schema {
+       s := generated.SourcePostgresqlSchema()
+       // Add deprecated aliases for backward compatibility
+       s.Attributes["insert_static_key_field_1"] = schema.StringAttribute{...}
+       return s
+   }
+   ```
+
+3. **API Field Mapping**: Deprecated and new attributes map to the **same API field name**, ensuring both work correctly
+
+### Key Design Characteristics
+
+| Characteristic | Implementation |
+|----------------|----------------|
+| **Backward Compatibility** | Deprecated fields remain functional, mapped to same API fields |
+| **User Guidance** | Clear `DeprecationMessage` guides users to new attribute names |
+| **Schema Validation** | Both deprecated and new fields work in Terraform configs |
+| **Description Clarity** | Description explicitly states "DEPRECATED: Use 'X' instead." |
+| **Centralized Registry** | All deprecations tracked in `deprecations.json` for audit |
 
 ### Typecheck Verification
 
