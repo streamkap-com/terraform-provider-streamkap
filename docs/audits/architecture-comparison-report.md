@@ -23,6 +23,7 @@
 12. [Code Generator Parser](#code-generator-parser)
 13. [Code Generator Type Mapping](#code-generator-type-mapping)
 14. [Override and Deprecation System](#override-and-deprecation-system)
+15. [Code Regeneration Test](#code-regeneration-test)
 
 ---
 
@@ -2197,6 +2198,79 @@ The JSON configuration files are processed during code generation:
 | **Separation of Concerns** | Generator logic separate from configuration data |
 | **Extensibility** | Adding new overrides/deprecations requires only JSON changes |
 | **Type Safety** | Nested field validators in overrides support full validation rules |
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## Code Regeneration Test
+
+This section documents the code regeneration stability verification.
+
+### Test Status: SKIPPED
+
+**Reason**: No backend path configured
+
+The `STREAMKAP_BACKEND_PATH` environment variable is not set. This variable should point to the local clone of the Streamkap Python FastAPI backend repository, which contains the `configuration.latest.json` files used for code generation.
+
+### Required Environment Variable
+
+| Variable | Purpose | Current Status |
+|----------|---------|----------------|
+| `STREAMKAP_BACKEND_PATH` | Path to local backend repository | **Not set** |
+
+### Command That Would Be Run
+
+If the backend path was available, the following command would verify regeneration stability:
+
+```bash
+# With backend path set
+export STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap
+
+# Regenerate all schemas
+go generate ./...
+
+# Check for any differences in generated files
+git diff --stat internal/generated/
+
+# Expected: Empty diff (or whitespace-only changes)
+```
+
+### Alternative Verification
+
+Without the backend path, regeneration stability can be inferred from:
+
+1. **Schema Backward Compatibility Tests**: All 16 tests passed (see [Section 9](#schema-backward-compatibility-tests))
+2. **Build Verification**: `go build ./...` completes without errors
+3. **Generated Files Present**: 52 generated schema files exist with proper `DO NOT EDIT` markers
+
+### Regeneration Stability Indicators
+
+| Indicator | Status | Evidence |
+|-----------|--------|----------|
+| Generated files have DO NOT EDIT markers | ✅ Verified | US-003 verification |
+| Generated file count matches expected | ✅ Verified | 52 files in `internal/generated/` |
+| Build succeeds with generated files | ✅ Verified | `go build ./...` passes |
+| Schema compatibility tests pass | ✅ Verified | 16/16 tests pass |
+
+### Recommendation
+
+For complete verification, run regeneration test with backend access before production release:
+
+```bash
+# Set backend path
+export STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap
+
+# Regenerate and verify
+go generate ./... && git diff --stat internal/generated/
+
+# If any differences, review them to ensure they are expected
+```
 
 ### Typecheck Verification
 
