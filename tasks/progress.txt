@@ -1173,3 +1173,29 @@
   - Weaviate consistency levels: ALL, ONE, QUORUM
   - Example directory structure: basic.tf (minimal config), complete.tf (all options), import.sh (import command)
 ---
+
+## 2026-01-21 - US-053
+- What was implemented:
+  - Verified 6 transform example directories already existed: enrich, enrich_async, fan_out, map_filter, rollup, sql_join
+  - Identified 2 missing transform example directories: toast_handling, un_nesting
+  - Created `examples/resources/streamkap_transform_toast_handling/` with basic.tf, complete.tf, import.sh
+  - Created `examples/resources/streamkap_transform_un_nesting/` with basic.tf, complete.tf, import.sh
+  - Terraform fmt skipped (terraform CLI not installed) - example files are pre-formatted
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `examples/resources/streamkap_transform_toast_handling/basic.tf`
+  - Created: `examples/resources/streamkap_transform_toast_handling/complete.tf`
+  - Created: `examples/resources/streamkap_transform_toast_handling/import.sh`
+  - Created: `examples/resources/streamkap_transform_un_nesting/basic.tf`
+  - Created: `examples/resources/streamkap_transform_un_nesting/complete.tf`
+  - Created: `examples/resources/streamkap_transform_un_nesting/import.sh`
+  - Modified: `tasks/prd.json` (marked US-053 as passes: true)
+- **Learnings for future iterations:**
+  - All 8 transform example directories now exist, matching all 8 transform schemas in internal/generated/
+  - ToastHandling transform handles PostgreSQL TOAST columns (large values stored externally)
+  - ToastHandling supports JavaScript or Python languages (default: Python)
+  - UnNesting transform flattens arrays and nested records into separate output records
+  - UnNesting has no transforms_language field - it's a configuration-only transform
+  - Both transforms use common fields: transforms_input_topic_pattern, transforms_output_topic_pattern, transforms_input_serialization_format, transforms_output_serialization_format
+  - Valid serialization formats: Any, Avro, Json (title case)
+---
