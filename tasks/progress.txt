@@ -228,3 +228,40 @@
   - Tests verify 298 total attributes across 6 sources, 7 destinations, and 3 transforms
   - New additive attributes are allowed (INFO log), removed/changed-to-required attributes fail
 ---
+
+## 2026-01-21 - US-013
+- What was implemented:
+  - Read `cmd/tfgen/deprecations.json` and counted 10 deprecated field entries
+  - Spot-checked 2 PostgreSQL deprecated fields for proper DeprecationMessage (insert_static_key_field_1, insert_static_key_value_1)
+  - Spot-checked Snowflake auto_schema_creation deprecation for proper DeprecationMessage
+  - Added comprehensive "Deprecated Fields" section to `docs/audits/architecture-comparison-report.md`
+  - Documented deprecations registry, field mappings, implementation architecture, and design characteristics
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md`
+- **Learnings for future iterations:**
+  - Deprecated fields are NOT in generated files (`internal/generated/`) - they're in wrapper files (`internal/resource/source/*_generated.go`, `internal/resource/destination/*_generated.go`)
+  - Wrapper files add deprecated attributes via `GetSchema()` method which extends the generated schema
+  - Deprecated and new attributes map to the SAME API field name (e.g., both `insert_static_key_field_1` and `transforms_insert_static_key1_static_field` map to `transforms.InsertStaticKey1.static.field`)
+  - `deprecations.json` contains 10 entries: 9 PostgreSQL source, 1 Snowflake destination
+---
+
+## 2026-01-21 - US-014
+- What was implemented:
+  - Checked for STREAMKAP_CLIENT_ID and STREAMKAP_SECRET environment variables - both not set
+  - Added comprehensive "Migration Tests" section to `docs/audits/architecture-comparison-report.md`
+  - Documented status as SKIPPED due to missing credentials
+  - Documented required environment variables and the command that would be run
+  - Added "Workaround for Credential-less Verification" section referencing schema compatibility tests
+  - Added recommendation for manual migration test execution before production release
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md`
+- **Learnings for future iterations:**
+  - Migration tests require TF_ACC=1, STREAMKAP_CLIENT_ID, and STREAMKAP_SECRET environment variables
+  - Migration tests use the pattern `TestAcc.*Migration` for test discovery
+  - Schema backward compatibility tests provide confidence even without credentials
+  - Migration tests verify no unexpected plan changes when upgrading from v2.1.18 to refactored provider
+---
