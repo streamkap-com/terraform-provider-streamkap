@@ -284,3 +284,43 @@
   - `TerraformAttributeName()` method converts backend names to Terraform-friendly names (removes `.user.defined` suffix, replaces dots/hyphens with underscores)
   - Parser supports conditional fields via `Condition` struct and `IsConditional()` method
 ---
+
+## 2026-01-21 - US-016
+- What was implemented:
+  - Read `cmd/tfgen/generator.go` (993 lines) to verify code generator type mapping
+  - Verified `string` → `types.String` mapping in `TerraformType()` (parser.go lines 247-248)
+  - Verified `password` → `types.String` (Sensitive) mapping via `IsSensitive()` (parser.go lines 121-125)
+  - Verified `number` → `types.Int64` mapping (parser.go lines 249-251)
+  - Verified `boolean`/`toggle` → `types.Bool` mapping (parser.go lines 252-253)
+  - Verified `encrypt=true` generates `Sensitive=true` via `IsSensitive()` check in `entryToFieldData()` (generator.go line 644)
+  - Added comprehensive "Code Generator Type Mapping" section to `docs/audits/architecture-comparison-report.md` (+230 lines)
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md`
+- **Learnings for future iterations:**
+  - Type mapping happens in two places: parser (TerraformType constants) and generator (schema attribute assignment)
+  - `IsSensitive()` returns true for `encrypt=true` OR `control=password` - both conditions make a field sensitive
+  - Generator has special port field override: fields named `port` or ending in `_port` are forced to Int64 type
+  - Validator generation: `one-select` → `OneOf` validator, `slider` → `Between` validator
+  - Test coverage exists in `parser_test.go` for `TestIsSensitive` with 4 test cases
+---
+
+## 2026-01-21 - US-017
+- What was implemented:
+  - Read `cmd/tfgen/overrides.json` and verified structure (3 field overrides)
+  - Read `cmd/tfgen/deprecations.json` and verified structure (10 deprecated field definitions)
+  - Verified at least one `map_string` override exists: Snowflake `auto_qa_dedupe_table_mapping`
+  - Verified at least one `map_nested` override exists: ClickHouse `topics_config_map` and SQL Server `snapshot_custom_table_config`
+  - Added comprehensive "Override and Deprecation System" section to `docs/audits/architecture-comparison-report.md` (+195 lines)
+  - Documented JSON structures, override types, deprecation registry, and application flow diagram
+  - Updated Table of Contents with new section (section 14)
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md`
+- **Learnings for future iterations:**
+  - `overrides.json` contains 3 entries: 1 map_string (Snowflake), 2 map_nested (ClickHouse, SQL Server)
+  - `deprecations.json` contains 10 entries: 9 PostgreSQL source, 1 Snowflake destination
+  - map_nested overrides support validators (e.g., `int64_at_least`) in their nested_fields
+  - Both deprecated and new attributes map to the same API field name for backward compatibility
+---
