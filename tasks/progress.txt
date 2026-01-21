@@ -744,3 +744,83 @@
   - Test environment variables: `TF_VAR_destination_kafkadirect_password`, `TF_VAR_destination_motherduck_token`, `TF_VAR_destination_mysql_hostname`
   - Third batch of 3 destination acceptance tests complete (KafkaDirect, Motherduck, MySQL)
 ---
+
+## 2026-01-21 - US-038
+- What was implemented:
+  - Created acceptance test for Oracle destination: `TestAccDestinationOracleResource` in `destination_oracle_resource_test.go`
+  - Created acceptance test for R2 destination: `TestAccDestinationR2Resource` in `destination_r2_resource_test.go`
+  - Created acceptance test for Redis destination: `TestAccDestinationRedisResource` in `destination_redis_resource_test.go`
+  - All tests implement basic CRUD operations: Create/Read, ImportState, Update/Read, Delete (automatic)
+  - All tests use `tf-acc-test-` prefix for resource names
+  - All tests include `t.Skip()` for graceful handling when credentials not set
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `internal/provider/destination_oracle_resource_test.go` (~115 lines)
+  - Created: `internal/provider/destination_r2_resource_test.go` (~100 lines)
+  - Created: `internal/provider/destination_redis_resource_test.go` (~105 lines)
+  - Modified: `tasks/prd.json` (marked US-038 as passes: true)
+- **Learnings for future iterations:**
+  - Oracle destination uses default port 1521 (standard for Oracle)
+  - Oracle destination has same schema evolution/insert mode/primary key mode pattern as MySQL/DB2/CockroachDB
+  - R2 is Cloudflare's S3-compatible object storage; uses `r2_account` for Cloudflare account ID
+  - R2 uses S3-compatible credentials: `aws_access_key_id`, `aws_secret_access_key`, `aws_s3_bucket_name`
+  - R2 format options: "JSON Lines", "JSON Array", "Parquet" (note: title case, not lowercase)
+  - R2 compression options: none, gzip, snappy, zstd
+  - Redis destination uses `redis_host`, `redis_port`, `redis_username`, `redis_password` naming convention
+  - Redis `redis_key_data_type` options: Stream, List, Hash (note: title case)
+  - Test environment variables: `TF_VAR_destination_oracle_hostname`, `TF_VAR_destination_r2_account`, `TF_VAR_destination_redis_host`
+  - Fourth batch of 3 destination acceptance tests complete (Oracle, R2, Redis)
+---
+
+## 2026-01-21 - US-039
+- What was implemented:
+  - Created acceptance test for Redshift destination: `TestAccDestinationRedshiftResource` in `destination_redshift_resource_test.go`
+  - Created acceptance test for SQL Server destination: `TestAccDestinationSqlserverResource` in `destination_sqlserver_resource_test.go`
+  - Created acceptance test for Starburst destination: `TestAccDestinationStarburstResource` in `destination_starburst_resource_test.go`
+  - All tests implement basic CRUD operations: Create/Read, ImportState, Update/Read, Delete (automatic)
+  - All tests use `tf-acc-test-` prefix for resource names
+  - All tests include `t.Skip()` for graceful handling when credentials not set
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `internal/provider/destination_redshift_resource_test.go` (~115 lines)
+  - Created: `internal/provider/destination_sqlserver_resource_test.go` (~125 lines)
+  - Created: `internal/provider/destination_starburst_resource_test.go` (~110 lines)
+  - Modified: `tasks/prd.json` (marked US-039 as passes: true)
+- **Learnings for future iterations:**
+  - Redshift uses `aws_redshift_domain`, `aws_redshift_port` (default 5439), `aws_redshift_database` naming convention
+  - Redshift is a columnar data warehouse optimized for analytics queries
+  - SQL Server destination uses default port 1433 (standard for SQL Server)
+  - SQL Server destination has same schema evolution/insert mode/primary key mode pattern as MySQL/Oracle/DB2/CockroachDB
+  - SQL Server uses `table_name_prefix` for schema (e.g., "dbo" for default schema)
+  - Starburst is S3-based analytics platform; uses AWS S3 credentials for storage
+  - Starburst format options: "CSV", "JSON Lines", "JSON Array", "Parquet" (note: title case)
+  - Starburst compression options: none, gzip, snappy, zstd
+  - Starburst uses `file_name_template` with Kafka placeholders: `{{topic}}-{{partition}}-{{start_offset}}`
+  - Test environment variables: `TF_VAR_destination_redshift_domain`, `TF_VAR_destination_sqlserver_hostname`, `TF_VAR_destination_starburst_access_key_id`
+  - Fifth batch of 3 destination acceptance tests complete (Redshift, SQLServer, Starburst)
+  - All 23 destination acceptance tests are now complete!
+---
+
+## 2026-01-21 - US-040
+- What was implemented:
+  - Created acceptance test for EnrichAsync transform: `TestAccTransformEnrichAsyncResource_basic` in `transform_enrich_async_resource_test.go`
+  - Created acceptance test for FanOut transform: `TestAccTransformFanOutResource_basic` in `transform_fan_out_resource_test.go`
+  - Created acceptance test for Rollup transform: `TestAccTransformRollupResource_basic` in `transform_rollup_resource_test.go`
+  - All tests implement basic CRUD operations: Create/Read, ImportState, Update/Read, Delete (automatic)
+  - All tests use `tf-acc-test-` prefix for resource names (e.g., "tf-acc-test-transform-enrich-async")
+  - All tests follow same pattern as existing `transform_enrich_resource_test.go`
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `internal/provider/transform_enrich_async_resource_test.go` (~75 lines)
+  - Created: `internal/provider/transform_fan_out_resource_test.go` (~65 lines)
+  - Created: `internal/provider/transform_rollup_resource_test.go` (~65 lines)
+  - Modified: `tasks/prd.json` (marked US-040 as passes: true)
+- **Learnings for future iterations:**
+  - Transform resources share similar schema structure: name, transforms_language, transforms_input_topic_pattern, transforms_output_topic_pattern, transforms_input_serialization_format, transforms_output_serialization_format
+  - EnrichAsync is unique - has additional `transforms_async_timeout_ms` and `transforms_async_capacity` fields; supports JavaScript or Python
+  - FanOut only supports JavaScript as `transforms_language`
+  - Rollup only supports SQL as `transforms_language`
+  - Valid serialization format values are title case: "Any", "Avro", "Json" (not lowercase)
+  - Transform tests don't require skip logic for credentials - they work like the Webhook source (no external dependencies)
+  - All 6 required transform types now have acceptance tests: Enrich, EnrichAsync, FanOut, MapFilter, Rollup, SqlJoin
+---
