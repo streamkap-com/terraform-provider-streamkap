@@ -66,7 +66,35 @@ func sweepSources(_ string) error {
 }
 
 func sweepDestinations(_ string) error {
-	log.Println("[INFO] Destination sweeper - manual cleanup may be needed for tf-migration-test-* resources")
+	client, err := newSweepClient()
+	if err != nil {
+		return fmt.Errorf("error creating sweep client: %w", err)
+	}
+
+	ctx := context.Background()
+
+	destinations, err := client.ListDestinations(ctx)
+	if err != nil {
+		return fmt.Errorf("error listing destinations: %w", err)
+	}
+
+	var errs []error
+	for _, destination := range destinations {
+		if isTestResource(destination.Name) {
+			log.Printf("[INFO] Sweeping destination: %s (ID: %s)", destination.Name, destination.ID)
+			if err := client.DeleteDestination(ctx, destination.ID); err != nil {
+				log.Printf("[ERROR] Failed to delete destination %s: %v", destination.Name, err)
+				errs = append(errs, fmt.Errorf("failed to delete destination %s: %w", destination.Name, err))
+			} else {
+				log.Printf("[INFO] Successfully deleted destination: %s", destination.Name)
+			}
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("errors during destination sweep: %v", errs)
+	}
+
 	return nil
 }
 
