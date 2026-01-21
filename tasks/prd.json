@@ -563,8 +563,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 38,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Tests compile and skip gracefully without credentials."
     },
     {
       "id": "US-039",
@@ -578,8 +578,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 39,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Tests compile and skip gracefully without credentials."
     },
     {
       "id": "US-040",
@@ -593,8 +593,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 40,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Tests compile and skip gracefully without credentials. Three transform tests created: EnrichAsync, FanOut, Rollup."
     },
     {
       "id": "US-041",
