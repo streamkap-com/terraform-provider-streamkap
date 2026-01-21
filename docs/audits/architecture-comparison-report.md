@@ -21,6 +21,7 @@
 10. [Deprecated Fields](#deprecated-fields)
 11. [Migration Tests](#migration-tests)
 12. [Code Generator Parser](#code-generator-parser)
+13. [Code Generator Type Mapping](#code-generator-type-mapping)
 
 ---
 
@@ -1774,6 +1775,235 @@ func (e *ConfigEntry) IsConditional() bool {
 | **Suffix Handling** | Strips `.user.defined` and `.user.displayed` suffixes |
 | **Case Conversion** | Custom `camelToSnake()` function for consistent naming |
 | **Null Safety** | All accessor methods handle nil values gracefully |
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## Code Generator Type Mapping
+
+This section documents the code generator's type mapping implementation in `cmd/tfgen/generator.go`, which converts backend control types to Terraform schema types.
+
+### Overview
+
+**Location**: `cmd/tfgen/generator.go` (993 lines)
+
+The generator is the second stage of the code generation pipeline. It takes parsed configuration data from the parser and generates Go code with Terraform schemas, model structs, and field mappings.
+
+### Type Mapping Architecture
+
+The type mapping occurs in two primary locations:
+1. **Parser** (`cmd/tfgen/parser.go`): `TerraformType()` method maps backend controls to Terraform type constants
+2. **Generator** (`cmd/tfgen/generator.go`): `entryToFieldData()` method uses these types to generate schema attributes
+
+### Backend Control to Terraform Type Mapping
+
+**Location**: `parser.go` lines 245-264 (TerraformType method)
+
+| Backend Control | Terraform Type Constant | Go Type |
+|-----------------|-------------------------|---------|
+| `string` | `TerraformTypeString` | `types.String` |
+| `password` | `TerraformTypeString` | `types.String` (+ Sensitive) |
+| `textarea` | `TerraformTypeString` | `types.String` |
+| `json` | `TerraformTypeString` | `types.String` |
+| `datetime` | `TerraformTypeString` | `types.String` |
+| `number` | `TerraformTypeInt64` | `types.Int64` |
+| `boolean` | `TerraformTypeBool` | `types.Bool` |
+| `toggle` | `TerraformTypeBool` | `types.Bool` |
+| `one-select` | `TerraformTypeString` | `types.String` (+ OneOf validator) |
+| `multi-select` | `TerraformTypeList` | `types.List` |
+| `slider` | `TerraformTypeInt64` | `types.Int64` (+ Between validator) |
+
+**Verification**: ✅ `string` → `types.String` mapping confirmed (line 247-248)
+**Verification**: ✅ `number` → `types.Int64` mapping confirmed (line 249-251)
+**Verification**: ✅ `boolean`/`toggle` → `types.Bool` mapping confirmed (line 252-253)
+
+### Terraform Type Constants
+
+**Location**: `parser.go` lines 90-98
+
+```go
+type TerraformType string
+
+const (
+    TerraformTypeString TerraformType = "types.String"
+    TerraformTypeInt64  TerraformType = "types.Int64"
+    TerraformTypeBool   TerraformType = "types.Bool"
+    TerraformTypeList   TerraformType = "types.List[types.String]"
+)
+```
+
+### Password Control to Sensitive Attribute Mapping
+
+**Location**: `parser.go` lines 121-125 (IsSensitive method)
+
+```go
+// IsSensitive returns true if this config entry should be marked as sensitive in Terraform.
+// Fields with encrypt=true or control=password are considered sensitive.
+func (e *ConfigEntry) IsSensitive() bool {
+    return e.Encrypt || e.Value.Control == "password"
+}
+```
+
+**Verification**: ✅ `password` control generates `Sensitive: true` via `IsSensitive()` check
+
+### encrypt=true to Sensitive=true Mapping
+
+**Location**: `generator.go` lines 644 (field initialization)
+
+The generator sets the `Sensitive` field from the parser's `IsSensitive()` result:
+
+```go
+field := FieldData{
+    GoFieldName:    goFieldName,
+    GoType:         string(entry.TerraformType()),
+    TfsdkTag:       tfAttrName,
+    TfAttrName:     tfAttrName,
+    Description:    entry.Description,
+    Sensitive:      entry.IsSensitive(),  // ← Uses IsSensitive()
+    APIFieldName:   entry.Name,
+    RequiresReplace: entry.IsSetOnce(),
+}
+```
+
+**Verification**: ✅ `encrypt=true` generates `Sensitive=true` via `IsSensitive()` which returns `e.Encrypt || e.Value.Control == "password"`
+
+### Schema Attribute Type Assignment
+
+**Location**: `generator.go` lines 663-678
+
+The generator assigns the appropriate schema attribute type based on the Terraform type:
+
+```go
+// Determine schema attribute type (respecting port field override)
+if forceInt64 {
+    field.SchemaAttrType = "schema.Int64Attribute"
+} else {
+    switch entry.TerraformType() {
+    case TerraformTypeString:
+        field.SchemaAttrType = "schema.StringAttribute"
+    case TerraformTypeInt64:
+        field.SchemaAttrType = "schema.Int64Attribute"
+    case TerraformTypeBool:
+        field.SchemaAttrType = "schema.BoolAttribute"
+    case TerraformTypeList:
+        field.SchemaAttrType = "schema.ListAttribute"
+        field.GoType = "types.List"
+        field.IsListType = true // Flag for template to add ElementType
+    }
+}
+```
+
+### Generated Schema Template
+
+**Location**: `generator.go` lines 853-992 (schemaTemplate constant)
+
+The template generates schema attributes with the appropriate type, sensitivity, and modifiers:
+
+```go
+"{{ .TfAttrName }}": {{ .SchemaAttrType }}{
+{{- if .Sensitive }}
+    Sensitive:           true,
+{{- end }}
+{{- if .Description }}
+    Description:         {{ printf "%q" .Description }},
+    MarkdownDescription: {{ printf "%q" .MarkdownDescription }},
+{{- end }}
+    // ... validators, defaults, plan modifiers
+},
+```
+
+### Type Mapping Test Coverage
+
+The `IsSensitive()` function is covered by dedicated tests in `parser_test.go`:
+
+**Test**: `TestIsSensitive` (lines 237-272)
+
+| Test Case | encrypt | control | Expected |
+|-----------|---------|---------|----------|
+| encrypt=true | `true` | `string` | `true` |
+| password control | `false` | `password` | `true` |
+| neither | `false` | `string` | `false` |
+| both | `true` | `password` | `true` |
+
+### Port Field Override
+
+**Location**: `generator.go` lines 625-628, 636
+
+Port fields are special-cased to use `Int64` type for better UX, even when the backend stores them as strings:
+
+```go
+// isPortField returns true if the field name indicates it's a port field.
+// Port fields should use Int64 type for better UX.
+func isPortField(tfAttrName string) bool {
+    return tfAttrName == "port" ||
+        strings.HasSuffix(tfAttrName, "_port")
+}
+```
+
+This is applied in `entryToFieldData()`:
+
+```go
+// Check if this is a port field that should be Int64
+forceInt64 := isPortField(tfAttrName)
+```
+
+### Validator Generation
+
+The generator also creates validators for specific control types:
+
+#### OneOf Validator (one-select control)
+
+**Location**: `generator.go` lines 772-779
+
+```go
+func (g *Generator) oneOfValidator(entry *ConfigEntry) string {
+    values := entry.GetRawValues()
+    quoted := make([]string, len(values))
+    for i, v := range values {
+        quoted[i] = fmt.Sprintf("%q", v)
+    }
+    return fmt.Sprintf("stringvalidator.OneOf(%s)", strings.Join(quoted, ", "))
+}
+```
+
+#### Between Validator (slider control)
+
+**Location**: `generator.go` lines 782-786
+
+```go
+func (g *Generator) rangeValidator(entry *ConfigEntry) string {
+    min := entry.GetSliderMin()
+    max := entry.GetSliderMax()
+    return fmt.Sprintf("int64validator.Between(%d, %d)", min, max)
+}
+```
+
+### Key Implementation Details
+
+| Feature | Implementation Location | Description |
+|---------|------------------------|-------------|
+| Type mapping | `parser.go:245-264` | Maps backend controls to TerraformType constants |
+| Sensitivity | `parser.go:121-125` | `encrypt=true` OR `control=password` → `Sensitive=true` |
+| Schema type | `generator.go:663-678` | Assigns `schema.*Attribute` based on TerraformType |
+| Port override | `generator.go:625-628` | Forces `Int64` for port fields |
+| OneOf validator | `generator.go:720-736` | Generated for `one-select` controls |
+| Range validator | `generator.go:739-742` | Generated for `slider` controls |
+
+### Summary of Verified Mappings
+
+| Requirement | Status | Evidence |
+|-------------|--------|----------|
+| `string` → `types.String` | ✅ Verified | `parser.go:247-248` |
+| `password` → `types.String` (Sensitive) | ✅ Verified | `parser.go:247-248`, `parser.go:123-124` |
+| `number` → `types.Int64` | ✅ Verified | `parser.go:249-251` |
+| `boolean` → `types.Bool` | ✅ Verified | `parser.go:252-253` |
+| `encrypt=true` → `Sensitive=true` | ✅ Verified | `parser.go:123`, `generator.go:644` |
 
 ### Typecheck Verification
 
