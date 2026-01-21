@@ -637,8 +637,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 43,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added ListDestinations method to API client. Sweeper lists all destinations and deletes those matching test resource prefixes (tf-acc-test-, tf-migration-test-, test-source-, test-destination-)."
     },
     {
       "id": "US-044",
@@ -652,8 +652,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 44,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added ListTransforms and ListPipelines methods to API client. Both sweepers list resources and delete those matching test prefixes (tf-acc-test-, tf-migration-test-, test-source-, test-destination-)."
     },
     {
       "id": "US-045",

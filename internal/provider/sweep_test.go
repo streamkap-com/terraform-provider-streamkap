@@ -25,10 +25,15 @@ func init() {
 		F:    sweepDestinations,
 	})
 
+	resource.AddTestSweepers("streamkap_transform", &resource.Sweeper{
+		Name: "streamkap_transform",
+		F:    sweepTransforms,
+	})
+
 	resource.AddTestSweepers("streamkap_pipeline", &resource.Sweeper{
 		Name:         "streamkap_pipeline",
 		F:            sweepPipelines,
-		Dependencies: []string{"streamkap_source", "streamkap_destination"},
+		Dependencies: []string{"streamkap_source", "streamkap_destination", "streamkap_transform"},
 	})
 }
 
@@ -98,8 +103,69 @@ func sweepDestinations(_ string) error {
 	return nil
 }
 
+func sweepTransforms(_ string) error {
+	client, err := newSweepClient()
+	if err != nil {
+		return fmt.Errorf("error creating sweep client: %w", err)
+	}
+
+	ctx := context.Background()
+
+	transforms, err := client.ListTransforms(ctx)
+	if err != nil {
+		return fmt.Errorf("error listing transforms: %w", err)
+	}
+
+	var errs []error
+	for _, transform := range transforms {
+		if isTestResource(transform.Name) {
+			log.Printf("[INFO] Sweeping transform: %s (ID: %s)", transform.Name, transform.ID)
+			if err := client.DeleteTransform(ctx, transform.ID); err != nil {
+				log.Printf("[ERROR] Failed to delete transform %s: %v", transform.Name, err)
+				errs = append(errs, fmt.Errorf("failed to delete transform %s: %w", transform.Name, err))
+			} else {
+				log.Printf("[INFO] Successfully deleted transform: %s", transform.Name)
+			}
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("errors during transform sweep: %v", errs)
+	}
+
+	return nil
+}
+
 func sweepPipelines(_ string) error {
-	log.Println("[INFO] Pipeline sweeper - manual cleanup may be needed for tf-migration-test-* resources")
+	client, err := newSweepClient()
+	if err != nil {
+		return fmt.Errorf("error creating sweep client: %w", err)
+	}
+
+	ctx := context.Background()
+
+	pipelines, err := client.ListPipelines(ctx)
+	if err != nil {
+		return fmt.Errorf("error listing pipelines: %w", err)
+	}
+
+	var errs []error
+	for _, pipeline := range pipelines {
+		if isTestResource(pipeline.Name) {
+			log.Printf("[INFO] Sweeping pipeline: %s (ID: %s)", pipeline.Name, pipeline.ID)
+			if err := client.DeletePipeline(ctx, pipeline.ID); err != nil {
+				log.Printf("[ERROR] Failed to delete pipeline %s: %v", pipeline.Name, err)
+				errs = append(errs, fmt.Errorf("failed to delete pipeline %s: %w", pipeline.Name, err))
+			} else {
+				log.Printf("[INFO] Successfully deleted pipeline: %s", pipeline.Name)
+			}
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("errors during pipeline sweep: %v", errs)
+	}
+
 	return nil
 }
 
