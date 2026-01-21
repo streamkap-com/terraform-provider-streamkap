@@ -12,6 +12,7 @@
 2. [Refactored Architecture](#refactored-architecture)
 3. [Comparison Matrix](#comparison-matrix)
 4. [Trade-offs](#trade-offs)
+5. [Architectural Decisions](#architectural-decisions)
 
 ---
 
@@ -541,5 +542,162 @@ The primary trade-off (reflection complexity) is mitigated by:
 - Compile-time interface checks (`var _ ConnectorConfig = (*Config)(nil)`)
 - Schema backward compatibility tests
 - Acceptance tests with VCR cassettes
+
+---
+
+## Architectural Decisions
+
+This section documents the rationale behind key architectural decisions in the refactored Terraform provider.
+
+### Decision 1: Code Generation Approach
+
+**Context**: Each connector (source/destination) requires a Terraform schema, model struct, and field mappings that must match the backend API configuration. The main branch approach required ~400-600 LOC of manually maintained code per connector.
+
+**Decision**: Implement a code generator (`cmd/tfgen`) that reads backend `configuration.latest.json` files and auto-generates:
+- Model structs with `tfsdk` tags
+- Schema functions with validators, defaults, and descriptions
+- Field mapping tables (Terraform attribute → API field name)
+
+**Rationale**:
+1. **Single Source of Truth**: Backend `configuration.latest.json` already defines all field metadata (name, type, control, default, required, sensitive). Generating from this ensures Terraform schemas always match backend validation rules.
+2. **Reduced Human Error**: Manual schema maintenance led to drift between Terraform and backend. Typos in field names, missing validators, and outdated descriptions were common.
+3. **Scalability**: With 42+ connectors, manually maintaining ~450 LOC each is unsustainable. Generation reduces per-connector unique code to ~55 LOC.
+4. **Consistency**: All generated schemas follow identical patterns for descriptions, validators, defaults, and plan modifiers.
+
+**Trade-offs Accepted**:
+- Generator infrastructure (~1,500 LOC) must be maintained
+- Requires `STREAMKAP_BACKEND_PATH` environment variable for regeneration
+- Team must understand generator to handle edge cases
+
+### Decision 2: Reflection-Based Marshaling
+
+**Context**: Terraform Plugin Framework requires converting between typed `types.String`/`types.Int64` values and `map[string]any` for API calls. The main branch used manual `model2ConfigMap()` and `configMap2Model()` methods in each connector (~100-200 LOC each).
+
+**Decision**: Implement generic reflection-based conversion in `base.go`:
+- `modelToConfigMap()`: Iterates struct fields, reads `tfsdk` tags, extracts values using type switches
+- `configMapToModel()`: Uses field mappings + helper functions to set Terraform types
+
+**Rationale**:
+1. **Code Reuse**: Single implementation serves all 42+ connectors vs. duplicating conversion logic
+2. **Declarative Mappings**: `FieldMappings` table clearly shows Terraform ↔ API relationship without implementation details
+3. **Type Safety**: Despite using reflection, the code uses type switches (`types.String`, `types.Int64`, `types.Bool`, `types.List`) that handle all supported Terraform types
+4. **Maintainability**: Bug fixes apply to all connectors. Adding support for new types (e.g., `types.Float64`) requires one change.
+
+**Implementation Details** (from `base.go`):
+```go
+// extractTerraformValue - handles all Terraform types via type switch
+switch v := fieldValue.Interface().(type) {
+case types.String:
+    if v.IsNull() || v.IsUnknown() { return nil }
+    return v.ValueString()
+case types.Int64:
+    if v.IsNull() || v.IsUnknown() { return nil }
+    return v.ValueInt64()
+// ... cases for Bool, Float64, List
+}
+```
+
+**Trade-offs Accepted**:
+- Runtime errors possible if struct tags mismatch (mitigated by compile-time interface checks)
+- Harder to debug type issues (mitigated by acceptance tests)
+- Performance overhead from reflection (negligible for Terraform operations)
+
+### Decision 3: Thin Wrapper Pattern
+
+**Context**: Generated schemas are immutable (DO NOT EDIT), but connectors need:
+- Deprecated field aliases for backward compatibility
+- Custom field overrides for complex types (maps, nested objects)
+- Interface implementation for the base resource
+
+**Decision**: Create thin wrapper files (~55 LOC each) that implement `ConnectorConfig` interface:
+```go
+type ConnectorConfig interface {
+    GetSchema() schema.Schema        // Returns generated schema + deprecations
+    GetFieldMappings() map[string]string  // Returns generated mappings + deprecated aliases
+    GetConnectorType() ConnectorType
+    GetConnectorCode() string
+    GetResourceName() string
+    NewModelInstance() any
+}
+```
+
+**Rationale**:
+1. **Separation of Concerns**: Generated code contains pure data; wrappers contain customization logic
+2. **Compile-Time Safety**: Wrappers include `var _ connector.ConnectorConfig = (*Config)(nil)` to verify interface compliance
+3. **Deprecation Layer**: Wrappers can add deprecated attributes with `DeprecationMessage` without modifying generated code
+4. **Override Flexibility**: Complex fields (map types, nested objects) defined in wrapper, not generator
+
+**Implementation Example** (from wrapper):
+```go
+func (c *PostgreSQLConfig) GetSchema() schema.Schema {
+    s := generated.SourcePostgresqlSchema()
+    // Add deprecated aliases for backward compatibility
+    s.Attributes["insert_static_key_field_1"] = schema.StringAttribute{
+        Optional:           true,
+        Computed:           true,
+        DeprecationMessage: "Use 'transforms_insert_static_key1_static_field' instead.",
+    }
+    return s
+}
+```
+
+**Trade-offs Accepted**:
+- Three files per connector vs. one (generated schema + wrapper + shared base)
+- Developers must understand layer responsibilities
+
+### Decision 4: JSON-Based Deprecations and Overrides
+
+**Context**: Managing deprecated field aliases and type overrides across 42+ connectors requires a systematic approach. Inline handling per connector would scatter this information across many files.
+
+**Decision**: Centralize configuration in JSON files:
+- `cmd/tfgen/deprecations.json`: Defines deprecated attribute → new attribute mappings
+- `cmd/tfgen/overrides.json`: Defines complex field types (map_string, map_nested)
+
+**Deprecations JSON Structure**:
+```json
+{
+  "deprecated_fields": [
+    {
+      "connector": "postgresql",
+      "entity_type": "sources",
+      "deprecated_attr": "insert_static_key_field_1",
+      "new_attr": "transforms_insert_static_key1_static_field",
+      "type": "string"
+    }
+  ]
+}
+```
+
+**Overrides JSON Structure**:
+```json
+{
+  "field_overrides": [
+    {
+      "connector": "snowflake",
+      "entity_type": "destinations",
+      "api_field_name": "auto.qa.dedupe.table.mapping",
+      "terraform_attr_name": "auto_qa_dedupe_table_mapping",
+      "type": "map_string",
+      "optional": true,
+      "description": "Mapping between tables..."
+    }
+  ]
+}
+```
+
+**Rationale**:
+1. **Centralized Audit**: Single file shows all deprecated fields across all connectors. Easy to review backward compatibility status.
+2. **Generator Integration**: Generator reads JSON and adds deprecated fields to model structs automatically
+3. **Type Flexibility**: `overrides.json` handles types the generator can't infer (map types, nested objects)
+4. **Version Control**: JSON changes are easy to review in PRs. Clear diff of what deprecations were added/removed.
+
+**Current Coverage**:
+- `deprecations.json`: 10 deprecated field definitions (9 PostgreSQL source, 1 Snowflake destination)
+- `overrides.json`: 3 field overrides (Snowflake map_string, ClickHouse map_nested, SQL Server map_nested)
+
+**Trade-offs Accepted**:
+- JSON must stay synchronized with actual field usage
+- Generator must parse and apply JSON correctly
+- Additional configuration files to maintain
 
 ---
