@@ -518,8 +518,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 35,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Tests compile and skip gracefully without credentials."
     },
     {
       "id": "US-036",

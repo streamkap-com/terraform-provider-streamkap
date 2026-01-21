@@ -667,3 +667,28 @@
   - Vitess requires 3 env vars: `TF_VAR_source_vitess_hostname`, `TF_VAR_source_vitess_vtctld_host`, `TF_VAR_source_vitess_vtctld_password`
   - All 20 source acceptance tests are now complete (AlloyDB, DB2, DocumentDB, DynamoDB, Elasticsearch, KafkaDirect, MariaDB, MongoDB, MongoDBHosted, MySQL, Oracle, OracleAWS, PlanetScale, PostgreSQL, Redis, S3, SQLServer, Supabase, Vitess, Webhook)
 ---
+
+## 2026-01-21 - US-035
+- What was implemented:
+  - Created acceptance test for AzBlob destination: `TestAccDestinationAzblobResource` in `destination_azblob_resource_test.go`
+  - Created acceptance test for BigQuery destination: `TestAccDestinationBigqueryResource` in `destination_bigquery_resource_test.go`
+  - Created acceptance test for CockroachDB destination: `TestAccDestinationCockroachdbResource` in `destination_cockroachdb_resource_test.go`
+  - All tests implement basic CRUD operations: Create/Read, ImportState, Update/Read, Delete (automatic)
+  - All tests use `tf-acc-test-` prefix for resource names (e.g., "tf-acc-test-destination-azblob")
+  - All tests include `t.Skip()` for graceful handling when credentials not set
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Created: `internal/provider/destination_azblob_resource_test.go` (~95 lines)
+  - Created: `internal/provider/destination_bigquery_resource_test.go` (~92 lines)
+  - Created: `internal/provider/destination_cockroachdb_resource_test.go` (~114 lines)
+  - Modified: `tasks/prd.json` (marked US-035 as passes: true)
+- **Learnings for future iterations:**
+  - AzBlob uses `azblob_connection_string` (SAS token or account key) and `azblob_container_name` for Azure Blob Storage
+  - AzBlob has file format options: json, csv, avro, parquet (default: json)
+  - BigQuery uses `bigquery_json` (service account JSON content), `table_name_prefix` (dataset), and `bigquery_region`
+  - BigQuery has 30+ region options (us-central1, us-east1, EU, US, etc.)
+  - CockroachDB uses standard database fields with default port 26257 (not 5432 like PostgreSQL)
+  - CockroachDB has `schema_evolution` (basic/none), `insert_mode` (insert/upsert), and `primary_key_mode` (none/record_key/record_value)
+  - Test environment variables: `TF_VAR_destination_azblob_connection_string`, `TF_VAR_destination_bigquery_json`, `TF_VAR_destination_cockroachdb_hostname`
+  - First batch of 3 destination acceptance tests complete (AzBlob, BigQuery, CockroachDB)
+---
