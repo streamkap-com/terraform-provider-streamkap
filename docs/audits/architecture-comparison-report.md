@@ -33,6 +33,7 @@
 22. [Destination Connector Schema Verification (Batch 1)](#destination-connector-schema-verification-batch-1)
 23. [Destination Connector Schema Verification (Batch 2)](#destination-connector-schema-verification-batch-2)
 24. [Destination Connector Schema Verification (Batch 3)](#destination-connector-schema-verification-batch-3)
+25. [Destination Connector Schema Verification (Batch 4)](#destination-connector-schema-verification-batch-4)
 
 ---
 
@@ -2975,6 +2976,115 @@ All 5 destination schemas in Batch 3 are verified present with generated code.
 After Batch 3, the following 6 destination connectors remain to be verified:
 - Batch 4: Redshift, S3, Snowflake, SQLServer, Starburst (5 connectors)
 - Additional: Weaviate (1 connector)
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## Destination Connector Schema Verification (Batch 4)
+
+This section verifies the existence and completeness of the fourth and final batch of destination connector schemas, including Weaviate to complete all 23 destination connectors.
+
+### Acceptance Criteria
+- [x] Verify schema exists for: Redshift, S3, Snowflake, SQLServer, Starburst
+- [x] Add 'Destination Schemas Batch 4' table to audit report
+- [x] Add summary: 'All 22 destination schemas verified' (Note: 23 total with Weaviate)
+- [x] Typecheck passes: `go build ./...`
+
+### Batch 4 Schema Verification
+
+| Connector | Generated File | Lines of Code | Status |
+|-----------|---------------|---------------|--------|
+| Redshift | `destination_redshift.go` | 139 | ✅ Verified |
+| S3 | `destination_s3.go` | 142 | ✅ Verified |
+| Snowflake | `destination_snowflake.go` | 238 | ✅ Verified |
+| SQLServer | `destination_sqlserver.go` | 194 | ✅ Verified |
+| Starburst | `destination_starburst.go` | 142 | ✅ Verified |
+| **Batch 4 Total** | **5 files** | **855** | **All Verified** |
+
+### Additional Connector: Weaviate
+
+| Connector | Generated File | Lines of Code | Status |
+|-----------|---------------|---------------|--------|
+| Weaviate | `destination_weaviate.go` | 278 | ✅ Verified |
+
+### Generated Destination Files (Batch 4)
+
+```bash
+$ ls internal/generated/destination_{redshift,s3,snowflake,sqlserver,starburst,weaviate}.go
+internal/generated/destination_redshift.go
+internal/generated/destination_s3.go
+internal/generated/destination_snowflake.go
+internal/generated/destination_sqlserver.go
+internal/generated/destination_starburst.go
+internal/generated/destination_weaviate.go
+```
+
+### Batch 4 Summary
+
+- **Redshift** (139 LOC): Amazon Redshift data warehouse destination
+- **S3** (142 LOC): Amazon S3 object storage destination for data lake exports
+- **Snowflake** (238 LOC): Snowflake data warehouse destination with comprehensive options (largest in batch)
+- **SQLServer** (194 LOC): Microsoft SQL Server database destination with upsert support
+- **Starburst** (142 LOC): Starburst (Trino) query engine destination
+- **Weaviate** (278 LOC): Weaviate vector database destination for AI/ML workloads (largest overall)
+
+All 6 destination schemas in Batch 4 (including Weaviate) are verified present with generated code.
+
+### Complete Destination Connector Summary
+
+| Batch | Connectors | Total LOC |
+|-------|------------|-----------|
+| Batch 1 | AzBlob, BigQuery, ClickHouse, CockroachDB, Databricks, DB2 | 1,006 |
+| Batch 2 | GCS, HTTPSink, Iceberg, Kafka, KafkaDirect, Motherduck | 869 |
+| Batch 3 | MySQL, Oracle, PostgreSQL, R2, Redis | 881 |
+| Batch 4 | Redshift, S3, Snowflake, SQLServer, Starburst, Weaviate | 1,133 |
+| **Grand Total** | **23 destination connectors** | **3,889** |
+
+### All 23 Destination Schemas Verified ✅
+
+The following destination connector schemas have been verified in `internal/generated/`:
+
+| # | Connector | File | LOC |
+|---|-----------|------|-----|
+| 1 | AzBlob | `destination_azblob.go` | 147 |
+| 2 | BigQuery | `destination_bigquery.go` | 124 |
+| 3 | ClickHouse | `destination_clickhouse.go` | 179 |
+| 4 | CockroachDB | `destination_cockroachdb.go` | 196 |
+| 5 | Databricks | `destination_databricks.go` | 196 |
+| 6 | DB2 | `destination_db2.go` | 164 |
+| 7 | GCS | `destination_gcs.go` | 123 |
+| 8 | HTTPSink | `destination_httpsink.go` | 260 |
+| 9 | Iceberg | `destination_iceberg.go` | 152 |
+| 10 | Kafka | `destination_kafka.go` | 109 |
+| 11 | KafkaDirect | `destination_kafkadirect.go` | 71 |
+| 12 | Motherduck | `destination_motherduck.go` | 154 |
+| 13 | MySQL | `destination_mysql.go` | 187 |
+| 14 | Oracle | `destination_oracle.go` | 187 |
+| 15 | PostgreSQL | `destination_postgresql.go` | 237 |
+| 16 | R2 | `destination_r2.go` | 137 |
+| 17 | Redis | `destination_redis.go` | 133 |
+| 18 | Redshift | `destination_redshift.go` | 139 |
+| 19 | S3 | `destination_s3.go` | 142 |
+| 20 | Snowflake | `destination_snowflake.go` | 238 |
+| 21 | SQLServer | `destination_sqlserver.go` | 194 |
+| 22 | Starburst | `destination_starburst.go` | 142 |
+| 23 | Weaviate | `destination_weaviate.go` | 278 |
+
+**Total: 23 destination connectors with 3,889 lines of generated schema code.**
+
+### Destination vs Source Schema Comparison
+
+| Category | Connectors | Total LOC | Avg LOC/Connector |
+|----------|------------|-----------|-------------------|
+| Sources | 20 | 4,477 | 224 |
+| Destinations | 23 | 3,889 | 169 |
+| **Combined** | **43** | **8,366** | **195** |
 
 ### Typecheck Verification
 

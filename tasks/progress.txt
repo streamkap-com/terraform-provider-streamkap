@@ -492,3 +492,41 @@
   - Remaining batches: Batch 3 (MySQL, Oracle, PostgreSQL, R2, Redis) and Batch 4 (Redshift, S3, Snowflake, SQLServer, Starburst) + Weaviate
   - HTTPSink destination is for real-time webhook event delivery, has extensive configuration options
 ---
+
+## 2026-01-21 - US-027
+- What was implemented:
+  - Verified 5 destination connector schemas exist: MySQL, Oracle, PostgreSQL, R2, Redis
+  - Line counts: MySQL (187), Oracle (187), PostgreSQL (237), R2 (137), Redis (133) = 881 total
+  - PostgreSQL has highest LOC (237) in batch - comprehensive destination with CDC support
+  - Redis has lowest LOC (133) - minimal schema for in-memory data store
+  - Added "Destination Connector Schema Verification (Batch 3)" section (section 24) to audit report
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md` (+66 lines)
+  - Modified: `tasks/prd.json` (marked US-027 as passes: true)
+- **Learnings for future iterations:**
+  - Cumulative destination progress: 17/23 destination connectors verified (2,756 LOC total)
+  - Remaining: Batch 4 (Redshift, S3, Snowflake, SQLServer, Starburst) + Weaviate (6 connectors)
+  - R2 is Cloudflare's S3-compatible object storage
+---
+
+## 2026-01-21 - US-028
+- What was implemented:
+  - Verified 6 final destination connector schemas exist: Redshift, S3, Snowflake, SQLServer, Starburst, Weaviate
+  - Line counts: Redshift (139), S3 (142), Snowflake (238), SQLServer (194), Starburst (142), Weaviate (278) = 1,133 total
+  - Added "Destination Connector Schema Verification (Batch 4)" section (section 25) to audit report
+  - Added complete "All 23 Destination Schemas Verified" summary table with all connectors and LOC
+  - Added "Destination vs Source Schema Comparison" showing 43 total connectors, 8,366 LOC combined
+  - Updated Table of Contents with new section
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md` (+108 lines)
+  - Modified: `tasks/prd.json` (marked US-028 as passes: true)
+- **Learnings for future iterations:**
+  - All 23 destination connector schemas verified (3,889 LOC total)
+  - All 20 source connector schemas verified (4,477 LOC total)
+  - Combined: 43 source+destination connectors with 8,366 LOC of generated schema code
+  - Weaviate has highest LOC (278) among destinations - vector DB with complex configuration
+  - Snowflake destination (238 LOC) has extensive options for data warehouse integration
+---
