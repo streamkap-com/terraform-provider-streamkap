@@ -622,8 +622,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 42,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added ListSources method to API client. Sweeper lists all sources and deletes those matching test resource prefixes (tf-acc-test-, tf-migration-test-, test-source-, test-destination-)."
     },
     {
       "id": "US-043",

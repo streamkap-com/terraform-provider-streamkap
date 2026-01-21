@@ -40,10 +40,27 @@ func sweepSources(_ string) error {
 
 	ctx := context.Background()
 
-	// Note: Would need ListSources API method - implement if available
-	log.Println("[INFO] Source sweeper - manual cleanup may be needed for tf-migration-test-* resources")
-	_ = client
-	_ = ctx
+	sources, err := client.ListSources(ctx)
+	if err != nil {
+		return fmt.Errorf("error listing sources: %w", err)
+	}
+
+	var errs []error
+	for _, source := range sources {
+		if isTestResource(source.Name) {
+			log.Printf("[INFO] Sweeping source: %s (ID: %s)", source.Name, source.ID)
+			if err := client.DeleteSource(ctx, source.ID); err != nil {
+				log.Printf("[ERROR] Failed to delete source %s: %v", source.Name, err)
+				errs = append(errs, fmt.Errorf("failed to delete source %s: %w", source.Name, err))
+			} else {
+				log.Printf("[INFO] Successfully deleted source: %s", source.Name)
+			}
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("errors during source sweep: %v", errs)
+	}
 
 	return nil
 }
