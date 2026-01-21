@@ -1239,3 +1239,28 @@
   - Documents accurately reflect 20 sources, 23 destinations, 8 transforms
   - CLAUDE.md references both audit documents in its "Detailed Reference Documents" section
 ---
+
+## 2026-01-21 - US-056
+- What was implemented:
+  - Created `docs/TESTING.md` with comprehensive test documentation (618 lines)
+  - Added Test Tiers Overview table with 7 test types: Unit, Schema Compat, Validators, Smoke, Integration, Acceptance, Migration
+  - Added Unit Tests section with commands, test locations table, and example test code
+  - Added Schema Tests section explaining snapshots, breaking change detection, and how to add new snapshots
+  - Added Acceptance Tests section with CRUD test pattern, skip logic, and environment variables
+  - Added Migration Tests section explaining the purpose, test pattern, and interpretation of failures
+  - Added VCR Cassettes section explaining recording, redaction, and re-recording
+  - Added Smoke Tests section explaining schema validation without API access
+  - Added Test Sweepers section with sweeper configuration and resource prefixes
+  - Added Environment Variables section with all required and optional variables
+  - Added Test Naming Conventions section with pattern overview and resource naming
+  - Added Writing New Tests section with step-by-step guides for adding new tests
+  - Added CI Integration section with recommended pipeline and pre-release checklist
+- Files changed:
+  - Created: `docs/TESTING.md`
+- **Learnings for future iterations:**
+  - Test files are in `internal/provider/` with pattern `*_test.go`
+  - testdata directory structure: `internal/provider/testdata/{cassettes,schemas}/`
+  - 16 schema snapshots exist in `testdata/schemas/` for backward compatibility testing
+  - Sweeper tests use build tag `//go:build sweep` and register via `resource.AddTestSweepers()`
+  - VCR cassettes use `gopkg.in/dnaeon/go-vcr.v4` and redact Authorization headers automatically
+---
