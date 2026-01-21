@@ -1,5 +1,62 @@
 // Package main provides the tfgen CLI tool for generating Terraform provider
-// schemas from backend configuration files.
+// schemas from Streamkap backend configuration.latest.json files.
+//
+// # Parser Module (parser.go)
+//
+// This file implements the configuration parser that reads backend JSON schemas
+// and extracts field metadata for Terraform schema generation.
+//
+// # Input Format
+//
+// The parser reads configuration.latest.json files from the backend repository.
+// Each file defines a connector's configuration fields:
+//
+//	{
+//	  "display_name": "PostgreSQL",
+//	  "config": [
+//	    {
+//	      "name": "database.hostname.user.defined",
+//	      "user_defined": true,
+//	      "required": true,
+//	      "value": {"control": "text", "type": "raw"}
+//	    }
+//	  ]
+//	}
+//
+// # Key Data Structures
+//
+// ConnectorConfig: Top-level structure containing display name and config array.
+//
+// ConfigEntry: Individual configuration field with name, user_defined flag,
+// required status, display settings, and value metadata.
+//
+// ValueObject: Field value metadata including control type (text, select, toggle,
+// slider, password), default values, validation constraints (min/max/step for
+// sliders), and raw_values for select options.
+//
+// Condition: Conditional visibility rules (EQ, NE, IN operators) for fields
+// that depend on other field values.
+//
+// # Type Mapping
+//
+// The TerraformType method maps backend controls to Terraform types:
+//   - text, select, textarea, password, file → types.String
+//   - number, slider → types.Int64
+//   - toggle, checkbox → types.Bool
+//   - multi_select → types.List[types.String]
+//
+// # User-Defined Field Filtering
+//
+// Only fields with user_defined=true are exposed in Terraform schemas.
+// Dynamic/computed fields (user_defined=false) are handled by the backend
+// and excluded from user input.
+//
+// # Attribute Naming
+//
+// TerraformAttributeName converts backend names to Terraform conventions:
+//   - Strips ".user.defined" suffix
+//   - Replaces dots and hyphens with underscores
+//   - Example: "database.hostname.user.defined" → "database_hostname"
 package main
 
 import (

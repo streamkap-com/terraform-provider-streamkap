@@ -1,6 +1,45 @@
-// Package connector provides a generic base resource for Streamkap connectors.
-// It implements the Terraform Resource interface and delegates connector-specific
-// behavior to a ConnectorConfig interface.
+// Package connector provides a generic base resource implementation for Streamkap
+// source and destination connectors in the Terraform provider.
+//
+// # Architecture
+//
+// This package implements the base layer of the three-layer architecture:
+//
+//  1. Generated Schemas (internal/generated/) - Auto-generated from backend config
+//  2. Thin Wrappers (internal/resource/source/, destination/) - ~55 LOC each
+//  3. Shared Base Resource (this package) - Generic CRUD with reflection
+//
+// The BaseConnectorResource implements the Terraform Plugin Framework interfaces
+// and uses reflection-based marshaling to convert between Terraform state and
+// API payloads, eliminating the need for per-connector CRUD implementations.
+//
+// # Key Components
+//
+// ConnectorConfig interface: Each connector wrapper must implement this interface
+// to provide its schema, field mappings, connector type, and model factory.
+//
+// BaseConnectorResource: The generic resource implementation that handles Create,
+// Read, Update, Delete, and ImportState operations for all connectors.
+//
+// # Reflection-Based Marshaling
+//
+// The modelToConfigMap and configMapToModel functions use Go reflection to:
+//   - Convert Terraform model structs to API request maps (for Create/Update)
+//   - Convert API response maps back to Terraform model structs (for Read)
+//
+// This approach eliminates ~400 LOC of manual type conversion per connector
+// while maintaining type safety through compile-time interface checks.
+//
+// # Usage
+//
+// Connector wrappers create a BaseConnectorResource via NewBaseConnectorResource:
+//
+//	func NewSourcePostgreSQL() resource.Resource {
+//	    return connector.NewBaseConnectorResource(&Config{})
+//	}
+//
+// Where Config implements the ConnectorConfig interface with the connector-specific
+// schema and field mappings.
 package connector
 
 import (

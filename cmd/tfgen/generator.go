@@ -1,5 +1,62 @@
 // Package main provides the tfgen CLI tool for generating Terraform provider
 // schemas from backend configuration files.
+//
+// # Generator Module (generator.go)
+//
+// This file implements the code generator that transforms parsed ConfigEntry
+// data into Go source files containing Terraform schema definitions.
+//
+// # Output Format
+//
+// The generator produces Go files in internal/generated/ with:
+//   - Model struct with tfsdk tags for state management
+//   - Schema function returning schema.Schema with attributes
+//   - FieldMappings map for API field name resolution
+//
+// # Configuration Files
+//
+// Two JSON configuration files customize the generation:
+//
+// overrides.json: Defines special handling for complex types that cannot be
+// auto-generated, such as map_string and map_nested fields (e.g., Snowflake
+// properties, ClickHouse custom_types).
+//
+// deprecations.json: Defines deprecated attribute aliases that maintain backward
+// compatibility with v2.1.18 while mapping to new attribute names.
+//
+// # Key Components
+//
+// Generator: Orchestrates the code generation process, loading overrides and
+// deprecations, then iterating through connectors to generate schema files.
+//
+// TemplateData: Holds all data needed by the Go template, including package
+// name, entity type, connector code, and processed field definitions.
+//
+// FieldData: Represents a single Terraform attribute with all schema properties
+// (required, optional, computed, sensitive, default, validators).
+//
+// # Template Processing
+//
+// The schemaTemplate constant defines the Go template used for code generation.
+// It produces properly formatted Go code with:
+//   - "DO NOT EDIT" header comment
+//   - Required imports
+//   - Model struct with all fields
+//   - Schema function with attribute definitions
+//   - Field mappings for API translation
+//
+// # Sensitive Field Handling
+//
+// Fields marked with encrypt=true in backend config or using password/file
+// control types generate Sensitive=true in the schema, preventing values
+// from appearing in logs or CLI output.
+//
+// # Validator Generation
+//
+// The generator creates validators for:
+//   - Enum fields (oneOfValidator from raw_values)
+//   - Slider fields (rangeValidator from min/max)
+//   - Port fields (Between validator for 1-65535)
 package main
 
 import (
