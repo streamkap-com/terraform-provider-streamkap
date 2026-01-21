@@ -4024,3 +4024,72 @@ SECRET:
 # No credentials available - skipping destination cassette recording
 ```
 
+
+### Transform, Pipeline, and Topic Cassettes
+
+**Status:** SKIPPED - No credentials available
+
+The VCR cassette recording for transform, pipeline, and topic acceptance tests was skipped because the required environment variables (`STREAMKAP_CLIENT_ID` and `STREAMKAP_SECRET`) are not set.
+
+#### Prerequisites for Recording
+
+To record VCR cassettes for transform, pipeline, and topic tests, set the following environment variables:
+
+```bash
+export STREAMKAP_CLIENT_ID="your-client-id"
+export STREAMKAP_SECRET="your-secret"
+export TF_ACC=1
+```
+
+Then run:
+
+```bash
+# Transform tests
+UPDATE_CASSETTES=1 go test -v -run 'TestAccTransform' ./internal/provider/...
+
+# Pipeline tests
+UPDATE_CASSETTES=1 go test -v -run 'TestAccPipeline' ./internal/provider/...
+
+# Topic tests
+UPDATE_CASSETTES=1 go test -v -run 'TestAccTopic' ./internal/provider/...
+```
+
+#### Cassettes Directory Structure
+
+```
+internal/provider/testdata/cassettes/
+├── .gitignore         # Excludes recorded cassettes from version control
+└── .gitkeep           # Ensures directory exists in git
+```
+
+When cassettes are recorded, they will be organized in this directory for replay during CI testing.
+
+#### Verification
+
+```bash
+$ echo "CLIENT_ID: ${STREAMKAP_CLIENT_ID:+set}" && echo "SECRET: ${STREAMKAP_SECRET:+set}"
+CLIENT_ID: 
+SECRET: 
+# No credentials available - skipping transform/pipeline/topic cassette recording
+```
+
+### VCR Cassette Summary
+
+| Resource Type | Status | Cassettes Recorded |
+|---------------|--------|-------------------|
+| Sources | SKIPPED | None (no credentials) |
+| Destinations | SKIPPED | None (no credentials) |
+| Transforms | SKIPPED | None (no credentials) |
+| Pipelines | SKIPPED | None (no credentials) |
+| Topics | SKIPPED | None (no credentials) |
+
+**Note:** When credentials become available, cassettes should be recorded for all resource types to enable CI testing without live API access.
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
