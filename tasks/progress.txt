@@ -1306,3 +1306,21 @@
   - Document architecture decisions and key abstractions in package-level comments
   - GoDoc sections that are useful: Architecture, Key Components, Usage, Examples
 ---
+
+## 2026-01-21 - US-059
+- What was implemented:
+  - Checked credentials availability: STREAMKAP_CLIENT_ID and STREAMKAP_SECRET are NOT set
+  - Added "VCR Cassette Recording" section to `docs/audits/architecture-comparison-report.md`
+  - Documented "Source Cassettes: SKIPPED - No credentials available"
+  - Added prerequisites for recording cassettes when credentials become available
+  - Documented current cassettes directory structure (internal/provider/testdata/cassettes/)
+  - Updated Table of Contents with new section (items 31-32: Audit Documents, VCR Cassette Recording)
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md`
+- **Learnings for future iterations:**
+  - VCR cassette recording requires credentials: `STREAMKAP_CLIENT_ID` and `STREAMKAP_SECRET`
+  - Cassettes directory exists at `internal/provider/testdata/cassettes/` with .gitignore and .gitkeep
+  - To record cassettes: `UPDATE_CASSETTES=1 go test -v -run 'TestAccSource' ./internal/provider/...`
+  - Cassettes are useful for CI - allows tests to run without live API credentials
+---

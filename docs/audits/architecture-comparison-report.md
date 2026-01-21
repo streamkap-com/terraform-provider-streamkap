@@ -39,6 +39,8 @@
 28. [Smoke Tests](#smoke-tests)
 29. [AI-Agent Descriptions](#ai-agent-descriptions)
 30. [Core Documentation](#core-documentation)
+31. [Audit Documents](#audit-documents)
+32. [VCR Cassette Recording](#vcr-cassette-recording)
 
 ---
 
@@ -3935,5 +3937,58 @@ Both documents were generated on 2026-01-09 as part of the Terraform Provider Re
 | Status | ✅ Current | ✅ Current |
 | TODOs | None | None |
 | Placeholders | None (except valid docs) | None (except valid docs) |
+
+---
+
+
+## VCR Cassette Recording
+
+### Source Cassettes
+
+**Status:** SKIPPED - No credentials available
+
+The VCR cassette recording for source acceptance tests was skipped because the required environment variables (`STREAMKAP_CLIENT_ID` and `STREAMKAP_SECRET`) are not set.
+
+#### Prerequisites for Recording
+
+To record VCR cassettes for source tests, set the following environment variables:
+
+```bash
+export STREAMKAP_CLIENT_ID="your-client-id"
+export STREAMKAP_SECRET="your-secret"
+export TF_ACC=1
+```
+
+Then run:
+
+```bash
+UPDATE_CASSETTES=1 go test -v -run 'TestAccSource' ./internal/provider/...
+```
+
+#### Current Cassettes Directory Structure
+
+```
+internal/provider/testdata/cassettes/
+├── .gitignore
+└── .gitkeep
+```
+
+The cassettes directory exists but is currently empty, awaiting cassette recording when credentials are available.
+
+#### Verification
+
+```bash
+$ echo "CLIENT_ID: ${STREAMKAP_CLIENT_ID:+set}" && echo "SECRET: ${STREAMKAP_SECRET:+set}"
+CLIENT_ID: 
+SECRET: 
+# No credentials available - skipping cassette recording
+```
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
 
 ---
