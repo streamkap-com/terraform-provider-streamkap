@@ -28,6 +28,7 @@
 17. [Dynamic Field Exclusion](#dynamic-field-exclusion)
 18. [Source Connector Schema Verification (Batch 1)](#source-connector-schema-verification-batch-1)
 19. [Source Connector Schema Verification (Batch 2)](#source-connector-schema-verification-batch-2)
+20. [Source Connector Schema Verification (Batch 3)](#source-connector-schema-verification-batch-3)
 
 ---
 
@@ -2630,6 +2631,60 @@ internal/generated/source_mysql.go
 - **MySQL** (314 LOC): MySQL database source with comprehensive CDC support
 
 All 5 source schemas in Batch 2 are verified present with generated code.
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## Source Connector Schema Verification (Batch 3)
+
+This section verifies that generated schema files exist for the third batch of 5 source connectors: Oracle, OracleAWS, PlanetScale, PostgreSQL, and Redis.
+
+### Verification Results
+
+| Connector | Generated File | Status | Lines of Code |
+|-----------|---------------|--------|---------------|
+| **Oracle** | `internal/generated/source_oracle.go` | ✅ EXISTS | 223 |
+| **OracleAWS** | `internal/generated/source_oracleaws.go` | ✅ EXISTS | 216 |
+| **PlanetScale** | `internal/generated/source_planetscale.go` | ✅ EXISTS | 195 |
+| **PostgreSQL** | `internal/generated/source_postgresql.go` | ✅ EXISTS | 372 |
+| **Redis** | `internal/generated/source_redis.go` | ✅ EXISTS | 236 |
+| **Total** | 5 files | **All Present** | 1,242 |
+
+### Generated Source Files (Batch 3)
+
+```bash
+$ ls internal/generated/source_{oracle,oracleaws,planetscale,postgresql,redis}.go
+internal/generated/source_oracle.go
+internal/generated/source_oracleaws.go
+internal/generated/source_planetscale.go
+internal/generated/source_postgresql.go
+internal/generated/source_redis.go
+```
+
+### Batch 3 Summary
+
+- **Oracle** (223 LOC): Oracle Database source with LogMiner CDC support
+- **OracleAWS** (216 LOC): Oracle RDS/AWS-hosted Oracle database source
+- **PlanetScale** (195 LOC): PlanetScale MySQL-compatible serverless database source
+- **PostgreSQL** (372 LOC): PostgreSQL database source with comprehensive CDC support (highest LOC due to extensive deprecated field mappings)
+- **Redis** (236 LOC): Redis in-memory data store source
+
+All 5 source schemas in Batch 3 are verified present with generated code.
+
+### Cumulative Progress
+
+| Batch | Connectors | Total LOC |
+|-------|------------|-----------|
+| Batch 1 | AlloyDB, DB2, DocumentDB, DynamoDB, Elasticsearch | 1,018 |
+| Batch 2 | KafkaDirect, MariaDB, MongoDB, MongoDBHosted, MySQL | 1,098 |
+| Batch 3 | Oracle, OracleAWS, PlanetScale, PostgreSQL, Redis | 1,242 |
+| **Running Total** | **15 source connectors** | **3,358** |
 
 ### Typecheck Verification
 
