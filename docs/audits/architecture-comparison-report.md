@@ -26,6 +26,8 @@
 15. [Code Regeneration Test](#code-regeneration-test)
 16. [Environment Variables](#environment-variables)
 17. [Dynamic Field Exclusion](#dynamic-field-exclusion)
+18. [Source Connector Schema Verification (Batch 1)](#source-connector-schema-verification-batch-1)
+19. [Source Connector Schema Verification (Batch 2)](#source-connector-schema-verification-batch-2)
 
 ---
 
@@ -2583,6 +2585,51 @@ internal/generated/source_mysql.go
 - **Elasticsearch** (149 LOC): Elasticsearch search engine source
 
 All 5 source schemas in Batch 1 are verified present with generated code.
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
+
+---
+
+## Source Connector Schema Verification (Batch 2)
+
+This section verifies that generated schema files exist for the second batch of 5 source connectors: KafkaDirect, MariaDB, MongoDB, MongoDBHosted, and MySQL.
+
+### Verification Results
+
+| Connector | Generated File | Status | Lines of Code |
+|-----------|---------------|--------|---------------|
+| **KafkaDirect** | `internal/generated/source_kafkadirect.go` | ✅ EXISTS | 95 |
+| **MariaDB** | `internal/generated/source_mariadb.go` | ✅ EXISTS | 245 |
+| **MongoDB** | `internal/generated/source_mongodb.go` | ✅ EXISTS | 222 |
+| **MongoDBHosted** | `internal/generated/source_mongodbhosted.go` | ✅ EXISTS | 222 |
+| **MySQL** | `internal/generated/source_mysql.go` | ✅ EXISTS | 314 |
+| **Total** | 5 files | **All Present** | 1,098 |
+
+### Generated Source Files (Batch 2)
+
+```bash
+$ ls internal/generated/source_{kafkadirect,mariadb,mongodb,mongodbhosted,mysql}.go
+internal/generated/source_kafkadirect.go
+internal/generated/source_mariadb.go
+internal/generated/source_mongodb.go
+internal/generated/source_mongodbhosted.go
+internal/generated/source_mysql.go
+```
+
+### Batch 2 Summary
+
+- **KafkaDirect** (95 LOC): Direct Kafka topic source for streaming data ingestion
+- **MariaDB** (245 LOC): MariaDB (MySQL-compatible) database source
+- **MongoDB** (222 LOC): Self-hosted MongoDB database source
+- **MongoDBHosted** (222 LOC): MongoDB Atlas/hosted MongoDB source
+- **MySQL** (314 LOC): MySQL database source with comprehensive CDC support
+
+All 5 source schemas in Batch 2 are verified present with generated code.
 
 ### Typecheck Verification
 
