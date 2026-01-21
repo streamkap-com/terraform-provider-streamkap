@@ -12,7 +12,8 @@
 2. [Refactored Architecture](#refactored-architecture)
 3. [Comparison Matrix](#comparison-matrix)
 4. [Trade-offs](#trade-offs)
-5. [Architectural Decisions](#architectural-decisions)
+5. [API Client](#api-client)
+6. [Architectural Decisions](#architectural-decisions)
 
 ---
 
@@ -542,6 +543,126 @@ The primary trade-off (reflection complexity) is mitigated by:
 - Compile-time interface checks (`var _ ConnectorConfig = (*Config)(nil)`)
 - Schema backward compatibility tests
 - Acceptance tests with VCR cassettes
+
+---
+
+## API Client
+
+This section documents the API client implementation and authentication mechanisms.
+
+### OAuth2 Token Exchange
+
+**Location**: `internal/api/auth.go`
+
+The API client implements OAuth2 token exchange via the `GetAccessToken()` method:
+
+```go
+type Token struct {
+    AccessToken  string `json:"accessToken"`
+    Expires      string `json:"expires"`
+    ExpiresIn    int64  `json:"expiresIn"`
+    RefreshToken string `json:"refreshToken"`
+}
+
+type GetAccessTokenRequest struct {
+    ClientID string `json:"client_id"`
+    Secret   string `json:"secret"`
+}
+
+func (s *streamkapAPI) GetAccessToken(clientID, secret string) (*Token, error) {
+    body := &GetAccessTokenRequest{
+        ClientID: clientID,
+        Secret:   secret,
+    }
+    // POST to /auth/access-token
+    req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+        s.cfg.BaseURL+"/auth/access-token", bytes.NewBuffer(payload))
+    // ...
+}
+```
+
+**Verification**: ✅ OAuth2 token exchange function exists at `auth.go:22-45`
+
+### Authorization Header
+
+**Location**: `internal/api/client.go:80-86`
+
+All authenticated requests include the Bearer token in the `doRequest()` method:
+
+```go
+func (s *streamkapAPI) doRequest(ctx context.Context, req *http.Request, result interface{}) error {
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("Accept", "application/json")
+
+    if s.token != nil {
+        req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.token.AccessToken))
+    }
+    // ...
+}
+```
+
+**Verification**: ✅ Authorization header set at `client.go:84-86`
+
+### Secret Returned Parameter
+
+**Location**: All source, destination, transform, and pipeline API operations
+
+The `?secret_returned=true` query parameter is included in all CRUD operations to ensure sensitive fields are returned in API responses. This is necessary for Terraform to properly manage state for resources with sensitive configuration.
+
+**Usage Summary**:
+
+| API File | Operations | Uses `secret_returned=true` |
+|----------|------------|----------------------------|
+| `source.go` | Create, Get, Delete, Update | ✅ All operations |
+| `destination.go` | Create, Get, Delete, Update | ✅ All operations |
+| `transform.go` | Get, Create, Update | ✅ All operations |
+| `pipeline.go` | Create, Get, Delete, Update | ✅ All operations |
+
+**Example** (from `source.go:47`):
+```go
+req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+    s.cfg.BaseURL+"/sources?secret_returned=true", bytes.NewBuffer(payload))
+```
+
+**Verification**: ✅ `?secret_returned=true` consistently used across 15 API endpoints
+
+### API Client Interface
+
+**Location**: `internal/api/client.go:15-53`
+
+The `StreamkapAPI` interface defines all available API operations:
+
+```go
+type StreamkapAPI interface {
+    GetAccessToken(clientID, secret string) (*Token, error)
+    SetToken(token *Token)
+
+    // Source APIs (4 methods)
+    CreateSource, UpdateSource, GetSource, DeleteSource
+
+    // Destination APIs (4 methods)
+    CreateDestination, UpdateDestination, GetDestination, DeleteDestination
+
+    // Pipeline APIs (4 methods)
+    CreatePipeline, UpdatePipeline, GetPipeline, DeletePipeline
+
+    // Transform APIs (4 methods)
+    CreateTransform, UpdateTransform, GetTransform, DeleteTransform
+
+    // Tags APIs (4 methods)
+    GetTag, CreateTag, UpdateTag, DeleteTag
+
+    // Topic APIs (3 methods)
+    GetTopic, UpdateTopic, DeleteTopic
+}
+```
+
+### Typecheck Verification
+
+```bash
+$ go build ./...
+# Completed with no errors
+```
 
 ---
 
