@@ -308,7 +308,7 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 20,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -322,7 +322,7 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 21,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -335,7 +335,7 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 22,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -348,7 +348,7 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 23,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {

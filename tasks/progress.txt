@@ -364,3 +364,76 @@
   - Key locations: `provider.go` (core auth), `*_resource_test.go` (connector credentials), `internal/generated/doc.go` (backend path)
   - Connector test variables follow pattern: `TF_VAR_source_<connector>_<field>` or `TF_VAR_destination_<connector>_<field>`
 ---
+
+## 2026-01-21 - US-020
+- What was implemented:
+  - Verified raw `database.hostname` computed field is NOT exposed in generated schemas (correct - only `database.hostname.user.defined` is exposed)
+  - Verified raw `database.port` computed field is NOT exposed in generated schemas (correct - only `database.port.user.defined` is exposed)
+  - Verified `connection.url` exclusion - Databricks uses `.user.defined`, Weaviate uses direct URL (intentional design)
+  - Documented `IsUserDefined()` filter in parser that ensures only `user_defined: true` fields become Terraform attributes
+  - Added field mapping statistics: 145 total `.user.defined` mappings across 38 generated files
+  - Confirmed transform resources correctly have 0 `.user.defined` fields (they're not database connectors)
+  - Added comprehensive "Dynamic Field Exclusion" section (section 17) to `docs/audits/architecture-comparison-report.md`
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md` (+156 lines)
+  - Modified: `tasks/prd.json` (marked US-020 as passes: true)
+- **Learnings for future iterations:**
+  - Dynamic field exclusion is handled by `IsUserDefined()` in `cmd/tfgen/parser.go:117-119`
+  - Only fields with `user_defined: true` in backend config become Terraform attributes
+  - `.user.defined` suffix in field name is stripped by `TerraformAttributeName()` to create clean attribute names
+  - Not all fields have a computed counterpart - some fields (credentials, config options) are direct user inputs without `.user.defined` suffix
+  - Transform resources don't use `.user.defined` pattern - they're configuration-only, not database connectors
+---
+
+## 2026-01-21 - US-021
+- What was implemented:
+  - Verified 5 source connector schemas exist: AlloyDB, DB2, DocumentDB, DynamoDB, Elasticsearch
+  - Listed first 10 generated source files (confirmed all batch 1 connectors present)
+  - Added "Source Connector Schema Verification (Batch 1)" section to `docs/audits/architecture-comparison-report.md`
+  - Documented line counts for each file: AlloyDB (330), DB2 (186), DocumentDB (157), DynamoDB (196), Elasticsearch (149)
+  - Total: 1,018 lines of generated code for batch 1
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md` (+50 lines)
+  - Modified: `tasks/prd.json` (marked US-021 as passes: true)
+- **Learnings for future iterations:**
+  - All 20 source connector generated files are in `internal/generated/source_*.go`
+  - Generated file naming convention: `source_<connectorname>.go` (all lowercase)
+  - Line counts vary from ~150 LOC (simpler connectors) to ~330 LOC (complex connectors like AlloyDB)
+  - Use `wc -l internal/generated/source_*.go` to get line counts for all source schemas
+---
+
+## 2026-01-21 - US-022
+- What was implemented:
+  - Verified 5 source connector schemas exist: KafkaDirect, MariaDB, MongoDB, MongoDBHosted, MySQL
+  - Note: File naming uses lowercase without underscores (kafkadirect, mongodbhosted not kafka_direct, mongodb_hosted)
+  - Line counts: KafkaDirect (95), MariaDB (245), MongoDB (222), MongoDBHosted (222), MySQL (314) = 1,098 total
+  - Added "Source Connector Schema Verification (Batch 2)" section to audit report
+  - Updated Table of Contents with sections 18 and 19
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md` (+47 lines)
+  - Modified: `tasks/prd.json` (marked US-022 as passes: true)
+- **Learnings for future iterations:**
+  - Generated file naming convention: all lowercase, no underscores between words (e.g., `source_kafkadirect.go` not `source_kafka_direct.go`)
+  - Schema file sizes vary from ~95 LOC (simple connectors like KafkaDirect) to ~314 LOC (complex connectors like MySQL)
+  - MongoDB and MongoDBHosted have identical LOC (222) - likely similar schema structure with different connection handling
+---
+
+## 2026-01-21 - US-023
+- What was implemented:
+  - Verified 5 source connector schemas exist: Oracle, OracleAWS, PlanetScale, PostgreSQL, Redis
+  - Line counts: Oracle (223), OracleAWS (216), PlanetScale (195), PostgreSQL (372), Redis (236) = 1,242 total
+  - PostgreSQL has highest LOC due to extensive deprecated field mappings (9 deprecated fields)
+  - Added "Source Connector Schema Verification (Batch 3)" section to audit report with cumulative progress table
+  - Updated Table of Contents with section 20
+  - Typecheck passed: `go build ./...`
+- Files changed:
+  - Modified: `docs/audits/architecture-comparison-report.md` (+56 lines)
+  - Modified: `tasks/prd.json` (marked US-023 as passes: true)
+- **Learnings for future iterations:**
+  - PostgreSQL has highest LOC (372) among all sources due to 9 deprecated field mappings in deprecations.json
+  - Cumulative progress: 15/20 source connectors verified (3,358 LOC total)
+  - Oracle and OracleAWS are separate connectors (for self-hosted vs AWS RDS Oracle)
+---
