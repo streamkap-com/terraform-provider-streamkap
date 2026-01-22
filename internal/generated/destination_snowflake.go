@@ -99,8 +99,8 @@ func DestinationSnowflakeSchema() schema.Schema {
 			"snowflake_private_key_passphrase": schema.StringAttribute{
 				Optional:            true,
 				Sensitive:           true,
-				Description:         "The passphrase is used to decrypt the private key. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "The passphrase is used to decrypt the private key.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "The passphrase is used to decrypt the private key. Conditionally required when snowflake_private_key_passphrase_secured is true. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The passphrase is used to decrypt the private key. **Conditionally required** when `snowflake_private_key_passphrase_secured` is `true`.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"sfwarehouse": schema.StringAttribute{
 				Optional:            true,
@@ -149,15 +149,15 @@ func DestinationSnowflakeSchema() schema.Schema {
 			"hard_delete": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only) Defaults to true.",
-				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only) Defaults to `true`.",
+				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. Conditionally required when ingestion_mode is 'upsert'. Defaults to true.",
+				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. **Conditionally required** when `ingestion_mode` is `upsert`. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"schema_evolution": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to \"basic\". Valid values: basic, none.",
-				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.",
+				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to 'NONE'. Conditionally required when ingestion_mode is 'upsert'. Defaults to \"basic\". Valid values: basic, none.",
+				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. **Conditionally required** when `ingestion_mode` is `upsert`. Defaults to `basic`. Valid values: `basic`, `none`.",
 				Default:             stringdefault.StaticString("basic"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("basic", "none"),
@@ -166,35 +166,35 @@ func DestinationSnowflakeSchema() schema.Schema {
 			"use_hybrid_tables": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies whether the connector should create Hybrid Tables (applies to `upsert` only) Defaults to false.",
-				MarkdownDescription: "Specifies whether the connector should create Hybrid Tables (applies to `upsert` only) Defaults to `false`.",
+				Description:         "Specifies whether the connector should create Hybrid Tables. Conditionally required when ingestion_mode is 'upsert'. Defaults to false.",
+				MarkdownDescription: "Specifies whether the connector should create Hybrid Tables. **Conditionally required** when `ingestion_mode` is `upsert`. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"apply_dynamic_table_script": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only) Defaults to false.",
-				MarkdownDescription: "Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only) Defaults to `false`.",
+				Description:         "Specifies whether the connector should create Dynamic Tables & Cleanup Tasks. Conditionally required when ingestion_mode is 'append'. Defaults to false.",
+				MarkdownDescription: "Specifies whether the connector should create Dynamic Tables & Cleanup Tasks. **Conditionally required** when `ingestion_mode` is `append`. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"create_sql_execute": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "These template queries run for each table the first time a record is streamed for them. Defaults to \"CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';\\nCREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);\\nALTER TASK {{table}}_CT RESUME\".",
-				MarkdownDescription: "These template queries run for each table the first time a record is streamed for them. Defaults to `CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';\nCREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);\nALTER TASK {{table}}_CT RESUME`.",
+				Description:         "These template queries run for each table the first time a record is streamed for them. Conditionally required when ingestion_mode is 'append' and apply_dynamic_table_script is true. Defaults to \"CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';\\nCREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);\\nALTER TASK {{table}}_CT RESUME\".",
+				MarkdownDescription: "These template queries run for each table the first time a record is streamed for them. **Conditionally required** when `ingestion_mode` is `append` and `apply_dynamic_table_script` is `true`. Defaults to `CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';\nCREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);\nALTER TASK {{table}}_CT RESUME`.",
 				Default:             stringdefault.StaticString("CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';\nCREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);\nALTER TASK {{table}}_CT RESUME"),
 			},
 			"sql_table_name": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Can be used as <code>{{dynamicTableName}}</code> in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic. Defaults to \"{{table}}_DT\".",
-				MarkdownDescription: "Can be used as <code>{{dynamicTableName}}</code> in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic. Defaults to `{{table}}_DT`.",
+				Description:         "Can be used as <code>{{dynamicTableName}}</code> in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic. Conditionally required when ingestion_mode is 'append' and apply_dynamic_table_script is true. Defaults to \"{{table}}_DT\".",
+				MarkdownDescription: "Can be used as <code>{{dynamicTableName}}</code> in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic. **Conditionally required** when `ingestion_mode` is `append` and `apply_dynamic_table_script` is `true`. Defaults to `{{table}}_DT`.",
 				Default:             stringdefault.StaticString("{{table}}_DT"),
 			},
 			"create_sql_data": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Use <code>{\"TABLE_DATA\": {\"{table_name}\": {\"{key}\": \"{value}\"}, ...}, ...}</code> to set table specific data. This data will be available in the custom SQL templates e.g. <code>SELECT {{key}}</code>.",
-				MarkdownDescription: "Use <code>{\"TABLE_DATA\": {\"{table_name}\": {\"{key}\": \"{value}\"}, ...}, ...}</code> to set table specific data. This data will be available in the custom SQL templates e.g. <code>SELECT {{key}}</code>.",
+				Description:         "Use <code>{\"TABLE_DATA\": {\"{table_name}\": {\"{key}\": \"{value}\"}, ...}, ...}</code> to set table specific data. This data will be available in the custom SQL templates e.g. <code>SELECT {{key}}</code>. Conditionally required when ingestion_mode is 'append' and apply_dynamic_table_script is true.",
+				MarkdownDescription: "Use <code>{\"TABLE_DATA\": {\"{table_name}\": {\"{key}\": \"{value}\"}, ...}, ...}</code> to set table specific data. This data will be available in the custom SQL templates e.g. <code>SELECT {{key}}</code>. Conditionally required when ingestion_mode is 'append' and apply_dynamic_table_script is true.",
 			},
 			"snowflake_topic2table_map": schema.StringAttribute{
 				Optional:            true,
@@ -206,8 +206,8 @@ func DestinationSnowflakeSchema() schema.Schema {
 			"auto_qa_dedupe_table_mapping": schema.MapAttribute{
 				Optional:            true,
 				ElementType:         types.StringType,
-				Description:         "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
-				MarkdownDescription: "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
+				Description:         "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table. Conditionally required when ingestion_mode is 'append' and apply_dynamic_table_script is true.",
+				MarkdownDescription: "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table. Conditionally required when ingestion_mode is 'append' and apply_dynamic_table_script is true.",
 			},
 		},
 	}

@@ -219,8 +219,8 @@
         "Typecheck passes"
       ],
       "priority": 14,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Elasticsearch: http_auth_user and http_auth_password changed from Required to Optional (conditionally required when http_auth=Basic). Redis: redis_stream_name and topic changed from Required to Optional with conditional documentation. MongoDBHosted and Vitess: SSH field descriptions updated to document conditional requirement. S3 and Webhook: No conditional fields found."
     },
     {
       "id": "US-015",
@@ -234,8 +234,8 @@
         "Typecheck passes"
       ],
       "priority": 15,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Updated descriptions for 9 conditional fields: snowflake_private_key_passphrase (conditionally required when passphrase_secured=true), hard_delete, schema_evolution, use_hybrid_tables (conditionally required when ingestion_mode=upsert), apply_dynamic_table_script (conditionally required when ingestion_mode=append), create_sql_execute, sql_table_name, create_sql_data, auto_qa_dedupe_table_mapping (conditionally required when ingestion_mode=append and apply_dynamic_table_script=true). All fields were already Optional - only descriptions needed updating."
     },
     {
       "id": "US-016",
