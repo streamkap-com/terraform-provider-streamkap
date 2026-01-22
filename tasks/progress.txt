@@ -12,6 +12,32 @@
 
 ---
 
+## 2026-01-22 - US-004
+- What was implemented:
+  - Audited MongoDB source conditional fields from backend configuration.latest.json
+  - Compared backend conditional requirements with current Terraform schema
+  - Found MongoDB schema is ALREADY CORRECTLY IMPLEMENTED
+- Files changed:
+  - Updated: `tasks/progress.txt`
+  - Updated: `tasks/prd.json`
+- **Learnings for future iterations:**
+  - MongoDB has `signal.data.collection.schema.or.database` as always required (no conditions)
+  - MongoDB SSH fields follow the same conditional pattern as other connectors
+  - Previous commits already completed conditional field work (verified via git log)
+  - All source connector schemas have been correctly updated with conditional field handling
+
+### MongoDB Conditional Fields Audit
+
+| Backend Field | Required | Conditions | TF Status | Correct? |
+|---------------|----------|------------|-----------|----------|
+| `signal.data.collection.schema.or.database` | Yes | NONE | Required | YES |
+| `ssh.host` | No | `ssh.enabled == true` | Optional | YES |
+| `ssh.port` | No | `ssh.enabled == true` | Optional (default: 22) | YES |
+| `ssh.user` | No | `ssh.enabled == true` | Optional (default: "streamkap") | YES |
+| `ssh.public.key.user.displayed` | No | `ssh.enabled == true` | Optional | YES |
+
+---
+
 ## 2026-01-22 - US-003
 - What was implemented:
   - Audited MySQL source conditional fields from backend configuration.latest.json

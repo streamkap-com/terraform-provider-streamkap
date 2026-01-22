@@ -63,8 +63,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "MongoDB schema already correctly implements conditional fields. signal_data_collection_schema_or_database: Required (backend has required:true with no conditions). SSH fields: all Optional with conditional requirement documented."
     },
     {
       "id": "US-005",
