@@ -9,18 +9,20 @@ Terraform provider for [Streamkap](https://streamkap.com) - a real-time data str
 - AlloyDB, DB2, DocumentDB, Elasticsearch, MariaDB, MongoDB Hosted
 - Oracle, Oracle AWS, PlanetScale, Redis, S3, Supabase, Vitess, Webhook
 
-### Destination Connectors (22 available)
+### Destination Connectors (23 available)
 - Snowflake, ClickHouse, Databricks, PostgreSQL, S3, Iceberg, Kafka
 - Azure Blob, BigQuery, CockroachDB, DB2, GCS, HTTP Sink, Kafka Direct
-- Motherduck, MySQL, Oracle, R2, Redis, Redshift, SQL Server, Starburst
+- Motherduck, MySQL, Oracle, R2, Redis, Redshift, SQL Server, Starburst, Weaviate
 
-### Transform Resources
+### Transform Resources (8 available)
 - Map Filter
 - Enrich
 - Enrich Async
 - SQL Join
 - Rollup
 - Fan Out
+- Toast Handling
+- UnNesting
 
 ### Other Resources
 - Pipelines
@@ -89,7 +91,7 @@ resource "streamkap_pipeline" "my_pipeline" {
 
 Run `terraform apply` and your data pipeline is ready.
 
-See [examples/](./examples/) for complete configurations for all 42 connectors.
+See [examples/](./examples/) for complete configurations for all 43 connectors.
 
 ---
 
