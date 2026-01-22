@@ -146,9 +146,9 @@ func SourceMysqlSchema() schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
-				Required:            true,
-				Description:         "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
-				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
+				Optional:            true,
+				Description:         "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'. Conditionally required when heartbeat_enabled is true AND snapshot_gtid is \"No\".",
+				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.\n\n**Conditionally required:** This field is required when `heartbeat_enabled` is `true` AND `snapshot_gtid` is `No`.",
 			},
 			"database_connection_time_zone": schema.StringAttribute{
 				Optional:            true,
