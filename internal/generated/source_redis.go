@@ -112,15 +112,15 @@ func SourceRedisSchema() schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"redis_stream_name": schema.StringAttribute{
-				Required:            true,
-				Description:         "Name of the Redis stream to read from",
-				MarkdownDescription: "Name of the Redis stream to read from",
+				Optional:            true,
+				Description:         "Name of the Redis stream to read from. Required when connector_class_type is \"Stream\".",
+				MarkdownDescription: "Name of the Redis stream to read from. Required when `connector_class_type` is `Stream`.",
 			},
 			"redis_stream_offset": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Starting point for reading from the stream Defaults to \"Latest\". Valid values: Latest, Earliest.",
-				MarkdownDescription: "Starting point for reading from the stream Defaults to `Latest`. Valid values: `Latest`, `Earliest`.",
+				Description:         "Starting point for reading from the stream. Only applicable when connector_class_type is \"Stream\". Defaults to \"Latest\". Valid values: Latest, Earliest.",
+				MarkdownDescription: "Starting point for reading from the stream. Only applicable when `connector_class_type` is `Stream`. Defaults to `Latest`. Valid values: `Latest`, `Earliest`.",
 				Default:             stringdefault.StaticString("Latest"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("Latest", "Earliest"),
@@ -129,8 +129,8 @@ func SourceRedisSchema() schema.Schema {
 			"redis_stream_delivery": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Delivery guarantee mode Defaults to \"At Least Once\". Valid values: At Least Once, At Most Once.",
-				MarkdownDescription: "Delivery guarantee mode Defaults to `At Least Once`. Valid values: `At Least Once`, `At Most Once`.",
+				Description:         "Delivery guarantee mode. Only applicable when connector_class_type is \"Stream\". Defaults to \"At Least Once\". Valid values: At Least Once, At Most Once.",
+				MarkdownDescription: "Delivery guarantee mode. Only applicable when `connector_class_type` is `Stream`. Defaults to `At Least Once`. Valid values: `At Least Once`, `At Most Once`.",
 				Default:             stringdefault.StaticString("At Least Once"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("At Least Once", "At Most Once"),
@@ -139,8 +139,8 @@ func SourceRedisSchema() schema.Schema {
 			"redis_stream_block_seconds": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Block duration when waiting for new messages Defaults to 1.",
-				MarkdownDescription: "Block duration when waiting for new messages Defaults to `1`.",
+				Description:         "Block duration when waiting for new messages. Only applicable when connector_class_type is \"Stream\". Defaults to 1.",
+				MarkdownDescription: "Block duration when waiting for new messages. Only applicable when `connector_class_type` is `Stream`. Defaults to `1`.",
 				Default:             int64default.StaticInt64(1),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 60),
@@ -149,29 +149,29 @@ func SourceRedisSchema() schema.Schema {
 			"redis_stream_consumer_group": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Consumer group name for coordinating multiple consumers Defaults to \"kafka-consumer-group\".",
-				MarkdownDescription: "Consumer group name for coordinating multiple consumers Defaults to `kafka-consumer-group`.",
+				Description:         "Consumer group name for coordinating multiple consumers. Only applicable when connector_class_type is \"Stream\". Defaults to \"kafka-consumer-group\".",
+				MarkdownDescription: "Consumer group name for coordinating multiple consumers. Only applicable when `connector_class_type` is `Stream`. Defaults to `kafka-consumer-group`.",
 				Default:             stringdefault.StaticString("kafka-consumer-group"),
 			},
 			"redis_stream_consumer_name": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Base name for consumer instances Defaults to \"consumer\".",
-				MarkdownDescription: "Base name for consumer instances Defaults to `consumer`.",
+				Description:         "Base name for consumer instances. Only applicable when connector_class_type is \"Stream\". Defaults to \"consumer\".",
+				MarkdownDescription: "Base name for consumer instances. Only applicable when `connector_class_type` is `Stream`. Defaults to `consumer`.",
 				Default:             stringdefault.StaticString("consumer"),
 			},
 			"redis_keys_pattern": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Key pattern to monitor (e.g., user:*, order:*, or * for all keys) Defaults to \"*\".",
-				MarkdownDescription: "Key pattern to monitor (e.g., user:*, order:*, or * for all keys) Defaults to `*`.",
+				Description:         "Key pattern to monitor (e.g., user:*, order:*, or * for all keys). Required when connector_class_type is \"Keys\". Defaults to \"*\".",
+				MarkdownDescription: "Key pattern to monitor (e.g., user:*, order:*, or * for all keys). Required when `connector_class_type` is `Keys`. Defaults to `*`.",
 				Default:             stringdefault.StaticString("*"),
 			},
 			"redis_keys_timeout_seconds": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Idle timeout before connector stops if no activity Defaults to 300.",
-				MarkdownDescription: "Idle timeout before connector stops if no activity Defaults to `300`.",
+				Description:         "Idle timeout before connector stops if no activity. Only applicable when connector_class_type is \"Keys\". Defaults to 300.",
+				MarkdownDescription: "Idle timeout before connector stops if no activity. Only applicable when `connector_class_type` is `Keys`. Defaults to `300`.",
 				Default:             int64default.StaticInt64(300),
 				Validators: []validator.Int64{
 					int64validator.Between(60, 3600),
@@ -180,8 +180,8 @@ func SourceRedisSchema() schema.Schema {
 			"mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "LIVE performs initial snapshot then streams updates. LIVEONLY only streams updates. Defaults to \"LIVE\". Valid values: LIVE, LIVEONLY.",
-				MarkdownDescription: "LIVE performs initial snapshot then streams updates. LIVEONLY only streams updates. Defaults to `LIVE`. Valid values: `LIVE`, `LIVEONLY`.",
+				Description:         "LIVE performs initial snapshot then streams updates. LIVEONLY only streams updates. Only applicable when connector_class_type is \"Keys\". Defaults to \"LIVE\". Valid values: LIVE, LIVEONLY.",
+				MarkdownDescription: "LIVE performs initial snapshot then streams updates. LIVEONLY only streams updates. Only applicable when `connector_class_type` is `Keys`. Defaults to `LIVE`. Valid values: `LIVE`, `LIVEONLY`.",
 				Default:             stringdefault.StaticString("LIVE"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("LIVE", "LIVEONLY"),
@@ -190,20 +190,20 @@ func SourceRedisSchema() schema.Schema {
 			"topic_use_stream_name": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Use Redis stream name as Kafka topic name (only for Stream connectors) Defaults to false.",
-				MarkdownDescription: "Use Redis stream name as Kafka topic name (only for Stream connectors) Defaults to `false`.",
+				Description:         "Use Redis stream name as Kafka topic name. Only applicable when connector_class_type is \"Stream\". Defaults to false.",
+				MarkdownDescription: "Use Redis stream name as Kafka topic name. Only applicable when `connector_class_type` is `Stream`. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"topic": schema.StringAttribute{
-				Required:            true,
-				Description:         "Kafka topic name to publish messages to",
-				MarkdownDescription: "Kafka topic name to publish messages to",
+				Optional:            true,
+				Description:         "Kafka topic name to publish messages to. Required when connector_class_type is \"Keys\", or when connector_class_type is \"Stream\" and topic_use_stream_name is false.",
+				MarkdownDescription: "Kafka topic name to publish messages to. Required when `connector_class_type` is `Keys`, or when `connector_class_type` is `Stream` and `topic_use_stream_name` is `false`.",
 			},
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Number of parallel tasks (Stream: 1-10, Keys: always 1) Defaults to 1.",
-				MarkdownDescription: "Number of parallel tasks (Stream: 1-10, Keys: always 1) Defaults to `1`.",
+				Description:         "Number of parallel tasks. Only configurable when connector_class_type is \"Stream\" (1-10). For \"Keys\" connector, this is always 1. Defaults to 1.",
+				MarkdownDescription: "Number of parallel tasks. Only configurable when `connector_class_type` is `Stream` (1-10). For `Keys` connector, this is always 1. Defaults to `1`.",
 				Default:             int64default.StaticInt64(1),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 10),
