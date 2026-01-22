@@ -122,8 +122,8 @@ func TestSourceSchemas(t *testing.T) {
 				"database_user",
 				"database_password",
 				"database_dbname",
-				"signal_data_collection_schema_or_database",
-				"heartbeat_data_collection_schema_or_database",
+				// signal_data_collection_schema_or_database is conditionally required (when snapshot_read_only="No")
+				// heartbeat_data_collection_schema_or_database is conditionally required (when heartbeat_enabled=true and snapshot_read_only="No")
 				"schema_include_list",
 				"table_include_list",
 			},

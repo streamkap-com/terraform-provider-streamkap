@@ -124,9 +124,9 @@ func SourceSupabaseSchema() schema.Schema {
 				},
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
-				Required:            true,
-				Description:         "Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here.",
-				MarkdownDescription: "Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here.",
+				Optional:            true,
+				Description:         "Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here. Required when snapshot_read_only is set to 'No'.",
+				MarkdownDescription: "Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here. Required when `snapshot_read_only` is set to `No`.",
 			},
 			"column_include_list_toggled": schema.BoolAttribute{
 				Optional:            true,
@@ -153,9 +153,9 @@ func SourceSupabaseSchema() schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
-				Required:            true,
-				Description:         "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
-				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
+				Optional:            true,
+				Description:         "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'. Required when heartbeat_enabled is true and snapshot_read_only is set to 'No'.",
+				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'. Required when `heartbeat_enabled` is `true` and `snapshot_read_only` is set to `No`.",
 			},
 			"slot_name": schema.StringAttribute{
 				Optional:            true,

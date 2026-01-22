@@ -68,8 +68,8 @@
       "sensitive": false
     },
     "heartbeat_data_collection_schema_or_database": {
-      "required": true,
-      "optional": false,
+      "required": false,
+      "optional": true,
       "computed": false,
       "sensitive": false
     },
