@@ -442,4 +442,14 @@ var SourcePostgresqlFieldMappings = map[string]string{
 	"ssh_port":                                     "ssh.port",
 	"ssh_user":                                     "ssh.user",
 	"ssh_public_key":                               "ssh.public.key.user.displayed",
+	// Deprecated field mappings - map old field names to the same API keys as their replacements
+	"insert_static_key_field_1":            "transforms.InsertStaticKey1.static.field",
+	"insert_static_key_value_1":            "transforms.InsertStaticKey1.static.value",
+	"insert_static_value_field_1":          "transforms.InsertStaticValue1.static.field",
+	"insert_static_value_1":                "transforms.InsertStaticValue1.static.value",
+	"insert_static_key_field_2":            "transforms.InsertStaticKey2.static.field",
+	"insert_static_key_value_2":            "transforms.InsertStaticKey2.static.value",
+	"insert_static_value_field_2":          "transforms.InsertStaticValue2.static.field",
+	"insert_static_value_2":                "transforms.InsertStaticValue2.static.value",
+	"predicates_istopictoenrich_pattern":   "predicates.IsTopicToEnrich.pattern",
 }
