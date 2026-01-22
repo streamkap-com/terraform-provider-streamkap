@@ -12,6 +12,35 @@
 
 ---
 
+## 2026-01-22 - US-003
+- What was implemented:
+  - Audited MySQL source conditional fields from backend configuration.latest.json
+  - Compared backend conditional requirements with current Terraform schema
+  - Found MySQL schema is ALREADY CORRECTLY IMPLEMENTED
+- Files changed:
+  - Updated: `tasks/progress.txt`
+  - Updated: `tasks/prd.json`
+- **Learnings for future iterations:**
+  - MySQL uses `snapshot.gtid` instead of `snapshot.read.only.user.defined` for the read-only toggle
+  - MySQL `signal.data.collection.schema.or.database` is NOT required (vs PostgreSQL which has required:true)
+  - MySQL `heartbeat.data.collection.schema.or.database` is required when conditions met (same as PostgreSQL)
+  - SSH conditional fields follow the same pattern as PostgreSQL
+
+### MySQL Conditional Fields Audit
+
+| Backend Field | Required | Conditions | TF Status | Correct? |
+|---------------|----------|------------|-----------|----------|
+| `signal.data.collection.schema.or.database` | No | `snapshot_gtid == "No"` | Optional | YES |
+| `heartbeat.data.collection.schema.or.database` | Yes | `heartbeat_enabled AND snapshot_gtid == "No"` | Optional (with condition doc) | YES |
+| `column.include.list.user.defined` | No | `column.include.list.toggled == true` | Optional | YES |
+| `column.exclude.list.user.defined` | No | `column.include.list.toggled == false` | Optional | YES |
+| `ssh.host` | No | `ssh.enabled == true` | Optional | YES |
+| `ssh.port` | No | `ssh.enabled == true` | Optional (default: 22) | YES |
+| `ssh.user` | No | `ssh.enabled == true` | Optional (default: "streamkap") | YES |
+| `ssh.public.key.user.displayed` | No | `ssh.enabled == true` | Optional | YES |
+
+---
+
 ## 2026-01-22 - US-001
 - What was implemented:
   - Audited PostgreSQL source conditional fields from backend configuration.latest.json
