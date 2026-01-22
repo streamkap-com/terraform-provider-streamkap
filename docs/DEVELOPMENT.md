@@ -348,9 +348,9 @@ All generated connector schemas are now exposed in the provider:
 alloydb, db2, documentdb, elasticsearch, mariadb, mongodbhosted,
 oracle, oracleaws, planetscale, redis, s3, supabase, vitess, webhook
 
-**Destinations (22):** snowflake, clickhouse, databricks, postgresql, s3, iceberg, kafka,
+**Destinations (23):** snowflake, clickhouse, databricks, postgresql, s3, iceberg, kafka,
 azblob, bigquery, cockroachdb, db2, gcs, httpsink, kafkadirect,
-motherduck, mysql, oracle, r2, redis, redshift, sqlserver, starburst
+motherduck, mysql, oracle, r2, redis, redshift, sqlserver, starburst, weaviate
 
 ## Running Tests
 
