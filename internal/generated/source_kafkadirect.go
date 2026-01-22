@@ -78,8 +78,8 @@ func SourceKafkadirectSchema() schema.Schema {
 			"schemas_enable": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "If untoggled (default), Streamkap attempts to infer schema from your data - depending on the Destination. Otherwise, Streamkap assumes the Kafka message key and value contain `schema` and `payload` structures Defaults to false.",
-				MarkdownDescription: "If untoggled (default), Streamkap attempts to infer schema from your data - depending on the Destination. Otherwise, Streamkap assumes the Kafka message key and value contain `schema` and `payload` structures Defaults to `false`.",
+				Description:         "If untoggled (default), Streamkap attempts to infer schema from your data - depending on the Destination. Otherwise, Streamkap assumes the Kafka message key and value contain `schema` and `payload` structures. Conditionally required when format is \"json\". Defaults to false.",
+				MarkdownDescription: "If untoggled (default), Streamkap attempts to infer schema from your data - depending on the Destination. Otherwise, Streamkap assumes the Kafka message key and value contain `schema` and `payload` structures. **Conditionally required** when `format` is `json`. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 		},
