@@ -154,8 +154,8 @@ func SourceSqlserverawsSchema() schema.Schema {
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'. Defaults to \"streamkap\".",
-				MarkdownDescription: "Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'. Defaults to `streamkap`.",
+				Description:         "Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'. Conditionally required when heartbeat_enabled is true. Defaults to \"streamkap\".",
+				MarkdownDescription: "Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'.\n\n**Conditionally Required:** This field is required when `heartbeat_enabled` is `true`. Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
 			"schema_history_internal_store_only_captured_databases_ddl": schema.BoolAttribute{
@@ -211,21 +211,21 @@ func SourceSqlserverawsSchema() schema.Schema {
 			},
 			"ssh_host": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Hostname of your SSH server",
-				MarkdownDescription: "Hostname of your SSH server",
+				Description:         "Hostname of your SSH server. Conditionally required when ssh_enabled is true.",
+				MarkdownDescription: "Hostname of your SSH server.\n\n**Conditionally Required:** This field is required when `ssh_enabled` is `true`.",
 			},
 			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to 22.",
-				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
+				Description:         "Port of your SSH server. Conditionally required when ssh_enabled is true. Defaults to 22.",
+				MarkdownDescription: "Port of your SSH server.\n\n**Conditionally Required:** This field is required when `ssh_enabled` is `true`. Defaults to `22`.",
 				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "User that allows Streamkap to connect to SSH server Defaults to \"streamkap\".",
-				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
+				Description:         "User that allows Streamkap to connect to SSH server. Conditionally required when ssh_enabled is true. Defaults to \"streamkap\".",
+				MarkdownDescription: "User that allows Streamkap to connect to SSH server.\n\n**Conditionally Required:** This field is required when `ssh_enabled` is `true`. Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
 			"transforms_insert_static_key1_static_field": schema.StringAttribute{
@@ -251,8 +251,8 @@ func SourceSqlserverawsSchema() schema.Schema {
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Public key to add to SSH server Defaults to \"<SSH.PUBLIC.KEY>\".",
-				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
+				Description:         "Public key to add to SSH server. Conditionally required when ssh_enabled is true. Defaults to \"<SSH.PUBLIC.KEY>\".",
+				MarkdownDescription: "Public key to add to SSH server.\n\n**Conditionally Required:** This field is required when `ssh_enabled` is `true`. Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
 			"snapshot_custom_table_config": schema.MapNestedAttribute{
