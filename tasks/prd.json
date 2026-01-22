@@ -16,8 +16,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 1,
-      "passes": false,
-      "notes": "Backend config path: $STREAMKAP_BACKEND_PATH/app/sources/plugins/postgresql/configuration.latest.json"
+      "passes": true,
+      "notes": "PostgreSQL schema ALREADY correctly implements conditional fields. Two required+conditional fields (signal_data_collection_schema_or_database, heartbeat_data_collection_schema_or_database) are correctly marked Optional with documentation. All deprecated fields have schema attributes with DeprecationMessage and field mappings."
     },
     {
       "id": "US-002",
@@ -32,8 +32,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "NO CHANGES NEEDED - All criteria already met in current schema. signal_data_collection_schema_or_database: Optional with default 'public'. heartbeat_data_collection_schema_or_database: Optional. SSH fields: all Optional with defaults. Column lists: Optional."
     },
     {
       "id": "US-003",
@@ -48,8 +48,8 @@
         "Typecheck passes: go build ./..."
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "NO CHANGES NEEDED - MySQL schema already correctly implements conditional fields. signal_data_collection_schema_or_database: Optional. heartbeat_data_collection_schema_or_database: Optional with conditional requirement documented. SSH fields: all Optional with defaults."
     },
     {
       "id": "US-004",
