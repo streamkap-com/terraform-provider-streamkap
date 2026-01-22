@@ -46,6 +46,7 @@ type PipelineResourceModel struct {
 	Destination       *PipelineDestinationModel `tfsdk:"destination"`
 	Transforms        []*PipelineTransformModel `tfsdk:"transforms"`
 	Tags              types.Set                 `tfsdk:"tags"`
+	Timeouts          timeouts.Value            `tfsdk:"timeouts"`
 }
 
 type PipelineSourceModel struct {
