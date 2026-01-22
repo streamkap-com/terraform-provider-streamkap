@@ -327,6 +327,39 @@ func SourcePostgresqlSchema() schema.Schema {
 				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
+			// Deprecated fields - kept for backward compatibility
+			"insert_static_key_field_1": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Deprecated: Use transforms_insert_static_key1_static_field instead. The name of the static field to be added to the message key.",
+				MarkdownDescription: "**Deprecated:** Use `transforms_insert_static_key1_static_field` instead. The name of the static field to be added to the message key.",
+				DeprecationMessage:  "Use transforms_insert_static_key1_static_field instead",
+				Default:             stringdefault.StaticString(""),
+			},
+			"insert_static_key_value_1": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Deprecated: Use transforms_insert_static_key1_static_value instead. The value of the static field to be added to the message key.",
+				MarkdownDescription: "**Deprecated:** Use `transforms_insert_static_key1_static_value` instead. The value of the static field to be added to the message key.",
+				DeprecationMessage:  "Use transforms_insert_static_key1_static_value instead",
+				Default:             stringdefault.StaticString(""),
+			},
+			"insert_static_value_field_1": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Deprecated: Use transforms_insert_static_value1_static_field instead. The name of the static field to be added to the message value.",
+				MarkdownDescription: "**Deprecated:** Use `transforms_insert_static_value1_static_field` instead. The name of the static field to be added to the message value.",
+				DeprecationMessage:  "Use transforms_insert_static_value1_static_field instead",
+				Default:             stringdefault.StaticString(""),
+			},
+			"insert_static_value_1": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Deprecated: Use transforms_insert_static_value1_static_value instead. The value of the static field to be added to the message value.",
+				MarkdownDescription: "**Deprecated:** Use `transforms_insert_static_value1_static_value` instead. The value of the static field to be added to the message value.",
+				DeprecationMessage:  "Use transforms_insert_static_value1_static_value instead",
+				Default:             stringdefault.StaticString(""),
+			},
 		},
 	}
 }
