@@ -103,6 +103,12 @@
       "computed": true,
       "sensitive": false
     },
+    "snapshot_custom_table_config": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
     "ssh_enabled": {
       "required": false,
       "optional": true,
@@ -131,12 +137,6 @@
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
-    },
-    "streamkap_snapshot_custom_table_config": {
-      "required": false,
-      "optional": true,
-      "computed": false,
       "sensitive": false
     },
     "streamkap_snapshot_large_table_threshold": {
