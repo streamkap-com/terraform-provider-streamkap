@@ -95,15 +95,15 @@ func SourceElasticsearchSchema() schema.Schema {
 				},
 			},
 			"http_auth_user": schema.StringAttribute{
-				Required:            true,
-				Description:         "Elasticsearch username",
-				MarkdownDescription: "Elasticsearch username",
+				Optional:            true,
+				Description:         "Elasticsearch username. Required when http_auth is \"Basic\".",
+				MarkdownDescription: "Elasticsearch username. Required when `http_auth` is `Basic`.",
 			},
 			"http_auth_password": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Sensitive:           true,
-				Description:         "Elasticsearch password This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Elasticsearch password\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "Elasticsearch password. Required when http_auth is \"Basic\". This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Elasticsearch password. Required when `http_auth` is `Basic`.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"endpoint_include_list": schema.StringAttribute{
 				Required:            true,
