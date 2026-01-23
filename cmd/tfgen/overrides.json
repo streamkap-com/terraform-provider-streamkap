@@ -1,0 +1,68 @@
+{
+  "field_overrides": [
+    {
+      "connector": "snowflake",
+      "entity_type": "destinations",
+      "api_field_name": "auto.qa.dedupe.table.mapping",
+      "terraform_attr_name": "auto_qa_dedupe_table_mapping",
+      "type": "map_string",
+      "optional": true,
+      "description": "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table."
+    },
+    {
+      "connector": "clickhouse",
+      "entity_type": "destinations",
+      "api_field_name": "topics.config.map",
+      "terraform_attr_name": "topics_config_map",
+      "type": "map_nested",
+      "optional": true,
+      "description": "Per topic configuration in JSON format",
+      "nested_model_name": "ClickHouseTopicsConfigMapItemModel",
+      "nested_fields": [
+        {
+          "name": "delete_sql_execute",
+          "terraform_attr_name": "delete_sql_execute",
+          "type": "string",
+          "optional": true
+        }
+      ]
+    },
+    {
+      "connector": "sqlserveraws",
+      "entity_type": "sources",
+      "api_field_name": "streamkap.snapshot.custom.table.config.user.defined",
+      "terraform_attr_name": "snapshot_custom_table_config",
+      "type": "map_nested",
+      "optional": true,
+      "description": "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",
+      "nested_model_name": "SnapshotCustomTableConfigModel",
+      "nested_fields": [
+        {
+          "name": "chunks",
+          "terraform_attr_name": "chunks",
+          "type": "int64",
+          "required": true,
+          "validators": [
+            {
+              "type": "int64_at_least",
+              "value": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "additional_fields": [
+    {
+      "connector": "un_nesting",
+      "entity_type": "transforms",
+      "api_field_name": "transforms.language",
+      "terraform_attr_name": "transforms_language",
+      "type": "string",
+      "required": true,
+      "default": "Python",
+      "description": "Implementation language",
+      "raw_values": ["JavaScript", "Python"]
+    }
+  ]
+}
