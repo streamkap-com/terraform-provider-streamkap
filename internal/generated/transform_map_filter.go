@@ -4,8 +4,10 @@ package generated
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -23,6 +25,7 @@ type TransformMapFilterModel struct {
 	TransformsOutputTopicPattern        types.String   `tfsdk:"transforms_output_topic_pattern"`
 	TransformsInputSerializationFormat  types.String   `tfsdk:"transforms_input_serialization_format"`
 	TransformsOutputSerializationFormat types.String   `tfsdk:"transforms_output_serialization_format"`
+	TransformsInputJobParallelism       types.Int64    `tfsdk:"transforms_input_job_parallelism"`
 	Timeouts                            timeouts.Value `tfsdk:"timeouts"`
 }
 
@@ -99,6 +102,16 @@ func TransformMapFilterSchema() schema.Schema {
 					stringvalidator.OneOf("Any", "Avro", "Json"),
 				},
 			},
+			"transforms_input_job_parallelism": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The number of parallel tasks this transform should be using. Recommended: 1-5 for most workloads. Higher values increase throughput but consume more resources. Start low and increase based on lag metrics. Defaults to 5.",
+				MarkdownDescription: "The number of parallel tasks this transform should be using. Recommended: 1-5 for most workloads. Higher values increase throughput but consume more resources. Start low and increase based on lag metrics. Defaults to `5`.",
+				Default:             int64default.StaticInt64(5),
+				Validators: []validator.Int64{
+					int64validator.Between(1, 20),
+				},
+			},
 		},
 	}
 }
@@ -110,4 +123,5 @@ var TransformMapFilterFieldMappings = map[string]string{
 	"transforms_output_topic_pattern":        "transforms.output.topic.pattern",
 	"transforms_input_serialization_format":  "transforms.input.serialization.format",
 	"transforms_output_serialization_format": "transforms.output.serialization.format",
+	"transforms_input_job_parallelism":       "transforms.input.job.parallelism",
 }
