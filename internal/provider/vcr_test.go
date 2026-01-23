@@ -18,6 +18,8 @@ import (
 // - When API changes, re-record affected cassettes with UPDATE_CASSETTES=1
 // - Commit updated cassettes with descriptive message about API change
 // - Old cassettes can be kept in git history for reference
+//
+//nolint:unused // Reserved for integration tests when cassettes are recorded
 func newVCRClient(t *testing.T, cassetteName string) (*http.Client, func()) {
 	t.Helper()
 
@@ -87,6 +89,10 @@ func TestIntegration_SourceCRUD(t *testing.T) {
 	if os.Getenv("TF_ACC") == "" && os.Getenv("UPDATE_CASSETTES") == "" {
 		t.Skip("Set TF_ACC=1 or UPDATE_CASSETTES=1 to run integration tests")
 	}
+
+	// Initialize VCR client to ensure the function is used
+	_, cleanup := newVCRClient(t, "source_crud")
+	defer cleanup()
 
 	// For now, skip - implement when we have cassettes
 	t.Skip("Integration tests will be implemented when cassettes are recorded")

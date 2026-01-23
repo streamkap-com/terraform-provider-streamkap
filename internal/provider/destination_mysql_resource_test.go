@@ -10,7 +10,7 @@ import (
 var destinationMysqlHostname = os.Getenv("TF_VAR_destination_mysql_hostname")
 var destinationMysqlUsername = os.Getenv("TF_VAR_destination_mysql_username")
 var destinationMysqlPassword = os.Getenv("TF_VAR_destination_mysql_password")
-var destinationMysqlDatabase = os.Getenv("TF_VAR_destination_mysql_database")
+var _ = os.Getenv("TF_VAR_destination_mysql_database") // used via TF_VAR in HCL config
 
 func TestAccDestinationMysqlResource(t *testing.T) {
 	if destinationMysqlHostname == "" || destinationMysqlUsername == "" || destinationMysqlPassword == "" {

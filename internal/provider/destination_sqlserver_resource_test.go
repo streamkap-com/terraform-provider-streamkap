@@ -10,7 +10,7 @@ import (
 var destinationSqlserverHostname = os.Getenv("TF_VAR_destination_sqlserver_hostname")
 var destinationSqlserverUsername = os.Getenv("TF_VAR_destination_sqlserver_username")
 var destinationSqlserverPassword = os.Getenv("TF_VAR_destination_sqlserver_password")
-var destinationSqlserverDatabase = os.Getenv("TF_VAR_destination_sqlserver_database")
+var _ = os.Getenv("TF_VAR_destination_sqlserver_database") // used via TF_VAR in HCL config
 
 func TestAccDestinationSqlserverResource(t *testing.T) {
 	if destinationSqlserverHostname == "" || destinationSqlserverUsername == "" || destinationSqlserverPassword == "" {

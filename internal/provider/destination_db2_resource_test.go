@@ -10,7 +10,7 @@ import (
 var destinationDb2Hostname = os.Getenv("TF_VAR_destination_db2_hostname")
 var destinationDb2Username = os.Getenv("TF_VAR_destination_db2_username")
 var destinationDb2Password = os.Getenv("TF_VAR_destination_db2_password")
-var destinationDb2Database = os.Getenv("TF_VAR_destination_db2_database")
+var _ = os.Getenv("TF_VAR_destination_db2_database") // used via TF_VAR in HCL config
 
 func TestAccDestinationDb2Resource(t *testing.T) {
 	if destinationDb2Hostname == "" || destinationDb2Username == "" || destinationDb2Password == "" {
