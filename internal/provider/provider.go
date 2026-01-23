@@ -204,6 +204,7 @@ func (p *streamkapProvider) DataSources(_ context.Context) []func() datasource.D
 		ds.NewTransformDataSource,
 		ds.NewTagDataSource,
 		ds.NewTopicsDataSource,
+		ds.NewTopicDataSource,
 	}
 }
 

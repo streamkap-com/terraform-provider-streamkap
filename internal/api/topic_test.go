@@ -172,3 +172,95 @@ func TestGetTopicTableMetrics(t *testing.T) {
 		t.Error("Expected metrics, got nil")
 	}
 }
+
+func TestGetTopicDetailed(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/topics/topic-123" {
+			t.Errorf("Expected path /topics/topic-123, got %s", r.URL.Path)
+		}
+		if r.URL.RawQuery != "detailed=true" {
+			t.Errorf("Expected query detailed=true, got %s", r.URL.RawQuery)
+		}
+		if r.Method != http.MethodGet {
+			t.Errorf("Expected GET, got %s", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"id": "topic-123",
+			"name": "my-topic",
+			"prefix": "streamkap",
+			"serialization": "avro",
+			"entity": {
+				"entity_type": "sources",
+				"entity_id": "source-456",
+				"name": "my-postgres"
+			},
+			"kafka": {
+				"partitions": 3,
+				"configs": {
+					"retention.ms": 604800000,
+					"cleanup.policy": "delete"
+				}
+			}
+		}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(&Config{BaseURL: server.URL})
+	client.SetToken(&Token{AccessToken: "test-token"})
+
+	topic, err := client.GetTopicDetailed(context.Background(), "topic-123")
+	if err != nil {
+		t.Fatalf("GetTopicDetailed failed: %v", err)
+	}
+	if topic.ID != "topic-123" {
+		t.Errorf("Expected ID topic-123, got %s", topic.ID)
+	}
+	if topic.Name != "my-topic" {
+		t.Errorf("Expected name my-topic, got %s", topic.Name)
+	}
+	if topic.Kafka == nil || topic.Kafka.Partitions != 3 {
+		t.Error("Expected 3 partitions")
+	}
+	if topic.Kafka.Configs == nil || topic.Kafka.Configs.RetentionMs == nil || *topic.Kafka.Configs.RetentionMs != 604800000 {
+		t.Error("Expected retention.ms 604800000")
+	}
+	if topic.Kafka.Configs.CleanupPolicy == nil || *topic.Kafka.Configs.CleanupPolicy != "delete" {
+		t.Error("Expected cleanup.policy delete")
+	}
+	if topic.Entity == nil || topic.Entity.EntityID != "source-456" {
+		t.Error("Expected entity_id source-456")
+	}
+}
+
+func TestGetTopicDetailed_MinimalResponse(t *testing.T) {
+	// Test handling of minimal response without optional fields
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{
+			"id": "topic-minimal",
+			"name": "minimal-topic"
+		}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(&Config{BaseURL: server.URL})
+	client.SetToken(&Token{AccessToken: "test-token"})
+
+	topic, err := client.GetTopicDetailed(context.Background(), "topic-minimal")
+	if err != nil {
+		t.Fatalf("GetTopicDetailed failed: %v", err)
+	}
+	if topic.ID != "topic-minimal" {
+		t.Errorf("Expected ID topic-minimal, got %s", topic.ID)
+	}
+	if topic.Entity != nil {
+		t.Error("Expected entity to be nil")
+	}
+	if topic.Kafka != nil {
+		t.Error("Expected kafka to be nil")
+	}
+	if topic.Prefix != nil {
+		t.Error("Expected prefix to be nil")
+	}
+}
