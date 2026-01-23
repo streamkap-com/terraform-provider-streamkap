@@ -55,6 +55,40 @@ type TopicListParams struct {
 	Offset     int      // Pagination offset
 }
 
+// TopicMetricsEntity represents an entity with its topic IDs for metrics request
+// Must match backend SingleTopicTableMetricReq model
+type TopicMetricsEntity struct {
+	ID         string   `json:"id"`           // Entity ID
+	EntityType string   `json:"entity_type"`  // "sources", "transforms", "destinations"
+	Connector  string   `json:"connector"`    // Connector type
+	TopicIDs   []string `json:"topic_ids"`    // List of topic IDs
+	TopicDBIDs []string `json:"topic_db_ids"` // List of topic DB IDs (MongoDB ObjectIds)
+}
+
+// TopicTableMetricsRequest represents the request body for /topics/table_metrics
+type TopicTableMetricsRequest struct {
+	Entities      []TopicMetricsEntity `json:"entities"`
+	TimestampFrom *string              `json:"timestamp_from,omitempty"` // ISO 8601 string
+	TimestampTo   *string              `json:"timestamp_to,omitempty"`   // ISO 8601 string
+	TimeType      *string              `json:"time_type,omitempty"`      // "latest", "timeseries", "timesummary"
+	TimeInterval  *int                 `json:"time_interval,omitempty"`
+	TimeUnit      *string              `json:"time_unit,omitempty"` // "minute", "hour", "day", "week", "month"
+}
+
+// TopicMetrics represents metrics for a single topic
+type TopicMetrics struct {
+	MessagesIn   *int64   `json:"messages_in,omitempty"`
+	MessagesOut  *int64   `json:"messages_out,omitempty"`
+	BytesIn      *int64   `json:"bytes_in,omitempty"`
+	BytesOut     *int64   `json:"bytes_out,omitempty"`
+	Lag          *int64   `json:"lag,omitempty"`
+	AvgLatencyMs *float64 `json:"avg_latency_ms,omitempty"`
+}
+
+// TopicTableMetricsResponse represents the response from /topics/table_metrics
+// Map structure: entity_id -> topic_id -> metrics
+type TopicTableMetricsResponse map[string]map[string]TopicMetrics
+
 
 func (s *streamkapAPI) UpdateTopic(ctx context.Context, topicID string, reqPayload Topic) (*Topic, error) {
 	expectedPayload := map[string]map[string]int{
@@ -176,4 +210,34 @@ func (s *streamkapAPI) ListTopics(ctx context.Context, params *TopicListParams) 
 	}
 
 	return &resp, nil
+}
+
+func (s *streamkapAPI) GetTopicTableMetrics(ctx context.Context, reqPayload TopicTableMetricsRequest) (TopicTableMetricsResponse, error) {
+	payload, err := json.Marshal(reqPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(
+		ctx, http.MethodPost, s.cfg.BaseURL+"/topics/table_metrics", bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"GetTopicTableMetrics request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n"+
+			"\tBody: %s",
+		req.Method,
+		req.URL.String(),
+		payload,
+	))
+
+	var resp TopicTableMetricsResponse
+	err = s.doRequest(ctx, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
