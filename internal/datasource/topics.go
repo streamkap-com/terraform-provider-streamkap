@@ -6,7 +6,9 @@ import (
 
 	ds "github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 )
 
@@ -59,6 +61,9 @@ func (d *TopicsDataSource) Schema(ctx context.Context, req ds.SchemaRequest, res
 				Description:         "Filter topics by entity type. Valid values: sources, transforms, destinations.",
 				MarkdownDescription: "Filter topics by entity type. Valid values: `sources`, `transforms`, `destinations`.",
 				Optional:            true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("sources", "transforms", "destinations"),
+				},
 			},
 			"entity_ids": schema.ListAttribute{
 				Description:         "Filter topics by specific entity IDs.",
@@ -190,12 +195,20 @@ func (d *TopicsDataSource) Read(ctx context.Context, req ds.ReadRequest, resp *d
 			config.Topics[i].EntityID = types.StringValue(topic.Entity.EntityID)
 			config.Topics[i].EntityName = types.StringValue(topic.Entity.Name)
 			config.Topics[i].EntityType = types.StringValue(topic.Entity.EntityType)
+		} else {
+			config.Topics[i].EntityID = types.StringNull()
+			config.Topics[i].EntityName = types.StringNull()
+			config.Topics[i].EntityType = types.StringNull()
 		}
 		if topic.Messages7D != nil {
 			config.Topics[i].Messages7D = types.Int64Value(*topic.Messages7D)
+		} else {
+			config.Topics[i].Messages7D = types.Int64Null()
 		}
 		if topic.Messages30D != nil {
 			config.Topics[i].Messages30D = types.Int64Value(*topic.Messages30D)
+		} else {
+			config.Topics[i].Messages30D = types.Int64Null()
 		}
 	}
 
