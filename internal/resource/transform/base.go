@@ -157,7 +157,7 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	// Add the name to the config map as transforms expect it there
-	configMap["name"] = name
+	configMap["transforms.name"] = name
 
 	tflog.Debug(ctx, fmt.Sprintf("Creating %s transform with config: %+v", r.config.GetTransformType(), configMap))
 
@@ -299,7 +299,7 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Add the name to the config map as transforms expect it there
-	configMap["name"] = name
+	configMap["transforms.name"] = name
 
 	tflog.Debug(ctx, fmt.Sprintf("Updating %s transform with ID: %s, config: %+v", r.config.GetTransformType(), id, configMap))
 
