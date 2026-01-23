@@ -54,6 +54,7 @@ type StreamkapAPI interface {
 	GetTopic(ctx context.Context, TopicID string) (*Topic, error)
 	UpdateTopic(ctx context.Context, TopicID string, reqPayload Topic) (*Topic, error)
 	DeleteTopic(ctx context.Context, TopicID string) error
+	ListTopics(ctx context.Context, params *TopicListParams) (*TopicDetailsResponse, error)
 }
 
 type APIErrorResponse struct {
