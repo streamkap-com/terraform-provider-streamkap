@@ -89,6 +89,28 @@ type TopicMetrics struct {
 // Map structure: entity_id -> topic_id -> metrics
 type TopicTableMetricsResponse map[string]map[string]TopicMetrics
 
+// TopicKafkaConfig represents Kafka configuration for a topic
+type TopicKafkaConfig struct {
+	RetentionMs   *int64  `json:"retention.ms,omitempty"`
+	CleanupPolicy *string `json:"cleanup.policy,omitempty"`
+}
+
+// TopicKafka represents Kafka-specific metadata
+type TopicKafka struct {
+	Partitions int               `json:"partitions"`
+	Configs    *TopicKafkaConfig `json:"configs,omitempty"`
+}
+
+// TopicDetailed represents the full topic response from /topics/{id}?detailed=true
+type TopicDetailed struct {
+	ID            string       `json:"id"`
+	Name          string       `json:"name"`
+	Entity        *TopicEntity `json:"entity,omitempty"`
+	Kafka         *TopicKafka  `json:"kafka,omitempty"`
+	Prefix        *string      `json:"prefix,omitempty"`
+	Serialization *string      `json:"serialization,omitempty"`
+}
+
 
 func (s *streamkapAPI) UpdateTopic(ctx context.Context, topicID string, reqPayload Topic) (*Topic, error) {
 	expectedPayload := map[string]map[string]int{
@@ -240,4 +262,27 @@ func (s *streamkapAPI) GetTopicTableMetrics(ctx context.Context, reqPayload Topi
 	}
 
 	return resp, nil
+}
+
+func (s *streamkapAPI) GetTopicDetailed(ctx context.Context, topicID string) (*TopicDetailed, error) {
+	req, err := http.NewRequestWithContext(
+		ctx, http.MethodGet, s.cfg.BaseURL+"/topics/"+topicID+"?detailed=true", http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"GetTopicDetailed request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n",
+		req.Method,
+		req.URL.String(),
+	))
+
+	var resp TopicDetailed
+	err = s.doRequest(ctx, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 }
