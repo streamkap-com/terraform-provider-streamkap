@@ -84,7 +84,7 @@ func (s *streamkapAPI) SetToken(token *Token) {
 	s.token = token
 }
 
-func (s *streamkapAPI) doRequest(ctx context.Context, req *http.Request, result interface{}) error {
+func (s *streamkapAPI) doRequest(ctx context.Context, req *http.Request, result any) error {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 

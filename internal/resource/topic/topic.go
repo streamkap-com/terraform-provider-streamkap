@@ -98,7 +98,7 @@ func (r *TopicResource) Create(ctx context.Context, req res.CreateRequest, resp 
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error updateing topic",
+			"Error updating topic",
 			fmt.Sprintf("Unable to update topic, got error: %s", err),
 		)
 		return
@@ -166,7 +166,7 @@ func (r *TopicResource) Update(ctx context.Context, req res.UpdateRequest, resp 
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error updateing topic",
+			"Error updating topic",
 			fmt.Sprintf("Unable to update topic, got error: %s", err),
 		)
 		return
