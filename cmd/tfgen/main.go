@@ -243,7 +243,7 @@ func processEntity(backendPath, output string, entity EntityConfig, specificConn
 
 		// Generate the schema
 		fmt.Printf("Generating %s_%s.go...\n", entity.Type, connectorCode)
-		if err := generator.Generate(config, connectorCode); err != nil {
+		if err := generator.Generate(config, connectorCode, backendPath); err != nil {
 			return count, fmt.Errorf("failed to generate %s %s: %w", entity.Type, connectorCode, err)
 		}
 		count++

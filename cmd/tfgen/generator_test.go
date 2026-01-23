@@ -963,7 +963,7 @@ func TestGenerateFile_Integration(t *testing.T) {
 	}
 
 	// Generate the file
-	err = g.Generate(config, "testconn")
+	err = g.Generate(config, "testconn", "")
 	if err != nil {
 		t.Fatalf("Generate failed: %v", err)
 	}
@@ -1057,7 +1057,7 @@ func TestGeneratePostgreSQL_Integration(t *testing.T) {
 
 	// Generate the schema
 	g := NewGenerator(tmpDir, "source")
-	err = g.Generate(config, "postgresql")
+	err = g.Generate(config, "postgresql", "")
 	if err != nil {
 		t.Fatalf("Generate failed: %v", err)
 	}
@@ -1134,7 +1134,7 @@ func TestGenerateSnowflake_Integration(t *testing.T) {
 
 	// Generate the schema
 	g := NewGenerator(tmpDir, "destination")
-	err = g.Generate(config, "snowflake")
+	err = g.Generate(config, "snowflake", "")
 	if err != nil {
 		t.Fatalf("Generate failed: %v", err)
 	}
@@ -1301,7 +1301,7 @@ func TestOutputDirectoryCreation(t *testing.T) {
 		Config:      []ConfigEntry{},
 	}
 
-	err = g.Generate(config, "test")
+	err = g.Generate(config, "test", "")
 	if err != nil {
 		t.Fatalf("Generate failed: %v", err)
 	}
