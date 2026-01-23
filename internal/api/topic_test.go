@@ -145,3 +145,30 @@ func TestListTopics_WithEntityDetails(t *testing.T) {
 		t.Errorf("Expected 2 topic_ids, got %d", len(topic.Entity.TopicIDs))
 	}
 }
+
+func TestGetTopicTableMetrics(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/topics/table_metrics" {
+			t.Errorf("Expected path /topics/table_metrics, got %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Errorf("Expected POST, got %s", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"entity-1": {"topic-1": {"messages_in": 100}}}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(&Config{BaseURL: server.URL})
+	client.SetToken(&Token{AccessToken: "test-token"})
+
+	metrics, err := client.GetTopicTableMetrics(context.Background(), TopicTableMetricsRequest{
+		Entities: []TopicMetricsEntity{{ID: "entity-1", EntityType: "sources", Connector: "postgresql", TopicIDs: []string{"topic-1"}, TopicDBIDs: []string{}}},
+	})
+	if err != nil {
+		t.Fatalf("GetTopicTableMetrics failed: %v", err)
+	}
+	if metrics == nil {
+		t.Error("Expected metrics, got nil")
+	}
+}
