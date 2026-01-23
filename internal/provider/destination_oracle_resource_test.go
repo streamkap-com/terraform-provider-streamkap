@@ -10,7 +10,7 @@ import (
 var destinationOracleHostname = os.Getenv("TF_VAR_destination_oracle_hostname")
 var destinationOracleUsername = os.Getenv("TF_VAR_destination_oracle_username")
 var destinationOraclePassword = os.Getenv("TF_VAR_destination_oracle_password")
-var destinationOracleDatabase = os.Getenv("TF_VAR_destination_oracle_database")
+var _ = os.Getenv("TF_VAR_destination_oracle_database") // used via TF_VAR in HCL config
 
 func TestAccDestinationOracleResource(t *testing.T) {
 	if destinationOracleHostname == "" || destinationOracleUsername == "" || destinationOraclePassword == "" {

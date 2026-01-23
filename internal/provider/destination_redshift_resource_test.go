@@ -10,7 +10,7 @@ import (
 var destinationRedshiftDomain = os.Getenv("TF_VAR_destination_redshift_domain")
 var destinationRedshiftUsername = os.Getenv("TF_VAR_destination_redshift_username")
 var destinationRedshiftPassword = os.Getenv("TF_VAR_destination_redshift_password")
-var destinationRedshiftDatabase = os.Getenv("TF_VAR_destination_redshift_database")
+var _ = os.Getenv("TF_VAR_destination_redshift_database") // used via TF_VAR in HCL config
 
 func TestAccDestinationRedshiftResource(t *testing.T) {
 	if destinationRedshiftDomain == "" || destinationRedshiftUsername == "" || destinationRedshiftPassword == "" {

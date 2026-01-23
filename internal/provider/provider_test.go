@@ -58,10 +58,3 @@ func legacyProviderConfig() map[string]resource.ExternalProvider {
 	}
 }
 
-// skipIfLegacyProviderUnavailable is a helper for tests that need the legacy provider.
-// Call this at the start of migration tests to provide a clear skip message.
-func skipIfLegacyProviderUnavailable(t *testing.T) {
-	// The ExternalProviders mechanism will fail if the provider can't be downloaded.
-	// This helper documents the requirement but doesn't pre-check (Terraform does that).
-	t.Log("Migration test requires legacy provider v2.1.18 from registry.terraform.io/streamkap-com/streamkap")
-}
