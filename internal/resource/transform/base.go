@@ -288,6 +288,24 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 	}
 	name := r.getStringField(model, "Name")
 
+	// Fetch existing transform to get implementation data
+	// This is required because the backend overwrites implementation on update
+	existingTransform, err := r.client.GetTransform(ctx, id)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Error reading %s transform for update", r.config.GetTransformType()),
+			fmt.Sprintf("Unable to read existing transform: %s", err),
+		)
+		return
+	}
+	if existingTransform == nil {
+		resp.Diagnostics.AddError(
+			fmt.Sprintf("Error reading %s transform for update", r.config.GetTransformType()),
+			fmt.Sprintf("Transform %s does not exist", id),
+		)
+		return
+	}
+
 	// Convert model to config map using field mappings
 	configMap, err := r.modelToConfigMap(ctx, model)
 	if err != nil {
@@ -303,10 +321,11 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 
 	tflog.Debug(ctx, fmt.Sprintf("Updating %s transform with ID: %s, config: %+v", r.config.GetTransformType(), id, configMap))
 
-	// Call the Transform API
+	// Call the Transform API with existing implementation to prevent it from being overwritten
 	transform, err := r.client.UpdateTransform(ctx, id, api.UpdateTransformRequest{
-		Transform: r.config.GetTransformType(),
-		Config:    configMap,
+		Transform:      r.config.GetTransformType(),
+		Config:         configMap,
+		Implementation: existingTransform.Implementation,
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(

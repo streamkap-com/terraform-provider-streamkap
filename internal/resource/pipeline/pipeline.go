@@ -101,6 +101,16 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 		return
 	}
 
+	defaultEmptyTopicsSet, diags := types.SetValue(
+		types.StringType,
+		[]attr.Value{},
+	)
+
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	resp.Schema = schema.Schema{
 		Description: "Manages a Streamkap pipeline that connects sources to destinations with optional transforms.",
 		MarkdownDescription: "Manages a **Streamkap pipeline** that connects sources to destinations with optional transforms.\n\n" +
@@ -129,7 +139,7 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 				Description:         "Whether to automatically snapshot newly added tables (topics). When enabled, new tables added to the source will be automatically snapshotted. Defaults to true.",
 				MarkdownDescription: "Whether to automatically snapshot newly added tables (topics). When enabled, new tables added to the source will be automatically snapshotted. Defaults to `true`.",
 			},
-			"source": schema.ObjectAttribute{
+			"source": schema.SingleNestedAttribute{
 				Required:            true,
 				Description:         "Source connector configuration block. Defines the source connector that produces data for the pipeline. Contains id (source connector identifier), name (display name), connector (connector type code), and topics (set of topic names to consume from the source).",
 				MarkdownDescription: "Source connector configuration block. Defines the source connector that produces data for the pipeline.\n\n" +
@@ -138,16 +148,33 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 					"- `name` - Display name of the source connector\n" +
 					"- `connector` - Connector type code (e.g., `postgresql`, `mysql`)\n" +
 					"- `topics` - Set of topic names to consume from the source",
-				AttributeTypes: map[string]attr.Type{
-					"id":        types.StringType,
-					"name":      types.StringType,
-					"connector": types.StringType,
-					"topics": types.SetType{
-						ElemType: types.StringType,
-					},
+				Attributes: map[string]schema.Attribute{
+				"id": schema.StringAttribute{
+					Required:            true,
+					Description:         "Source connector identifier. References a source resource (e.g., streamkap_source_postgresql).",
+					MarkdownDescription: "Source connector identifier. References a source resource (e.g., `streamkap_source_postgresql`).",
+				},
+				"name": schema.StringAttribute{
+					Required:            true,
+					Description:         "Display name of the source connector.",
+					MarkdownDescription: "Display name of the source connector.",
+				},
+				"connector": schema.StringAttribute{
+					Required:            true,
+					Description:         "Connector type code (e.g., postgresql, mysql, mongodb).",
+					MarkdownDescription: "Connector type code (e.g., `postgresql`, `mysql`, `mongodb`).",
+				},
+				"topics": schema.SetAttribute{
+					Optional:            true,
+					Computed:            true,
+					ElementType:         types.StringType,
+					Default:             setdefault.StaticValue(defaultEmptyTopicsSet),
+					Description:         "Set of topic names to consume from the source. Optional when transforms are configured - defaults to an empty set.",
+					MarkdownDescription: "Set of topic names to consume from the source. Optional when transforms are configured - defaults to an empty set.",
 				},
 			},
-			"destination": schema.ObjectAttribute{
+		},
+		"destination": schema.ObjectAttribute{
 				Required:            true,
 				Description:         "Destination connector configuration block. Defines the destination connector that receives data from the pipeline. Contains id (destination connector identifier), name (display name), and connector (connector type code).",
 				MarkdownDescription: "Destination connector configuration block. Defines the destination connector that receives data from the pipeline.\n\n" +
