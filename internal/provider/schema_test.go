@@ -461,6 +461,43 @@ func TestPipelineSchema(t *testing.T) {
 	}, "pipeline")
 }
 
+// TestPipelineSourceTopicsOptional verifies that source.topics is optional with a default.
+func TestPipelineSourceTopicsOptional(t *testing.T) {
+	res := pipeline.NewPipelineResource()
+	s := getSchema(t, res)
+
+	// Get the source attribute
+	sourceAttr, ok := s.Attributes["source"]
+	require.True(t, ok, "pipeline: source attribute must exist")
+
+	// Verify source is a SingleNestedAttribute
+	sourceNested, ok := sourceAttr.(schema.SingleNestedAttribute)
+	require.True(t, ok, "pipeline: source must be a SingleNestedAttribute, got %T", sourceAttr)
+
+	// Verify nested attributes exist
+	require.NotNil(t, sourceNested.Attributes, "pipeline: source must have nested Attributes")
+
+	// Verify id, name, connector are required
+	idAttr, ok := sourceNested.Attributes["id"]
+	require.True(t, ok, "pipeline: source.id must exist")
+	assert.True(t, idAttr.IsRequired(), "pipeline: source.id must be required")
+
+	nameAttr, ok := sourceNested.Attributes["name"]
+	require.True(t, ok, "pipeline: source.name must exist")
+	assert.True(t, nameAttr.IsRequired(), "pipeline: source.name must be required")
+
+	connectorAttr, ok := sourceNested.Attributes["connector"]
+	require.True(t, ok, "pipeline: source.connector must exist")
+	assert.True(t, connectorAttr.IsRequired(), "pipeline: source.connector must be required")
+
+	// Verify topics is optional and computed (has default)
+	topicsAttr, ok := sourceNested.Attributes["topics"]
+	require.True(t, ok, "pipeline: source.topics must exist")
+	assert.True(t, topicsAttr.IsOptional(), "pipeline: source.topics must be optional")
+	assert.True(t, topicsAttr.IsComputed(), "pipeline: source.topics must be computed (has default)")
+	assert.False(t, topicsAttr.IsRequired(), "pipeline: source.topics must not be required")
+}
+
 // TestTopicSchema validates the topic resource schema.
 func TestTopicSchema(t *testing.T) {
 	res := topic.NewTopicResource()

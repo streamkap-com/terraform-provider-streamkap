@@ -43,9 +43,10 @@ type CreateTransformRequest struct {
 
 // UpdateTransformRequest represents the request payload for updating a transform
 type UpdateTransformRequest struct {
-	ID        string         `json:"id"`
-	Transform string         `json:"transform"`
-	Config    map[string]any `json:"config"`
+	ID             string         `json:"id"`
+	Transform      string         `json:"transform"`
+	Config         map[string]any `json:"config"`
+	Implementation map[string]any `json:"implementation,omitempty"`
 }
 
 func (s *streamkapAPI) GetTransform(ctx context.Context, TransformID string) (*Transform, error) {
