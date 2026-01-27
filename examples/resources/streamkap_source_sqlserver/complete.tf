@@ -32,14 +32,14 @@ resource "streamkap_source_sqlserver" "example-source-sqlserver" {
   # Connection settings
   database_hostname = var.source_sqlserver_hostname # Database server hostname or IP
   database_port     = 1433                          # SQL Server port (default: 1433)
-  database_user     = "admin"                       # User with CDC access
+  database_user     = "streamkap_user"              # User with CDC access
   database_password = var.source_sqlserver_password # Password (use variables for secrets)
   database_encrypt  = "true"                        # Enable TLS encryption (true/false)
 
   # Database and table selection
-  database_names      = "sqlserverdemo"   # Database to stream from
-  schema_include_list = "dbo"             # Schemas to include
-  table_include_list  = "dbo.Orders"      # Tables to capture (schema.table format)
+  database_names      = "demo"       # Database to stream from
+  schema_include_list = "dbo"        # Schemas to include
+  table_include_list  = "dbo.Orders" # Tables to capture (schema.table format)
 
   # Signal table for incremental snapshots (optional, defaults to "streamkap")
   signal_data_collection_schema_or_database = "streamkap"
@@ -48,7 +48,7 @@ resource "streamkap_source_sqlserver" "example-source-sqlserver" {
   # column_exclude_list = "dbo.Orders.sensitive_column"
 
   # Heartbeat configuration (for monitoring replication lag)
-  heartbeat_enabled                            = false      # Enable heartbeat messages
+  heartbeat_enabled                            = false       # Enable heartbeat messages
   heartbeat_data_collection_schema_or_database = "streamkap" # Schema containing heartbeat table
 
   # Schema history optimization (for large instances)
@@ -64,11 +64,11 @@ resource "streamkap_source_sqlserver" "example-source-sqlserver" {
 
   # Custom table configuration for parallelization
   # Format: JSON object mapping table names to chunk counts
-  streamkap_snapshot_custom_table_config = jsonencode({
+  snapshot_custom_table_config = {
     "dbo.Orders" = {
       chunks = 2
     }
-  })
+  }
 
   # SSH tunnel settings (optional, for secure connections)
   ssh_enabled = false

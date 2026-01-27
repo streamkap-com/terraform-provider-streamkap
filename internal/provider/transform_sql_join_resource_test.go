@@ -34,8 +34,8 @@ resource "streamkap_transform_sql_join" "test" {
   name                                   = "tf-acc-test-transform-sql-join"
   transforms_input_topic_pattern         = "test-input-topic"
   transforms_output_topic_pattern        = "test-output-topic"
-  transforms_input_serialization_format  = "AVRO"
-  transforms_output_serialization_format = "AVRO"
+  transforms_input_serialization_format  = "Avro"
+  transforms_output_serialization_format = "Avro"
 }
 `
 }

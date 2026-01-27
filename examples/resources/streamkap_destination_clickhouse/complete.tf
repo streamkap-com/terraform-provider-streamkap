@@ -34,15 +34,10 @@ resource "streamkap_destination_clickhouse" "example-destination-clickhouse" {
   hostname            = var.destination_clickhouse_hostname
   connection_username = var.destination_clickhouse_connection_username
   connection_password = var.destination_clickhouse_connection_password
-  port                = 8443
+  port                = "8443"
   database            = "demo"
   ssl                 = true
-  topics_config_map = {
-    "streamkap.customer" = {
-      delete_sql_execute = "SELECT 1;"
-    }
-  }
-  schema_evolution = "basic"
+  schema_evolution    = "basic"
 }
 
 output "example-destination-clickhouse" {

@@ -26,12 +26,12 @@ resource "streamkap_destination_postgresql" "example" {
 
   # Connection settings (required)
   database_hostname   = var.destination_postgresql_hostname
-  database_port       = "5432"
-  connection_username = "streamkap_user"
+  database_port       = 5432
+  connection_username = "streamkap"
   connection_password = var.destination_postgresql_password
 
   # Database name
-  database_database = "analytics"
+  database_database = "sandbox"
 
   # Schema prefix for table names (required)
   table_name_prefix = "streamkap"
