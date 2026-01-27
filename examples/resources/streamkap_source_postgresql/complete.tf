@@ -31,7 +31,7 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   # Connection settings
   database_hostname = var.source_postgresql_hostname # Database server hostname or IP
   database_port     = 5432                           # PostgreSQL port (default: 5432)
-  database_user     = "postgresql"                   # User with replication privileges
+  database_user     = "streamkap"                    # User with replication privileges
   database_password = var.source_postgresql_password # Password (use variables for secrets)
   database_dbname   = "postgres"                     # Database name to connect to
 
@@ -42,7 +42,7 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   snapshot_read_only = "No" # "Yes" to prevent DDL during snapshots
 
   # Table selection (comma-separated, supports regex patterns)
-  schema_include_list = "streamkap"                        # Schemas to include
+  schema_include_list = "streamkap"                              # Schemas to include
   table_include_list  = "streamkap.customer,streamkap.customer2" # Tables to capture (schema.table format)
 
   # Column filtering (optional, uses regex pattern: schema[.]table[.](col1|col2))
@@ -60,8 +60,8 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   include_source_db_name_in_table_name = false # Prefix table names with database name
 
   # Replication slot and publication (must be pre-created in PostgreSQL)
-  slot_name        = "terraform_pgoutput_slot" # Logical replication slot name
-  publication_name = "terraform_pub"           # Publication name for the tables
+  slot_name        = "terraform_pgoutput_slot_1" # Logical replication slot name
+  publication_name = "terraform_pub_1"           # Publication name for the tables
 
   # Binary data handling
   binary_handling_mode = "bytes" # Options: bytes, base64, base64-url-safe, hex

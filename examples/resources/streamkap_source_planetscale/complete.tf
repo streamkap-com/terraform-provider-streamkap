@@ -32,7 +32,7 @@ resource "streamkap_source_planetscale" "example-source-planetscale" {
   # Connection settings
   database_hostname = var.source_planetscale_hostname
   database_port     = "443"
-  database_user     = "branch_user"
+  database_user     = "streamkap"
   database_password = var.source_planetscale_password
 
   # Vitess keyspace (database name)
