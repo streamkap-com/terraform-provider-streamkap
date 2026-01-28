@@ -32,17 +32,17 @@ resource "streamkap_source_planetscale" "example-source-planetscale" {
   # Connection settings
   database_hostname = var.source_planetscale_hostname
   database_port     = "443"
-  database_user     = "streamkap"
+  database_user     = "eu0akgouilvei5flomiy"
   database_password = var.source_planetscale_password
 
   # Vitess keyspace (database name)
-  vitess_keyspace = "ecommerce"
+  vitess_keyspace = "sandbox"
 
   # Tablet type for streaming
   vitess_tablet_type = "MASTER" # Options: MASTER, REPLICA, RDONLY
 
   # Table selection
-  table_include_list = "ecommerce.orders,ecommerce.customers,ecommerce.products"
+  table_include_list = "sandbox.orders,sandbox.customers,sandbox.products"
 
   # Tinyint to boolean conversion
   converter_tinyint_bool = false
@@ -52,7 +52,7 @@ resource "streamkap_source_planetscale" "example-source-planetscale" {
   schema_history_internal_store_only_captured_tables_ddl    = false
 
   # Column filtering (optional)
-  column_exclude_list = "ecommerce.customers.ssn"
+  column_exclude_list = "sandbox.customers.ssn"
 
   # SSH tunnel settings (optional)
   ssh_enabled = false

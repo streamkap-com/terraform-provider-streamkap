@@ -34,9 +34,9 @@ resource "streamkap_source_supabase" "test" {
 	name                                         = "tf-acc-test-source-supabase"
 	database_hostname                            = var.source_supabase_hostname
 	database_port                                = 5432
-	database_user                                = "postgres"
+	database_user                                = "streamkap"
 	database_password                            = var.source_supabase_password
-	database_dbname                              = "postgres"
+	database_dbname                              = "sandbox"
 	snapshot_read_only                           = "Yes"
 	database_sslmode                             = "require"
 	schema_include_list                          = "public"
@@ -44,8 +44,8 @@ resource "streamkap_source_supabase" "test" {
 	signal_data_collection_schema_or_database    = "public"
 	heartbeat_enabled                            = true
 	heartbeat_data_collection_schema_or_database = "public"
-	slot_name                                    = "streamkap_pgoutput_slot"
-	publication_name                             = "streamkap_pub"
+	slot_name                                    = "streamkap_pgoutput_slot_n"
+	publication_name                             = "streamkap_pub_n"
 	binary_handling_mode                         = "bytes"
 	include_source_db_name_in_table_name         = false
 	ssh_enabled                                  = false
@@ -55,9 +55,9 @@ resource "streamkap_source_supabase" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "name", "tf-acc-test-source-supabase"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "database_hostname", sourceSupabaseHostname),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "database_port", "5432"),
-					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "database_user", "postgres"),
+					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "database_user", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "database_password", sourceSupabasePassword),
-					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "database_dbname", "postgres"),
+					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "database_dbname", "sandbox"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "snapshot_read_only", "Yes"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "database_sslmode", "require"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "schema_include_list", "public"),
@@ -94,9 +94,9 @@ resource "streamkap_source_supabase" "test" {
 	name                                         = "tf-acc-test-source-supabase-updated"
 	database_hostname                            = var.source_supabase_hostname
 	database_port                                = 5432
-	database_user                                = "postgres"
+	database_user                                = "streamkap"
 	database_password                            = var.source_supabase_password
-	database_dbname                              = "postgres"
+	database_dbname                              = "sandbox"
 	snapshot_read_only                           = "No"
 	database_sslmode                             = "require"
 	schema_include_list                          = "public"
