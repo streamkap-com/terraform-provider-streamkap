@@ -20,7 +20,7 @@ resource "streamkap_destination_weaviate" "example-destination-weaviate" {
   name = "example-destination-weaviate"
 
   # Connection settings
-  weaviate_connection_url = "https://my-cluster.weaviate.network"
+  weaviate_connection_url = "https://9sj3r1bdseylkegrgjgazq.c0.europe-west3.gcp.weaviate.cloud"
   weaviate_grpc_url       = "my-cluster.weaviate.network:50051"
   weaviate_grpc_secured   = true
 

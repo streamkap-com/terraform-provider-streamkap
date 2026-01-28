@@ -34,11 +34,11 @@ resource "streamkap_source_planetscale" "test" {
 	name                = "tf-acc-test-source-planetscale"
 	database_hostname   = var.source_planetscale_hostname
 	database_port       = 443
-	database_user       = "streamkap"
+	database_user       = "eu0akgouilvei5flomiy"
 	database_password   = var.source_planetscale_password
-	vitess_keyspace     = "streamkap"
+	vitess_keyspace     = "sandbox"
 	vitess_tablet_type  = "MASTER"
-	table_include_list  = "streamkap.customer"
+	table_include_list  = "sandbox.customer"
 	ssh_enabled         = false
 }
 `,
@@ -46,11 +46,11 @@ resource "streamkap_source_planetscale" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "name", "tf-acc-test-source-planetscale"),
 					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "database_hostname", sourcePlanetScaleHostname),
 					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "database_port", "443"),
-					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "database_user", "streamkap"),
+					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "database_user", "eu0akgouilvei5flomiy"),
 					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "database_password", sourcePlanetScalePassword),
-					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "vitess_keyspace", "streamkap"),
+					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "vitess_keyspace", "sandbox"),
 					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "vitess_tablet_type", "MASTER"),
-					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "table_include_list", "streamkap.customer"),
+					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "table_include_list", "sandbox.customer"),
 					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "ssh_enabled", "false"),
 				),
 			},
@@ -76,18 +76,18 @@ resource "streamkap_source_planetscale" "test" {
 	name                = "tf-acc-test-source-planetscale-updated"
 	database_hostname   = var.source_planetscale_hostname
 	database_port       = 443
-	database_user       = "streamkap"
+	database_user       = "eu0akgouilvei5flomiy"
 	database_password   = var.source_planetscale_password
-	vitess_keyspace     = "streamkap"
+	vitess_keyspace     = "sandbox"
 	vitess_tablet_type  = "REPLICA"
-	table_include_list  = "streamkap.customer,streamkap.orders"
+	table_include_list  = "sandbox.customer,sandbox.orders"
 	ssh_enabled         = false
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "name", "tf-acc-test-source-planetscale-updated"),
 					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "vitess_tablet_type", "REPLICA"),
-					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "table_include_list", "streamkap.customer,streamkap.orders"),
+					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "table_include_list", "sandbox.customer,sandbox.orders"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
