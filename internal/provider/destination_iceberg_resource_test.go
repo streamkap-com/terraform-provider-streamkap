@@ -29,28 +29,31 @@ variable "iceberg_aws_secret_key" {
 }
 
 resource "streamkap_destination_iceberg" "test" {
-  name           = "test-destination-iceberg"
-  catalog_type   = "rest"
-  catalog_name   = "iceberg_catalog_name"
-  catalog_uri    = "iceberg_catalog_uri"
-  aws_access_key = var.iceberg_aws_access_key
-  aws_secret_key = var.iceberg_aws_secret_key
-  aws_region     = "us-west-2"
-  bucket_path    = "iceberg_bucket_path"
-  schema         = "iceberg_schema"
+  name                                 = "test-destination-iceberg"
+  iceberg_catalog_type                 = "rest"
+  iceberg_catalog_name                 = "iceberg_catalog_name"
+  iceberg_catalog_uri                  = "iceberg_catalog_uri"
+  iceberg_catalog_s3_access_key_id     = var.iceberg_aws_access_key
+  iceberg_catalog_s3_secret_access_key = var.iceberg_aws_secret_key
+  iceberg_catalog_client_region        = "us-west-2"
+  iceberg_catalog_warehouse            = "s3://my-bucket/iceberg-warehouse"
+  table_name_prefix                    = "analytics"
+  insert_mode                          = "insert"
+  iceberg_tables_default_id_columns    = "id,created_at"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "name", "test-destination-iceberg"),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "catalog_type", "rest"),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "catalog_name", "iceberg_catalog_name"),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "catalog_uri", "iceberg_catalog_uri"),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "aws_access_key", icebergAwsAccessKey),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "aws_secret_key", icebergAwsSecretKey),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "aws_region", "us-west-2"),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "bucket_path", "iceberg_bucket_path"),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "schema", "iceberg_schema"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_type", "rest"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_name", "iceberg_catalog_name"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_uri", "iceberg_catalog_uri"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_s3_access_key_id", icebergAwsAccessKey),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_s3_secret_access_key", icebergAwsSecretKey),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_client_region", "us-west-2"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_warehouse", "s3://my-bucket/iceberg-warehouse"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "table_name_prefix", "analytics"),
 					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "insert_mode", "insert"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_tables_default_id_columns", "id,created_at"),
 				),
 			},
 			// Step 2: ImportState Testing
@@ -73,29 +76,31 @@ variable "iceberg_aws_secret_key" {
 }
 
 resource "streamkap_destination_iceberg" "test" {
-  name           = "test-destination-iceberg-updated"
-  catalog_type   = "hive"
-  catalog_name   = "iceberg_catalog_name-updated"
-  catalog_uri    = "iceberg_catalog_uri"
-  aws_access_key = var.iceberg_aws_access_key
-  aws_secret_key = var.iceberg_aws_secret_key
-  aws_region     = "us-west-1"
-  bucket_path    = "iceberg_bucket_path-updated"
-  schema         = "iceberg_schema"
-  insert_mode    = "upsert"
+  name                                 = "test-destination-iceberg-updated"
+  iceberg_catalog_type                 = "hive"
+  iceberg_catalog_name                 = "iceberg_catalog_name_updated"
+  iceberg_catalog_uri                  = "iceberg_catalog_uri_updated"
+  iceberg_catalog_s3_access_key_id     = var.iceberg_aws_access_key
+  iceberg_catalog_s3_secret_access_key = var.iceberg_aws_secret_key
+  iceberg_catalog_client_region        = "us-west-1"
+  iceberg_catalog_warehouse            = "s3://my-bucket/iceberg-warehouse-updated"
+  table_name_prefix                    = "analytics_updated"
+  insert_mode                          = "upsert"
+  iceberg_tables_default_id_columns    = "id"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "name", "test-destination-iceberg-updated"),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "catalog_type", "hive"),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "catalog_name", "iceberg_catalog_name-updated"),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "catalog_uri", "iceberg_catalog_uri"),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "aws_access_key", icebergAwsAccessKey),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "aws_secret_key", icebergAwsSecretKey),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "aws_region", "us-west-1"),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "bucket_path", "iceberg_bucket_path-updated"),
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "schema", "iceberg_schema"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_type", "hive"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_name", "iceberg_catalog_name_updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_uri", "iceberg_catalog_uri_updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_s3_access_key_id", icebergAwsAccessKey),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_s3_secret_access_key", icebergAwsSecretKey),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_client_region", "us-west-1"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_warehouse", "s3://my-bucket/iceberg-warehouse-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "table_name_prefix", "analytics_updated"),
 					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "insert_mode", "upsert"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_tables_default_id_columns", "id"),
 				),
 			},
 			// Delete testing is automatically handled by the test framework
