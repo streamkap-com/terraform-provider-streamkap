@@ -32,27 +32,24 @@ resource "streamkap_destination_postgresql" "test" {
 	name                 = "test-destination-postgresql"
 	database_hostname    = var.destination_postgresql_hostname
 	database_port        = 5432
-	database_dbname      = "postgres"
-	database_username    = "postgresql"
-	database_password    = var.destination_postgresql_password
-	database_schema_name = "streamkap"
-	schema_evolution     = "basic"
-	insert_mode          = "insert"
-	hard_delete          = false
-	ssh_enabled          = false
+	database_database      = "sandbox"
+	connection_username    = "streamkap"
+	connection_password    = var.destination_postgresql_password
+	table_name_prefix = "streamkap"
+	
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "name", "test-destination-postgresql"),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_hostname", destinationPostgresqlHostname),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_port", "5432"),
-					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_dbname", "postgres"),
-					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_username", "postgresql"),
-					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_password", destinationPostgresqlPassword),
-					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_schema_name", "streamkap"),
+					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_database", "sandbox"),
+					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "connection_username", "streamkap"),
+					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "connection_password", destinationPostgresqlPassword),
+					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "table_name_prefix", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "schema_evolution", "basic"),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "insert_mode", "insert"),
-					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "hard_delete", "false"),
+					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "delete_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "ssh_enabled", "false"),
 
 					resource.TestCheckResourceAttrSet("streamkap_destination_postgresql.test", "id"),
@@ -82,13 +79,13 @@ resource "streamkap_destination_postgresql" "test" {
 	name                 = "test-destination-postgresql-updated"
 	database_hostname    = var.destination_postgresql_hostname
 	database_port        = 5432
-	database_dbname      = "postgres"
-	database_username    = "postgresql"
-	database_password    = var.destination_postgresql_password
-	database_schema_name = "streamkap"
+	database_database    = "sandbox"
+	connection_username  = "streamkap"
+	connection_password  = var.destination_postgresql_password
+	table_name_prefix    = "streamkap"
 	schema_evolution     = "none"
 	insert_mode          = "upsert"
-	hard_delete          = true
+	delete_enabled       = true
 	ssh_enabled          = false
 }
 `,
@@ -96,13 +93,13 @@ resource "streamkap_destination_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "name", "test-destination-postgresql-updated"),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_hostname", destinationPostgresqlHostname),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_port", "5432"),
-					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_dbname", "postgres"),
-					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_username", "postgresql"),
-					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_password", destinationPostgresqlPassword),
-					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_schema_name", "streamkap"),
+					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_database", "sandbox"),
+					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "connection_username", "streamkap"),
+					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "connection_password", destinationPostgresqlPassword),
+					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "table_name_prefix", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "schema_evolution", "none"),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "insert_mode", "upsert"),
-					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "hard_delete", "true"),
+					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "delete_enabled", "true"),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "ssh_enabled", "false"),
 
 					resource.TestCheckResourceAttrSet("streamkap_destination_postgresql.test", "id"),

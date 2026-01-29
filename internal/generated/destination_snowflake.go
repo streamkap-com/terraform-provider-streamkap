@@ -201,7 +201,7 @@ func DestinationSnowflakeSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5</code> uses only the last segment as table name. Defaults to \"^([-\\\\w]+\\\\.)([-\\\\w]+\\\\.)?([-\\\\w]+\\\\.)?([-\\\\w]+\\\\.)?([-\\\\w]+):$5\".",
 				MarkdownDescription: "Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5</code> uses only the last segment as table name. Defaults to `^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5`.",
-				Default:             stringdefault.StaticString("^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5"),
+				Default:             stringdefault.StaticString("REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5"),
 			},
 			"auto_qa_dedupe_table_mapping": schema.MapAttribute{
 				Optional:            true,

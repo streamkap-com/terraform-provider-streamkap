@@ -103,18 +103,18 @@ resource "streamkap_destination_mysql" "test" {
 	database_database   = var.destination_mysql_database
 	connection_username = var.destination_mysql_username
 	connection_password = var.destination_mysql_password
-	schema_evolution    = "none"
+	schema_evolution    = "basic"
 	insert_mode         = "upsert"
-	delete_enabled      = true
+	delete_enabled      = false
 	primary_key_mode    = "record_value"
 	tasks_max           = 10
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "name", "tf-acc-test-destination-mysql-updated"),
-					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "schema_evolution", "none"),
+					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "schema_evolution", "basic"),
 					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "insert_mode", "upsert"),
-					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "delete_enabled", "true"),
+					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "delete_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "primary_key_mode", "record_value"),
 					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "tasks_max", "10"),
 				),

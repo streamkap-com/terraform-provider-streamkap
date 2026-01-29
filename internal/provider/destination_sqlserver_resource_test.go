@@ -7,12 +7,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-var destinationSqlserverHostname = os.Getenv("TF_VAR_destination_sqlserver_hostname")
-var destinationSqlserverUsername = os.Getenv("TF_VAR_destination_sqlserver_username")
-var destinationSqlserverPassword = os.Getenv("TF_VAR_destination_sqlserver_password")
-var _ = os.Getenv("TF_VAR_destination_sqlserver_database") // used via TF_VAR in HCL config
-
 func TestAccDestinationSqlserverResource(t *testing.T) {
+	var destinationSqlserverHostname = os.Getenv("TF_VAR_destination_sqlserver_hostname")
+	var destinationSqlserverUsername = os.Getenv("TF_VAR_destination_sqlserver_username")
+	var destinationSqlserverPassword = os.Getenv("TF_VAR_destination_sqlserver_password")
+	var _ = os.Getenv("TF_VAR_destination_sqlserver_database") // used via TF_VAR in HCL config
 	if destinationSqlserverHostname == "" || destinationSqlserverUsername == "" || destinationSqlserverPassword == "" {
 		t.Skip("Skipping TestAccDestinationSqlserverResource: TF_VAR_destination_sqlserver_hostname, TF_VAR_destination_sqlserver_username, or TF_VAR_destination_sqlserver_password not set")
 	}

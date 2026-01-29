@@ -53,3 +53,30 @@ func GetTfCfgListString(ctx context.Context, cfg map[string]any, key string) typ
 
 	return types.ListNull(types.StringType)
 }
+
+func GetTfCfgMapString(ctx context.Context, cfg map[string]any, key string) map[string]types.String {
+	if val, ok := cfg[key]; ok && val != nil {
+		// Handle map[string]interface{}
+		if mapVal, ok := val.(map[string]interface{}); ok {
+			result := make(map[string]types.String, len(mapVal))
+			for k, v := range mapVal {
+				if strVal, ok := v.(string); ok {
+					result[k] = types.StringValue(strVal)
+				} else {
+					result[k] = types.StringNull()
+				}
+			}
+			return result
+		}
+		// Handle map[string]string
+		if mapVal, ok := val.(map[string]string); ok {
+			result := make(map[string]types.String, len(mapVal))
+			for k, v := range mapVal {
+				result[k] = types.StringValue(v)
+			}
+			return result
+		}
+	}
+
+	return nil
+}

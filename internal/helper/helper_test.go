@@ -301,3 +301,95 @@ func TestGetTfCfgListStringNilMap(t *testing.T) {
 		t.Error("Expected null for nil map")
 	}
 }
+
+func TestGetTfCfgMapString(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		cfg      map[string]any
+		key      string
+		expected map[string]types.String
+	}{
+		{
+			name: "valid map[string]interface{}",
+			cfg: map[string]any{
+				"test_map": map[string]interface{}{
+					"key1": "value1",
+					"key2": "value2",
+				},
+			},
+			key: "test_map",
+			expected: map[string]types.String{
+				"key1": types.StringValue("value1"),
+				"key2": types.StringValue("value2"),
+			},
+		},
+		{
+			name: "valid map[string]string",
+			cfg: map[string]any{
+				"test_map": map[string]string{
+					"key1": "value1",
+					"key2": "value2",
+				},
+			},
+			key: "test_map",
+			expected: map[string]types.String{
+				"key1": types.StringValue("value1"),
+				"key2": types.StringValue("value2"),
+			},
+		},
+		{
+			name:     "missing key",
+			cfg:      map[string]any{},
+			key:      "test_map",
+			expected: nil,
+		},
+		{
+			name: "nil value",
+			cfg: map[string]any{
+				"test_map": nil,
+			},
+			key:      "test_map",
+			expected: nil,
+		},
+		{
+			name: "empty map",
+			cfg: map[string]any{
+				"test_map": map[string]string{},
+			},
+			key:      "test_map",
+			expected: map[string]types.String{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := GetTfCfgMapString(ctx, tt.cfg, tt.key)
+
+			if tt.expected == nil {
+				if result != nil {
+					t.Errorf("Expected nil, got %v", result)
+				}
+				return
+			}
+
+			if len(result) != len(tt.expected) {
+				t.Errorf("Expected map length %d, got %d", len(tt.expected), len(result))
+				return
+			}
+
+			for k, expectedVal := range tt.expected {
+				actualVal, ok := result[k]
+				if !ok {
+					t.Errorf("Expected key %s not found in result", k)
+					continue
+				}
+
+				if !expectedVal.Equal(actualVal) {
+					t.Errorf("For key %s: expected %v, got %v", k, expectedVal, actualVal)
+				}
+			}
+		})
+	}
+}

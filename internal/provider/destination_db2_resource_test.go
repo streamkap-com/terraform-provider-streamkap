@@ -7,12 +7,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-var destinationDb2Hostname = os.Getenv("TF_VAR_destination_db2_hostname")
-var destinationDb2Username = os.Getenv("TF_VAR_destination_db2_username")
-var destinationDb2Password = os.Getenv("TF_VAR_destination_db2_password")
-var _ = os.Getenv("TF_VAR_destination_db2_database") // used via TF_VAR in HCL config
-
 func TestAccDestinationDb2Resource(t *testing.T) {
+	var destinationDb2Hostname = os.Getenv("TF_VAR_destination_db2_hostname")
+	var destinationDb2Username = os.Getenv("TF_VAR_destination_db2_username")
+	var destinationDb2Password = os.Getenv("TF_VAR_destination_db2_password")
+	var _ = os.Getenv("TF_VAR_destination_db2_database") // used via TF_VAR in HCL config
 	if destinationDb2Hostname == "" || destinationDb2Username == "" || destinationDb2Password == "" {
 		t.Skip("Skipping TestAccDestinationDb2Resource: TF_VAR_destination_db2_hostname, TF_VAR_destination_db2_username, or TF_VAR_destination_db2_password not set")
 	}

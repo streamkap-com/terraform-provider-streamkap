@@ -54,8 +54,9 @@ variable "destination_kafka_sasl_password" {
 
 resource "streamkap_destination_kafka" "test" {
   name              = "tf-acc-test-destination-kafka"
-  bootstrap_servers = var.destination_kafka_bootstrap_servers
-  security_protocol = "PLAINTEXT"
+  kafka_sink_bootstrap = var.destination_kafka_bootstrap_servers
+  destination_format   = "avro"
+  schema_registry_url  = "https://schema-registry-dev.streamkap.net"
 }
 `
 }

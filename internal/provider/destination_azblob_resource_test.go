@@ -7,10 +7,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-var destinationAzblobConnectionString = os.Getenv("TF_VAR_destination_azblob_connection_string")
-var destinationAzblobContainerName = os.Getenv("TF_VAR_destination_azblob_container_name")
-
 func TestAccDestinationAzblobResource(t *testing.T) {
+	var destinationAzblobConnectionString = os.Getenv("TF_VAR_destination_azblob_connection_string")
+	var destinationAzblobContainerName = os.Getenv("TF_VAR_destination_azblob_container_name")
 	if destinationAzblobConnectionString == "" || destinationAzblobContainerName == "" {
 		t.Skip("Skipping TestAccDestinationAzblobResource: TF_VAR_destination_azblob_connection_string or TF_VAR_destination_azblob_container_name not set")
 	}
