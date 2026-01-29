@@ -7,10 +7,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-var destinationBigqueryJson = os.Getenv("TF_VAR_destination_bigquery_json")
-var destinationBigqueryDataset = os.Getenv("TF_VAR_destination_bigquery_dataset")
-
 func TestAccDestinationBigqueryResource(t *testing.T) {
+	var destinationBigqueryJson = os.Getenv("TF_VAR_destination_bigquery_json")
+	var destinationBigqueryDataset = os.Getenv("TF_VAR_destination_bigquery_dataset")
 	if destinationBigqueryJson == "" || destinationBigqueryDataset == "" {
 		t.Skip("Skipping TestAccDestinationBigqueryResource: TF_VAR_destination_bigquery_json or TF_VAR_destination_bigquery_dataset not set")
 	}

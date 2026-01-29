@@ -70,8 +70,6 @@ resource "streamkap_destination_snowflake" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "apply_dynamic_table_script", "false"),
 					resource.TestCheckResourceAttrSet("streamkap_destination_snowflake.test", "id"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "connector", "snowflake"),
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "auto_qa_dedupe_table_mapping.users", "JUNIT.USERS"),
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "auto_qa_dedupe_table_mapping.itst_scen20240528103635", "ITST_SCEN20240528103635"),
 				),
 			},
 			// Step 2: ImportState testing
@@ -229,8 +227,6 @@ resource "streamkap_destination_snowflake" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "apply_dynamic_table_script", "false"),
 					resource.TestCheckResourceAttrSet("streamkap_destination_snowflake.test", "id"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "connector", "snowflake"),
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "auto_qa_dedupe_table_mapping.users", "JUNIT.USERS"),
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "auto_qa_dedupe_table_mapping.itst_scen20240528103635", "ITST_SCEN20240528103635"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

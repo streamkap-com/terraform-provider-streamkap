@@ -661,6 +661,29 @@ func (r *BaseConnectorResource) extractTerraformValue(ctx context.Context, field
 		return result
 
 	default:
+		// Check if it's a map[string]types.String
+		if fieldValue.Kind() == reflect.Map {
+			mapType := fieldValue.Type()
+			if mapType.Key().Kind() == reflect.String && mapType.Elem() == reflect.TypeOf(types.String{}) {
+				// This is a map[string]types.String
+				if fieldValue.IsNil() || fieldValue.Len() == 0 {
+					return nil
+				}
+				result := make(map[string]string)
+				iter := fieldValue.MapRange()
+				for iter.Next() {
+					key := iter.Key().String()
+					value := iter.Value().Interface().(types.String)
+					if !value.IsNull() && !value.IsUnknown() {
+						result[key] = value.ValueString()
+					}
+				}
+				if len(result) == 0 {
+					return nil
+				}
+				return result
+			}
+		}
 		tflog.Warn(ctx, fmt.Sprintf("Unknown Terraform type: %T", v))
 		return nil
 	}
@@ -701,6 +724,20 @@ func (r *BaseConnectorResource) setTerraformValue(ctx context.Context, cfg map[s
 		fieldValue.Set(reflect.ValueOf(tfVal))
 
 	default:
+		// Check if it's a map[string]types.String
+		if fieldType.Kind() == reflect.Map {
+			if fieldType.Key().Kind() == reflect.String && fieldType.Elem() == reflect.TypeOf(types.String{}) {
+				// This is a map[string]types.String
+				tfVal := helper.GetTfCfgMapString(ctx, cfg, apiField)
+				if tfVal != nil {
+					fieldValue.Set(reflect.ValueOf(tfVal))
+				} else {
+					// Set to nil/empty map
+					fieldValue.Set(reflect.Zero(fieldType))
+				}
+				return
+			}
+		}
 		tflog.Warn(ctx, fmt.Sprintf("Unknown field type for '%s': %s", apiField, fieldType))
 	}
 }

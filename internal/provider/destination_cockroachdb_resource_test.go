@@ -35,7 +35,7 @@ resource "streamkap_destination_cockroachdb" "test" {
 	database_hostname    = var.destination_cockroachdb_hostname
 	database_port        = 26257
 	database_database    = "defaultdb"
-	connection_username  = "streamkap"
+	connection_username  = "wasi"
 	connection_password  = var.destination_cockroachdb_password
 	table_name_prefix    = "public"
 	schema_evolution     = "basic"
@@ -85,7 +85,7 @@ resource "streamkap_destination_cockroachdb" "test" {
 	database_hostname    = var.destination_cockroachdb_hostname
 	database_port        = 26257
 	database_database    = "defaultdb"
-	connection_username  = "streamkap"
+	connection_username  = "wasi"
 	connection_password  = var.destination_cockroachdb_password
 	table_name_prefix    = "streamkap"
 	schema_evolution     = "none"
