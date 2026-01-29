@@ -74,6 +74,7 @@ type SourcePostgreSQLResourceModel struct {
 	InsertStaticKeyValue2                   types.String `tfsdk:"insert_static_key_value_2"`
 	InsertStaticValueField2                 types.String `tfsdk:"insert_static_value_field_2"`
 	InsertStaticValue2                      types.String `tfsdk:"insert_static_value_2"`
+	PollIntervalMs                          types.Int64  `tfsdk:"poll_interval_ms"`
 }
 
 func (r *SourcePostgreSQLResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -330,6 +331,13 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 				Description:         "The value of the static field to be added to the message value.",
 				MarkdownDescription: "The value of the static field to be added to the message value.",
 			},
+			"poll_interval_ms": schema.Int64Attribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             int64default.StaticInt64(500),
+				Description:         "The number of milliseconds the connector waits for new change events to appear before processing a batch.",
+				MarkdownDescription: "The number of milliseconds the connector waits for new change events to appear before processing a batch.",
+			},
 		},
 	}
 }
@@ -540,6 +548,7 @@ func (r *SourcePostgreSQLResource) model2ConfigMap(model SourcePostgreSQLResourc
 		"transforms.InsertStaticKey2.static.value":      model.InsertStaticKeyValue2.ValueString(),
 		"transforms.InsertStaticValue2.static.field":    model.InsertStaticValueField2.ValueString(),
 		"transforms.InsertStaticValue2.static.value":    model.InsertStaticValue2.ValueString(),
+		"poll.interval.ms":                              int(model.PollIntervalMs.ValueInt64()),
 	}
 
 	if !model.ColumnIncludeList.IsNull() {
@@ -586,4 +595,5 @@ func (r *SourcePostgreSQLResource) configMap2Model(cfg map[string]any, model *So
 	model.InsertStaticKeyValue2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey2.static.value")
 	model.InsertStaticValueField2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue2.static.field")
 	model.InsertStaticValue2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue2.static.value")
+	model.PollIntervalMs = helper.GetTfCfgInt64(cfg, "poll.interval.ms")
 }

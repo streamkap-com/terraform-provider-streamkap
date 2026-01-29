@@ -86,6 +86,7 @@ output "example-source-mysql" {
 - `insert_static_value_2` (String) The value of the static field to be added to the message value.
 - `insert_static_value_field_1` (String) The name of the static field to be added to the message value.
 - `insert_static_value_field_2` (String) The name of the static field to be added to the message value.
+- `poll_interval_ms` (Number) The number of milliseconds the connector waits for new change events to appear before processing a batch.
 - `predicates_istopictoenrich_pattern` (String) Regex pattern to match topics for enrichment
 - `signal_data_collection_schema_or_database` (String) Schema for signal data collection. If connector is in read-only mode (snapshot_gtid="Yes"), set this to null.
 - `snapshot_gtid` (Boolean) GTID snapshots are read only but require some prerequisite settings, including enabling GTID on the source database. See the documentation for more details.

@@ -68,6 +68,7 @@ type SourceSQLServerResourceModel struct {
 	SnapshotParallelism                     types.Int64 `tfsdk:"snapshot_parallelism"`
 	SnapshotLargeTableThreshold             types.Int64 `tfsdk:"snapshot_large_table_threshold"`
 	SnapshotCustomTableConfig               map[string]snapshotCustomTableConfigModel `tfsdk:"snapshot_custom_table_config"`
+	PollIntervalMs                          types.Int64 `tfsdk:"poll_interval_ms"`
 }
 
 type snapshotCustomTableConfigModel struct {
@@ -267,6 +268,13 @@ func (r *SourceSQLServerResource) Schema(ctx context.Context, req res.SchemaRequ
 				},
 				Description:         "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",
 				MarkdownDescription: "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",
+			},
+			"poll_interval_ms": schema.Int64Attribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             int64default.StaticInt64(500),
+				Description:         "The number of milliseconds the connector waits for new change events to appear before processing a batch.",
+				MarkdownDescription: "The number of milliseconds the connector waits for new change events to appear before processing a batch.",
 			},
 		},
 	}
@@ -497,9 +505,10 @@ func (r *SourceSQLServerResource) model2ConfigMap(model SourceSQLServerResourceM
 		"ssh.host":                                     model.SSHHost.ValueStringPointer(),
 		"ssh.port":                                     model.SSHPort.ValueString(),
 		"ssh.user":                                     model.SSHUser.ValueString(),
-		"streamkap.snapshot.parallelism":               model.SnapshotParallelism.ValueInt64(),
-		"streamkap.snapshot.large.table.threshold":     model.SnapshotLargeTableThreshold.ValueInt64(),
+		"streamkap.snapshot.parallelism":                      model.SnapshotParallelism.ValueInt64(),
+		"streamkap.snapshot.large.table.threshold":            model.SnapshotLargeTableThreshold.ValueInt64(),
 		"streamkap.snapshot.custom.table.config.user.defined": expectedSnapshotCustomTableConfig,
+		"poll.interval.ms":                                    int(model.PollIntervalMs.ValueInt64()),
 	}
 
 	return configMap, nil
@@ -529,6 +538,7 @@ func (r *SourceSQLServerResource) configMap2Model(cfg map[string]any, model *Sou
 	model.SSHUser = helper.GetTfCfgString(cfg, "ssh.user")
 	model.SnapshotParallelism = helper.GetTfCfgInt64(cfg, "streamkap.snapshot.parallelism")
 	model.SnapshotLargeTableThreshold = helper.GetTfCfgInt64(cfg, "streamkap.snapshot.large.table.threshold")
+	model.PollIntervalMs = helper.GetTfCfgInt64(cfg, "poll.interval.ms")
 
 	snapshotCustomTableConfigStr := helper.GetTfCfgString(cfg, "streamkap.snapshot.custom.table.config.user.defined").ValueString()
 	snapshotCustomTableConfig := make(map[string]snapshotCustomTableConfigModel)

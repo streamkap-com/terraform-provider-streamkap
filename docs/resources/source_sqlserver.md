@@ -92,6 +92,7 @@ output "example-source-sqlserver" {
 - `insert_static_key_value` (String) The value of the static field to be added to the message key.
 - `insert_static_value` (String) The value of the static field to be added to the message value.
 - `insert_static_value_field` (String) The name of the static field to be added to the message value.
+- `poll_interval_ms` (Number) The number of milliseconds the connector waits for new change events to appear before processing a batch.
 - `signal_data_collection_schema_or_database` (String) Schema for signal data collection. If connector is in read-only mode (snapshot_gtid="Yes"), set this to null.
 - `snapshot_custom_table_config` (Attributes Map) Explicitly set nb of parallel chunks for tables. Format: {"db.Some_Tbl": {"chunks": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably (see [below for nested schema](#nestedatt--snapshot_custom_table_config))
 - `snapshot_large_table_threshold` (Number) The threshold in MB for a Large Table to require multiple chunks to be read in parallel
