@@ -70,6 +70,7 @@ type SourceMySQLResourceModel struct {
 	SSHPort                                 types.String `tfsdk:"ssh_port"`
 	SSHUser                                 types.String `tfsdk:"ssh_user"`
 	PredicatesIsTopicToEnrichPattern        types.String `tfsdk:"predicates_istopictoenrich_pattern"`
+	PollIntervalMs                          types.Int64  `tfsdk:"poll_interval_ms"`
 }
 
 func (r *SourceMySQLResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -369,6 +370,13 @@ func (r *SourceMySQLResource) Schema(ctx context.Context, req res.SchemaRequest,
 				Description:         "Regex pattern to match topics for enrichment",
 				MarkdownDescription: "Regex pattern to match topics for enrichment",
 			},
+			"poll_interval_ms": schema.Int64Attribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             int64default.StaticInt64(500),
+				Description:         "The number of milliseconds the connector waits for new change events to appear before processing a batch.",
+				MarkdownDescription: "The number of milliseconds the connector waits for new change events to appear before processing a batch.",
+			},
 		},
 	}
 }
@@ -578,7 +586,8 @@ func (r *SourceMySQLResource) model2ConfigMap(model SourceMySQLResourceModel) (m
 		"ssh.host":                                     model.SSHHost.ValueStringPointer(),
 		"ssh.port":                                     model.SSHPort.ValueString(),
 		"ssh.user":                                     model.SSHUser.ValueString(),
-		"predicates.IsTopicToEnrich.pattern":    model.PredicatesIsTopicToEnrichPattern.ValueString(),
+		"predicates.IsTopicToEnrich.pattern":           model.PredicatesIsTopicToEnrichPattern.ValueString(),
+		"poll.interval.ms":                             int(model.PollIntervalMs.ValueInt64()),
 	}
 
 	if !model.ColumnIncludeList.IsNull() {
@@ -621,4 +630,5 @@ func (r *SourceMySQLResource) configMap2Model(cfg map[string]any, model *SourceM
 	model.SSHPort = helper.GetTfCfgString(cfg, "ssh.port")
 	model.SSHUser = helper.GetTfCfgString(cfg, "ssh.user")
 	model.PredicatesIsTopicToEnrichPattern = helper.GetTfCfgString(cfg, "predicates.IsTopicToEnrich.pattern")
+	model.PollIntervalMs = helper.GetTfCfgInt64(cfg, "poll.interval.ms")
 }

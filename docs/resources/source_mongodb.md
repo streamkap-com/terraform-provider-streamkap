@@ -69,6 +69,7 @@ output "example-source-mongodb" {
 - `insert_static_value_field_1` (String) The name of the static field to be added to the message value.
 - `insert_static_value_field_2` (String) The name of the static field to be added to the message value.
 - `nested_document_encoding` (String) How to encode nested documents. 'Document' encodes them as JSON Objects, 'String' encodes them as JSON Strings
+- `poll_interval_ms` (Number) The number of milliseconds the connector waits for new change events to appear before processing a batch.
 - `predicates_istopictoenrich_pattern` (String) Regex pattern to match topics for enrichment
 - `ssh_enabled` (Boolean) Connect via SSH tunnel
 - `ssh_host` (String) Hostname of the SSH server, only required if `ssh_enabled` is true
