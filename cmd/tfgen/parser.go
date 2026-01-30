@@ -152,6 +152,7 @@ const (
 	TerraformTypeInt64  TerraformType = "types.Int64"
 	TerraformTypeBool   TerraformType = "types.Bool"
 	TerraformTypeList   TerraformType = "types.List[types.String]"
+	TerraformTypeJSON   TerraformType = "jsontypes.Normalized"
 )
 
 // ParseConnectorConfig reads and parses a configuration.latest.json file.
@@ -301,8 +302,10 @@ func (e *ConfigEntry) GetDefaultBool() bool {
 // This maps control types to Terraform types as specified in the audit document.
 func (e *ConfigEntry) TerraformType() TerraformType {
 	switch e.Value.Control {
-	case "string", "password", "textarea", "json", "datetime":
+	case "string", "password", "textarea", "datetime":
 		return TerraformTypeString
+	case "json":
+		return TerraformTypeJSON
 	case "number":
 		// Number is often stored as string in the API, but we use Int64 for type safety
 		return TerraformTypeInt64

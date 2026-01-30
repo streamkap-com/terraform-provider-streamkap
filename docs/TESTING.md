@@ -430,6 +430,35 @@ Resources matching these prefixes are swept:
 
 ## Environment Variables
 
+### Automatic .env Loading
+
+Tests automatically load environment variables from `.env` using [godotenv](https://github.com/joho/godotenv). **No manual `source .env` is required.**
+
+Simply run tests:
+```bash
+go test -v -run 'TestAcc' ./internal/provider -timeout 120m
+```
+
+The `.env` file is loaded automatically from:
+1. Current working directory
+2. Project root (when running from `internal/provider/`)
+
+### Special Case: Snowflake PEM Keys
+
+Snowflake private keys require multiline content that godotenv cannot handle directly. Use the helper script:
+
+```bash
+# Load PEM keys (run AFTER .env is loaded, BEFORE Snowflake tests)
+source scripts/load-pem-keys.sh
+
+# Then run tests
+go test -v -run 'TestAccDestinationSnowflake' ./internal/provider -timeout 120m
+```
+
+The script loads:
+- `TF_VAR_destination_snowflake_private_key` from `TF_VAR_destination_snowflake_private_key.pem`
+- `TF_VAR_destination_snowflake_private_key_nocrypt` from `TF_VAR_destination_snowflake_private_key_nocrypt.pem`
+
 ### Required for Acceptance Tests
 
 | Variable | Required | Description |
@@ -439,16 +468,59 @@ Resources matching these prefixes are swept:
 | `STREAMKAP_SECRET` | Yes | OAuth2 client secret |
 | `STREAMKAP_HOST` | No | Override API URL (default: `https://api.streamkap.com`) |
 
-### Connector-Specific Variables
+### Source Connector Variables
 
 | Variable | Resource | Description |
 |----------|----------|-------------|
-| `TF_VAR_source_postgresql_hostname` | PostgreSQL source | Database hostname |
-| `TF_VAR_source_postgresql_password` | PostgreSQL source | Database password |
-| `TF_VAR_source_mysql_hostname` | MySQL source | Database hostname |
-| `TF_VAR_source_mysql_password` | MySQL source | Database password |
-| `TF_VAR_destination_snowflake_url` | Snowflake destination | Account URL |
-| `TF_VAR_destination_snowflake_password` | Snowflake destination | User password |
+| `TF_VAR_source_postgresql_hostname` | PostgreSQL | Database hostname |
+| `TF_VAR_source_postgresql_username` | PostgreSQL | Database username |
+| `TF_VAR_source_postgresql_password` | PostgreSQL | Database password |
+| `TF_VAR_source_postgresql_ssh_host` | PostgreSQL | SSH tunnel host |
+| `TF_VAR_source_supabase_hostname` | Supabase | Database hostname |
+| `TF_VAR_source_supabase_password` | Supabase | Database password |
+| `TF_VAR_source_supabase_ssh_host` | Supabase | SSH tunnel host |
+| `TF_VAR_source_mysql_hostname` | MySQL | Database hostname |
+| `TF_VAR_source_mysql_username` | MySQL | Database username |
+| `TF_VAR_source_mysql_password` | MySQL | Database password |
+| `TF_VAR_source_mysql_ssh_host` | MySQL | SSH tunnel host |
+| `TF_VAR_source_mongodb_connection_string` | MongoDB | Full connection string |
+| `TF_VAR_source_mongodb_ssh_host` | MongoDB | SSH tunnel host |
+| `TF_VAR_source_sqlserver_hostname` | SQL Server | Database hostname |
+| `TF_VAR_source_sqlserver_username` | SQL Server | Database username |
+| `TF_VAR_source_sqlserver_password` | SQL Server | Database password |
+| `TF_VAR_source_sqlserver_ssh_host` | SQL Server | SSH tunnel host |
+| `TF_VAR_source_dynamodb_aws_region` | DynamoDB | AWS region |
+| `TF_VAR_source_dynamodb_aws_access_key_id` | DynamoDB | AWS access key ID |
+| `TF_VAR_source_dynamodb_aws_secret_key` | DynamoDB | AWS secret key |
+| `TF_VAR_source_planetscale_hostname` | PlanetScale | Database hostname |
+| `TF_VAR_source_planetscale_username` | PlanetScale | Database username |
+| `TF_VAR_source_planetscale_password` | PlanetScale | Database password |
+| `TF_VAR_source_planetscale_ssh_host` | PlanetScale | SSH tunnel host |
+
+### Destination Connector Variables
+
+| Variable | Resource | Description |
+|----------|----------|-------------|
+| `TF_VAR_destination_snowflake_url_name` | Snowflake | Account URL |
+| `TF_VAR_destination_snowflake_key_passphrase` | Snowflake | Private key passphrase |
+| `TF_VAR_destination_snowflake_private_key` | Snowflake | Private key (via script) |
+| `TF_VAR_destination_snowflake_private_key_nocrypt` | Snowflake | Unencrypted key (via script) |
+| `TF_VAR_destination_clickhouse_hostname` | ClickHouse | Database hostname |
+| `TF_VAR_destination_clickhouse_connection_username` | ClickHouse | Database username |
+| `TF_VAR_destination_clickhouse_connection_password` | ClickHouse | Database password |
+| `TF_VAR_destination_databricks_connection_url` | Databricks | JDBC connection URL |
+| `TF_VAR_destination_databricks_token` | Databricks | API token |
+| `TF_VAR_destination_postgresql_hostname` | PostgreSQL | Database hostname |
+| `TF_VAR_destination_postgresql_username` | PostgreSQL | Database username |
+| `TF_VAR_destination_postgresql_password` | PostgreSQL | Database password |
+| `TF_VAR_s3_aws_access_key` | S3 | AWS access key ID |
+| `TF_VAR_s3_aws_secret_key` | S3 | AWS secret key |
+| `TF_VAR_iceberg_aws_access_key` | Iceberg | AWS access key ID |
+| `TF_VAR_iceberg_aws_secret_key` | Iceberg | AWS secret key |
+| `TF_VAR_destination_kafka_bootstrap_servers` | Kafka | Bootstrap servers |
+| `TF_VAR_destination_kafka_sasl_username` | Kafka | SASL username |
+| `TF_VAR_destination_kafka_sasl_password` | Kafka | SASL password |
+| `TF_VAR_destination_weaviate_api_key` | Weaviate | API key |
 
 ### Test Control Variables
 

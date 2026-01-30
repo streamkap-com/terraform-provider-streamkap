@@ -399,6 +399,7 @@ type FieldData struct {
 	NeedsPlanMod        bool   // needs UseStateForUnknown plan modifier
 	RequiresReplace     bool   // needs RequiresReplace plan modifier (set_once)
 	IsListType          bool   // needs ElementType for ListAttribute
+	IsJSONType          bool   // needs CustomType for jsontypes.Normalized
 
 	// Field mapping
 	APIFieldName string // e.g., "database.hostname.user.defined"
@@ -461,6 +462,9 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 		}
 
 		// Track required imports based on field properties
+		if effectiveType == TerraformTypeJSON {
+			imports["github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"] = true
+		}
 		if field.HasDefault {
 			switch effectiveType {
 			case TerraformTypeString:
@@ -482,6 +486,9 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 				imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"] = true
 			case TerraformTypeBool:
 				imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"] = true
+			case TerraformTypeJSON:
+				// JSON type uses jsontypes.Normalized which doesn't need special plan modifiers
+				// The value is normalized automatically
 			}
 		}
 		if field.RequiresReplace {
@@ -492,6 +499,8 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 				imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"] = true
 			case TerraformTypeBool:
 				imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"] = true
+			case TerraformTypeJSON:
+				// JSON type doesn't typically require replace modifiers
 			}
 		}
 		if field.HasValidators {
@@ -902,6 +911,10 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 			field.SchemaAttrType = "schema.ListAttribute"
 			field.GoType = "types.List"
 			field.IsListType = true // Flag for template to add ElementType
+		case TerraformTypeJSON:
+			field.SchemaAttrType = "schema.StringAttribute"
+			field.GoType = "jsontypes.Normalized"
+			field.IsJSONType = true // Flag for template to add CustomType
 		}
 	}
 
@@ -1136,6 +1149,9 @@ func {{ .SchemaFuncName }}() schema.Schema {
 {{- end }}
 {{- if .IsListType }}
 				ElementType:         types.StringType,
+{{- end }}
+{{- if .IsJSONType }}
+				CustomType:          jsontypes.NormalizedType{},
 {{- end }}
 {{- if .Sensitive }}
 				Sensitive:           true,
