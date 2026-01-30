@@ -58,7 +58,7 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destina
 		payload,
 	))
 	var resp Destination
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +91,27 @@ func (s *streamkapAPI) GetDestination(ctx context.Context, destinationID string)
 	return &resp.Result[0], nil
 }
 
+func (s *streamkapAPI) ListDestinations(ctx context.Context) ([]Destination, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/destinations?secret_returned=true", http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"ListDestinations request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n",
+		req.Method,
+		req.URL.String(),
+	))
+	var resp GetDestinationResponse
+	err = s.doRequest(ctx, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Result, nil
+}
+
 func (s *streamkapAPI) DeleteDestination(ctx context.Context, destinationID string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/destinations/"+destinationID+"?secret_returned=true", http.NoBody)
 	if err != nil {
@@ -104,7 +125,7 @@ func (s *streamkapAPI) DeleteDestination(ctx context.Context, destinationID stri
 		req.URL.String(),
 	))
 	var resp Destination
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return err
 	}
@@ -132,7 +153,7 @@ func (s *streamkapAPI) UpdateDestination(ctx context.Context, destinationID stri
 		payload,
 	))
 	var resp Destination
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}

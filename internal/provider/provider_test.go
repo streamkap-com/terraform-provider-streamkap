@@ -2,11 +2,35 @@ package provider
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/joho/godotenv"
 )
+
+func init() {
+	// Auto-load .env file from project root for tests
+	// This allows running tests without manually sourcing .env
+	//
+	// The function looks for .env in the following locations:
+	// 1. Current directory
+	// 2. Project root (two levels up from internal/provider)
+	//
+	// Missing .env file is not an error - environment variables
+	// may be set through other means (CI, shell, etc.)
+
+	// Try current directory first
+	if err := godotenv.Load(); err == nil {
+		return
+	}
+
+	// Try project root (from internal/provider, go up two levels)
+	projectRoot := filepath.Join("..", "..", ".env")
+	_ = godotenv.Load(projectRoot)
+}
 
 const (
 	// ProviderConfig is a shared configuration to combine with the actual
@@ -26,7 +50,10 @@ var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 	"streamkap": providerserver.NewProtocol6WithError(New("test")()),
 }
 
-func TestAccPreCheck(t *testing.T) {
+// testAccPreCheck is a helper function called by acceptance tests to verify
+// required environment variables are set before running tests.
+func testAccPreCheck(t *testing.T) {
+	t.Helper()
 	if v := os.Getenv("STREAMKAP_CLIENT_ID"); v == "" {
 		t.Fatal("STREAMKAP_CLIENT_ID must be set for acceptance tests")
 	}
@@ -34,3 +61,23 @@ func TestAccPreCheck(t *testing.T) {
 		t.Fatal("STREAMKAP_SECRET must be set for acceptance tests")
 	}
 }
+
+// legacyProviderConfig returns ExternalProvider config for the OLD provider (v2.1.18)
+// Used in migration tests to create state with old provider, then verify new provider
+// produces no planned changes.
+//
+// Requirements:
+// - v2.1.18 must be available in Terraform Registry
+// - If provider fetch fails, migration tests will error (not skip)
+// - Verify with: terraform providers mirror -platform=linux_amd64 /tmp/mirror
+//
+// TEMPORARY: Delete this after v3.0.0 release is validated.
+func legacyProviderConfig() map[string]resource.ExternalProvider {
+	return map[string]resource.ExternalProvider{
+		"streamkap": {
+			VersionConstraint: "2.1.18",
+			Source:            "streamkap-com/streamkap",
+		},
+	}
+}
+

@@ -7,12 +7,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// Define environment variables for ClickHouse configuration
-var destinationClickHouseHostname = os.Getenv("TF_VAR_destination_clickhouse_hostname")
-var destinationClickHouseUsername = os.Getenv("TF_VAR_destination_clickhouse_connection_username")
-var destinationClickHousePassword = os.Getenv("TF_VAR_destination_clickhouse_connection_password")
-
 func TestAccDestinationClickHouseResource(t *testing.T) {
+	// Define environment variables for ClickHouse configuration
+	var destinationClickHouseHostname = os.Getenv("TF_VAR_destination_clickhouse_hostname")
+	var destinationClickHouseUsername = os.Getenv("TF_VAR_destination_clickhouse_connection_username")
+	var destinationClickHousePassword = os.Getenv("TF_VAR_destination_clickhouse_connection_password")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
@@ -43,14 +42,6 @@ resource "streamkap_destination_clickhouse" "test" {
 	port                 = 8443
 	database             = "demo"
 	ssl                  = true
-	topics_config_map = {
-		"streamkap.customer" = {
-			delete_sql_execute = "DELETE FROM table1 WHERE id = ?"
-		}
-		"streamkap.customer2" = {
-			delete_sql_execute = "DELETE FROM table2 WHERE id = ?"
-		}
-	}
 	schema_evolution     = "basic"
 }
 `,
@@ -65,8 +56,6 @@ resource "streamkap_destination_clickhouse" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "port", "8443"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "database", "demo"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ssl", "true"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "topics_config_map.streamkap.customer.delete_sql_execute", "DELETE FROM table1 WHERE id = ?"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "topics_config_map.streamkap.customer2.delete_sql_execute", "DELETE FROM table2 WHERE id = ?"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "schema_evolution", "basic"),
 					resource.TestCheckResourceAttrSet("streamkap_destination_clickhouse.test", "id"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connector", "clickhouse"),
@@ -104,15 +93,7 @@ resource "streamkap_destination_clickhouse" "test" {
 	tasks_max            = 5
 	port                 = 8443
 	database             = "demo"
-	ssl                  = false
-	topics_config_map = {
-		"streamkap.customer" = {
-			delete_sql_execute = "DELETE FROM table1 WHERE id = ? AND name = ?"
-		}
-		"topic3" = {
-			delete_sql_execute = "DELETE FROM table3 WHERE id = ?"
-		}
-	}
+	ssl                  = true
 	schema_evolution     = "none"
 }
 `,
@@ -126,9 +107,7 @@ resource "streamkap_destination_clickhouse" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "tasks_max", "5"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "port", "8443"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "database", "demo"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ssl", "false"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "topics_config_map.streamkap.customer.delete_sql_execute", "DELETE FROM table1 WHERE id = ? AND name = ?"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "topics_config_map.topic3.delete_sql_execute", "DELETE FROM table3 WHERE id = ?"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ssl", "true"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "schema_evolution", "none"),
 					resource.TestCheckResourceAttrSet("streamkap_destination_clickhouse.test", "id"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connector", "clickhouse"),

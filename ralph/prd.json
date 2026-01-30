@@ -1,0 +1,403 @@
+{
+  "project": "terraform-provider-streamkap",
+  "branchName": "ralph/conditional-validation-struct-alignment",
+  "baseBranch": "refactored-terraform",
+  "description": "Fix conditional validation and struct/schema alignment - make conditionally-required fields Optional, add missing deprecated field schema attributes, fix Pipeline timeouts struct mismatch. IMPORTANT: Create branch from 'refactored-terraform' branch, NOT from 'main'.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Audit connectors for conditional field requirements",
+      "description": "As a developer, I need to identify all fields across connectors that have conditions in backend config but are incorrectly marked as Required in Terraform.",
+      "acceptanceCriteria": [
+        "Parse all configuration.latest.json files in python-be-streamkap/app/sources/plugins/*/, app/destinations/plugins/*/, and app/transforms/plugins/*/",
+        "Identify fields with conditions array that are marked required: true in backend",
+        "Cross-reference with current Terraform schemas in internal/generated/ and internal/resource/ to find mismatches",
+        "Create audit report at docs/audits/conditional-fields-audit.md documenting all affected fields per connector",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Backend path: /Users/alexandrubodea/Documents/Repositories/python-be-streamkap"
+    },
+    {
+      "id": "US-002",
+      "title": "Fix Pipeline struct missing Timeouts field",
+      "description": "As a Terraform user, I want Pipeline timeouts to work correctly without causing runtime errors.",
+      "acceptanceCriteria": [
+        "Add Timeouts timeouts.Value field to PipelineResourceModel struct in internal/resource/pipeline/pipeline.go",
+        "Field should have tfsdk tag: `tfsdk:\"timeouts\"`",
+        "Verify CRUD methods already handle timeouts correctly (they do - just struct field is missing)",
+        "Typecheck passes",
+        "go build succeeds"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Simple fix - just add one field to struct at line 49"
+    },
+    {
+      "id": "US-003",
+      "title": "Add deprecated field schema attributes for PostgreSQL - Part 1",
+      "description": "As a Terraform user, I want deprecated insert_static fields to work with deprecation warnings.",
+      "acceptanceCriteria": [
+        "Add insert_static_key_field_1 to SourcePostgresqlSchema() with DeprecationMessage pointing to transforms_insert_static_key1_static_field",
+        "Add insert_static_key_value_1 to schema with DeprecationMessage pointing to transforms_insert_static_key1_static_value",
+        "Add insert_static_value_field_1 to schema with DeprecationMessage pointing to transforms_insert_static_value1_static_field",
+        "Add insert_static_value_1 to schema with DeprecationMessage pointing to transforms_insert_static_value1_static_value",
+        "All added as Optional: true, Computed: true with Default: stringdefault.StaticString(\"\")",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "File: internal/generated/source_postgresql.go - add to Attributes map after line 330"
+    },
+    {
+      "id": "US-004",
+      "title": "Add deprecated field schema attributes for PostgreSQL - Part 2",
+      "description": "As a Terraform user, I want remaining deprecated insert_static fields to work with deprecation warnings.",
+      "acceptanceCriteria": [
+        "Add insert_static_key_field_2 to SourcePostgresqlSchema() with DeprecationMessage pointing to transforms_insert_static_key2_static_field",
+        "Add insert_static_key_value_2 to schema with DeprecationMessage pointing to transforms_insert_static_key2_static_value",
+        "Add insert_static_value_field_2 to schema with DeprecationMessage pointing to transforms_insert_static_value2_static_field",
+        "Add insert_static_value_2 to schema with DeprecationMessage pointing to transforms_insert_static_value2_static_value",
+        "Add predicates_istopictoenrich_pattern to schema with DeprecationMessage pointing to predicates_is_topic_to_enrich_pattern",
+        "All added as Optional: true, Computed: true with Default: stringdefault.StaticString(\"\")",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "File: internal/generated/source_postgresql.go"
+    },
+    {
+      "id": "US-005",
+      "title": "Add deprecated field mappings for PostgreSQL",
+      "description": "As a developer, I need deprecated fields to map to correct API keys.",
+      "acceptanceCriteria": [
+        "Add insert_static_key_field_1 -> transforms.InsertStaticKey1.static.field to SourcePostgresqlFieldMappings",
+        "Add insert_static_key_value_1 -> transforms.InsertStaticKey1.static.value",
+        "Add insert_static_value_field_1 -> transforms.InsertStaticValue1.static.field",
+        "Add insert_static_value_1 -> transforms.InsertStaticValue1.static.value",
+        "Add insert_static_key_field_2 -> transforms.InsertStaticKey2.static.field",
+        "Add insert_static_key_value_2 -> transforms.InsertStaticKey2.static.value",
+        "Add insert_static_value_field_2 -> transforms.InsertStaticValue2.static.field",
+        "Add insert_static_value_2 -> transforms.InsertStaticValue2.static.value",
+        "Add predicates_istopictoenrich_pattern -> predicates.IsTopicToEnrich.pattern",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "File: internal/generated/source_postgresql.go - add to SourcePostgresqlFieldMappings map"
+    },
+    {
+      "id": "US-006",
+      "title": "Update PostgreSQL source conditional fields",
+      "description": "As a Terraform user, I want heartbeat_data_collection_schema_or_database and signal_data_collection_schema_or_database to be optional.",
+      "acceptanceCriteria": [
+        "Change signal_data_collection_schema_or_database from Required: true to Optional: true, Computed: true",
+        "Add Default: stringdefault.StaticString(\"public\") to signal_data_collection_schema_or_database",
+        "Change heartbeat_data_collection_schema_or_database from Required: true to Optional: true",
+        "Update descriptions to document when fields are conditionally required",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "File: internal/generated/source_postgresql.go lines 140-173"
+    },
+    {
+      "id": "US-007",
+      "title": "Update MySQL source conditional fields",
+      "description": "As a Terraform user, I want MySQL conditional fields to match backend validation rules.",
+      "acceptanceCriteria": [
+        "Read MySQL backend config from python-be-streamkap/app/sources/plugins/mysql/configuration.latest.json",
+        "Identify all fields with conditions array",
+        "Update internal/generated/source_mysql.go to make conditional fields Optional with defaults",
+        "Update descriptions to document when fields are conditionally required",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "Pattern same as PostgreSQL"
+    },
+    {
+      "id": "US-008",
+      "title": "Update MongoDB source conditional fields",
+      "description": "As a Terraform user, I want MongoDB conditional fields to match backend validation rules.",
+      "acceptanceCriteria": [
+        "Read MongoDB backend config from python-be-streamkap/app/sources/plugins/mongodb/configuration.latest.json",
+        "Identify all fields with conditions array",
+        "Update internal/resource/source/mongodb_generated.go to make conditional fields Optional",
+        "Update descriptions to document when fields are conditionally required",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "Pattern same as PostgreSQL"
+    },
+    {
+      "id": "US-009",
+      "title": "Update DynamoDB source conditional fields",
+      "description": "As a Terraform user, I want DynamoDB conditional fields to match backend validation rules.",
+      "acceptanceCriteria": [
+        "Read DynamoDB backend config from python-be-streamkap/app/sources/plugins/dynamodb/configuration.latest.json",
+        "Identify all fields with conditions array",
+        "Update internal/resource/source/dynamodb_generated.go to make conditional fields Optional",
+        "Update descriptions to document when fields are conditionally required",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "No conditional fields found in DynamoDB backend config - no changes required"
+    },
+    {
+      "id": "US-010",
+      "title": "Update SQL Server source conditional fields",
+      "description": "As a Terraform user, I want SQL Server conditional fields to match backend validation rules.",
+      "acceptanceCriteria": [
+        "Read SQL Server backend config from python-be-streamkap/app/sources/plugins/sqlserveraws/configuration.latest.json",
+        "Identify all fields with conditions array",
+        "Update internal/resource/source/sqlserver_generated.go to make conditional fields Optional",
+        "Update descriptions to document when fields are conditionally required",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": "All conditional fields were already Optional; updated descriptions to document when required"
+    },
+    {
+      "id": "US-011",
+      "title": "Update Kafka Direct source conditional fields",
+      "description": "As a Terraform user, I want Kafka Direct conditional fields to match backend validation rules.",
+      "acceptanceCriteria": [
+        "Read Kafka Direct backend config from python-be-streamkap/app/sources/plugins/kafkadirect/configuration.latest.json",
+        "Identify all fields with conditions array",
+        "Update internal/resource/source/kafkadirect_generated.go to make conditional fields Optional",
+        "Update descriptions to document when fields are conditionally required",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": "schemas_enable field was already Optional; updated description to document conditional requirement when format=json"
+    },
+    {
+      "id": "US-012",
+      "title": "Update remaining source connectors conditional fields - Group 1",
+      "description": "As a Terraform user, I want AlloyDB, MariaDB, Supabase, PlanetScale conditional fields to match backend.",
+      "acceptanceCriteria": [
+        "Read backend configs for AlloyDB, MariaDB, Supabase, PlanetScale from python-be-streamkap/app/sources/plugins/",
+        "Identify all fields with conditions array in each connector",
+        "Update internal/resource/source/*_generated.go files to make conditional fields Optional",
+        "Update descriptions to document when fields are conditionally required",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": "AlloyDB and Supabase: signal_data_collection and heartbeat_data_collection changed to Optional. MariaDB: heartbeat_data_collection changed to Optional. PlanetScale: SSH fields already Optional - no changes needed."
+    },
+    {
+      "id": "US-013",
+      "title": "Update remaining source connectors conditional fields - Group 2",
+      "description": "As a Terraform user, I want Oracle, OracleAWS, DB2, DocumentDB conditional fields to match backend.",
+      "acceptanceCriteria": [
+        "Read backend configs for Oracle, OracleAWS, DB2, DocumentDB from python-be-streamkap/app/sources/plugins/",
+        "Identify all fields with conditions array in each connector",
+        "Update internal/resource/source/*_generated.go files to make conditional fields Optional",
+        "Update descriptions to document when fields are conditionally required",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": "Oracle/OracleAWS: heartbeat_data_collection changed from Required to Optional (conditionally required when heartbeat_enabled=true). All connectors: SSH field descriptions updated to document conditional requirement when ssh_enabled=true. DB2 and DocumentDB only have SSH conditional fields (no heartbeat_data_collection field)."
+    },
+    {
+      "id": "US-014",
+      "title": "Update remaining source connectors conditional fields - Group 3",
+      "description": "As a Terraform user, I want MongoDBHosted, Elasticsearch, Redis, Vitess, S3, Webhook conditional fields to match backend.",
+      "acceptanceCriteria": [
+        "Read backend configs for MongoDBHosted, Elasticsearch, Redis, Vitess, S3, Webhook from python-be-streamkap/app/sources/plugins/",
+        "Identify all fields with conditions array in each connector",
+        "Update internal/resource/source/*_generated.go files to make conditional fields Optional",
+        "Update descriptions to document when fields are conditionally required",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": "Elasticsearch: http_auth_user and http_auth_password changed from Required to Optional (conditionally required when http_auth=Basic). Redis: redis_stream_name and topic changed from Required to Optional with conditional documentation. MongoDBHosted and Vitess: SSH field descriptions updated to document conditional requirement. S3 and Webhook: No conditional fields found."
+    },
+    {
+      "id": "US-015",
+      "title": "Update Snowflake destination conditional fields",
+      "description": "As a Terraform user, I want Snowflake conditional fields to match backend validation rules.",
+      "acceptanceCriteria": [
+        "Read Snowflake backend config from python-be-streamkap/app/destinations/plugins/snowflake/configuration.latest.json",
+        "Identify hard_delete and other fields with conditions array",
+        "Update internal/resource/destination/snowflake.go to make conditional fields Optional",
+        "Update descriptions to document when fields are conditionally required",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": true,
+      "notes": "Updated descriptions for 9 conditional fields: snowflake_private_key_passphrase (conditionally required when passphrase_secured=true), hard_delete, schema_evolution, use_hybrid_tables (conditionally required when ingestion_mode=upsert), apply_dynamic_table_script (conditionally required when ingestion_mode=append), create_sql_execute, sql_table_name, create_sql_data, auto_qa_dedupe_table_mapping (conditionally required when ingestion_mode=append and apply_dynamic_table_script=true). All fields were already Optional - only descriptions needed updating."
+    },
+    {
+      "id": "US-016",
+      "title": "Update ClickHouse destination conditional fields",
+      "description": "As a Terraform user, I want ClickHouse conditional fields to match backend validation rules.",
+      "acceptanceCriteria": [
+        "Read ClickHouse backend config from python-be-streamkap/app/destinations/plugins/clickhouse/configuration.latest.json",
+        "Identify hard_delete and other fields with conditions array",
+        "Update internal/resource/destination/clickhouse.go to make conditional fields Optional",
+        "Update descriptions to document when fields are conditionally required",
+        "Typecheck passes"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Update remaining destination connectors conditional fields",
+      "description": "As a Terraform user, I want all destination conditional fields to match backend validation rules.",
+      "acceptanceCriteria": [
+        "Audit all destination backend configs for fields with conditions arrays",
+        "Update PostgreSQL, S3, Iceberg, Kafka, Databricks destinations as needed",
+        "Make all conditional fields Optional with appropriate defaults",
+        "Update descriptions to document when fields are conditionally required",
+        "Typecheck passes"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Update transform resources conditional fields",
+      "description": "As a Terraform user, I want transform conditional fields to match backend validation rules.",
+      "acceptanceCriteria": [
+        "Audit transform backend configs for MapFilter, Enrich, EnrichAsync, Rollup, FanOut, SQLJoin",
+        "Read configs from python-be-streamkap/app/transforms/plugins/*/configuration.latest.json",
+        "Identify all fields with conditions array in each transform",
+        "Update internal/resource/transform/*_generated.go files to make conditional fields Optional",
+        "Update descriptions to document when fields are conditionally required",
+        "Typecheck passes"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": "Transforms: map_filter, enrich, enrich_async, rollup, fan_out, sql_join"
+    },
+    {
+      "id": "US-019",
+      "title": "Audit and fix struct/schema mismatches for other connectors",
+      "description": "As a developer, I need to ensure all resource structs have schema attributes for all tfsdk-tagged fields.",
+      "acceptanceCriteria": [
+        "Compare all resource model structs against their schema definitions",
+        "Identify any fields with tfsdk tags that are missing from schema",
+        "Add missing schema attributes with deprecation warnings where appropriate",
+        "Add missing field mappings",
+        "Typecheck passes"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Update tfgen parser for conditions array",
+      "description": "As a developer, I want tfgen to extract conditions from backend configs.",
+      "acceptanceCriteria": [
+        "Update cmd/tfgen/parser.go to extract conditions array from config entries",
+        "Store conditions in ConfigEntry struct",
+        "Parse operator, config, and value from each condition",
+        "Typecheck passes"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "Update tfgen generator for conditional fields",
+      "description": "As a developer, I want tfgen to generate Optional fields for conditional requirements.",
+      "acceptanceCriteria": [
+        "Update cmd/tfgen/generator.go to check for conditions array",
+        "Fields with conditions should be generated as Optional: true (not Required)",
+        "Add appropriate defaults for conditional fields",
+        "Add documentation noting when field is conditionally required",
+        "Typecheck passes"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "Update tfgen for deprecated field schema generation",
+      "description": "As a developer, I want tfgen to generate schema attributes for deprecated fields in struct.",
+      "acceptanceCriteria": [
+        "Update generator to detect deprecated fields in struct (marked with comment)",
+        "Generate schema attributes with DeprecationMessage for deprecated fields",
+        "Generate field mappings for deprecated fields",
+        "Typecheck passes"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "Add unit tests for conditional field validation",
+      "description": "As a developer, I want tests that verify conditional fields work correctly.",
+      "acceptanceCriteria": [
+        "Add unit tests for PostgreSQL conditional fields in internal/provider/",
+        "Test that omitting conditional fields works when conditions not met",
+        "Test that providing conditional fields works when conditions met",
+        "Test that deprecated fields can still be used",
+        "Test that API validation catches missing required conditionals",
+        "All tests pass"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-024",
+      "title": "Update schema snapshots",
+      "description": "As a developer, I need to update schema compatibility snapshots after changes.",
+      "acceptanceCriteria": [
+        "Run UPDATE_SNAPSHOTS=1 go test -v -run TestSchemaBackwardsCompatibility ./internal/provider/...",
+        "Review snapshot changes to confirm they are expected",
+        "Schema compatibility tests pass",
+        "No unintended breaking changes introduced"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-025",
+      "title": "Update MIGRATION.md with deprecation guidance",
+      "description": "As a Terraform user, I want documentation for migrating from deprecated fields.",
+      "acceptanceCriteria": [
+        "Add section to docs/MIGRATION.md documenting all deprecated fields",
+        "Include mapping table showing old field -> new field",
+        "Add example showing migration from deprecated to new fields",
+        "Typecheck passes"
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-026",
+      "title": "Update example files for conditional fields",
+      "description": "As a Terraform user, I want examples that show conditional fields correctly.",
+      "acceptanceCriteria": [
+        "Update examples/resources/streamkap_source_postgresql/ to show conditional fields",
+        "Add comments explaining when conditional fields are required",
+        "Run go generate to regenerate documentation",
+        "Documentation accurately reflects schema"
+      ],
+      "priority": 26,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

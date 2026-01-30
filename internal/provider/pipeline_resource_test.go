@@ -219,7 +219,7 @@ resource "streamkap_source_dynamodb" "test" {
 	aws_access_key_id                = var.source_dynamodb_aws_access_key_id
 	aws_secret_key                   = var.source_dynamodb_aws_secret_key
 	s3_export_bucket_name            = "streamkap-export"
-	table_include_list_user_defined  = "warehouse-test-2"
+	table_include_list               = "warehouse-test-2"
 	batch_size                       = 1024
 	poll_timeout_ms                  = 1000
 	incremental_snapshot_chunk_size  = 32768

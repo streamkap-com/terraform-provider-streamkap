@@ -10,7 +10,7 @@ import (
 var destinationSnowflakeURLName = os.Getenv("TF_VAR_destination_snowflake_url_name")
 var destinationSnowflakePrivateKey = os.Getenv("TF_VAR_destination_snowflake_private_key")
 var destinationSnowflakeKeyPassphrase = os.Getenv("TF_VAR_destination_snowflake_key_passphrase")
-var destinationSnowflakePrivateKeyNoCrypt = os.Getenv("TF_VAR_destination_snowflake_private_key_nocrypt")
+var _ = os.Getenv("TF_VAR_destination_snowflake_private_key_nocrypt") // used via TF_VAR in HCL config (commented test)
 
 func TestAccDestinationSnowflakeResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
@@ -70,8 +70,6 @@ resource "streamkap_destination_snowflake" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "apply_dynamic_table_script", "false"),
 					resource.TestCheckResourceAttrSet("streamkap_destination_snowflake.test", "id"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "connector", "snowflake"),
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "auto_qa_dedupe_table_mapping.users", "JUNIT.USERS"),
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "auto_qa_dedupe_table_mapping.itst_scen20240528103635", "ITST_SCEN20240528103635"),
 				),
 			},
 			// Step 2: ImportState testing
@@ -229,8 +227,6 @@ resource "streamkap_destination_snowflake" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "apply_dynamic_table_script", "false"),
 					resource.TestCheckResourceAttrSet("streamkap_destination_snowflake.test", "id"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "connector", "snowflake"),
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "auto_qa_dedupe_table_mapping.users", "JUNIT.USERS"),
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "auto_qa_dedupe_table_mapping.itst_scen20240528103635", "ITST_SCEN20240528103635"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

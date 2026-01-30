@@ -19,7 +19,9 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/destination"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/pipeline"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/tag"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/topic"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/transform"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -201,26 +203,65 @@ func (p *streamkapProvider) DataSources(_ context.Context) []func() datasource.D
 	return []func() datasource.DataSource{
 		ds.NewTransformDataSource,
 		ds.NewTagDataSource,
+		ds.NewTopicsDataSource,
+		ds.NewTopicDataSource,
+		ds.NewTopicMetricsDataSource,
 	}
 }
 
 // Resources defines the resources implemented in the provider.
 func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		source.NewSourceMongoDBResource,
-		source.NewSourceMySQLResource,
-		source.NewSourcePostgreSQLResource,
-		source.NewSourceDynamoDBResource,
-		source.NewSourceSQLServerResource,
-		source.NewSourceKafkaDirectResource,
-		destination.NewDestinationSnowflakeResource,
-		destination.NewDestinationClickHouseResource,
-		destination.NewDestinationDatabricksResource,
-		destination.NewDestinationPostgresqlResource,
-		destination.NewDestinationS3Resource,
-		destination.NewDestinationIcebergResource,
-		destination.NewDestinationKafkaResource,
+		source.NewMongoDBResource,
+		source.NewMySQLResource,
+		source.NewPostgreSQLResource,
+		source.NewDynamoDBResource,
+		source.NewSQLServerResource,
+		source.NewKafkaDirectResource,
+		source.NewAlloyDBResource,
+		source.NewDB2Resource,
+		source.NewDocumentDBResource,
+		source.NewElasticsearchResource,
+		source.NewMariaDBResource,
+		source.NewMongoDBHostedResource,
+		source.NewOracleResource,
+		source.NewOracleAWSResource,
+		source.NewPlanetScaleResource,
+		source.NewRedisResource,
+		source.NewS3SourceResource,
+		source.NewSupabaseResource,
+		source.NewVitessResource,
+		source.NewWebhookResource,
+		destination.NewSnowflakeResource,
+		destination.NewClickHouseResource,
+		destination.NewDatabricksResource,
+		destination.NewPostgreSQLResource,
+		destination.NewS3Resource,
+		destination.NewIcebergResource,
+		destination.NewKafkaResource,
+		destination.NewAzBlobResource,
+		destination.NewBigQueryResource,
+		destination.NewCockroachDBResource,
+		destination.NewDB2DestResource,
+		destination.NewGCSResource,
+		destination.NewHTTPSinkResource,
+		destination.NewKafkaDirectDestResource,
+		destination.NewMotherduckResource,
+		destination.NewMySQLDestResource,
+		destination.NewOracleDestResource,
+		destination.NewR2Resource,
+		destination.NewRedisDestResource,
+		destination.NewRedshiftResource,
+		destination.NewSQLServerDestResource,
+		destination.NewStarburstResource,
 		pipeline.NewPipelineResource,
 		topic.NewTopicResource,
+		tag.NewTagResource,
+		transform.NewMapFilterResource,
+		transform.NewEnrichResource,
+		transform.NewEnrichAsyncResource,
+		transform.NewSqlJoinResource,
+		transform.NewRollupResource,
+		transform.NewFanOutResource,
 	}
 }

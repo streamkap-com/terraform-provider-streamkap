@@ -7,11 +7,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// Define environment variables for Databricks configuration
-var destinationDatabricksConnectionUrl = os.Getenv("TF_VAR_destination_databricks_connection_url")
-var destinationDatabricksToken = os.Getenv("TF_VAR_destination_databricks_token")
-
 func TestAccDestinationDatabricksResource(t *testing.T) {
+	// Define environment variables for Databricks configuration
+	var destinationDatabricksConnectionUrl = os.Getenv("TF_VAR_destination_databricks_connection_url")
+	var destinationDatabricksToken = os.Getenv("TF_VAR_destination_databricks_token")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{

@@ -58,7 +58,7 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 		payload,
 	))
 	var resp Source
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +91,27 @@ func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) (*Source,
 	return &resp.Result[0], nil
 }
 
+func (s *streamkapAPI) ListSources(ctx context.Context) ([]Source, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/sources?secret_returned=true", http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"ListSources request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n",
+		req.Method,
+		req.URL.String(),
+	))
+	var resp GetSourceResponse
+	err = s.doRequest(ctx, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Result, nil
+}
+
 func (s *streamkapAPI) DeleteSource(ctx context.Context, sourceID string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/sources/"+sourceID+"?secret_returned=true", http.NoBody)
 	if err != nil {
@@ -104,7 +125,7 @@ func (s *streamkapAPI) DeleteSource(ctx context.Context, sourceID string) error 
 		req.URL.String(),
 	))
 	var resp Source
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return err
 	}
@@ -132,7 +153,7 @@ func (s *streamkapAPI) UpdateSource(ctx context.Context, sourceID string, reqPay
 		payload,
 	))
 	var resp Source
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}
