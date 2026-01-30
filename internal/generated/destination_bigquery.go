@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -18,17 +19,17 @@ import (
 
 // DestinationBigqueryModel is the Terraform model for the bigquery destination.
 type DestinationBigqueryModel struct {
-	ID                           types.String   `tfsdk:"id"`
-	Name                         types.String   `tfsdk:"name"`
-	Connector                    types.String   `tfsdk:"connector"`
-	BigqueryJson                 types.String   `tfsdk:"bigquery_json"`
-	TableNamePrefix              types.String   `tfsdk:"table_name_prefix"`
-	BigqueryRegion               types.String   `tfsdk:"bigquery_region"`
-	CustomBigqueryClusterField   types.String   `tfsdk:"custom_bigquery_cluster_field"`
-	CustomBigqueryPartitionField types.String   `tfsdk:"custom_bigquery_partition_field"`
-	BigqueryTimeBasedPartition   types.Bool     `tfsdk:"bigquery_time_based_partition"`
-	TasksMax                     types.Int64    `tfsdk:"tasks_max"`
-	Timeouts                     timeouts.Value `tfsdk:"timeouts"`
+	ID                           types.String         `tfsdk:"id"`
+	Name                         types.String         `tfsdk:"name"`
+	Connector                    types.String         `tfsdk:"connector"`
+	BigqueryJson                 jsontypes.Normalized `tfsdk:"bigquery_json"`
+	TableNamePrefix              types.String         `tfsdk:"table_name_prefix"`
+	BigqueryRegion               types.String         `tfsdk:"bigquery_region"`
+	CustomBigqueryClusterField   types.String         `tfsdk:"custom_bigquery_cluster_field"`
+	CustomBigqueryPartitionField types.String         `tfsdk:"custom_bigquery_partition_field"`
+	BigqueryTimeBasedPartition   types.Bool           `tfsdk:"bigquery_time_based_partition"`
+	TasksMax                     types.Int64          `tfsdk:"tasks_max"`
+	Timeouts                     timeouts.Value       `tfsdk:"timeouts"`
 }
 
 // DestinationBigquerySchema returns the Terraform schema for the bigquery destination.
@@ -62,6 +63,7 @@ func DestinationBigquerySchema() schema.Schema {
 			},
 			"bigquery_json": schema.StringAttribute{
 				Required:            true,
+				CustomType:          jsontypes.NormalizedType{},
 				Sensitive:           true,
 				Description:         "Upload the Bigquery JSON file. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "Upload the Bigquery JSON file.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",

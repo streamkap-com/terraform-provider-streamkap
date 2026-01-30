@@ -107,7 +107,7 @@ func TestFieldTypeMapping(t *testing.T) {
 		{"string control", "string", "types.String", "schema.StringAttribute", false},
 		{"password control", "password", "types.String", "schema.StringAttribute", false},
 		{"textarea control", "textarea", "types.String", "schema.StringAttribute", false},
-		{"json control", "json", "types.String", "schema.StringAttribute", false},
+		{"json control", "json", "jsontypes.Normalized", "schema.StringAttribute", false},
 		{"datetime control", "datetime", "types.String", "schema.StringAttribute", false},
 		{"number control", "number", "types.Int64", "schema.Int64Attribute", false},
 		{"slider control", "slider", "types.Int64", "schema.Int64Attribute", false},

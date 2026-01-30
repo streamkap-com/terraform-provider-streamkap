@@ -142,10 +142,8 @@ go test -v -run 'Test.*Validator' ./internal/provider/...
 # Run integration tests with recorded responses (VCR)
 go test -v -run 'TestIntegration_' ./internal/provider/...
 
-# Run acceptance tests (requires staging credentials)
-export TF_ACC=1
-export STREAMKAP_CLIENT_ID="..."
-export STREAMKAP_SECRET="..."
+# Run acceptance tests (auto-loads .env via godotenv)
+# Simply run - no manual export needed if .env exists!
 go test -v -timeout 120m -run 'TestAcc' ./internal/provider/...
 
 # Run migration tests (validates old→new equivalence)
@@ -213,6 +211,10 @@ See `internal/provider/sweep_test.go` for sweeper implementation.
 
 ### Environment Variables
 
+**Automatic Loading**: Tests auto-load `.env` via [godotenv](https://github.com/joho/godotenv). No manual `source .env` needed!
+
+For Snowflake PEM keys (multiline content), use: `source scripts/load-pem-keys.sh`
+
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `TF_ACC` | For acceptance | Set to `1` to enable |
@@ -222,6 +224,8 @@ See `internal/provider/sweep_test.go` for sweeper implementation.
 | `UPDATE_CASSETTES` | Optional | Re-record HTTP cassettes |
 | `UPDATE_SNAPSHOTS` | Optional | Update schema snapshots |
 | `TF_LOG` | Optional | TRACE/DEBUG/INFO/WARN/ERROR |
+
+See `docs/TESTING.md` for complete environment variable reference.
 
 ## AI-Agent Description Standards
 

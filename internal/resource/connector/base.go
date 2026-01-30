@@ -47,6 +47,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -647,6 +648,12 @@ func (r *BaseConnectorResource) extractTerraformValue(ctx context.Context, field
 		}
 		return v.ValueFloat64()
 
+	case jsontypes.Normalized:
+		if v.IsNull() || v.IsUnknown() {
+			return nil
+		}
+		return v.ValueString()
+
 	case types.List:
 		if v.IsNull() || v.IsUnknown() {
 			return nil
@@ -717,6 +724,18 @@ func (r *BaseConnectorResource) setTerraformValue(ctx context.Context, cfg map[s
 			}
 		} else {
 			fieldValue.Set(reflect.ValueOf(types.Float64Null()))
+		}
+
+	case reflect.TypeOf(jsontypes.Normalized{}):
+		// JSON type - stored as string in API
+		if val, ok := cfg[apiField]; ok && val != nil {
+			if strVal, ok := val.(string); ok {
+				fieldValue.Set(reflect.ValueOf(jsontypes.NewNormalizedValue(strVal)))
+			} else {
+				fieldValue.Set(reflect.ValueOf(jsontypes.NewNormalizedNull()))
+			}
+		} else {
+			fieldValue.Set(reflect.ValueOf(jsontypes.NewNormalizedNull()))
 		}
 
 	case reflect.TypeOf(types.List{}):

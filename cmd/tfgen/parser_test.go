@@ -213,7 +213,7 @@ func TestTerraformType(t *testing.T) {
 		{"string", TerraformTypeString},
 		{"password", TerraformTypeString},
 		{"textarea", TerraformTypeString},
-		{"json", TerraformTypeString},
+		{"json", TerraformTypeJSON},
 		{"datetime", TerraformTypeString},
 		{"number", TerraformTypeInt64},
 		{"boolean", TerraformTypeBool},
