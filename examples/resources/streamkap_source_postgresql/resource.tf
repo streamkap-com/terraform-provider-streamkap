@@ -31,7 +31,7 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   database_sslmode                             = "require"
   schema_include_list                          = "streamkap"
   table_include_list                           = "streamkap.customer,streamkap.customer2"
-  signal_data_collection_schema_or_database    = "streamkap"
+  signal_data_collection_schema_or_database    = "streamkap.streamkap_signal"
   column_include_list                          = "streamkap[.]customer[.](id|name)"
   heartbeat_enabled                            = false
   heartbeat_data_collection_schema_or_database = null

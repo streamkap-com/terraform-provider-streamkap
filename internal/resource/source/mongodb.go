@@ -135,8 +135,8 @@ func (r *SourceMongoDBResource) Schema(ctx context.Context, req res.SchemaReques
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
 				Required:            true,
-				Description:         "Streamkap will use a collection in this database to monitor incremental snapshotting. Follow the instructions in the documentation for creating this collection and specify which database to use here.",
-				MarkdownDescription: "Streamkap will use a collection in this database to monitor incremental snapshotting. Follow the instructions in the documentation for creating this collection and specify which database to use here.",
+				Description:         "Signal collection location in database.collection format (e.g., 'admin.streamkap_signal'). For backwards compatibility, you can specify just the database name. Follow the instructions in the documentation for creating this collection.",
+				MarkdownDescription: "Signal collection location in `database.collection` format (e.g., `admin.streamkap_signal`). For backwards compatibility, you can specify just the database name. Follow the instructions in the documentation for creating this collection.",
 			},
 			"ssh_enabled": schema.BoolAttribute{
 				Computed:            true,
