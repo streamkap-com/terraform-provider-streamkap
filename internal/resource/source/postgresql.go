@@ -168,8 +168,8 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("public"),
-				Description:         "Schema for signal data collection",
-				MarkdownDescription: "Schema for signal data collection",
+				Description:         "Signal table location in schema.table format (e.g., 'public.streamkap_signal'). For backwards compatibility, you can specify just the schema name.",
+				MarkdownDescription: "Signal table location in `schema.table` format (e.g., `public.streamkap_signal`). For backwards compatibility, you can specify just the schema name.",
 			},
 			"column_include_list": schema.StringAttribute{
 				Optional: true,

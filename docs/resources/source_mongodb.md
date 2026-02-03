@@ -55,7 +55,7 @@ output "example-source-mongodb" {
 - `database_include_list` (String) Source databases to sync.
 - `mongodb_connection_string` (String, Sensitive) Mongodb Connection String. See Mongodb documentation for further details.
 - `name` (String) Source name
-- `signal_data_collection_schema_or_database` (String) Streamkap will use a collection in this database to monitor incremental snapshotting. Follow the instructions in the documentation for creating this collection and specify which database to use here.
+- `signal_data_collection_schema_or_database` (String) Signal collection location in `database.collection` format (e.g., `admin.streamkap_signal`). For backwards compatibility, you can specify just the database name. Follow the instructions in the documentation for creating this collection.
 
 ### Optional
 

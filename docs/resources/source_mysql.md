@@ -44,7 +44,7 @@ resource "streamkap_source_mysql" "test" {
   database_password                         = var.source_mysql_password
   database_include_list                     = "crm,ecommerce,tst"
   table_include_list                        = "crm.demo,ecommerce.customers,tst.test_id_timestamp"
-  signal_data_collection_schema_or_database = "crm"
+  signal_data_collection_schema_or_database = "crm.streamkap_signal"
   column_include_list                       = "crm[.]demo[.](id|name),ecommerce[.]customers[.](customer_id|email)"
   database_connection_timezone              = "SERVER"
   snapshot_gtid                             = true
@@ -87,7 +87,7 @@ output "example-source-mysql" {
 - `insert_static_value_field_1` (String) The name of the static field to be added to the message value.
 - `insert_static_value_field_2` (String) The name of the static field to be added to the message value.
 - `predicates_istopictoenrich_pattern` (String) Regex pattern to match topics for enrichment
-- `signal_data_collection_schema_or_database` (String) Schema for signal data collection. If connector is in read-only mode (snapshot_gtid="Yes"), set this to null.
+- `signal_data_collection_schema_or_database` (String) Signal table location in `database.table` format (e.g., `mydb.streamkap_signal`). For backwards compatibility, you can specify just the database name. If connector is in read-only mode (`snapshot_gtid="Yes"`), set this to null.
 - `snapshot_gtid` (Boolean) GTID snapshots are read only but require some prerequisite settings, including enabling GTID on the source database. See the documentation for more details.
 - `ssh_enabled` (Boolean) Connect via SSH tunnel
 - `ssh_host` (String) Hostname of the SSH server, only required if `ssh_enabled` is true
