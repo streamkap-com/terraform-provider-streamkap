@@ -73,6 +73,7 @@ output "example-destination-postgresql" {
 - `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database
 - `insert_mode` (String) Insert or upsert modes are available
 - `primary_key_mode` (String) Specifies how the connector resolves the primary key columns from the event
+- `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements
 - `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `none`
 - `ssh_enabled` (Boolean) Connect via SSH tunnel
 - `ssh_host` (String) Hostname of the SSH server, only required if `ssh_enabled` is true

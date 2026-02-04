@@ -100,6 +100,7 @@ output "example-destination-snowflake" {
 	```
 - `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)
 - `ingestion_mode` (String) `upsert` or `append` modes are available
+- `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements
 - `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `none`
 - `sfwarehouse` (String) The name of the Snowflake warehouse.
 - `snowflake_private_key_passphrase` (String, Sensitive) If the value is not empty, this phrase is used to try to decrypt the private key.
