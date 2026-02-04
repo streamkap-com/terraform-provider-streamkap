@@ -60,6 +60,7 @@ type DestinationPostgresqlResourceModel struct {
 	SSHHost            types.String `tfsdk:"ssh_host"`
 	SSHPort            types.String `tfsdk:"ssh_port"`
 	SSHUser            types.String `tfsdk:"ssh_user"`
+	QuoteIdentifiers   types.Bool   `tfsdk:"quote_identifiers"`
 }
 
 func (r *DestinationPostgresqlResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -211,6 +212,13 @@ func (r *DestinationPostgresqlResource) Schema(ctx context.Context, req res.Sche
 				Default:             stringdefault.StaticString("streamkap"),
 				Description:         "User for connecting to the SSH server, only required if `ssh_enabled` is true",
 				MarkdownDescription: "User for connecting to the SSH server, only required if `ssh_enabled` is true",
+			},
+			"quote_identifiers": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(true),
+				Description:         "Whether to quote identifiers in SQL statements",
+				MarkdownDescription: "Whether to quote identifiers in SQL statements",
 			},
 		},
 	}
@@ -393,6 +401,7 @@ func (r *DestinationPostgresqlResource) model2ConfigMap(model DestinationPostgre
 		"ssh.host":                       model.SSHHost.ValueStringPointer(),
 		"ssh.port":                       model.SSHPort.ValueString(),
 		"ssh.user":                       model.SSHUser.ValueString(),
+		"quote.identifiers":              model.QuoteIdentifiers.ValueBool(),
 	}
 
 	return configMap
@@ -416,4 +425,5 @@ func (r *DestinationPostgresqlResource) configMap2Model(cfg map[string]any, mode
 	model.SSHHost = helper.GetTfCfgString(cfg, "ssh.host")
 	model.SSHPort = helper.GetTfCfgString(cfg, "ssh.port")
 	model.SSHUser = helper.GetTfCfgString(cfg, "ssh.user")
+	model.QuoteIdentifiers = helper.GetTfCfgBool(cfg, "quote.identifiers")
 }

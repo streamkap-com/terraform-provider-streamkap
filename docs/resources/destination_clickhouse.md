@@ -80,6 +80,7 @@ output "example-destination-clickhouse" {
 - `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)
 - `ingestion_mode` (String) Upsert or append modes are available
 - `port` (Number) ClickHouse Port. For example, 8443
+- `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements
 - `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `none`
 - `ssl` (Boolean) Enable TLS for network connections
 - `tasks_max` (Number) The maximum number of active task
