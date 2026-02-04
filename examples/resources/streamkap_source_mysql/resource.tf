@@ -29,7 +29,7 @@ resource "streamkap_source_mysql" "test" {
   database_password                         = var.source_mysql_password
   database_include_list                     = "crm,ecommerce,tst"
   table_include_list                        = "crm.demo,ecommerce.customers,tst.test_id_timestamp"
-  signal_data_collection_schema_or_database = "crm"
+  signal_data_collection_schema_or_database = "crm.streamkap_signal"
   column_include_list                       = "crm[.]demo[.](id|name),ecommerce[.]customers[.](customer_id|email)"
   database_connection_timezone              = "SERVER"
   snapshot_gtid                             = true

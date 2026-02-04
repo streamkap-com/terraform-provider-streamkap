@@ -46,7 +46,7 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   database_sslmode                             = "require"
   schema_include_list                          = "streamkap"
   table_include_list                           = "streamkap.customer,streamkap.customer2"
-  signal_data_collection_schema_or_database    = "streamkap"
+  signal_data_collection_schema_or_database    = "streamkap.streamkap_signal"
   column_include_list                          = "streamkap[.]customer[.](id|name)"
   heartbeat_enabled                            = false
   heartbeat_data_collection_schema_or_database = null
@@ -95,7 +95,7 @@ output "example-source-postgresql" {
 - `insert_static_value_field_2` (String) The name of the static field to be added to the message value.
 - `predicates_istopictoenrich_pattern` (String) Regex pattern to match topics for enrichment
 - `publication_name` (String) Publication name for the connector
-- `signal_data_collection_schema_or_database` (String) Schema for signal data collection
+- `signal_data_collection_schema_or_database` (String) Signal table location in `schema.table` format (e.g., `public.streamkap_signal`). For backwards compatibility, you can specify just the schema name.
 - `slot_name` (String) Replication slot name for the connector
 - `snapshot_read_only` (String) When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots
 - `ssh_enabled` (Boolean) Connect via SSH tunnel
