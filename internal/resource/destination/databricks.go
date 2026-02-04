@@ -54,6 +54,7 @@ type DestinationDatabricksResourceModel struct {
 	SchemaEvolution                  types.String `tfsdk:"schema_evolution"`
 	TasksMax                         types.Int64  `tfsdk:"tasks_max"`
 	ConsumerWaitTimeForLargerBatchMs types.Int64  `tfsdk:"consumer_wait_time_for_larger_batch_ms"`
+	QuoteIdentifiers                 types.Bool   `tfsdk:"quote_identifiers"`
 }
 
 func (r *DestinationDatabricksResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -173,6 +174,13 @@ func (r *DestinationDatabricksResource) Schema(ctx context.Context, req res.Sche
 				Validators: []validator.Int64{
 					int64validator.Between(500, 300000),
 				},
+			},
+			"quote_identifiers": schema.BoolAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             booldefault.StaticBool(true),
+				Description:         "Whether to quote identifiers in SQL statements",
+				MarkdownDescription: "Whether to quote identifiers in SQL statements",
 			},
 		},
 	}
@@ -355,6 +363,7 @@ func (r *DestinationDatabricksResource) model2ConfigMap(_ context.Context, model
 		"schema.evolution":                       model.SchemaEvolution.ValueString(),
 		"tasks.max":                              model.TasksMax.ValueInt64(),
 		"consumer.wait.time.for.larger.batch.ms": model.ConsumerWaitTimeForLargerBatchMs.ValueInt64(),
+		"quote.identifiers":                      model.QuoteIdentifiers.ValueBool(),
 	}
 
 	return configMap
@@ -372,4 +381,5 @@ func (r *DestinationDatabricksResource) configMap2Model(ctx context.Context, cfg
 	model.SchemaEvolution = helper.GetTfCfgString(cfg, "schema.evolution")
 	model.TasksMax = helper.GetTfCfgInt64(cfg, "tasks.max")
 	model.ConsumerWaitTimeForLargerBatchMs = helper.GetTfCfgInt64(cfg, "consumer.wait.time.for.larger.batch.ms")
+	model.QuoteIdentifiers = helper.GetTfCfgBool(cfg, "quote.identifiers")
 }

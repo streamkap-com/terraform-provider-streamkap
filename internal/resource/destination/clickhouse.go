@@ -57,6 +57,7 @@ type DestinationClickHouseResourceModel struct {
 	SSL                types.Bool                                    `tfsdk:"ssl"`
 	TopicsConfigMap    map[string]clickHouseTopicsConfigMapItemModel `tfsdk:"topics_config_map"`
 	SchemaEvolution    types.String                                  `tfsdk:"schema_evolution"`
+	QuoteIdentifiers   types.Bool                                    `tfsdk:"quote_identifiers"`
 }
 
 type clickHouseTopicsConfigMapItemModel struct {
@@ -180,6 +181,13 @@ func (r *DestinationClickHouseResource) Schema(ctx context.Context, req res.Sche
 						"none",
 					),
 				},
+			},
+			"quote_identifiers": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+				Description:         "Whether to quote identifiers in SQL statements",
+				MarkdownDescription: "Whether to quote identifiers in SQL statements",
 			},
 		},
 	}
@@ -406,6 +414,7 @@ func (r *DestinationClickHouseResource) model2ConfigMap(model DestinationClickHo
 		"ssl":               model.SSL.ValueBool(),
 		"topics.config.map": topicsConfigMapStr,
 		"schema.evolution":  model.SchemaEvolution.ValueString(),
+		"quote.identifiers": model.QuoteIdentifiers.ValueBool(),
 	}, nil
 }
 
@@ -422,6 +431,7 @@ func (r *DestinationClickHouseResource) configMap2Model(cfg map[string]any, mode
 	model.Database = helper.GetTfCfgString(cfg, "database")
 	model.SSL = helper.GetTfCfgBool(cfg, "ssl")
 	model.SchemaEvolution = helper.GetTfCfgString(cfg, "schema.evolution")
+	model.QuoteIdentifiers = helper.GetTfCfgBool(cfg, "quote.identifiers")
 
 	// Parse topics config map
 	// Example:

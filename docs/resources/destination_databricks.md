@@ -71,6 +71,7 @@ output "example-destination-databricks" {
 - `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only)
 - `ingestion_mode` (String) `upsert` or `append` modes are available
 - `partition_mode` (String) Partition tables or not
+- `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements
 - `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `none`
 - `tasks_max` (Number) The maximum number of active task
 

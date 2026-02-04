@@ -62,6 +62,7 @@ type DestinationSnowflakeResourceModel struct {
 	SQLTableName                  types.String            `tfsdk:"sql_table_name"`
 	AutoQADedupeTableMapping      map[string]types.String `tfsdk:"auto_qa_dedupe_table_mapping"`
 	SnowflakeTopic2TableMap       types.String            `tfsdk:"snowflake_topic2table_map"`
+	QuoteIdentifiers              types.Bool              `tfsdk:"quote_identifiers"`
 }
 
 func (r *DestinationSnowflakeResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -244,6 +245,13 @@ func (r *DestinationSnowflakeResource) Schema(ctx context.Context, req res.Schem
 				Default:             stringdefault.StaticString("REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5"),
 				Description:         "Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5</code> uses only the last segment as table name",
 				MarkdownDescription: "Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5</code> uses only the last segment as table name",
+			},
+			"quote_identifiers": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(true),
+				Description:         "Whether to quote identifiers in SQL statements",
+				MarkdownDescription: "Whether to quote identifiers in SQL statements",
 			},
 		},
 	}
@@ -448,6 +456,7 @@ func (r *DestinationSnowflakeResource) model2ConfigMap(_ context.Context, model 
 		"sql.table.name":                           model.SQLTableName.ValueStringPointer(),
 		"auto.qa.dedupe.table.mapping":             autoQADedupeTableMappingStr,
 		"snowflake.topic2table.map":                model.SnowflakeTopic2TableMap.ValueStringPointer(),
+		"quote.identifiers":                        model.QuoteIdentifiers.ValueBool(),
 	}
 
 	if model.SnowflakePrivateKeyPassphrase.IsNull() {
@@ -477,6 +486,7 @@ func (r *DestinationSnowflakeResource) configMap2Model(ctx context.Context, cfg 
 	model.CreateSQLData = helper.GetTfCfgString(cfg, "create.sql.data")
 	model.SQLTableName = helper.GetTfCfgString(cfg, "sql.table.name")
 	model.SnowflakeTopic2TableMap = helper.GetTfCfgString(cfg, "snowflake.topic2table.map")
+	model.QuoteIdentifiers = helper.GetTfCfgBool(cfg, "quote.identifiers")
 
 	// Parse auto QA deduplication table mapping
 	// Example:
