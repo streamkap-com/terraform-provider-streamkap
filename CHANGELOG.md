@@ -8,6 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **AGENTS.md** - AI coding agent guide following emerging standards for AI-assisted development
+- **Provider Configuration Validation Tests** - Tests for missing credentials, empty values, environment variable fallbacks
+- **Example File Validation Tests** - Tests to verify all example .tf files are valid HCL and have required files
+- **429 Rate Limit Handling** - Retry logic now handles HTTP 429 (Too Many Requests) responses
+
+### Changed
+- **GNUmakefile** - Enhanced with comprehensive build, test, lint, and development targets including:
+  - `make test` - Run unit tests
+  - `make test-schema` - Run schema compatibility tests
+  - `make test-validators` - Run validator tests
+  - `make test-integration` - Run VCR integration tests
+  - `make testacc` - Run acceptance tests
+  - `make lint` - Run golangci-lint
+  - `make cassettes` - Record VCR cassettes
+  - `make snapshots` - Update schema snapshots
+  - `make sweep` - Clean up orphaned test resources
+  - `make validate-examples` - Validate example Terraform files
+
+---
+
+## [2.1.19+] - 2026-02-05 (Development)
+
+### Added
 - **Comprehensive Test Suite**
   - Acceptance tests for all 14 new source connectors (AlloyDB, DB2, DocumentDB, Elasticsearch, MariaDB, MongoDB Hosted, Oracle, Oracle AWS, PlanetScale, Redis, S3, Supabase, Vitess, Webhook)
   - Acceptance tests for all 15 new destination connectors (Azure Blob, BigQuery, CockroachDB, DB2, GCS, HTTP Sink, Kafka Direct, Motherduck, MySQL, Oracle, R2, Redis, Redshift, SQL Server, Starburst)

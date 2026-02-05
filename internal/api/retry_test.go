@@ -19,6 +19,9 @@ func TestIsRetryableError(t *testing.T) {
 		{"KC timeout", errors.New("KafkaConnectTimeout"), true},
 		{"request timeout", errors.New("Request timed out"), true},
 		{"socket timeout", errors.New("SocketTimeoutException: connect timed out"), true},
+		// Rate limit errors
+		{"429 error", errors.New("429 Too Many Requests"), true},
+		{"too many requests", errors.New("too many requests"), true},
 		// Gateway errors - infrastructure issues
 		{"503 error", errors.New("503 Service Unavailable"), true},
 		{"502 error", errors.New("502 Bad Gateway"), true},

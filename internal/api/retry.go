@@ -28,6 +28,8 @@ func IsRetryableError(err error) bool {
 
 	// Gateway/infrastructure errors - Streamkap API issues
 	gatewayPatterns := []string{
+		"429",               // Rate limit (Too Many Requests)
+		"too many requests", // Rate limit message
 		"502", "503", "504", // Gateway errors
 		"bad gateway",
 		"service unavailable",
