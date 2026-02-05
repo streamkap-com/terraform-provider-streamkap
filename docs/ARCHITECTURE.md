@@ -278,6 +278,62 @@ Fields are marked sensitive (`Sensitive: true`) when:
 | `required: false` | `Optional: true` |
 | `user_defined: false` | Field skipped (not user-editable) |
 
+## Supported Type Mappings
+
+### Nested Map Types
+
+The base resource supports nested map types (`map[string]struct`) for complex configurations:
+
+**ClickHouse `topics_config_map`:**
+```hcl
+resource "streamkap_destination_clickhouse" "example" {
+  # ...
+  topics_config_map = {
+    "my_topic" = {
+      delete_sql_execute = "DELETE FROM my_table WHERE id = ?"
+    }
+  }
+}
+```
+
+**SQL Server AWS `snapshot_custom_table_config`:**
+```hcl
+resource "streamkap_source_sqlserveraws" "example" {
+  # ...
+  snapshot_custom_table_config = {
+    "db.Some_Tbl" = {
+      chunks = 5
+    }
+  }
+}
+```
+
+## BaseTransformResource Design
+
+The `BaseTransformResource` provides a generic implementation for all transform resources.
+
+### Transform Implementation Management
+
+All transforms support the `implementation_json` attribute for managing transform code/logic:
+
+```hcl
+resource "streamkap_transform_map_filter" "example" {
+  name = "my-transform"
+  transforms_language = "JavaScript"
+
+  # Optional: Manage implementation via Terraform
+  implementation_json = jsonencode({
+    language        = "JavaScript"
+    value_transform = "return record;"
+    key_transform   = ""
+    topic_transform = ""
+    common_transform = ""
+  })
+}
+```
+
+**Note:** If `implementation_json` is not specified, the implementation is managed outside Terraform (e.g., via Streamkap UI) and is preserved during updates.
+
 ## BaseConnectorResource Design
 
 The `BaseConnectorResource` provides a generic implementation for all connector resources.

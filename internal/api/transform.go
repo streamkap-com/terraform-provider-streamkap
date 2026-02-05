@@ -179,3 +179,72 @@ func (s *streamkapAPI) DeleteTransform(ctx context.Context, transformID string) 
 
 	return nil
 }
+
+// TransformImplementationDetails represents the implementation details for a transform
+type TransformImplementationDetails struct {
+	TransformID    string         `json:"transform_id"`
+	VersionID      string         `json:"version_id,omitempty"`
+	Description    *string        `json:"description,omitempty"`
+	Implementation map[string]any `json:"implementation,omitempty"`
+	Config         map[string]any `json:"config,omitempty"`
+}
+
+// TransformImplementationDetailsResponse represents the response from GET implementation_details
+type TransformImplementationDetailsResponse struct {
+	TransformID  string                                `json:"transform_id"`
+	ImplVersions map[string]TransformImplementationDetails `json:"impl_versions"`
+}
+
+// GetTransformImplementationDetails retrieves implementation details including version history
+func (s *streamkapAPI) GetTransformImplementationDetails(ctx context.Context, transformID string) (*TransformImplementationDetailsResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/transforms/"+transformID+"/implementation_details", http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"GetTransformImplementationDetails request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n",
+		req.Method,
+		req.URL.String(),
+	))
+	var resp TransformImplementationDetailsResponse
+	err = s.doRequest(ctx, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+// UpdateTransformImplementationDetails updates the implementation details for a transform
+func (s *streamkapAPI) UpdateTransformImplementationDetails(ctx context.Context, transformID string, details TransformImplementationDetails) (*TransformImplementationDetails, error) {
+	// Ensure transform_id is set
+	details.TransformID = transformID
+
+	payload, err := json.Marshal(details)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, s.cfg.BaseURL+"/transforms/"+transformID+"/implementation_details", bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"UpdateTransformImplementationDetails request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n"+
+			"\tBody: %s",
+		req.Method,
+		req.URL.String(),
+		payload,
+	))
+	var resp TransformImplementationDetails
+	err = s.doRequestWithRetry(ctx, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}

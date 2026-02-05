@@ -5,13 +5,17 @@ package transform
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -70,6 +74,18 @@ func (r *BaseTransformResource) Metadata(ctx context.Context, req resource.Metad
 // Schema returns the schema for this resource.
 func (r *BaseTransformResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	baseSchema := r.config.GetSchema()
+
+	// Add implementation_json attribute for managing transform implementation code
+	baseSchema.Attributes["implementation_json"] = schema.StringAttribute{
+		CustomType:          jsontypes.NormalizedType{},
+		Optional:            true,
+		Computed:            true,
+		Description:         "Transform implementation as JSON. Structure varies by transform type (map_filter, enrich, sql_join, rollup, etc.).",
+		MarkdownDescription: "Transform implementation as JSON. Structure varies by transform type (`map_filter`, `enrich`, `sql_join`, `rollup`, etc.).\n\n**Note:** If not specified, the implementation is managed outside Terraform (e.g., via Streamkap UI).",
+		PlanModifiers: []planmodifier.String{
+			stringplanmodifier.UseStateForUnknown(),
+		},
+	}
 
 	// Add timeouts block to the schema
 	baseSchema.Blocks = map[string]schema.Block{
@@ -182,6 +198,56 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Handle implementation_json if provided in the plan
+	var implementationJSON jsontypes.Normalized
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("implementation_json"), &implementationJSON)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if !implementationJSON.IsNull() && !implementationJSON.IsUnknown() {
+		// User provided implementation - update it via the implementation_details API
+		var implMap map[string]any
+		if err := json.Unmarshal([]byte(implementationJSON.ValueString()), &implMap); err != nil {
+			resp.Diagnostics.AddError(
+				"Invalid Implementation JSON",
+				fmt.Sprintf("Unable to parse implementation_json: %s", err),
+			)
+			return
+		}
+
+		_, err := r.client.UpdateTransformImplementationDetails(ctx, transform.ID, api.TransformImplementationDetails{
+			TransformID:    transform.ID,
+			Implementation: implMap,
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Error setting %s transform implementation", r.config.GetTransformType()),
+				fmt.Sprintf("Unable to update implementation: %s", err),
+			)
+			return
+		}
+
+		// Set the implementation_json in state
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), implementationJSON)...)
+	} else {
+		// No implementation provided - read from API response and set as computed
+		if len(transform.Implementation) > 0 {
+			implBytes, err := json.Marshal(transform.Implementation)
+			if err != nil {
+				tflog.Warn(ctx, fmt.Sprintf("Failed to marshal implementation to JSON: %s", err))
+				resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
+			} else {
+				resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedValue(string(implBytes)))...)
+			}
+		} else {
+			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
+		}
+	}
 }
 
 // Read reads the transform resource.
@@ -239,6 +305,22 @@ func (r *BaseTransformResource) Read(ctx context.Context, req resource.ReadReque
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Read implementation_json from API and set in state
+	if len(transform.Implementation) > 0 {
+		implBytes, err := json.Marshal(transform.Implementation)
+		if err != nil {
+			tflog.Warn(ctx, fmt.Sprintf("Failed to marshal implementation to JSON: %s", err))
+			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
+		} else {
+			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedValue(string(implBytes)))...)
+		}
+	} else {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
+	}
 }
 
 // Update updates the transform resource.
@@ -342,6 +424,71 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Handle implementation_json update
+	var planImplementationJSON jsontypes.Normalized
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("implementation_json"), &planImplementationJSON)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var stateImplementationJSON jsontypes.Normalized
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("implementation_json"), &stateImplementationJSON)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Check if implementation_json has changed or is being set
+	if !planImplementationJSON.IsNull() && !planImplementationJSON.IsUnknown() {
+		// Check if it's different from state
+		implementationChanged := stateImplementationJSON.IsNull() ||
+			stateImplementationJSON.IsUnknown() ||
+			planImplementationJSON.ValueString() != stateImplementationJSON.ValueString()
+
+		if implementationChanged {
+			// Parse the new implementation JSON
+			var implMap map[string]any
+			if err := json.Unmarshal([]byte(planImplementationJSON.ValueString()), &implMap); err != nil {
+				resp.Diagnostics.AddError(
+					"Invalid Implementation JSON",
+					fmt.Sprintf("Unable to parse implementation_json: %s", err),
+				)
+				return
+			}
+
+			// Update implementation via the implementation_details API
+			_, err := r.client.UpdateTransformImplementationDetails(ctx, id, api.TransformImplementationDetails{
+				TransformID:    id,
+				Implementation: implMap,
+			})
+			if err != nil {
+				resp.Diagnostics.AddError(
+					fmt.Sprintf("Error updating %s transform implementation", r.config.GetTransformType()),
+					fmt.Sprintf("Unable to update implementation: %s", err),
+				)
+				return
+			}
+		}
+
+		// Set the planned implementation_json in state
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), planImplementationJSON)...)
+	} else {
+		// No implementation in plan - read from API response
+		if len(transform.Implementation) > 0 {
+			implBytes, err := json.Marshal(transform.Implementation)
+			if err != nil {
+				tflog.Warn(ctx, fmt.Sprintf("Failed to marshal implementation to JSON: %s", err))
+				resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
+			} else {
+				resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedValue(string(implBytes)))...)
+			}
+		} else {
+			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
+		}
+	}
 }
 
 // Delete deletes the transform resource.
