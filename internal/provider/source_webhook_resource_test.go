@@ -11,6 +11,7 @@ func TestAccSourceWebhookResource(t *testing.T) {
 	// Skip only if TF_ACC is not set (handled by framework) or if explicitly disabled
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{

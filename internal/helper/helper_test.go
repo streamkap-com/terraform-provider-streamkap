@@ -121,6 +121,66 @@ func TestGetTfCfgBool(t *testing.T) {
 	}
 }
 
+func TestGetTfCfgFloat64(t *testing.T) {
+	tests := []struct {
+		name     string
+		cfg      map[string]any
+		key      string
+		expected float64
+		isNull   bool
+	}{
+		{"float64 value", map[string]any{"key": float64(42.5)}, "key", 42.5, false},
+		{"float64 zero", map[string]any{"key": float64(0)}, "key", 0, false},
+		{"float64 negative", map[string]any{"key": float64(-100.25)}, "key", -100.25, false},
+		{"float64 large", map[string]any{"key": float64(1.7976931348623157e+308)}, "key", 1.7976931348623157e+308, false},
+		{"float64 small", map[string]any{"key": float64(0.0001)}, "key", 0.0001, false},
+		{"integer value as float64", map[string]any{"key": float64(42)}, "key", 42, false},
+		{"string float", map[string]any{"key": "42.5"}, "key", 42.5, false},
+		{"string negative float", map[string]any{"key": "-42.5"}, "key", -42.5, false},
+		{"string zero", map[string]any{"key": "0"}, "key", 0, false},
+		{"string integer", map[string]any{"key": "42"}, "key", 42, false},
+		{"missing key", map[string]any{}, "key", 0, true},
+		{"nil value", map[string]any{"key": nil}, "key", 0, true},
+		{"different key exists", map[string]any{"other": float64(42.5)}, "key", 0, true},
+		{"invalid string returns zero", map[string]any{"key": "not-a-number"}, "key", 0, false},
+		{"empty string returns zero", map[string]any{"key": ""}, "key", 0, false},
+		{"non-float64 int returns null", map[string]any{"key": 42}, "key", 0, true},
+		{"non-float64 bool returns null", map[string]any{"key": true}, "key", 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := GetTfCfgFloat64(tt.cfg, tt.key)
+			if tt.isNull {
+				if !result.IsNull() {
+					t.Errorf("Expected null, got: %v", result)
+				}
+			} else {
+				if result.IsNull() {
+					t.Errorf("Expected non-null value %f, got null", tt.expected)
+				} else if result.ValueFloat64() != tt.expected {
+					t.Errorf("GetTfCfgFloat64() = %f, want %f", result.ValueFloat64(), tt.expected)
+				}
+			}
+		})
+	}
+}
+
+// TestGetTfCfgFloat64NilMap tests behavior with nil map
+func TestGetTfCfgFloat64NilMap(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Log("GetTfCfgFloat64 panics with nil map (expected behavior)")
+		}
+	}()
+
+	var nilMap map[string]any
+	result := GetTfCfgFloat64(nilMap, "key")
+	if !result.IsNull() {
+		t.Error("Expected null for nil map")
+	}
+}
+
 func TestGetTfCfgListString(t *testing.T) {
 	ctx := context.Background()
 

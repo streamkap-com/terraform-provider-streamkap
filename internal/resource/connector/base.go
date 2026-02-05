@@ -312,10 +312,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 			return
 		}
 		if source == nil {
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Error reading %s source", r.config.GetConnectorCode()),
-				fmt.Sprintf("Source %s does not exist", id),
-			)
+			resp.State.RemoveResource(ctx)
 			return
 		}
 		connectorName = source.Name
@@ -332,10 +329,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 			return
 		}
 		if destination == nil {
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Error reading %s destination", r.config.GetConnectorCode()),
-				fmt.Sprintf("Destination %s does not exist", id),
-			)
+			resp.State.RemoveResource(ctx)
 			return
 		}
 		connectorName = destination.Name

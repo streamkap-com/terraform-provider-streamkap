@@ -16,6 +16,7 @@ func TestAccDestinationKafkaResource_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccDestinationKafkaResourceConfig(),

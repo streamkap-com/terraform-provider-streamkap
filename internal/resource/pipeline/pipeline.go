@@ -328,10 +328,7 @@ func (r *PipelineResource) Read(ctx context.Context, req res.ReadRequest, resp *
 		return
 	}
 	if pipeline == nil {
-		resp.Diagnostics.AddError(
-			"Error reading pipeline",
-			fmt.Sprintf("Pipeline %s does not exist", pipelineID),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
