@@ -44,6 +44,7 @@ package connector
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -91,6 +92,19 @@ type ConnectorConfig interface {
 	// NewModelInstance creates a new instance of the connector's model struct.
 	// This is needed for reflection-based operations.
 	NewModelInstance() any
+}
+
+// ConnectorConfigWithJSONStringFields is an optional interface that connectors
+// can implement to specify fields that should be serialized as JSON strings
+// when sent to the API, rather than as nested objects.
+// This is needed for fields where the backend expects a JSON string (textarea control)
+// but Terraform uses a nested map for better UX.
+type ConnectorConfigWithJSONStringFields interface {
+	// GetJSONStringFields returns a list of Terraform attribute names that should
+	// be serialized as JSON strings when sent to the API.
+	// Example: []string{"topics_config_map"} means the nested map should be
+	// JSON-stringified before sending to the API.
+	GetJSONStringFields() []string
 }
 
 // Ensure BaseConnectorResource satisfies framework interfaces.
@@ -538,6 +552,9 @@ func (r *BaseConnectorResource) modelToConfigMap(ctx context.Context, model any)
 	configMap := make(map[string]any)
 	mappings := r.config.GetFieldMappings()
 
+	// Check if the config specifies fields that should be JSON-stringified
+	jsonStringFields := r.getJSONStringFields()
+
 	// Get the reflect value of the model (need to dereference if it's a pointer)
 	v := reflect.ValueOf(model)
 	if v.Kind() == reflect.Ptr {
@@ -568,11 +585,42 @@ func (r *BaseConnectorResource) modelToConfigMap(ctx context.Context, model any)
 
 		// Only include non-nil values in the config map
 		if apiValue != nil {
+			// Check if this field should be serialized as a JSON string
+			if r.isJSONStringField(tfAttr, jsonStringFields) {
+				// If apiValue is a map, serialize it to JSON string
+				if mapVal, isMap := apiValue.(map[string]map[string]any); isMap {
+					jsonBytes, err := json.Marshal(mapVal)
+					if err != nil {
+						tflog.Warn(ctx, fmt.Sprintf("Failed to serialize %s to JSON: %s", tfAttr, err))
+					} else {
+						configMap[apiField] = string(jsonBytes)
+						continue
+					}
+				}
+			}
 			configMap[apiField] = apiValue
 		}
 	}
 
 	return configMap, nil
+}
+
+// getJSONStringFields returns the list of fields that should be JSON-stringified.
+func (r *BaseConnectorResource) getJSONStringFields() []string {
+	if cfg, ok := r.config.(ConnectorConfigWithJSONStringFields); ok {
+		return cfg.GetJSONStringFields()
+	}
+	return nil
+}
+
+// isJSONStringField checks if a field is in the JSON string fields list.
+func (r *BaseConnectorResource) isJSONStringField(fieldName string, jsonStringFields []string) bool {
+	for _, f := range jsonStringFields {
+		if f == fieldName {
+			return true
+		}
+	}
+	return false
 }
 
 // configMapToModel updates a model struct from a config map using the field mappings.
@@ -829,10 +877,25 @@ func (r *BaseConnectorResource) setNestedMapValue(ctx context.Context, cfg map[s
 		return
 	}
 
-	// The API response should be a map[string]any where values are maps of field values
-	apiMap, ok := val.(map[string]any)
-	if !ok {
-		tflog.Debug(ctx, fmt.Sprintf("Expected map[string]any for nested field '%s', got %T", apiField, val))
+	// The API response could be a map[string]any OR a JSON string (for textarea control fields)
+	var apiMap map[string]any
+
+	switch v := val.(type) {
+	case map[string]any:
+		apiMap = v
+	case string:
+		// Try to parse as JSON string (backend stores some nested maps as JSON strings)
+		if v == "" {
+			fieldValue.Set(reflect.Zero(fieldValue.Type()))
+			return
+		}
+		if err := json.Unmarshal([]byte(v), &apiMap); err != nil {
+			tflog.Debug(ctx, fmt.Sprintf("Failed to parse JSON string for nested field '%s': %s", apiField, err))
+			fieldValue.Set(reflect.Zero(fieldValue.Type()))
+			return
+		}
+	default:
+		tflog.Debug(ctx, fmt.Sprintf("Expected map[string]any or JSON string for nested field '%s', got %T", apiField, val))
 		fieldValue.Set(reflect.Zero(fieldValue.Type()))
 		return
 	}
