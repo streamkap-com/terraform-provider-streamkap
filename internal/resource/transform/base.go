@@ -291,10 +291,7 @@ func (r *BaseTransformResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 	if transform == nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Error reading %s transform", r.config.GetTransformType()),
-			fmt.Sprintf("Transform %s does not exist", id),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

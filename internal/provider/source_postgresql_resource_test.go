@@ -14,6 +14,7 @@ var sourcePostgreSQLSSHHost = os.Getenv("TF_VAR_source_postgresql_ssh_host")
 func TestAccSourcePostgreSQLResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read testing
 			{
@@ -262,6 +263,7 @@ resource "streamkap_source_postgresql" "test" {
 func TestAccSourcePostgreSQLResource_WithTimeout(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: providerConfig + `

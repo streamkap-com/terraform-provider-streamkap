@@ -135,10 +135,7 @@ func (r *TopicResource) Read(ctx context.Context, req res.ReadRequest, resp *res
 		return
 	}
 	if topic == nil {
-		resp.Diagnostics.AddError(
-			"Error reading topic",
-			fmt.Sprintf("topic %s does not exist", topicID),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 	r.configMap2Model(*topic, &state)

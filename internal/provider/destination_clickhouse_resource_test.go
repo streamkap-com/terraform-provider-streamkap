@@ -14,6 +14,7 @@ func TestAccDestinationClickHouseResource(t *testing.T) {
 	var destinationClickHousePassword = os.Getenv("TF_VAR_destination_clickhouse_connection_password")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read Testing
 			{

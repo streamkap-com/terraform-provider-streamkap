@@ -43,6 +43,20 @@ func GetTfCfgBool(cfg map[string]any, key string) types.Bool {
 	return types.BoolNull()
 }
 
+func GetTfCfgFloat64(cfg map[string]any, key string) types.Float64 {
+	if val, ok := cfg[key]; ok && val != nil {
+		if strVal, ok := val.(string); ok {
+			floatVal, _ := strconv.ParseFloat(strVal, 64)
+
+			return types.Float64Value(floatVal)
+		} else if floatVal, ok := val.(float64); ok {
+			return types.Float64Value(floatVal)
+		}
+	}
+
+	return types.Float64Null()
+}
+
 func GetTfCfgListString(ctx context.Context, cfg map[string]any, key string) types.List {
 	if val, ok := cfg[key]; ok && val != nil {
 		val, _ := val.([]interface{})

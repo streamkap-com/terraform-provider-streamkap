@@ -43,6 +43,9 @@ terraform.rc
 .env.*
 !.env.example
 
+# Private key files (Snowflake PEM keys for testing)
+*.pem
+
 # Local tooling
 .mcp.json
 .serena/
