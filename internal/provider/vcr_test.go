@@ -86,14 +86,17 @@ func redactSensitiveFields(body string) string {
 // These run on every PR without needing API credentials
 
 func TestIntegration_SourceCRUD(t *testing.T) {
+	// Skip until cassettes are recorded
+	// To record cassettes: UPDATE_CASSETTES=1 go test -v -run 'TestIntegration_' ./internal/provider/...
+	t.Skip("Integration tests will be implemented when cassettes are recorded")
+
 	if os.Getenv("TF_ACC") == "" && os.Getenv("UPDATE_CASSETTES") == "" {
 		t.Skip("Set TF_ACC=1 or UPDATE_CASSETTES=1 to run integration tests")
 	}
 
-	// Initialize VCR client to ensure the function is used
+	// Initialize VCR client
 	_, cleanup := newVCRClient(t, "source_crud")
 	defer cleanup()
 
-	// For now, skip - implement when we have cassettes
-	t.Skip("Integration tests will be implemented when cassettes are recorded")
+	// TODO: Implement actual CRUD test using VCR client
 }
