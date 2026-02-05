@@ -668,32 +668,92 @@ func (r *BaseConnectorResource) extractTerraformValue(ctx context.Context, field
 		return result
 
 	default:
-		// Check if it's a map[string]types.String
+		// Check if it's a map type
 		if fieldValue.Kind() == reflect.Map {
 			mapType := fieldValue.Type()
-			if mapType.Key().Kind() == reflect.String && mapType.Elem() == reflect.TypeOf(types.String{}) {
-				// This is a map[string]types.String
+			if mapType.Key().Kind() == reflect.String {
 				if fieldValue.IsNil() || fieldValue.Len() == 0 {
 					return nil
 				}
-				result := make(map[string]string)
-				iter := fieldValue.MapRange()
-				for iter.Next() {
-					key := iter.Key().String()
-					value := iter.Value().Interface().(types.String)
-					if !value.IsNull() && !value.IsUnknown() {
-						result[key] = value.ValueString()
+
+				// Check if it's map[string]types.String
+				if mapType.Elem() == reflect.TypeOf(types.String{}) {
+					result := make(map[string]string)
+					iter := fieldValue.MapRange()
+					for iter.Next() {
+						key := iter.Key().String()
+						value := iter.Value().Interface().(types.String)
+						if !value.IsNull() && !value.IsUnknown() {
+							result[key] = value.ValueString()
+						}
 					}
+					if len(result) == 0 {
+						return nil
+					}
+					return result
 				}
-				if len(result) == 0 {
-					return nil
+
+				// Check if it's a map[string]struct (nested map type)
+				if mapType.Elem().Kind() == reflect.Struct {
+					result := make(map[string]map[string]any)
+					iter := fieldValue.MapRange()
+					for iter.Next() {
+						key := iter.Key().String()
+						structValue := iter.Value()
+						nestedMap := r.extractNestedStruct(ctx, structValue)
+						if len(nestedMap) > 0 {
+							result[key] = nestedMap
+						}
+					}
+					if len(result) == 0 {
+						return nil
+					}
+					return result
 				}
-				return result
 			}
 		}
 		tflog.Warn(ctx, fmt.Sprintf("Unknown Terraform type: %T", v))
 		return nil
 	}
+}
+
+// extractNestedStruct extracts a struct's fields into a map using tfsdk tags.
+func (r *BaseConnectorResource) extractNestedStruct(ctx context.Context, structValue reflect.Value) map[string]any {
+	result := make(map[string]any)
+	t := structValue.Type()
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		tag := field.Tag.Get("tfsdk")
+		if tag == "" || tag == "-" {
+			continue
+		}
+
+		fieldVal := structValue.Field(i)
+		// Extract the value based on its type
+		switch v := fieldVal.Interface().(type) {
+		case types.String:
+			if !v.IsNull() && !v.IsUnknown() {
+				result[tag] = v.ValueString()
+			}
+		case types.Int64:
+			if !v.IsNull() && !v.IsUnknown() {
+				result[tag] = v.ValueInt64()
+			}
+		case types.Bool:
+			if !v.IsNull() && !v.IsUnknown() {
+				result[tag] = v.ValueBool()
+			}
+		case types.Float64:
+			if !v.IsNull() && !v.IsUnknown() {
+				result[tag] = v.ValueFloat64()
+			}
+		default:
+			tflog.Debug(ctx, fmt.Sprintf("Unsupported nested field type: %T for field %s", v, tag))
+		}
+	}
+
+	return result
 }
 
 // setTerraformValue sets a Terraform types value from a config map value.
@@ -743,21 +803,139 @@ func (r *BaseConnectorResource) setTerraformValue(ctx context.Context, cfg map[s
 		fieldValue.Set(reflect.ValueOf(tfVal))
 
 	default:
-		// Check if it's a map[string]types.String
-		if fieldType.Kind() == reflect.Map {
-			if fieldType.Key().Kind() == reflect.String && fieldType.Elem() == reflect.TypeOf(types.String{}) {
-				// This is a map[string]types.String
+		// Check if it's a map type
+		if fieldType.Kind() == reflect.Map && fieldType.Key().Kind() == reflect.String {
+			// Check if it's map[string]types.String
+			if fieldType.Elem() == reflect.TypeOf(types.String{}) {
 				tfVal := helper.GetTfCfgMapString(ctx, cfg, apiField)
 				if tfVal != nil {
 					fieldValue.Set(reflect.ValueOf(tfVal))
 				} else {
-					// Set to nil/empty map
 					fieldValue.Set(reflect.Zero(fieldType))
 				}
 				return
 			}
+
+			// Check if it's a map[string]struct (nested map type)
+			if fieldType.Elem().Kind() == reflect.Struct {
+				r.setNestedMapValue(ctx, cfg, apiField, fieldValue)
+				return
+			}
 		}
 		tflog.Warn(ctx, fmt.Sprintf("Unknown field type for '%s': %s", apiField, fieldType))
+	}
+}
+
+// setNestedMapValue sets a map[string]struct field from a config map value.
+func (r *BaseConnectorResource) setNestedMapValue(ctx context.Context, cfg map[string]any, apiField string, fieldValue reflect.Value) {
+	// Get the value from the config
+	val, ok := cfg[apiField]
+	if !ok || val == nil {
+		fieldValue.Set(reflect.Zero(fieldValue.Type()))
+		return
+	}
+
+	// The API response should be a map[string]any where values are maps of field values
+	apiMap, ok := val.(map[string]any)
+	if !ok {
+		tflog.Debug(ctx, fmt.Sprintf("Expected map[string]any for nested field '%s', got %T", apiField, val))
+		fieldValue.Set(reflect.Zero(fieldValue.Type()))
+		return
+	}
+
+	if len(apiMap) == 0 {
+		fieldValue.Set(reflect.Zero(fieldValue.Type()))
+		return
+	}
+
+	// Create a new map of the correct type
+	elemType := fieldValue.Type().Elem()
+	newMap := reflect.MakeMap(fieldValue.Type())
+
+	for key, itemValue := range apiMap {
+		// Each item should be a map[string]any representing the struct fields
+		itemMap, ok := itemValue.(map[string]any)
+		if !ok {
+			tflog.Debug(ctx, fmt.Sprintf("Expected map[string]any for nested item '%s', got %T", key, itemValue))
+			continue
+		}
+
+		// Create a new instance of the struct
+		newStruct := reflect.New(elemType).Elem()
+		r.setNestedStructFields(ctx, itemMap, newStruct)
+		newMap.SetMapIndex(reflect.ValueOf(key), newStruct)
+	}
+
+	fieldValue.Set(newMap)
+}
+
+// setNestedStructFields sets fields on a struct from a map using tfsdk tags.
+func (r *BaseConnectorResource) setNestedStructFields(ctx context.Context, itemMap map[string]any, structValue reflect.Value) {
+	t := structValue.Type()
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		tag := field.Tag.Get("tfsdk")
+		if tag == "" || tag == "-" {
+			continue
+		}
+
+		fieldVal := structValue.Field(i)
+		if !fieldVal.CanSet() {
+			continue
+		}
+
+		// Get the value from the map
+		val, ok := itemMap[tag]
+		if !ok || val == nil {
+			// Set null value based on type
+			switch fieldVal.Type() {
+			case reflect.TypeOf(types.String{}):
+				fieldVal.Set(reflect.ValueOf(types.StringNull()))
+			case reflect.TypeOf(types.Int64{}):
+				fieldVal.Set(reflect.ValueOf(types.Int64Null()))
+			case reflect.TypeOf(types.Bool{}):
+				fieldVal.Set(reflect.ValueOf(types.BoolNull()))
+			case reflect.TypeOf(types.Float64{}):
+				fieldVal.Set(reflect.ValueOf(types.Float64Null()))
+			}
+			continue
+		}
+
+		// Set the value based on the field type
+		switch fieldVal.Type() {
+		case reflect.TypeOf(types.String{}):
+			if strVal, ok := val.(string); ok {
+				fieldVal.Set(reflect.ValueOf(types.StringValue(strVal)))
+			} else {
+				fieldVal.Set(reflect.ValueOf(types.StringNull()))
+			}
+		case reflect.TypeOf(types.Int64{}):
+			switch v := val.(type) {
+			case float64:
+				fieldVal.Set(reflect.ValueOf(types.Int64Value(int64(v))))
+			case int64:
+				fieldVal.Set(reflect.ValueOf(types.Int64Value(v)))
+			case int:
+				fieldVal.Set(reflect.ValueOf(types.Int64Value(int64(v))))
+			default:
+				fieldVal.Set(reflect.ValueOf(types.Int64Null()))
+			}
+		case reflect.TypeOf(types.Bool{}):
+			if boolVal, ok := val.(bool); ok {
+				fieldVal.Set(reflect.ValueOf(types.BoolValue(boolVal)))
+			} else {
+				fieldVal.Set(reflect.ValueOf(types.BoolNull()))
+			}
+		case reflect.TypeOf(types.Float64{}):
+			if floatVal, ok := val.(float64); ok {
+				fieldVal.Set(reflect.ValueOf(types.Float64Value(floatVal)))
+			} else {
+				fieldVal.Set(reflect.ValueOf(types.Float64Null()))
+			}
+		default:
+			tflog.Debug(ctx, fmt.Sprintf("Unsupported nested field type: %s for field %s", fieldVal.Type(), tag))
+		}
 	}
 }
 
