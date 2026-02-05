@@ -587,9 +587,21 @@ func (r *BaseConnectorResource) modelToConfigMap(ctx context.Context, model any)
 		if apiValue != nil {
 			// Check if this field should be serialized as a JSON string
 			if r.isJSONStringField(tfAttr, jsonStringFields) {
-				// If apiValue is a map, serialize it to JSON string
+				// If apiValue is a map, serialize it to JSON string with double-encoding
+				// The API expects: {"topic":"{\"key\":\"value\"}"} (inner values are JSON strings)
 				if mapVal, isMap := apiValue.(map[string]map[string]any); isMap {
-					jsonBytes, err := json.Marshal(mapVal)
+					// First, convert each inner map to a JSON string
+					stringifiedMap := make(map[string]string)
+					for key, innerMap := range mapVal {
+						innerBytes, err := json.Marshal(innerMap)
+						if err != nil {
+							tflog.Warn(ctx, fmt.Sprintf("Failed to serialize inner map for %s.%s to JSON: %s", tfAttr, key, err))
+							continue
+						}
+						stringifiedMap[key] = string(innerBytes)
+					}
+					// Then marshal the outer map with string values
+					jsonBytes, err := json.Marshal(stringifiedMap)
 					if err != nil {
 						tflog.Warn(ctx, fmt.Sprintf("Failed to serialize %s to JSON: %s", tfAttr, err))
 					} else {
@@ -910,10 +922,23 @@ func (r *BaseConnectorResource) setNestedMapValue(ctx context.Context, cfg map[s
 	newMap := reflect.MakeMap(fieldValue.Type())
 
 	for key, itemValue := range apiMap {
-		// Each item should be a map[string]any representing the struct fields
-		itemMap, ok := itemValue.(map[string]any)
-		if !ok {
-			tflog.Debug(ctx, fmt.Sprintf("Expected map[string]any for nested item '%s', got %T", key, itemValue))
+		// Each item could be a map[string]any or a JSON string (double-encoded format)
+		// The API returns: {"topic":"{\"key\":\"value\"}"} (inner values are JSON strings)
+		var itemMap map[string]any
+		switch v := itemValue.(type) {
+		case map[string]any:
+			itemMap = v
+		case string:
+			// Try to parse as JSON string (double-encoded format)
+			if v == "" {
+				continue
+			}
+			if err := json.Unmarshal([]byte(v), &itemMap); err != nil {
+				tflog.Debug(ctx, fmt.Sprintf("Failed to parse JSON string for nested item '%s': %s", key, err))
+				continue
+			}
+		default:
+			tflog.Debug(ctx, fmt.Sprintf("Expected map[string]any or JSON string for nested item '%s', got %T", key, itemValue))
 			continue
 		}
 
