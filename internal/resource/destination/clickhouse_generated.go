@@ -12,8 +12,11 @@ import (
 // ClickHouseConfig implements the ConnectorConfig interface for ClickHouse destinations.
 type ClickHouseConfig struct{}
 
-// Ensure ClickHouseConfig implements ConnectorConfig.
-var _ connector.ConnectorConfig = (*ClickHouseConfig)(nil)
+// Ensure ClickHouseConfig implements ConnectorConfig and ConnectorConfigWithJSONStringFields.
+var (
+	_ connector.ConnectorConfig                   = (*ClickHouseConfig)(nil)
+	_ connector.ConnectorConfigWithJSONStringFields = (*ClickHouseConfig)(nil)
+)
 
 // GetSchema returns the Terraform schema for ClickHouse destination.
 func (c *ClickHouseConfig) GetSchema() schema.Schema {
@@ -43,6 +46,12 @@ func (c *ClickHouseConfig) GetResourceName() string {
 // NewModelInstance returns a new instance of the ClickHouse model.
 func (c *ClickHouseConfig) NewModelInstance() any {
 	return &generated.DestinationClickhouseModel{}
+}
+
+// GetJSONStringFields returns fields that should be serialized as JSON strings.
+// topics_config_map uses a nested map in Terraform but the backend expects a JSON string.
+func (c *ClickHouseConfig) GetJSONStringFields() []string {
+	return []string{"topics_config_map"}
 }
 
 // NewClickHouseResource creates a new ClickHouse destination resource.
