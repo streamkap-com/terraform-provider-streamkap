@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -25,8 +26,9 @@ type TransformEnrichModel struct {
 	TransformsOutputTopicPattern        types.String   `tfsdk:"transforms_output_topic_pattern"`
 	TransformsInputJobParallelism       types.Int64    `tfsdk:"transforms_input_job_parallelism"`
 	TransformsInputSerializationFormat  types.String   `tfsdk:"transforms_input_serialization_format"`
-	TransformsOutputSerializationFormat types.String   `tfsdk:"transforms_output_serialization_format"`
-	Timeouts                            timeouts.Value `tfsdk:"timeouts"`
+	TransformsOutputSerializationFormat types.String             `tfsdk:"transforms_output_serialization_format"`
+	ImplementationJSON                  jsontypes.Normalized     `tfsdk:"implementation_json"`
+	Timeouts                            timeouts.Value           `tfsdk:"timeouts"`
 }
 
 // TransformEnrichSchema returns the Terraform schema for the enrich transform.

@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -25,8 +26,9 @@ type TransformUnNestingModel struct {
 	TransformsInputSerializationFormat  types.String   `tfsdk:"transforms_input_serialization_format"`
 	TransformsOutputSerializationFormat types.String   `tfsdk:"transforms_output_serialization_format"`
 	TransformsInputJobParallelism       types.Int64    `tfsdk:"transforms_input_job_parallelism"`
-	TransformsLanguage                  types.String   `tfsdk:"transforms_language"`
-	Timeouts                            timeouts.Value `tfsdk:"timeouts"`
+	TransformsLanguage                  types.String             `tfsdk:"transforms_language"`
+	ImplementationJSON                  jsontypes.Normalized     `tfsdk:"implementation_json"`
+	Timeouts                            timeouts.Value           `tfsdk:"timeouts"`
 }
 
 // TransformUnNestingSchema returns the Terraform schema for the un_nesting transform.

@@ -28,9 +28,10 @@ func TestAccTransformRollupResource_basic(t *testing.T) {
 			},
 			// ImportState
 			{
-				ResourceName:      "streamkap_transform_rollup.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "streamkap_transform_rollup.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"implementation_json"},
 			},
 			// Update
 			{

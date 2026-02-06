@@ -38,8 +38,6 @@ resource "streamkap_transform_map_filter" "example" {
         return inputObj;
       }
     JS
-    key_transform   = null
-    topic_transform = null
   })
 }
 

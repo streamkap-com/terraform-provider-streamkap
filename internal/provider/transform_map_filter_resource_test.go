@@ -23,9 +23,10 @@ func TestAccTransformMapFilterResource_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      "streamkap_transform_map_filter.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "streamkap_transform_map_filter.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"implementation_json"},
 			},
 		},
 	})
@@ -60,7 +61,7 @@ func TestAccTransformMapFilterResource_withImplementation(t *testing.T) {
 				ResourceName:            "streamkap_transform_map_filter.test_impl",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"implementation_json"}, // Implementation may have formatting differences
+				ImportStateVerifyIgnore: []string{"implementation_json"},
 			},
 		},
 	})
@@ -92,8 +93,6 @@ resource "streamkap_transform_map_filter" "test_impl" {
   implementation_json = jsonencode({
     language        = "JAVASCRIPT"
     value_transform = "function _streamkap_transform(inputObj) { return inputObj; }"
-    key_transform   = null
-    topic_transform = null
   })
 }
 `
@@ -112,8 +111,6 @@ resource "streamkap_transform_map_filter" "test_impl" {
   implementation_json = jsonencode({
     language        = "JAVASCRIPT"
     value_transform = "function _streamkap_transform(inputObj) { inputObj.processed = true; return inputObj; }"
-    key_transform   = null
-    topic_transform = null
   })
 }
 `

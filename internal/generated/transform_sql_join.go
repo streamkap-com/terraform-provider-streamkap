@@ -3,6 +3,7 @@
 package generated
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -26,8 +27,9 @@ type TransformSQLJoinModel struct {
 	TransformsTopicTtl                  types.String   `tfsdk:"transforms_topic_ttl"`
 	TransformsInputSerializationFormat  types.String   `tfsdk:"transforms_input_serialization_format"`
 	TransformsOutputSerializationFormat types.String   `tfsdk:"transforms_output_serialization_format"`
-	TransformsInputJobParallelism       types.Int64    `tfsdk:"transforms_input_job_parallelism"`
-	Timeouts                            timeouts.Value `tfsdk:"timeouts"`
+	TransformsInputJobParallelism       types.Int64              `tfsdk:"transforms_input_job_parallelism"`
+	ImplementationJSON                  jsontypes.Normalized     `tfsdk:"implementation_json"`
+	Timeouts                            timeouts.Value           `tfsdk:"timeouts"`
 }
 
 // TransformSQLJoinSchema returns the Terraform schema for the sql_join transform.

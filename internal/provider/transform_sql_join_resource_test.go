@@ -21,9 +21,10 @@ func TestAccTransformSqlJoinResource_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      "streamkap_transform_sql_join.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "streamkap_transform_sql_join.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"implementation_json"},
 			},
 		},
 	})
