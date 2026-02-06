@@ -574,6 +574,11 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 	imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"] = true
 	imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"] = true
 
+	// Transforms need jsontypes for the implementation_json field added by base.go
+	if g.entityType == "transform" {
+		imports["github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"] = true
+	}
+
 	// Process deprecated field aliases (add to model only, not schema or field mappings)
 	deprecations := g.getDeprecationsForConnector(connectorCode)
 	for _, dep := range deprecations {
@@ -1124,6 +1129,9 @@ type {{ .ModelName }} struct {
 {{- range .DeprecatedFields }}
 	{{ .GoFieldName }} {{ .GoType }} ` + "`" + `tfsdk:"{{ .TfsdkTag }}"` + "`" + `
 {{- end }}
+{{- end }}
+{{- if eq .EntityType "transform" }}
+	ImplementationJSON jsontypes.Normalized ` + "`" + `tfsdk:"implementation_json"` + "`" + `
 {{- end }}
 	Timeouts timeouts.Value ` + "`" + `tfsdk:"timeouts"` + "`" + `
 }

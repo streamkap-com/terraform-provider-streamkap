@@ -7,6 +7,12 @@
       "computed": true,
       "sensitive": false
     },
+    "implementation_json": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "name": {
       "required": true,
       "optional": false,
@@ -16,6 +22,12 @@
     "transform_type": {
       "required": false,
       "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_input_job_parallelism": {
+      "required": false,
+      "optional": true,
       "computed": true,
       "sensitive": false
     },

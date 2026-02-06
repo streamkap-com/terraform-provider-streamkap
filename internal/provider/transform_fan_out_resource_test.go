@@ -28,9 +28,10 @@ func TestAccTransformFanOutResource_basic(t *testing.T) {
 			},
 			// ImportState
 			{
-				ResourceName:      "streamkap_transform_fan_out.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "streamkap_transform_fan_out.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"implementation_json"},
 			},
 			// Update
 			{

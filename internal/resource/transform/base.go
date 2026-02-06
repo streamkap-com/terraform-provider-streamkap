@@ -232,17 +232,17 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 			return
 		}
 
-		// Set the implementation_json in state
+		// Set the user's implementation_json in state
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), implementationJSON)...)
 	} else {
 		// No implementation provided - read from API response and set as computed
 		if len(transform.Implementation) > 0 {
-			implBytes, err := json.Marshal(transform.Implementation)
+			implJSON, err := marshalImplementation(transform.Implementation)
 			if err != nil {
 				tflog.Warn(ctx, fmt.Sprintf("Failed to marshal implementation to JSON: %s", err))
 				resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
 			} else {
-				resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedValue(string(implBytes)))...)
+				resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedValue(implJSON))...)
 			}
 		} else {
 			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
@@ -308,12 +308,12 @@ func (r *BaseTransformResource) Read(ctx context.Context, req resource.ReadReque
 
 	// Read implementation_json from API and set in state
 	if len(transform.Implementation) > 0 {
-		implBytes, err := json.Marshal(transform.Implementation)
+		implJSON, err := marshalImplementation(transform.Implementation)
 		if err != nil {
 			tflog.Warn(ctx, fmt.Sprintf("Failed to marshal implementation to JSON: %s", err))
 			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
 		} else {
-			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedValue(string(implBytes)))...)
+			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedValue(implJSON))...)
 		}
 	} else {
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
@@ -475,12 +475,12 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 	} else {
 		// No implementation in plan - read from API response
 		if len(transform.Implementation) > 0 {
-			implBytes, err := json.Marshal(transform.Implementation)
+			implJSON, err := marshalImplementation(transform.Implementation)
 			if err != nil {
 				tflog.Warn(ctx, fmt.Sprintf("Failed to marshal implementation to JSON: %s", err))
 				resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
 			} else {
-				resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedValue(string(implBytes)))...)
+				resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedValue(implJSON))...)
 			}
 		} else {
 			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
@@ -550,6 +550,38 @@ func (r *BaseTransformResource) Delete(ctx context.Context, req resource.DeleteR
 // ImportState imports an existing resource by ID.
 func (r *BaseTransformResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// stripNullValues recursively removes null values from a map.
+// This is needed because the API returns extra null fields in implementation JSON
+// that weren't in the original request, causing spurious diffs.
+func stripNullValues(m map[string]any) map[string]any {
+	result := make(map[string]any, len(m))
+	for k, v := range m {
+		if v == nil {
+			continue
+		}
+		if nested, ok := v.(map[string]any); ok {
+			stripped := stripNullValues(nested)
+			if len(stripped) > 0 {
+				result[k] = stripped
+			}
+		} else {
+			result[k] = v
+		}
+	}
+	return result
+}
+
+// marshalImplementation converts an implementation map to a JSON string,
+// stripping null values to prevent spurious diffs from API-added defaults.
+func marshalImplementation(impl map[string]any) (string, error) {
+	stripped := stripNullValues(impl)
+	implBytes, err := json.Marshal(stripped)
+	if err != nil {
+		return "", err
+	}
+	return string(implBytes), nil
 }
 
 // modelToConfigMap converts a model struct to a config map using the field mappings.

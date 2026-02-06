@@ -21,9 +21,10 @@ func TestAccTransformEnrichResource_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      "streamkap_transform_enrich.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "streamkap_transform_enrich.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"implementation_json"},
 			},
 		},
 	})

@@ -7,6 +7,12 @@
       "computed": true,
       "sensitive": false
     },
+    "implementation_json": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "name": {
       "required": true,
       "optional": false,
@@ -19,6 +25,18 @@
       "computed": true,
       "sensitive": false
     },
+    "transforms_input_job_parallelism": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_input_serialization_format": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "transforms_input_topic_pattern": {
       "required": false,
       "optional": true,
@@ -26,6 +44,12 @@
       "sensitive": false
     },
     "transforms_language": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_output_serialization_format": {
       "required": false,
       "optional": true,
       "computed": true,
