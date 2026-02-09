@@ -15,14 +15,14 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Resources                                   │
 ├──────────────────┬──────────────────┬──────────────────┬────────┤
-│  Sources (20)    │  Destinations(23)│  Transforms (8)  │ Other  │
+│  Sources (20)    │  Destinations(23)│  Transforms (6)  │ Other  │
 │  PostgreSQL      │  Snowflake       │  MapFilter       │Pipeline│
 │  MySQL, MongoDB  │  ClickHouse      │  Enrich          │ Topic  │
 │  DynamoDB        │  Databricks      │  EnrichAsync     │  Tag   │
 │  SQLServer       │  PostgreSQL, S3  │  SQLJoin         │        │
 │  KafkaDirect     │  Iceberg, Kafka  │  Rollup, FanOut  │        │
-│  Oracle, Redis   │  BigQuery, GCS   │  ToastHandling   │        │
-│  + 12 more...    │  + 15 more...    │  UnNesting       │        │
+│  Oracle, Redis   │  BigQuery, GCS   │                  │        │
+│  + 12 more...    │  + 15 more...    │                  │        │
 └──────────────────┴──────────────────┴──────────────────┴────────┘
               │
               ▼

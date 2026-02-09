@@ -14,15 +14,13 @@ Terraform provider for [Streamkap](https://streamkap.com) - a real-time data str
 - Azure Blob, BigQuery, CockroachDB, DB2, GCS, HTTP Sink, Kafka Direct
 - Motherduck, MySQL, Oracle, R2, Redis, Redshift, SQL Server, Starburst, Weaviate
 
-### Transform Resources (8 available)
+### Transform Resources (6 available)
 - Map Filter
 - Enrich
 - Enrich Async
 - SQL Join
 - Rollup
 - Fan Out
-- Toast Handling
-- UnNesting
 
 ### Other Resources
 - Pipelines

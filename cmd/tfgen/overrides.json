@@ -52,17 +52,5 @@
       ]
     }
   ],
-  "additional_fields": [
-    {
-      "connector": "un_nesting",
-      "entity_type": "transforms",
-      "api_field_name": "transforms.language",
-      "terraform_attr_name": "transforms_language",
-      "type": "string",
-      "required": true,
-      "default": "Python",
-      "description": "Implementation language",
-      "raw_values": ["JavaScript", "Python"]
-    }
-  ]
+  "additional_fields": []
 }

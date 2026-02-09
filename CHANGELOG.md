@@ -48,9 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Entity config schema audit (`docs/audits/entity-config-schema-audit.md`)
   - Backend code reference guide (`docs/audits/backend-code-reference.md`)
 - **Examples**
-  - Examples for ToastHandling and UnNesting transforms
   - Examples for Weaviate destination
-  - All 20 sources, 23 destinations, and 8 transforms now have basic.tf and complete.tf examples
+  - All 20 sources, 23 destinations, and 6 transforms now have basic.tf and complete.tf examples
 - **API Client Enhancements**
   - ListSources, ListDestinations, ListTransforms, ListPipelines methods for sweepers
 - **Full Connector Coverage** - All 42 connectors now exposed:
