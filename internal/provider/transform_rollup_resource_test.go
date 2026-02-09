@@ -110,7 +110,6 @@ resource "streamkap_transform_rollup" "test_impl" {
   transforms_output_serialization_format = "Avro"
 
   implementation_json = jsonencode({
-    language = "SQL"
     inputTables = [
       {
         name              = "orders"
