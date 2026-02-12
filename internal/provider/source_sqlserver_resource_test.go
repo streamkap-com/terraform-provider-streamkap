@@ -32,9 +32,9 @@ resource "streamkap_source_sqlserver" "test" {
 	name                                         = "test-source-sqlserver"
 	database_hostname                            = var.source_sqlserver_hostname
 	database_port                                = 1433
-	database_user                                = "admin"
+	database_user                                = "sa"
 	database_password                            = var.source_sqlserver_password
-	database_dbname                              = "sqlserverdemo"
+	database_names                              = "demo"
 	schema_include_list                          = "dbo"
 	table_include_list                           = "dbo.Orders,dbo.Customers"
 	signal_data_collection_schema_or_database    = "streamkap"
@@ -48,9 +48,9 @@ resource "streamkap_source_sqlserver" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "name", "test-source-sqlserver"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_hostname", sourceSQLServerHostname),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_port", "1433"),
-					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_user", "admin"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_user", "sa"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_password", sourceSQLServerPassword),
-					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_dbname", "sqlserverdemo"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_names", "demo"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "schema_include_list", "dbo"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "table_include_list", "dbo.Orders,dbo.Customers"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "signal_data_collection_schema_or_database", "streamkap"),
@@ -81,9 +81,9 @@ resource "streamkap_source_sqlserver" "test" {
 	name                                         = "test-source-sqlserver-updated"
 	database_hostname                            = var.source_sqlserver_hostname
 	database_port                                = 1433
-	database_user                                = "admin"
+	database_user                                = "sa"
 	database_password                            = var.source_sqlserver_password
-	database_dbname                              = "sqlserverdemo"
+	database_names                              = "demo"
 	schema_include_list                          = "dbo"
 	table_include_list                           = "dbo.Orders, dbo.Customers"
 	signal_data_collection_schema_or_database    = "streamkap"
@@ -98,9 +98,9 @@ resource "streamkap_source_sqlserver" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "name", "test-source-sqlserver-updated"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_hostname", sourceSQLServerHostname),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_port", "1433"),
-					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_user", "admin"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_user", "sa"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_password", sourceSQLServerPassword),
-					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_dbname", "sqlserverdemo"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_names", "demo"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "schema_include_list", "dbo"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "table_include_list", "dbo.Orders, dbo.Customers"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "signal_data_collection_schema_or_database", "streamkap"),
@@ -125,9 +125,9 @@ resource "streamkap_source_sqlserver" "test" {
 	name                                         = "test-source-sqlserver-exclude"
 	database_hostname                            = var.source_sqlserver_hostname
 	database_port                                = 1433
-	database_user                                = "admin"
+	database_user                                = "sa"
 	database_password                            = var.source_sqlserver_password
-	database_dbname                              = "sqlserverdemo"
+	database_names                              = "demo"
 	schema_include_list                          = "dbo"
 	table_include_list                           = "dbo.Orders, dbo.Customers"
 	signal_data_collection_schema_or_database    = "streamkap"
@@ -142,9 +142,9 @@ resource "streamkap_source_sqlserver" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "name", "test-source-sqlserver-exclude"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_hostname", sourceSQLServerHostname),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_port", "1433"),
-					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_user", "admin"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_user", "sa"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_password", sourceSQLServerPassword),
-					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_dbname", "sqlserverdemo"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_names", "demo"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "schema_include_list", "dbo"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "table_include_list", "dbo.Orders, dbo.Customers"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "signal_data_collection_schema_or_database", "streamkap"),
@@ -174,9 +174,9 @@ resource "streamkap_source_sqlserver" "test" {
 	name                                         = "test-source-sqlserver-ssh"
 	database_hostname                            = var.source_sqlserver_hostname
 	database_port                                = 1433
-	database_user                                = "admin"
+	database_user                                = "sa"
 	database_password                            = var.source_sqlserver_password
-	database_dbname                              = "sqlserverdemo"
+	database_names                              = "demo"
 	schema_include_list                          = "dbo"
 	table_include_list                           = "dbo.Orders, dbo.Customers"
 	signal_data_collection_schema_or_database    = "streamkap"
@@ -184,7 +184,7 @@ resource "streamkap_source_sqlserver" "test" {
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = null
 	binary_handling_mode                         = "bytes"
-	ssh_enabled                                  = true
+	ssh_enabled                                  = false
 	ssh_host                                     = var.source_sqlserver_ssh_host
 	ssh_port                                     = "22"
 	ssh_user                                     = "streamkap"
@@ -194,15 +194,15 @@ resource "streamkap_source_sqlserver" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "name", "test-source-sqlserver-ssh"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_hostname", sourceSQLServerHostname),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_port", "1433"),
-					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_user", "admin"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_user", "sa"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_password", sourceSQLServerPassword),
-					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_dbname", "sqlserverdemo"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_names", "demo"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "schema_include_list", "dbo"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "table_include_list", "dbo.Orders, dbo.Customers"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "signal_data_collection_schema_or_database", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "heartbeat_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "binary_handling_mode", "bytes"),
-					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "ssh_enabled", "true"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "ssh_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "ssh_host", sourceSQLServerSSHHost),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "ssh_port", "22"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "ssh_user", "streamkap"),

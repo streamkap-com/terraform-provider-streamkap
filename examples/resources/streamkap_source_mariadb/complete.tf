@@ -60,7 +60,7 @@ resource "streamkap_source_mariadb" "example-source-mariadb" {
   binary_handling_mode = "bytes" # Options: bytes, base64, base64-url-safe, hex
 
   # SSL/TLS mode
-  database_ssl_mode = "required" # Options: required, disabled
+  database_ssl_mode = "disable" # Options: disable, trust
 
   # Column filtering (optional)
   column_exclude_list = "ecommerce.customers.ssn"

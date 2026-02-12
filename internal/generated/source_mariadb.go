@@ -174,7 +174,7 @@ func SourceMariadbSchema() schema.Schema {
 				MarkdownDescription: "Enables SSL/TLS in a specific mode Defaults to `required`. Valid values: `required`, `disabled`.",
 				Default:             stringdefault.StaticString("required"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("required", "disabled"),
+					stringvalidator.OneOf("disable", "trust"),
 				},
 			},
 			"ssh_enabled": schema.BoolAttribute{

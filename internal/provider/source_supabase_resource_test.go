@@ -46,7 +46,7 @@ resource "streamkap_source_supabase" "test" {
 	heartbeat_enabled                            = true
 	heartbeat_data_collection_schema_or_database = "public"
 	slot_name                                    = "streamkap_pgoutput_slot_n"
-	publication_name                             = "streamkap_pub_n"
+	publication_name                             = "streamkap_pub"
 	binary_handling_mode                         = "bytes"
 	include_source_db_name_in_table_name         = false
 	ssh_enabled                                  = false

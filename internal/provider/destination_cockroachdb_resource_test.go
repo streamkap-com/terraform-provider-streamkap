@@ -51,7 +51,7 @@ resource "streamkap_destination_cockroachdb" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "database_hostname", destinationCockroachdbHostname),
 					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "database_port", "26257"),
 					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "database_database", "defaultdb"),
-					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "connection_username", "streamkap"),
+					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "connection_username", "wasi"),
 					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "connection_password", destinationCockroachdbPassword),
 					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "table_name_prefix", "public"),
 					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "schema_evolution", "basic"),

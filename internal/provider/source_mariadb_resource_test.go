@@ -35,16 +35,16 @@ resource "streamkap_source_mariadb" "test" {
 	name                                         = "tf-acc-test-source-mariadb"
 	database_hostname                            = var.source_mariadb_hostname
 	database_port                                = 3306
-	database_user                                = "streamkap"
+	database_user                                = "root"
 	database_password                            = var.source_mariadb_password
-	database_include_list                        = "streamkap"
-	table_include_list                           = "streamkap.customer"
+	database_include_list                        = "sandbox"
+	table_include_list                           = "sandbox.customer"
 	heartbeat_enabled                            = true
-	heartbeat_data_collection_schema_or_database = "streamkap"
+	heartbeat_data_collection_schema_or_database = "sandbox"
 	database_connection_time_zone                = "SERVER"
 	snapshot_gtid                                = "Yes"
 	binary_handling_mode                         = "bytes"
-	database_ssl_mode                            = "required"
+	database_ssl_mode                            = "disable"
 	ssh_enabled                                  = false
 }
 `,
@@ -52,16 +52,16 @@ resource "streamkap_source_mariadb" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "name", "tf-acc-test-source-mariadb"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_hostname", sourceMariaDBHostname),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_port", "3306"),
-					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_user", "streamkap"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_user", "root"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_password", sourceMariaDBPassword),
-					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_include_list", "streamkap"),
-					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "table_include_list", "streamkap.customer"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_include_list", "sandbox"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "table_include_list", "sandbox.customer"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "heartbeat_enabled", "true"),
-					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "heartbeat_data_collection_schema_or_database", "streamkap"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "heartbeat_data_collection_schema_or_database", "sandbox"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_connection_time_zone", "SERVER"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "snapshot_gtid", "Yes"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "binary_handling_mode", "bytes"),
-					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_ssl_mode", "required"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_ssl_mode", "disable"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "ssh_enabled", "false"),
 				),
 			},
@@ -87,22 +87,22 @@ resource "streamkap_source_mariadb" "test" {
 	name                                         = "tf-acc-test-source-mariadb-updated"
 	database_hostname                            = var.source_mariadb_hostname
 	database_port                                = 3306
-	database_user                                = "streamkap"
+	database_user                                = "root"
 	database_password                            = var.source_mariadb_password
-	database_include_list                        = "streamkap"
-	table_include_list                           = "streamkap.customer,streamkap.orders"
+	database_include_list                        = "sandbox"
+	table_include_list                           = "sandbox.customer,sandbox.orders"
 	heartbeat_enabled                            = false
-	heartbeat_data_collection_schema_or_database = "streamkap"
+	heartbeat_data_collection_schema_or_database = "sandbox"
 	database_connection_time_zone                = "UTC"
 	snapshot_gtid                                = "No"
 	binary_handling_mode                         = "base64"
-	database_ssl_mode                            = "required"
+	database_ssl_mode                            = "disable"
 	ssh_enabled                                  = false
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "name", "tf-acc-test-source-mariadb-updated"),
-					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "table_include_list", "streamkap.customer,streamkap.orders"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "table_include_list", "sandbox.customer,sandbox.orders"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "heartbeat_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_connection_time_zone", "UTC"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "snapshot_gtid", "No"),

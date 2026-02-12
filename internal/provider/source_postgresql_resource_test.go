@@ -32,7 +32,7 @@ resource "streamkap_source_postgresql" "test" {
 	name                                         = "test-source-postgresql"
 	database_hostname                            = var.source_postgresql_hostname
 	database_port                                = "5432"
-	database_user                                = "postgresql"
+	database_user                                = "streamkap"
 	database_password                            = var.source_postgresql_password
 	database_dbname                              = "postgres"
 	snapshot_read_only                           = "No"
@@ -54,7 +54,7 @@ resource "streamkap_source_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "name", "test-source-postgresql"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_hostname", sourcePostgreSQLHostname),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_port", "5432"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_user", "postgresql"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_user", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_password", sourcePostgreSQLPassword),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_dbname", "postgres"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "snapshot_read_only", "No"),
@@ -94,7 +94,7 @@ resource "streamkap_source_postgresql" "test" {
 	name                                         = "test-source-postgresql-updated"
 	database_hostname                            = var.source_postgresql_hostname
 	database_port                                = "5432"
-	database_user                                = "postgresql"
+	database_user                                = "streamkap"
 	database_password                            = var.source_postgresql_password
 	database_dbname                              = "postgres"
 	snapshot_read_only                           = "Yes"
@@ -116,7 +116,7 @@ resource "streamkap_source_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "name", "test-source-postgresql-updated"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_hostname", sourcePostgreSQLHostname),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_port", "5432"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_user", "postgresql"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_user", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_password", sourcePostgreSQLPassword),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_dbname", "postgres"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "snapshot_read_only", "Yes"),
@@ -149,7 +149,7 @@ resource "streamkap_source_postgresql" "test" {
 	name                                         = "test-source-postgresql-exclude"
 	database_hostname                            = var.source_postgresql_hostname
 	database_port                                = "5432"
-	database_user                                = "postgresql"
+	database_user                                = "streamkap"
 	database_password                            = var.source_postgresql_password
 	database_dbname                              = "postgres"
 	snapshot_read_only                           = "No"
@@ -171,7 +171,7 @@ resource "streamkap_source_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "name", "test-source-postgresql-exclude"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_hostname", sourcePostgreSQLHostname),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_port", "5432"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_user", "postgresql"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_user", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_password", sourcePostgreSQLPassword),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_dbname", "postgres"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "snapshot_read_only", "No"),
@@ -210,7 +210,7 @@ resource "streamkap_source_postgresql" "test" {
 	name                                         = "test-source-postgresql-ssh"
 	database_hostname                            = var.source_postgresql_hostname
 	database_port                                = "5432"
-	database_user                                = "postgresql"
+	database_user                                = "streamkap"
 	database_password                            = var.source_postgresql_password
 	database_dbname                              = "postgres"
 	snapshot_read_only                           = "No"
@@ -235,7 +235,7 @@ resource "streamkap_source_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "name", "test-source-postgresql-ssh"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_hostname", sourcePostgreSQLHostname),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_port", "5432"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_user", "postgresql"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_user", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_password", sourcePostgreSQLPassword),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_dbname", "postgres"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "snapshot_read_only", "No"),
@@ -278,7 +278,7 @@ resource "streamkap_source_postgresql" "test_timeout" {
 	name              = "test-source-postgresql-timeout"
 	database_hostname = var.source_postgresql_hostname
 	database_port     = "5432"
-	database_user     = "postgresql"
+	database_user     = "streamkap"
 	database_password = var.source_postgresql_password
 	database_dbname   = "postgres"
 	database_sslmode  = "require"

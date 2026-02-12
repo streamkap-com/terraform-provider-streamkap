@@ -39,8 +39,8 @@ resource "streamkap_source_mongodb" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "signal_data_collection_schema_or_database", "Test"),
 					// Check computed and default values
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "connector", "mongodb"),
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "array_encoding", "array_string"),
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "nested_document_encoding", "document"),
+					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "transforms_unwrap_array_encoding", "array_string"),
+					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "transforms_unwrap_document_encoding", "document"),
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "ssh_enabled", "false"),
 				),
 			},
@@ -64,8 +64,8 @@ resource "streamkap_source_mongodb" "test" {
 	database_include_list                        = "Test"
 	collection_include_list                      = "Test.test_data,Test.test_data2,Test.test_data3"
 	signal_data_collection_schema_or_database    = "Test"
-	array_encoding                               = "array"
-	nested_document_encoding                     = "string"
+	transforms_unwrap_array_encoding                               = "array"
+	transforms_unwrap_document_encoding                     = "string"
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -74,8 +74,8 @@ resource "streamkap_source_mongodb" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "database_include_list", "Test"),
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "collection_include_list", "Test.test_data,Test.test_data2,Test.test_data3"),
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "signal_data_collection_schema_or_database", "Test"),
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "array_encoding", "array"),
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "nested_document_encoding", "string"),
+					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "transforms_unwrap_array_encoding", "array"),
+					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "transforms_unwrap_document_encoding", "string"),
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "ssh_enabled", "false"),
 				),
 			},
@@ -114,8 +114,8 @@ resource "streamkap_source_mongodb" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "ssh_port", "22"),
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "ssh_user", "streamkap"),
 					// Check that optional fields revert to their default values
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "array_encoding", "array_string"),
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "nested_document_encoding", "document"),
+					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "transforms_unwrap_array_encoding", "array_string"),
+					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "transforms_unwrap_document_encoding", "document"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

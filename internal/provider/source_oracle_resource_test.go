@@ -35,9 +35,9 @@ resource "streamkap_source_oracle" "test" {
 	name                                         = "tf-acc-test-source-oracle"
 	database_hostname                            = var.source_oracle_hostname
 	database_port                                = 1521
-	database_user                                = "streamkap"
+	database_user                                = "system"
 	database_password                            = var.source_oracle_password
-	database_dbname                              = "ORCL"
+	database_dbname                              = "FREE"
 	schema_include_list                          = "STREAMKAP"
 	table_include_list                           = "STREAMKAP.CUSTOMER"
 	signal_data_collection_schema_or_database    = "STREAMKAP"
@@ -51,9 +51,9 @@ resource "streamkap_source_oracle" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "name", "tf-acc-test-source-oracle"),
 					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "database_hostname", sourceOracleHostname),
 					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "database_port", "1521"),
-					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "database_user", "streamkap"),
+					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "database_user", "system"),
 					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "database_password", sourceOraclePassword),
-					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "database_dbname", "ORCL"),
+					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "database_dbname", "FREE"),
 					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "schema_include_list", "STREAMKAP"),
 					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "table_include_list", "STREAMKAP.CUSTOMER"),
 					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "signal_data_collection_schema_or_database", "STREAMKAP"),
@@ -85,9 +85,9 @@ resource "streamkap_source_oracle" "test" {
 	name                                         = "tf-acc-test-source-oracle-updated"
 	database_hostname                            = var.source_oracle_hostname
 	database_port                                = 1521
-	database_user                                = "streamkap"
+	database_user                                = "system"
 	database_password                            = var.source_oracle_password
-	database_dbname                              = "ORCL"
+	database_dbname                              = "FREE"
 	schema_include_list                          = "STREAMKAP"
 	table_include_list                           = "STREAMKAP.CUSTOMER,STREAMKAP.ORDERS"
 	signal_data_collection_schema_or_database    = "STREAMKAP"
