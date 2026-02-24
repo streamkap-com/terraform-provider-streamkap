@@ -25,6 +25,12 @@
       "computed": false,
       "sensitive": false
     },
+    "iceberg_catalog_rest_provider": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "iceberg_catalog_s3_access_key_id": {
       "required": false,
       "optional": true,
@@ -32,6 +38,12 @@
       "sensitive": false
     },
     "iceberg_catalog_s3_secret_access_key": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": true
+    },
+    "iceberg_catalog_token": {
       "required": false,
       "optional": true,
       "computed": false,

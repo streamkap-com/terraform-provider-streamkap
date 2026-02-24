@@ -19,7 +19,7 @@ resource "streamkap_source_kafkadirect" "example-source-kafkadirect" {
   name = "example-source-kafkadirect"
 
   # Topic configuration
-  topic_prefix       = "sample-topic_"                                              # Prefix for topic names
+  topic_prefix       = "sample-topic_"                                               # Prefix for topic names
   topic_include_list = "sample-topic_topic1,sample-topic_topic2,sample-topic_topic3" # Topics to sync (comma-separated)
 
   # Data format configuration

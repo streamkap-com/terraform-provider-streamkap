@@ -38,6 +38,7 @@ resource "streamkap_source_mysql" "test" {
 	table_include_list                        = "crm.demo,ecommerce.customers,tst.test_id_timestamp"
 	signal_data_collection_schema_or_database = "crm"
 	column_include_list                       = "crm[.]demo[.](id|name),ecommerce[.]customers[.](customer_id|email)"
+	heartbeat_data_collection_schema_or_database = "crm"
 	database_connection_time_zone              = "SERVER"
 	snapshot_gtid                             = "Yes"
 	binary_handling_mode                      = "bytes"
@@ -54,6 +55,7 @@ resource "streamkap_source_mysql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "table_include_list", "crm.demo,ecommerce.customers,tst.test_id_timestamp"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "signal_data_collection_schema_or_database", "crm"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "column_include_list", "crm[.]demo[.](id|name),ecommerce[.]customers[.](customer_id|email)"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "heartbeat_data_collection_schema_or_database", "crm"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "database_connection_time_zone", "SERVER"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "snapshot_gtid", "Yes"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "binary_handling_mode", "bytes"),
@@ -102,7 +104,7 @@ resource "streamkap_source_mysql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "name", "test-source-mysql-updated"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "database_include_list", "crm"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "table_include_list", "crm.demo"),
-					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "heartbeat_enabled", "Yes"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "heartbeat_enabled", "true"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "heartbeat_data_collection_schema_or_database", "crm"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "column_include_list", "crm[.]demo[.](id|name)"),
 				),
@@ -140,7 +142,7 @@ resource "streamkap_source_mysql" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "name", "test-source-mysql-exclude"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "column_exclude_list", "crm.demo.name"),
-					// Since column_include_list is not set, it should be null; we can skip explicit check unless needed
+					resource.TestCheckNoResourceAttr("streamkap_source_mysql.test", "column_include_list"),
 				),
 			},
 			// Step 5: Update to test insert_static_* fields

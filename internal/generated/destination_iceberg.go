@@ -19,9 +19,11 @@ type DestinationIcebergModel struct {
 	Name                              types.String   `tfsdk:"name"`
 	Connector                         types.String   `tfsdk:"connector"`
 	IcebergCatalogType                types.String   `tfsdk:"iceberg_catalog_type"`
+	IcebergCatalogRestProvider        types.String   `tfsdk:"iceberg_catalog_rest_provider"`
 	IcebergCatalogName                types.String   `tfsdk:"iceberg_catalog_name"`
 	IcebergCatalogClientAssumeRoleARN types.String   `tfsdk:"iceberg_catalog_client_assume_role_arn"`
 	IcebergCatalogUri                 types.String   `tfsdk:"iceberg_catalog_uri"`
+	IcebergCatalogToken               types.String   `tfsdk:"iceberg_catalog_token"`
 	IcebergCatalogS3AccessKeyID       types.String   `tfsdk:"iceberg_catalog_s3_access_key_id"`
 	IcebergCatalogS3SecretAccessKey   types.String   `tfsdk:"iceberg_catalog_s3_secret_access_key"`
 	IcebergCatalogClientRegion        types.String   `tfsdk:"iceberg_catalog_client_region"`
@@ -70,6 +72,22 @@ func DestinationIcebergSchema() schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.OneOf("rest", "hive", "glue"),
 				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"iceberg_catalog_rest_provider": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Select the Iceberg REST catalog provider. Defaults to \"generic\". Valid values: generic, r2.",
+				MarkdownDescription: "Select the Iceberg REST catalog provider. Defaults to `generic`. Valid values: `generic`, `r2`.",
+				Default:             stringdefault.StaticString("generic"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("generic", "r2"),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"iceberg_catalog_name": schema.StringAttribute{
 				Optional:            true,
@@ -86,6 +104,12 @@ func DestinationIcebergSchema() schema.Schema {
 				Description:         "Iceberg catalog uri",
 				MarkdownDescription: "Iceberg catalog uri",
 			},
+			"iceberg_catalog_token": schema.StringAttribute{
+				Optional:            true,
+				Sensitive:           true,
+				Description:         "Cloudflare R2 Data Catalog API token used for bearer authentication. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Cloudflare R2 Data Catalog API token used for bearer authentication.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+			},
 			"iceberg_catalog_s3_access_key_id": schema.StringAttribute{
 				Optional:            true,
 				Description:         "The AWS Access Key ID used to connect to S3.",
@@ -100,17 +124,17 @@ func DestinationIcebergSchema() schema.Schema {
 			"iceberg_catalog_client_region": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The AWS region to be used Defaults to \"us-west-2\". Valid values: ap-south-1, eu-west-2, eu-west-1, ap-northeast-2, ap-northeast-1, ca-central-1, sa-east-1, cn-north-1, us-gov-west-1, ap-southeast-1, ap-southeast-2, eu-central-1, us-east-1, us-east-2, us-west-1, us-west-2.",
-				MarkdownDescription: "The AWS region to be used Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.",
+				Description:         "The AWS region to be used Defaults to \"us-west-2\". Valid values: ap-south-1, eu-west-2, eu-west-1, ap-northeast-2, ap-northeast-1, ca-central-1, sa-east-1, cn-north-1, us-gov-west-1, ap-southeast-1, ap-southeast-2, eu-central-1, us-east-1, us-east-2, us-west-1, us-west-2, auto.",
+				MarkdownDescription: "The AWS region to be used Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`, `auto`.",
 				Default:             stringdefault.StaticString("us-west-2"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("ap-south-1", "eu-west-2", "eu-west-1", "ap-northeast-2", "ap-northeast-1", "ca-central-1", "sa-east-1", "cn-north-1", "us-gov-west-1", "ap-southeast-1", "ap-southeast-2", "eu-central-1", "us-east-1", "us-east-2", "us-west-1", "us-west-2"),
+					stringvalidator.OneOf("ap-south-1", "eu-west-2", "eu-west-1", "ap-northeast-2", "ap-northeast-1", "ca-central-1", "sa-east-1", "cn-north-1", "us-gov-west-1", "ap-southeast-1", "ap-southeast-2", "eu-central-1", "us-east-1", "us-east-2", "us-west-1", "us-west-2", "auto"),
 				},
 			},
 			"iceberg_catalog_warehouse": schema.StringAttribute{
 				Required:            true,
-				Description:         "The S3 Bucket path to use.",
-				MarkdownDescription: "The S3 Bucket path to use.",
+				Description:         "The Iceberg warehouse identifier. For R2 Data Catalog, this should be the warehouse name configured in the catalog. For S3-based catalogs, this is typically an S3 or S3-compatible path (e.g., s3://bucket/path).",
+				MarkdownDescription: "The Iceberg warehouse identifier. For R2 Data Catalog, this should be the warehouse name configured in the catalog. For S3-based catalogs, this is typically an S3 or S3-compatible path (e.g., s3://bucket/path).",
 			},
 			"table_name_prefix": schema.StringAttribute{
 				Required:            true,
@@ -139,9 +163,11 @@ func DestinationIcebergSchema() schema.Schema {
 // DestinationIcebergFieldMappings maps Terraform attribute names to API field names.
 var DestinationIcebergFieldMappings = map[string]string{
 	"iceberg_catalog_type":                   "iceberg.catalog.type",
+	"iceberg_catalog_rest_provider":          "iceberg.catalog.rest.provider",
 	"iceberg_catalog_name":                   "iceberg.catalog.name",
 	"iceberg_catalog_client_assume_role_arn": "iceberg.catalog.client.assume-role.arn",
 	"iceberg_catalog_uri":                    "iceberg.catalog.uri",
+	"iceberg_catalog_token":                  "iceberg.catalog.token",
 	"iceberg_catalog_s3_access_key_id":       "iceberg.catalog.s3.access-key-id",
 	"iceberg_catalog_s3_secret_access_key":   "iceberg.catalog.s3.secret-access-key",
 	"iceberg_catalog_client_region":          "iceberg.catalog.client.region.user.defined",

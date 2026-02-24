@@ -27,20 +27,20 @@ resource "streamkap_destination_azblob" "example" {
   azblob_container_name = "streamkap-data"
 
   # File format settings
-  format                 = "json"               # Valid values: json, csv, avro, parquet. Default: json
-  format_csv_write_headers = false              # Include column headers in CSV files. Default: false
+  format                   = "json" # Valid values: json, csv, avro, parquet. Default: json
+  format_csv_write_headers = false  # Include column headers in CSV files. Default: false
 
   # File organization
-  topics_dir        = "data/topics"             # Top level directory for storing data
+  topics_dir         = "data/topics"                              # Top level directory for storing data
   file_name_template = "{{topic}}-{{partition}}-{{start_offset}}" # Default filename template
 
   # Performance settings
-  flush_size          = 1000                    # Number of records per file. Default: 1000
-  file_size           = 65536                   # Minimum file size in bytes. Default: 65536
-  rotate_interval_ms  = -1                      # Max wait time in ms before writing. Default: -1 (disabled)
+  flush_size         = 1000  # Number of records per file. Default: 1000
+  file_size          = 65536 # Minimum file size in bytes. Default: 65536
+  rotate_interval_ms = -1    # Max wait time in ms before writing. Default: -1 (disabled)
 
   # Compression
-  compression = "gzip"                          # Compression type for output files
+  compression = "gzip" # Compression type for output files
 }
 
 output "example_destination_azblob" {

@@ -23,17 +23,21 @@ This resource creates and manages a Iceberg destination for Streamkap data pipel
 
 ### Required
 
-- `iceberg_catalog_warehouse` (String) The S3 Bucket path to use.
+- `iceberg_catalog_warehouse` (String) The Iceberg warehouse identifier. For R2 Data Catalog, this should be the warehouse name configured in the catalog. For S3-based catalogs, this is typically an S3 or S3-compatible path (e.g., s3://bucket/path).
 - `name` (String) Name of the destination
 - `table_name_prefix` (String) Name of the database schema that contains the table (e.g., public, sales, analytics).
 
 ### Optional
 
 - `iceberg_catalog_client_assume_role_arn` (String) AWS IAM role (e.g., arn:aws:iam::<your-account>:role/<role-name>)
-- `iceberg_catalog_client_region` (String) The AWS region to be used Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.
+- `iceberg_catalog_client_region` (String) The AWS region to be used Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`, `auto`.
 - `iceberg_catalog_name` (String) Iceberg catalog name
+- `iceberg_catalog_rest_provider` (String) Select the Iceberg REST catalog provider. Defaults to `generic`. Valid values: `generic`, `r2`.
 - `iceberg_catalog_s3_access_key_id` (String) The AWS Access Key ID used to connect to S3.
 - `iceberg_catalog_s3_secret_access_key` (String, Sensitive) The AWS Secret Access Key used to connect to S3.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
+- `iceberg_catalog_token` (String, Sensitive) Cloudflare R2 Data Catalog API token used for bearer authentication.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `iceberg_catalog_type` (String) Type of Iceberg catalog Defaults to `rest`. Valid values: `rest`, `hive`, `glue`.

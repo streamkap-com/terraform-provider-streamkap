@@ -18,56 +18,50 @@ import (
 
 // SourcePostgresqlModel is the Terraform model for the postgresql source.
 type SourcePostgresqlModel struct {
-	ID                                      types.String `tfsdk:"id"`
-	Name                                    types.String `tfsdk:"name"`
-	Connector                               types.String `tfsdk:"connector"`
-	DatabaseHostname                        types.String `tfsdk:"database_hostname"`
-	DatabasePort                            types.Int64  `tfsdk:"database_port"`
-	DatabaseUser                            types.String `tfsdk:"database_user"`
-	DatabasePassword                        types.String `tfsdk:"database_password"`
-	DatabaseDbname                          types.String `tfsdk:"database_dbname"`
-	SnapshotReadOnly                        types.String `tfsdk:"snapshot_read_only"`
-	SignalDataCollectionSchemaOrDatabase    types.String `tfsdk:"signal_data_collection_schema_or_database"`
-	ColumnIncludeListToggled                types.Bool   `tfsdk:"column_include_list_toggled"`
-	ColumnIncludeList                       types.String `tfsdk:"column_include_list"`
-	ColumnExcludeList                       types.String `tfsdk:"column_exclude_list"`
-	HeartbeatEnabled                        types.Bool   `tfsdk:"heartbeat_enabled"`
-	HeartbeatDataCollectionSchemaOrDatabase types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
-	SlotName                                types.String `tfsdk:"slot_name"`
-	PublicationName                         types.String `tfsdk:"publication_name"`
-	SchemaIncludeList                       types.String `tfsdk:"schema_include_list"`
-	TableIncludeList                        types.String `tfsdk:"table_include_list"`
-	DatabaseSslmode                         types.String `tfsdk:"database_sslmode"`
-	IncludeSourceDBNameInTableName          types.Bool   `tfsdk:"include_source_db_name_in_table_name"`
-	BinaryHandlingMode                      types.String `tfsdk:"binary_handling_mode"`
-	TransformsInsertStaticKey1StaticField   types.String `tfsdk:"transforms_insert_static_key1_static_field"`
-	TransformsInsertStaticKey1StaticValue   types.String `tfsdk:"transforms_insert_static_key1_static_value"`
-	TransformsInsertStaticValue1StaticField types.String `tfsdk:"transforms_insert_static_value1_static_field"`
-	TransformsInsertStaticValue1StaticValue types.String `tfsdk:"transforms_insert_static_value1_static_value"`
-	TransformsInsertStaticKey2StaticField   types.String `tfsdk:"transforms_insert_static_key2_static_field"`
-	TransformsInsertStaticKey2StaticValue   types.String `tfsdk:"transforms_insert_static_key2_static_value"`
-	TransformsInsertStaticValue2StaticField types.String `tfsdk:"transforms_insert_static_value2_static_field"`
-	TransformsInsertStaticValue2StaticValue types.String `tfsdk:"transforms_insert_static_value2_static_value"`
-	PredicatesIsTopicToEnrichPattern        types.String `tfsdk:"predicates_is_topic_to_enrich_pattern"`
-	StreamkapSnapshotParallelism            types.Int64  `tfsdk:"streamkap_snapshot_parallelism"`
-	StreamkapSnapshotLargeTableThreshold    types.Int64  `tfsdk:"streamkap_snapshot_large_table_threshold"`
-	StreamkapSnapshotCustomTableConfig      types.String `tfsdk:"streamkap_snapshot_custom_table_config"`
-	SSHEnabled                              types.Bool   `tfsdk:"ssh_enabled"`
-	SSHHost                                 types.String `tfsdk:"ssh_host"`
-	SSHPort                                 types.Int64  `tfsdk:"ssh_port"`
-	SSHUser                                 types.String `tfsdk:"ssh_user"`
-	SSHPublicKey                            types.String `tfsdk:"ssh_public_key"`
-	// Deprecated fields - kept for backward compatibility
-	InsertStaticKeyField1            types.String   `tfsdk:"insert_static_key_field_1"`
-	InsertStaticKeyValue1            types.String   `tfsdk:"insert_static_key_value_1"`
-	InsertStaticValueField1          types.String   `tfsdk:"insert_static_value_field_1"`
-	InsertStaticValue1               types.String   `tfsdk:"insert_static_value_1"`
-	InsertStaticKeyField2            types.String   `tfsdk:"insert_static_key_field_2"`
-	InsertStaticKeyValue2            types.String   `tfsdk:"insert_static_key_value_2"`
-	InsertStaticValueField2          types.String   `tfsdk:"insert_static_value_field_2"`
-	InsertStaticValue2               types.String   `tfsdk:"insert_static_value_2"`
-	PredicatesIstopictoenrichPattern types.String   `tfsdk:"predicates_istopictoenrich_pattern"`
-	Timeouts                         timeouts.Value `tfsdk:"timeouts"`
+	ID                                            types.String   `tfsdk:"id"`
+	Name                                          types.String   `tfsdk:"name"`
+	Connector                                     types.String   `tfsdk:"connector"`
+	DatabaseHostname                              types.String   `tfsdk:"database_hostname"`
+	DatabasePort                                  types.Int64    `tfsdk:"database_port"`
+	DatabaseUser                                  types.String   `tfsdk:"database_user"`
+	DatabasePassword                              types.String   `tfsdk:"database_password"`
+	DatabaseDbname                                types.String   `tfsdk:"database_dbname"`
+	SnapshotReadOnly                              types.String   `tfsdk:"snapshot_read_only"`
+	SignalDataCollectionSchemaOrDatabase          types.String   `tfsdk:"signal_data_collection_schema_or_database"`
+	ColumnIncludeListToggled                      types.Bool     `tfsdk:"column_include_list_toggled"`
+	SourceRegexSupportEnabled                     types.Bool     `tfsdk:"source_regex_support_enabled"`
+	TransformsSourceRegexSupportRegexReplacement  types.String   `tfsdk:"transforms_source_regex_support_regex_replacement"`
+	TransformsSourceRegexSupportKeyFieldTemplate  types.String   `tfsdk:"transforms_source_regex_support_key_field_template"`
+	TransformsSourceRegexSupportMetadataFieldName types.String   `tfsdk:"transforms_source_regex_support_metadata_field_name"`
+	ColumnIncludeList                             types.String   `tfsdk:"column_include_list"`
+	ColumnExcludeList                             types.String   `tfsdk:"column_exclude_list"`
+	HeartbeatEnabled                              types.Bool     `tfsdk:"heartbeat_enabled"`
+	HeartbeatDataCollectionSchemaOrDatabase       types.String   `tfsdk:"heartbeat_data_collection_schema_or_database"`
+	SlotName                                      types.String   `tfsdk:"slot_name"`
+	PublicationName                               types.String   `tfsdk:"publication_name"`
+	SchemaIncludeList                             types.String   `tfsdk:"schema_include_list"`
+	TableIncludeList                              types.String   `tfsdk:"table_include_list"`
+	DatabaseSslmode                               types.String   `tfsdk:"database_sslmode"`
+	IncludeSourceDBNameInTableName                types.Bool     `tfsdk:"include_source_db_name_in_table_name"`
+	BinaryHandlingMode                            types.String   `tfsdk:"binary_handling_mode"`
+	TransformsInsertStaticKey1StaticField         types.String   `tfsdk:"transforms_insert_static_key1_static_field"`
+	TransformsInsertStaticKey1StaticValue         types.String   `tfsdk:"transforms_insert_static_key1_static_value"`
+	TransformsInsertStaticValue1StaticField       types.String   `tfsdk:"transforms_insert_static_value1_static_field"`
+	TransformsInsertStaticValue1StaticValue       types.String   `tfsdk:"transforms_insert_static_value1_static_value"`
+	TransformsInsertStaticKey2StaticField         types.String   `tfsdk:"transforms_insert_static_key2_static_field"`
+	TransformsInsertStaticKey2StaticValue         types.String   `tfsdk:"transforms_insert_static_key2_static_value"`
+	TransformsInsertStaticValue2StaticField       types.String   `tfsdk:"transforms_insert_static_value2_static_field"`
+	TransformsInsertStaticValue2StaticValue       types.String   `tfsdk:"transforms_insert_static_value2_static_value"`
+	PredicatesIsTopicToEnrichPattern              types.String   `tfsdk:"predicates_is_topic_to_enrich_pattern"`
+	StreamkapSnapshotParallelism                  types.Int64    `tfsdk:"streamkap_snapshot_parallelism"`
+	StreamkapSnapshotLargeTableThreshold          types.Int64    `tfsdk:"streamkap_snapshot_large_table_threshold"`
+	StreamkapSnapshotCustomTableConfig            types.String   `tfsdk:"streamkap_snapshot_custom_table_config"`
+	SSHEnabled                                    types.Bool     `tfsdk:"ssh_enabled"`
+	SSHHost                                       types.String   `tfsdk:"ssh_host"`
+	SSHPort                                       types.Int64    `tfsdk:"ssh_port"`
+	SSHUser                                       types.String   `tfsdk:"ssh_user"`
+	SSHPublicKey                                  types.String   `tfsdk:"ssh_public_key"`
+	Timeouts                                      timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourcePostgresqlSchema returns the Terraform schema for the postgresql source.
@@ -138,11 +132,9 @@ func SourcePostgresqlSchema() schema.Schema {
 				},
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here. Conditionally required when snapshot_read_only is \"No\". Defaults to \"public\".",
-				MarkdownDescription: "Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here.\n\n**Conditionally required** when `snapshot_read_only` is `No`. Defaults to `public`.",
-				Default:             stringdefault.StaticString("public"),
+				Required:            true,
+				Description:         "Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here.",
+				MarkdownDescription: "Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here.",
 			},
 			"column_include_list_toggled": schema.BoolAttribute{
 				Optional:            true,
@@ -150,6 +142,34 @@ func SourcePostgresqlSchema() schema.Schema {
 				Description:         "Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to true.",
 				MarkdownDescription: "Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
+			},
+			"source_regex_support_enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Enable regex support. Useful for merging multiple tables into the same output topic Defaults to false.",
+				MarkdownDescription: "Enable regex support. Useful for merging multiple tables into the same output topic Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"transforms_source_regex_support_regex_replacement": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Replacement string for matching regex snippets. Defaults to \"_REGEX_\".",
+				MarkdownDescription: "Replacement string for matching regex snippets. Defaults to `_REGEX_`.",
+				Default:             stringdefault.StaticString("_REGEX_"),
+			},
+			"transforms_source_regex_support_key_field_template": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId Defaults to \"{{database}}.{{table}}\".",
+				MarkdownDescription: "Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId Defaults to `{{database}}.{{table}}`.",
+				Default:             stringdefault.StaticString("{{database}}.{{table}}"),
+			},
+			"transforms_source_regex_support_metadata_field_name": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Name of the extra metadata field to store source information and ensure uniqueness across all tables when regex support is enabled. Defaults to \"_streamkap_source_metadata\".",
+				MarkdownDescription: "Name of the extra metadata field to store source information and ensure uniqueness across all tables when regex support is enabled. Defaults to `_streamkap_source_metadata`.",
+				Default:             stringdefault.StaticString("_streamkap_source_metadata"),
 			},
 			"column_include_list": schema.StringAttribute{
 				Optional:            true,
@@ -169,9 +189,9 @@ func SourcePostgresqlSchema() schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
-				Optional:            true,
-				Description:         "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'. Conditionally required when heartbeat_enabled is true AND snapshot_read_only is \"No\".",
-				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.\n\n**Conditionally required** when `heartbeat_enabled` is `true` AND `snapshot_read_only` is `No`.",
+				Required:            true,
+				Description:         "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
+				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
 			},
 			"slot_name": schema.StringAttribute{
 				Optional:            true,
@@ -278,7 +298,7 @@ func SourcePostgresqlSchema() schema.Schema {
 				MarkdownDescription: "How many parallel chunk requests to send to the source DB. Defaults to `1`.",
 				Default:             int64default.StaticInt64(1),
 				Validators: []validator.Int64{
-					int64validator.Between(1, 10),
+					int64validator.Between(1, 50),
 				},
 			},
 			"streamkap_snapshot_large_table_threshold": schema.Int64Attribute{
@@ -329,129 +349,50 @@ func SourcePostgresqlSchema() schema.Schema {
 				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
-			// Deprecated fields - kept for backward compatibility
-			"insert_static_key_field_1": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Deprecated: Use transforms_insert_static_key1_static_field instead. The name of the static field to be added to the message key.",
-				MarkdownDescription: "**Deprecated:** Use `transforms_insert_static_key1_static_field` instead. The name of the static field to be added to the message key.",
-				DeprecationMessage:  "Use transforms_insert_static_key1_static_field instead",
-				Default:             stringdefault.StaticString(""),
-			},
-			"insert_static_key_value_1": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Deprecated: Use transforms_insert_static_key1_static_value instead. The value of the static field to be added to the message key.",
-				MarkdownDescription: "**Deprecated:** Use `transforms_insert_static_key1_static_value` instead. The value of the static field to be added to the message key.",
-				DeprecationMessage:  "Use transforms_insert_static_key1_static_value instead",
-				Default:             stringdefault.StaticString(""),
-			},
-			"insert_static_value_field_1": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Deprecated: Use transforms_insert_static_value1_static_field instead. The name of the static field to be added to the message value.",
-				MarkdownDescription: "**Deprecated:** Use `transforms_insert_static_value1_static_field` instead. The name of the static field to be added to the message value.",
-				DeprecationMessage:  "Use transforms_insert_static_value1_static_field instead",
-				Default:             stringdefault.StaticString(""),
-			},
-			"insert_static_value_1": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Deprecated: Use transforms_insert_static_value1_static_value instead. The value of the static field to be added to the message value.",
-				MarkdownDescription: "**Deprecated:** Use `transforms_insert_static_value1_static_value` instead. The value of the static field to be added to the message value.",
-				DeprecationMessage:  "Use transforms_insert_static_value1_static_value instead",
-				Default:             stringdefault.StaticString(""),
-			},
-			"insert_static_key_field_2": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Deprecated: Use transforms_insert_static_key2_static_field instead. The name of the static field to be added to the message key.",
-				MarkdownDescription: "**Deprecated:** Use `transforms_insert_static_key2_static_field` instead. The name of the static field to be added to the message key.",
-				DeprecationMessage:  "Use transforms_insert_static_key2_static_field instead",
-				Default:             stringdefault.StaticString(""),
-			},
-			"insert_static_key_value_2": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Deprecated: Use transforms_insert_static_key2_static_value instead. The value of the static field to be added to the message key.",
-				MarkdownDescription: "**Deprecated:** Use `transforms_insert_static_key2_static_value` instead. The value of the static field to be added to the message key.",
-				DeprecationMessage:  "Use transforms_insert_static_key2_static_value instead",
-				Default:             stringdefault.StaticString(""),
-			},
-			"insert_static_value_field_2": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Deprecated: Use transforms_insert_static_value2_static_field instead. The name of the static field to be added to the message value.",
-				MarkdownDescription: "**Deprecated:** Use `transforms_insert_static_value2_static_field` instead. The name of the static field to be added to the message value.",
-				DeprecationMessage:  "Use transforms_insert_static_value2_static_field instead",
-				Default:             stringdefault.StaticString(""),
-			},
-			"insert_static_value_2": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Deprecated: Use transforms_insert_static_value2_static_value instead. The value of the static field to be added to the message value.",
-				MarkdownDescription: "**Deprecated:** Use `transforms_insert_static_value2_static_value` instead. The value of the static field to be added to the message value.",
-				DeprecationMessage:  "Use transforms_insert_static_value2_static_value instead",
-				Default:             stringdefault.StaticString(""),
-			},
-			"predicates_istopictoenrich_pattern": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Deprecated: Use predicates_is_topic_to_enrich_pattern instead. Regex pattern to match topics for enrichment.",
-				MarkdownDescription: "**Deprecated:** Use `predicates_is_topic_to_enrich_pattern` instead. Regex pattern to match topics for enrichment.",
-				DeprecationMessage:  "Use predicates_is_topic_to_enrich_pattern instead",
-				Default:             stringdefault.StaticString(""),
-			},
 		},
 	}
 }
 
 // SourcePostgresqlFieldMappings maps Terraform attribute names to API field names.
 var SourcePostgresqlFieldMappings = map[string]string{
-	"database_hostname":                            "database.hostname.user.defined",
-	"database_port":                                "database.port.user.defined",
-	"database_user":                                "database.user",
-	"database_password":                            "database.password",
-	"database_dbname":                              "database.dbname",
-	"snapshot_read_only":                           "snapshot.read.only.user.defined",
-	"signal_data_collection_schema_or_database":    "signal.data.collection.schema.or.database",
-	"column_include_list_toggled":                  "column.include.list.toggled",
-	"column_include_list":                          "column.include.list.user.defined",
-	"column_exclude_list":                          "column.exclude.list.user.defined",
-	"heartbeat_enabled":                            "heartbeat.enabled",
-	"heartbeat_data_collection_schema_or_database": "heartbeat.data.collection.schema.or.database",
-	"slot_name":                                    "slot.name",
-	"publication_name":                             "publication.name",
-	"schema_include_list":                          "schema.include.list",
-	"table_include_list":                           "table.include.list.user.defined",
-	"database_sslmode":                             "database.sslmode",
-	"include_source_db_name_in_table_name":         "include.source.db.name.in.table.name.user.defined",
-	"binary_handling_mode":                         "binary.handling.mode",
-	"transforms_insert_static_key1_static_field":   "transforms.InsertStaticKey1.static.field",
-	"transforms_insert_static_key1_static_value":   "transforms.InsertStaticKey1.static.value",
-	"transforms_insert_static_value1_static_field": "transforms.InsertStaticValue1.static.field",
-	"transforms_insert_static_value1_static_value": "transforms.InsertStaticValue1.static.value",
-	"transforms_insert_static_key2_static_field":   "transforms.InsertStaticKey2.static.field",
-	"transforms_insert_static_key2_static_value":   "transforms.InsertStaticKey2.static.value",
-	"transforms_insert_static_value2_static_field": "transforms.InsertStaticValue2.static.field",
-	"transforms_insert_static_value2_static_value": "transforms.InsertStaticValue2.static.value",
-	"predicates_is_topic_to_enrich_pattern":        "predicates.IsTopicToEnrich.pattern",
-	"streamkap_snapshot_parallelism":               "streamkap.snapshot.parallelism",
-	"streamkap_snapshot_large_table_threshold":     "streamkap.snapshot.large.table.threshold",
-	"streamkap_snapshot_custom_table_config":       "streamkap.snapshot.custom.table.config.user.defined",
-	"ssh_enabled":                                  "ssh.enabled",
-	"ssh_host":                                     "ssh.host",
-	"ssh_port":                                     "ssh.port",
-	"ssh_user":                                     "ssh.user",
-	"ssh_public_key":                               "ssh.public.key.user.displayed",
-	// Deprecated field mappings - map old field names to the same API keys as their replacements
-	"insert_static_key_field_1":            "transforms.InsertStaticKey1.static.field",
-	"insert_static_key_value_1":            "transforms.InsertStaticKey1.static.value",
-	"insert_static_value_field_1":          "transforms.InsertStaticValue1.static.field",
-	"insert_static_value_1":                "transforms.InsertStaticValue1.static.value",
-	"insert_static_key_field_2":            "transforms.InsertStaticKey2.static.field",
-	"insert_static_key_value_2":            "transforms.InsertStaticKey2.static.value",
-	"insert_static_value_field_2":          "transforms.InsertStaticValue2.static.field",
-	"insert_static_value_2":                "transforms.InsertStaticValue2.static.value",
-	"predicates_istopictoenrich_pattern":   "predicates.IsTopicToEnrich.pattern",
+	"database_hostname":                                   "database.hostname.user.defined",
+	"database_port":                                       "database.port.user.defined",
+	"database_user":                                       "database.user",
+	"database_password":                                   "database.password",
+	"database_dbname":                                     "database.dbname",
+	"snapshot_read_only":                                  "snapshot.read.only.user.defined",
+	"signal_data_collection_schema_or_database":           "signal.data.collection.schema.or.database",
+	"column_include_list_toggled":                         "column.include.list.toggled",
+	"source_regex_support_enabled":                        "SourceRegexSupport.enabled",
+	"transforms_source_regex_support_regex_replacement":   "transforms.SourceRegexSupport.regex.replacement",
+	"transforms_source_regex_support_key_field_template":  "transforms.SourceRegexSupport.key.field.template",
+	"transforms_source_regex_support_metadata_field_name": "transforms.SourceRegexSupport.metadata.field.name",
+	"column_include_list":                                 "column.include.list.user.defined",
+	"column_exclude_list":                                 "column.exclude.list.user.defined",
+	"heartbeat_enabled":                                   "heartbeat.enabled",
+	"heartbeat_data_collection_schema_or_database":        "heartbeat.data.collection.schema.or.database",
+	"slot_name":                                           "slot.name",
+	"publication_name":                                    "publication.name",
+	"schema_include_list":                                 "schema.include.list",
+	"table_include_list":                                  "table.include.list.user.defined",
+	"database_sslmode":                                    "database.sslmode",
+	"include_source_db_name_in_table_name":                "include.source.db.name.in.table.name.user.defined",
+	"binary_handling_mode":                                "binary.handling.mode",
+	"transforms_insert_static_key1_static_field":          "transforms.InsertStaticKey1.static.field",
+	"transforms_insert_static_key1_static_value":          "transforms.InsertStaticKey1.static.value",
+	"transforms_insert_static_value1_static_field":        "transforms.InsertStaticValue1.static.field",
+	"transforms_insert_static_value1_static_value":        "transforms.InsertStaticValue1.static.value",
+	"transforms_insert_static_key2_static_field":          "transforms.InsertStaticKey2.static.field",
+	"transforms_insert_static_key2_static_value":          "transforms.InsertStaticKey2.static.value",
+	"transforms_insert_static_value2_static_field":        "transforms.InsertStaticValue2.static.field",
+	"transforms_insert_static_value2_static_value":        "transforms.InsertStaticValue2.static.value",
+	"predicates_is_topic_to_enrich_pattern":               "predicates.IsTopicToEnrich.pattern",
+	"streamkap_snapshot_parallelism":                      "streamkap.snapshot.parallelism",
+	"streamkap_snapshot_large_table_threshold":            "streamkap.snapshot.large.table.threshold",
+	"streamkap_snapshot_custom_table_config":              "streamkap.snapshot.custom.table.config.user.defined",
+	"ssh_enabled":                                         "ssh.enabled",
+	"ssh_host":                                            "ssh.host",
+	"ssh_port":                                            "ssh.port",
+	"ssh_user":                                            "ssh.user",
+	"ssh_public_key":                                      "ssh.public.key.user.displayed",
 }

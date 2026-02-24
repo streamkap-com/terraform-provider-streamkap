@@ -22,20 +22,20 @@ resource "streamkap_destination_redshift" "example" {
 
   # Connection settings (required)
   aws_redshift_domain   = "my-cluster.abc123xyz.us-west-2.redshift.amazonaws.com"
-  aws_redshift_port     = 5439                  # Default: 5439
+  aws_redshift_port     = 5439 # Default: 5439
   aws_redshift_database = "mydb"
   connection_username   = "streamkap_user"
   connection_password   = var.destination_redshift_password
 
   # Schema settings (required)
-  table_name_prefix = "public"                  # Schema for table names
+  table_name_prefix = "public" # Schema for table names
 
   # Data settings
-  primary_key_fields = "id"                     # Comma-separated primary key fields. Default: id
-  schema_evolution   = "basic"                  # Valid values: basic, none. Default: basic
+  primary_key_fields = "id"    # Comma-separated primary key fields. Default: id
+  schema_evolution   = "basic" # Valid values: basic, none. Default: basic
 
   # Performance settings
-  tasks_max = 5                                 # Max active tasks (1-10). Default: 5
+  tasks_max = 5 # Max active tasks (1-10). Default: 5
 }
 
 output "example_destination_redshift" {

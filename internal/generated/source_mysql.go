@@ -34,6 +34,10 @@ type SourceMysqlModel struct {
 	HeartbeatDataCollectionSchemaOrDatabase            types.String   `tfsdk:"heartbeat_data_collection_schema_or_database"`
 	DatabaseConnectionTimeZone                         types.String   `tfsdk:"database_connection_time_zone"`
 	SnapshotGtid                                       types.String   `tfsdk:"snapshot_gtid"`
+	SourceRegexSupportEnabled                          types.Bool     `tfsdk:"source_regex_support_enabled"`
+	TransformsSourceRegexSupportRegexReplacement       types.String   `tfsdk:"transforms_source_regex_support_regex_replacement"`
+	TransformsSourceRegexSupportKeyFieldTemplate       types.String   `tfsdk:"transforms_source_regex_support_key_field_template"`
+	TransformsSourceRegexSupportMetadataFieldName      types.String   `tfsdk:"transforms_source_regex_support_metadata_field_name"`
 	SchemaHistoryInternalStoreOnlyCapturedDatabasesDdl types.Bool     `tfsdk:"schema_history_internal_store_only_captured_databases_ddl"`
 	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool     `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
 	BinaryHandlingMode                                 types.String   `tfsdk:"binary_handling_mode"`
@@ -146,18 +150,18 @@ func SourceMysqlSchema() schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
-				Optional:            true,
-				Description:         "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'. Conditionally required when heartbeat_enabled is true AND snapshot_gtid is \"No\".",
-				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.\n\n**Conditionally required:** This field is required when `heartbeat_enabled` is `true` AND `snapshot_gtid` is `No`.",
+				Required:            true,
+				Description:         "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
+				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
 			},
 			"database_connection_time_zone": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MySQL server session variables 'time_zone' or 'system_time_zone'  Defaults to \"SERVER\". Valid values: SERVER, UTC, Africa/Cairo,  Asia/Riyadh, Africa/Casablanca, Asia/Seoul, Africa/Harare, Asia/Shanghai, Africa/Monrovia, Asia/Singapore, Africa/Nairobi, Asia/Taipei, Africa/Tripoli, Asia/Tehran, Africa/Windhoek, Asia/Tokyo, America/Araguaina, Asia/Ulaanbaatar, America/Asuncion, Asia/Vladivostok, America/Bogota, Asia/Yakutsk, America/Buenos_Aires, Asia/Yerevan, America/Caracas, Atlantic/Azores, America/Chihuahua, Australia/Adelaide, America/Cuiaba, Australia/Brisbane, America/Denver, Australia/Darwin, America/Fortaleza, Australia/Hobart, America/Guatemala, Australia/Perth, America/Halifax, Australia/Sydney, America/Manaus, Brazil/East, America/Matamoros, Canada/Newfoundland, America/Monterrey, Canada/Saskatchewan, America/Montevideo, Canada/Yukon, America/Phoenix, Europe/Amsterdam, America/Santiago, Europe/Athens, America/Tijuana, Europe/Dublin, Asia/Amman, Europe/Helsinki, Asia/Ashgabat, Europe/Istanbul, Asia/Baghdad, Europe/Kaliningrad, Asia/Baku, Europe/Moscow, Asia/Bangkok, Europe/Paris, Asia/Beirut, Europe/Prague, Asia/Calcutta, Europe/Sarajevo, Asia/Damascus, Pacific/Auckland, Asia/Dhaka, Pacific/Fiji, Asia/Irkutsk, Pacific/Guam, Asia/Jerusalem, Pacific/Honolulu, Asia/Kabul, Pacific/Samoa, Asia/Karachi, US/Alaska, Asia/Kathmandu, US/Central, Asia/Krasnoyarsk, US/Eastern, Asia/Magadan, US/East-Indiana, Asia/Muscat, US/Pacific, Asia/Novosibirsk.",
-				MarkdownDescription: "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MySQL server session variables 'time_zone' or 'system_time_zone'  Defaults to `SERVER`. Valid values: `SERVER`, `UTC`, `Africa/Cairo`, ` Asia/Riyadh`, `Africa/Casablanca`, `Asia/Seoul`, `Africa/Harare`, `Asia/Shanghai`, `Africa/Monrovia`, `Asia/Singapore`, `Africa/Nairobi`, `Asia/Taipei`, `Africa/Tripoli`, `Asia/Tehran`, `Africa/Windhoek`, `Asia/Tokyo`, `America/Araguaina`, `Asia/Ulaanbaatar`, `America/Asuncion`, `Asia/Vladivostok`, `America/Bogota`, `Asia/Yakutsk`, `America/Buenos_Aires`, `Asia/Yerevan`, `America/Caracas`, `Atlantic/Azores`, `America/Chihuahua`, `Australia/Adelaide`, `America/Cuiaba`, `Australia/Brisbane`, `America/Denver`, `Australia/Darwin`, `America/Fortaleza`, `Australia/Hobart`, `America/Guatemala`, `Australia/Perth`, `America/Halifax`, `Australia/Sydney`, `America/Manaus`, `Brazil/East`, `America/Matamoros`, `Canada/Newfoundland`, `America/Monterrey`, `Canada/Saskatchewan`, `America/Montevideo`, `Canada/Yukon`, `America/Phoenix`, `Europe/Amsterdam`, `America/Santiago`, `Europe/Athens`, `America/Tijuana`, `Europe/Dublin`, `Asia/Amman`, `Europe/Helsinki`, `Asia/Ashgabat`, `Europe/Istanbul`, `Asia/Baghdad`, `Europe/Kaliningrad`, `Asia/Baku`, `Europe/Moscow`, `Asia/Bangkok`, `Europe/Paris`, `Asia/Beirut`, `Europe/Prague`, `Asia/Calcutta`, `Europe/Sarajevo`, `Asia/Damascus`, `Pacific/Auckland`, `Asia/Dhaka`, `Pacific/Fiji`, `Asia/Irkutsk`, `Pacific/Guam`, `Asia/Jerusalem`, `Pacific/Honolulu`, `Asia/Kabul`, `Pacific/Samoa`, `Asia/Karachi`, `US/Alaska`, `Asia/Kathmandu`, `US/Central`, `Asia/Krasnoyarsk`, `US/Eastern`, `Asia/Magadan`, `US/East-Indiana`, `Asia/Muscat`, `US/Pacific`, `Asia/Novosibirsk`.",
+				Description:         "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MySQL server session variables 'time_zone' or 'system_time_zone'  Defaults to \"SERVER\". Valid values: SERVER, UTC, Africa/Cairo, Asia/Riyadh, Africa/Casablanca, Asia/Seoul, Africa/Harare, Asia/Shanghai, Africa/Monrovia, Asia/Singapore, Africa/Nairobi, Asia/Taipei, Africa/Tripoli, Asia/Tehran, Africa/Windhoek, Asia/Tokyo, America/Araguaina, Asia/Ulaanbaatar, America/Asuncion, Asia/Vladivostok, America/Bogota, Asia/Yakutsk, America/Buenos_Aires, Asia/Yerevan, America/Caracas, Atlantic/Azores, America/Chihuahua, Australia/Adelaide, America/Cuiaba, Australia/Brisbane, America/Denver, Australia/Darwin, America/Fortaleza, Australia/Hobart, America/Guatemala, Australia/Perth, America/Halifax, Australia/Sydney, America/Manaus, Brazil/East, America/Matamoros, Canada/Newfoundland, America/Monterrey, Canada/Saskatchewan, America/Montevideo, Canada/Yukon, America/Phoenix, Europe/Amsterdam, America/Santiago, Europe/Athens, America/Tijuana, Europe/Dublin, Asia/Amman, Europe/Helsinki, Asia/Ashgabat, Europe/Istanbul, Asia/Baghdad, Europe/Kaliningrad, Asia/Baku, Europe/Moscow, Asia/Bangkok, Europe/Paris, Asia/Beirut, Europe/Prague, Asia/Calcutta, Europe/Sarajevo, Asia/Damascus, Pacific/Auckland, Asia/Dhaka, Pacific/Fiji, Asia/Irkutsk, Pacific/Guam, Asia/Jerusalem, Pacific/Honolulu, Asia/Kabul, Pacific/Samoa, Asia/Karachi, US/Alaska, Asia/Kathmandu, US/Central, Asia/Krasnoyarsk, US/Eastern, Asia/Magadan, US/East-Indiana, Asia/Muscat, US/Pacific, Asia/Novosibirsk.",
+				MarkdownDescription: "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MySQL server session variables 'time_zone' or 'system_time_zone'  Defaults to `SERVER`. Valid values: `SERVER`, `UTC`, `Africa/Cairo`, `Asia/Riyadh`, `Africa/Casablanca`, `Asia/Seoul`, `Africa/Harare`, `Asia/Shanghai`, `Africa/Monrovia`, `Asia/Singapore`, `Africa/Nairobi`, `Asia/Taipei`, `Africa/Tripoli`, `Asia/Tehran`, `Africa/Windhoek`, `Asia/Tokyo`, `America/Araguaina`, `Asia/Ulaanbaatar`, `America/Asuncion`, `Asia/Vladivostok`, `America/Bogota`, `Asia/Yakutsk`, `America/Buenos_Aires`, `Asia/Yerevan`, `America/Caracas`, `Atlantic/Azores`, `America/Chihuahua`, `Australia/Adelaide`, `America/Cuiaba`, `Australia/Brisbane`, `America/Denver`, `Australia/Darwin`, `America/Fortaleza`, `Australia/Hobart`, `America/Guatemala`, `Australia/Perth`, `America/Halifax`, `Australia/Sydney`, `America/Manaus`, `Brazil/East`, `America/Matamoros`, `Canada/Newfoundland`, `America/Monterrey`, `Canada/Saskatchewan`, `America/Montevideo`, `Canada/Yukon`, `America/Phoenix`, `Europe/Amsterdam`, `America/Santiago`, `Europe/Athens`, `America/Tijuana`, `Europe/Dublin`, `Asia/Amman`, `Europe/Helsinki`, `Asia/Ashgabat`, `Europe/Istanbul`, `Asia/Baghdad`, `Europe/Kaliningrad`, `Asia/Baku`, `Europe/Moscow`, `Asia/Bangkok`, `Europe/Paris`, `Asia/Beirut`, `Europe/Prague`, `Asia/Calcutta`, `Europe/Sarajevo`, `Asia/Damascus`, `Pacific/Auckland`, `Asia/Dhaka`, `Pacific/Fiji`, `Asia/Irkutsk`, `Pacific/Guam`, `Asia/Jerusalem`, `Pacific/Honolulu`, `Asia/Kabul`, `Pacific/Samoa`, `Asia/Karachi`, `US/Alaska`, `Asia/Kathmandu`, `US/Central`, `Asia/Krasnoyarsk`, `US/Eastern`, `Asia/Magadan`, `US/East-Indiana`, `Asia/Muscat`, `US/Pacific`, `Asia/Novosibirsk`.",
 				Default:             stringdefault.StaticString("SERVER"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("SERVER", "UTC", "Africa/Cairo", " Asia/Riyadh", "Africa/Casablanca", "Asia/Seoul", "Africa/Harare", "Asia/Shanghai", "Africa/Monrovia", "Asia/Singapore", "Africa/Nairobi", "Asia/Taipei", "Africa/Tripoli", "Asia/Tehran", "Africa/Windhoek", "Asia/Tokyo", "America/Araguaina", "Asia/Ulaanbaatar", "America/Asuncion", "Asia/Vladivostok", "America/Bogota", "Asia/Yakutsk", "America/Buenos_Aires", "Asia/Yerevan", "America/Caracas", "Atlantic/Azores", "America/Chihuahua", "Australia/Adelaide", "America/Cuiaba", "Australia/Brisbane", "America/Denver", "Australia/Darwin", "America/Fortaleza", "Australia/Hobart", "America/Guatemala", "Australia/Perth", "America/Halifax", "Australia/Sydney", "America/Manaus", "Brazil/East", "America/Matamoros", "Canada/Newfoundland", "America/Monterrey", "Canada/Saskatchewan", "America/Montevideo", "Canada/Yukon", "America/Phoenix", "Europe/Amsterdam", "America/Santiago", "Europe/Athens", "America/Tijuana", "Europe/Dublin", "Asia/Amman", "Europe/Helsinki", "Asia/Ashgabat", "Europe/Istanbul", "Asia/Baghdad", "Europe/Kaliningrad", "Asia/Baku", "Europe/Moscow", "Asia/Bangkok", "Europe/Paris", "Asia/Beirut", "Europe/Prague", "Asia/Calcutta", "Europe/Sarajevo", "Asia/Damascus", "Pacific/Auckland", "Asia/Dhaka", "Pacific/Fiji", "Asia/Irkutsk", "Pacific/Guam", "Asia/Jerusalem", "Pacific/Honolulu", "Asia/Kabul", "Pacific/Samoa", "Asia/Karachi", "US/Alaska", "Asia/Kathmandu", "US/Central", "Asia/Krasnoyarsk", "US/Eastern", "Asia/Magadan", "US/East-Indiana", "Asia/Muscat", "US/Pacific", "Asia/Novosibirsk"),
+					stringvalidator.OneOf("SERVER", "UTC", "Africa/Cairo", "Asia/Riyadh", "Africa/Casablanca", "Asia/Seoul", "Africa/Harare", "Asia/Shanghai", "Africa/Monrovia", "Asia/Singapore", "Africa/Nairobi", "Asia/Taipei", "Africa/Tripoli", "Asia/Tehran", "Africa/Windhoek", "Asia/Tokyo", "America/Araguaina", "Asia/Ulaanbaatar", "America/Asuncion", "Asia/Vladivostok", "America/Bogota", "Asia/Yakutsk", "America/Buenos_Aires", "Asia/Yerevan", "America/Caracas", "Atlantic/Azores", "America/Chihuahua", "Australia/Adelaide", "America/Cuiaba", "Australia/Brisbane", "America/Denver", "Australia/Darwin", "America/Fortaleza", "Australia/Hobart", "America/Guatemala", "Australia/Perth", "America/Halifax", "Australia/Sydney", "America/Manaus", "Brazil/East", "America/Matamoros", "Canada/Newfoundland", "America/Monterrey", "Canada/Saskatchewan", "America/Montevideo", "Canada/Yukon", "America/Phoenix", "Europe/Amsterdam", "America/Santiago", "Europe/Athens", "America/Tijuana", "Europe/Dublin", "Asia/Amman", "Europe/Helsinki", "Asia/Ashgabat", "Europe/Istanbul", "Asia/Baghdad", "Europe/Kaliningrad", "Asia/Baku", "Europe/Moscow", "Asia/Bangkok", "Europe/Paris", "Asia/Beirut", "Europe/Prague", "Asia/Calcutta", "Europe/Sarajevo", "Asia/Damascus", "Pacific/Auckland", "Asia/Dhaka", "Pacific/Fiji", "Asia/Irkutsk", "Pacific/Guam", "Asia/Jerusalem", "Pacific/Honolulu", "Asia/Kabul", "Pacific/Samoa", "Asia/Karachi", "US/Alaska", "Asia/Kathmandu", "US/Central", "Asia/Krasnoyarsk", "US/Eastern", "Asia/Magadan", "US/East-Indiana", "Asia/Muscat", "US/Pacific", "Asia/Novosibirsk"),
 				},
 			},
 			"snapshot_gtid": schema.StringAttribute{
@@ -169,6 +173,34 @@ func SourceMysqlSchema() schema.Schema {
 				Validators: []validator.String{
 					stringvalidator.OneOf("Yes", "No"),
 				},
+			},
+			"source_regex_support_enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Enable regex support. Useful for merging multiple tables into the same output topic. NOTE: most times when regex support is enabled there will be 100s of 1000s of tables and \"Capture Only Captured Tables DDL?\" must also be enabled. Defaults to false.",
+				MarkdownDescription: "Enable regex support. Useful for merging multiple tables into the same output topic. NOTE: most times when regex support is enabled there will be 100s of 1000s of tables and \"Capture Only Captured Tables DDL?\" must also be enabled. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"transforms_source_regex_support_regex_replacement": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Replacement string for matching regex snippets. Defaults to \"_REGEX_\".",
+				MarkdownDescription: "Replacement string for matching regex snippets. Defaults to `_REGEX_`.",
+				Default:             stringdefault.StaticString("_REGEX_"),
+			},
+			"transforms_source_regex_support_key_field_template": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId Defaults to \"{{database}}.{{table}}\".",
+				MarkdownDescription: "Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId Defaults to `{{database}}.{{table}}`.",
+				Default:             stringdefault.StaticString("{{database}}.{{table}}"),
+			},
+			"transforms_source_regex_support_metadata_field_name": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Name of the extra metadata field to store source information and ensure uniqueness across all tables when regex support is enabled. Defaults to \"_streamkap_source_metadata\".",
+				MarkdownDescription: "Name of the extra metadata field to store source information and ensure uniqueness across all tables when regex support is enabled. Defaults to `_streamkap_source_metadata`.",
+				Default:             stringdefault.StaticString("_streamkap_source_metadata"),
 			},
 			"schema_history_internal_store_only_captured_databases_ddl": schema.BoolAttribute{
 				Optional:            true,
@@ -280,35 +312,39 @@ func SourceMysqlSchema() schema.Schema {
 
 // SourceMysqlFieldMappings maps Terraform attribute names to API field names.
 var SourceMysqlFieldMappings = map[string]string{
-	"database_hostname":                            "database.hostname.user.defined",
-	"database_port":                                "database.port.user.defined",
-	"database_user":                                "database.user",
-	"database_password":                            "database.password",
-	"database_include_list":                        "database.include.list.user.defined",
-	"table_include_list":                           "table.include.list.user.defined",
-	"signal_data_collection_schema_or_database":    "signal.data.collection.schema.or.database",
-	"column_include_list_toggled":                  "column.include.list.toggled",
-	"column_include_list":                          "column.include.list.user.defined",
-	"column_exclude_list":                          "column.exclude.list.user.defined",
-	"heartbeat_enabled":                            "heartbeat.enabled",
-	"heartbeat_data_collection_schema_or_database": "heartbeat.data.collection.schema.or.database",
-	"database_connection_time_zone":                "database.connectionTimeZone",
-	"snapshot_gtid":                                "snapshot.gtid",
+	"database_hostname":                                         "database.hostname.user.defined",
+	"database_port":                                             "database.port.user.defined",
+	"database_user":                                             "database.user",
+	"database_password":                                         "database.password",
+	"database_include_list":                                     "database.include.list.user.defined",
+	"table_include_list":                                        "table.include.list.user.defined",
+	"signal_data_collection_schema_or_database":                 "signal.data.collection.schema.or.database",
+	"column_include_list_toggled":                               "column.include.list.toggled",
+	"column_include_list":                                       "column.include.list.user.defined",
+	"column_exclude_list":                                       "column.exclude.list.user.defined",
+	"heartbeat_enabled":                                         "heartbeat.enabled",
+	"heartbeat_data_collection_schema_or_database":              "heartbeat.data.collection.schema.or.database",
+	"database_connection_time_zone":                             "database.connectionTimeZone",
+	"snapshot_gtid":                                             "snapshot.gtid",
+	"source_regex_support_enabled":                              "SourceRegexSupport.enabled",
+	"transforms_source_regex_support_regex_replacement":         "transforms.SourceRegexSupport.regex.replacement",
+	"transforms_source_regex_support_key_field_template":        "transforms.SourceRegexSupport.key.field.template",
+	"transforms_source_regex_support_metadata_field_name":       "transforms.SourceRegexSupport.metadata.field.name",
 	"schema_history_internal_store_only_captured_databases_ddl": "schema.history.internal.store.only.captured.databases.ddl",
 	"schema_history_internal_store_only_captured_tables_ddl":    "schema.history.internal.store.only.captured.tables.ddl",
-	"binary_handling_mode": "binary.handling.mode",
-	"ssh_enabled":          "ssh.enabled",
-	"ssh_host":             "ssh.host",
-	"ssh_port":             "ssh.port",
-	"ssh_user":             "ssh.user",
-	"transforms_insert_static_key1_static_field":   "transforms.InsertStaticKey1.static.field",
-	"transforms_insert_static_key1_static_value":   "transforms.InsertStaticKey1.static.value",
-	"transforms_insert_static_value1_static_field": "transforms.InsertStaticValue1.static.field",
-	"transforms_insert_static_value1_static_value": "transforms.InsertStaticValue1.static.value",
-	"transforms_insert_static_key2_static_field":   "transforms.InsertStaticKey2.static.field",
-	"transforms_insert_static_key2_static_value":   "transforms.InsertStaticKey2.static.value",
-	"transforms_insert_static_value2_static_field": "transforms.InsertStaticValue2.static.field",
-	"transforms_insert_static_value2_static_value": "transforms.InsertStaticValue2.static.value",
-	"predicates_is_topic_to_enrich_pattern":        "predicates.IsTopicToEnrich.pattern",
-	"ssh_public_key":                               "ssh.public.key.user.displayed",
+	"binary_handling_mode":                                      "binary.handling.mode",
+	"ssh_enabled":                                               "ssh.enabled",
+	"ssh_host":                                                  "ssh.host",
+	"ssh_port":                                                  "ssh.port",
+	"ssh_user":                                                  "ssh.user",
+	"transforms_insert_static_key1_static_field":                "transforms.InsertStaticKey1.static.field",
+	"transforms_insert_static_key1_static_value":                "transforms.InsertStaticKey1.static.value",
+	"transforms_insert_static_value1_static_field":              "transforms.InsertStaticValue1.static.field",
+	"transforms_insert_static_value1_static_value":              "transforms.InsertStaticValue1.static.value",
+	"transforms_insert_static_key2_static_field":                "transforms.InsertStaticKey2.static.field",
+	"transforms_insert_static_key2_static_value":                "transforms.InsertStaticKey2.static.value",
+	"transforms_insert_static_value2_static_field":              "transforms.InsertStaticValue2.static.field",
+	"transforms_insert_static_value2_static_value":              "transforms.InsertStaticValue2.static.value",
+	"predicates_is_topic_to_enrich_pattern":                     "predicates.IsTopicToEnrich.pattern",
+	"ssh_public_key":                                            "ssh.public.key.user.displayed",
 }

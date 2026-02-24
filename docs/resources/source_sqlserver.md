@@ -39,27 +39,17 @@ This resource creates and manages a SQL Server source for Streamkap data pipelin
 - `column_exclude_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.
 - `database_encrypt` (String) Use TLS encryption with the SQL Server? Defaults to `true`. Valid values: `true`, `false`.
 - `database_port` (Number) SQL Server Port. For example, 1433 Defaults to `1433`.
-- `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'.
-
-**Conditionally Required:** This field is required when `heartbeat_enabled` is `true`. Defaults to `streamkap`.
+- `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'. Defaults to `streamkap`.
 - `heartbeat_enabled` (Boolean) Heartbeats are used to monitor whether the connector is still receiving change events from the database, especially when there is low and intermittent traffic. Defaults to `true`.
 - `schema_history_internal_store_only_captured_databases_ddl` (Boolean) Specifies whether the connector records schema structures from all logical databases in the database instance or only captured databases. Enabling this when you have many databases in your instance can improve performance and avoid timeouts. Defaults to `false`.
 - `schema_history_internal_store_only_captured_tables_ddl` (Boolean) Specifies whether the connector records schema structures from all logical tables in the captured schemas or databases, or only captured tables. Enabling this when you have many tables can improve performance and avoid timeouts. Defaults to `false`.
 - `signal_data_collection_schema_or_database` (String) Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here. Defaults to `streamkap`.
-- `snapshot_custom_table_config` (Attributes Map) Explicitly set nb of parallel chunks for tables. Format: {"db.Some_Tbl": {"chunks": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably (see [below for nested schema](#nestedatt--snapshot_custom_table_config))
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
-- `ssh_host` (String) Hostname of your SSH server.
-
-**Conditionally Required:** This field is required when `ssh_enabled` is `true`.
-- `ssh_port` (Number) Port of your SSH server.
-
-**Conditionally Required:** This field is required when `ssh_enabled` is `true`. Defaults to `22`.
-- `ssh_public_key` (String) Public key to add to SSH server.
-
-**Conditionally Required:** This field is required when `ssh_enabled` is `true`. Defaults to `<SSH.PUBLIC.KEY>`.
-- `ssh_user` (String) User that allows Streamkap to connect to SSH server.
-
-**Conditionally Required:** This field is required when `ssh_enabled` is `true`. Defaults to `streamkap`.
+- `ssh_host` (String) Hostname of your SSH server
+- `ssh_port` (Number) Port of your SSH server Defaults to `22`.
+- `ssh_public_key` (String) Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.
+- `ssh_user` (String) User that allows Streamkap to connect to SSH server Defaults to `streamkap`.
+- `streamkap_snapshot_custom_table_config` (String) Explicitly set nb of parallel chunks for tables. Format: {"db.Some_Tbl": {"chunks": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.
 - `streamkap_snapshot_large_table_threshold` (Number) The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to `20000`.
 - `streamkap_snapshot_parallelism` (Number) How many parallel chunk requests to send to the source DB. Defaults to `1`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
@@ -72,14 +62,6 @@ This resource creates and manages a SQL Server source for Streamkap data pipelin
 
 - `connector` (String) Connector type
 - `id` (String) Unique identifier for the source
-
-<a id="nestedatt--snapshot_custom_table_config"></a>
-### Nested Schema for `snapshot_custom_table_config`
-
-Required:
-
-- `chunks` (Number)
-
 
 <a id="nestedblock--timeouts"></a>
 ### Nested Schema for `timeouts`

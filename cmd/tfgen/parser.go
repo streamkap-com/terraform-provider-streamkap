@@ -383,7 +383,7 @@ func (e *ConfigEntry) GetRawValues() []string {
 	for _, v := range e.Value.RawValues {
 		switch val := v.(type) {
 		case string:
-			result = append(result, val)
+			result = append(result, strings.TrimSpace(val))
 		case bool:
 			result = append(result, fmt.Sprintf("%t", val))
 		case float64:

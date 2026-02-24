@@ -31,7 +31,11 @@ type SourceMariadbModel struct {
 	HeartbeatDataCollectionSchemaOrDatabase            types.String   `tfsdk:"heartbeat_data_collection_schema_or_database"`
 	DatabaseConnectionTimeZone                         types.String   `tfsdk:"database_connection_time_zone"`
 	SnapshotGtid                                       types.String   `tfsdk:"snapshot_gtid"`
+	SourceRegexSupportEnabled                          types.Bool     `tfsdk:"source_regex_support_enabled"`
+	TransformsSourceRegexSupportRegexReplacement       types.String   `tfsdk:"transforms_source_regex_support_regex_replacement"`
+	TransformsSourceRegexSupportKeyFieldTemplate       types.String   `tfsdk:"transforms_source_regex_support_key_field_template"`
 	SchemaHistoryInternalStoreOnlyCapturedDatabasesDdl types.Bool     `tfsdk:"schema_history_internal_store_only_captured_databases_ddl"`
+	TransformsSourceRegexSupportMetadataFieldName      types.String   `tfsdk:"transforms_source_regex_support_metadata_field_name"`
 	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool     `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
 	BinaryHandlingMode                                 types.String   `tfsdk:"binary_handling_mode"`
 	DatabaseSSLMode                                    types.String   `tfsdk:"database_ssl_mode"`
@@ -39,8 +43,8 @@ type SourceMariadbModel struct {
 	SSHHost                                            types.String   `tfsdk:"ssh_host"`
 	SSHPort                                            types.Int64    `tfsdk:"ssh_port"`
 	SSHUser                                            types.String   `tfsdk:"ssh_user"`
-	SSHPublicKey                                       types.String   `tfsdk:"ssh_public_key"`
 	ColumnExcludeList                                  types.String   `tfsdk:"column_exclude_list"`
+	SSHPublicKey                                       types.String   `tfsdk:"ssh_public_key"`
 	Timeouts                                           timeouts.Value `tfsdk:"timeouts"`
 }
 
@@ -119,18 +123,18 @@ func SourceMariadbSchema() schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
-				Optional:            true,
-				Description:         "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'. Required when heartbeat_enabled is true and snapshot_gtid is set to 'No'.",
-				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'. Required when `heartbeat_enabled` is `true` and `snapshot_gtid` is set to `No`.",
+				Required:            true,
+				Description:         "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
+				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
 			},
 			"database_connection_time_zone": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MariaDB server session variables 'time_zone' or 'system_time_zone'  Defaults to \"SERVER\". Valid values: SERVER, UTC, Africa/Cairo,  Asia/Riyadh, Africa/Casablanca, Asia/Seoul, Africa/Harare, Asia/Shanghai, Africa/Monrovia, Asia/Singapore, Africa/Nairobi, Asia/Taipei, Africa/Tripoli, Asia/Tehran, Africa/Windhoek, Asia/Tokyo, America/Araguaina, Asia/Ulaanbaatar, America/Asuncion, Asia/Vladivostok, America/Bogota, Asia/Yakutsk, America/Buenos_Aires, Asia/Yerevan, America/Caracas, Atlantic/Azores, America/Chihuahua, Australia/Adelaide, America/Cuiaba, Australia/Brisbane, America/Denver, Australia/Darwin, America/Fortaleza, Australia/Hobart, America/Guatemala, Australia/Perth, America/Halifax, Australia/Sydney, America/Manaus, Brazil/East, America/Matamoros, Canada/Newfoundland, America/Monterrey, Canada/Saskatchewan, America/Montevideo, Canada/Yukon, America/Phoenix, Europe/Amsterdam, America/Santiago, Europe/Athens, America/Tijuana, Europe/Dublin, Asia/Amman, Europe/Helsinki, Asia/Ashgabat, Europe/Istanbul, Asia/Baghdad, Europe/Kaliningrad, Asia/Baku, Europe/Moscow, Asia/Bangkok, Europe/Paris, Asia/Beirut, Europe/Prague, Asia/Calcutta, Europe/Sarajevo, Asia/Damascus, Pacific/Auckland, Asia/Dhaka, Pacific/Fiji, Asia/Irkutsk, Pacific/Guam, Asia/Jerusalem, Pacific/Honolulu, Asia/Kabul, Pacific/Samoa, Asia/Karachi, US/Alaska, Asia/Kathmandu, US/Central, Asia/Krasnoyarsk, US/Eastern, Asia/Magadan, US/East-Indiana, Asia/Muscat, US/Pacific, Asia/Novosibirsk.",
-				MarkdownDescription: "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MariaDB server session variables 'time_zone' or 'system_time_zone'  Defaults to `SERVER`. Valid values: `SERVER`, `UTC`, `Africa/Cairo`, ` Asia/Riyadh`, `Africa/Casablanca`, `Asia/Seoul`, `Africa/Harare`, `Asia/Shanghai`, `Africa/Monrovia`, `Asia/Singapore`, `Africa/Nairobi`, `Asia/Taipei`, `Africa/Tripoli`, `Asia/Tehran`, `Africa/Windhoek`, `Asia/Tokyo`, `America/Araguaina`, `Asia/Ulaanbaatar`, `America/Asuncion`, `Asia/Vladivostok`, `America/Bogota`, `Asia/Yakutsk`, `America/Buenos_Aires`, `Asia/Yerevan`, `America/Caracas`, `Atlantic/Azores`, `America/Chihuahua`, `Australia/Adelaide`, `America/Cuiaba`, `Australia/Brisbane`, `America/Denver`, `Australia/Darwin`, `America/Fortaleza`, `Australia/Hobart`, `America/Guatemala`, `Australia/Perth`, `America/Halifax`, `Australia/Sydney`, `America/Manaus`, `Brazil/East`, `America/Matamoros`, `Canada/Newfoundland`, `America/Monterrey`, `Canada/Saskatchewan`, `America/Montevideo`, `Canada/Yukon`, `America/Phoenix`, `Europe/Amsterdam`, `America/Santiago`, `Europe/Athens`, `America/Tijuana`, `Europe/Dublin`, `Asia/Amman`, `Europe/Helsinki`, `Asia/Ashgabat`, `Europe/Istanbul`, `Asia/Baghdad`, `Europe/Kaliningrad`, `Asia/Baku`, `Europe/Moscow`, `Asia/Bangkok`, `Europe/Paris`, `Asia/Beirut`, `Europe/Prague`, `Asia/Calcutta`, `Europe/Sarajevo`, `Asia/Damascus`, `Pacific/Auckland`, `Asia/Dhaka`, `Pacific/Fiji`, `Asia/Irkutsk`, `Pacific/Guam`, `Asia/Jerusalem`, `Pacific/Honolulu`, `Asia/Kabul`, `Pacific/Samoa`, `Asia/Karachi`, `US/Alaska`, `Asia/Kathmandu`, `US/Central`, `Asia/Krasnoyarsk`, `US/Eastern`, `Asia/Magadan`, `US/East-Indiana`, `Asia/Muscat`, `US/Pacific`, `Asia/Novosibirsk`.",
+				Description:         "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MariaDB server session variables 'time_zone' or 'system_time_zone'  Defaults to \"SERVER\". Valid values: SERVER, UTC, Africa/Cairo, Asia/Riyadh, Africa/Casablanca, Asia/Seoul, Africa/Harare, Asia/Shanghai, Africa/Monrovia, Asia/Singapore, Africa/Nairobi, Asia/Taipei, Africa/Tripoli, Asia/Tehran, Africa/Windhoek, Asia/Tokyo, America/Araguaina, Asia/Ulaanbaatar, America/Asuncion, Asia/Vladivostok, America/Bogota, Asia/Yakutsk, America/Buenos_Aires, Asia/Yerevan, America/Caracas, Atlantic/Azores, America/Chihuahua, Australia/Adelaide, America/Cuiaba, Australia/Brisbane, America/Denver, Australia/Darwin, America/Fortaleza, Australia/Hobart, America/Guatemala, Australia/Perth, America/Halifax, Australia/Sydney, America/Manaus, Brazil/East, America/Matamoros, Canada/Newfoundland, America/Monterrey, Canada/Saskatchewan, America/Montevideo, Canada/Yukon, America/Phoenix, Europe/Amsterdam, America/Santiago, Europe/Athens, America/Tijuana, Europe/Dublin, Asia/Amman, Europe/Helsinki, Asia/Ashgabat, Europe/Istanbul, Asia/Baghdad, Europe/Kaliningrad, Asia/Baku, Europe/Moscow, Asia/Bangkok, Europe/Paris, Asia/Beirut, Europe/Prague, Asia/Calcutta, Europe/Sarajevo, Asia/Damascus, Pacific/Auckland, Asia/Dhaka, Pacific/Fiji, Asia/Irkutsk, Pacific/Guam, Asia/Jerusalem, Pacific/Honolulu, Asia/Kabul, Pacific/Samoa, Asia/Karachi, US/Alaska, Asia/Kathmandu, US/Central, Asia/Krasnoyarsk, US/Eastern, Asia/Magadan, US/East-Indiana, Asia/Muscat, US/Pacific, Asia/Novosibirsk.",
+				MarkdownDescription: "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MariaDB server session variables 'time_zone' or 'system_time_zone'  Defaults to `SERVER`. Valid values: `SERVER`, `UTC`, `Africa/Cairo`, `Asia/Riyadh`, `Africa/Casablanca`, `Asia/Seoul`, `Africa/Harare`, `Asia/Shanghai`, `Africa/Monrovia`, `Asia/Singapore`, `Africa/Nairobi`, `Asia/Taipei`, `Africa/Tripoli`, `Asia/Tehran`, `Africa/Windhoek`, `Asia/Tokyo`, `America/Araguaina`, `Asia/Ulaanbaatar`, `America/Asuncion`, `Asia/Vladivostok`, `America/Bogota`, `Asia/Yakutsk`, `America/Buenos_Aires`, `Asia/Yerevan`, `America/Caracas`, `Atlantic/Azores`, `America/Chihuahua`, `Australia/Adelaide`, `America/Cuiaba`, `Australia/Brisbane`, `America/Denver`, `Australia/Darwin`, `America/Fortaleza`, `Australia/Hobart`, `America/Guatemala`, `Australia/Perth`, `America/Halifax`, `Australia/Sydney`, `America/Manaus`, `Brazil/East`, `America/Matamoros`, `Canada/Newfoundland`, `America/Monterrey`, `Canada/Saskatchewan`, `America/Montevideo`, `Canada/Yukon`, `America/Phoenix`, `Europe/Amsterdam`, `America/Santiago`, `Europe/Athens`, `America/Tijuana`, `Europe/Dublin`, `Asia/Amman`, `Europe/Helsinki`, `Asia/Ashgabat`, `Europe/Istanbul`, `Asia/Baghdad`, `Europe/Kaliningrad`, `Asia/Baku`, `Europe/Moscow`, `Asia/Bangkok`, `Europe/Paris`, `Asia/Beirut`, `Europe/Prague`, `Asia/Calcutta`, `Europe/Sarajevo`, `Asia/Damascus`, `Pacific/Auckland`, `Asia/Dhaka`, `Pacific/Fiji`, `Asia/Irkutsk`, `Pacific/Guam`, `Asia/Jerusalem`, `Pacific/Honolulu`, `Asia/Kabul`, `Pacific/Samoa`, `Asia/Karachi`, `US/Alaska`, `Asia/Kathmandu`, `US/Central`, `Asia/Krasnoyarsk`, `US/Eastern`, `Asia/Magadan`, `US/East-Indiana`, `Asia/Muscat`, `US/Pacific`, `Asia/Novosibirsk`.",
 				Default:             stringdefault.StaticString("SERVER"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("SERVER", "UTC", "Africa/Cairo", " Asia/Riyadh", "Africa/Casablanca", "Asia/Seoul", "Africa/Harare", "Asia/Shanghai", "Africa/Monrovia", "Asia/Singapore", "Africa/Nairobi", "Asia/Taipei", "Africa/Tripoli", "Asia/Tehran", "Africa/Windhoek", "Asia/Tokyo", "America/Araguaina", "Asia/Ulaanbaatar", "America/Asuncion", "Asia/Vladivostok", "America/Bogota", "Asia/Yakutsk", "America/Buenos_Aires", "Asia/Yerevan", "America/Caracas", "Atlantic/Azores", "America/Chihuahua", "Australia/Adelaide", "America/Cuiaba", "Australia/Brisbane", "America/Denver", "Australia/Darwin", "America/Fortaleza", "Australia/Hobart", "America/Guatemala", "Australia/Perth", "America/Halifax", "Australia/Sydney", "America/Manaus", "Brazil/East", "America/Matamoros", "Canada/Newfoundland", "America/Monterrey", "Canada/Saskatchewan", "America/Montevideo", "Canada/Yukon", "America/Phoenix", "Europe/Amsterdam", "America/Santiago", "Europe/Athens", "America/Tijuana", "Europe/Dublin", "Asia/Amman", "Europe/Helsinki", "Asia/Ashgabat", "Europe/Istanbul", "Asia/Baghdad", "Europe/Kaliningrad", "Asia/Baku", "Europe/Moscow", "Asia/Bangkok", "Europe/Paris", "Asia/Beirut", "Europe/Prague", "Asia/Calcutta", "Europe/Sarajevo", "Asia/Damascus", "Pacific/Auckland", "Asia/Dhaka", "Pacific/Fiji", "Asia/Irkutsk", "Pacific/Guam", "Asia/Jerusalem", "Pacific/Honolulu", "Asia/Kabul", "Pacific/Samoa", "Asia/Karachi", "US/Alaska", "Asia/Kathmandu", "US/Central", "Asia/Krasnoyarsk", "US/Eastern", "Asia/Magadan", "US/East-Indiana", "Asia/Muscat", "US/Pacific", "Asia/Novosibirsk"),
+					stringvalidator.OneOf("SERVER", "UTC", "Africa/Cairo", "Asia/Riyadh", "Africa/Casablanca", "Asia/Seoul", "Africa/Harare", "Asia/Shanghai", "Africa/Monrovia", "Asia/Singapore", "Africa/Nairobi", "Asia/Taipei", "Africa/Tripoli", "Asia/Tehran", "Africa/Windhoek", "Asia/Tokyo", "America/Araguaina", "Asia/Ulaanbaatar", "America/Asuncion", "Asia/Vladivostok", "America/Bogota", "Asia/Yakutsk", "America/Buenos_Aires", "Asia/Yerevan", "America/Caracas", "Atlantic/Azores", "America/Chihuahua", "Australia/Adelaide", "America/Cuiaba", "Australia/Brisbane", "America/Denver", "Australia/Darwin", "America/Fortaleza", "Australia/Hobart", "America/Guatemala", "Australia/Perth", "America/Halifax", "Australia/Sydney", "America/Manaus", "Brazil/East", "America/Matamoros", "Canada/Newfoundland", "America/Monterrey", "Canada/Saskatchewan", "America/Montevideo", "Canada/Yukon", "America/Phoenix", "Europe/Amsterdam", "America/Santiago", "Europe/Athens", "America/Tijuana", "Europe/Dublin", "Asia/Amman", "Europe/Helsinki", "Asia/Ashgabat", "Europe/Istanbul", "Asia/Baghdad", "Europe/Kaliningrad", "Asia/Baku", "Europe/Moscow", "Asia/Bangkok", "Europe/Paris", "Asia/Beirut", "Europe/Prague", "Asia/Calcutta", "Europe/Sarajevo", "Asia/Damascus", "Pacific/Auckland", "Asia/Dhaka", "Pacific/Fiji", "Asia/Irkutsk", "Pacific/Guam", "Asia/Jerusalem", "Pacific/Honolulu", "Asia/Kabul", "Pacific/Samoa", "Asia/Karachi", "US/Alaska", "Asia/Kathmandu", "US/Central", "Asia/Krasnoyarsk", "US/Eastern", "Asia/Magadan", "US/East-Indiana", "Asia/Muscat", "US/Pacific", "Asia/Novosibirsk"),
 				},
 			},
 			"snapshot_gtid": schema.StringAttribute{
@@ -143,12 +147,40 @@ func SourceMariadbSchema() schema.Schema {
 					stringvalidator.OneOf("Yes", "No"),
 				},
 			},
+			"source_regex_support_enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Enable regex support. Useful for merging multiple tables into the same output topic. NOTE: most times when regex support is enabled there will be 100s of 1000s of tables and \"Capture Only Captured Tables DDL?\" must also be enabled. Defaults to false.",
+				MarkdownDescription: "Enable regex support. Useful for merging multiple tables into the same output topic. NOTE: most times when regex support is enabled there will be 100s of 1000s of tables and \"Capture Only Captured Tables DDL?\" must also be enabled. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"transforms_source_regex_support_regex_replacement": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Replacement string for matching regex snippets. Defaults to \"REGEX\".",
+				MarkdownDescription: "Replacement string for matching regex snippets. Defaults to `REGEX`.",
+				Default:             stringdefault.StaticString("REGEX"),
+			},
+			"transforms_source_regex_support_key_field_template": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId Defaults to \"{{database}}.{{table}}\".",
+				MarkdownDescription: "Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId Defaults to `{{database}}.{{table}}`.",
+				Default:             stringdefault.StaticString("{{database}}.{{table}}"),
+			},
 			"schema_history_internal_store_only_captured_databases_ddl": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
 				Description:         "Specifies whether the connector records schema structures from all logical databases in the database instance or only captured databases. Enabling this when you have many databases in your instance can improve performance and avoid timeouts. Defaults to false.",
 				MarkdownDescription: "Specifies whether the connector records schema structures from all logical databases in the database instance or only captured databases. Enabling this when you have many databases in your instance can improve performance and avoid timeouts. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
+			},
+			"transforms_source_regex_support_metadata_field_name": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Name of the extra metadata field to store source information and ensure uniqueness across all tables when regex support is enabled. Defaults to \"_streamkap_source_metadata\".",
+				MarkdownDescription: "Name of the extra metadata field to store source information and ensure uniqueness across all tables when regex support is enabled. Defaults to `_streamkap_source_metadata`.",
+				Default:             stringdefault.StaticString("_streamkap_source_metadata"),
 			},
 			"schema_history_internal_store_only_captured_tables_ddl": schema.BoolAttribute{
 				Optional:            true,
@@ -170,9 +202,9 @@ func SourceMariadbSchema() schema.Schema {
 			"database_ssl_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Enables SSL/TLS in a specific mode Defaults to \"required\". Valid values: required, disabled.",
-				MarkdownDescription: "Enables SSL/TLS in a specific mode Defaults to `required`. Valid values: `required`, `disabled`.",
-				Default:             stringdefault.StaticString("required"),
+				Description:         "Enables SSL/TLS in a specific mode. 'disable' = unencrypted connection. 'trust' = encrypted, no certificate verification. Defaults to \"trust\". Valid values: disable, trust.",
+				MarkdownDescription: "Enables SSL/TLS in a specific mode. 'disable' = unencrypted connection. 'trust' = encrypted, no certificate verification. Defaults to `trust`. Valid values: `disable`, `trust`.",
+				Default:             stringdefault.StaticString("trust"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("disable", "trust"),
 				},
@@ -203,6 +235,11 @@ func SourceMariadbSchema() schema.Schema {
 				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
+			"column_exclude_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
+				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
+			},
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -210,36 +247,35 @@ func SourceMariadbSchema() schema.Schema {
 				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
-			"column_exclude_list": schema.StringAttribute{
-				Optional:            true,
-				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
-				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
-			},
 		},
 	}
 }
 
 // SourceMariadbFieldMappings maps Terraform attribute names to API field names.
 var SourceMariadbFieldMappings = map[string]string{
-	"database_hostname":                            "database.hostname.user.defined",
-	"database_port":                                "database.port.user.defined",
-	"database_user":                                "database.user",
-	"database_password":                            "database.password",
-	"database_include_list":                        "database.include.list.user.defined",
-	"table_include_list":                           "table.include.list.user.defined",
-	"signal_data_collection_schema_or_database":    "signal.data.collection.schema.or.database",
-	"heartbeat_enabled":                            "heartbeat.enabled",
-	"heartbeat_data_collection_schema_or_database": "heartbeat.data.collection.schema.or.database",
-	"database_connection_time_zone":                "database.connectionTimeZone",
-	"snapshot_gtid":                                "snapshot.gtid",
+	"database_hostname":                                         "database.hostname.user.defined",
+	"database_port":                                             "database.port.user.defined",
+	"database_user":                                             "database.user",
+	"database_password":                                         "database.password",
+	"database_include_list":                                     "database.include.list.user.defined",
+	"table_include_list":                                        "table.include.list.user.defined",
+	"signal_data_collection_schema_or_database":                 "signal.data.collection.schema.or.database",
+	"heartbeat_enabled":                                         "heartbeat.enabled",
+	"heartbeat_data_collection_schema_or_database":              "heartbeat.data.collection.schema.or.database",
+	"database_connection_time_zone":                             "database.connectionTimeZone",
+	"snapshot_gtid":                                             "snapshot.gtid",
+	"source_regex_support_enabled":                              "SourceRegexSupport.enabled",
+	"transforms_source_regex_support_regex_replacement":         "transforms.SourceRegexSupport.regex.replacement",
+	"transforms_source_regex_support_key_field_template":        "transforms.SourceRegexSupport.key.field.template",
 	"schema_history_internal_store_only_captured_databases_ddl": "schema.history.internal.store.only.captured.databases.ddl",
+	"transforms_source_regex_support_metadata_field_name":       "transforms.SourceRegexSupport.metadata.field.name",
 	"schema_history_internal_store_only_captured_tables_ddl":    "schema.history.internal.store.only.captured.tables.ddl",
-	"binary_handling_mode": "binary.handling.mode",
-	"database_ssl_mode":    "database.ssl.mode",
-	"ssh_enabled":          "ssh.enabled",
-	"ssh_host":             "ssh.host",
-	"ssh_port":             "ssh.port",
-	"ssh_user":             "ssh.user",
-	"ssh_public_key":       "ssh.public.key.user.displayed",
-	"column_exclude_list":  "column.exclude.list.user.defined",
+	"binary_handling_mode":                                      "binary.handling.mode",
+	"database_ssl_mode":                                         "database.ssl.mode",
+	"ssh_enabled":                                               "ssh.enabled",
+	"ssh_host":                                                  "ssh.host",
+	"ssh_port":                                                  "ssh.port",
+	"ssh_user":                                                  "ssh.user",
+	"column_exclude_list":                                       "column.exclude.list.user.defined",
+	"ssh_public_key":                                            "ssh.public.key.user.displayed",
 }

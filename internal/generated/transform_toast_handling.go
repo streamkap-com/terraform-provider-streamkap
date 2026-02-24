@@ -16,8 +16,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// TransformRollupModel is the Terraform model for the rollup transform.
-type TransformRollupModel struct {
+// TransformToastHandlingModel is the Terraform model for the toast_handling transform.
+type TransformToastHandlingModel struct {
 	ID                                  types.String         `tfsdk:"id"`
 	Name                                types.String         `tfsdk:"name"`
 	TransformType                       types.String         `tfsdk:"transform_type"`
@@ -31,12 +31,12 @@ type TransformRollupModel struct {
 	Timeouts                            timeouts.Value       `tfsdk:"timeouts"`
 }
 
-// TransformRollupSchema returns the Terraform schema for the rollup transform.
-func TransformRollupSchema() schema.Schema {
+// TransformToastHandlingSchema returns the Terraform schema for the toast_handling transform.
+func TransformToastHandlingSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Rollup transform connector.",
-		MarkdownDescription: "Manages a **Rollup transform connector**.\n\n" +
-			"This resource creates and manages a Rollup transform for Streamkap data pipelines.\n\n" +
+		Description: "Manages a TOAST Handling transform connector.",
+		MarkdownDescription: "Manages a **TOAST Handling transform connector**.\n\n" +
+			"This resource creates and manages a TOAST Handling transform for Streamkap data pipelines.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -63,11 +63,11 @@ func TransformRollupSchema() schema.Schema {
 			"transforms_language": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Language of the transform. Defaults to \"SQL\". Valid values: SQL.",
-				MarkdownDescription: "Language of the transform. Defaults to `SQL`. Valid values: `SQL`.",
-				Default:             stringdefault.StaticString("SQL"),
+				Description:         "Implementation language Defaults to \"Python\". Valid values: JavaScript, Python.",
+				MarkdownDescription: "Implementation language Defaults to `Python`. Valid values: `JavaScript`, `Python`.",
+				Default:             stringdefault.StaticString("Python"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("SQL"),
+					stringvalidator.OneOf("JavaScript", "Python"),
 				},
 			},
 			"transforms_input_topic_pattern": schema.StringAttribute{
@@ -118,8 +118,8 @@ func TransformRollupSchema() schema.Schema {
 	}
 }
 
-// TransformRollupFieldMappings maps Terraform attribute names to API field names.
-var TransformRollupFieldMappings = map[string]string{
+// TransformToastHandlingFieldMappings maps Terraform attribute names to API field names.
+var TransformToastHandlingFieldMappings = map[string]string{
 	"transforms_language":                    "transforms.language",
 	"transforms_input_topic_pattern":         "transforms.input.topic.pattern",
 	"transforms_output_topic_pattern":        "transforms.output.topic.pattern",

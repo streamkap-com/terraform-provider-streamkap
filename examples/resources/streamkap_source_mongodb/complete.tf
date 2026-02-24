@@ -29,7 +29,7 @@ resource "streamkap_source_mongodb" "example-source-mongodb" {
   mongodb_connection_string = var.source_mongodb_connection_string
 
   # Database and collection selection
-  database_include_list   = "Test"                          # Databases to sync
+  database_include_list   = "Test"                            # Databases to sync
   collection_include_list = "Test.test_data4,Test.test_data2" # Collections to capture (db.collection format)
 
   # Signal collection for incremental snapshots (required)

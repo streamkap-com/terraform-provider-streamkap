@@ -583,35 +583,33 @@ func (r *BaseConnectorResource) modelToConfigMap(ctx context.Context, model any)
 		fieldValue := v.Field(fieldIdx)
 		apiValue := r.extractTerraformValue(ctx, fieldValue)
 
-		// Only include non-nil values in the config map
-		if apiValue != nil {
-			// Check if this field should be serialized as a JSON string
-			if r.isJSONStringField(tfAttr, jsonStringFields) {
-				// If apiValue is a map, serialize it to JSON string with double-encoding
-				// The API expects: {"topic":"{\"key\":\"value\"}"} (inner values are JSON strings)
-				if mapVal, isMap := apiValue.(map[string]map[string]any); isMap {
-					// First, convert each inner map to a JSON string
-					stringifiedMap := make(map[string]string)
-					for key, innerMap := range mapVal {
-						innerBytes, err := json.Marshal(innerMap)
-						if err != nil {
-							tflog.Warn(ctx, fmt.Sprintf("Failed to serialize inner map for %s.%s to JSON: %s", tfAttr, key, err))
-							continue
-						}
-						stringifiedMap[key] = string(innerBytes)
-					}
-					// Then marshal the outer map with string values
-					jsonBytes, err := json.Marshal(stringifiedMap)
+		// Check if this non-nil field should be serialized as a JSON string
+		if apiValue != nil && r.isJSONStringField(tfAttr, jsonStringFields) {
+			// If apiValue is a map, serialize it to JSON string with double-encoding
+			// The API expects: {"topic":"{\"key\":\"value\"}"} (inner values are JSON strings)
+			if mapVal, isMap := apiValue.(map[string]map[string]any); isMap {
+				// First, convert each inner map to a JSON string
+				stringifiedMap := make(map[string]string)
+				for key, innerMap := range mapVal {
+					innerBytes, err := json.Marshal(innerMap)
 					if err != nil {
-						tflog.Warn(ctx, fmt.Sprintf("Failed to serialize %s to JSON: %s", tfAttr, err))
-					} else {
-						configMap[apiField] = string(jsonBytes)
+						tflog.Warn(ctx, fmt.Sprintf("Failed to serialize inner map for %s.%s to JSON: %s", tfAttr, key, err))
 						continue
 					}
+					stringifiedMap[key] = string(innerBytes)
+				}
+				// Then marshal the outer map with string values
+				jsonBytes, err := json.Marshal(stringifiedMap)
+				if err != nil {
+					tflog.Warn(ctx, fmt.Sprintf("Failed to serialize %s to JSON: %s", tfAttr, err))
+				} else {
+					configMap[apiField] = string(jsonBytes)
+					continue
 				}
 			}
-			configMap[apiField] = apiValue
 		}
+		// Always assign, including nil (JSON null tells the backend to clear the field)
+		configMap[apiField] = apiValue
 	}
 
 	return configMap, nil
@@ -829,16 +827,8 @@ func (r *BaseConnectorResource) setTerraformValue(ctx context.Context, cfg map[s
 		fieldValue.Set(reflect.ValueOf(tfVal))
 
 	case reflect.TypeOf(types.Float64{}):
-		// Float64 helper not in current helper.go, handle inline
-		if val, ok := cfg[apiField]; ok && val != nil {
-			if floatVal, ok := val.(float64); ok {
-				fieldValue.Set(reflect.ValueOf(types.Float64Value(floatVal)))
-			} else {
-				fieldValue.Set(reflect.ValueOf(types.Float64Null()))
-			}
-		} else {
-			fieldValue.Set(reflect.ValueOf(types.Float64Null()))
-		}
+		tfVal := helper.GetTfCfgFloat64(cfg, apiField)
+		fieldValue.Set(reflect.ValueOf(tfVal))
 
 	case reflect.TypeOf(jsontypes.Normalized{}):
 		// JSON type - stored as string in API

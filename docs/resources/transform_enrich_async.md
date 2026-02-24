@@ -27,6 +27,9 @@ This resource creates and manages a Enrich Async transform for Streamkap data pi
 
 ### Optional
 
+- `implementation_json` (String) Transform implementation as JSON. Structure varies by transform type (`map_filter`, `enrich`, `sql_join`, `rollup`, etc.).
+
+**Note:** If not specified, the implementation is managed outside Terraform (e.g., via Streamkap UI).
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_async_capacity` (Number) If one async call takes 10ms and the target throughput per task is 1000 records per second, then the capacity should be 1000 * 10ms = 10 parallel requests. Defaults to `10`.
 - `transforms_async_timeout_ms` (Number) Timeout to wait for async operation to complete Defaults to `1000`.
@@ -50,3 +53,14 @@ Optional:
 - `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 - `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
 - `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# Import an existing Enrich Async transform by its ID
+terraform import streamkap_transform_enrich_async.example <transform-id>
+```

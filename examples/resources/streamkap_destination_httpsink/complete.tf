@@ -42,24 +42,24 @@ resource "streamkap_destination_httpsink" "example" {
   http_proxy_port = 8080
 
   # Batching configuration
-  batching_enabled       = true                 # Enable batching. Default: false
-  batch_max_size         = 500                  # Max records per batch (1-1,000,000). Default: 500
-  batch_buffering_enabled = true                # Buffer until batch full or timeout. Default: false
-  batch_max_time_ms      = 10000                # Max wait before flush in ms. Default: 10000
-  batch_prefix           = "["                  # Batch prefix. Default: [
-  batch_suffix           = "]"                  # Batch suffix. Default: ]
-  batch_separator        = ","                  # Record separator. Default: ,
+  batching_enabled        = true  # Enable batching. Default: false
+  batch_max_size          = 500   # Max records per batch (1-1,000,000). Default: 500
+  batch_buffering_enabled = true  # Buffer until batch full or timeout. Default: false
+  batch_max_time_ms       = 10000 # Max wait before flush in ms. Default: 10000
+  batch_prefix            = "["   # Batch prefix. Default: [
+  batch_suffix            = "]"   # Batch suffix. Default: ]
+  batch_separator         = ","   # Record separator. Default: ,
 
   # Retry and timeout settings
-  max_retries      = 3                          # Max retries on error. Default: 1
-  retry_backoff_ms = 3000                       # Wait time between retries in ms. Default: 3000
-  http_timeout     = 30                         # Response timeout in seconds. Default: 30
+  max_retries      = 3    # Max retries on error. Default: 1
+  retry_backoff_ms = 3000 # Wait time between retries in ms. Default: 3000
+  http_timeout     = 30   # Response timeout in seconds. Default: 30
 
   # Data formatting
-  decimal_format = "NUMERIC"                    # Valid values: BASE64, NUMERIC. Default: NUMERIC
+  decimal_format = "NUMERIC" # Valid values: BASE64, NUMERIC. Default: NUMERIC
 
   # Error handling
-  errors_tolerance = "none"                     # Valid values: none, all. Default: none
+  errors_tolerance = "none" # Valid values: none, all. Default: none
 }
 
 output "example_destination_httpsink" {

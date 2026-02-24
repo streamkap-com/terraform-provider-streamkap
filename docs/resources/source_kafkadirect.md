@@ -29,8 +29,8 @@ This resource creates and manages a Kafka Direct source for Streamkap data pipel
 
 ### Optional
 
-- `format` (String) The serialised format of the data written to the Kafka topic Defaults to `string`. Valid values: `json`, `string`.
-- `schemas_enable` (Boolean) If untoggled (default), Streamkap attempts to infer schema from your data - depending on the Destination. Otherwise, Streamkap assumes the Kafka message key and value contain `schema` and `payload` structures. **Conditionally required** when `format` is `json`. Defaults to `false`.
+- `format` (String) The serialised format of the data written to the Kafka topic Defaults to `string`. Valid values: `json`, `string`, `avro`.
+- `schemas_enable` (Boolean) If untoggled (default), Streamkap attempts to infer schema from your data - depending on the Destination. Otherwise, Streamkap assumes the Kafka message key and value contain `schema` and `payload` structures Defaults to `false`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only

@@ -33,6 +33,7 @@ type DestinationWeaviateModel struct {
 	DocumentIDFieldName      types.String   `tfsdk:"document_id_field_name"`
 	VectorStrategy           types.String   `tfsdk:"vector_strategy"`
 	VectorFieldName          types.String   `tfsdk:"vector_field_name"`
+	WeaviateVectorizer       types.String   `tfsdk:"weaviate_vectorizer"`
 	DeleteEnabled            types.Bool     `tfsdk:"delete_enabled"`
 	BatchSize                types.String   `tfsdk:"batch_size"`
 	PoolSize                 types.String   `tfsdk:"pool_size"`
@@ -180,6 +181,16 @@ func DestinationWeaviateSchema() schema.Schema {
 				MarkdownDescription: "Field name containing the embedding vector Defaults to `vector`.",
 				Default:             stringdefault.StaticString("vector"),
 			},
+			"weaviate_vectorizer": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Sets the default Weaviate vectorizer to use for objects without explicit vector data. Applies to new collections only. Defaults to \"basic\". Valid values: none, text2vec-weaviate, text2vec-cohere, text2vec-jinaai, text2vec-openai, text2vec-voyageai.",
+				MarkdownDescription: "Sets the default Weaviate vectorizer to use for objects without explicit vector data. Applies to new collections only. Defaults to `basic`. Valid values: `none`, `text2vec-weaviate`, `text2vec-cohere`, `text2vec-jinaai`, `text2vec-openai`, `text2vec-voyageai`.",
+				Default:             stringdefault.StaticString("basic"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("none", "text2vec-weaviate", "text2vec-cohere", "text2vec-jinaai", "text2vec-openai", "text2vec-voyageai"),
+				},
+			},
 			"delete_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -266,6 +277,7 @@ var DestinationWeaviateFieldMappings = map[string]string{
 	"document_id_field_name":      "document.id.field.name",
 	"vector_strategy":             "vector.strategy.user.defined",
 	"vector_field_name":           "vector.field.name",
+	"weaviate_vectorizer":         "weaviate.vectorizer",
 	"delete_enabled":              "delete.enabled",
 	"batch_size":                  "batch.size",
 	"pool_size":                   "pool.size",

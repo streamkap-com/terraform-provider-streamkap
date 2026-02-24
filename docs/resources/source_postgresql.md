@@ -29,8 +29,10 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `database_user` (String) Username to access the database
+- `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.
 - `name` (String) Name of the source
 - `schema_include_list` (String) Schemas to include.
+- `signal_data_collection_schema_or_database` (String) Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here.
 - `table_include_list` (String) Source tables to sync.
 
 ### Optional
@@ -41,9 +43,6 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 - `column_include_list_toggled` (Boolean) Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to `true`.
 - `database_port` (Number) PostgreSQL Port. For example, 5432 Defaults to `5432`.
 - `database_sslmode` (String) Whether to use an encrypted connection to the PostgreSQL server Defaults to `require`. Valid values: `require`, `disable`.
-- `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.
-
-**Conditionally required** when `heartbeat_enabled` is `true` AND `snapshot_read_only` is `No`.
 - `heartbeat_enabled` (Boolean) Heartbeats are used to monitor whether the connector is still receiving change events from the database, especially when there is low and intermittent traffic. Defaults to `true`.
 - `include_source_db_name_in_table_name` (Boolean) Changes the format of topics to 'DatabaseName_TopicName' Defaults to `false`.
 - `insert_static_key_field_1` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key1_static_field' instead.
@@ -57,11 +56,9 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 - `predicates_is_topic_to_enrich_pattern` (String) Regex pattern to match topics for enrichment. Defaults to `$^`.
 - `predicates_istopictoenrich_pattern` (String, Deprecated) DEPRECATED: Use 'predicates_is_topic_to_enrich_pattern' instead.
 - `publication_name` (String) The name of the publication for the connector to use. Defaults to `streamkap_pub`.
-- `signal_data_collection_schema_or_database` (String) Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here.
-
-**Conditionally required** when `snapshot_read_only` is `No`. Defaults to `public`.
 - `slot_name` (String) The name of the replication slot for the connector to use. Defaults to `streamkap_pgoutput_slot`.
 - `snapshot_read_only` (String) When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots Defaults to `Yes`. Valid values: `Yes`, `No`.
+- `source_regex_support_enabled` (Boolean) Enable regex support. Useful for merging multiple tables into the same output topic Defaults to `false`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
 - `ssh_port` (Number) Port of your SSH server Defaults to `22`.
@@ -79,6 +76,9 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 - `transforms_insert_static_value1_static_value` (String) The value of the static field to be added to the message value.
 - `transforms_insert_static_value2_static_field` (String) The name of the static field to be added to the message value.
 - `transforms_insert_static_value2_static_value` (String) The value of the static field to be added to the message value.
+- `transforms_source_regex_support_key_field_template` (String) Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId Defaults to `{{database}}.{{table}}`.
+- `transforms_source_regex_support_metadata_field_name` (String) Name of the extra metadata field to store source information and ensure uniqueness across all tables when regex support is enabled. Defaults to `_streamkap_source_metadata`.
+- `transforms_source_regex_support_regex_replacement` (String) Replacement string for matching regex snippets. Defaults to `_REGEX_`.
 
 ### Read-Only
 

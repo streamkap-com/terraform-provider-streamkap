@@ -67,6 +67,12 @@
       "computed": true,
       "sensitive": false
     },
+    "quote_identifiers": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "schema_evolution": {
       "required": false,
       "optional": true,

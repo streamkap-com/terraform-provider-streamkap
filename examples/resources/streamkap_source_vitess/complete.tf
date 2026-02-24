@@ -38,7 +38,7 @@ resource "streamkap_source_vitess" "example-source-vitess" {
   # VTGate connection settings
   database_hostname = var.source_vitess_vtgate_hostname
   database_port     = "15991"
-  database_user     = "vt_user"        # Optional for unauthenticated gRPC
+  database_user     = "vt_user"                         # Optional for unauthenticated gRPC
   database_password = var.source_vitess_vtgate_password # Optional
 
   # Vitess keyspace

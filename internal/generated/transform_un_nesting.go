@@ -16,12 +16,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// TransformRollupModel is the Terraform model for the rollup transform.
-type TransformRollupModel struct {
+// TransformUnNestingModel is the Terraform model for the un_nesting transform.
+type TransformUnNestingModel struct {
 	ID                                  types.String         `tfsdk:"id"`
 	Name                                types.String         `tfsdk:"name"`
 	TransformType                       types.String         `tfsdk:"transform_type"`
-	TransformsLanguage                  types.String         `tfsdk:"transforms_language"`
 	TransformsInputTopicPattern         types.String         `tfsdk:"transforms_input_topic_pattern"`
 	TransformsOutputTopicPattern        types.String         `tfsdk:"transforms_output_topic_pattern"`
 	TransformsInputSerializationFormat  types.String         `tfsdk:"transforms_input_serialization_format"`
@@ -31,12 +30,12 @@ type TransformRollupModel struct {
 	Timeouts                            timeouts.Value       `tfsdk:"timeouts"`
 }
 
-// TransformRollupSchema returns the Terraform schema for the rollup transform.
-func TransformRollupSchema() schema.Schema {
+// TransformUnNestingSchema returns the Terraform schema for the un_nesting transform.
+func TransformUnNestingSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Rollup transform connector.",
-		MarkdownDescription: "Manages a **Rollup transform connector**.\n\n" +
-			"This resource creates and manages a Rollup transform for Streamkap data pipelines.\n\n" +
+		Description: "Manages a Un-Nesting transform connector.",
+		MarkdownDescription: "Manages a **Un-Nesting transform connector**.\n\n" +
+			"This resource creates and manages a Un-Nesting transform for Streamkap data pipelines.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -58,16 +57,6 @@ func TransformRollupSchema() schema.Schema {
 				MarkdownDescription: "Transform type",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"transforms_language": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Language of the transform. Defaults to \"SQL\". Valid values: SQL.",
-				MarkdownDescription: "Language of the transform. Defaults to `SQL`. Valid values: `SQL`.",
-				Default:             stringdefault.StaticString("SQL"),
-				Validators: []validator.String{
-					stringvalidator.OneOf("SQL"),
 				},
 			},
 			"transforms_input_topic_pattern": schema.StringAttribute{
@@ -118,9 +107,8 @@ func TransformRollupSchema() schema.Schema {
 	}
 }
 
-// TransformRollupFieldMappings maps Terraform attribute names to API field names.
-var TransformRollupFieldMappings = map[string]string{
-	"transforms_language":                    "transforms.language",
+// TransformUnNestingFieldMappings maps Terraform attribute names to API field names.
+var TransformUnNestingFieldMappings = map[string]string{
 	"transforms_input_topic_pattern":         "transforms.input.topic.pattern",
 	"transforms_output_topic_pattern":        "transforms.output.topic.pattern",
 	"transforms_input_serialization_format":  "transforms.input.serialization.format",

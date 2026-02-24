@@ -22,27 +22,27 @@ resource "streamkap_destination_sqlserver" "example" {
 
   # Connection settings (required)
   database_hostname   = "sqlserver.example.com"
-  database_port       = 1433                    # Default: 1433
+  database_port       = 1433 # Default: 1433
   database_database   = "mydb"
   connection_username = "streamkap_user"
   connection_password = var.destination_sqlserver_password
 
   # Schema settings (required)
-  table_name_prefix = "dbo"                     # Schema for table names
-  schema_evolution  = "basic"                   # Valid values: basic, none. Default: basic
+  table_name_prefix = "dbo"   # Schema for table names
+  schema_evolution  = "basic" # Valid values: basic, none. Default: basic
 
   # Write behavior
-  insert_mode      = "upsert"                   # Valid values: insert, upsert. Default: insert
-  delete_enabled   = true                       # Process DELETE events. Default: false
-  primary_key_mode = "record_key"               # Valid values: none, record_key, record_value. Default: record_key
-  primary_key_fields = "id"                     # Comma-separated list of primary key fields
+  insert_mode        = "upsert"     # Valid values: insert, upsert. Default: insert
+  delete_enabled     = true         # Process DELETE events. Default: false
+  primary_key_mode   = "record_key" # Valid values: none, record_key, record_value. Default: record_key
+  primary_key_fields = "id"         # Comma-separated list of primary key fields
 
   # Performance settings
-  tasks_max = 5                                 # Max active tasks (1-10). Default: 5
+  tasks_max = 5 # Max active tasks (1-10). Default: 5
 
   # Table mapping
-  topic2table_map                          = true  # Use Streamkap's default mapping. Default: false
-  transforms_change_topic_name_match_regex = "^.*\\.(.*)\\.(.*)$" # Regex for topic name matching
+  topic2table_map                          = true                      # Use Streamkap's default mapping. Default: false
+  transforms_change_topic_name_match_regex = "^.*\\.(.*)\\.(.*)$"      # Regex for topic name matching
   transforms_change_topic_name_mapping     = "source_table:dest_table" # Source to destination table mapping
 }
 

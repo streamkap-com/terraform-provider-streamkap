@@ -18,17 +18,17 @@ import (
 
 // TransformMapFilterModel is the Terraform model for the map_filter transform.
 type TransformMapFilterModel struct {
-	ID                                  types.String   `tfsdk:"id"`
-	Name                                types.String   `tfsdk:"name"`
-	TransformType                       types.String   `tfsdk:"transform_type"`
-	TransformsLanguage                  types.String   `tfsdk:"transforms_language"`
-	TransformsInputTopicPattern         types.String   `tfsdk:"transforms_input_topic_pattern"`
-	TransformsOutputTopicPattern        types.String   `tfsdk:"transforms_output_topic_pattern"`
-	TransformsInputSerializationFormat  types.String   `tfsdk:"transforms_input_serialization_format"`
-	TransformsOutputSerializationFormat types.String   `tfsdk:"transforms_output_serialization_format"`
-	TransformsInputJobParallelism       types.Int64              `tfsdk:"transforms_input_job_parallelism"`
-	ImplementationJSON                  jsontypes.Normalized     `tfsdk:"implementation_json"`
-	Timeouts                            timeouts.Value           `tfsdk:"timeouts"`
+	ID                                  types.String         `tfsdk:"id"`
+	Name                                types.String         `tfsdk:"name"`
+	TransformType                       types.String         `tfsdk:"transform_type"`
+	TransformsLanguage                  types.String         `tfsdk:"transforms_language"`
+	TransformsInputTopicPattern         types.String         `tfsdk:"transforms_input_topic_pattern"`
+	TransformsOutputTopicPattern        types.String         `tfsdk:"transforms_output_topic_pattern"`
+	TransformsInputSerializationFormat  types.String         `tfsdk:"transforms_input_serialization_format"`
+	TransformsOutputSerializationFormat types.String         `tfsdk:"transforms_output_serialization_format"`
+	TransformsInputJobParallelism       types.Int64          `tfsdk:"transforms_input_job_parallelism"`
+	ImplementationJSON                  jsontypes.Normalized `tfsdk:"implementation_json"`
+	Timeouts                            timeouts.Value       `tfsdk:"timeouts"`
 }
 
 // TransformMapFilterSchema returns the Terraform schema for the map_filter transform.

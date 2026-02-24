@@ -35,10 +35,10 @@ This resource creates and manages a MongoDB Atlas source for Streamkap data pipe
 
 - `predicates_is_topic_to_enrich_pattern` (String) Regex pattern to match topics for enrichment. Defaults to `$^`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
-- `ssh_host` (String) Hostname of your SSH server. **Conditionally Required:** This field is required when `ssh_enabled` is `true`.
-- `ssh_port` (Number) Port of your SSH server. Defaults to `22`. **Conditionally Required:** This field is required when `ssh_enabled` is `true`.
-- `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`. **Conditionally Required:** This field is required when `ssh_enabled` is `true`.
-- `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`. **Conditionally Required:** This field is required when `ssh_enabled` is `true`.
+- `ssh_host` (String) Hostname of your SSH server
+- `ssh_port` (Number) Port of your SSH server Defaults to `22`.
+- `ssh_public_key` (String) Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.
+- `ssh_user` (String) User that allows Streamkap to connect to SSH server Defaults to `streamkap`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_insert_static_key1_static_field` (String) The name of the static field to be added to the message key.
 - `transforms_insert_static_key1_static_value` (String) The value of the static field to be added to the message key.

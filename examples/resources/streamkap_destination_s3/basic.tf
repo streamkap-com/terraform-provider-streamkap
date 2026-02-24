@@ -1,10 +1,10 @@
 # Minimal S3 destination configuration
 
 resource "streamkap_destination_s3" "example" {
-  name               = "my-s3-dest"
-  aws_access_key_id  = var.aws_access_key_id
+  name                  = "my-s3-dest"
+  aws_access_key_id     = var.aws_access_key_id
   aws_secret_access_key = var.aws_secret_access_key
-  aws_s3_bucket_name = var.s3_bucket_name
+  aws_s3_bucket_name    = var.s3_bucket_name
 }
 
 variable "aws_access_key_id" {

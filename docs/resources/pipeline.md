@@ -30,7 +30,7 @@ A pipeline is the core orchestration resource that defines how data flows from a
 - `name` - Display name of the destination connector
 - `connector` - Connector type code (e.g., `snowflake`, `clickhouse`) (see [below for nested schema](#nestedatt--destination))
 - `name` (String) Display name of the pipeline shown in the Streamkap UI.
-- `source` (Object) Source connector configuration block. Defines the source connector that produces data for the pipeline.
+- `source` (Attributes) Source connector configuration block. Defines the source connector that produces data for the pipeline.
 
 **Nested attributes:**
 - `id` - Source connector identifier (from a `streamkap_source_*` resource)
@@ -68,10 +68,13 @@ Required:
 
 Required:
 
-- `connector` (String)
-- `id` (String)
-- `name` (String)
-- `topics` (Set of String)
+- `connector` (String) Connector type code (e.g., `postgresql`, `mysql`, `mongodb`).
+- `id` (String) Source connector identifier. References a source resource (e.g., `streamkap_source_postgresql`).
+- `name` (String) Display name of the source connector.
+
+Optional:
+
+- `topics` (Set of String) Set of topic names to consume from the source. Optional when transforms are configured - defaults to an empty set.
 
 
 <a id="nestedblock--timeouts"></a>

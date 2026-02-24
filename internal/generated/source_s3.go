@@ -75,8 +75,8 @@ func SourceS3Schema() schema.Schema {
 			"topic_postfix": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The postfix of the topic to be used, for example source_[UUID]_[postfix] Defaults to \"default\".",
-				MarkdownDescription: "The postfix of the topic to be used, for example source_[UUID]_[postfix] Defaults to `default`.",
+				Description:         "The postfix of the topic to be used, for example source_[UUID].s3.[postfix] Defaults to \"default\".",
+				MarkdownDescription: "The postfix of the topic to be used, for example source_[UUID].s3.[postfix] Defaults to `default`.",
 				Default:             stringdefault.StaticString("default"),
 			},
 			"aws_access_key_id": schema.StringAttribute{

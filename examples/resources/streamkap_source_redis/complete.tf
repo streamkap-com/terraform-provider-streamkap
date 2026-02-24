@@ -35,29 +35,29 @@ resource "streamkap_source_redis" "example-source-redis" {
   # Connection settings
   redis_host     = var.source_redis_host
   redis_port     = "6379"
-  redis_username = "default"          # For Redis 6+ ACL
+  redis_username = "default" # For Redis 6+ ACL
   redis_password = var.source_redis_password
 
   # TLS/SSL
   ssl_enabled = true
 
   # Stream settings
-  redis_stream_name     = "orders-stream"
-  redis_stream_offset   = "Latest"       # Options: Latest, Earliest
-  redis_stream_delivery = "At Least Once" # Options: At Least Once, At Most Once
-  redis_stream_block_seconds  = 1        # Block duration (1-60)
+  redis_stream_name           = "orders-stream"
+  redis_stream_offset         = "Latest"        # Options: Latest, Earliest
+  redis_stream_delivery       = "At Least Once" # Options: At Least Once, At Most Once
+  redis_stream_block_seconds  = 1               # Block duration (1-60)
   redis_stream_consumer_group = "kafka-consumer-group"
   redis_stream_consumer_name  = "consumer"
 
   # Keys settings (when connector_class_type = "Keys")
-  redis_keys_pattern         = "*"     # Key pattern to monitor
-  redis_keys_timeout_seconds = 300     # Idle timeout
+  redis_keys_pattern         = "*" # Key pattern to monitor
+  redis_keys_timeout_seconds = 300 # Idle timeout
 
   # Capture mode
   mode = "LIVE" # Options: LIVE, LIVEONLY
 
   # Topic settings
-  topic_use_stream_name = false         # Use stream name as topic
+  topic_use_stream_name = false          # Use stream name as topic
   topic                 = "redis-events" # Kafka topic name
 
   # Task parallelism

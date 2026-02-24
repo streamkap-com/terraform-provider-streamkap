@@ -1,8 +1,8 @@
 # Minimal Motherduck destination configuration
 
 resource "streamkap_destination_motherduck" "example" {
-  name              = "my-motherduck-dest"
-  motherduck_token  = var.motherduck_token
+  name               = "my-motherduck-dest"
+  motherduck_token   = var.motherduck_token
   motherduck_catalog = var.motherduck_catalog
 }
 

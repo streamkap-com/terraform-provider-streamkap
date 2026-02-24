@@ -35,7 +35,7 @@ resource "streamkap_source_elasticsearch" "example-source-elasticsearch" {
   es_port   = "443"              # Default: 443 for HTTPS, 9200 for HTTP
 
   # Authentication
-  http_auth      = "Basic" # Options: None, Basic
+  http_auth          = "Basic" # Options: None, Basic
   http_auth_user     = "elastic"
   http_auth_password = var.source_es_password
 

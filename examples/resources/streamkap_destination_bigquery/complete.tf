@@ -22,10 +22,10 @@ resource "streamkap_destination_bigquery" "example" {
 
   # Connection settings (required)
   bigquery_json     = var.destination_bigquery_json
-  table_name_prefix = "streamkap_dataset"       # Destination Dataset name
+  table_name_prefix = "streamkap_dataset" # Destination Dataset name
 
   # Region configuration
-  bigquery_region = "us-central1"               # Default: us-central1
+  bigquery_region = "us-central1" # Default: us-central1
   # Valid values: us-east5, us-central1, us-west4, us-west2, northamerica-northeast1,
   # us-east4, us-west1, us-west3, southamerica-east1, southamerica-west1, us-east1,
   # northamerica-northeast2, asia-south2, asia-east2, asia-southeast2, australia-southeast2,
@@ -39,7 +39,7 @@ resource "streamkap_destination_bigquery" "example" {
   bigquery_time_based_partition   = false             # Time-based partitioning. Default: false
 
   # Performance settings
-  tasks_max = 5                                 # Max active tasks (1-10). Default: 5
+  tasks_max = 5 # Max active tasks (1-10). Default: 5
 }
 
 output "example_destination_bigquery" {

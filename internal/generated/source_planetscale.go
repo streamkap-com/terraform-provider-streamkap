@@ -34,8 +34,8 @@ type SourcePlanetscaleModel struct {
 	SSHHost                                            types.String   `tfsdk:"ssh_host"`
 	SSHPort                                            types.Int64    `tfsdk:"ssh_port"`
 	SSHUser                                            types.String   `tfsdk:"ssh_user"`
-	SSHPublicKey                                       types.String   `tfsdk:"ssh_public_key"`
 	ColumnExcludeList                                  types.String   `tfsdk:"column_exclude_list"`
+	SSHPublicKey                                       types.String   `tfsdk:"ssh_public_key"`
 	Timeouts                                           timeouts.Value `tfsdk:"timeouts"`
 }
 
@@ -158,17 +158,17 @@ func SourcePlanetscaleSchema() schema.Schema {
 				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
+			"column_exclude_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
+				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
+			},
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Description:         "Public key to add to SSH server Defaults to \"<SSH.PUBLIC.KEY>\".",
 				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
-			},
-			"column_exclude_list": schema.StringAttribute{
-				Optional:            true,
-				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
-				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
 			},
 		},
 	}
@@ -190,6 +190,6 @@ var SourcePlanetscaleFieldMappings = map[string]string{
 	"ssh_host":            "ssh.host",
 	"ssh_port":            "ssh.port",
 	"ssh_user":            "ssh.user",
-	"ssh_public_key":      "ssh.public.key.user.displayed",
 	"column_exclude_list": "column.exclude.list.user.defined",
+	"ssh_public_key":      "ssh.public.key.user.displayed",
 }

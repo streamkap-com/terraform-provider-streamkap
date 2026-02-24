@@ -36,7 +36,7 @@ resource "streamkap_transform_rollup" "example" {
         SQL
       }
     ]
-    rollupSQL = <<-SQL
+    rollupSQL           = <<-SQL
       SELECT
         product_id,
         order_date,
@@ -47,8 +47,8 @@ resource "streamkap_transform_rollup" "example" {
       GROUP BY product_id, order_date
     SQL
     keyFields           = ["product_id", "order_date"]
-    sourceIdleTimeoutMs = 30000     # 30 seconds idle timeout
-    stateTTLMs          = 86400000  # 24 hours state retention
+    sourceIdleTimeoutMs = 30000    # 30 seconds idle timeout
+    stateTTLMs          = 86400000 # 24 hours state retention
   })
 }
 

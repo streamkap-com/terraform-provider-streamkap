@@ -46,7 +46,7 @@ resource "streamkap_source_mysql" "example-source-mysql" {
   column_include_list = "crm[.]demo[.](id|name),ecommerce[.]customers[.](customer_id|email)"
 
   # Heartbeat configuration (for monitoring replication lag)
-  heartbeat_enabled                            = true # Enable heartbeat messages
+  heartbeat_enabled                            = true  # Enable heartbeat messages
   heartbeat_data_collection_schema_or_database = "crm" # Database containing heartbeat table
 
   # Timezone configuration

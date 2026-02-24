@@ -40,8 +40,8 @@ resource "streamkap_source_s3" "example-source-s3" {
   aws_secret_access_key = var.source_s3_secret_access_key
 
   # S3 bucket settings
-  aws_s3_region       = "us-west-2" # Options: us-east-1, us-west-2, eu-west-1, etc.
-  aws_s3_bucket_name  = "my-data-bucket"
+  aws_s3_region        = "us-west-2" # Options: us-east-1, us-west-2, eu-west-1, etc.
+  aws_s3_bucket_name   = "my-data-bucket"
   aws_s3_object_prefix = "data/incoming/"
 
   # Scan settings

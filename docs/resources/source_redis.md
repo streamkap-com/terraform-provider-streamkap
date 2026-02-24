@@ -25,29 +25,29 @@ This resource creates and manages a Redis source for Streamkap data pipelines.
 
 - `name` (String) Name of the source
 - `redis_host` (String) Redis hostname (e.g., redis.example.com or 127.0.0.1)
+- `redis_stream_name` (String) Name of the Redis stream to read from
+- `topic` (String) Kafka topic name to publish messages to
 
 ### Optional
 
 - `connector_class_type` (String) Type of Redis source connector Defaults to `Stream`. Valid values: `Stream`, `Keys`.
-- `mode` (String) LIVE performs initial snapshot then streams updates. LIVEONLY only streams updates. Only applicable when `connector_class_type` is `Keys`. Defaults to `LIVE`. Valid values: `LIVE`, `LIVEONLY`.
-- `redis_keys_pattern` (String) Key pattern to monitor (e.g., user:*, order:*, or * for all keys). Required when `connector_class_type` is `Keys`. Defaults to `*`.
-- `redis_keys_timeout_seconds` (Number) Idle timeout before connector stops if no activity. Only applicable when `connector_class_type` is `Keys`. Defaults to `300`.
+- `mode` (String) LIVE performs initial snapshot then streams updates. LIVEONLY only streams updates. Defaults to `LIVE`. Valid values: `LIVE`, `LIVEONLY`.
+- `redis_keys_pattern` (String) Key pattern to monitor (e.g., user:*, order:*, or * for all keys) Defaults to `*`.
+- `redis_keys_timeout_seconds` (Number) Idle timeout before connector stops if no activity Defaults to `300`.
 - `redis_password` (String, Sensitive) Redis password (optional)
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `redis_port` (Number) Redis port number Defaults to `6379`.
-- `redis_stream_block_seconds` (Number) Block duration when waiting for new messages. Only applicable when `connector_class_type` is `Stream`. Defaults to `1`.
-- `redis_stream_consumer_group` (String) Consumer group name for coordinating multiple consumers. Only applicable when `connector_class_type` is `Stream`. Defaults to `kafka-consumer-group`.
-- `redis_stream_consumer_name` (String) Base name for consumer instances. Only applicable when `connector_class_type` is `Stream`. Defaults to `consumer`.
-- `redis_stream_delivery` (String) Delivery guarantee mode. Only applicable when `connector_class_type` is `Stream`. Defaults to `At Least Once`. Valid values: `At Least Once`, `At Most Once`.
-- `redis_stream_name` (String) Name of the Redis stream to read from. Required when `connector_class_type` is `Stream`.
-- `redis_stream_offset` (String) Starting point for reading from the stream. Only applicable when `connector_class_type` is `Stream`. Defaults to `Latest`. Valid values: `Latest`, `Earliest`.
+- `redis_stream_block_seconds` (Number) Block duration when waiting for new messages Defaults to `1`.
+- `redis_stream_consumer_group` (String) Consumer group name for coordinating multiple consumers Defaults to `kafka-consumer-group`.
+- `redis_stream_consumer_name` (String) Base name for consumer instances Defaults to `consumer`.
+- `redis_stream_delivery` (String) Delivery guarantee mode Defaults to `At Least Once`. Valid values: `At Least Once`, `At Most Once`.
+- `redis_stream_offset` (String) Starting point for reading from the stream Defaults to `Latest`. Valid values: `Latest`, `Earliest`.
 - `redis_username` (String) Redis username (optional, for Redis 6+ ACL)
 - `ssl_enabled` (Boolean) Enable TLS/SSL for secure connections Defaults to `true`.
-- `tasks_max` (Number) Number of parallel tasks. Only configurable when `connector_class_type` is `Stream` (1-10). For `Keys` connector, this is always 1. Defaults to `1`.
+- `tasks_max` (Number) Number of parallel tasks (Stream: 1-10, Keys: always 1) Defaults to `1`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `topic` (String) Kafka topic name to publish messages to. Required when `connector_class_type` is `Keys`, or when `connector_class_type` is `Stream` and `topic_use_stream_name` is `false`.
-- `topic_use_stream_name` (Boolean) Use Redis stream name as Kafka topic name. Only applicable when `connector_class_type` is `Stream`. Defaults to `false`.
+- `topic_use_stream_name` (Boolean) Use Redis stream name as Kafka topic name (only for Stream connectors) Defaults to `false`.
 
 ### Read-Only
 

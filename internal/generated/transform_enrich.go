@@ -18,17 +18,17 @@ import (
 
 // TransformEnrichModel is the Terraform model for the enrich transform.
 type TransformEnrichModel struct {
-	ID                                  types.String   `tfsdk:"id"`
-	Name                                types.String   `tfsdk:"name"`
-	TransformType                       types.String   `tfsdk:"transform_type"`
-	TransformsLanguage                  types.String   `tfsdk:"transforms_language"`
-	TransformsInputTopicPattern         types.String   `tfsdk:"transforms_input_topic_pattern"`
-	TransformsOutputTopicPattern        types.String   `tfsdk:"transforms_output_topic_pattern"`
-	TransformsInputJobParallelism       types.Int64    `tfsdk:"transforms_input_job_parallelism"`
-	TransformsInputSerializationFormat  types.String   `tfsdk:"transforms_input_serialization_format"`
-	TransformsOutputSerializationFormat types.String             `tfsdk:"transforms_output_serialization_format"`
-	ImplementationJSON                  jsontypes.Normalized     `tfsdk:"implementation_json"`
-	Timeouts                            timeouts.Value           `tfsdk:"timeouts"`
+	ID                                  types.String         `tfsdk:"id"`
+	Name                                types.String         `tfsdk:"name"`
+	TransformType                       types.String         `tfsdk:"transform_type"`
+	TransformsLanguage                  types.String         `tfsdk:"transforms_language"`
+	TransformsInputTopicPattern         types.String         `tfsdk:"transforms_input_topic_pattern"`
+	TransformsOutputTopicPattern        types.String         `tfsdk:"transforms_output_topic_pattern"`
+	TransformsInputJobParallelism       types.Int64          `tfsdk:"transforms_input_job_parallelism"`
+	TransformsInputSerializationFormat  types.String         `tfsdk:"transforms_input_serialization_format"`
+	TransformsOutputSerializationFormat types.String         `tfsdk:"transforms_output_serialization_format"`
+	ImplementationJSON                  jsontypes.Normalized `tfsdk:"implementation_json"`
+	Timeouts                            timeouts.Value       `tfsdk:"timeouts"`
 }
 
 // TransformEnrichSchema returns the Terraform schema for the enrich transform.

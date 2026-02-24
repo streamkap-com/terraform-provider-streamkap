@@ -38,8 +38,8 @@ resource "streamkap_transform_enrich_async" "example" {
       }
     JS
     # Async-specific settings
-    async_timeout_ms = 5000  # 5 second timeout for external calls
-    async_capacity   = 20    # Process up to 20 records concurrently
+    async_timeout_ms = 5000 # 5 second timeout for external calls
+    async_capacity   = 20   # Process up to 20 records concurrently
   })
 }
 

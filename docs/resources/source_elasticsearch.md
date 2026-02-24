@@ -26,6 +26,10 @@ This resource creates and manages a ElasticSearch source for Streamkap data pipe
 - `datetime_field_name` (String) The name of datetime field to use to detect new records.
 - `endpoint_include_list` (String) The name of ElasticSearch indices
 - `es_host` (String) ElasticSearch host. Optionally it is possible to specify many hosts using ; as separator (host1;host2;host3)
+- `http_auth_password` (String, Sensitive) Elasticsearch password
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
+- `http_auth_user` (String) Elasticsearch username
 - `name` (String) Name of the source
 
 ### Optional
@@ -34,10 +38,6 @@ This resource creates and manages a ElasticSearch source for Streamkap data pipe
 - `es_port` (Number) Port for ElasticSearch HTTP/HTTPS REST API. For example, 443 or 9200 Defaults to `443`.
 - `es_scheme` (String) ElasticSearch protocol (http/https) Defaults to `https`. Valid values: `http`, `https`.
 - `http_auth` (String) Type of Authentication Defaults to `Basic`. Valid values: `None`, `Basic`.
-- `http_auth_password` (String, Sensitive) Elasticsearch password. Required when `http_auth` is `Basic`.
-
-**Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `http_auth_user` (String) Elasticsearch username. Required when `http_auth` is `Basic`.
 - `tasks_max` (Number) The maximum number of active tasks Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 

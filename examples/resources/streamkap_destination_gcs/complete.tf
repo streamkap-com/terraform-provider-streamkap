@@ -25,14 +25,14 @@ resource "streamkap_destination_gcs" "example" {
   gcs_bucket_name      = "my-streamkap-bucket"
 
   # File format settings
-  format = "CSV"                                # Valid values: CSV, JSON Lines, JSON Array, Parquet. Default: CSV
+  format = "CSV" # Valid values: CSV, JSON Lines, JSON Array, Parquet. Default: CSV
 
   # File naming
   file_name_template = "{{topic}}-{{partition}}-{{start_offset}}" # Default filename template
-  file_name_prefix   = "data/output/"           # Directory prefix for files
+  file_name_prefix   = "data/output/"                             # Directory prefix for files
 
   # Compression
-  file_compression_type = "gzip"                # Valid values: none, gzip, snappy, zstd. Default: gzip
+  file_compression_type = "gzip" # Valid values: none, gzip, snappy, zstd. Default: gzip
 
   # Output field selection
   format_output_fields = ["key", "value", "timestamp", "offset", "headers"]

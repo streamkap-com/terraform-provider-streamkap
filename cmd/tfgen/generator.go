@@ -433,6 +433,13 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 	// Add common fields first (id, name, connector/transform_type)
 	data.Fields = append(data.Fields, g.commonFields()...)
 
+	// Track seen Terraform attribute names to prevent duplicates
+	// (backend configs can define the same field in multiple sections)
+	seenTfAttr := make(map[string]bool)
+	for _, f := range data.Fields {
+		seenTfAttr[f.TfAttrName] = true
+	}
+
 	// Get overrides for this connector to skip fields that have custom handling
 	overrides := g.getOverridesForConnector(connectorCode)
 	overrideAPIFields := make(map[string]bool)
@@ -453,6 +460,13 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 		}
 
 		field := g.entryToFieldData(&entry)
+
+		// Skip duplicate Terraform attribute names
+		if seenTfAttr[field.TfAttrName] {
+			continue
+		}
+		seenTfAttr[field.TfAttrName] = true
+
 		data.Fields = append(data.Fields, field)
 
 		// Determine the effective type (port fields force Int64)
@@ -518,6 +532,13 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 	// Process map field overrides (overrides already loaded above)
 	for _, override := range overrides {
 		mapField := g.overrideToMapFieldData(&override)
+
+		// Skip duplicate Terraform attribute names
+		if seenTfAttr[mapField.TfAttrName] {
+			continue
+		}
+		seenTfAttr[mapField.TfAttrName] = true
+
 		data.MapFields = append(data.MapFields, mapField)
 
 		// Add nested model if this is a nested map
@@ -545,6 +566,13 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 	additionalFields := g.getAdditionalFieldsForConnector(connectorCode)
 	for _, af := range additionalFields {
 		field := g.additionalFieldToFieldData(&af)
+
+		// Skip duplicate Terraform attribute names
+		if seenTfAttr[field.TfAttrName] {
+			continue
+		}
+		seenTfAttr[field.TfAttrName] = true
+
 		data.Fields = append(data.Fields, field)
 
 		// Track required imports for additional fields

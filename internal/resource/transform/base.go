@@ -618,10 +618,8 @@ func (r *BaseTransformResource) modelToConfigMap(ctx context.Context, model any)
 		fieldValue := v.Field(fieldIdx)
 		apiValue := r.extractTerraformValue(ctx, fieldValue)
 
-		// Only include non-nil values in the config map
-		if apiValue != nil {
-			configMap[apiField] = apiValue
-		}
+		// Always assign, including nil (JSON null tells the backend to clear the field)
+		configMap[apiField] = apiValue
 	}
 
 	return configMap, nil
@@ -732,16 +730,8 @@ func (r *BaseTransformResource) setTerraformValue(ctx context.Context, cfg map[s
 		fieldValue.Set(reflect.ValueOf(tfVal))
 
 	case reflect.TypeOf(types.Float64{}):
-		// Float64 helper not in current helper.go, handle inline
-		if val, ok := cfg[apiField]; ok && val != nil {
-			if floatVal, ok := val.(float64); ok {
-				fieldValue.Set(reflect.ValueOf(types.Float64Value(floatVal)))
-			} else {
-				fieldValue.Set(reflect.ValueOf(types.Float64Null()))
-			}
-		} else {
-			fieldValue.Set(reflect.ValueOf(types.Float64Null()))
-		}
+		tfVal := helper.GetTfCfgFloat64(cfg, apiField)
+		fieldValue.Set(reflect.ValueOf(tfVal))
 
 	case reflect.TypeOf(types.List{}):
 		tfVal := helper.GetTfCfgListString(ctx, cfg, apiField)

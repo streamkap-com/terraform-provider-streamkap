@@ -68,8 +68,8 @@
       "sensitive": false
     },
     "heartbeat_data_collection_schema_or_database": {
-      "required": false,
-      "optional": true,
+      "required": true,
+      "optional": false,
       "computed": false,
       "sensitive": false
     },
@@ -116,6 +116,12 @@
       "sensitive": false
     },
     "snapshot_gtid": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "source_regex_support_enabled": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -203,6 +209,24 @@
       "required": false,
       "optional": true,
       "computed": false,
+      "sensitive": false
+    },
+    "transforms_source_regex_support_key_field_template": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_source_regex_support_metadata_field_name": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_source_regex_support_regex_replacement": {
+      "required": false,
+      "optional": true,
+      "computed": true,
       "sensitive": false
     }
   }

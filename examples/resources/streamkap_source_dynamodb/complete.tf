@@ -51,13 +51,13 @@ resource "streamkap_source_dynamodb" "example-source-dynamodb" {
   # dynamodb_service_endpoint = "http://localhost:8000"
 
   # Performance tuning
-  tasks_max                      = 3     # Maximum number of parallel tasks (1-40)
-  batch_size                     = 1024  # Records per batch
-  poll_timeout_ms                = 1000  # Poll timeout in milliseconds
-  incremental_snapshot_chunk_size  = 32768 # Chunk size for incremental snapshots
-  incremental_snapshot_max_threads = 8     # Max threads for incremental snapshots
+  tasks_max                        = 3        # Maximum number of parallel tasks (1-40)
+  batch_size                       = 1024     # Records per batch
+  poll_timeout_ms                  = 1000     # Poll timeout in milliseconds
+  incremental_snapshot_chunk_size  = 32768    # Chunk size for incremental snapshots
+  incremental_snapshot_max_threads = 8        # Max threads for incremental snapshots
   full_export_expiration_time_ms   = 86400000 # Export expiration (24 hours)
-  signal_kafka_poll_timeout_ms     = 1000  # Kafka signal poll timeout
+  signal_kafka_poll_timeout_ms     = 1000     # Kafka signal poll timeout
 
   # Parallel snapshot configuration
   # snapshot_parallel_time_offset = 0 # Set > 0 to run snapshot in parallel with CDC

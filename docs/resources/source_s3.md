@@ -39,7 +39,7 @@ This resource creates and manages a S3 source for Streamkap data pipelines.
 - `fs_scan_interval_ms` (Number) The interval in milliseconds at which to scan for new files. Defaults to `10000`.
 - `tasks_max` (Number) The maximum number of active tasks Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `topic_postfix` (String) The postfix of the topic to be used, for example source_[UUID]_[postfix] Defaults to `default`.
+- `topic_postfix` (String) The postfix of the topic to be used, for example source_[UUID].s3.[postfix] Defaults to `default`.
 
 ### Read-Only
 

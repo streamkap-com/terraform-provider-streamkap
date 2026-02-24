@@ -27,14 +27,14 @@ resource "streamkap_destination_r2" "example" {
   aws_s3_bucket_name    = "my-r2-bucket"
 
   # File format settings
-  format = "JSON Array"                         # Valid values: JSON Lines, JSON Array, Parquet. Default: JSON Array
+  format = "JSON Array" # Valid values: JSON Lines, JSON Array, Parquet. Default: JSON Array
 
   # File naming
   file_name_template = "{{topic}}-{{partition}}-{{start_offset}}" # Default filename template
-  file_name_prefix   = "data/output/"           # Directory prefix for files
+  file_name_prefix   = "data/output/"                             # Directory prefix for files
 
   # Compression
-  file_compression_type = "gzip"                # Valid values: none, gzip, snappy, zstd. Default: gzip
+  file_compression_type = "gzip" # Valid values: none, gzip, snappy, zstd. Default: gzip
 
   # Output field selection
   format_output_fields = ["key", "value", "timestamp", "offset", "headers"]
