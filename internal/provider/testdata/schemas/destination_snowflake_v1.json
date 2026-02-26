@@ -25,6 +25,12 @@
       "computed": true,
       "sensitive": false
     },
+    "connector_status": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
     "create_schema_auto": {
       "required": false,
       "optional": true,

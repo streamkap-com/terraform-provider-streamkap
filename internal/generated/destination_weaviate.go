@@ -19,6 +19,7 @@ type DestinationWeaviateModel struct {
 	ID                       types.String   `tfsdk:"id"`
 	Name                     types.String   `tfsdk:"name"`
 	Connector                types.String   `tfsdk:"connector"`
+	ConnectorStatus          types.String   `tfsdk:"connector_status"`
 	WeaviateConnectionURL    types.String   `tfsdk:"weaviate_connection_url"`
 	WeaviateGrpcURL          types.String   `tfsdk:"weaviate_grpc_url"`
 	WeaviateGrpcSecured      types.Bool     `tfsdk:"weaviate_grpc_secured"`
@@ -49,9 +50,10 @@ type DestinationWeaviateModel struct {
 // DestinationWeaviateSchema returns the Terraform schema for the weaviate destination.
 func DestinationWeaviateSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Weaviate destination connector.",
+		Description: "Manages a Weaviate destination connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **Weaviate destination connector**.\n\n" +
-			"This resource creates and manages a Weaviate destination for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a Weaviate destination for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -74,6 +76,11 @@ func DestinationWeaviateSchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"connector_status": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
+				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
 			"weaviate_connection_url": schema.StringAttribute{
 				Optional:            true,

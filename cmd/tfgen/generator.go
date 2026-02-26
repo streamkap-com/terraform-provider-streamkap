@@ -885,6 +885,18 @@ func (g *Generator) commonFields() []FieldData {
 			NeedsPlanMod:        true,
 			APIFieldName:        "", // Connector is handled separately
 		})
+		fields = append(fields, FieldData{
+			GoFieldName:         "ConnectorStatus",
+			GoType:              "types.String",
+			TfsdkTag:            "connector_status",
+			TfAttrName:          "connector_status",
+			SchemaAttrType:      "schema.StringAttribute",
+			Computed:            true,
+			Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
+			MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			NeedsPlanMod:        false, // Status is volatile — always read fresh from API
+			APIFieldName:        "",    // ConnectorStatus is handled separately
+		})
 	}
 
 	return fields
@@ -1167,9 +1179,10 @@ type {{ .ModelName }} struct {
 // {{ .SchemaFuncName }} returns the Terraform schema for the {{ .ConnectorCode }} {{ .EntityType }}.
 func {{ .SchemaFuncName }}() schema.Schema {
 	return schema.Schema{
-		Description:         "Manages a {{ .DisplayName }} {{ .EntityType }} connector.",
+		Description:         "Manages a {{ .DisplayName }} {{ .EntityType }} connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **{{ .DisplayName }} {{ .EntityType }} connector**.\n\n" +
-			"This resource creates and manages a {{ .DisplayName }} {{ .EntityType }} for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a {{ .DisplayName }} {{ .EntityType }} for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 {{- range .Fields }}

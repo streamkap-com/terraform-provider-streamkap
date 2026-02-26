@@ -2,56 +2,82 @@ package helper
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func GetTfCfgString(cfg map[string]any, key string) types.String {
+func GetTfCfgString(ctx context.Context, cfg map[string]any, key string) types.String {
 	if val, ok := cfg[key]; ok && val != nil {
-		val, _ := val.(string)
+		strVal, ok := val.(string)
+		if !ok {
+			tflog.Warn(ctx, fmt.Sprintf("GetTfCfgString: expected string for key %q, got %T", key, val))
+			return types.StringNull()
+		}
 
-		return types.StringValue(val)
+		return types.StringValue(strVal)
 	}
 
 	return types.StringNull()
 }
 
-func GetTfCfgInt64(cfg map[string]any, key string) types.Int64 {
+func GetTfCfgInt64(ctx context.Context, cfg map[string]any, key string) types.Int64 {
 	if val, ok := cfg[key]; ok && val != nil {
 		if strVal, ok := val.(string); ok {
-			val, _ := strconv.ParseInt(strVal, 10, 64)
+			intVal, err := strconv.ParseInt(strVal, 10, 64)
+			if err != nil {
+				tflog.Warn(ctx, fmt.Sprintf("GetTfCfgInt64: failed to parse string %q for key %q: %v", strVal, key, err))
+				return types.Int64Null()
+			}
 
-			return types.Int64Value(val)
-		} else {
-			val, _ := val.(float64)
-
-			return types.Int64Value(int64(val))
+			return types.Int64Value(intVal)
 		}
+
+		if floatVal, ok := val.(float64); ok {
+			return types.Int64Value(int64(floatVal))
+		}
+
+		tflog.Warn(ctx, fmt.Sprintf("GetTfCfgInt64: expected string or float64 for key %q, got %T", key, val))
+		return types.Int64Null()
 	}
 
 	return types.Int64Null()
 }
 
-func GetTfCfgBool(cfg map[string]any, key string) types.Bool {
+func GetTfCfgBool(ctx context.Context, cfg map[string]any, key string) types.Bool {
 	if val, ok := cfg[key]; ok && val != nil {
-		val, _ := val.(bool)
+		boolVal, ok := val.(bool)
+		if !ok {
+			tflog.Warn(ctx, fmt.Sprintf("GetTfCfgBool: expected bool for key %q, got %T", key, val))
+			return types.BoolNull()
+		}
 
-		return types.BoolValue(val)
+		return types.BoolValue(boolVal)
 	}
 
 	return types.BoolNull()
 }
 
-func GetTfCfgFloat64(cfg map[string]any, key string) types.Float64 {
+func GetTfCfgFloat64(ctx context.Context, cfg map[string]any, key string) types.Float64 {
 	if val, ok := cfg[key]; ok && val != nil {
 		if strVal, ok := val.(string); ok {
-			floatVal, _ := strconv.ParseFloat(strVal, 64)
+			floatVal, err := strconv.ParseFloat(strVal, 64)
+			if err != nil {
+				tflog.Warn(ctx, fmt.Sprintf("GetTfCfgFloat64: failed to parse string %q for key %q: %v", strVal, key, err))
+				return types.Float64Null()
+			}
 
 			return types.Float64Value(floatVal)
-		} else if floatVal, ok := val.(float64); ok {
+		}
+
+		if floatVal, ok := val.(float64); ok {
 			return types.Float64Value(floatVal)
 		}
+
+		tflog.Warn(ctx, fmt.Sprintf("GetTfCfgFloat64: expected string or float64 for key %q, got %T", key, val))
+		return types.Float64Null()
 	}
 
 	return types.Float64Null()
@@ -59,10 +85,18 @@ func GetTfCfgFloat64(cfg map[string]any, key string) types.Float64 {
 
 func GetTfCfgListString(ctx context.Context, cfg map[string]any, key string) types.List {
 	if val, ok := cfg[key]; ok && val != nil {
-		val, _ := val.([]interface{})
+		listVal, ok := val.([]interface{})
+		if !ok {
+			tflog.Warn(ctx, fmt.Sprintf("GetTfCfgListString: expected []interface{} for key %q, got %T", key, val))
+			return types.ListNull(types.StringType)
+		}
 
-		listVal, _ := types.ListValueFrom(ctx, types.StringType, val)
-		return listVal
+		result, diags := types.ListValueFrom(ctx, types.StringType, listVal)
+		if diags.HasError() {
+			tflog.Warn(ctx, fmt.Sprintf("GetTfCfgListString: failed to convert list for key %q: %s", key, diags.Errors()))
+			return types.ListNull(types.StringType)
+		}
+		return result
 	}
 
 	return types.ListNull(types.StringType)
@@ -90,6 +124,8 @@ func GetTfCfgMapString(ctx context.Context, cfg map[string]any, key string) map[
 			}
 			return result
 		}
+
+		tflog.Warn(ctx, fmt.Sprintf("GetTfCfgMapString: expected map type for key %q, got %T", key, val))
 	}
 
 	return nil

@@ -72,6 +72,7 @@ func testAccPreCheck(t *testing.T) {
 // - Verify with: terraform providers mirror -platform=linux_amd64 /tmp/mirror
 //
 // TEMPORARY: Delete this after v3.0.0 release is validated.
+// Tracked: create a GitHub issue for post-v3.0 cleanup (see also migration_test.go, migration.yml).
 func legacyProviderConfig() map[string]resource.ExternalProvider {
 	return map[string]resource.ExternalProvider{
 		"streamkap": {

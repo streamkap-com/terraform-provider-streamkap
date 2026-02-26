@@ -21,6 +21,7 @@ type DestinationMotherduckModel struct {
 	ID                                  types.String   `tfsdk:"id"`
 	Name                                types.String   `tfsdk:"name"`
 	Connector                           types.String   `tfsdk:"connector"`
+	ConnectorStatus                     types.String   `tfsdk:"connector_status"`
 	IngestionMode                       types.String   `tfsdk:"ingestion_mode"`
 	MotherduckToken                     types.String   `tfsdk:"motherduck_token"`
 	MotherduckCatalog                   types.String   `tfsdk:"motherduck_catalog"`
@@ -37,9 +38,10 @@ type DestinationMotherduckModel struct {
 // DestinationMotherduckSchema returns the Terraform schema for the motherduck destination.
 func DestinationMotherduckSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Motherduck destination connector.",
+		Description: "Manages a Motherduck destination connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **Motherduck destination connector**.\n\n" +
-			"This resource creates and manages a Motherduck destination for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a Motherduck destination for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -62,6 +64,11 @@ func DestinationMotherduckSchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"connector_status": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
+				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
 			"ingestion_mode": schema.StringAttribute{
 				Optional:            true,

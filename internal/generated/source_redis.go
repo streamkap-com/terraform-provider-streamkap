@@ -21,6 +21,7 @@ type SourceRedisModel struct {
 	ID                       types.String   `tfsdk:"id"`
 	Name                     types.String   `tfsdk:"name"`
 	Connector                types.String   `tfsdk:"connector"`
+	ConnectorStatus          types.String   `tfsdk:"connector_status"`
 	ConnectorClassType       types.String   `tfsdk:"connector_class_type"`
 	RedisHost                types.String   `tfsdk:"redis_host"`
 	RedisPort                types.Int64    `tfsdk:"redis_port"`
@@ -45,9 +46,10 @@ type SourceRedisModel struct {
 // SourceRedisSchema returns the Terraform schema for the redis source.
 func SourceRedisSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Redis source connector.",
+		Description: "Manages a Redis source connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **Redis source connector**.\n\n" +
-			"This resource creates and manages a Redis source for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a Redis source for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -70,6 +72,11 @@ func SourceRedisSchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"connector_status": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
+				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
 			"connector_class_type": schema.StringAttribute{
 				Optional:            true,

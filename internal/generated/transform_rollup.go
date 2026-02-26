@@ -34,9 +34,10 @@ type TransformRollupModel struct {
 // TransformRollupSchema returns the Terraform schema for the rollup transform.
 func TransformRollupSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Rollup transform connector.",
+		Description: "Manages a Rollup transform connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **Rollup transform connector**.\n\n" +
-			"This resource creates and manages a Rollup transform for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a Rollup transform for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

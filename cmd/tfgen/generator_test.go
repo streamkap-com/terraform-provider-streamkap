@@ -37,8 +37,14 @@ func TestCommonFields(t *testing.T) {
 			g := NewGenerator("/tmp", tt.entityType)
 			fields := g.commonFields()
 
-			if len(fields) != 3 {
-				t.Fatalf("commonFields() returned %d fields, want 3", len(fields))
+			// Sources/destinations have 4 common fields (id, name, connector, connector_status)
+			// Transforms have 3 common fields (id, name, transform_type)
+			wantCount := 4
+			if tt.entityType == "transform" {
+				wantCount = 3
+			}
+			if len(fields) != wantCount {
+				t.Fatalf("commonFields() returned %d fields, want %d", len(fields), wantCount)
 			}
 
 			// Verify ID field
@@ -90,6 +96,23 @@ func TestCommonFields(t *testing.T) {
 			}
 			if !thirdField.NeedsPlanMod {
 				t.Error("thirdField.NeedsPlanMod should be true (UseStateForUnknown)")
+			}
+
+			// Verify connector_status field for sources/destinations
+			if tt.entityType != "transform" {
+				statusField := fields[3]
+				if statusField.GoFieldName != "ConnectorStatus" {
+					t.Errorf("statusField.GoFieldName = %q, want %q", statusField.GoFieldName, "ConnectorStatus")
+				}
+				if !statusField.Computed {
+					t.Error("statusField.Computed should be true")
+				}
+				if statusField.NeedsPlanMod {
+					t.Error("statusField.NeedsPlanMod should be false (volatile field)")
+				}
+				if statusField.TfAttrName != "connector_status" {
+					t.Errorf("statusField.TfAttrName = %q, want %q", statusField.TfAttrName, "connector_status")
+				}
 			}
 		})
 	}
@@ -574,9 +597,10 @@ func TestPrepareTemplateData(t *testing.T) {
 		t.Errorf("FieldMappingsName = %q, want %q", data.FieldMappingsName, "SourcePostgresqlFieldMappings")
 	}
 
-	// Should have 3 common fields + 1 user-defined field = 4 fields total
-	if len(data.Fields) != 4 {
-		t.Errorf("len(Fields) = %d, want 4", len(data.Fields))
+	// Should have 4 common fields + 1 user-defined field = 5 fields total
+	// (common: id, name, connector, connector_status)
+	if len(data.Fields) != 5 {
+		t.Errorf("len(Fields) = %d, want 5", len(data.Fields))
 	}
 
 	// Verify imports include required packages
@@ -993,6 +1017,7 @@ func TestGenerateFile_Integration(t *testing.T) {
 		"ID ", "types.String", "`tfsdk:\"id\"`",
 		"Name ", "`tfsdk:\"name\"`",
 		"Connector ", "`tfsdk:\"connector\"`",
+		"ConnectorStatus ", "`tfsdk:\"connector_status\"`",
 		"DatabaseHostname ", "`tfsdk:\"database_hostname\"`",
 		"DatabasePort ", "types.Int64", "`tfsdk:\"database_port\"`", // Port fields are Int64
 		"DatabasePassword ", "`tfsdk:\"database_password\"`",

@@ -64,6 +64,7 @@ resource "streamkap_source_sqlserver" "test" {
 				ResourceName:      "streamkap_source_sqlserver.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Step 3: Update and Read testing
 			{

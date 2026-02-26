@@ -78,6 +78,7 @@ resource "streamkap_destination_snowflake" "test" {
 				ResourceName:      "streamkap_destination_snowflake.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Step 3: Update and Read testing with passphrase (change name and ingestion mode)
 			{

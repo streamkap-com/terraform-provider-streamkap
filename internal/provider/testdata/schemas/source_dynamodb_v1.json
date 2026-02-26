@@ -37,6 +37,12 @@
       "computed": true,
       "sensitive": false
     },
+    "connector_status": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
     "dynamodb_service_endpoint": {
       "required": false,
       "optional": true,

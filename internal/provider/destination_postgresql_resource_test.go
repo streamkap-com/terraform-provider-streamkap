@@ -62,6 +62,7 @@ resource "streamkap_destination_postgresql" "test" {
 				ResourceName:      "streamkap_destination_postgresql.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Step 3: Update and Read Testing
 			{

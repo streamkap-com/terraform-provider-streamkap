@@ -67,6 +67,7 @@ resource "streamkap_destination_clickhouse" "test" {
 				ResourceName:      "streamkap_destination_clickhouse.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Step 3: Update and Read Testing
 			{

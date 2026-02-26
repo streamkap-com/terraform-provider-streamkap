@@ -157,6 +157,8 @@ func testAccCheckTopicDestroy(s *terraform.State) error {
 
 // testAccCheckTagDestroy verifies that all tag resources have been destroyed.
 // It checks the Streamkap API to confirm that tag resources no longer exist.
+//
+//nolint:unused // Will be used when tag acceptance tests are added
 func testAccCheckTagDestroy(s *terraform.State) error {
 	client, err := testAccCheckDestroyClient()
 	if err != nil {

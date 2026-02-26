@@ -30,7 +30,7 @@ func TestAccDestinationKafkaResource_basic(t *testing.T) {
 				ResourceName:            "streamkap_destination_kafka.test",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"sasl_password"},
+				ImportStateVerifyIgnore: []string{"sasl_password", "connector_status"},
 			},
 		},
 	})

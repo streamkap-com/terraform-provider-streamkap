@@ -69,6 +69,7 @@ resource "streamkap_source_mysql" "test" {
 				ResourceName:      "streamkap_source_mysql.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Step 3: Update and Read testing
 			{

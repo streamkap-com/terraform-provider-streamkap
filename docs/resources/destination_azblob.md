@@ -4,7 +4,7 @@ page_title: "streamkap_destination_azblob Resource - terraform-provider-streamka
 subcategory: ""
 description: |-
   Manages a Azure Blob Storage destination connector.
-  This resource creates and manages a Azure Blob Storage destination for Streamkap data pipelines.
+  This resource creates and manages a Azure Blob Storage destination for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Manages a **Azure Blob Storage destination connector**.
 
-This resource creates and manages a Azure Blob Storage destination for Streamkap data pipelines.
+This resource creates and manages a Azure Blob Storage destination for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -44,6 +44,7 @@ This resource creates and manages a Azure Blob Storage destination for Streamkap
 ### Read-Only
 
 - `connector` (String) Connector type
+- `connector_status` (String) Current status of the connector. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
 - `id` (String) Unique identifier for the destination
 
 <a id="nestedblock--timeouts"></a>

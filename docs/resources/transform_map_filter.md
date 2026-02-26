@@ -4,7 +4,7 @@ page_title: "streamkap_transform_map_filter Resource - terraform-provider-stream
 subcategory: ""
 description: |-
   Manages a Transform/Filter Records transform connector.
-  This resource creates and manages a Transform/Filter Records transform for Streamkap data pipelines.
+  This resource creates and manages a Transform/Filter Records transform for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Manages a **Transform/Filter Records transform connector**.
 
-This resource creates and manages a Transform/Filter Records transform for Streamkap data pipelines.
+This resource creates and manages a Transform/Filter Records transform for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 

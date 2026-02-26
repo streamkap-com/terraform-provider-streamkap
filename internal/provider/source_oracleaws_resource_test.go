@@ -68,6 +68,7 @@ resource "streamkap_source_oracleaws" "test" {
 				ResourceName:      "streamkap_source_oracleaws.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Update and Read testing
 			{

@@ -49,6 +49,7 @@ resource "streamkap_destination_kafkadirect" "test" {
 				ResourceName:      "streamkap_destination_kafkadirect.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Update and Read testing
 			{

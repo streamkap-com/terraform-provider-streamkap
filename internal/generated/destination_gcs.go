@@ -18,6 +18,7 @@ type DestinationGcsModel struct {
 	ID                  types.String   `tfsdk:"id"`
 	Name                types.String   `tfsdk:"name"`
 	Connector           types.String   `tfsdk:"connector"`
+	ConnectorStatus     types.String   `tfsdk:"connector_status"`
 	GcsCredentialsJson  types.String   `tfsdk:"gcs_credentials_json"`
 	GcsBucketName       types.String   `tfsdk:"gcs_bucket_name"`
 	Format              types.String   `tfsdk:"format"`
@@ -31,9 +32,10 @@ type DestinationGcsModel struct {
 // DestinationGcsSchema returns the Terraform schema for the gcs destination.
 func DestinationGcsSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a GCS destination connector.",
+		Description: "Manages a GCS destination connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **GCS destination connector**.\n\n" +
-			"This resource creates and manages a GCS destination for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a GCS destination for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -56,6 +58,11 @@ func DestinationGcsSchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"connector_status": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
+				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
 			"gcs_credentials_json": schema.StringAttribute{
 				Optional:            true,

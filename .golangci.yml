@@ -1,0 +1,29 @@
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - errcheck
+    - gosec
+    - govet
+    - staticcheck
+    - bodyclose
+    - nilerr
+    - gosimple
+    - ineffassign
+    - unused
+    - typecheck
+
+issues:
+  exclude-dirs:
+    - internal/generated
+  exclude-rules:
+    # Test files can have more relaxed rules
+    - path: _test\.go
+      linters:
+        - gosec
+        - errcheck
+    # Allow unchecked errors in test helpers
+    - path: internal/provider/test_helpers
+      linters:
+        - errcheck

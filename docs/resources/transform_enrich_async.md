@@ -4,7 +4,7 @@ page_title: "streamkap_transform_enrich_async Resource - terraform-provider-stre
 subcategory: ""
 description: |-
   Manages a Enrich Async transform connector.
-  This resource creates and manages a Enrich Async transform for Streamkap data pipelines.
+  This resource creates and manages a Enrich Async transform for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Manages a **Enrich Async transform connector**.
 
-This resource creates and manages a Enrich Async transform for Streamkap data pipelines.
+This resource creates and manages a Enrich Async transform for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 

@@ -19,10 +19,11 @@ type GetDestinationResponse struct {
 }
 
 type Destination struct {
-	ID        string         `json:"id"`
-	Name      string         `json:"name"`
-	Connector string         `json:"connector"`
-	Config    map[string]any `json:"config"`
+	ID              string         `json:"id"`
+	Name            string         `json:"name"`
+	Connector       string         `json:"connector"`
+	ConnectorStatus string         `json:"connector_status,omitempty"`
+	Config          map[string]any `json:"config"`
 }
 
 func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destination) (*Destination, error) {

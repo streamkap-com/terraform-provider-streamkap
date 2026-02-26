@@ -18,6 +18,7 @@ type DestinationStarburstModel struct {
 	ID                  types.String   `tfsdk:"id"`
 	Name                types.String   `tfsdk:"name"`
 	Connector           types.String   `tfsdk:"connector"`
+	ConnectorStatus     types.String   `tfsdk:"connector_status"`
 	AWSAccessKeyID      types.String   `tfsdk:"aws_access_key_id"`
 	AWSSecretAccessKey  types.String   `tfsdk:"aws_secret_access_key"`
 	AWSS3Region         types.String   `tfsdk:"aws_s3_region"`
@@ -33,9 +34,10 @@ type DestinationStarburstModel struct {
 // DestinationStarburstSchema returns the Terraform schema for the starburst destination.
 func DestinationStarburstSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Starburst destination connector.",
+		Description: "Manages a Starburst destination connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **Starburst destination connector**.\n\n" +
-			"This resource creates and manages a Starburst destination for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a Starburst destination for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -58,6 +60,11 @@ func DestinationStarburstSchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"connector_status": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
+				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
 			"aws_access_key_id": schema.StringAttribute{
 				Optional:            true,

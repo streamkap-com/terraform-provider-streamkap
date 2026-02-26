@@ -18,6 +18,7 @@ type DestinationS3Model struct {
 	ID                  types.String   `tfsdk:"id"`
 	Name                types.String   `tfsdk:"name"`
 	Connector           types.String   `tfsdk:"connector"`
+	ConnectorStatus     types.String   `tfsdk:"connector_status"`
 	AWSAccessKeyID      types.String   `tfsdk:"aws_access_key_id"`
 	AWSSecretAccessKey  types.String   `tfsdk:"aws_secret_access_key"`
 	AWSS3Region         types.String   `tfsdk:"aws_s3_region"`
@@ -33,9 +34,10 @@ type DestinationS3Model struct {
 // DestinationS3Schema returns the Terraform schema for the s3 destination.
 func DestinationS3Schema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a S3 destination connector.",
+		Description: "Manages a S3 destination connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **S3 destination connector**.\n\n" +
-			"This resource creates and manages a S3 destination for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a S3 destination for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -58,6 +60,11 @@ func DestinationS3Schema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"connector_status": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
+				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
 			"aws_access_key_id": schema.StringAttribute{
 				Optional:            true,

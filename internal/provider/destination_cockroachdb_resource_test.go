@@ -68,6 +68,7 @@ resource "streamkap_destination_cockroachdb" "test" {
 				ResourceName:      "streamkap_destination_cockroachdb.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Update and Read testing
 			{

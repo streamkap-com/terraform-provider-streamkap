@@ -7,6 +7,12 @@
       "computed": true,
       "sensitive": false
     },
+    "connector_status": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
     "format": {
       "required": false,
       "optional": true,

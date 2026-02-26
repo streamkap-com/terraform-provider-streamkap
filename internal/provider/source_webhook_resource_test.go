@@ -39,6 +39,7 @@ resource "streamkap_source_webhook" "test" {
 				ResourceName:      "streamkap_source_webhook.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Update and Read testing
 			{

@@ -4,7 +4,7 @@ page_title: "streamkap_destination_gcs Resource - terraform-provider-streamkap"
 subcategory: ""
 description: |-
   Manages a GCS destination connector.
-  This resource creates and manages a GCS destination for Streamkap data pipelines.
+  This resource creates and manages a GCS destination for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Manages a **GCS destination connector**.
 
-This resource creates and manages a GCS destination for Streamkap data pipelines.
+This resource creates and manages a GCS destination for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -43,6 +43,7 @@ Example format: {\"type\": \"service_account\",\"project_id\": \"XXXXXX\", ...}
 ### Read-Only
 
 - `connector` (String) Connector type
+- `connector_status` (String) Current status of the connector. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
 - `id` (String) Unique identifier for the destination
 
 <a id="nestedblock--timeouts"></a>

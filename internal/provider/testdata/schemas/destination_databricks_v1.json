@@ -19,6 +19,12 @@
       "computed": true,
       "sensitive": false
     },
+    "connector_status": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
     "consumer_wait_time_for_larger_batch_ms": {
       "required": false,
       "optional": true,

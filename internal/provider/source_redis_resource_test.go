@@ -74,6 +74,7 @@ resource "streamkap_source_redis" "test" {
 				ResourceName:      "streamkap_source_redis.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Update and Read testing
 			{

@@ -69,6 +69,7 @@ resource "streamkap_source_vitess" "test" {
 				ResourceName:      "streamkap_source_vitess.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Update and Read testing
 			{

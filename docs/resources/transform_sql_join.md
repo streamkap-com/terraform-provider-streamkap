@@ -4,7 +4,7 @@ page_title: "streamkap_transform_sql_join Resource - terraform-provider-streamka
 subcategory: ""
 description: |-
   Manages a Join transform connector.
-  This resource creates and manages a Join transform for Streamkap data pipelines.
+  This resource creates and manages a Join transform for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Manages a **Join transform connector**.
 
-This resource creates and manages a Join transform for Streamkap data pipelines.
+This resource creates and manages a Join transform for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 

@@ -19,6 +19,7 @@ import (
 // If the plan is not empty, the new provider has a behavioral difference!
 //
 // TEMPORARY: Delete this entire file after v3.0.0 release is validated.
+// Tracked: create a GitHub issue for post-v3.0 cleanup (this file, provider_test.go legacy config, migration.yml workflow).
 
 var sourcePostgreSQLHostnameMigration = os.Getenv("TF_VAR_source_postgresql_hostname")
 var sourcePostgreSQLPasswordMigration = os.Getenv("TF_VAR_source_postgresql_password")

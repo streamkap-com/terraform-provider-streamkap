@@ -19,6 +19,7 @@ type DestinationKafkaModel struct {
 	ID                 types.String   `tfsdk:"id"`
 	Name               types.String   `tfsdk:"name"`
 	Connector          types.String   `tfsdk:"connector"`
+	ConnectorStatus    types.String   `tfsdk:"connector_status"`
 	KafkaSinkBootstrap types.String   `tfsdk:"kafka_sink_bootstrap"`
 	DestinationFormat  types.String   `tfsdk:"destination_format"`
 	JsonSchemaEnable   types.Bool     `tfsdk:"json_schema_enable"`
@@ -31,9 +32,10 @@ type DestinationKafkaModel struct {
 // DestinationKafkaSchema returns the Terraform schema for the kafka destination.
 func DestinationKafkaSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Kafka destination connector.",
+		Description: "Manages a Kafka destination connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **Kafka destination connector**.\n\n" +
-			"This resource creates and manages a Kafka destination for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a Kafka destination for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -56,6 +58,11 @@ func DestinationKafkaSchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"connector_status": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
+				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
 			"kafka_sink_bootstrap": schema.StringAttribute{
 				Required:            true,

@@ -7,6 +7,12 @@
       "computed": true,
       "sensitive": false
     },
+    "connector_status": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
     "iceberg_catalog_client_assume_role_arn": {
       "required": false,
       "optional": true,

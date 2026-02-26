@@ -20,6 +20,7 @@ type SourcePlanetscaleModel struct {
 	ID                                                 types.String   `tfsdk:"id"`
 	Name                                               types.String   `tfsdk:"name"`
 	Connector                                          types.String   `tfsdk:"connector"`
+	ConnectorStatus                                    types.String   `tfsdk:"connector_status"`
 	DatabaseHostname                                   types.String   `tfsdk:"database_hostname"`
 	DatabasePort                                       types.Int64    `tfsdk:"database_port"`
 	DatabaseUser                                       types.String   `tfsdk:"database_user"`
@@ -42,9 +43,10 @@ type SourcePlanetscaleModel struct {
 // SourcePlanetscaleSchema returns the Terraform schema for the planetscale source.
 func SourcePlanetscaleSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Planetscale Vitess source connector.",
+		Description: "Manages a Planetscale Vitess source connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **Planetscale Vitess source connector**.\n\n" +
-			"This resource creates and manages a Planetscale Vitess source for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a Planetscale Vitess source for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -67,6 +69,11 @@ func SourcePlanetscaleSchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"connector_status": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
+				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
 			"database_hostname": schema.StringAttribute{
 				Required:            true,

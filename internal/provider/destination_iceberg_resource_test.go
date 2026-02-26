@@ -62,6 +62,7 @@ resource "streamkap_destination_iceberg" "test" {
 				ResourceName:      "streamkap_destination_iceberg.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Step 3: Update and Read Testing
 			{

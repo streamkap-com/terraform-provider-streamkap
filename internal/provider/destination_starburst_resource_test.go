@@ -66,6 +66,7 @@ resource "streamkap_destination_starburst" "test" {
 				ResourceName:      "streamkap_destination_starburst.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Update and Read testing
 			{

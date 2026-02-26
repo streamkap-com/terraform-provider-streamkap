@@ -31,6 +31,12 @@
       "computed": true,
       "sensitive": false
     },
+    "connector_status": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
     "file_compression_type": {
       "required": false,
       "optional": true,

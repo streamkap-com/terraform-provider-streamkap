@@ -58,6 +58,7 @@ resource "streamkap_destination_httpsink" "test" {
 				ResourceName:      "streamkap_destination_httpsink.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Update and Read testing
 			{

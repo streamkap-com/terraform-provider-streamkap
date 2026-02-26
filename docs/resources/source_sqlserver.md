@@ -4,7 +4,7 @@ page_title: "streamkap_source_sqlserver Resource - terraform-provider-streamkap"
 subcategory: ""
 description: |-
   Manages a SQL Server source connector.
-  This resource creates and manages a SQL Server source for Streamkap data pipelines.
+  This resource creates and manages a SQL Server source for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Manages a **SQL Server source connector**.
 
-This resource creates and manages a SQL Server source for Streamkap data pipelines.
+This resource creates and manages a SQL Server source for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -61,6 +61,7 @@ This resource creates and manages a SQL Server source for Streamkap data pipelin
 ### Read-Only
 
 - `connector` (String) Connector type
+- `connector_status` (String) Current status of the connector. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
 - `id` (String) Unique identifier for the source
 
 <a id="nestedblock--timeouts"></a>

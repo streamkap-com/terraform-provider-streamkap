@@ -58,6 +58,7 @@ import (
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/shared"
 )
 
 // ConnectorType represents the type of connector (source or destination).
@@ -229,6 +230,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	var id string
 	var connectorName string
 	var connectorCode string
+	var connectorStatus string
 	var responseConfig map[string]any
 
 	switch r.config.GetConnectorType() {
@@ -248,6 +250,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		id = source.ID
 		connectorName = source.Name
 		connectorCode = source.Connector
+		connectorStatus = source.ConnectorStatus
 		responseConfig = source.Config
 
 	case ConnectorTypeDestination:
@@ -266,6 +269,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		id = destination.ID
 		connectorName = destination.Name
 		connectorCode = destination.Connector
+		connectorStatus = destination.ConnectorStatus
 		responseConfig = destination.Config
 	}
 
@@ -273,6 +277,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	r.setStringField(model, "ID", id)
 	r.setStringField(model, "Name", connectorName)
 	r.setStringField(model, "Connector", connectorCode)
+	r.setStringField(model, "ConnectorStatus", connectorStatus)
 	r.configMapToModel(ctx, responseConfig, model)
 
 	// Save data into Terraform state
@@ -313,6 +318,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 	// Call the appropriate API based on connector type
 	var connectorName string
 	var connectorCode string
+	var connectorStatus string
 	var responseConfig map[string]any
 
 	switch r.config.GetConnectorType() {
@@ -331,6 +337,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 		}
 		connectorName = source.Name
 		connectorCode = source.Connector
+		connectorStatus = source.ConnectorStatus
 		responseConfig = source.Config
 
 	case ConnectorTypeDestination:
@@ -348,12 +355,14 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 		}
 		connectorName = destination.Name
 		connectorCode = destination.Connector
+		connectorStatus = destination.ConnectorStatus
 		responseConfig = destination.Config
 	}
 
 	// Update model with response data
 	r.setStringField(model, "Name", connectorName)
 	r.setStringField(model, "Connector", connectorCode)
+	r.setStringField(model, "ConnectorStatus", connectorStatus)
 	r.configMapToModel(ctx, responseConfig, model)
 
 	// Save updated data into Terraform state
@@ -422,6 +431,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 	// Call the appropriate API based on connector type
 	var connectorName string
 	var connectorCode string
+	var connectorStatus string
 	var responseConfig map[string]any
 
 	switch r.config.GetConnectorType() {
@@ -440,6 +450,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		}
 		connectorName = source.Name
 		connectorCode = source.Connector
+		connectorStatus = source.ConnectorStatus
 		responseConfig = source.Config
 
 	case ConnectorTypeDestination:
@@ -457,12 +468,14 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		}
 		connectorName = destination.Name
 		connectorCode = destination.Connector
+		connectorStatus = destination.ConnectorStatus
 		responseConfig = destination.Config
 	}
 
 	// Update model with response data
 	r.setStringField(model, "Name", connectorName)
 	r.setStringField(model, "Connector", connectorCode)
+	r.setStringField(model, "ConnectorStatus", connectorStatus)
 	r.configMapToModel(ctx, responseConfig, model)
 
 	// Save updated data into Terraform state
@@ -549,67 +562,37 @@ func (r *BaseConnectorResource) ImportState(ctx context.Context, req resource.Im
 // modelToConfigMap converts a model struct to a config map using the field mappings.
 // It uses reflection to read values from the model and maps them to API field names.
 func (r *BaseConnectorResource) modelToConfigMap(ctx context.Context, model any) (map[string]any, error) {
-	configMap := make(map[string]any)
-	mappings := r.config.GetFieldMappings()
+	configMap, err := shared.ModelToConfigMap(ctx, model, r.config.GetFieldMappings(), r.extractValueHook())
+	if err != nil {
+		return nil, err
+	}
 
-	// Check if the config specifies fields that should be JSON-stringified
+	// Post-process JSON string fields (double-encoding for nested map types)
 	jsonStringFields := r.getJSONStringFields()
-
-	// Get the reflect value of the model (need to dereference if it's a pointer)
-	v := reflect.ValueOf(model)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	t := v.Type()
-
-	// Build a map from tfsdk tag to field index for quick lookup
-	tfsdkToField := make(map[string]int)
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		tag := field.Tag.Get("tfsdk")
-		if tag != "" && tag != "-" {
-			tfsdkToField[tag] = i
-		}
-	}
-
-	// Iterate over field mappings and extract values
-	for tfAttr, apiField := range mappings {
-		fieldIdx, ok := tfsdkToField[tfAttr]
-		if !ok {
-			tflog.Warn(ctx, fmt.Sprintf("Field mapping for '%s' not found in model", tfAttr))
-			continue
-		}
-
-		fieldValue := v.Field(fieldIdx)
-		apiValue := r.extractTerraformValue(ctx, fieldValue)
-
-		// Check if this non-nil field should be serialized as a JSON string
-		if apiValue != nil && r.isJSONStringField(tfAttr, jsonStringFields) {
-			// If apiValue is a map, serialize it to JSON string with double-encoding
-			// The API expects: {"topic":"{\"key\":\"value\"}"} (inner values are JSON strings)
-			if mapVal, isMap := apiValue.(map[string]map[string]any); isMap {
-				// First, convert each inner map to a JSON string
-				stringifiedMap := make(map[string]string)
-				for key, innerMap := range mapVal {
-					innerBytes, err := json.Marshal(innerMap)
-					if err != nil {
-						tflog.Warn(ctx, fmt.Sprintf("Failed to serialize inner map for %s.%s to JSON: %s", tfAttr, key, err))
-						continue
+	if len(jsonStringFields) > 0 {
+		mappings := r.config.GetFieldMappings()
+		for tfAttr, apiField := range mappings {
+			apiValue := configMap[apiField]
+			if apiValue != nil && r.isJSONStringField(tfAttr, jsonStringFields) {
+				if mapVal, isMap := apiValue.(map[string]map[string]any); isMap {
+					stringifiedMap := make(map[string]string)
+					for key, innerMap := range mapVal {
+						innerBytes, jsonErr := json.Marshal(innerMap)
+						if jsonErr != nil {
+							tflog.Warn(ctx, fmt.Sprintf("Failed to serialize inner map for %s.%s to JSON: %s", tfAttr, key, jsonErr))
+							continue
+						}
+						stringifiedMap[key] = string(innerBytes)
 					}
-					stringifiedMap[key] = string(innerBytes)
-				}
-				// Then marshal the outer map with string values
-				jsonBytes, err := json.Marshal(stringifiedMap)
-				if err != nil {
-					tflog.Warn(ctx, fmt.Sprintf("Failed to serialize %s to JSON: %s", tfAttr, err))
-				} else {
-					configMap[apiField] = string(jsonBytes)
-					continue
+					jsonBytes, jsonErr := json.Marshal(stringifiedMap)
+					if jsonErr != nil {
+						tflog.Warn(ctx, fmt.Sprintf("Failed to serialize %s to JSON: %s", tfAttr, jsonErr))
+					} else {
+						configMap[apiField] = string(jsonBytes)
+					}
 				}
 			}
 		}
-		// Always assign, including nil (JSON null tells the backend to clear the field)
-		configMap[apiField] = apiValue
 	}
 
 	return configMap, nil
@@ -634,101 +617,32 @@ func (r *BaseConnectorResource) isJSONStringField(fieldName string, jsonStringFi
 }
 
 // configMapToModel updates a model struct from a config map using the field mappings.
-// It uses reflection to set values on the model.
 func (r *BaseConnectorResource) configMapToModel(ctx context.Context, cfg map[string]any, model any) {
-	mappings := r.config.GetFieldMappings()
-
-	// Get the reflect value of the model (need to dereference if it's a pointer)
-	v := reflect.ValueOf(model)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	t := v.Type()
-
-	// Build a map from tfsdk tag to field index for quick lookup
-	tfsdkToField := make(map[string]int)
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		tag := field.Tag.Get("tfsdk")
-		if tag != "" && tag != "-" {
-			tfsdkToField[tag] = i
-		}
-	}
-
-	// Iterate over field mappings and set values
-	for tfAttr, apiField := range mappings {
-		fieldIdx, ok := tfsdkToField[tfAttr]
-		if !ok {
-			continue
-		}
-
-		fieldValue := v.Field(fieldIdx)
-		if !fieldValue.CanSet() {
-			continue
-		}
-
-		// Get the Terraform value based on the field type
-		r.setTerraformValue(ctx, cfg, apiField, fieldValue)
-	}
+	shared.ConfigMapToModel(ctx, cfg, model, r.config.GetFieldMappings(), r.setValueHook())
 }
 
-// extractTerraformValue extracts the underlying value from a Terraform types value.
-func (r *BaseConnectorResource) extractTerraformValue(ctx context.Context, fieldValue reflect.Value) any {
-	// Handle different Terraform types
-	switch v := fieldValue.Interface().(type) {
-	case types.String:
-		if v.IsNull() || v.IsUnknown() {
-			return nil
-		}
-		return v.ValueString()
-
-	case types.Int64:
-		if v.IsNull() || v.IsUnknown() {
-			return nil
-		}
-		return v.ValueInt64()
-
-	case types.Bool:
-		if v.IsNull() || v.IsUnknown() {
-			return nil
-		}
-		return v.ValueBool()
-
-	case types.Float64:
-		if v.IsNull() || v.IsUnknown() {
-			return nil
-		}
-		return v.ValueFloat64()
-
-	case jsontypes.Normalized:
-		if v.IsNull() || v.IsUnknown() {
-			return nil
-		}
-		return v.ValueString()
-
-	case types.List:
-		if v.IsNull() || v.IsUnknown() {
-			return nil
-		}
-		// Convert list to slice of strings
-		var result []string
-		for _, elem := range v.Elements() {
-			if strVal, ok := elem.(types.String); ok {
-				result = append(result, strVal.ValueString())
+// extractValueHook returns a hook for shared.ExtractTerraformValue that handles
+// connector-specific types: jsontypes.Normalized, map[string]types.String,
+// and map[string]struct (nested map types).
+func (r *BaseConnectorResource) extractValueHook() shared.ExtractValueFunc {
+	return func(ctx context.Context, fieldValue reflect.Value) (any, bool) {
+		// Handle jsontypes.Normalized
+		if v, ok := fieldValue.Interface().(jsontypes.Normalized); ok {
+			if v.IsNull() || v.IsUnknown() {
+				return nil, true
 			}
+			return v.ValueString(), true
 		}
-		return result
 
-	default:
-		// Check if it's a map type
+		// Handle map types
 		if fieldValue.Kind() == reflect.Map {
 			mapType := fieldValue.Type()
 			if mapType.Key().Kind() == reflect.String {
 				if fieldValue.IsNil() || fieldValue.Len() == 0 {
-					return nil
+					return nil, true
 				}
 
-				// Check if it's map[string]types.String
+				// map[string]types.String
 				if mapType.Elem() == reflect.TypeOf(types.String{}) {
 					result := make(map[string]string)
 					iter := fieldValue.MapRange()
@@ -740,12 +654,12 @@ func (r *BaseConnectorResource) extractTerraformValue(ctx context.Context, field
 						}
 					}
 					if len(result) == 0 {
-						return nil
+						return nil, true
 					}
-					return result
+					return result, true
 				}
 
-				// Check if it's a map[string]struct (nested map type)
+				// map[string]struct (nested map type)
 				if mapType.Elem().Kind() == reflect.Struct {
 					result := make(map[string]map[string]any)
 					iter := fieldValue.MapRange()
@@ -758,14 +672,59 @@ func (r *BaseConnectorResource) extractTerraformValue(ctx context.Context, field
 						}
 					}
 					if len(result) == 0 {
-						return nil
+						return nil, true
 					}
-					return result
+					return result, true
 				}
 			}
 		}
-		tflog.Warn(ctx, fmt.Sprintf("Unknown Terraform type: %T", v))
-		return nil
+
+		return nil, false // not handled
+	}
+}
+
+// setValueHook returns a hook for shared.SetTerraformValue that handles
+// connector-specific types: jsontypes.Normalized, map[string]types.String,
+// and map[string]struct (nested map types).
+func (r *BaseConnectorResource) setValueHook() shared.SetValueFunc {
+	return func(ctx context.Context, cfg map[string]any, apiField string, fieldValue reflect.Value) bool {
+		fieldType := fieldValue.Type()
+
+		// Handle jsontypes.Normalized
+		if fieldType == reflect.TypeOf(jsontypes.Normalized{}) {
+			if val, ok := cfg[apiField]; ok && val != nil {
+				if strVal, ok := val.(string); ok {
+					fieldValue.Set(reflect.ValueOf(jsontypes.NewNormalizedValue(strVal)))
+				} else {
+					fieldValue.Set(reflect.ValueOf(jsontypes.NewNormalizedNull()))
+				}
+			} else {
+				fieldValue.Set(reflect.ValueOf(jsontypes.NewNormalizedNull()))
+			}
+			return true
+		}
+
+		// Handle map types
+		if fieldType.Kind() == reflect.Map && fieldType.Key().Kind() == reflect.String {
+			// map[string]types.String
+			if fieldType.Elem() == reflect.TypeOf(types.String{}) {
+				tfVal := helper.GetTfCfgMapString(ctx, cfg, apiField)
+				if tfVal != nil {
+					fieldValue.Set(reflect.ValueOf(tfVal))
+				} else {
+					fieldValue.Set(reflect.Zero(fieldType))
+				}
+				return true
+			}
+
+			// map[string]struct (nested map type)
+			if fieldType.Elem().Kind() == reflect.Struct {
+				r.setNestedMapValue(ctx, cfg, apiField, fieldValue)
+				return true
+			}
+		}
+
+		return false // not handled
 	}
 }
 
@@ -808,67 +767,7 @@ func (r *BaseConnectorResource) extractNestedStruct(ctx context.Context, structV
 	return result
 }
 
-// setTerraformValue sets a Terraform types value from a config map value.
-func (r *BaseConnectorResource) setTerraformValue(ctx context.Context, cfg map[string]any, apiField string, fieldValue reflect.Value) {
-	// Get the field type to determine which helper to use
-	fieldType := fieldValue.Type()
-
-	switch fieldType {
-	case reflect.TypeOf(types.String{}):
-		tfVal := helper.GetTfCfgString(cfg, apiField)
-		fieldValue.Set(reflect.ValueOf(tfVal))
-
-	case reflect.TypeOf(types.Int64{}):
-		tfVal := helper.GetTfCfgInt64(cfg, apiField)
-		fieldValue.Set(reflect.ValueOf(tfVal))
-
-	case reflect.TypeOf(types.Bool{}):
-		tfVal := helper.GetTfCfgBool(cfg, apiField)
-		fieldValue.Set(reflect.ValueOf(tfVal))
-
-	case reflect.TypeOf(types.Float64{}):
-		tfVal := helper.GetTfCfgFloat64(cfg, apiField)
-		fieldValue.Set(reflect.ValueOf(tfVal))
-
-	case reflect.TypeOf(jsontypes.Normalized{}):
-		// JSON type - stored as string in API
-		if val, ok := cfg[apiField]; ok && val != nil {
-			if strVal, ok := val.(string); ok {
-				fieldValue.Set(reflect.ValueOf(jsontypes.NewNormalizedValue(strVal)))
-			} else {
-				fieldValue.Set(reflect.ValueOf(jsontypes.NewNormalizedNull()))
-			}
-		} else {
-			fieldValue.Set(reflect.ValueOf(jsontypes.NewNormalizedNull()))
-		}
-
-	case reflect.TypeOf(types.List{}):
-		tfVal := helper.GetTfCfgListString(ctx, cfg, apiField)
-		fieldValue.Set(reflect.ValueOf(tfVal))
-
-	default:
-		// Check if it's a map type
-		if fieldType.Kind() == reflect.Map && fieldType.Key().Kind() == reflect.String {
-			// Check if it's map[string]types.String
-			if fieldType.Elem() == reflect.TypeOf(types.String{}) {
-				tfVal := helper.GetTfCfgMapString(ctx, cfg, apiField)
-				if tfVal != nil {
-					fieldValue.Set(reflect.ValueOf(tfVal))
-				} else {
-					fieldValue.Set(reflect.Zero(fieldType))
-				}
-				return
-			}
-
-			// Check if it's a map[string]struct (nested map type)
-			if fieldType.Elem().Kind() == reflect.Struct {
-				r.setNestedMapValue(ctx, cfg, apiField, fieldValue)
-				return
-			}
-		}
-		tflog.Warn(ctx, fmt.Sprintf("Unknown field type for '%s': %s", apiField, fieldType))
-	}
-}
+// Note: setTerraformValue is now handled by shared.SetTerraformValue + setValueHook().
 
 // setNestedMapValue sets a map[string]struct field from a config map value.
 func (r *BaseConnectorResource) setNestedMapValue(ctx context.Context, cfg map[string]any, apiField string, fieldValue reflect.Value) {
@@ -1011,36 +910,10 @@ func (r *BaseConnectorResource) setNestedStructFields(ctx context.Context, itemM
 	}
 }
 
-// getStringField gets a string value from a model field using reflection.
 func (r *BaseConnectorResource) getStringField(model any, fieldName string) string {
-	v := reflect.ValueOf(model)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-
-	field := v.FieldByName(fieldName)
-	if !field.IsValid() {
-		return ""
-	}
-
-	if strVal, ok := field.Interface().(types.String); ok {
-		return strVal.ValueString()
-	}
-
-	return ""
+	return shared.GetStringField(model, fieldName)
 }
 
-// setStringField sets a types.String value on a model field using reflection.
 func (r *BaseConnectorResource) setStringField(model any, fieldName string, value string) {
-	v := reflect.ValueOf(model)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-
-	field := v.FieldByName(fieldName)
-	if !field.IsValid() || !field.CanSet() {
-		return
-	}
-
-	field.Set(reflect.ValueOf(types.StringValue(value)))
+	shared.SetStringField(model, fieldName, value)
 }

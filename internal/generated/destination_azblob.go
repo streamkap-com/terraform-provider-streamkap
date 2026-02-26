@@ -20,6 +20,7 @@ type DestinationAzblobModel struct {
 	ID                     types.String   `tfsdk:"id"`
 	Name                   types.String   `tfsdk:"name"`
 	Connector              types.String   `tfsdk:"connector"`
+	ConnectorStatus        types.String   `tfsdk:"connector_status"`
 	AzblobConnectionString types.String   `tfsdk:"azblob_connection_string"`
 	AzblobContainerName    types.String   `tfsdk:"azblob_container_name"`
 	Format                 types.String   `tfsdk:"format"`
@@ -36,9 +37,10 @@ type DestinationAzblobModel struct {
 // DestinationAzblobSchema returns the Terraform schema for the azblob destination.
 func DestinationAzblobSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Azure Blob Storage destination connector.",
+		Description: "Manages a Azure Blob Storage destination connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **Azure Blob Storage destination connector**.\n\n" +
-			"This resource creates and manages a Azure Blob Storage destination for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a Azure Blob Storage destination for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -61,6 +63,11 @@ func DestinationAzblobSchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"connector_status": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
+				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
 			"azblob_connection_string": schema.StringAttribute{
 				Required:            true,

@@ -19,6 +19,7 @@ type DestinationSnowflakeModel struct {
 	ID                                   types.String   `tfsdk:"id"`
 	Name                                 types.String   `tfsdk:"name"`
 	Connector                            types.String   `tfsdk:"connector"`
+	ConnectorStatus                      types.String   `tfsdk:"connector_status"`
 	SnowflakeURLName                     types.String   `tfsdk:"snowflake_url_name"`
 	SnowflakeUserName                    types.String   `tfsdk:"snowflake_user_name"`
 	SnowflakePrivateKey                  types.String   `tfsdk:"snowflake_private_key"`
@@ -45,9 +46,10 @@ type DestinationSnowflakeModel struct {
 // DestinationSnowflakeSchema returns the Terraform schema for the snowflake destination.
 func DestinationSnowflakeSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Snowflake destination connector.",
+		Description: "Manages a Snowflake destination connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **Snowflake destination connector**.\n\n" +
-			"This resource creates and manages a Snowflake destination for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a Snowflake destination for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -70,6 +72,11 @@ func DestinationSnowflakeSchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"connector_status": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
+				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
 			"snowflake_url_name": schema.StringAttribute{
 				Optional:            true,

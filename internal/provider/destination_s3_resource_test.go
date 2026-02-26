@@ -54,6 +54,7 @@ resource "streamkap_destination_s3" "test" {
 				ResourceName:      "streamkap_destination_s3.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Step 3: Update and Read Testing
 			{

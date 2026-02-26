@@ -4,7 +4,7 @@ page_title: "streamkap_destination_snowflake Resource - terraform-provider-strea
 subcategory: ""
 description: |-
   Manages a Snowflake destination connector.
-  This resource creates and manages a Snowflake destination for Streamkap data pipelines.
+  This resource creates and manages a Snowflake destination for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Manages a **Snowflake destination connector**.
 
-This resource creates and manages a Snowflake destination for Streamkap data pipelines.
+This resource creates and manages a Snowflake destination for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -59,6 +59,7 @@ ALTER TASK {{table}}_CT RESUME`.
 ### Read-Only
 
 - `connector` (String) Connector type
+- `connector_status` (String) Current status of the connector. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
 - `id` (String) Unique identifier for the destination
 
 <a id="nestedblock--timeouts"></a>

@@ -20,6 +20,7 @@ type DestinationRedshiftModel struct {
 	ID                  types.String   `tfsdk:"id"`
 	Name                types.String   `tfsdk:"name"`
 	Connector           types.String   `tfsdk:"connector"`
+	ConnectorStatus     types.String   `tfsdk:"connector_status"`
 	TasksMax            types.Int64    `tfsdk:"tasks_max"`
 	AWSRedshiftDomain   types.String   `tfsdk:"aws_redshift_domain"`
 	AWSRedshiftPort     types.Int64    `tfsdk:"aws_redshift_port"`
@@ -35,9 +36,10 @@ type DestinationRedshiftModel struct {
 // DestinationRedshiftSchema returns the Terraform schema for the redshift destination.
 func DestinationRedshiftSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Redshift destination connector.",
+		Description: "Manages a Redshift destination connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **Redshift destination connector**.\n\n" +
-			"This resource creates and manages a Redshift destination for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a Redshift destination for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -60,6 +62,11 @@ func DestinationRedshiftSchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"connector_status": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
+				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,

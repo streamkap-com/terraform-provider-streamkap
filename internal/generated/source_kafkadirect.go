@@ -19,6 +19,7 @@ type SourceKafkadirectModel struct {
 	ID               types.String   `tfsdk:"id"`
 	Name             types.String   `tfsdk:"name"`
 	Connector        types.String   `tfsdk:"connector"`
+	ConnectorStatus  types.String   `tfsdk:"connector_status"`
 	TopicPrefix      types.String   `tfsdk:"topic_prefix"`
 	TopicIncludeList types.String   `tfsdk:"topic_include_list"`
 	Format           types.String   `tfsdk:"format"`
@@ -29,9 +30,10 @@ type SourceKafkadirectModel struct {
 // SourceKafkadirectSchema returns the Terraform schema for the kafkadirect source.
 func SourceKafkadirectSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Kafka Direct source connector.",
+		Description: "Manages a Kafka Direct source connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **Kafka Direct source connector**.\n\n" +
-			"This resource creates and manages a Kafka Direct source for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a Kafka Direct source for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -54,6 +56,11 @@ func SourceKafkadirectSchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"connector_status": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
+				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
 			"topic_prefix": schema.StringAttribute{
 				Required:            true,

@@ -13,6 +13,12 @@
       "computed": true,
       "sensitive": false
     },
+    "connector_status": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
     "database_include_list": {
       "required": true,
       "optional": false,

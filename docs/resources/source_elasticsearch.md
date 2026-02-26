@@ -4,7 +4,7 @@ page_title: "streamkap_source_elasticsearch Resource - terraform-provider-stream
 subcategory: ""
 description: |-
   Manages a ElasticSearch source connector.
-  This resource creates and manages a ElasticSearch source for Streamkap data pipelines.
+  This resource creates and manages a ElasticSearch source for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Manages a **ElasticSearch source connector**.
 
-This resource creates and manages a ElasticSearch source for Streamkap data pipelines.
+This resource creates and manages a ElasticSearch source for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -44,6 +44,7 @@ This resource creates and manages a ElasticSearch source for Streamkap data pipe
 ### Read-Only
 
 - `connector` (String) Connector type
+- `connector_status` (String) Current status of the connector. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
 - `id` (String) Unique identifier for the source
 
 <a id="nestedblock--timeouts"></a>

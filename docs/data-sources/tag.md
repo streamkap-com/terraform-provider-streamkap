@@ -26,7 +26,7 @@ terraform {
       version = ">= 2.0.0"
     }
   }
-  required_version = ">= 1.0.0"
+  required_version = ">= 1.5.0"
 }
 
 provider "streamkap" {}

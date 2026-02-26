@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -16,11 +15,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/shared"
 )
 
 // TransformConfig is the interface that each transform must implement to provide
@@ -306,14 +305,41 @@ func (r *BaseTransformResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	// Read implementation_json from API and set in state
+	// Read implementation_json from API and set in state.
+	// The API may add server-side defaults (e.g., sourceIdleTimeoutMs, stateTTLMs for rollup).
+	// If the user's config is a subset of the API response, preserve the user's value to avoid
+	// spurious diffs from these defaults.
+	var currentImplJSON jsontypes.Normalized
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("implementation_json"), &currentImplJSON)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	if len(transform.Implementation) > 0 {
-		implJSON, err := marshalImplementation(transform.Implementation)
-		if err != nil {
-			tflog.Warn(ctx, fmt.Sprintf("Failed to marshal implementation to JSON: %s", err))
-			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
+		if !currentImplJSON.IsNull() && !currentImplJSON.IsUnknown() {
+			// User has set implementation_json - check if API just added defaults
+			if isImplementationSubset(currentImplJSON.ValueString(), transform.Implementation) {
+				// State is a subset of API response (API added server-side defaults) - preserve user's value
+				resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), currentImplJSON)...)
+			} else {
+				// Real drift detected - update state with API value
+				implJSON, err := marshalImplementation(transform.Implementation)
+				if err != nil {
+					tflog.Warn(ctx, fmt.Sprintf("Failed to marshal implementation to JSON: %s", err))
+					resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
+				} else {
+					resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedValue(implJSON))...)
+				}
+			}
 		} else {
-			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedValue(implJSON))...)
+			// No user implementation in state - set from API
+			implJSON, err := marshalImplementation(transform.Implementation)
+			if err != nil {
+				tflog.Warn(ctx, fmt.Sprintf("Failed to marshal implementation to JSON: %s", err))
+				resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
+			} else {
+				resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedValue(implJSON))...)
+			}
 		}
 	} else {
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
@@ -584,194 +610,99 @@ func marshalImplementation(impl map[string]any) (string, error) {
 	return string(implBytes), nil
 }
 
+// isImplementationSubset checks if all fields in the state's implementation JSON exist
+// with the same values in the API response. Returns true if the API response is a superset
+// of the state (i.e., the API only added server-side defaults like sourceIdleTimeoutMs).
+// This prevents spurious diffs when the backend adds default fields to user-provided implementations.
+func isImplementationSubset(stateJSON string, apiImpl map[string]any) bool {
+	var stateMap map[string]any
+	if err := json.Unmarshal([]byte(stateJSON), &stateMap); err != nil {
+		return false
+	}
+	return jsonMapIsSubset(stateMap, apiImpl)
+}
+
+// jsonMapIsSubset recursively checks that every key in subset exists in superset
+// with an equivalent value. Extra keys in superset are allowed.
+func jsonMapIsSubset(subset, superset map[string]any) bool {
+	for k, subVal := range subset {
+		superVal, exists := superset[k]
+		if !exists {
+			return false
+		}
+		if !jsonValuesEqual(subVal, superVal) {
+			return false
+		}
+	}
+	return true
+}
+
+// jsonValuesEqual compares two JSON-deserialized values for deep equality.
+// It handles maps, slices, and scalar types.
+func jsonValuesEqual(a, b any) bool {
+	// Handle nil
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+
+	// Handle maps recursively with subset logic
+	aMap, aIsMap := a.(map[string]any)
+	bMap, bIsMap := b.(map[string]any)
+	if aIsMap && bIsMap {
+		// For nested maps, require exact match (not subset)
+		if len(aMap) != len(bMap) {
+			return false
+		}
+		for k, av := range aMap {
+			bv, exists := bMap[k]
+			if !exists || !jsonValuesEqual(av, bv) {
+				return false
+			}
+		}
+		return true
+	}
+
+	// Handle slices
+	aSlice, aIsSlice := a.([]any)
+	bSlice, bIsSlice := b.([]any)
+	if aIsSlice && bIsSlice {
+		if len(aSlice) != len(bSlice) {
+			return false
+		}
+		for i := range aSlice {
+			if !jsonValuesEqual(aSlice[i], bSlice[i]) {
+				return false
+			}
+		}
+		return true
+	}
+
+	// Scalar comparison via JSON marshaling to normalize numeric types
+	aJSON, errA := json.Marshal(a)
+	bJSON, errB := json.Marshal(b)
+	if errA != nil || errB != nil {
+		return false
+	}
+	return string(aJSON) == string(bJSON)
+}
+
 // modelToConfigMap converts a model struct to a config map using the field mappings.
 // It uses reflection to read values from the model and maps them to API field names.
 func (r *BaseTransformResource) modelToConfigMap(ctx context.Context, model any) (map[string]any, error) {
-	configMap := make(map[string]any)
-	mappings := r.config.GetFieldMappings()
-
-	// Get the reflect value of the model (need to dereference if it's a pointer)
-	v := reflect.ValueOf(model)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	t := v.Type()
-
-	// Build a map from tfsdk tag to field index for quick lookup
-	tfsdkToField := make(map[string]int)
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		tag := field.Tag.Get("tfsdk")
-		if tag != "" && tag != "-" {
-			tfsdkToField[tag] = i
-		}
-	}
-
-	// Iterate over field mappings and extract values
-	for tfAttr, apiField := range mappings {
-		fieldIdx, ok := tfsdkToField[tfAttr]
-		if !ok {
-			tflog.Warn(ctx, fmt.Sprintf("Field mapping for '%s' not found in model", tfAttr))
-			continue
-		}
-
-		fieldValue := v.Field(fieldIdx)
-		apiValue := r.extractTerraformValue(ctx, fieldValue)
-
-		// Always assign, including nil (JSON null tells the backend to clear the field)
-		configMap[apiField] = apiValue
-	}
-
-	return configMap, nil
+	return shared.ModelToConfigMap(ctx, model, r.config.GetFieldMappings(), nil)
 }
 
-// configMapToModel updates a model struct from a config map using the field mappings.
-// It uses reflection to set values on the model.
 func (r *BaseTransformResource) configMapToModel(ctx context.Context, cfg map[string]any, model any) {
-	mappings := r.config.GetFieldMappings()
-
-	// Get the reflect value of the model (need to dereference if it's a pointer)
-	v := reflect.ValueOf(model)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	t := v.Type()
-
-	// Build a map from tfsdk tag to field index for quick lookup
-	tfsdkToField := make(map[string]int)
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		tag := field.Tag.Get("tfsdk")
-		if tag != "" && tag != "-" {
-			tfsdkToField[tag] = i
-		}
-	}
-
-	// Iterate over field mappings and set values
-	for tfAttr, apiField := range mappings {
-		fieldIdx, ok := tfsdkToField[tfAttr]
-		if !ok {
-			continue
-		}
-
-		fieldValue := v.Field(fieldIdx)
-		if !fieldValue.CanSet() {
-			continue
-		}
-
-		// Get the Terraform value based on the field type
-		r.setTerraformValue(ctx, cfg, apiField, fieldValue)
-	}
+	shared.ConfigMapToModel(ctx, cfg, model, r.config.GetFieldMappings(), nil)
 }
 
-// extractTerraformValue extracts the underlying value from a Terraform types value.
-func (r *BaseTransformResource) extractTerraformValue(ctx context.Context, fieldValue reflect.Value) any {
-	// Handle different Terraform types
-	switch v := fieldValue.Interface().(type) {
-	case types.String:
-		if v.IsNull() || v.IsUnknown() {
-			return nil
-		}
-		return v.ValueString()
-
-	case types.Int64:
-		if v.IsNull() || v.IsUnknown() {
-			return nil
-		}
-		return v.ValueInt64()
-
-	case types.Bool:
-		if v.IsNull() || v.IsUnknown() {
-			return nil
-		}
-		return v.ValueBool()
-
-	case types.Float64:
-		if v.IsNull() || v.IsUnknown() {
-			return nil
-		}
-		return v.ValueFloat64()
-
-	case types.List:
-		if v.IsNull() || v.IsUnknown() {
-			return nil
-		}
-		// Convert list to slice of strings
-		var result []string
-		for _, elem := range v.Elements() {
-			if strVal, ok := elem.(types.String); ok {
-				result = append(result, strVal.ValueString())
-			}
-		}
-		return result
-
-	default:
-		tflog.Warn(ctx, fmt.Sprintf("Unknown Terraform type: %T", v))
-		return nil
-	}
-}
-
-// setTerraformValue sets a Terraform types value from a config map value.
-func (r *BaseTransformResource) setTerraformValue(ctx context.Context, cfg map[string]any, apiField string, fieldValue reflect.Value) {
-	// Get the field type to determine which helper to use
-	fieldType := fieldValue.Type()
-
-	switch fieldType {
-	case reflect.TypeOf(types.String{}):
-		tfVal := helper.GetTfCfgString(cfg, apiField)
-		fieldValue.Set(reflect.ValueOf(tfVal))
-
-	case reflect.TypeOf(types.Int64{}):
-		tfVal := helper.GetTfCfgInt64(cfg, apiField)
-		fieldValue.Set(reflect.ValueOf(tfVal))
-
-	case reflect.TypeOf(types.Bool{}):
-		tfVal := helper.GetTfCfgBool(cfg, apiField)
-		fieldValue.Set(reflect.ValueOf(tfVal))
-
-	case reflect.TypeOf(types.Float64{}):
-		tfVal := helper.GetTfCfgFloat64(cfg, apiField)
-		fieldValue.Set(reflect.ValueOf(tfVal))
-
-	case reflect.TypeOf(types.List{}):
-		tfVal := helper.GetTfCfgListString(ctx, cfg, apiField)
-		fieldValue.Set(reflect.ValueOf(tfVal))
-
-	default:
-		tflog.Warn(ctx, fmt.Sprintf("Unknown field type for '%s': %s", apiField, fieldType))
-	}
-}
-
-// getStringField gets a string value from a model field using reflection.
 func (r *BaseTransformResource) getStringField(model any, fieldName string) string {
-	v := reflect.ValueOf(model)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-
-	field := v.FieldByName(fieldName)
-	if !field.IsValid() {
-		return ""
-	}
-
-	if strVal, ok := field.Interface().(types.String); ok {
-		return strVal.ValueString()
-	}
-
-	return ""
+	return shared.GetStringField(model, fieldName)
 }
 
-// setStringField sets a types.String value on a model field using reflection.
 func (r *BaseTransformResource) setStringField(model any, fieldName string, value string) {
-	v := reflect.ValueOf(model)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-
-	field := v.FieldByName(fieldName)
-	if !field.IsValid() || !field.CanSet() {
-		return
-	}
-
-	field.Set(reflect.ValueOf(types.StringValue(value)))
+	shared.SetStringField(model, fieldName, value)
 }

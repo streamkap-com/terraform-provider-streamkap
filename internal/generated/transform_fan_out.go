@@ -34,9 +34,10 @@ type TransformFanOutModel struct {
 // TransformFanOutSchema returns the Terraform schema for the fan_out transform.
 func TransformFanOutSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Fan Out transform connector.",
+		Description: "Manages a Fan Out transform connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **Fan Out transform connector**.\n\n" +
-			"This resource creates and manages a Fan Out transform for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a Fan Out transform for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

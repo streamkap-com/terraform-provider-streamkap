@@ -1,5 +1,6 @@
 # Migration tests workflow - validates old→new provider equivalence
-# TEMPORARY: Delete this file after v3.0.0 release validation
+# TEMPORARY: Delete this file after v3.0.0 release validation.
+# Tracked: create a GitHub issue for post-v3.0 cleanup (migration tests, legacy provider config).
 name: Migration Tests
 
 on:

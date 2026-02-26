@@ -105,7 +105,10 @@ func (r *TopicResource) Create(ctx context.Context, req res.CreateRequest, resp 
 	}
 	tflog.Debug(ctx, "Post CREATE ===> config: "+fmt.Sprintf("%+v", topic))
 
-	r.configMap2Model(*topic, &plan)
+	if err := r.configMap2Model(*topic, &plan); err != nil {
+		resp.Diagnostics.AddError("Error mapping topic response", err.Error())
+		return
+	}
 	tflog.Debug(ctx, "Post CREATE ===> plan: "+fmt.Sprintf("%+v", plan))
 
 	// Save data into Terraform state
@@ -138,7 +141,10 @@ func (r *TopicResource) Read(ctx context.Context, req res.ReadRequest, resp *res
 		resp.State.RemoveResource(ctx)
 		return
 	}
-	r.configMap2Model(*topic, &state)
+	if err := r.configMap2Model(*topic, &state); err != nil {
+		resp.Diagnostics.AddError("Error mapping topic response", err.Error())
+		return
+	}
 	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", state))
 
 	// Save updated data into Terraform state
@@ -170,7 +176,10 @@ func (r *TopicResource) Update(ctx context.Context, req res.UpdateRequest, resp 
 	}
 
 	// Update resource state with updated items
-	r.configMap2Model(*topic, &plan)
+	if err := r.configMap2Model(*topic, &plan); err != nil {
+		resp.Diagnostics.AddError("Error mapping topic response", err.Error())
+		return
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)

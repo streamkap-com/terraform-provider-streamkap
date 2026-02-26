@@ -116,6 +116,8 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 		MarkdownDescription: "Manages a **Streamkap pipeline** that connects sources to destinations with optional transforms.\n\n" +
 			"A pipeline is the core orchestration resource that defines how data flows from a source " +
 			"connector through optional transforms to a destination connector.\n\n" +
+			"**Related resources:** `streamkap_source_*` (sources), `streamkap_destination_*` (destinations), " +
+			"`streamkap_transform_*` (transforms), `streamkap_topic` (topics).\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 
 		Attributes: map[string]schema.Attribute{
@@ -297,9 +299,10 @@ func (r *PipelineResource) Create(ctx context.Context, req res.CreateRequest, re
 		return
 	}
 
-	// For the purposes of this example code, hardcoding a response value to
-	// save into the Terraform state.
-	r.api2Model(ctx, *pipeline, &plan)
+	if err := r.api2Model(ctx, *pipeline, &plan); err != nil {
+		resp.Diagnostics.AddError("Error mapping pipeline response", err.Error())
+		return
+	}
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -332,7 +335,10 @@ func (r *PipelineResource) Read(ctx context.Context, req res.ReadRequest, resp *
 		return
 	}
 
-	r.api2Model(ctx, *pipeline, &state)
+	if err := r.api2Model(ctx, *pipeline, &state); err != nil {
+		resp.Diagnostics.AddError("Error mapping pipeline response", err.Error())
+		return
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -385,9 +391,10 @@ func (r *PipelineResource) Update(ctx context.Context, req res.UpdateRequest, re
 		return
 	}
 
-	// For the purposes of this example code, hardcoding a response value to
-	// save into the Terraform state.
-	r.api2Model(ctx, *pipeline, &plan)
+	if err := r.api2Model(ctx, *pipeline, &plan); err != nil {
+		resp.Diagnostics.AddError("Error mapping pipeline response", err.Error())
+		return
+	}
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)

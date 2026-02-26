@@ -53,6 +53,7 @@ resource "streamkap_source_documentdb" "test" {
 				ResourceName:      "streamkap_source_documentdb.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Update and Read testing
 			{

@@ -12,20 +12,22 @@ import (
 
 // DestinationKafkadirectModel is the Terraform model for the kafkadirect destination.
 type DestinationKafkadirectModel struct {
-	ID           types.String   `tfsdk:"id"`
-	Name         types.String   `tfsdk:"name"`
-	Connector    types.String   `tfsdk:"connector"`
-	Password     types.String   `tfsdk:"password"`
-	WhitelistIps types.String   `tfsdk:"whitelist_ips"`
-	Timeouts     timeouts.Value `tfsdk:"timeouts"`
+	ID              types.String   `tfsdk:"id"`
+	Name            types.String   `tfsdk:"name"`
+	Connector       types.String   `tfsdk:"connector"`
+	ConnectorStatus types.String   `tfsdk:"connector_status"`
+	Password        types.String   `tfsdk:"password"`
+	WhitelistIps    types.String   `tfsdk:"whitelist_ips"`
+	Timeouts        timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationKafkadirectSchema returns the Terraform schema for the kafkadirect destination.
 func DestinationKafkadirectSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Kafka Direct destination connector.",
+		Description: "Manages a Kafka Direct destination connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **Kafka Direct destination connector**.\n\n" +
-			"This resource creates and manages a Kafka Direct destination for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a Kafka Direct destination for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -48,6 +50,11 @@ func DestinationKafkadirectSchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"connector_status": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
+				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
 			"password": schema.StringAttribute{
 				Required:            true,

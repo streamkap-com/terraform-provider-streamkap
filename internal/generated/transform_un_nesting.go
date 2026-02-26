@@ -33,9 +33,10 @@ type TransformUnNestingModel struct {
 // TransformUnNestingSchema returns the Terraform schema for the un_nesting transform.
 func TransformUnNestingSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Un-Nesting transform connector.",
+		Description: "Manages a Un-Nesting transform connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **Un-Nesting transform connector**.\n\n" +
-			"This resource creates and manages a Un-Nesting transform for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a Un-Nesting transform for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

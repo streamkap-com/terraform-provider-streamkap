@@ -22,6 +22,7 @@ type DestinationBigqueryModel struct {
 	ID                           types.String         `tfsdk:"id"`
 	Name                         types.String         `tfsdk:"name"`
 	Connector                    types.String         `tfsdk:"connector"`
+	ConnectorStatus              types.String         `tfsdk:"connector_status"`
 	BigqueryJson                 jsontypes.Normalized `tfsdk:"bigquery_json"`
 	TableNamePrefix              types.String         `tfsdk:"table_name_prefix"`
 	BigqueryRegion               types.String         `tfsdk:"bigquery_region"`
@@ -35,9 +36,10 @@ type DestinationBigqueryModel struct {
 // DestinationBigquerySchema returns the Terraform schema for the bigquery destination.
 func DestinationBigquerySchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a BigQuery destination connector.",
+		Description: "Manages a BigQuery destination connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages a **BigQuery destination connector**.\n\n" +
-			"This resource creates and manages a BigQuery destination for Streamkap data pipelines.\n\n" +
+			"This resource creates and manages a BigQuery destination for Streamkap data pipelines. " +
+			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -60,6 +62,11 @@ func DestinationBigquerySchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"connector_status": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
+				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
 			"bigquery_json": schema.StringAttribute{
 				Required:            true,

@@ -1,9 +1,11 @@
 package provider
 
 import (
+	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"gopkg.in/dnaeon/go-vcr.v4/pkg/cassette"
@@ -64,22 +66,66 @@ func newVCRClient(t *testing.T, cassetteName string) (*http.Client, func()) {
 	return r.GetDefaultClient(), cleanup
 }
 
-// redactSensitiveFields replaces known sensitive field values with [REDACTED]
+// sensitivePatterns lists field name substrings whose values should be redacted from cassettes.
+// Patterns are matched case-insensitively via strings.Contains.
+// Keep patterns specific enough to avoid redacting non-sensitive config fields
+// (e.g., "auth" alone would match "authorization_type" which is a non-sensitive enum).
+var sensitivePatterns = []string{
+	"password", "secret", "private_key", "passphrase",
+	"access_token", "refresh_token", "api_key",
+	"pem", "credential",
+	"client_secret", "auth_key", "auth_token",
+	"bearer", "connection_string",
+}
+
+// redactSensitiveFields parses body as JSON and replaces values of sensitive keys with [REDACTED].
+// Falls back to the original body if it is not valid JSON.
 func redactSensitiveFields(body string) string {
-	// List of sensitive field patterns to redact
-	sensitivePatterns := []string{
-		"password", "secret", "private_key", "passphrase",
-		"access_token", "refresh_token", "api_key",
+	if strings.TrimSpace(body) == "" {
+		return body
 	}
 
-	result := body
-	for _, pattern := range sensitivePatterns {
-		// Simple redaction - for production use, consider proper JSON parsing
-		// This handles: "password": "value" -> "password": "[REDACTED]"
-		// Note: This is a basic implementation; complex nested values may need more sophisticated handling
-		_ = pattern // Placeholder to avoid unused variable error
+	var data any
+	if err := json.Unmarshal([]byte(body), &data); err != nil {
+		return body // not JSON — return unchanged
 	}
-	return result
+
+	redactRecursive(data)
+
+	out, err := json.Marshal(data)
+	if err != nil {
+		return body
+	}
+	return string(out)
+}
+
+// redactRecursive walks a parsed JSON value in-place and replaces sensitive string values.
+func redactRecursive(v any) {
+	switch val := v.(type) {
+	case map[string]any:
+		for key, child := range val {
+			if isSensitiveKey(key) {
+				val[key] = "[REDACTED]"
+			} else {
+				redactRecursive(child)
+			}
+		}
+	case []any:
+		for _, item := range val {
+			redactRecursive(item)
+		}
+	}
+}
+
+// isSensitiveKey returns true if any sensitive pattern is a substring of the key (case-insensitive).
+func isSensitiveKey(key string) bool {
+	lower := strings.ToLower(key)
+	for _, pattern := range sensitivePatterns {
+		if strings.Contains(lower, pattern) {
+			return true
+		}
+	}
+	return false
 }
 
 // Integration tests using recorded cassettes
