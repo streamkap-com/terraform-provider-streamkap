@@ -11,8 +11,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/stretchr/testify/require"
 
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/client_credential"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/destination"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/kafka_user"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/pipeline"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/tag"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/topic"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/transform"
 )
 
@@ -282,5 +287,317 @@ func TestSchemaBackwardsCompatibility_TransformSqlJoin(t *testing.T) {
 		name:            "transform_sql_join",
 		snapshotFile:    "transform_sql_join_v1.json",
 		resourceFactory: transform.NewSqlJoinResource,
+	})
+}
+
+// --- Sources (missing) ---
+
+func TestSchemaBackwardsCompatibility_SourceAlloyDB(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_alloydb",
+		snapshotFile:    "source_alloydb_v1.json",
+		resourceFactory: source.NewAlloyDBResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceDB2(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_db2",
+		snapshotFile:    "source_db2_v1.json",
+		resourceFactory: source.NewDB2Resource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceDocumentDB(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_documentdb",
+		snapshotFile:    "source_documentdb_v1.json",
+		resourceFactory: source.NewDocumentDBResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceElasticsearch(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_elasticsearch",
+		snapshotFile:    "source_elasticsearch_v1.json",
+		resourceFactory: source.NewElasticsearchResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceMariaDB(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_mariadb",
+		snapshotFile:    "source_mariadb_v1.json",
+		resourceFactory: source.NewMariaDBResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceMongoDBHosted(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_mongodbhosted",
+		snapshotFile:    "source_mongodbhosted_v1.json",
+		resourceFactory: source.NewMongoDBHostedResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceOracle(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_oracle",
+		snapshotFile:    "source_oracle_v1.json",
+		resourceFactory: source.NewOracleResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceOracleAWS(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_oracleaws",
+		snapshotFile:    "source_oracleaws_v1.json",
+		resourceFactory: source.NewOracleAWSResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourcePlanetScale(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_planetscale",
+		snapshotFile:    "source_planetscale_v1.json",
+		resourceFactory: source.NewPlanetScaleResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceRedis(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_redis",
+		snapshotFile:    "source_redis_v1.json",
+		resourceFactory: source.NewRedisResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceS3(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_s3",
+		snapshotFile:    "source_s3_v1.json",
+		resourceFactory: source.NewS3SourceResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceSupabase(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_supabase",
+		snapshotFile:    "source_supabase_v1.json",
+		resourceFactory: source.NewSupabaseResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceVitess(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_vitess",
+		snapshotFile:    "source_vitess_v1.json",
+		resourceFactory: source.NewVitessResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceWebhook(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_webhook",
+		snapshotFile:    "source_webhook_v1.json",
+		resourceFactory: source.NewWebhookResource,
+	})
+}
+
+// --- Destinations (missing) ---
+
+func TestSchemaBackwardsCompatibility_DestinationAzBlob(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_azblob",
+		snapshotFile:    "destination_azblob_v1.json",
+		resourceFactory: destination.NewAzBlobResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DestinationBigQuery(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_bigquery",
+		snapshotFile:    "destination_bigquery_v1.json",
+		resourceFactory: destination.NewBigQueryResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DestinationCockroachDB(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_cockroachdb",
+		snapshotFile:    "destination_cockroachdb_v1.json",
+		resourceFactory: destination.NewCockroachDBResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DestinationDB2(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_db2",
+		snapshotFile:    "destination_db2_v1.json",
+		resourceFactory: destination.NewDB2DestResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DestinationGCS(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_gcs",
+		snapshotFile:    "destination_gcs_v1.json",
+		resourceFactory: destination.NewGCSResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DestinationHTTPSink(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_httpsink",
+		snapshotFile:    "destination_httpsink_v1.json",
+		resourceFactory: destination.NewHTTPSinkResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DestinationKafkaDirect(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_kafkadirect",
+		snapshotFile:    "destination_kafkadirect_v1.json",
+		resourceFactory: destination.NewKafkaDirectDestResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DestinationMotherduck(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_motherduck",
+		snapshotFile:    "destination_motherduck_v1.json",
+		resourceFactory: destination.NewMotherduckResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DestinationMySQL(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_mysql",
+		snapshotFile:    "destination_mysql_v1.json",
+		resourceFactory: destination.NewMySQLDestResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DestinationOracle(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_oracle",
+		snapshotFile:    "destination_oracle_v1.json",
+		resourceFactory: destination.NewOracleDestResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DestinationR2(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_r2",
+		snapshotFile:    "destination_r2_v1.json",
+		resourceFactory: destination.NewR2Resource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DestinationRedis(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_redis",
+		snapshotFile:    "destination_redis_v1.json",
+		resourceFactory: destination.NewRedisDestResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DestinationRedshift(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_redshift",
+		snapshotFile:    "destination_redshift_v1.json",
+		resourceFactory: destination.NewRedshiftResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DestinationSQLServer(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_sqlserver",
+		snapshotFile:    "destination_sqlserver_v1.json",
+		resourceFactory: destination.NewSQLServerDestResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DestinationStarburst(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_starburst",
+		snapshotFile:    "destination_starburst_v1.json",
+		resourceFactory: destination.NewStarburstResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DestinationWeaviate(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_weaviate",
+		snapshotFile:    "destination_weaviate_v1.json",
+		resourceFactory: destination.NewWeaviateResource,
+	})
+}
+
+// --- Transforms (missing) ---
+
+func TestSchemaBackwardsCompatibility_TransformEnrichAsync(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "transform_enrich_async",
+		snapshotFile:    "transform_enrich_async_v1.json",
+		resourceFactory: transform.NewEnrichAsyncResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_TransformRollup(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "transform_rollup",
+		snapshotFile:    "transform_rollup_v1.json",
+		resourceFactory: transform.NewRollupResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_TransformFanOut(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "transform_fan_out",
+		snapshotFile:    "transform_fan_out_v1.json",
+		resourceFactory: transform.NewFanOutResource,
+	})
+}
+
+// --- Non-connector resources ---
+
+func TestSchemaBackwardsCompatibility_Pipeline(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "pipeline",
+		snapshotFile:    "pipeline_v1.json",
+		resourceFactory: pipeline.NewPipelineResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_Topic(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "topic",
+		snapshotFile:    "topic_v1.json",
+		resourceFactory: topic.NewTopicResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_Tag(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "tag",
+		snapshotFile:    "tag_v1.json",
+		resourceFactory: tag.NewTagResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_KafkaUser(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "kafka_user",
+		snapshotFile:    "kafka_user_v1.json",
+		resourceFactory: kafka_user.NewKafkaUserResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_ClientCredential(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "client_credential",
+		snapshotFile:    "client_credential_v1.json",
+		resourceFactory: client_credential.NewClientCredentialResource,
 	})
 }

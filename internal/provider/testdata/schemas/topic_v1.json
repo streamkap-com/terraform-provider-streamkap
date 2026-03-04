@@ -1,0 +1,17 @@
+{
+  "version": "v3.0.0",
+  "attributes": {
+    "partition_count": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false
+    },
+    "topic_id": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false
+    }
+  }
+}

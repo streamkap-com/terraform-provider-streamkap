@@ -26,6 +26,14 @@ Terraform provider for [Streamkap](https://streamkap.com) - a real-time data str
 - Pipelines
 - Topics
 - Tags
+- Kafka Users (ACL-based Kafka access control)
+- Client Credentials (API token management)
+
+### Data Sources
+- Topics, Topic, Topic Metrics
+- Tags
+- Transforms
+- Roles
 
 ## Quick Start
 
@@ -237,7 +245,9 @@ go test -v ./cmd/tfgen/...
 │   │   ├── transform/   # Transform resource configs
 │   │   ├── pipeline/    # Pipeline resource
 │   │   ├── topic/       # Topic resource
-│   │   └── tag/         # Tag resource
+│   │   ├── tag/         # Tag resource
+│   │   ├── kafka_user/  # Kafka user resource
+│   │   └── client_credential/ # Client credential resource
 │   ├── datasource/      # Data sources
 │   └── helper/          # Utility functions
 └── examples/            # Example Terraform configs

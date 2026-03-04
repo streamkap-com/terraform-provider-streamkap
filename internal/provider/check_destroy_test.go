@@ -155,10 +155,56 @@ func testAccCheckTopicDestroy(s *terraform.State) error {
 	return nil
 }
 
+// testAccCheckKafkaUserDestroy verifies that all Kafka user resources have been destroyed.
+func testAccCheckKafkaUserDestroy(s *terraform.State) error {
+	client, err := testAccCheckDestroyClient()
+	if err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "streamkap_kafka_user" {
+			continue
+		}
+
+		user, err := client.GetKafkaUser(ctx, rs.Primary.ID)
+		if err == nil && user != nil {
+			return fmt.Errorf("kafka user %s still exists", rs.Primary.ID)
+		}
+	}
+
+	return nil
+}
+
+// testAccCheckClientCredentialDestroy verifies that all client credential resources have been destroyed.
+func testAccCheckClientCredentialDestroy(s *terraform.State) error {
+	client, err := testAccCheckDestroyClient()
+	if err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "streamkap_client_credential" {
+			continue
+		}
+
+		cred, err := client.GetClientCredential(ctx, rs.Primary.ID)
+		if err == nil && cred != nil {
+			return fmt.Errorf("client credential %s still exists", rs.Primary.ID)
+		}
+	}
+
+	return nil
+}
+
 // testAccCheckTagDestroy verifies that all tag resources have been destroyed.
 // It checks the Streamkap API to confirm that tag resources no longer exist.
 //
-//nolint:unused // Will be used when tag acceptance tests are added
+//nolint:unused // Available for tag acceptance tests
 func testAccCheckTagDestroy(s *terraform.State) error {
 	client, err := testAccCheckDestroyClient()
 	if err != nil {

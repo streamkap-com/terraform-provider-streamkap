@@ -19,8 +19,8 @@
 │  PostgreSQL      │  Snowflake       │  MapFilter       │Pipeline│
 │  MySQL, MongoDB  │  ClickHouse      │  Enrich          │ Topic  │
 │  DynamoDB        │  Databricks      │  EnrichAsync     │  Tag   │
-│  SQLServer       │  PostgreSQL, S3  │  SQLJoin         │        │
-│  KafkaDirect     │  Iceberg, Kafka  │  Rollup, FanOut  │        │
+│  SQLServer       │  PostgreSQL, S3  │  SQLJoin         │KfkUser │
+│  KafkaDirect     │  Iceberg, Kafka  │  Rollup, FanOut  │CliCred │
 │  Oracle, Redis   │  BigQuery, GCS   │                  │        │
 │  + 12 more...    │  + 15 more...    │                  │        │
 └──────────────────┴──────────────────┴──────────────────┴────────┘
@@ -38,6 +38,7 @@
 │                      API Client                                  │
 │  - HTTP client with Bearer token auth                            │
 │  - Source, Destination, Transform, Pipeline, Topic, Tag CRUD     │
+│  - Kafka User, Client Credential, Role APIs                      │
 └─────────────────────────────────────────────────────────────────┘
               │
               ▼
@@ -334,6 +335,29 @@ resource "streamkap_transform_map_filter" "example" {
 
 **Note:** If `implementation_json` is not specified, the implementation is managed outside Terraform (e.g., via Streamkap UI) and is preserved during updates.
 
+## Non-Connector Resources
+
+Resources that don't follow the connector pattern have their own implementations:
+
+### Kafka User (`internal/resource/kafka_user/`)
+- CRUD via `/kafka-access/kafka-users` endpoints
+- `username` is the resource ID (ForceNew — cannot change after creation)
+- `password` is write-only (not returned by API on read, uses `UseStateForUnknown`)
+- `kafka_acls` is a `ListNestedBlock` with ACL rules (topic_name, operation, resource_pattern_type, resource)
+- Import uses username as the ID
+- No individual GET endpoint — reads filter from list
+
+### Client Credential (`internal/resource/client_credential/`)
+- Create/List/Delete only — no Update endpoint exists in the backend
+- All writable fields (`role_ids`, `description`, `service_id`) use ForceNew plan modifiers
+- `secret` is only returned on creation, preserved in state on reads
+- `roles` is a computed `ListNestedBlock` resolved from `role_ids`
+- Uses a custom `listRequiresReplace` plan modifier for the `role_ids` list
+
+### Roles Data Source (`internal/datasource/roles.go`)
+- Lists available roles from `/auth/roles`
+- Used to discover role IDs for `streamkap_client_credential` resources
+
 ## BaseConnectorResource Design
 
 The `BaseConnectorResource` provides a generic implementation for all connector resources.
@@ -471,7 +495,10 @@ terraform-provider-streamkap/
 │   │   ├── pipeline.go           # Pipeline CRUD
 │   │   ├── topic.go              # Topic CRUD
 │   │   ├── tag.go                # Tag CRUD
-│   │   └── transform.go          # Transform CRUD
+│   │   ├── transform.go          # Transform CRUD
+│   │   ├── kafka_user.go         # Kafka User CRUD
+│   │   ├── client_credential.go  # Client Credential Create/List/Delete
+│   │   └── role.go               # Role list
 │   │
 │   ├── generated/                # Generated code (DO NOT EDIT)
 │   │   ├── doc.go                # Package doc
@@ -496,11 +523,17 @@ terraform-provider-streamkap/
 │   │   │   └── *_generated.go    # TransformConfig implementations
 │   │   ├── pipeline/             # Pipeline resource
 │   │   ├── topic/                # Topic resource
-│   │   └── tag/                  # Tag resource
+│   │   ├── tag/                  # Tag resource
+│   │   ├── kafka_user/           # Kafka user resource
+│   │   └── client_credential/    # Client credential resource
 │   │
 │   ├── datasource/               # Data sources
 │   │   ├── transform.go          # Transform datasource
-│   │   └── tag.go                # Tag datasource
+│   │   ├── tag.go                # Tag datasource
+│   │   ├── topics.go             # Topics list datasource
+│   │   ├── topic.go              # Topic datasource
+│   │   ├── topic_metrics.go      # Topic metrics datasource
+│   │   └── roles.go              # Roles list datasource
 │   │
 │   └── helper/                   # Utility functions
 │       └── helper.go             # Type conversion helpers

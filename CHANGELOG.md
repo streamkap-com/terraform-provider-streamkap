@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`streamkap_destination_weaviate` resource** - Weaviate vector database destination connector
+- **`streamkap_kafka_user` resource** - Kafka user management with ACL-based topic access control
+- **`streamkap_client_credential` resource** - API token (client credential) management for machine-to-machine authentication
+- **`streamkap_roles` data source** - List available roles for client credential assignment
+- **Data source tests** - Acceptance tests for all 6 data sources (tag, topic, topics, topic_metrics, transform, roles)
+- **Schema backward compatibility snapshots** - Coverage for all 54 resources (was 16, now complete)
 - **AGENTS.md** - AI coding agent guide following emerging standards for AI-assisted development
 - **Provider Configuration Validation Tests** - Tests for missing credentials, empty values, environment variable fallbacks
 - **Example File Validation Tests** - Tests to verify all example .tf files are valid HCL and have required files

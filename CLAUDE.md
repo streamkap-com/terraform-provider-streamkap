@@ -19,6 +19,10 @@ When debugging or adding new connectors, these backend locations are most releva
 - `app/sources/plugins/{connector}/` — Source connector plugins (config schemas, validation)
 - `app/destinations/plugins/{connector}/` — Destination connector plugins
 - `app/utils/entity_changes.py` — CRUD logic, `created_from` handling
+- `app/api/kafka_access_api.py` — Kafka user management endpoints
+- `app/models/api/kafka_access.py` — Kafka user/ACL Pydantic models
+- `app/api/auth_api.py` — Client credential and role endpoints
+- `app/models/api/app_auth.py` — Client credential/role Pydantic models
 
 ### Plugin Structure
 Each connector plugin folder contains:
@@ -62,8 +66,8 @@ After setup: `go install .` then use provider in Terraform configs. See examples
 ### Core Components
 - **Provider** (`internal/provider/provider.go`): Registers all resources/datasources, handles authentication via OAuth2 token exchange
 - **API Client** (`internal/api/`): HTTP client implementing `StreamkapAPI` interface with methods for each resource type
-- **Resources** (`internal/resource/`): Source connectors (PostgreSQL, MySQL, MongoDB, DynamoDB, SQL Server, KafkaDirect), Destination connectors (Snowflake, ClickHouse, Databricks, PostgreSQL, S3, Iceberg, Kafka), Transform resources (MapFilter, Enrich, EnrichAsync, SQLJoin, Rollup, FanOut), Pipelines, Topics
-- **Data Sources** (`internal/datasource/`): Transforms, Tags
+- **Resources** (`internal/resource/`): Source connectors (PostgreSQL, MySQL, MongoDB, DynamoDB, SQL Server, KafkaDirect), Destination connectors (Snowflake, ClickHouse, Databricks, PostgreSQL, S3, Iceberg, Kafka, Weaviate), Transform resources (MapFilter, Enrich, EnrichAsync, SQLJoin, Rollup, FanOut), Pipelines, Topics, Kafka Users (`internal/resource/kafka_user/`), Client Credentials (`internal/resource/client_credential/`)
+- **Data Sources** (`internal/datasource/`): Transforms, Tags, Topics, Topic, Topic Metrics, Roles
 
 ### Transform API
 The API client provides CRUD operations for Transform resources:
@@ -106,6 +110,11 @@ All API operations go through `streamkapAPI.doRequest()` which:
 - Handles errors from API `detail` field
 - All Create operations inject `created_from: constants.TERRAFORM` to track resource origin
 - Includes retry logic with exponential backoff for transient failures (`internal/api/retry.go`)
+
+### Non-Connector Resource APIs
+- **Kafka Users** (`internal/api/kafka_user.go`): CRUD via `/kafka-access/kafka-users`. Username is the resource ID. Password is write-only. No individual GET endpoint (filters from list).
+- **Client Credentials** (`internal/api/client_credential.go`): Create/List/Delete via `/auth/client-credentials`. No Update endpoint — all fields are ForceNew. Secret only returned on creation.
+- **Roles** (`internal/api/role.go`): List via `/auth/roles`. Used to discover role IDs for client credential creation.
 
 ### Resource Implementation Pattern
 Each resource (source/destination):

@@ -59,6 +59,22 @@ type StreamkapAPI interface {
 	DeleteTopic(ctx context.Context, TopicID string) error
 	ListTopics(ctx context.Context, params *TopicListParams) (*TopicDetailsResponse, error)
 	GetTopicTableMetrics(ctx context.Context, req TopicTableMetricsRequest) (TopicTableMetricsResponse, error)
+
+	// Kafka User APIs
+	CreateKafkaUser(ctx context.Context, reqPayload CreateKafkaUserRequest) (*KafkaUser, error)
+	GetKafkaUser(ctx context.Context, username string) (*KafkaUser, error)
+	ListKafkaUsers(ctx context.Context) ([]KafkaUser, error)
+	UpdateKafkaUser(ctx context.Context, username string, reqPayload UpdateKafkaUserRequest) (*KafkaUser, error)
+	DeleteKafkaUser(ctx context.Context, username string) error
+
+	// Client Credential APIs
+	CreateClientCredential(ctx context.Context, reqPayload CreateClientCredentialRequest) (*ClientCredential, error)
+	GetClientCredential(ctx context.Context, clientID string) (*ClientCredential, error)
+	ListClientCredentials(ctx context.Context) ([]ClientCredential, error)
+	DeleteClientCredential(ctx context.Context, clientID string) error
+
+	// Role APIs
+	ListRoles(ctx context.Context) ([]Role, error)
 }
 
 type APIErrorResponse struct {

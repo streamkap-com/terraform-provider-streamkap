@@ -69,7 +69,7 @@ This resource creates and manages a MySQL source for Streamkap data pipelines. U
 ### Read-Only
 
 - `connector` (String) Connector type
-- `connector_status` (String) Current status of the connector. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
+- `connector_status` (String) Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
 - `id` (String) Unique identifier for the source
 
 <a id="nestedblock--timeouts"></a>

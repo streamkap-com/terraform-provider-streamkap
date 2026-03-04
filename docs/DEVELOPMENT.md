@@ -409,6 +409,20 @@ Enable debug logging:
 TF_LOG=DEBUG terraform plan
 ```
 
+## Documentation Updates Checklist
+
+When adding a new resource, update all of the following:
+
+1. **Resource wrapper** + registration in `internal/provider/provider.go`
+2. **Example files**: `examples/resources/streamkap_<name>/basic.tf`, `complete.tf`, `import.sh`
+3. **Acceptance test**: `internal/provider/<name>_resource_test.go`
+4. **Schema backward compatibility snapshot**: Add test to `schema_compat_test.go`, run `UPDATE_SNAPSHOTS=1`
+5. **Sweep test coverage**: Add sweep function to `sweep_test.go` if applicable
+6. **CLAUDE.md**: Update resource list, API methods, counts
+7. **ARCHITECTURE.md**: Document new patterns if introducing new architecture
+8. **CHANGELOG.md**: Add entry under `[Unreleased]`
+9. **Run `go generate ./...`**: Regenerate docs
+
 ## CI/CD Workflows
 
 - **ci.yml** - Build, lint, test on PRs

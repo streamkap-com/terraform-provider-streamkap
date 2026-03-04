@@ -680,6 +680,41 @@ acceptance:
   command: go test -v -timeout 120m -run 'TestAcc' ./internal/provider/...
 ```
 
+### Data Source Tests
+
+Data source tests follow a similar pattern to resource tests but read existing data:
+
+```go
+func TestAccDataSourceTag(t *testing.T) {
+    resource.Test(t, resource.TestCase{
+        ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+        Steps: []resource.TestStep{
+            {
+                Config: providerConfig + `
+resource "streamkap_tag" "test" { ... }
+data "streamkap_tag" "test" {
+    id = streamkap_tag.test.id
+}`,
+                Check: resource.ComposeAggregateTestCheckFunc(
+                    resource.TestCheckResourceAttrPair("data.streamkap_tag.test", "id", "streamkap_tag.test", "id"),
+                ),
+            },
+        },
+    })
+}
+```
+
+### ImportStateVerifyIgnore Patterns
+
+Different resource types require ignoring different attributes during import state verification:
+
+| Resource Type | Ignored Attributes | Reason |
+|---------------|-------------------|--------|
+| Connectors (source/destination) | `connector_status` | Status may change between create and import |
+| Kafka User | `password` | Write-only: not returned by API on read |
+| Client Credential | `secret` | Only returned on creation |
+| Transforms | `implementation_json` | API normalizes JSON keys server-side |
+
 ### Pre-release Checklist
 
 1. All unit tests pass: `go test -v -short ./...`
