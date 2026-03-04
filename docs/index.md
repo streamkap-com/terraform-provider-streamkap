@@ -4,7 +4,7 @@ page_title: "streamkap Provider"
 description: |-
   Terraform provider for Streamkap data streaming platform.
   Manages sources, destinations, pipelines, transforms, and topics.
-  Version guidance: The latest stable release is v2.1.18. v3.x is currently in beta — pin version = "~> 2.1" for production use.
+  Version guidance: The latest stable release is v2.1.19. v3.x is currently in beta — pin version = "~> 2.1" for production use.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
@@ -14,7 +14,7 @@ Terraform provider for **Streamkap** data streaming platform.
 
 Manages sources, destinations, pipelines, transforms, and topics.
 
-**Version guidance:** The latest stable release is **v2.1.18**. v3.x is currently in **beta** — pin `version = "~> 2.1"` for production use.
+**Version guidance:** The latest stable release is **v2.1.19**. v3.x is currently in **beta** — pin `version = "~> 2.1"` for production use.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -25,7 +25,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.1.18"
+      version = ">= 2.1.19"
     }
   }
 }
