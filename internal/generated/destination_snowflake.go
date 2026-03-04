@@ -50,7 +50,7 @@ func DestinationSnowflakeSchema() schema.Schema {
 		MarkdownDescription: "Manages a **Snowflake destination connector**.\n\n" +
 			"This resource creates and manages a Snowflake destination for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
-			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
+			"[Documentation](https://docs.streamkap.com/snowflake)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -134,15 +134,15 @@ func DestinationSnowflakeSchema() schema.Schema {
 			"snowflake_role_name": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The name of an existing role with necessary privileges (for Streamkap) assigned to the <Username> Defaults to \"STREAMKAP_ROLE\".",
-				MarkdownDescription: "The name of an existing role with necessary privileges (for Streamkap) assigned to the <Username> Defaults to `STREAMKAP_ROLE`.",
+				Description:         "The name of an existing role with necessary privileges (for Streamkap) assigned to the <Username>. Defaults to \"STREAMKAP_ROLE\".",
+				MarkdownDescription: "The name of an existing role with necessary privileges (for Streamkap) assigned to the <Username>. Defaults to `STREAMKAP_ROLE`.",
 				Default:             stringdefault.StaticString("STREAMKAP_ROLE"),
 			},
 			"ingestion_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "<span>Upsert or append modes are available. NOTE: when switching append to upsert, existing data must be deduplicated or deleted. <a href='https://docs.streamkap.com/docs/snowflake#upsert-mode' class='docs-url' target='_blank'>Read more about upsert mode</a> </span> Defaults to \"append\". Valid values: upsert, append.",
-				MarkdownDescription: "<span>Upsert or append modes are available. NOTE: when switching append to upsert, existing data must be deduplicated or deleted. <a href='https://docs.streamkap.com/docs/snowflake#upsert-mode' class='docs-url' target='_blank'>Read more about upsert mode</a> </span> Defaults to `append`. Valid values: `upsert`, `append`.",
+				Description:         "<span>Upsert or append modes are available. NOTE: when switching append to upsert, existing data must be deduplicated or deleted. <a href='https://docs.streamkap.com/docs/snowflake#upsert-mode' class='docs-url' target='_blank'>Read more about upsert mode</a> </span>. Defaults to \"append\". Valid values: upsert, append.",
+				MarkdownDescription: "<span>Upsert or append modes are available. NOTE: when switching append to upsert, existing data must be deduplicated or deleted. <a href='https://docs.streamkap.com/docs/snowflake#upsert-mode' class='docs-url' target='_blank'>Read more about upsert mode</a> </span>. Defaults to `append`. Valid values: `upsert`, `append`.",
 				Default:             stringdefault.StaticString("append"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("upsert", "append"),
@@ -154,15 +154,15 @@ func DestinationSnowflakeSchema() schema.Schema {
 			"hard_delete": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only) Defaults to true.",
-				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only) Defaults to `true`.",
+				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only). Defaults to true.",
+				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only). Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"schema_evolution": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to \"basic\". Valid values: basic, none.",
-				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.",
+				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to \"basic\". Valid values: basic, none.",
+				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.",
 				Default:             stringdefault.StaticString("basic"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("basic", "none"),
@@ -171,15 +171,15 @@ func DestinationSnowflakeSchema() schema.Schema {
 			"use_hybrid_tables": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies whether the connector should create Hybrid Tables (applies to `upsert` only) Defaults to false.",
-				MarkdownDescription: "Specifies whether the connector should create Hybrid Tables (applies to `upsert` only) Defaults to `false`.",
+				Description:         "Specifies whether the connector should create Hybrid Tables (applies to `upsert` only). Defaults to false.",
+				MarkdownDescription: "Specifies whether the connector should create Hybrid Tables (applies to `upsert` only). Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"apply_dynamic_table_script": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only) Defaults to false.",
-				MarkdownDescription: "Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only) Defaults to `false`.",
+				Description:         "Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only). Defaults to false.",
+				MarkdownDescription: "Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only). Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"create_sql_execute": schema.StringAttribute{

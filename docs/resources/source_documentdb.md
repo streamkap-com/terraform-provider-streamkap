@@ -35,12 +35,12 @@ This resource creates and manages a DocumentDB source for Streamkap data pipelin
 
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
-- `ssh_port` (Number) Port of your SSH server Defaults to `22`.
-- `ssh_public_key` (String) Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.
-- `ssh_user` (String) User that allows Streamkap to connect to SSH server Defaults to `streamkap`.
+- `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
+- `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
+- `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `transforms_unwrap_array_encoding` (String) How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types Defaults to `array_string`. Valid values: `array`, `array_string`.
-- `transforms_unwrap_document_encoding` (String) How to encode nested documents. 'Document' encodes them as JSON Objects, 'String' encodes them as JSON Strings Defaults to `document`. Valid values: `document`, `string`.
+- `transforms_unwrap_array_encoding` (String) How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types. Defaults to `array_string`. Valid values: `array`, `array_string`.
+- `transforms_unwrap_document_encoding` (String) How to encode nested documents. 'Document' encodes them as JSON Objects, 'String' encodes them as JSON Strings. Defaults to `document`. Valid values: `document`, `string`.
 
 ### Read-Only
 

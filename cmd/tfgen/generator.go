@@ -319,6 +319,8 @@ type TemplateData struct {
 	ConnectorCode     string // e.g., "postgresql"
 	ConnectorCodeCap  string // e.g., "Postgresql"
 	DisplayName       string // e.g., "PostgreSQL"
+	Article           string // "a" or "an" depending on DisplayName
+	DocURL            string // connector-specific documentation URL
 	ModelName         string // e.g., "SourcePostgresqlModel"
 	SchemaFuncName    string // e.g., "SourcePostgresqlSchema"
 	FieldMappingsName string // e.g., "SourcePostgresqlFieldMappings"
@@ -410,6 +412,11 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 	entityTypeCap := capitalizeFirst(g.entityType)
 	connectorCodeCap := toPascalCase(connectorCode)
 
+	docURL := defaultDocURL
+	if url, ok := connectorDocURLs[connectorCode]; ok {
+		docURL = url
+	}
+
 	data := &TemplateData{
 		PackageName:       "generated",
 		EntityType:        g.entityType,
@@ -417,6 +424,8 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 		ConnectorCode:     connectorCode,
 		ConnectorCodeCap:  connectorCodeCap,
 		DisplayName:       config.DisplayName,
+		Article:           articleFor(config.DisplayName),
+		DocURL:            docURL,
 		ModelName:         entityTypeCap + connectorCodeCap + "Model",
 		SchemaFuncName:    entityTypeCap + connectorCodeCap + "Schema",
 		FieldMappingsName: entityTypeCap + connectorCodeCap + "FieldMappings",
@@ -779,6 +788,8 @@ func (g *Generator) additionalFieldToFieldData(field *AdditionalField) FieldData
 		data.HasDefault = true
 
 		// Generate default function
+		data.Description = ensureTrailingPeriod(data.Description)
+		data.MarkdownDescription = ensureTrailingPeriod(data.MarkdownDescription)
 		switch field.Type {
 		case "string":
 			data.DefaultFunc = fmt.Sprintf("stringdefault.StaticString(%q)", field.Default)
@@ -807,6 +818,8 @@ func (g *Generator) additionalFieldToFieldData(field *AdditionalField) FieldData
 		data.Validators = fmt.Sprintf("stringvalidator.OneOf(%s)", strings.Join(quoted, ", "))
 
 		// Enhance descriptions with valid values
+		data.Description = ensureTrailingPeriod(data.Description)
+		data.MarkdownDescription = ensureTrailingPeriod(data.MarkdownDescription)
 		valuesStr := strings.Join(field.RawValues, ", ")
 		data.Description = data.Description + " Valid values: " + valuesStr + "."
 
@@ -977,6 +990,8 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 			field.NeedsPlanMod = false // Fields with defaults don't need UseStateForUnknown
 
 			// Capture default value and enhance descriptions
+			field.Description = ensureTrailingPeriod(field.Description)
+			field.MarkdownDescription = ensureTrailingPeriod(field.MarkdownDescription)
 			if forceInt64 {
 				// Port fields: parse string default as int64
 				defaultVal := entry.GetDefaultInt64FromString()
@@ -1009,6 +1024,8 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 		field.Validators = g.oneOfValidator(entry)
 
 		// Enhance descriptions with valid values
+		field.Description = ensureTrailingPeriod(field.Description)
+		field.MarkdownDescription = ensureTrailingPeriod(field.MarkdownDescription)
 		values := entry.GetRawValues()
 		valuesStr := strings.Join(values, ", ")
 		field.Description = field.Description + " Valid values: " + valuesStr + "."
@@ -1135,6 +1152,56 @@ func toPascalCase(s string) string {
 	return strings.Join(parts, "")
 }
 
+// articleFor returns "an" if the display name starts with a vowel sound, "a" otherwise.
+func articleFor(name string) string {
+	if name == "" {
+		return "a"
+	}
+	// Words that start with a vowel sound when spoken
+	// "HTTP" → "aitch", "S3" → "ess", etc.
+	vowelSoundPrefixes := []string{
+		"AlloyDB", "Azure", "ElasticSearch", "Enrich", "HTTP",
+		"Iceberg", "Oracle", "S3", "Un-Nesting",
+	}
+	for _, prefix := range vowelSoundPrefixes {
+		if strings.HasPrefix(name, prefix) {
+			return "an"
+		}
+	}
+	return "a"
+}
+
+// ensureTrailingPeriod trims whitespace and appends a period if the string
+// doesn't already end with one.
+func ensureTrailingPeriod(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return s
+	}
+	if !strings.HasSuffix(s, ".") {
+		s += "."
+	}
+	return s
+}
+
+// connectorDocURLs maps connector codes to their specific documentation pages.
+var connectorDocURLs = map[string]string{
+	"postgresql":    "https://docs.streamkap.com/postgresql-source-faq",
+	"mysql":         "https://docs.streamkap.com/mysql-source-faq",
+	"mongodb":       "https://docs.streamkap.com/mongodb-atlas",
+	"mongodbhosted": "https://docs.streamkap.com/mongodb-1",
+	"dynamodb":      "https://docs.streamkap.com/dynamodb-source",
+	"sqlserver":     "https://docs.streamkap.com/sql-server-source-faq",
+	"oracle":        "https://docs.streamkap.com/oracle-source-faq",
+	"oracleaws":     "https://docs.streamkap.com/amazon-rds-oracle",
+	"snowflake":     "https://docs.streamkap.com/snowflake",
+	"clickhouse":    "https://docs.streamkap.com/clickhouse",
+	"weaviate":      "https://docs.streamkap.com/weaviate",
+	"kafka":         "https://docs.streamkap.com/kafka-to-kafka",
+}
+
+const defaultDocURL = "https://docs.streamkap.com/streamkap-provider-for-terraform"
+
 // schemaTemplate is the Go template for generating schema files.
 const schemaTemplate = `// Code generated by tfgen. DO NOT EDIT.
 
@@ -1179,11 +1246,11 @@ type {{ .ModelName }} struct {
 // {{ .SchemaFuncName }} returns the Terraform schema for the {{ .ConnectorCode }} {{ .EntityType }}.
 func {{ .SchemaFuncName }}() schema.Schema {
 	return schema.Schema{
-		Description:         "Manages a {{ .DisplayName }} {{ .EntityType }} connector. Use with streamkap_pipeline to build data pipelines.",
-		MarkdownDescription: "Manages a **{{ .DisplayName }} {{ .EntityType }} connector**.\n\n" +
-			"This resource creates and manages a {{ .DisplayName }} {{ .EntityType }} for Streamkap data pipelines. " +
+		Description:         "Manages {{ .Article }} {{ .DisplayName }} {{ .EntityType }} connector. Use with streamkap_pipeline to build data pipelines.",
+		MarkdownDescription: "Manages {{ .Article }} **{{ .DisplayName }} {{ .EntityType }} connector**.\n\n" +
+			"This resource creates and manages {{ .Article }} {{ .DisplayName }} {{ .EntityType }} for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
-			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
+			"[Documentation]({{ .DocURL }})",
 		Attributes: map[string]schema.Attribute{
 {{- range .Fields }}
 			"{{ .TfAttrName }}": {{ .SchemaAttrType }}{

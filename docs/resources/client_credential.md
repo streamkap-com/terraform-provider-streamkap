@@ -6,7 +6,7 @@ description: |-
   Manages a Streamkap client credential (API token) for machine-to-machine authentication.
   Client credentials are used to authenticate API access programmatically. The secret is only returned on creation and cannot be retrieved afterwards.
   Note: This resource does not support updates. Any change to configuration will destroy the existing credential and create a new one.
-  Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
+  Documentation https://docs.streamkap.com/api-tokens
 ---
 
 # streamkap_client_credential (Resource)
@@ -17,7 +17,7 @@ Client credentials are used to authenticate API access programmatically. The sec
 
 **Note:** This resource does not support updates. Any change to configuration will destroy the existing credential and create a new one.
 
-[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
+[Documentation](https://docs.streamkap.com/api-tokens)
 
 
 

@@ -3,16 +3,16 @@
 page_title: "streamkap_destination_azblob Resource - terraform-provider-streamkap"
 subcategory: ""
 description: |-
-  Manages a Azure Blob Storage destination connector.
-  This resource creates and manages a Azure Blob Storage destination for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
+  Manages an Azure Blob Storage destination connector.
+  This resource creates and manages an Azure Blob Storage destination for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
 # streamkap_destination_azblob (Resource)
 
-Manages a **Azure Blob Storage destination connector**.
+Manages an **Azure Blob Storage destination connector**.
 
-This resource creates and manages a Azure Blob Storage destination for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
+This resource creates and manages an Azure Blob Storage destination for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -33,11 +33,11 @@ This resource creates and manages a Azure Blob Storage destination for Streamkap
 - `azblob_container_name` (String) The name of an existing blob container to use
 - `compression` (String) The compression type to use when writing data to the storage.
 - `file_name_template` (String) The format of the filename. See documentation for more information about formatting options. Defaults to `{{topic}}-{{partition}}-{{start_offset}}`.
-- `file_size` (Number) Minimum size (in bytes) per file. Records are held in memory until this file size is met or the **Rotate interval** is exceeded Defaults to `65536`.
-- `flush_size` (Number) Number of records to write per file Defaults to `1000`.
-- `format` (String) The format to use when writing data to file storage Defaults to `json`. Valid values: `json`, `csv`, `avro`, `parquet`.
-- `format_csv_write_headers` (Boolean) Include or exclude column name header row per file Defaults to `false`.
-- `rotate_interval_ms` (Number) Maximum time (in milliseconds) to wait before writing records held in memory to file. This ignores the flush and file size settings Defaults to `-1`.
+- `file_size` (Number) Minimum size (in bytes) per file. Records are held in memory until this file size is met or the **Rotate interval** is exceeded. Defaults to `65536`.
+- `flush_size` (Number) Number of records to write per file. Defaults to `1000`.
+- `format` (String) The format to use when writing data to file storage. Defaults to `json`. Valid values: `json`, `csv`, `avro`, `parquet`.
+- `format_csv_write_headers` (Boolean) Include or exclude column name header row per file. Defaults to `false`.
+- `rotate_interval_ms` (Number) Maximum time (in milliseconds) to wait before writing records held in memory to file. This ignores the flush and file size settings. Defaults to `-1`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `topics_dir` (String) Top level directory for storing the data e.g. myfolder/subfolder
 

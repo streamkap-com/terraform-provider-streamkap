@@ -37,9 +37,9 @@ type SourceElasticsearchModel struct {
 // SourceElasticsearchSchema returns the Terraform schema for the elasticsearch source.
 func SourceElasticsearchSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a ElasticSearch source connector. Use with streamkap_pipeline to build data pipelines.",
-		MarkdownDescription: "Manages a **ElasticSearch source connector**.\n\n" +
-			"This resource creates and manages a ElasticSearch source for Streamkap data pipelines. " +
+		Description: "Manages an ElasticSearch source connector. Use with streamkap_pipeline to build data pipelines.",
+		MarkdownDescription: "Manages an **ElasticSearch source connector**.\n\n" +
+			"This resource creates and manages an ElasticSearch source for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
@@ -77,8 +77,8 @@ func SourceElasticsearchSchema() schema.Schema {
 			"es_scheme": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "ElasticSearch protocol (http/https) Defaults to \"https\". Valid values: http, https.",
-				MarkdownDescription: "ElasticSearch protocol (http/https) Defaults to `https`. Valid values: `http`, `https`.",
+				Description:         "ElasticSearch protocol (http/https). Defaults to \"https\". Valid values: http, https.",
+				MarkdownDescription: "ElasticSearch protocol (http/https). Defaults to `https`. Valid values: `http`, `https`.",
 				Default:             stringdefault.StaticString("https"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("http", "https"),
@@ -87,15 +87,15 @@ func SourceElasticsearchSchema() schema.Schema {
 			"es_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port for ElasticSearch HTTP/HTTPS REST API. For example, 443 or 9200 Defaults to 443.",
-				MarkdownDescription: "Port for ElasticSearch HTTP/HTTPS REST API. For example, 443 or 9200 Defaults to `443`.",
+				Description:         "Port for ElasticSearch HTTP/HTTPS REST API. For example, 443 or 9200. Defaults to 443.",
+				MarkdownDescription: "Port for ElasticSearch HTTP/HTTPS REST API. For example, 443 or 9200. Defaults to `443`.",
 				Default:             int64default.StaticInt64(443),
 			},
 			"http_auth": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Type of Authentication Defaults to \"Basic\". Valid values: None, Basic.",
-				MarkdownDescription: "Type of Authentication Defaults to `Basic`. Valid values: `None`, `Basic`.",
+				Description:         "Type of Authentication. Defaults to \"Basic\". Valid values: None, Basic.",
+				MarkdownDescription: "Type of Authentication. Defaults to `Basic`. Valid values: `None`, `Basic`.",
 				Default:             stringdefault.StaticString("Basic"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("None", "Basic"),
@@ -130,8 +130,8 @@ func SourceElasticsearchSchema() schema.Schema {
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The maximum number of active tasks Defaults to 5.",
-				MarkdownDescription: "The maximum number of active tasks Defaults to `5`.",
+				Description:         "The maximum number of active tasks. Defaults to 5.",
+				MarkdownDescription: "The maximum number of active tasks. Defaults to `5`.",
 				Default:             int64default.StaticInt64(5),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 10),

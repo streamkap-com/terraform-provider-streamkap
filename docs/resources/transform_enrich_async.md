@@ -3,16 +3,16 @@
 page_title: "streamkap_transform_enrich_async Resource - terraform-provider-streamkap"
 subcategory: ""
 description: |-
-  Manages a Enrich Async transform connector.
-  This resource creates and manages a Enrich Async transform for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
+  Manages an Enrich Async transform connector.
+  This resource creates and manages an Enrich Async transform for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
 # streamkap_transform_enrich_async (Resource)
 
-Manages a **Enrich Async transform connector**.
+Manages an **Enrich Async transform connector**.
 
-This resource creates and manages a Enrich Async transform for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
+This resource creates and manages an Enrich Async transform for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -32,13 +32,13 @@ This resource creates and manages a Enrich Async transform for Streamkap data pi
 **Note:** If not specified, the implementation is managed outside Terraform (e.g., via Streamkap UI).
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_async_capacity` (Number) If one async call takes 10ms and the target throughput per task is 1000 records per second, then the capacity should be 1000 * 10ms = 10 parallel requests. Defaults to `10`.
-- `transforms_async_timeout_ms` (Number) Timeout to wait for async operation to complete Defaults to `1000`.
+- `transforms_async_timeout_ms` (Number) Timeout to wait for async operation to complete. Defaults to `1000`.
 - `transforms_input_job_parallelism` (Number) The number of parallel tasks this transform should be using. Recommended: 1-5 for most workloads. Higher values increase throughput but consume more resources. Start low and increase based on lag metrics. Defaults to `5`.
-- `transforms_input_serialization_format` (String) Format of the input topics Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.
-- `transforms_input_topic_pattern` (String) Regex pattern to search for the input topics Defaults to `placeholder-input-topic-pattern-to-be-revised-during-implementation`.
-- `transforms_language` (String) Language of the datastream. Ex:Javascript or Python Defaults to `JavaScript`. Valid values: `JavaScript`, `Python`.
-- `transforms_output_serialization_format` (String) Format of the output topics Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.
-- `transforms_output_topic_pattern` (String) String pattern to save the output topics Defaults to `placeholder-output-replacement-pattern-to-be-revised-during-implementation`.
+- `transforms_input_serialization_format` (String) Format of the input topics. Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.
+- `transforms_input_topic_pattern` (String) Regex pattern to search for the input topics. Defaults to `placeholder-input-topic-pattern-to-be-revised-during-implementation`.
+- `transforms_language` (String) Language of the datastream. Ex:Javascript or Python. Defaults to `JavaScript`. Valid values: `JavaScript`, `Python`.
+- `transforms_output_serialization_format` (String) Format of the output topics. Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.
+- `transforms_output_topic_pattern` (String) String pattern to save the output topics. Defaults to `placeholder-output-replacement-pattern-to-be-revised-during-implementation`.
 
 ### Read-Only
 

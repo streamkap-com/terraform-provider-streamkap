@@ -6,7 +6,7 @@ description: |-
   Manages a Streamkap pipeline that connects sources to destinations with optional transforms.
   A pipeline is the core orchestration resource that defines how data flows from a source connector through optional transforms to a destination connector.
   Related resources: streamkap_source_* (sources), streamkap_destination_* (destinations), streamkap_transform_* (transforms), streamkap_topic (topics).
-  Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
+  Documentation https://docs.streamkap.com/pipelines
 ---
 
 # streamkap_pipeline (Resource)
@@ -17,7 +17,7 @@ A pipeline is the core orchestration resource that defines how data flows from a
 
 **Related resources:** `streamkap_source_*` (sources), `streamkap_destination_*` (destinations), `streamkap_transform_*` (transforms), `streamkap_topic` (topics).
 
-[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
+[Documentation](https://docs.streamkap.com/pipelines)
 
 
 

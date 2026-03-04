@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   Manages a MySQL source connector.
   This resource creates and manages a MySQL source for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
-  Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
+  Documentation https://docs.streamkap.com/mysql-source-faq
 ---
 
 # streamkap_source_mysql (Resource)
@@ -14,7 +14,7 @@ Manages a **MySQL source connector**.
 
 This resource creates and manages a MySQL source for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
-[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
+[Documentation](https://docs.streamkap.com/mysql-source-faq)
 
 
 
@@ -39,8 +39,8 @@ This resource creates and manages a MySQL source for Streamkap data pipelines. U
 - `column_exclude_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.
 - `column_include_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form schemaName[.]tableName[.](columnName1|columnName2)
 - `column_include_list_toggled` (Boolean) Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to `true`.
-- `database_connection_time_zone` (String) Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MySQL server session variables 'time_zone' or 'system_time_zone'  Defaults to `SERVER`. Valid values: `SERVER`, `UTC`, `Africa/Cairo`, `Asia/Riyadh`, `Africa/Casablanca`, `Asia/Seoul`, `Africa/Harare`, `Asia/Shanghai`, `Africa/Monrovia`, `Asia/Singapore`, `Africa/Nairobi`, `Asia/Taipei`, `Africa/Tripoli`, `Asia/Tehran`, `Africa/Windhoek`, `Asia/Tokyo`, `America/Araguaina`, `Asia/Ulaanbaatar`, `America/Asuncion`, `Asia/Vladivostok`, `America/Bogota`, `Asia/Yakutsk`, `America/Buenos_Aires`, `Asia/Yerevan`, `America/Caracas`, `Atlantic/Azores`, `America/Chihuahua`, `Australia/Adelaide`, `America/Cuiaba`, `Australia/Brisbane`, `America/Denver`, `Australia/Darwin`, `America/Fortaleza`, `Australia/Hobart`, `America/Guatemala`, `Australia/Perth`, `America/Halifax`, `Australia/Sydney`, `America/Manaus`, `Brazil/East`, `America/Matamoros`, `Canada/Newfoundland`, `America/Monterrey`, `Canada/Saskatchewan`, `America/Montevideo`, `Canada/Yukon`, `America/Phoenix`, `Europe/Amsterdam`, `America/Santiago`, `Europe/Athens`, `America/Tijuana`, `Europe/Dublin`, `Asia/Amman`, `Europe/Helsinki`, `Asia/Ashgabat`, `Europe/Istanbul`, `Asia/Baghdad`, `Europe/Kaliningrad`, `Asia/Baku`, `Europe/Moscow`, `Asia/Bangkok`, `Europe/Paris`, `Asia/Beirut`, `Europe/Prague`, `Asia/Calcutta`, `Europe/Sarajevo`, `Asia/Damascus`, `Pacific/Auckland`, `Asia/Dhaka`, `Pacific/Fiji`, `Asia/Irkutsk`, `Pacific/Guam`, `Asia/Jerusalem`, `Pacific/Honolulu`, `Asia/Kabul`, `Pacific/Samoa`, `Asia/Karachi`, `US/Alaska`, `Asia/Kathmandu`, `US/Central`, `Asia/Krasnoyarsk`, `US/Eastern`, `Asia/Magadan`, `US/East-Indiana`, `Asia/Muscat`, `US/Pacific`, `Asia/Novosibirsk`.
-- `database_port` (Number) MySQL Port. For example, 3306 Defaults to `3306`.
+- `database_connection_time_zone` (String) Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MySQL server session variables 'time_zone' or 'system_time_zone'. Defaults to `SERVER`. Valid values: `SERVER`, `UTC`, `Africa/Cairo`, `Asia/Riyadh`, `Africa/Casablanca`, `Asia/Seoul`, `Africa/Harare`, `Asia/Shanghai`, `Africa/Monrovia`, `Asia/Singapore`, `Africa/Nairobi`, `Asia/Taipei`, `Africa/Tripoli`, `Asia/Tehran`, `Africa/Windhoek`, `Asia/Tokyo`, `America/Araguaina`, `Asia/Ulaanbaatar`, `America/Asuncion`, `Asia/Vladivostok`, `America/Bogota`, `Asia/Yakutsk`, `America/Buenos_Aires`, `Asia/Yerevan`, `America/Caracas`, `Atlantic/Azores`, `America/Chihuahua`, `Australia/Adelaide`, `America/Cuiaba`, `Australia/Brisbane`, `America/Denver`, `Australia/Darwin`, `America/Fortaleza`, `Australia/Hobart`, `America/Guatemala`, `Australia/Perth`, `America/Halifax`, `Australia/Sydney`, `America/Manaus`, `Brazil/East`, `America/Matamoros`, `Canada/Newfoundland`, `America/Monterrey`, `Canada/Saskatchewan`, `America/Montevideo`, `Canada/Yukon`, `America/Phoenix`, `Europe/Amsterdam`, `America/Santiago`, `Europe/Athens`, `America/Tijuana`, `Europe/Dublin`, `Asia/Amman`, `Europe/Helsinki`, `Asia/Ashgabat`, `Europe/Istanbul`, `Asia/Baghdad`, `Europe/Kaliningrad`, `Asia/Baku`, `Europe/Moscow`, `Asia/Bangkok`, `Europe/Paris`, `Asia/Beirut`, `Europe/Prague`, `Asia/Calcutta`, `Europe/Sarajevo`, `Asia/Damascus`, `Pacific/Auckland`, `Asia/Dhaka`, `Pacific/Fiji`, `Asia/Irkutsk`, `Pacific/Guam`, `Asia/Jerusalem`, `Pacific/Honolulu`, `Asia/Kabul`, `Pacific/Samoa`, `Asia/Karachi`, `US/Alaska`, `Asia/Kathmandu`, `US/Central`, `Asia/Krasnoyarsk`, `US/Eastern`, `Asia/Magadan`, `US/East-Indiana`, `Asia/Muscat`, `US/Pacific`, `Asia/Novosibirsk`.
+- `database_port` (Number) MySQL Port. For example, 3306. Defaults to `3306`.
 - `heartbeat_enabled` (Boolean) Heartbeats are used to monitor whether the connector is still receiving change events from the database, especially when there is low and intermittent traffic. Defaults to `true`.
 - `predicates_is_topic_to_enrich_pattern` (String) Regex pattern to match topics for enrichment. Defaults to `$^`.
 - `schema_history_internal_store_only_captured_databases_ddl` (Boolean) Specifies whether the connector records schema structures from all logical databases in the database instance or only captured databases. Enabling this when you have many databases in your instance can improve performance and avoid timeouts. Defaults to `false`.
@@ -50,9 +50,9 @@ This resource creates and manages a MySQL source for Streamkap data pipelines. U
 - `source_regex_support_enabled` (Boolean) Enable regex support. Useful for merging multiple tables into the same output topic. NOTE: most times when regex support is enabled there will be 100s of 1000s of tables and "Capture Only Captured Tables DDL?" must also be enabled. Defaults to `false`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
-- `ssh_port` (Number) Port of your SSH server Defaults to `22`.
-- `ssh_public_key` (String) Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.
-- `ssh_user` (String) User that allows Streamkap to connect to SSH server Defaults to `streamkap`.
+- `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
+- `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
+- `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_insert_static_key1_static_field` (String) The name of the static field to be added to the message key.
 - `transforms_insert_static_key1_static_value` (String) The value of the static field to be added to the message key.
@@ -62,7 +62,7 @@ This resource creates and manages a MySQL source for Streamkap data pipelines. U
 - `transforms_insert_static_value1_static_value` (String) The value of the static field to be added to the message value.
 - `transforms_insert_static_value2_static_field` (String) The name of the static field to be added to the message value.
 - `transforms_insert_static_value2_static_value` (String) The value of the static field to be added to the message value.
-- `transforms_source_regex_support_key_field_template` (String) Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId Defaults to `{{database}}.{{table}}`.
+- `transforms_source_regex_support_key_field_template` (String) Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId. Defaults to `{{database}}.{{table}}`.
 - `transforms_source_regex_support_metadata_field_name` (String) Name of the extra metadata field to store source information and ensure uniqueness across all tables when regex support is enabled. Defaults to `_streamkap_source_metadata`.
 - `transforms_source_regex_support_regex_replacement` (String) Replacement string for matching regex snippets. Defaults to `_REGEX_`.
 

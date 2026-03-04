@@ -72,7 +72,7 @@ func SourcePostgresqlSchema() schema.Schema {
 		MarkdownDescription: "Manages a **PostgreSQL source connector**.\n\n" +
 			"This resource creates and manages a PostgreSQL source for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
-			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
+			"[Documentation](https://docs.streamkap.com/postgresql-source-faq)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -108,8 +108,8 @@ func SourcePostgresqlSchema() schema.Schema {
 			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "PostgreSQL Port. For example, 5432 Defaults to 5432.",
-				MarkdownDescription: "PostgreSQL Port. For example, 5432 Defaults to `5432`.",
+				Description:         "PostgreSQL Port. For example, 5432. Defaults to 5432.",
+				MarkdownDescription: "PostgreSQL Port. For example, 5432. Defaults to `5432`.",
 				Default:             int64default.StaticInt64(5432),
 			},
 			"database_user": schema.StringAttribute{
@@ -131,8 +131,8 @@ func SourcePostgresqlSchema() schema.Schema {
 			"snapshot_read_only": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots Defaults to \"Yes\". Valid values: Yes, No.",
-				MarkdownDescription: "When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots Defaults to `Yes`. Valid values: `Yes`, `No`.",
+				Description:         "When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots. Defaults to \"Yes\". Valid values: Yes, No.",
+				MarkdownDescription: "When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots. Defaults to `Yes`. Valid values: `Yes`, `No`.",
 				Default:             stringdefault.StaticString("Yes"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("Yes", "No"),
@@ -153,8 +153,8 @@ func SourcePostgresqlSchema() schema.Schema {
 			"source_regex_support_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Enable regex support. Useful for merging multiple tables into the same output topic Defaults to false.",
-				MarkdownDescription: "Enable regex support. Useful for merging multiple tables into the same output topic Defaults to `false`.",
+				Description:         "Enable regex support. Useful for merging multiple tables into the same output topic. Defaults to false.",
+				MarkdownDescription: "Enable regex support. Useful for merging multiple tables into the same output topic. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"transforms_source_regex_support_regex_replacement": schema.StringAttribute{
@@ -167,8 +167,8 @@ func SourcePostgresqlSchema() schema.Schema {
 			"transforms_source_regex_support_key_field_template": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId Defaults to \"{{database}}.{{table}}\".",
-				MarkdownDescription: "Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId Defaults to `{{database}}.{{table}}`.",
+				Description:         "Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId. Defaults to \"{{database}}.{{table}}\".",
+				MarkdownDescription: "Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId. Defaults to `{{database}}.{{table}}`.",
 				Default:             stringdefault.StaticString("{{database}}.{{table}}"),
 			},
 			"transforms_source_regex_support_metadata_field_name": schema.StringAttribute{
@@ -227,8 +227,8 @@ func SourcePostgresqlSchema() schema.Schema {
 			"database_sslmode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Whether to use an encrypted connection to the PostgreSQL server Defaults to \"require\". Valid values: require, disable.",
-				MarkdownDescription: "Whether to use an encrypted connection to the PostgreSQL server Defaults to `require`. Valid values: `require`, `disable`.",
+				Description:         "Whether to use an encrypted connection to the PostgreSQL server. Defaults to \"require\". Valid values: require, disable.",
+				MarkdownDescription: "Whether to use an encrypted connection to the PostgreSQL server. Defaults to `require`. Valid values: `require`, `disable`.",
 				Default:             stringdefault.StaticString("require"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("require", "disable"),
@@ -237,8 +237,8 @@ func SourcePostgresqlSchema() schema.Schema {
 			"include_source_db_name_in_table_name": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Changes the format of topics to 'DatabaseName_TopicName' Defaults to false.",
-				MarkdownDescription: "Changes the format of topics to 'DatabaseName_TopicName' Defaults to `false`.",
+				Description:         "Changes the format of topics to 'DatabaseName_TopicName'. Defaults to false.",
+				MarkdownDescription: "Changes the format of topics to 'DatabaseName_TopicName'. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"binary_handling_mode": schema.StringAttribute{
@@ -338,22 +338,22 @@ func SourcePostgresqlSchema() schema.Schema {
 			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to 22.",
-				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
+				Description:         "Port of your SSH server. Defaults to 22.",
+				MarkdownDescription: "Port of your SSH server. Defaults to `22`.",
 				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "User that allows Streamkap to connect to SSH server Defaults to \"streamkap\".",
-				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
+				Description:         "User that allows Streamkap to connect to SSH server. Defaults to \"streamkap\".",
+				MarkdownDescription: "User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Public key to add to SSH server Defaults to \"<SSH.PUBLIC.KEY>\".",
-				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
+				Description:         "Public key to add to SSH server. Defaults to \"<SSH.PUBLIC.KEY>\".",
+				MarkdownDescription: "Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
 		},

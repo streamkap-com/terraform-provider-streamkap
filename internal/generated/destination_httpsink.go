@@ -50,9 +50,9 @@ type DestinationHttpsinkModel struct {
 // DestinationHttpsinkSchema returns the Terraform schema for the httpsink destination.
 func DestinationHttpsinkSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a HTTP Sink destination connector. Use with streamkap_pipeline to build data pipelines.",
-		MarkdownDescription: "Manages a **HTTP Sink destination connector**.\n\n" +
-			"This resource creates and manages a HTTP Sink destination for Streamkap data pipelines. " +
+		Description: "Manages an HTTP Sink destination connector. Use with streamkap_pipeline to build data pipelines.",
+		MarkdownDescription: "Manages an **HTTP Sink destination connector**.\n\n" +
+			"This resource creates and manages an HTTP Sink destination for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{

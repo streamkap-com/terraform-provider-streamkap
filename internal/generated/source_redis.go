@@ -81,8 +81,8 @@ func SourceRedisSchema() schema.Schema {
 			"connector_class_type": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Type of Redis source connector Defaults to \"Stream\". Valid values: Stream, Keys.",
-				MarkdownDescription: "Type of Redis source connector Defaults to `Stream`. Valid values: `Stream`, `Keys`.",
+				Description:         "Type of Redis source connector. Defaults to \"Stream\". Valid values: Stream, Keys.",
+				MarkdownDescription: "Type of Redis source connector. Defaults to `Stream`. Valid values: `Stream`, `Keys`.",
 				Default:             stringdefault.StaticString("Stream"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("Stream", "Keys"),
@@ -96,8 +96,8 @@ func SourceRedisSchema() schema.Schema {
 			"redis_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Redis port number Defaults to 6379.",
-				MarkdownDescription: "Redis port number Defaults to `6379`.",
+				Description:         "Redis port number. Defaults to 6379.",
+				MarkdownDescription: "Redis port number. Defaults to `6379`.",
 				Default:             int64default.StaticInt64(6379),
 			},
 			"redis_username": schema.StringAttribute{
@@ -114,8 +114,8 @@ func SourceRedisSchema() schema.Schema {
 			"ssl_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Enable TLS/SSL for secure connections Defaults to true.",
-				MarkdownDescription: "Enable TLS/SSL for secure connections Defaults to `true`.",
+				Description:         "Enable TLS/SSL for secure connections. Defaults to true.",
+				MarkdownDescription: "Enable TLS/SSL for secure connections. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"redis_stream_name": schema.StringAttribute{
@@ -126,8 +126,8 @@ func SourceRedisSchema() schema.Schema {
 			"redis_stream_offset": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Starting point for reading from the stream Defaults to \"Latest\". Valid values: Latest, Earliest.",
-				MarkdownDescription: "Starting point for reading from the stream Defaults to `Latest`. Valid values: `Latest`, `Earliest`.",
+				Description:         "Starting point for reading from the stream. Defaults to \"Latest\". Valid values: Latest, Earliest.",
+				MarkdownDescription: "Starting point for reading from the stream. Defaults to `Latest`. Valid values: `Latest`, `Earliest`.",
 				Default:             stringdefault.StaticString("Latest"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("Latest", "Earliest"),
@@ -136,8 +136,8 @@ func SourceRedisSchema() schema.Schema {
 			"redis_stream_delivery": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Delivery guarantee mode Defaults to \"At Least Once\". Valid values: At Least Once, At Most Once.",
-				MarkdownDescription: "Delivery guarantee mode Defaults to `At Least Once`. Valid values: `At Least Once`, `At Most Once`.",
+				Description:         "Delivery guarantee mode. Defaults to \"At Least Once\". Valid values: At Least Once, At Most Once.",
+				MarkdownDescription: "Delivery guarantee mode. Defaults to `At Least Once`. Valid values: `At Least Once`, `At Most Once`.",
 				Default:             stringdefault.StaticString("At Least Once"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("At Least Once", "At Most Once"),
@@ -146,8 +146,8 @@ func SourceRedisSchema() schema.Schema {
 			"redis_stream_block_seconds": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Block duration when waiting for new messages Defaults to 1.",
-				MarkdownDescription: "Block duration when waiting for new messages Defaults to `1`.",
+				Description:         "Block duration when waiting for new messages. Defaults to 1.",
+				MarkdownDescription: "Block duration when waiting for new messages. Defaults to `1`.",
 				Default:             int64default.StaticInt64(1),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 60),
@@ -156,29 +156,29 @@ func SourceRedisSchema() schema.Schema {
 			"redis_stream_consumer_group": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Consumer group name for coordinating multiple consumers Defaults to \"kafka-consumer-group\".",
-				MarkdownDescription: "Consumer group name for coordinating multiple consumers Defaults to `kafka-consumer-group`.",
+				Description:         "Consumer group name for coordinating multiple consumers. Defaults to \"kafka-consumer-group\".",
+				MarkdownDescription: "Consumer group name for coordinating multiple consumers. Defaults to `kafka-consumer-group`.",
 				Default:             stringdefault.StaticString("kafka-consumer-group"),
 			},
 			"redis_stream_consumer_name": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Base name for consumer instances Defaults to \"consumer\".",
-				MarkdownDescription: "Base name for consumer instances Defaults to `consumer`.",
+				Description:         "Base name for consumer instances. Defaults to \"consumer\".",
+				MarkdownDescription: "Base name for consumer instances. Defaults to `consumer`.",
 				Default:             stringdefault.StaticString("consumer"),
 			},
 			"redis_keys_pattern": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Key pattern to monitor (e.g., user:*, order:*, or * for all keys) Defaults to \"*\".",
-				MarkdownDescription: "Key pattern to monitor (e.g., user:*, order:*, or * for all keys) Defaults to `*`.",
+				Description:         "Key pattern to monitor (e.g., user:*, order:*, or * for all keys). Defaults to \"*\".",
+				MarkdownDescription: "Key pattern to monitor (e.g., user:*, order:*, or * for all keys). Defaults to `*`.",
 				Default:             stringdefault.StaticString("*"),
 			},
 			"redis_keys_timeout_seconds": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Idle timeout before connector stops if no activity Defaults to 300.",
-				MarkdownDescription: "Idle timeout before connector stops if no activity Defaults to `300`.",
+				Description:         "Idle timeout before connector stops if no activity. Defaults to 300.",
+				MarkdownDescription: "Idle timeout before connector stops if no activity. Defaults to `300`.",
 				Default:             int64default.StaticInt64(300),
 				Validators: []validator.Int64{
 					int64validator.Between(60, 3600),
@@ -197,8 +197,8 @@ func SourceRedisSchema() schema.Schema {
 			"topic_use_stream_name": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Use Redis stream name as Kafka topic name (only for Stream connectors) Defaults to false.",
-				MarkdownDescription: "Use Redis stream name as Kafka topic name (only for Stream connectors) Defaults to `false`.",
+				Description:         "Use Redis stream name as Kafka topic name (only for Stream connectors). Defaults to false.",
+				MarkdownDescription: "Use Redis stream name as Kafka topic name (only for Stream connectors). Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"topic": schema.StringAttribute{
@@ -209,8 +209,8 @@ func SourceRedisSchema() schema.Schema {
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Number of parallel tasks (Stream: 1-10, Keys: always 1) Defaults to 1.",
-				MarkdownDescription: "Number of parallel tasks (Stream: 1-10, Keys: always 1) Defaults to `1`.",
+				Description:         "Number of parallel tasks (Stream: 1-10, Keys: always 1). Defaults to 1.",
+				MarkdownDescription: "Number of parallel tasks (Stream: 1-10, Keys: always 1). Defaults to `1`.",
 				Default:             int64default.StaticInt64(1),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 10),

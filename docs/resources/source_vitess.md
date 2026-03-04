@@ -43,11 +43,11 @@ This resource creates and manages a Vitess source for Streamkap data pipelines. 
 - `database_user` (String) An optional username of the Vitess database server (VTGate). If not configured, unauthenticated VTGate gRPC is used.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
-- `ssh_port` (Number) Port of your SSH server Defaults to `22`.
-- `ssh_public_key` (String) Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.
-- `ssh_user` (String) User that allows Streamkap to connect to SSH server Defaults to `streamkap`.
+- `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
+- `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
+- `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `vitess_tablet_type` (String) The type of Tablet (hence MySQL) from which to stream the changes Defaults to `MASTER`. Valid values: `MASTER`, `REPLICA`, `RDONLY`.
+- `vitess_tablet_type` (String) The type of Tablet (hence MySQL) from which to stream the changes. Defaults to `MASTER`. Valid values: `MASTER`, `REPLICA`, `RDONLY`.
 - `vitess_vtctld_port` (Number) Integer port number of the VTCtld server. Defaults to `15999`.
 
 ### Read-Only

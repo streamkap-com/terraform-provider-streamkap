@@ -52,7 +52,7 @@ func DestinationPostgresqlSchema() schema.Schema {
 		MarkdownDescription: "Manages a **PostgreSQL destination connector**.\n\n" +
 			"This resource creates and manages a PostgreSQL destination for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
-			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
+			"[Documentation](https://docs.streamkap.com/postgresql-source-faq)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -88,8 +88,8 @@ func DestinationPostgresqlSchema() schema.Schema {
 			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "PostgreSQL Port. For example, 5432 Defaults to 5432.",
-				MarkdownDescription: "PostgreSQL Port. For example, 5432 Defaults to `5432`.",
+				Description:         "PostgreSQL Port. For example, 5432. Defaults to 5432.",
+				MarkdownDescription: "PostgreSQL Port. For example, 5432. Defaults to `5432`.",
 				Default:             int64default.StaticInt64(5432),
 			},
 			"database_database": schema.StringAttribute{
@@ -123,15 +123,15 @@ func DestinationPostgresqlSchema() schema.Schema {
 			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to 22.",
-				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
+				Description:         "Port of your SSH server. Defaults to 22.",
+				MarkdownDescription: "Port of your SSH server. Defaults to `22`.",
 				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "User that allows Streamkap to connect to SSH server Defaults to \"streamkap\".",
-				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
+				Description:         "User that allows Streamkap to connect to SSH server. Defaults to \"streamkap\".",
+				MarkdownDescription: "User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
 			"table_name_prefix": schema.StringAttribute{
@@ -142,8 +142,8 @@ func DestinationPostgresqlSchema() schema.Schema {
 			"schema_evolution": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to \"basic\". Valid values: basic, none.",
-				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.",
+				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to \"basic\". Valid values: basic, none.",
+				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.",
 				Default:             stringdefault.StaticString("basic"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("basic", "none"),
@@ -152,8 +152,8 @@ func DestinationPostgresqlSchema() schema.Schema {
 			"insert_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies the strategy used to insert events into the database Defaults to \"insert\". Valid values: insert, upsert.",
-				MarkdownDescription: "Specifies the strategy used to insert events into the database Defaults to `insert`. Valid values: `insert`, `upsert`.",
+				Description:         "Specifies the strategy used to insert events into the database. Defaults to \"insert\". Valid values: insert, upsert.",
+				MarkdownDescription: "Specifies the strategy used to insert events into the database. Defaults to `insert`. Valid values: `insert`, `upsert`.",
 				Default:             stringdefault.StaticString("insert"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("insert", "upsert"),
@@ -162,15 +162,15 @@ func DestinationPostgresqlSchema() schema.Schema {
 			"delete_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database Defaults to false.",
-				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database Defaults to `false`.",
+				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. Defaults to false.",
+				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"primary_key_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies how the connector resolves the primary key columns from the event Defaults to \"record_key\". Valid values: none, record_key, record_value.",
-				MarkdownDescription: "Specifies how the connector resolves the primary key columns from the event Defaults to `record_key`. Valid values: `none`, `record_key`, `record_value`.",
+				Description:         "Specifies how the connector resolves the primary key columns from the event. Defaults to \"record_key\". Valid values: none, record_key, record_value.",
+				MarkdownDescription: "Specifies how the connector resolves the primary key columns from the event. Defaults to `record_key`. Valid values: `none`, `record_key`, `record_value`.",
 				Default:             stringdefault.StaticString("record_key"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("none", "record_key", "record_value"),
@@ -184,8 +184,8 @@ func DestinationPostgresqlSchema() schema.Schema {
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The maximum number of active tasks Defaults to 5.",
-				MarkdownDescription: "The maximum number of active tasks Defaults to `5`.",
+				Description:         "The maximum number of active tasks. Defaults to 5.",
+				MarkdownDescription: "The maximum number of active tasks. Defaults to `5`.",
 				Default:             int64default.StaticInt64(5),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 10),
@@ -194,8 +194,8 @@ func DestinationPostgresqlSchema() schema.Schema {
 			"topic2table_map": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Falls back to Streamkap's default for tables where no match is found Defaults to false.",
-				MarkdownDescription: "Falls back to Streamkap's default for tables where no match is found Defaults to `false`.",
+				Description:         "Falls back to Streamkap's default for tables where no match is found. Defaults to false.",
+				MarkdownDescription: "Falls back to Streamkap's default for tables where no match is found. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"transforms_change_topic_name_match_regex": schema.StringAttribute{
@@ -211,8 +211,8 @@ func DestinationPostgresqlSchema() schema.Schema {
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Public key to add to SSH server Defaults to \"<SSH.PUBLIC.KEY>\".",
-				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
+				Description:         "Public key to add to SSH server. Defaults to \"<SSH.PUBLIC.KEY>\".",
+				MarkdownDescription: "Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
 		},

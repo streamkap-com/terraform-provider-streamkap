@@ -29,7 +29,7 @@ This resource creates and manages a Starburst destination for Streamkap data pip
 
 - `aws_access_key_id` (String) The AWS Access Key ID used to connect to Starburst.
 - `aws_s3_bucket_name` (String) The Bucket to use.
-- `aws_s3_region` (String) The AWS region to be used Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.
+- `aws_s3_region` (String) The AWS region to be used. Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.
 - `aws_secret_access_key` (String, Sensitive) The AWS Secret Access Key used to connect to Starburst.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.

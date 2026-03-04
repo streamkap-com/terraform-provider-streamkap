@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   Manages a PostgreSQL source connector.
   This resource creates and manages a PostgreSQL source for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
-  Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
+  Documentation https://docs.streamkap.com/postgresql-source-faq
 ---
 
 # streamkap_source_postgresql (Resource)
@@ -14,7 +14,7 @@ Manages a **PostgreSQL source connector**.
 
 This resource creates and manages a PostgreSQL source for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
-[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
+[Documentation](https://docs.streamkap.com/postgresql-source-faq)
 
 
 
@@ -41,10 +41,10 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 - `column_exclude_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.
 - `column_include_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form schemaName[.]tableName[.](columnName1|columnName2)
 - `column_include_list_toggled` (Boolean) Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to `true`.
-- `database_port` (Number) PostgreSQL Port. For example, 5432 Defaults to `5432`.
-- `database_sslmode` (String) Whether to use an encrypted connection to the PostgreSQL server Defaults to `require`. Valid values: `require`, `disable`.
+- `database_port` (Number) PostgreSQL Port. For example, 5432. Defaults to `5432`.
+- `database_sslmode` (String) Whether to use an encrypted connection to the PostgreSQL server. Defaults to `require`. Valid values: `require`, `disable`.
 - `heartbeat_enabled` (Boolean) Heartbeats are used to monitor whether the connector is still receiving change events from the database, especially when there is low and intermittent traffic. Defaults to `true`.
-- `include_source_db_name_in_table_name` (Boolean) Changes the format of topics to 'DatabaseName_TopicName' Defaults to `false`.
+- `include_source_db_name_in_table_name` (Boolean) Changes the format of topics to 'DatabaseName_TopicName'. Defaults to `false`.
 - `insert_static_key_field_1` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key1_static_field' instead.
 - `insert_static_key_field_2` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key2_static_field' instead.
 - `insert_static_key_value_1` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key1_static_value' instead.
@@ -57,13 +57,13 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 - `predicates_istopictoenrich_pattern` (String, Deprecated) DEPRECATED: Use 'predicates_is_topic_to_enrich_pattern' instead.
 - `publication_name` (String) The name of the publication for the connector to use. Defaults to `streamkap_pub`.
 - `slot_name` (String) The name of the replication slot for the connector to use. Defaults to `streamkap_pgoutput_slot`.
-- `snapshot_read_only` (String) When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots Defaults to `Yes`. Valid values: `Yes`, `No`.
-- `source_regex_support_enabled` (Boolean) Enable regex support. Useful for merging multiple tables into the same output topic Defaults to `false`.
+- `snapshot_read_only` (String) When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots. Defaults to `Yes`. Valid values: `Yes`, `No`.
+- `source_regex_support_enabled` (Boolean) Enable regex support. Useful for merging multiple tables into the same output topic. Defaults to `false`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
-- `ssh_port` (Number) Port of your SSH server Defaults to `22`.
-- `ssh_public_key` (String) Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.
-- `ssh_user` (String) User that allows Streamkap to connect to SSH server Defaults to `streamkap`.
+- `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
+- `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
+- `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
 - `streamkap_snapshot_custom_table_config` (String) Explicitly set nb of parallel chunks for tables. Format: {"db.Some_Tbl": {"chunks": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.
 - `streamkap_snapshot_large_table_threshold` (Number) The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to `20000`.
 - `streamkap_snapshot_parallelism` (Number) How many parallel chunk requests to send to the source DB. Defaults to `1`.
@@ -76,7 +76,7 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 - `transforms_insert_static_value1_static_value` (String) The value of the static field to be added to the message value.
 - `transforms_insert_static_value2_static_field` (String) The name of the static field to be added to the message value.
 - `transforms_insert_static_value2_static_value` (String) The value of the static field to be added to the message value.
-- `transforms_source_regex_support_key_field_template` (String) Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId Defaults to `{{database}}.{{table}}`.
+- `transforms_source_regex_support_key_field_template` (String) Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId. Defaults to `{{database}}.{{table}}`.
 - `transforms_source_regex_support_metadata_field_name` (String) Name of the extra metadata field to store source information and ensure uniqueness across all tables when regex support is enabled. Defaults to `_streamkap_source_metadata`.
 - `transforms_source_regex_support_regex_replacement` (String) Replacement string for matching regex snippets. Defaults to `_REGEX_`.
 

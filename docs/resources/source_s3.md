@@ -3,16 +3,16 @@
 page_title: "streamkap_source_s3 Resource - terraform-provider-streamkap"
 subcategory: ""
 description: |-
-  Manages a S3 source connector.
-  This resource creates and manages a S3 source for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
+  Manages an S3 source connector.
+  This resource creates and manages an S3 source for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
 # streamkap_source_s3 (Resource)
 
-Manages a **S3 source connector**.
+Manages an **S3 source connector**.
 
-This resource creates and manages a S3 source for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
+This resource creates and manages an S3 source for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -27,19 +27,19 @@ This resource creates and manages a S3 source for Streamkap data pipelines. Use 
 
 ### Optional
 
-- `aws_access_key_id` (String) The AWS Access Key ID used to connect to S3 Defaults to ``.
-- `aws_s3_bucket_name` (String) The S3 Bucket to use Defaults to ``.
-- `aws_s3_object_prefix` (String) Prefix for S3 objects to scan. Can be used to specify a directory Defaults to `file-pulse/`.
-- `aws_s3_region` (String) The AWS region to be used Defaults to `us-west-2`. Valid values: `eu-west-2`, `eu-west-1`, `eu-central-1`, `ap-south-1`, `ap-northeast-2`, `ap-northeast-1`, `ap-southeast-1`, `ap-southeast-2`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.
-- `aws_secret_access_key` (String, Sensitive) The AWS Secret Access Key used to connect to S3 Defaults to ``.
+- `aws_access_key_id` (String) The AWS Access Key ID used to connect to S3. Defaults to ``.
+- `aws_s3_bucket_name` (String) The S3 Bucket to use. Defaults to ``.
+- `aws_s3_object_prefix` (String) Prefix for S3 objects to scan. Can be used to specify a directory. Defaults to `file-pulse/`.
+- `aws_s3_region` (String) The AWS region to be used. Defaults to `us-west-2`. Valid values: `eu-west-2`, `eu-west-1`, `eu-central-1`, `ap-south-1`, `ap-northeast-2`, `ap-northeast-1`, `ap-southeast-1`, `ap-southeast-2`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.
+- `aws_secret_access_key` (String, Sensitive) The AWS Secret Access Key used to connect to S3. Defaults to ``.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `format` (String) The input file format Defaults to `json`. Valid values: `json`, `csv`, `avro`.
+- `format` (String) The input file format. Defaults to `json`. Valid values: `json`, `csv`, `avro`.
 - `fs_cleanup_policy_class` (String) The policy to use for cleaning up files after processing. Defaults to `io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy`. Valid values: `io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy`, `io.streamthoughts.kafka.connect.filepulse.fs.clean.DeleteCleanupPolicy`.
 - `fs_scan_interval_ms` (Number) The interval in milliseconds at which to scan for new files. Defaults to `10000`.
-- `tasks_max` (Number) The maximum number of active tasks Defaults to `5`.
+- `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `topic_postfix` (String) The postfix of the topic to be used, for example source_[UUID].s3.[postfix] Defaults to `default`.
+- `topic_postfix` (String) The postfix of the topic to be used, for example source_[UUID].s3.[postfix]. Defaults to `default`.
 
 ### Read-Only
 

@@ -64,8 +64,8 @@ func TransformFanOutSchema() schema.Schema {
 			"transforms_language": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Transform language Defaults to \"JavaScript\". Valid values: JavaScript.",
-				MarkdownDescription: "Transform language Defaults to `JavaScript`. Valid values: `JavaScript`.",
+				Description:         "Transform language. Defaults to \"JavaScript\". Valid values: JavaScript.",
+				MarkdownDescription: "Transform language. Defaults to `JavaScript`. Valid values: `JavaScript`.",
 				Default:             stringdefault.StaticString("JavaScript"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("JavaScript"),
@@ -74,22 +74,22 @@ func TransformFanOutSchema() schema.Schema {
 			"transforms_input_topic_pattern": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Regex pattern to search for the input topics Defaults to \"placeholder-input-topic-pattern-to-be-revised-during-implementation\".",
-				MarkdownDescription: "Regex pattern to search for the input topics Defaults to `placeholder-input-topic-pattern-to-be-revised-during-implementation`.",
+				Description:         "Regex pattern to search for the input topics. Defaults to \"placeholder-input-topic-pattern-to-be-revised-during-implementation\".",
+				MarkdownDescription: "Regex pattern to search for the input topics. Defaults to `placeholder-input-topic-pattern-to-be-revised-during-implementation`.",
 				Default:             stringdefault.StaticString("placeholder-input-topic-pattern-to-be-revised-during-implementation"),
 			},
 			"transforms_output_topic_pattern": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "String pattern to save the output topics Defaults to \"placeholder-output-replacement-pattern-to-be-revised-during-implementation\".",
-				MarkdownDescription: "String pattern to save the output topics Defaults to `placeholder-output-replacement-pattern-to-be-revised-during-implementation`.",
+				Description:         "String pattern to save the output topics. Defaults to \"placeholder-output-replacement-pattern-to-be-revised-during-implementation\".",
+				MarkdownDescription: "String pattern to save the output topics. Defaults to `placeholder-output-replacement-pattern-to-be-revised-during-implementation`.",
 				Default:             stringdefault.StaticString("placeholder-output-replacement-pattern-to-be-revised-during-implementation"),
 			},
 			"transforms_input_serialization_format": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Format of the input topics Defaults to \"Any\". Valid values: Any, Avro, Json.",
-				MarkdownDescription: "Format of the input topics Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.",
+				Description:         "Format of the input topics. Defaults to \"Any\". Valid values: Any, Avro, Json.",
+				MarkdownDescription: "Format of the input topics. Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.",
 				Default:             stringdefault.StaticString("Any"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("Any", "Avro", "Json"),
@@ -98,8 +98,8 @@ func TransformFanOutSchema() schema.Schema {
 			"transforms_output_serialization_format": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Format of the output topics Defaults to \"Any\". Valid values: Any, Avro, Json.",
-				MarkdownDescription: "Format of the output topics Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.",
+				Description:         "Format of the output topics. Defaults to \"Any\". Valid values: Any, Avro, Json.",
+				MarkdownDescription: "Format of the output topics. Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.",
 				Default:             stringdefault.StaticString("Any"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("Any", "Avro", "Json"),

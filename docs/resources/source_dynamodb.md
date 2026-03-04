@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   Manages a DynamoDB source connector.
   This resource creates and manages a DynamoDB source for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
-  Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
+  Documentation https://docs.streamkap.com/dynamodb-source
 ---
 
 # streamkap_source_dynamodb (Resource)
@@ -14,7 +14,7 @@ Manages a **DynamoDB source connector**.
 
 This resource creates and manages a DynamoDB source for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
-[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
+[Documentation](https://docs.streamkap.com/dynamodb-source)
 
 
 
@@ -36,17 +36,17 @@ This resource creates and manages a DynamoDB source for Streamkap data pipelines
 
 ### Optional
 
-- `array_encoding_json` (Boolean) Force nested lists as JSON string Defaults to `true`.
+- `array_encoding_json` (Boolean) Force nested lists as JSON string. Defaults to `true`.
 - `batch_size` (Number)
 - `dynamodb_service_endpoint` (String) Dynamodb Service Endpoint (optional)
-- `full_export_expiration_time_ms` (Number) Full Export Expiration Time (ms) Defaults to `0`.
-- `incremental_snapshot_chunk_size` (Number) Incremental snapshot chunk size Defaults to `0`.
-- `incremental_snapshot_max_threads` (Number) Incremental snapshot max threads Defaults to `0`.
-- `poll_timeout_ms` (Number) Poll Timeout (ms) Defaults to `0`.
-- `signal_kafka_poll_timeout_ms` (Number) Signal Kafka Poll Timeout (ms) Defaults to `0`.
-- `snapshot_parallel_time_offset` (Number) If > 0, snapshot will run in parallel with streaming and snapshot records _streamkap_ts_ms will be set back in time by this amount to prioritize CDC events downstream Defaults to `0`.
-- `struct_encoding_json` (Boolean) Force nested maps as JSON string Defaults to `true`.
-- `tasks_max` (Number) The maximum number of active tasks Defaults to `10`.
+- `full_export_expiration_time_ms` (Number) Full Export Expiration Time (ms). Defaults to `0`.
+- `incremental_snapshot_chunk_size` (Number) Incremental snapshot chunk size. Defaults to `0`.
+- `incremental_snapshot_max_threads` (Number) Incremental snapshot max threads. Defaults to `0`.
+- `poll_timeout_ms` (Number) Poll Timeout (ms). Defaults to `0`.
+- `signal_kafka_poll_timeout_ms` (Number) Signal Kafka Poll Timeout (ms). Defaults to `0`.
+- `snapshot_parallel_time_offset` (Number) If > 0, snapshot will run in parallel with streaming and snapshot records _streamkap_ts_ms will be set back in time by this amount to prioritize CDC events downstream. Defaults to `0`.
+- `struct_encoding_json` (Boolean) Force nested maps as JSON string. Defaults to `true`.
+- `tasks_max` (Number) The maximum number of active tasks. Defaults to `10`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only

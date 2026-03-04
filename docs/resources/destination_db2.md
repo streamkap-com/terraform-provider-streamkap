@@ -33,13 +33,13 @@ This resource creates and manages a Db2 destination for Streamkap data pipelines
 ### Optional
 
 - `database_database` (String) Database name
-- `database_port` (Number) Db2 Port. For example, 50000 Defaults to `50000`.
-- `delete_enabled` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database Defaults to `false`.
-- `insert_mode` (String) Specifies the strategy used to insert events into the database Defaults to `insert`. Valid values: `insert`, `upsert`.
+- `database_port` (Number) Db2 Port. For example, 50000. Defaults to `50000`.
+- `delete_enabled` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. Defaults to `false`.
+- `insert_mode` (String) Specifies the strategy used to insert events into the database. Defaults to `insert`. Valid values: `insert`, `upsert`.
 - `primary_key_fields` (String) Optional. Either the name of the primary key column or a comma-separated list of fields to derive the primary key from.
-- `primary_key_mode` (String) Specifies how the connector resolves the primary key columns from the event Defaults to `record_key`. Valid values: `none`, `record_key`, `record_value`.
-- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.
-- `tasks_max` (Number) The maximum number of active tasks Defaults to `5`.
+- `primary_key_mode` (String) Specifies how the connector resolves the primary key columns from the event. Defaults to `record_key`. Valid values: `none`, `record_key`, `record_value`.
+- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
+- `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only

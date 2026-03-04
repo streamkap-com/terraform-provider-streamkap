@@ -62,7 +62,7 @@ func (r *KafkaUserResource) Schema(ctx context.Context, req res.SchemaRequest, r
 		MarkdownDescription: "Manages a **Streamkap Kafka user** with ACL rules for topic access control.\n\n" +
 			"This resource creates and manages Kafka users that can connect to the Streamkap Kafka proxy " +
 			"endpoint with fine-grained access control via ACL rules.\n\n" +
-			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
+			"[Documentation](https://docs.streamkap.com/kafka-access)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description:         "Unique identifier for the Kafka user. Same as the username.",

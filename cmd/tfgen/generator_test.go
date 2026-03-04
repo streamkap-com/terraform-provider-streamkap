@@ -871,7 +871,7 @@ func TestEntryToFieldData(t *testing.T) {
 			t.Errorf("SchemaAttrType = %q, want %q", field.SchemaAttrType, "schema.Int64Attribute")
 		}
 		// Since Encrypt=true, the security note is appended to the description
-		expectedDesc := "Test description Defaults to 50. This value is sensitive and will not appear in logs or CLI output."
+		expectedDesc := "Test description. Defaults to 50. This value is sensitive and will not appear in logs or CLI output."
 		if field.Description != expectedDesc {
 			t.Errorf("Description = %q, want %q", field.Description, expectedDesc)
 		}

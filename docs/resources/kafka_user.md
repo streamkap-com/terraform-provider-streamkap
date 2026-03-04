@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   Manages a Streamkap Kafka user with ACL rules for topic access control.
   This resource creates and manages Kafka users that can connect to the Streamkap Kafka proxy endpoint with fine-grained access control via ACL rules.
-  Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
+  Documentation https://docs.streamkap.com/kafka-access
 ---
 
 # streamkap_kafka_user (Resource)
@@ -14,7 +14,7 @@ Manages a **Streamkap Kafka user** with ACL rules for topic access control.
 
 This resource creates and manages Kafka users that can connect to the Streamkap Kafka proxy endpoint with fine-grained access control via ACL rules.
 
-[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
+[Documentation](https://docs.streamkap.com/kafka-access)
 
 
 

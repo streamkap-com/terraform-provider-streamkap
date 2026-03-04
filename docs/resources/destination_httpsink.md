@@ -3,16 +3,16 @@
 page_title: "streamkap_destination_httpsink Resource - terraform-provider-streamkap"
 subcategory: ""
 description: |-
-  Manages a HTTP Sink destination connector.
-  This resource creates and manages a HTTP Sink destination for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
+  Manages an HTTP Sink destination connector.
+  This resource creates and manages an HTTP Sink destination for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
 # streamkap_destination_httpsink (Resource)
 
-Manages a **HTTP Sink destination connector**.
+Manages an **HTTP Sink destination connector**.
 
-This resource creates and manages a HTTP Sink destination for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
+This resource creates and manages an HTTP Sink destination for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 

@@ -3,18 +3,18 @@
 page_title: "streamkap_source_oracleaws Resource - terraform-provider-streamkap"
 subcategory: ""
 description: |-
-  Manages a Oracle RDS source connector.
-  This resource creates and manages a Oracle RDS source for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
-  Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
+  Manages an Oracle RDS source connector.
+  This resource creates and manages an Oracle RDS source for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
+  Documentation https://docs.streamkap.com/amazon-rds-oracle
 ---
 
 # streamkap_source_oracleaws (Resource)
 
-Manages a **Oracle RDS source connector**.
+Manages an **Oracle RDS source connector**.
 
-This resource creates and manages a Oracle RDS source for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
+This resource creates and manages an Oracle RDS source for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
-[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
+[Documentation](https://docs.streamkap.com/amazon-rds-oracle)
 
 
 
@@ -39,15 +39,15 @@ This resource creates and manages a Oracle RDS source for Streamkap data pipelin
 
 - `binary_handling_mode` (String) Specifies how the data for binary columns e.g. blob, binary, varbinary should be represented. This setting depends on what the destination is. See the documentation for more details. Defaults to `bytes`. Valid values: `bytes`, `base64`, `base64-url-safe`, `hex`.
 - `column_exclude_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.
-- `database_port` (Number) Oracle Port. For example, 1521 Defaults to `1521`.
+- `database_port` (Number) Oracle Port. For example, 1521. Defaults to `1521`.
 - `heartbeat_enabled` (Boolean) Heartbeats are used to monitor whether the connector is still receiving change events from the database, especially when there is low and intermittent traffic. Defaults to `true`.
 - `schema_history_internal_store_only_captured_databases_ddl` (Boolean) Specifies whether the connector records schema structures from all logical databases in the database instance or only captured databases. Enabling this when you have many databases in your instance can improve performance and avoid timeouts. Defaults to `false`.
 - `schema_history_internal_store_only_captured_tables_ddl` (Boolean) Specifies whether the connector records schema structures from all logical tables in the captured schemas or databases, or only captured tables. Enabling this when you have many tables can improve performance and avoid timeouts. Defaults to `false`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
-- `ssh_port` (Number) Port of your SSH server Defaults to `22`.
-- `ssh_public_key` (String) Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.
-- `ssh_user` (String) User that allows Streamkap to connect to SSH server Defaults to `streamkap`.
+- `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
+- `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
+- `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only

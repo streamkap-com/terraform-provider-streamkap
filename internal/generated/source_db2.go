@@ -81,8 +81,8 @@ func SourceDb2Schema() schema.Schema {
 			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port number of the Db2 database server Defaults to 50000.",
-				MarkdownDescription: "Port number of the Db2 database server Defaults to `50000`.",
+				Description:         "Port number of the Db2 database server. Defaults to 50000.",
+				MarkdownDescription: "Port number of the Db2 database server. Defaults to `50000`.",
 				Default:             int64default.StaticInt64(50000),
 			},
 			"database_user": schema.StringAttribute{
@@ -145,15 +145,15 @@ func SourceDb2Schema() schema.Schema {
 			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to 22.",
-				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
+				Description:         "Port of your SSH server. Defaults to 22.",
+				MarkdownDescription: "Port of your SSH server. Defaults to `22`.",
 				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "User that allows Streamkap to connect to SSH server Defaults to \"streamkap\".",
-				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
+				Description:         "User that allows Streamkap to connect to SSH server. Defaults to \"streamkap\".",
+				MarkdownDescription: "User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
 			"column_exclude_list": schema.StringAttribute{
@@ -164,8 +164,8 @@ func SourceDb2Schema() schema.Schema {
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Public key to add to SSH server Defaults to \"<SSH.PUBLIC.KEY>\".",
-				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
+				Description:         "Public key to add to SSH server. Defaults to \"<SSH.PUBLIC.KEY>\".",
+				MarkdownDescription: "Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
 		},

@@ -3,16 +3,16 @@
 page_title: "streamkap_source_elasticsearch Resource - terraform-provider-streamkap"
 subcategory: ""
 description: |-
-  Manages a ElasticSearch source connector.
-  This resource creates and manages a ElasticSearch source for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
+  Manages an ElasticSearch source connector.
+  This resource creates and manages an ElasticSearch source for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
 # streamkap_source_elasticsearch (Resource)
 
-Manages a **ElasticSearch source connector**.
+Manages an **ElasticSearch source connector**.
 
-This resource creates and manages a ElasticSearch source for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
+This resource creates and manages an ElasticSearch source for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -35,10 +35,10 @@ This resource creates and manages a ElasticSearch source for Streamkap data pipe
 ### Optional
 
 - `datetime_field_value` (String) The day and time to start consuming records from. Leave it empty if you want to consume records as of now.
-- `es_port` (Number) Port for ElasticSearch HTTP/HTTPS REST API. For example, 443 or 9200 Defaults to `443`.
-- `es_scheme` (String) ElasticSearch protocol (http/https) Defaults to `https`. Valid values: `http`, `https`.
-- `http_auth` (String) Type of Authentication Defaults to `Basic`. Valid values: `None`, `Basic`.
-- `tasks_max` (Number) The maximum number of active tasks Defaults to `5`.
+- `es_port` (Number) Port for ElasticSearch HTTP/HTTPS REST API. For example, 443 or 9200. Defaults to `443`.
+- `es_scheme` (String) ElasticSearch protocol (http/https). Defaults to `https`. Valid values: `http`, `https`.
+- `http_auth` (String) Type of Authentication. Defaults to `Basic`. Valid values: `None`, `Basic`.
+- `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only

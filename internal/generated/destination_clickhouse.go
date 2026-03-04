@@ -45,7 +45,7 @@ func DestinationClickhouseSchema() schema.Schema {
 		MarkdownDescription: "Manages a **ClickHouse destination connector**.\n\n" +
 			"This resource creates and manages a ClickHouse destination for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
-			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
+			"[Documentation](https://docs.streamkap.com/clickhouse)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -76,8 +76,8 @@ func DestinationClickhouseSchema() schema.Schema {
 			"ingestion_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Upsert or append modes are available Defaults to \"upsert\". Valid values: upsert, append.",
-				MarkdownDescription: "Upsert or append modes are available Defaults to `upsert`. Valid values: `upsert`, `append`.",
+				Description:         "Upsert or append modes are available. Defaults to \"upsert\". Valid values: upsert, append.",
+				MarkdownDescription: "Upsert or append modes are available. Defaults to `upsert`. Valid values: `upsert`, `append`.",
 				Default:             stringdefault.StaticString("upsert"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("upsert", "append"),
@@ -86,15 +86,15 @@ func DestinationClickhouseSchema() schema.Schema {
 			"hard_delete": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only) Defaults to true.",
-				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only) Defaults to `true`.",
+				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only). Defaults to true.",
+				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only). Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The maximum number of active task Defaults to 5.",
-				MarkdownDescription: "The maximum number of active task Defaults to `5`.",
+				Description:         "The maximum number of active task. Defaults to 5.",
+				MarkdownDescription: "The maximum number of active task. Defaults to `5`.",
 				Default:             int64default.StaticInt64(5),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 10),
@@ -103,8 +103,8 @@ func DestinationClickhouseSchema() schema.Schema {
 			"quote_identifiers": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Whether to quote identifiers in SQL statements Defaults to false.",
-				MarkdownDescription: "Whether to quote identifiers in SQL statements Defaults to `false`.",
+				Description:         "Whether to quote identifiers in SQL statements. Defaults to false.",
+				MarkdownDescription: "Whether to quote identifiers in SQL statements. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"hostname": schema.StringAttribute{
@@ -126,8 +126,8 @@ func DestinationClickhouseSchema() schema.Schema {
 			"port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "ClickHouse Port. For example, 8443 Defaults to 8443.",
-				MarkdownDescription: "ClickHouse Port. For example, 8443 Defaults to `8443`.",
+				Description:         "ClickHouse Port. For example, 8443. Defaults to 8443.",
+				MarkdownDescription: "ClickHouse Port. For example, 8443. Defaults to `8443`.",
 				Default:             int64default.StaticInt64(8443),
 			},
 			"database": schema.StringAttribute{
@@ -138,8 +138,8 @@ func DestinationClickhouseSchema() schema.Schema {
 			"ssl": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Enable TLS for network connections Defaults to true.",
-				MarkdownDescription: "Enable TLS for network connections Defaults to `true`.",
+				Description:         "Enable TLS for network connections. Defaults to true.",
+				MarkdownDescription: "Enable TLS for network connections. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"topics_config_map": schema.StringAttribute{
@@ -155,8 +155,8 @@ func DestinationClickhouseSchema() schema.Schema {
 			"schema_evolution": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to \"basic\". Valid values: basic, none.",
-				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.",
+				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to \"basic\". Valid values: basic, none.",
+				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.",
 				Default:             stringdefault.StaticString("basic"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("basic", "none"),

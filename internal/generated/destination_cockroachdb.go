@@ -83,8 +83,8 @@ func DestinationCockroachdbSchema() schema.Schema {
 			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "CockroachDB Port. For example, 26257 Defaults to 26257.",
-				MarkdownDescription: "CockroachDB Port. For example, 26257 Defaults to `26257`.",
+				Description:         "CockroachDB Port. For example, 26257. Defaults to 26257.",
+				MarkdownDescription: "CockroachDB Port. For example, 26257. Defaults to `26257`.",
 				Default:             int64default.StaticInt64(26257),
 			},
 			"database_database": schema.StringAttribute{
@@ -106,15 +106,15 @@ func DestinationCockroachdbSchema() schema.Schema {
 			"table_name_prefix": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Schema for the associated table name Defaults to \"public\".",
-				MarkdownDescription: "Schema for the associated table name Defaults to `public`.",
+				Description:         "Schema for the associated table name. Defaults to \"public\".",
+				MarkdownDescription: "Schema for the associated table name. Defaults to `public`.",
 				Default:             stringdefault.StaticString("public"),
 			},
 			"schema_evolution": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to \"basic\". Valid values: basic, none.",
-				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.",
+				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to \"basic\". Valid values: basic, none.",
+				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.",
 				Default:             stringdefault.StaticString("basic"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("basic", "none"),
@@ -123,8 +123,8 @@ func DestinationCockroachdbSchema() schema.Schema {
 			"insert_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies the strategy used to insert events into the database Defaults to \"insert\". Valid values: insert, upsert.",
-				MarkdownDescription: "Specifies the strategy used to insert events into the database Defaults to `insert`. Valid values: `insert`, `upsert`.",
+				Description:         "Specifies the strategy used to insert events into the database. Defaults to \"insert\". Valid values: insert, upsert.",
+				MarkdownDescription: "Specifies the strategy used to insert events into the database. Defaults to `insert`. Valid values: `insert`, `upsert`.",
 				Default:             stringdefault.StaticString("insert"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("insert", "upsert"),
@@ -133,15 +133,15 @@ func DestinationCockroachdbSchema() schema.Schema {
 			"delete_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database Defaults to false.",
-				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database Defaults to `false`.",
+				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. Defaults to false.",
+				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"primary_key_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies how the connector resolves the primary key columns from the event Defaults to \"record_key\". Valid values: none, record_key, record_value.",
-				MarkdownDescription: "Specifies how the connector resolves the primary key columns from the event Defaults to `record_key`. Valid values: `none`, `record_key`, `record_value`.",
+				Description:         "Specifies how the connector resolves the primary key columns from the event. Defaults to \"record_key\". Valid values: none, record_key, record_value.",
+				MarkdownDescription: "Specifies how the connector resolves the primary key columns from the event. Defaults to `record_key`. Valid values: `none`, `record_key`, `record_value`.",
 				Default:             stringdefault.StaticString("record_key"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("none", "record_key", "record_value"),
@@ -155,8 +155,8 @@ func DestinationCockroachdbSchema() schema.Schema {
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The maximum number of active tasks Defaults to 5.",
-				MarkdownDescription: "The maximum number of active tasks Defaults to `5`.",
+				Description:         "The maximum number of active tasks. Defaults to 5.",
+				MarkdownDescription: "The maximum number of active tasks. Defaults to `5`.",
 				Default:             int64default.StaticInt64(5),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 10),
@@ -165,8 +165,8 @@ func DestinationCockroachdbSchema() schema.Schema {
 			"topic2table_map": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Falls back to Streamkap's default for tables where no match is found Defaults to false.",
-				MarkdownDescription: "Falls back to Streamkap's default for tables where no match is found Defaults to `false`.",
+				Description:         "Falls back to Streamkap's default for tables where no match is found. Defaults to false.",
+				MarkdownDescription: "Falls back to Streamkap's default for tables where no match is found. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"transforms_change_topic_name_match_regex": schema.StringAttribute{

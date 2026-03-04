@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   Manages a MongoDB Atlas source connector.
   This resource creates and manages a MongoDB Atlas source for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
-  Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
+  Documentation https://docs.streamkap.com/mongodb-atlas
 ---
 
 # streamkap_source_mongodb (Resource)
@@ -14,7 +14,7 @@ Manages a **MongoDB Atlas source connector**.
 
 This resource creates and manages a MongoDB Atlas source for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
-[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
+[Documentation](https://docs.streamkap.com/mongodb-atlas)
 
 
 
@@ -36,9 +36,9 @@ This resource creates and manages a MongoDB Atlas source for Streamkap data pipe
 - `predicates_is_topic_to_enrich_pattern` (String) Regex pattern to match topics for enrichment. Defaults to `$^`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
-- `ssh_port` (Number) Port of your SSH server Defaults to `22`.
-- `ssh_public_key` (String) Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.
-- `ssh_user` (String) User that allows Streamkap to connect to SSH server Defaults to `streamkap`.
+- `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
+- `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
+- `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_insert_static_key1_static_field` (String) The name of the static field to be added to the message key.
 - `transforms_insert_static_key1_static_value` (String) The value of the static field to be added to the message key.
@@ -48,8 +48,8 @@ This resource creates and manages a MongoDB Atlas source for Streamkap data pipe
 - `transforms_insert_static_value1_static_value` (String) The value of the static field to be added to the message value.
 - `transforms_insert_static_value2_static_field` (String) The name of the static field to be added to the message value.
 - `transforms_insert_static_value2_static_value` (String) The value of the static field to be added to the message value.
-- `transforms_unwrap_array_encoding` (String) How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types Defaults to `array_string`. Valid values: `array`, `array_string`.
-- `transforms_unwrap_document_encoding` (String) How to encode nested documents. 'Document' encodes them as JSON Objects, 'String' encodes them as JSON Strings Defaults to `document`. Valid values: `document`, `string`.
+- `transforms_unwrap_array_encoding` (String) How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types. Defaults to `array_string`. Valid values: `array`, `array_string`.
+- `transforms_unwrap_document_encoding` (String) How to encode nested documents. 'Document' encodes them as JSON Objects, 'String' encodes them as JSON Strings. Defaults to `document`. Valid values: `document`, `string`.
 
 ### Read-Only
 

@@ -33,10 +33,10 @@ This resource creates and manages a Redis destination for Streamkap data pipelin
 
 ### Optional
 
-- `redis_key_data_type` (String) Data Type of Redis Key. At the moment, only Stream and List are supported Defaults to `Stream`. Valid values: `Stream`, `List`, `Hash`.
-- `redis_port` (Number) Redis Port. For example, 6379 Defaults to `6379`.
-- `ssl_enabled` (Boolean) Enable TLS for network connections Defaults to `true`.
-- `tasks_max` (Number) The maximum number of active tasks Defaults to `5`.
+- `redis_key_data_type` (String) Data Type of Redis Key. At the moment, only Stream and List are supported. Defaults to `Stream`. Valid values: `Stream`, `List`, `Hash`.
+- `redis_port` (Number) Redis Port. For example, 6379. Defaults to `6379`.
+- `ssl_enabled` (Boolean) Enable TLS for network connections. Defaults to `true`.
+- `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only

@@ -27,13 +27,13 @@ This resource creates and manages a Webhook source for Streamkap data pipelines.
 
 ### Optional
 
-- `api_key` (String) API. This key will be generated after the source is created Defaults to `<API_KEY>`.
-- `camel_source_camel_message_header_key` (String) Camel Message Header contains key field details for Kafka Message, default is 'key' Defaults to `key`.
-- `format` (String) The incoming format of the data receive by webhook Defaults to `json`. Valid values: `json`, `string`.
+- `api_key` (String) API. This key will be generated after the source is created. Defaults to `<API_KEY>`.
+- `camel_source_camel_message_header_key` (String) Camel Message Header contains key field details for Kafka Message, default is 'key'. Defaults to `key`.
+- `format` (String) The incoming format of the data receive by webhook. Defaults to `json`. Valid values: `json`, `string`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `topic_include_list` (String) Topic names to use as output Defaults to `default_topic`.
-- `transforms_infer_schema_add_delete_field` (Boolean) Whether to add a 'delete' field to the schema when DELETE HTTP method is used Defaults to `false`.
-- `webhook_url` (String) Webhook URL. This URL will be generated after the source is created Defaults to ``.
+- `topic_include_list` (String) Topic names to use as output. Defaults to `default_topic`.
+- `transforms_infer_schema_add_delete_field` (Boolean) Whether to add a 'delete' field to the schema when DELETE HTTP method is used. Defaults to `false`.
+- `webhook_url` (String) Webhook URL. This URL will be generated after the source is created. Defaults to ``.
 
 ### Read-Only
 

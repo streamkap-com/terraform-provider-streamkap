@@ -42,11 +42,11 @@ type DestinationOracleModel struct {
 // DestinationOracleSchema returns the Terraform schema for the oracle destination.
 func DestinationOracleSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Oracle destination connector. Use with streamkap_pipeline to build data pipelines.",
-		MarkdownDescription: "Manages a **Oracle destination connector**.\n\n" +
-			"This resource creates and manages a Oracle destination for Streamkap data pipelines. " +
+		Description: "Manages an Oracle destination connector. Use with streamkap_pipeline to build data pipelines.",
+		MarkdownDescription: "Manages an **Oracle destination connector**.\n\n" +
+			"This resource creates and manages an Oracle destination for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
-			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
+			"[Documentation](https://docs.streamkap.com/oracle-source-faq)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -82,8 +82,8 @@ func DestinationOracleSchema() schema.Schema {
 			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Oracle Port. For example, 1521 Defaults to 1521.",
-				MarkdownDescription: "Oracle Port. For example, 1521 Defaults to `1521`.",
+				Description:         "Oracle Port. For example, 1521. Defaults to 1521.",
+				MarkdownDescription: "Oracle Port. For example, 1521. Defaults to `1521`.",
 				Default:             int64default.StaticInt64(1521),
 			},
 			"database_database": schema.StringAttribute{
@@ -105,8 +105,8 @@ func DestinationOracleSchema() schema.Schema {
 			"schema_evolution": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to \"basic\". Valid values: basic, none.",
-				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.",
+				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to \"basic\". Valid values: basic, none.",
+				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.",
 				Default:             stringdefault.StaticString("basic"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("basic", "none"),
@@ -115,8 +115,8 @@ func DestinationOracleSchema() schema.Schema {
 			"insert_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies the strategy used to insert events into the database Defaults to \"insert\". Valid values: insert, upsert.",
-				MarkdownDescription: "Specifies the strategy used to insert events into the database Defaults to `insert`. Valid values: `insert`, `upsert`.",
+				Description:         "Specifies the strategy used to insert events into the database. Defaults to \"insert\". Valid values: insert, upsert.",
+				MarkdownDescription: "Specifies the strategy used to insert events into the database. Defaults to `insert`. Valid values: `insert`, `upsert`.",
 				Default:             stringdefault.StaticString("insert"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("insert", "upsert"),
@@ -125,15 +125,15 @@ func DestinationOracleSchema() schema.Schema {
 			"delete_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database Defaults to false.",
-				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database Defaults to `false`.",
+				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. Defaults to false.",
+				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"primary_key_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies how the connector resolves the primary key columns from the event Defaults to \"record_key\". Valid values: none, record_key, record_value.",
-				MarkdownDescription: "Specifies how the connector resolves the primary key columns from the event Defaults to `record_key`. Valid values: `none`, `record_key`, `record_value`.",
+				Description:         "Specifies how the connector resolves the primary key columns from the event. Defaults to \"record_key\". Valid values: none, record_key, record_value.",
+				MarkdownDescription: "Specifies how the connector resolves the primary key columns from the event. Defaults to `record_key`. Valid values: `none`, `record_key`, `record_value`.",
 				Default:             stringdefault.StaticString("record_key"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("none", "record_key", "record_value"),
@@ -147,8 +147,8 @@ func DestinationOracleSchema() schema.Schema {
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The maximum number of active tasks Defaults to 5.",
-				MarkdownDescription: "The maximum number of active tasks Defaults to `5`.",
+				Description:         "The maximum number of active tasks. Defaults to 5.",
+				MarkdownDescription: "The maximum number of active tasks. Defaults to `5`.",
 				Default:             int64default.StaticInt64(5),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 10),
@@ -157,8 +157,8 @@ func DestinationOracleSchema() schema.Schema {
 			"topic2table_map": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Falls back to Streamkap's default for tables where no match is found Defaults to false.",
-				MarkdownDescription: "Falls back to Streamkap's default for tables where no match is found Defaults to `false`.",
+				Description:         "Falls back to Streamkap's default for tables where no match is found. Defaults to false.",
+				MarkdownDescription: "Falls back to Streamkap's default for tables where no match is found. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"transforms_change_topic_name_match_regex": schema.StringAttribute{

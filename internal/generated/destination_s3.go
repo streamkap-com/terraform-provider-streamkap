@@ -34,9 +34,9 @@ type DestinationS3Model struct {
 // DestinationS3Schema returns the Terraform schema for the s3 destination.
 func DestinationS3Schema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a S3 destination connector. Use with streamkap_pipeline to build data pipelines.",
-		MarkdownDescription: "Manages a **S3 destination connector**.\n\n" +
-			"This resource creates and manages a S3 destination for Streamkap data pipelines. " +
+		Description: "Manages an S3 destination connector. Use with streamkap_pipeline to build data pipelines.",
+		MarkdownDescription: "Manages an **S3 destination connector**.\n\n" +
+			"This resource creates and manages an S3 destination for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
@@ -80,8 +80,8 @@ func DestinationS3Schema() schema.Schema {
 			"aws_s3_region": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The AWS region to be used Defaults to \"us-west-2\". Valid values: ap-south-1, eu-west-2, eu-west-1, ap-northeast-2, ap-northeast-1, ca-central-1, sa-east-1, cn-north-1, us-gov-west-1, ap-southeast-1, ap-southeast-2, eu-central-1, us-east-1, us-east-2, us-west-1, us-west-2.",
-				MarkdownDescription: "The AWS region to be used Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.",
+				Description:         "The AWS region to be used. Defaults to \"us-west-2\". Valid values: ap-south-1, eu-west-2, eu-west-1, ap-northeast-2, ap-northeast-1, ca-central-1, sa-east-1, cn-north-1, us-gov-west-1, ap-southeast-1, ap-southeast-2, eu-central-1, us-east-1, us-east-2, us-west-1, us-west-2.",
+				MarkdownDescription: "The AWS region to be used. Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.",
 				Default:             stringdefault.StaticString("us-west-2"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("ap-south-1", "eu-west-2", "eu-west-1", "ap-northeast-2", "ap-northeast-1", "ca-central-1", "sa-east-1", "cn-north-1", "us-gov-west-1", "ap-southeast-1", "ap-southeast-2", "eu-central-1", "us-east-1", "us-east-2", "us-west-1", "us-west-2"),

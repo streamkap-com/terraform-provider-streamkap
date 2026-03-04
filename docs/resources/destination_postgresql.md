@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   Manages a PostgreSQL destination connector.
   This resource creates and manages a PostgreSQL destination for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
-  Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
+  Documentation https://docs.streamkap.com/postgresql-source-faq
 ---
 
 # streamkap_destination_postgresql (Resource)
@@ -14,7 +14,7 @@ Manages a **PostgreSQL destination connector**.
 
 This resource creates and manages a PostgreSQL destination for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
-[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
+[Documentation](https://docs.streamkap.com/postgresql-source-faq)
 
 
 
@@ -34,20 +34,20 @@ This resource creates and manages a PostgreSQL destination for Streamkap data pi
 ### Optional
 
 - `database_database` (String) Database name
-- `database_port` (Number) PostgreSQL Port. For example, 5432 Defaults to `5432`.
-- `delete_enabled` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database Defaults to `false`.
-- `insert_mode` (String) Specifies the strategy used to insert events into the database Defaults to `insert`. Valid values: `insert`, `upsert`.
+- `database_port` (Number) PostgreSQL Port. For example, 5432. Defaults to `5432`.
+- `delete_enabled` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. Defaults to `false`.
+- `insert_mode` (String) Specifies the strategy used to insert events into the database. Defaults to `insert`. Valid values: `insert`, `upsert`.
 - `primary_key_fields` (String) Optional. Either the name of the primary key column or a comma-separated list of fields to derive the primary key from.
-- `primary_key_mode` (String) Specifies how the connector resolves the primary key columns from the event Defaults to `record_key`. Valid values: `none`, `record_key`, `record_value`.
-- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.
+- `primary_key_mode` (String) Specifies how the connector resolves the primary key columns from the event. Defaults to `record_key`. Valid values: `none`, `record_key`, `record_value`.
+- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
-- `ssh_port` (Number) Port of your SSH server Defaults to `22`.
-- `ssh_public_key` (String) Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.
-- `ssh_user` (String) User that allows Streamkap to connect to SSH server Defaults to `streamkap`.
-- `tasks_max` (Number) The maximum number of active tasks Defaults to `5`.
+- `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
+- `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
+- `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
+- `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `topic2table_map` (Boolean) Falls back to Streamkap's default for tables where no match is found Defaults to `false`.
+- `topic2table_map` (Boolean) Falls back to Streamkap's default for tables where no match is found. Defaults to `false`.
 - `transforms_change_topic_name_mapping` (String) Map source tables to specific destination tables. Input should be the format of `source_table_name:destination_table_name` separated by a new line
 - `transforms_change_topic_name_match_regex` (String) Regular expression for matching topic name parts to use as the destination table (database) or file (file storage) name
 

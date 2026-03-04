@@ -31,13 +31,13 @@ This resource creates and manages a Motherduck destination for Streamkap data pi
 
 ### Optional
 
-- `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database Defaults to `false`.
-- `ingestion_mode` (String) Upsert or append modes are available Defaults to `upsert`. Valid values: `upsert`, `append`.
-- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.
-- `table_name_prefix` (String) Schema for the associated table name Defaults to `streamkap`.
-- `tasks_max` (Number) The maximum number of active tasks Defaults to `5`.
+- `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. Defaults to `false`.
+- `ingestion_mode` (String) Upsert or append modes are available. Defaults to `upsert`. Valid values: `upsert`, `append`.
+- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
+- `table_name_prefix` (String) Schema for the associated table name. Defaults to `streamkap`.
+- `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `topic2table_map` (Boolean) Falls back to Streamkap's default for tables where no match is found Defaults to `false`.
+- `topic2table_map` (Boolean) Falls back to Streamkap's default for tables where no match is found. Defaults to `false`.
 - `transforms_change_topic_name_mapping` (String) Map source tables to specific destination tables. Input should be the format of `source_table_name:destination_table_name` separated by a new line
 - `transforms_change_topic_name_match_regex` (String) Regular expression for matching topic name parts to use as the destination table (database) or file (file storage) name
 

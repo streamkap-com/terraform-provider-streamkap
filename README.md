@@ -287,7 +287,16 @@ See [AI_AGENT_COMPATIBILITY.md](docs/AI_AGENT_COMPATIBILITY.md) for detailed AI 
 
 ## Upgrading
 
-See [MIGRATION.md](docs/MIGRATION.md) for guidance on upgrading from previous versions, including breaking changes and deprecated attributes.
+See [MIGRATION.md](docs/MIGRATION.md) for guidance on upgrading between major versions, including breaking changes and deprecated attributes.
+
+### v3.0.0-beta.1 (Pre-release)
+
+A beta of v3.0 is available with new resources (Weaviate destination, Kafka Users, Client Credentials) and a Roles data source. This release is **not recommended for production**. If you are on v2.x and everything works, stay on v2.x until v3.0.0 stable is released.
+
+To try the beta in a test environment:
+```hcl
+version = "3.0.0-beta.1"  # Pin exact version
+```
 
 ## License
 

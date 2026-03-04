@@ -95,15 +95,15 @@ func SourceSqlserverawsSchema() schema.Schema {
 			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "SQL Server Port. For example, 1433 Defaults to 1433.",
-				MarkdownDescription: "SQL Server Port. For example, 1433 Defaults to `1433`.",
+				Description:         "SQL Server Port. For example, 1433. Defaults to 1433.",
+				MarkdownDescription: "SQL Server Port. For example, 1433. Defaults to `1433`.",
 				Default:             int64default.StaticInt64(1433),
 			},
 			"database_encrypt": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Use TLS encryption with the SQL Server? Defaults to \"true\". Valid values: true, false.",
-				MarkdownDescription: "Use TLS encryption with the SQL Server? Defaults to `true`. Valid values: `true`, `false`.",
+				Description:         "Use TLS encryption with the SQL Server?. Defaults to \"true\". Valid values: true, false.",
+				MarkdownDescription: "Use TLS encryption with the SQL Server?. Defaults to `true`. Valid values: `true`, `false`.",
 				Default:             stringdefault.StaticString("true"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("true", "false"),
@@ -225,15 +225,15 @@ func SourceSqlserverawsSchema() schema.Schema {
 			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to 22.",
-				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
+				Description:         "Port of your SSH server. Defaults to 22.",
+				MarkdownDescription: "Port of your SSH server. Defaults to `22`.",
 				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "User that allows Streamkap to connect to SSH server Defaults to \"streamkap\".",
-				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
+				Description:         "User that allows Streamkap to connect to SSH server. Defaults to \"streamkap\".",
+				MarkdownDescription: "User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
 			"transforms_insert_static_key1_static_field": schema.StringAttribute{
@@ -259,8 +259,8 @@ func SourceSqlserverawsSchema() schema.Schema {
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Public key to add to SSH server Defaults to \"<SSH.PUBLIC.KEY>\".",
-				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
+				Description:         "Public key to add to SSH server. Defaults to \"<SSH.PUBLIC.KEY>\".",
+				MarkdownDescription: "Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
 		},

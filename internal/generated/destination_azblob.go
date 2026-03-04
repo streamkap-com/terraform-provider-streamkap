@@ -37,9 +37,9 @@ type DestinationAzblobModel struct {
 // DestinationAzblobSchema returns the Terraform schema for the azblob destination.
 func DestinationAzblobSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Azure Blob Storage destination connector. Use with streamkap_pipeline to build data pipelines.",
-		MarkdownDescription: "Manages a **Azure Blob Storage destination connector**.\n\n" +
-			"This resource creates and manages a Azure Blob Storage destination for Streamkap data pipelines. " +
+		Description: "Manages an Azure Blob Storage destination connector. Use with streamkap_pipeline to build data pipelines.",
+		MarkdownDescription: "Manages an **Azure Blob Storage destination connector**.\n\n" +
+			"This resource creates and manages an Azure Blob Storage destination for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
@@ -83,8 +83,8 @@ func DestinationAzblobSchema() schema.Schema {
 			"format": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The format to use when writing data to file storage Defaults to \"json\". Valid values: json, csv, avro, parquet.",
-				MarkdownDescription: "The format to use when writing data to file storage Defaults to `json`. Valid values: `json`, `csv`, `avro`, `parquet`.",
+				Description:         "The format to use when writing data to file storage. Defaults to \"json\". Valid values: json, csv, avro, parquet.",
+				MarkdownDescription: "The format to use when writing data to file storage. Defaults to `json`. Valid values: `json`, `csv`, `avro`, `parquet`.",
 				Default:             stringdefault.StaticString("json"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("json", "csv", "avro", "parquet"),
@@ -93,8 +93,8 @@ func DestinationAzblobSchema() schema.Schema {
 			"format_csv_write_headers": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Include or exclude column name header row per file Defaults to false.",
-				MarkdownDescription: "Include or exclude column name header row per file Defaults to `false`.",
+				Description:         "Include or exclude column name header row per file. Defaults to false.",
+				MarkdownDescription: "Include or exclude column name header row per file. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"topics_dir": schema.StringAttribute{
@@ -112,22 +112,22 @@ func DestinationAzblobSchema() schema.Schema {
 			"flush_size": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Number of records to write per file Defaults to 1000.",
-				MarkdownDescription: "Number of records to write per file Defaults to `1000`.",
+				Description:         "Number of records to write per file. Defaults to 1000.",
+				MarkdownDescription: "Number of records to write per file. Defaults to `1000`.",
 				Default:             int64default.StaticInt64(1000),
 			},
 			"file_size": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Minimum size (in bytes) per file. Records are held in memory until this file size is met or the **Rotate interval** is exceeded Defaults to 65536.",
-				MarkdownDescription: "Minimum size (in bytes) per file. Records are held in memory until this file size is met or the **Rotate interval** is exceeded Defaults to `65536`.",
+				Description:         "Minimum size (in bytes) per file. Records are held in memory until this file size is met or the **Rotate interval** is exceeded. Defaults to 65536.",
+				MarkdownDescription: "Minimum size (in bytes) per file. Records are held in memory until this file size is met or the **Rotate interval** is exceeded. Defaults to `65536`.",
 				Default:             int64default.StaticInt64(65536),
 			},
 			"rotate_interval_ms": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Maximum time (in milliseconds) to wait before writing records held in memory to file. This ignores the flush and file size settings Defaults to -1.",
-				MarkdownDescription: "Maximum time (in milliseconds) to wait before writing records held in memory to file. This ignores the flush and file size settings Defaults to `-1`.",
+				Description:         "Maximum time (in milliseconds) to wait before writing records held in memory to file. This ignores the flush and file size settings. Defaults to -1.",
+				MarkdownDescription: "Maximum time (in milliseconds) to wait before writing records held in memory to file. This ignores the flush and file size settings. Defaults to `-1`.",
 				Default:             int64default.StaticInt64(-1),
 			},
 			"compression": schema.StringAttribute{

@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   Manages a Kafka destination connector.
   This resource creates and manages a Kafka destination for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
-  Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
+  Documentation https://docs.streamkap.com/kafka-to-kafka
 ---
 
 # streamkap_destination_kafka (Resource)
@@ -14,7 +14,7 @@ Manages a **Kafka destination connector**.
 
 This resource creates and manages a Kafka destination for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
-[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
+[Documentation](https://docs.streamkap.com/kafka-to-kafka)
 
 
 
@@ -28,8 +28,8 @@ This resource creates and manages a Kafka destination for Streamkap data pipelin
 
 ### Optional
 
-- `destination_format` (String) The format to use when writing data to kafka Defaults to `json`. Valid values: `avro`, `json`.
-- `json_schema_enable` (Boolean) Include schema in json message Defaults to `false`.
+- `destination_format` (String) The format to use when writing data to kafka. Defaults to `json`. Valid values: `avro`, `json`.
+- `json_schema_enable` (Boolean) Include schema in json message. Defaults to `false`.
 - `schema_registry_url` (String) Destination kafka schema registry url
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `topic_prefix` (String) Prefix for destination topics

@@ -46,7 +46,7 @@ func SourceDynamodbSchema() schema.Schema {
 		MarkdownDescription: "Manages a **DynamoDB source connector**.\n\n" +
 			"This resource creates and manages a DynamoDB source for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
-			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
+			"[Documentation](https://docs.streamkap.com/dynamodb-source)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -112,8 +112,8 @@ func SourceDynamodbSchema() schema.Schema {
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The maximum number of active tasks Defaults to 10.",
-				MarkdownDescription: "The maximum number of active tasks Defaults to `10`.",
+				Description:         "The maximum number of active tasks. Defaults to 10.",
+				MarkdownDescription: "The maximum number of active tasks. Defaults to `10`.",
 				Default:             int64default.StaticInt64(10),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 40),
@@ -122,8 +122,8 @@ func SourceDynamodbSchema() schema.Schema {
 			"snapshot_parallel_time_offset": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "If > 0, snapshot will run in parallel with streaming and snapshot records _streamkap_ts_ms will be set back in time by this amount to prioritize CDC events downstream Defaults to 0.",
-				MarkdownDescription: "If > 0, snapshot will run in parallel with streaming and snapshot records _streamkap_ts_ms will be set back in time by this amount to prioritize CDC events downstream Defaults to `0`.",
+				Description:         "If > 0, snapshot will run in parallel with streaming and snapshot records _streamkap_ts_ms will be set back in time by this amount to prioritize CDC events downstream. Defaults to 0.",
+				MarkdownDescription: "If > 0, snapshot will run in parallel with streaming and snapshot records _streamkap_ts_ms will be set back in time by this amount to prioritize CDC events downstream. Defaults to `0`.",
 				Default:             int64default.StaticInt64(0),
 				Validators: []validator.Int64{
 					int64validator.Between(0, 604800000),
@@ -132,50 +132,50 @@ func SourceDynamodbSchema() schema.Schema {
 			"poll_timeout_ms": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Poll Timeout (ms) Defaults to 0.",
-				MarkdownDescription: "Poll Timeout (ms) Defaults to `0`.",
+				Description:         "Poll Timeout (ms). Defaults to 0.",
+				MarkdownDescription: "Poll Timeout (ms). Defaults to `0`.",
 				Default:             int64default.StaticInt64(0),
 			},
 			"incremental_snapshot_chunk_size": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Incremental snapshot chunk size Defaults to 0.",
-				MarkdownDescription: "Incremental snapshot chunk size Defaults to `0`.",
+				Description:         "Incremental snapshot chunk size. Defaults to 0.",
+				MarkdownDescription: "Incremental snapshot chunk size. Defaults to `0`.",
 				Default:             int64default.StaticInt64(0),
 			},
 			"incremental_snapshot_max_threads": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Incremental snapshot max threads Defaults to 0.",
-				MarkdownDescription: "Incremental snapshot max threads Defaults to `0`.",
+				Description:         "Incremental snapshot max threads. Defaults to 0.",
+				MarkdownDescription: "Incremental snapshot max threads. Defaults to `0`.",
 				Default:             int64default.StaticInt64(0),
 			},
 			"full_export_expiration_time_ms": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Full Export Expiration Time (ms) Defaults to 0.",
-				MarkdownDescription: "Full Export Expiration Time (ms) Defaults to `0`.",
+				Description:         "Full Export Expiration Time (ms). Defaults to 0.",
+				MarkdownDescription: "Full Export Expiration Time (ms). Defaults to `0`.",
 				Default:             int64default.StaticInt64(0),
 			},
 			"signal_kafka_poll_timeout_ms": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Signal Kafka Poll Timeout (ms) Defaults to 0.",
-				MarkdownDescription: "Signal Kafka Poll Timeout (ms) Defaults to `0`.",
+				Description:         "Signal Kafka Poll Timeout (ms). Defaults to 0.",
+				MarkdownDescription: "Signal Kafka Poll Timeout (ms). Defaults to `0`.",
 				Default:             int64default.StaticInt64(0),
 			},
 			"array_encoding_json": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Force nested lists as JSON string Defaults to true.",
-				MarkdownDescription: "Force nested lists as JSON string Defaults to `true`.",
+				Description:         "Force nested lists as JSON string. Defaults to true.",
+				MarkdownDescription: "Force nested lists as JSON string. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"struct_encoding_json": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Force nested maps as JSON string Defaults to true.",
-				MarkdownDescription: "Force nested maps as JSON string Defaults to `true`.",
+				Description:         "Force nested maps as JSON string. Defaults to true.",
+				MarkdownDescription: "Force nested maps as JSON string. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 		},

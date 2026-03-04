@@ -47,11 +47,11 @@ type SourceOracleModel struct {
 // SourceOracleSchema returns the Terraform schema for the oracle source.
 func SourceOracleSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Oracle source connector. Use with streamkap_pipeline to build data pipelines.",
-		MarkdownDescription: "Manages a **Oracle source connector**.\n\n" +
-			"This resource creates and manages a Oracle source for Streamkap data pipelines. " +
+		Description: "Manages an Oracle source connector. Use with streamkap_pipeline to build data pipelines.",
+		MarkdownDescription: "Manages an **Oracle source connector**.\n\n" +
+			"This resource creates and manages an Oracle source for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
-			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
+			"[Documentation](https://docs.streamkap.com/oracle-source-faq)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -87,8 +87,8 @@ func SourceOracleSchema() schema.Schema {
 			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Oracle Port. For example, 1521 Defaults to 1521.",
-				MarkdownDescription: "Oracle Port. For example, 1521 Defaults to `1521`.",
+				Description:         "Oracle Port. For example, 1521. Defaults to 1521.",
+				MarkdownDescription: "Oracle Port. For example, 1521. Defaults to `1521`.",
 				Default:             int64default.StaticInt64(1521),
 			},
 			"database_user": schema.StringAttribute{
@@ -178,15 +178,15 @@ func SourceOracleSchema() schema.Schema {
 			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to 22.",
-				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
+				Description:         "Port of your SSH server. Defaults to 22.",
+				MarkdownDescription: "Port of your SSH server. Defaults to `22`.",
 				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "User that allows Streamkap to connect to SSH server Defaults to \"streamkap\".",
-				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
+				Description:         "User that allows Streamkap to connect to SSH server. Defaults to \"streamkap\".",
+				MarkdownDescription: "User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
 			"column_exclude_list": schema.StringAttribute{
@@ -197,8 +197,8 @@ func SourceOracleSchema() schema.Schema {
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Public key to add to SSH server Defaults to \"<SSH.PUBLIC.KEY>\".",
-				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
+				Description:         "Public key to add to SSH server. Defaults to \"<SSH.PUBLIC.KEY>\".",
+				MarkdownDescription: "Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
 		},

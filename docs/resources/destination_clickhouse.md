@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   Manages a ClickHouse destination connector.
   This resource creates and manages a ClickHouse destination for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
-  Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
+  Documentation https://docs.streamkap.com/clickhouse
 ---
 
 # streamkap_destination_clickhouse (Resource)
@@ -14,7 +14,7 @@ Manages a **ClickHouse destination connector**.
 
 This resource creates and manages a ClickHouse destination for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
-[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
+[Documentation](https://docs.streamkap.com/clickhouse)
 
 
 
@@ -34,13 +34,13 @@ This resource creates and manages a ClickHouse destination for Streamkap data pi
 
 - `clickhouse_json_support` (String) Allow JSON data type in ClickHouse, make sure the ClickHouse server supports it. If not set, the connector will use String type for JSON data.
 - `database` (String) ClickHouse database
-- `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only) Defaults to `true`.
-- `ingestion_mode` (String) Upsert or append modes are available Defaults to `upsert`. Valid values: `upsert`, `append`.
-- `port` (Number) ClickHouse Port. For example, 8443 Defaults to `8443`.
-- `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements Defaults to `false`.
-- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.
-- `ssl` (Boolean) Enable TLS for network connections Defaults to `true`.
-- `tasks_max` (Number) The maximum number of active task Defaults to `5`.
+- `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only). Defaults to `true`.
+- `ingestion_mode` (String) Upsert or append modes are available. Defaults to `upsert`. Valid values: `upsert`, `append`.
+- `port` (Number) ClickHouse Port. For example, 8443. Defaults to `8443`.
+- `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `false`.
+- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
+- `ssl` (Boolean) Enable TLS for network connections. Defaults to `true`.
+- `tasks_max` (Number) The maximum number of active task. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `topics_config_map` (String) Per topic configuration in JSON format
 

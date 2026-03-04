@@ -73,8 +73,8 @@ func DestinationMotherduckSchema() schema.Schema {
 			"ingestion_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Upsert or append modes are available Defaults to \"upsert\". Valid values: upsert, append.",
-				MarkdownDescription: "Upsert or append modes are available Defaults to `upsert`. Valid values: `upsert`, `append`.",
+				Description:         "Upsert or append modes are available. Defaults to \"upsert\". Valid values: upsert, append.",
+				MarkdownDescription: "Upsert or append modes are available. Defaults to `upsert`. Valid values: `upsert`, `append`.",
 				Default:             stringdefault.StaticString("upsert"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("upsert", "append"),
@@ -94,8 +94,8 @@ func DestinationMotherduckSchema() schema.Schema {
 			"schema_evolution": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to \"basic\". Valid values: basic, none.",
-				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.",
+				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to \"basic\". Valid values: basic, none.",
+				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.",
 				Default:             stringdefault.StaticString("basic"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("basic", "none"),
@@ -104,22 +104,22 @@ func DestinationMotherduckSchema() schema.Schema {
 			"table_name_prefix": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Schema for the associated table name Defaults to \"streamkap\".",
-				MarkdownDescription: "Schema for the associated table name Defaults to `streamkap`.",
+				Description:         "Schema for the associated table name. Defaults to \"streamkap\".",
+				MarkdownDescription: "Schema for the associated table name. Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
 			"hard_delete": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database Defaults to false.",
-				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database Defaults to `false`.",
+				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. Defaults to false.",
+				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The maximum number of active tasks Defaults to 5.",
-				MarkdownDescription: "The maximum number of active tasks Defaults to `5`.",
+				Description:         "The maximum number of active tasks. Defaults to 5.",
+				MarkdownDescription: "The maximum number of active tasks. Defaults to `5`.",
 				Default:             int64default.StaticInt64(5),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 25),
@@ -128,8 +128,8 @@ func DestinationMotherduckSchema() schema.Schema {
 			"topic2table_map": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Falls back to Streamkap's default for tables where no match is found Defaults to false.",
-				MarkdownDescription: "Falls back to Streamkap's default for tables where no match is found Defaults to `false`.",
+				Description:         "Falls back to Streamkap's default for tables where no match is found. Defaults to false.",
+				MarkdownDescription: "Falls back to Streamkap's default for tables where no match is found. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"transforms_change_topic_name_match_regex": schema.StringAttribute{

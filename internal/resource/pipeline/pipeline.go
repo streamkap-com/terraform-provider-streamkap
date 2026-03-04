@@ -118,7 +118,7 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 			"connector through optional transforms to a destination connector.\n\n" +
 			"**Related resources:** `streamkap_source_*` (sources), `streamkap_destination_*` (destinations), " +
 			"`streamkap_transform_*` (transforms), `streamkap_topic` (topics).\n\n" +
-			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
+			"[Documentation](https://docs.streamkap.com/pipelines)",
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

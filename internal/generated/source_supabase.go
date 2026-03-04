@@ -100,8 +100,8 @@ func SourceSupabaseSchema() schema.Schema {
 			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "PostgreSQL Port. For example, 5432 Defaults to 5432.",
-				MarkdownDescription: "PostgreSQL Port. For example, 5432 Defaults to `5432`.",
+				Description:         "PostgreSQL Port. For example, 5432. Defaults to 5432.",
+				MarkdownDescription: "PostgreSQL Port. For example, 5432. Defaults to `5432`.",
 				Default:             int64default.StaticInt64(5432),
 			},
 			"database_user": schema.StringAttribute{
@@ -123,8 +123,8 @@ func SourceSupabaseSchema() schema.Schema {
 			"snapshot_read_only": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots Defaults to \"Yes\". Valid values: Yes, No.",
-				MarkdownDescription: "When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots Defaults to `Yes`. Valid values: `Yes`, `No`.",
+				Description:         "When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots. Defaults to \"Yes\". Valid values: Yes, No.",
+				MarkdownDescription: "When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots. Defaults to `Yes`. Valid values: `Yes`, `No`.",
 				Default:             stringdefault.StaticString("Yes"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("Yes", "No"),
@@ -191,8 +191,8 @@ func SourceSupabaseSchema() schema.Schema {
 			"database_sslmode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Whether to use an encrypted connection to the PostgreSQL server Defaults to \"require\". Valid values: require, disable.",
-				MarkdownDescription: "Whether to use an encrypted connection to the PostgreSQL server Defaults to `require`. Valid values: `require`, `disable`.",
+				Description:         "Whether to use an encrypted connection to the PostgreSQL server. Defaults to \"require\". Valid values: require, disable.",
+				MarkdownDescription: "Whether to use an encrypted connection to the PostgreSQL server. Defaults to `require`. Valid values: `require`, `disable`.",
 				Default:             stringdefault.StaticString("require"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("require", "disable"),
@@ -201,8 +201,8 @@ func SourceSupabaseSchema() schema.Schema {
 			"include_source_db_name_in_table_name": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Changes the format of topics to 'DatabaseName_TopicName' Defaults to false.",
-				MarkdownDescription: "Changes the format of topics to 'DatabaseName_TopicName' Defaults to `false`.",
+				Description:         "Changes the format of topics to 'DatabaseName_TopicName'. Defaults to false.",
+				MarkdownDescription: "Changes the format of topics to 'DatabaseName_TopicName'. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"binary_handling_mode": schema.StringAttribute{
@@ -277,22 +277,22 @@ func SourceSupabaseSchema() schema.Schema {
 			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to 22.",
-				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
+				Description:         "Port of your SSH server. Defaults to 22.",
+				MarkdownDescription: "Port of your SSH server. Defaults to `22`.",
 				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "User that allows Streamkap to connect to SSH server Defaults to \"streamkap\".",
-				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
+				Description:         "User that allows Streamkap to connect to SSH server. Defaults to \"streamkap\".",
+				MarkdownDescription: "User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Public key to add to SSH server Defaults to \"<SSH.PUBLIC.KEY>\".",
-				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
+				Description:         "Public key to add to SSH server. Defaults to \"<SSH.PUBLIC.KEY>\".",
+				MarkdownDescription: "Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
 		},

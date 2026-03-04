@@ -75,8 +75,8 @@ func SourceKafkadirectSchema() schema.Schema {
 			"format": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The serialised format of the data written to the Kafka topic Defaults to \"string\". Valid values: json, string, avro.",
-				MarkdownDescription: "The serialised format of the data written to the Kafka topic Defaults to `string`. Valid values: `json`, `string`, `avro`.",
+				Description:         "The serialised format of the data written to the Kafka topic. Defaults to \"string\". Valid values: json, string, avro.",
+				MarkdownDescription: "The serialised format of the data written to the Kafka topic. Defaults to `string`. Valid values: `json`, `string`, `avro`.",
 				Default:             stringdefault.StaticString("string"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("json", "string", "avro"),
@@ -85,8 +85,8 @@ func SourceKafkadirectSchema() schema.Schema {
 			"schemas_enable": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "If untoggled (default), Streamkap attempts to infer schema from your data - depending on the Destination. Otherwise, Streamkap assumes the Kafka message key and value contain `schema` and `payload` structures Defaults to false.",
-				MarkdownDescription: "If untoggled (default), Streamkap attempts to infer schema from your data - depending on the Destination. Otherwise, Streamkap assumes the Kafka message key and value contain `schema` and `payload` structures Defaults to `false`.",
+				Description:         "If untoggled (default), Streamkap attempts to infer schema from your data - depending on the Destination. Otherwise, Streamkap assumes the Kafka message key and value contain `schema` and `payload` structures. Defaults to false.",
+				MarkdownDescription: "If untoggled (default), Streamkap attempts to infer schema from your data - depending on the Destination. Otherwise, Streamkap assumes the Kafka message key and value contain `schema` and `payload` structures. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 		},

@@ -31,11 +31,11 @@ This resource creates and manages a BigQuery destination for Streamkap data pipe
 
 ### Optional
 
-- `bigquery_region` (String) Region of the bigquery Dataset Defaults to `us-central1`. Valid values: `us-east5`, `us-central1`, `us-west4`, `us-west2`, `northamerica-northeast1`, `us-east4`, `us-west1`, `us-west3`, `southamerica-east1`, `southamerica-west1`, `us-east1`, `northamerica-northeast2`, `asia-south2`, `asia-east2`, `asia-southeast2`, `australia-southeast2`, `asia-south1`, `asia-northeast2`, `asia-northeast3`, `asia-southeast1`, `australia-southeast1`, `asia-east1`, `asia-northeast1`, `europe-west1`, `europe-north1`, `europe-west3`, `europe-west2`, `europe-southwest1`, `europe-west8`, `europe-west4`, `europe-west9`, `europe-central2`, `europe-west6`, `EU`, `US`.
-- `bigquery_time_based_partition` (Boolean) Is the partition time based? Defaults to `false`.
+- `bigquery_region` (String) Region of the bigquery Dataset. Defaults to `us-central1`. Valid values: `us-east5`, `us-central1`, `us-west4`, `us-west2`, `northamerica-northeast1`, `us-east4`, `us-west1`, `us-west3`, `southamerica-east1`, `southamerica-west1`, `us-east1`, `northamerica-northeast2`, `asia-south2`, `asia-east2`, `asia-southeast2`, `australia-southeast2`, `asia-south1`, `asia-northeast2`, `asia-northeast3`, `asia-southeast1`, `australia-southeast1`, `asia-east1`, `asia-northeast1`, `europe-west1`, `europe-north1`, `europe-west3`, `europe-west2`, `europe-southwest1`, `europe-west8`, `europe-west4`, `europe-west9`, `europe-central2`, `europe-west6`, `EU`, `US`.
+- `bigquery_time_based_partition` (Boolean) Is the partition time based?. Defaults to `false`.
 - `custom_bigquery_cluster_field` (String) User can set a Bigquery cluster field.
 - `custom_bigquery_partition_field` (String) User can set custom name of the partition field
-- `tasks_max` (Number) The maximum number of active tasks Defaults to `5`.
+- `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only

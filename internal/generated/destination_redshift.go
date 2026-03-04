@@ -71,8 +71,8 @@ func DestinationRedshiftSchema() schema.Schema {
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The maximum number of active tasks Defaults to 5.",
-				MarkdownDescription: "The maximum number of active tasks Defaults to `5`.",
+				Description:         "The maximum number of active tasks. Defaults to 5.",
+				MarkdownDescription: "The maximum number of active tasks. Defaults to `5`.",
 				Default:             int64default.StaticInt64(5),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 10),
@@ -86,8 +86,8 @@ func DestinationRedshiftSchema() schema.Schema {
 			"aws_redshift_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port number for incoming connections to the leader Defaults to 5439.",
-				MarkdownDescription: "Port number for incoming connections to the leader Defaults to `5439`.",
+				Description:         "Port number for incoming connections to the leader. Defaults to 5439.",
+				MarkdownDescription: "Port number for incoming connections to the leader. Defaults to `5439`.",
 				Default:             int64default.StaticInt64(5439),
 			},
 			"aws_redshift_database": schema.StringAttribute{
@@ -109,15 +109,15 @@ func DestinationRedshiftSchema() schema.Schema {
 			"primary_key_fields": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "List of comma-separated primary key field names Defaults to \"id\".",
-				MarkdownDescription: "List of comma-separated primary key field names Defaults to `id`.",
+				Description:         "List of comma-separated primary key field names. Defaults to \"id\".",
+				MarkdownDescription: "List of comma-separated primary key field names. Defaults to `id`.",
 				Default:             stringdefault.StaticString("id"),
 			},
 			"schema_evolution": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to \"basic\". Valid values: basic, none.",
-				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.",
+				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to \"basic\". Valid values: basic, none.",
+				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.",
 				Default:             stringdefault.StaticString("basic"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("basic", "none"),

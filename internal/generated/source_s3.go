@@ -37,9 +37,9 @@ type SourceS3Model struct {
 // SourceS3Schema returns the Terraform schema for the s3 source.
 func SourceS3Schema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a S3 source connector. Use with streamkap_pipeline to build data pipelines.",
-		MarkdownDescription: "Manages a **S3 source connector**.\n\n" +
-			"This resource creates and manages a S3 source for Streamkap data pipelines. " +
+		Description: "Manages an S3 source connector. Use with streamkap_pipeline to build data pipelines.",
+		MarkdownDescription: "Manages an **S3 source connector**.\n\n" +
+			"This resource creates and manages an S3 source for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
@@ -72,8 +72,8 @@ func SourceS3Schema() schema.Schema {
 			"format": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The input file format Defaults to \"json\". Valid values: json, csv, avro.",
-				MarkdownDescription: "The input file format Defaults to `json`. Valid values: `json`, `csv`, `avro`.",
+				Description:         "The input file format. Defaults to \"json\". Valid values: json, csv, avro.",
+				MarkdownDescription: "The input file format. Defaults to `json`. Valid values: `json`, `csv`, `avro`.",
 				Default:             stringdefault.StaticString("json"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("json", "csv", "avro"),
@@ -82,30 +82,30 @@ func SourceS3Schema() schema.Schema {
 			"topic_postfix": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The postfix of the topic to be used, for example source_[UUID].s3.[postfix] Defaults to \"default\".",
-				MarkdownDescription: "The postfix of the topic to be used, for example source_[UUID].s3.[postfix] Defaults to `default`.",
+				Description:         "The postfix of the topic to be used, for example source_[UUID].s3.[postfix]. Defaults to \"default\".",
+				MarkdownDescription: "The postfix of the topic to be used, for example source_[UUID].s3.[postfix]. Defaults to `default`.",
 				Default:             stringdefault.StaticString("default"),
 			},
 			"aws_access_key_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The AWS Access Key ID used to connect to S3 Defaults to \"\".",
-				MarkdownDescription: "The AWS Access Key ID used to connect to S3 Defaults to ``.",
+				Description:         "The AWS Access Key ID used to connect to S3. Defaults to \"\".",
+				MarkdownDescription: "The AWS Access Key ID used to connect to S3. Defaults to ``.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"aws_secret_access_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "The AWS Secret Access Key used to connect to S3 Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "The AWS Secret Access Key used to connect to S3 Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "The AWS Secret Access Key used to connect to S3. Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The AWS Secret Access Key used to connect to S3. Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"aws_s3_region": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The AWS region to be used Defaults to \"us-west-2\". Valid values: eu-west-2, eu-west-1, eu-central-1, ap-south-1, ap-northeast-2, ap-northeast-1, ap-southeast-1, ap-southeast-2, us-east-1, us-east-2, us-west-1, us-west-2.",
-				MarkdownDescription: "The AWS region to be used Defaults to `us-west-2`. Valid values: `eu-west-2`, `eu-west-1`, `eu-central-1`, `ap-south-1`, `ap-northeast-2`, `ap-northeast-1`, `ap-southeast-1`, `ap-southeast-2`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.",
+				Description:         "The AWS region to be used. Defaults to \"us-west-2\". Valid values: eu-west-2, eu-west-1, eu-central-1, ap-south-1, ap-northeast-2, ap-northeast-1, ap-southeast-1, ap-southeast-2, us-east-1, us-east-2, us-west-1, us-west-2.",
+				MarkdownDescription: "The AWS region to be used. Defaults to `us-west-2`. Valid values: `eu-west-2`, `eu-west-1`, `eu-central-1`, `ap-south-1`, `ap-northeast-2`, `ap-northeast-1`, `ap-southeast-1`, `ap-southeast-2`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.",
 				Default:             stringdefault.StaticString("us-west-2"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("eu-west-2", "eu-west-1", "eu-central-1", "ap-south-1", "ap-northeast-2", "ap-northeast-1", "ap-southeast-1", "ap-southeast-2", "us-east-1", "us-east-2", "us-west-1", "us-west-2"),
@@ -114,15 +114,15 @@ func SourceS3Schema() schema.Schema {
 			"aws_s3_bucket_name": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The S3 Bucket to use Defaults to \"\".",
-				MarkdownDescription: "The S3 Bucket to use Defaults to ``.",
+				Description:         "The S3 Bucket to use. Defaults to \"\".",
+				MarkdownDescription: "The S3 Bucket to use. Defaults to ``.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"aws_s3_object_prefix": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Prefix for S3 objects to scan. Can be used to specify a directory Defaults to \"file-pulse/\".",
-				MarkdownDescription: "Prefix for S3 objects to scan. Can be used to specify a directory Defaults to `file-pulse/`.",
+				Description:         "Prefix for S3 objects to scan. Can be used to specify a directory. Defaults to \"file-pulse/\".",
+				MarkdownDescription: "Prefix for S3 objects to scan. Can be used to specify a directory. Defaults to `file-pulse/`.",
 				Default:             stringdefault.StaticString("file-pulse/"),
 			},
 			"fs_scan_interval_ms": schema.Int64Attribute{
@@ -148,8 +148,8 @@ func SourceS3Schema() schema.Schema {
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The maximum number of active tasks Defaults to 5.",
-				MarkdownDescription: "The maximum number of active tasks Defaults to `5`.",
+				Description:         "The maximum number of active tasks. Defaults to 5.",
+				MarkdownDescription: "The maximum number of active tasks. Defaults to `5`.",
 				Default:             int64default.StaticInt64(5),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 10),

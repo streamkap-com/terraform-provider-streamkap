@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_No changes yet._
+
+---
+
+## [3.0.0-beta.1] - 2026-03-04 (Pre-release)
+
+> **Beta Release** — This is a pre-release version intended for testing and early feedback.
+> It is **not recommended for production use**. If you are currently on v2.x, there is no
+> urgency to upgrade. Wait for the stable v3.0.0 release unless you specifically need the
+> new resources below and are comfortable with potential breaking changes in future betas.
+>
+> Install the beta explicitly:
+> ```hcl
+> version = "3.0.0-beta.1"
+> ```
+
 ### Added
 - **`streamkap_destination_weaviate` resource** - Weaviate vector database destination connector
 - **`streamkap_kafka_user` resource** - Kafka user management with ACL-based topic access control

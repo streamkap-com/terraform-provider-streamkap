@@ -3,16 +3,16 @@
 page_title: "streamkap_destination_iceberg Resource - terraform-provider-streamkap"
 subcategory: ""
 description: |-
-  Manages a Iceberg destination connector.
-  This resource creates and manages a Iceberg destination for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
+  Manages an Iceberg destination connector.
+  This resource creates and manages an Iceberg destination for Streamkap data pipelines. Use with streamkap_pipeline to connect sources to destinations.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
 # streamkap_destination_iceberg (Resource)
 
-Manages a **Iceberg destination connector**.
+Manages an **Iceberg destination connector**.
 
-This resource creates and manages a Iceberg destination for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
+This resource creates and manages an Iceberg destination for Streamkap data pipelines. Use with **streamkap_pipeline** to connect sources to destinations.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -30,7 +30,7 @@ This resource creates and manages a Iceberg destination for Streamkap data pipel
 ### Optional
 
 - `iceberg_catalog_client_assume_role_arn` (String) AWS IAM role (e.g., arn:aws:iam::<your-account>:role/<role-name>)
-- `iceberg_catalog_client_region` (String) The AWS region to be used Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`, `auto`.
+- `iceberg_catalog_client_region` (String) The AWS region to be used. Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`, `auto`.
 - `iceberg_catalog_name` (String) Iceberg catalog name
 - `iceberg_catalog_rest_provider` (String) Select the Iceberg REST catalog provider. Defaults to `generic`. Valid values: `generic`, `r2`.
 - `iceberg_catalog_s3_access_key_id` (String) The AWS Access Key ID used to connect to S3.
@@ -40,10 +40,10 @@ This resource creates and manages a Iceberg destination for Streamkap data pipel
 - `iceberg_catalog_token` (String, Sensitive) Cloudflare R2 Data Catalog API token used for bearer authentication.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `iceberg_catalog_type` (String) Type of Iceberg catalog Defaults to `rest`. Valid values: `rest`, `hive`, `glue`.
+- `iceberg_catalog_type` (String) Type of Iceberg catalog. Defaults to `rest`. Valid values: `rest`, `hive`, `glue`.
 - `iceberg_catalog_uri` (String) Iceberg catalog uri
 - `iceberg_tables_default_id_columns` (String) Optional. A comma-separated list of field names to use as record identifiers when key fields are not present in Kafka messages
-- `insert_mode` (String) Specifies the strategy used to insert events into the database Defaults to `insert`. Valid values: `insert`, `upsert`.
+- `insert_mode` (String) Specifies the strategy used to insert events into the database. Defaults to `insert`. Valid values: `insert`, `upsert`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only

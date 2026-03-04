@@ -92,8 +92,8 @@ func SourceMariadbSchema() schema.Schema {
 			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port number of the MariaDB database server. For example, 3306 Defaults to 3306.",
-				MarkdownDescription: "Port number of the MariaDB database server. For example, 3306 Defaults to `3306`.",
+				Description:         "Port number of the MariaDB database server. For example, 3306. Defaults to 3306.",
+				MarkdownDescription: "Port number of the MariaDB database server. For example, 3306. Defaults to `3306`.",
 				Default:             int64default.StaticInt64(3306),
 			},
 			"database_user": schema.StringAttribute{
@@ -137,8 +137,8 @@ func SourceMariadbSchema() schema.Schema {
 			"database_connection_time_zone": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MariaDB server session variables 'time_zone' or 'system_time_zone'  Defaults to \"SERVER\". Valid values: SERVER, UTC, Africa/Cairo, Asia/Riyadh, Africa/Casablanca, Asia/Seoul, Africa/Harare, Asia/Shanghai, Africa/Monrovia, Asia/Singapore, Africa/Nairobi, Asia/Taipei, Africa/Tripoli, Asia/Tehran, Africa/Windhoek, Asia/Tokyo, America/Araguaina, Asia/Ulaanbaatar, America/Asuncion, Asia/Vladivostok, America/Bogota, Asia/Yakutsk, America/Buenos_Aires, Asia/Yerevan, America/Caracas, Atlantic/Azores, America/Chihuahua, Australia/Adelaide, America/Cuiaba, Australia/Brisbane, America/Denver, Australia/Darwin, America/Fortaleza, Australia/Hobart, America/Guatemala, Australia/Perth, America/Halifax, Australia/Sydney, America/Manaus, Brazil/East, America/Matamoros, Canada/Newfoundland, America/Monterrey, Canada/Saskatchewan, America/Montevideo, Canada/Yukon, America/Phoenix, Europe/Amsterdam, America/Santiago, Europe/Athens, America/Tijuana, Europe/Dublin, Asia/Amman, Europe/Helsinki, Asia/Ashgabat, Europe/Istanbul, Asia/Baghdad, Europe/Kaliningrad, Asia/Baku, Europe/Moscow, Asia/Bangkok, Europe/Paris, Asia/Beirut, Europe/Prague, Asia/Calcutta, Europe/Sarajevo, Asia/Damascus, Pacific/Auckland, Asia/Dhaka, Pacific/Fiji, Asia/Irkutsk, Pacific/Guam, Asia/Jerusalem, Pacific/Honolulu, Asia/Kabul, Pacific/Samoa, Asia/Karachi, US/Alaska, Asia/Kathmandu, US/Central, Asia/Krasnoyarsk, US/Eastern, Asia/Magadan, US/East-Indiana, Asia/Muscat, US/Pacific, Asia/Novosibirsk.",
-				MarkdownDescription: "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MariaDB server session variables 'time_zone' or 'system_time_zone'  Defaults to `SERVER`. Valid values: `SERVER`, `UTC`, `Africa/Cairo`, `Asia/Riyadh`, `Africa/Casablanca`, `Asia/Seoul`, `Africa/Harare`, `Asia/Shanghai`, `Africa/Monrovia`, `Asia/Singapore`, `Africa/Nairobi`, `Asia/Taipei`, `Africa/Tripoli`, `Asia/Tehran`, `Africa/Windhoek`, `Asia/Tokyo`, `America/Araguaina`, `Asia/Ulaanbaatar`, `America/Asuncion`, `Asia/Vladivostok`, `America/Bogota`, `Asia/Yakutsk`, `America/Buenos_Aires`, `Asia/Yerevan`, `America/Caracas`, `Atlantic/Azores`, `America/Chihuahua`, `Australia/Adelaide`, `America/Cuiaba`, `Australia/Brisbane`, `America/Denver`, `Australia/Darwin`, `America/Fortaleza`, `Australia/Hobart`, `America/Guatemala`, `Australia/Perth`, `America/Halifax`, `Australia/Sydney`, `America/Manaus`, `Brazil/East`, `America/Matamoros`, `Canada/Newfoundland`, `America/Monterrey`, `Canada/Saskatchewan`, `America/Montevideo`, `Canada/Yukon`, `America/Phoenix`, `Europe/Amsterdam`, `America/Santiago`, `Europe/Athens`, `America/Tijuana`, `Europe/Dublin`, `Asia/Amman`, `Europe/Helsinki`, `Asia/Ashgabat`, `Europe/Istanbul`, `Asia/Baghdad`, `Europe/Kaliningrad`, `Asia/Baku`, `Europe/Moscow`, `Asia/Bangkok`, `Europe/Paris`, `Asia/Beirut`, `Europe/Prague`, `Asia/Calcutta`, `Europe/Sarajevo`, `Asia/Damascus`, `Pacific/Auckland`, `Asia/Dhaka`, `Pacific/Fiji`, `Asia/Irkutsk`, `Pacific/Guam`, `Asia/Jerusalem`, `Pacific/Honolulu`, `Asia/Kabul`, `Pacific/Samoa`, `Asia/Karachi`, `US/Alaska`, `Asia/Kathmandu`, `US/Central`, `Asia/Krasnoyarsk`, `US/Eastern`, `Asia/Magadan`, `US/East-Indiana`, `Asia/Muscat`, `US/Pacific`, `Asia/Novosibirsk`.",
+				Description:         "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MariaDB server session variables 'time_zone' or 'system_time_zone'. Defaults to \"SERVER\". Valid values: SERVER, UTC, Africa/Cairo, Asia/Riyadh, Africa/Casablanca, Asia/Seoul, Africa/Harare, Asia/Shanghai, Africa/Monrovia, Asia/Singapore, Africa/Nairobi, Asia/Taipei, Africa/Tripoli, Asia/Tehran, Africa/Windhoek, Asia/Tokyo, America/Araguaina, Asia/Ulaanbaatar, America/Asuncion, Asia/Vladivostok, America/Bogota, Asia/Yakutsk, America/Buenos_Aires, Asia/Yerevan, America/Caracas, Atlantic/Azores, America/Chihuahua, Australia/Adelaide, America/Cuiaba, Australia/Brisbane, America/Denver, Australia/Darwin, America/Fortaleza, Australia/Hobart, America/Guatemala, Australia/Perth, America/Halifax, Australia/Sydney, America/Manaus, Brazil/East, America/Matamoros, Canada/Newfoundland, America/Monterrey, Canada/Saskatchewan, America/Montevideo, Canada/Yukon, America/Phoenix, Europe/Amsterdam, America/Santiago, Europe/Athens, America/Tijuana, Europe/Dublin, Asia/Amman, Europe/Helsinki, Asia/Ashgabat, Europe/Istanbul, Asia/Baghdad, Europe/Kaliningrad, Asia/Baku, Europe/Moscow, Asia/Bangkok, Europe/Paris, Asia/Beirut, Europe/Prague, Asia/Calcutta, Europe/Sarajevo, Asia/Damascus, Pacific/Auckland, Asia/Dhaka, Pacific/Fiji, Asia/Irkutsk, Pacific/Guam, Asia/Jerusalem, Pacific/Honolulu, Asia/Kabul, Pacific/Samoa, Asia/Karachi, US/Alaska, Asia/Kathmandu, US/Central, Asia/Krasnoyarsk, US/Eastern, Asia/Magadan, US/East-Indiana, Asia/Muscat, US/Pacific, Asia/Novosibirsk.",
+				MarkdownDescription: "Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MariaDB server session variables 'time_zone' or 'system_time_zone'. Defaults to `SERVER`. Valid values: `SERVER`, `UTC`, `Africa/Cairo`, `Asia/Riyadh`, `Africa/Casablanca`, `Asia/Seoul`, `Africa/Harare`, `Asia/Shanghai`, `Africa/Monrovia`, `Asia/Singapore`, `Africa/Nairobi`, `Asia/Taipei`, `Africa/Tripoli`, `Asia/Tehran`, `Africa/Windhoek`, `Asia/Tokyo`, `America/Araguaina`, `Asia/Ulaanbaatar`, `America/Asuncion`, `Asia/Vladivostok`, `America/Bogota`, `Asia/Yakutsk`, `America/Buenos_Aires`, `Asia/Yerevan`, `America/Caracas`, `Atlantic/Azores`, `America/Chihuahua`, `Australia/Adelaide`, `America/Cuiaba`, `Australia/Brisbane`, `America/Denver`, `Australia/Darwin`, `America/Fortaleza`, `Australia/Hobart`, `America/Guatemala`, `Australia/Perth`, `America/Halifax`, `Australia/Sydney`, `America/Manaus`, `Brazil/East`, `America/Matamoros`, `Canada/Newfoundland`, `America/Monterrey`, `Canada/Saskatchewan`, `America/Montevideo`, `Canada/Yukon`, `America/Phoenix`, `Europe/Amsterdam`, `America/Santiago`, `Europe/Athens`, `America/Tijuana`, `Europe/Dublin`, `Asia/Amman`, `Europe/Helsinki`, `Asia/Ashgabat`, `Europe/Istanbul`, `Asia/Baghdad`, `Europe/Kaliningrad`, `Asia/Baku`, `Europe/Moscow`, `Asia/Bangkok`, `Europe/Paris`, `Asia/Beirut`, `Europe/Prague`, `Asia/Calcutta`, `Europe/Sarajevo`, `Asia/Damascus`, `Pacific/Auckland`, `Asia/Dhaka`, `Pacific/Fiji`, `Asia/Irkutsk`, `Pacific/Guam`, `Asia/Jerusalem`, `Pacific/Honolulu`, `Asia/Kabul`, `Pacific/Samoa`, `Asia/Karachi`, `US/Alaska`, `Asia/Kathmandu`, `US/Central`, `Asia/Krasnoyarsk`, `US/Eastern`, `Asia/Magadan`, `US/East-Indiana`, `Asia/Muscat`, `US/Pacific`, `Asia/Novosibirsk`.",
 				Default:             stringdefault.StaticString("SERVER"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("SERVER", "UTC", "Africa/Cairo", "Asia/Riyadh", "Africa/Casablanca", "Asia/Seoul", "Africa/Harare", "Asia/Shanghai", "Africa/Monrovia", "Asia/Singapore", "Africa/Nairobi", "Asia/Taipei", "Africa/Tripoli", "Asia/Tehran", "Africa/Windhoek", "Asia/Tokyo", "America/Araguaina", "Asia/Ulaanbaatar", "America/Asuncion", "Asia/Vladivostok", "America/Bogota", "Asia/Yakutsk", "America/Buenos_Aires", "Asia/Yerevan", "America/Caracas", "Atlantic/Azores", "America/Chihuahua", "Australia/Adelaide", "America/Cuiaba", "Australia/Brisbane", "America/Denver", "Australia/Darwin", "America/Fortaleza", "Australia/Hobart", "America/Guatemala", "Australia/Perth", "America/Halifax", "Australia/Sydney", "America/Manaus", "Brazil/East", "America/Matamoros", "Canada/Newfoundland", "America/Monterrey", "Canada/Saskatchewan", "America/Montevideo", "Canada/Yukon", "America/Phoenix", "Europe/Amsterdam", "America/Santiago", "Europe/Athens", "America/Tijuana", "Europe/Dublin", "Asia/Amman", "Europe/Helsinki", "Asia/Ashgabat", "Europe/Istanbul", "Asia/Baghdad", "Europe/Kaliningrad", "Asia/Baku", "Europe/Moscow", "Asia/Bangkok", "Europe/Paris", "Asia/Beirut", "Europe/Prague", "Asia/Calcutta", "Europe/Sarajevo", "Asia/Damascus", "Pacific/Auckland", "Asia/Dhaka", "Pacific/Fiji", "Asia/Irkutsk", "Pacific/Guam", "Asia/Jerusalem", "Pacific/Honolulu", "Asia/Kabul", "Pacific/Samoa", "Asia/Karachi", "US/Alaska", "Asia/Kathmandu", "US/Central", "Asia/Krasnoyarsk", "US/Eastern", "Asia/Magadan", "US/East-Indiana", "Asia/Muscat", "US/Pacific", "Asia/Novosibirsk"),
@@ -171,8 +171,8 @@ func SourceMariadbSchema() schema.Schema {
 			"transforms_source_regex_support_key_field_template": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId Defaults to \"{{database}}.{{table}}\".",
-				MarkdownDescription: "Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId Defaults to `{{database}}.{{table}}`.",
+				Description:         "Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId. Defaults to \"{{database}}.{{table}}\".",
+				MarkdownDescription: "Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId. Defaults to `{{database}}.{{table}}`.",
 				Default:             stringdefault.StaticString("{{database}}.{{table}}"),
 			},
 			"schema_history_internal_store_only_captured_databases_ddl": schema.BoolAttribute{
@@ -231,15 +231,15 @@ func SourceMariadbSchema() schema.Schema {
 			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to 22.",
-				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
+				Description:         "Port of your SSH server. Defaults to 22.",
+				MarkdownDescription: "Port of your SSH server. Defaults to `22`.",
 				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "User that allows Streamkap to connect to SSH server Defaults to \"streamkap\".",
-				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
+				Description:         "User that allows Streamkap to connect to SSH server. Defaults to \"streamkap\".",
+				MarkdownDescription: "User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
 			"column_exclude_list": schema.StringAttribute{
@@ -250,8 +250,8 @@ func SourceMariadbSchema() schema.Schema {
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Public key to add to SSH server Defaults to \"<SSH.PUBLIC.KEY>\".",
-				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
+				Description:         "Public key to add to SSH server. Defaults to \"<SSH.PUBLIC.KEY>\".",
+				MarkdownDescription: "Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
 		},

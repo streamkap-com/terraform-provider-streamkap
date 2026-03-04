@@ -67,6 +67,8 @@ func (p *streamkapProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 		Description: "Terraform provider for Streamkap data streaming platform.",
 		MarkdownDescription: "Terraform provider for **Streamkap** data streaming platform.\n\n" +
 			"Manages sources, destinations, pipelines, transforms, and topics.\n\n" +
+			"**Version guidance:** The latest stable release is **v2.1.18**. " +
+			"v3.x is currently in **beta** — pin `version = \"~> 2.1\"` for production use.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{

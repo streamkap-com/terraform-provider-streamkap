@@ -1,7 +1,8 @@
 terraform {
   required_providers {
     streamkap = {
-      source = "github.com/streamkap-com/streamkap"
+      source  = "streamkap-com/streamkap"
+      version = ">= 2.1.18"
     }
   }
 }

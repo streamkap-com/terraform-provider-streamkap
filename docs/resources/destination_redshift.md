@@ -34,10 +34,10 @@ This resource creates and manages a Redshift destination for Streamkap data pipe
 ### Optional
 
 - `aws_redshift_database` (String) Name of the database on the cluster
-- `aws_redshift_port` (Number) Port number for incoming connections to the leader Defaults to `5439`.
-- `primary_key_fields` (String) List of comma-separated primary key field names Defaults to `id`.
-- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.
-- `tasks_max` (Number) The maximum number of active tasks Defaults to `5`.
+- `aws_redshift_port` (Number) Port number for incoming connections to the leader. Defaults to `5439`.
+- `primary_key_fields` (String) List of comma-separated primary key field names. Defaults to `id`.
+- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
+- `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 
 ### Read-Only

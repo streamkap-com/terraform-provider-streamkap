@@ -54,7 +54,7 @@ func DestinationWeaviateSchema() schema.Schema {
 		MarkdownDescription: "Manages a **Weaviate destination connector**.\n\n" +
 			"This resource creates and manages a Weaviate destination for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
-			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
+			"[Documentation](https://docs.streamkap.com/weaviate)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -85,29 +85,29 @@ func DestinationWeaviateSchema() schema.Schema {
 			"weaviate_connection_url": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Weaviate connection URL Defaults to \"http://localhost:8080\".",
-				MarkdownDescription: "Weaviate connection URL Defaults to `http://localhost:8080`.",
+				Description:         "Weaviate connection URL. Defaults to \"http://localhost:8080\".",
+				MarkdownDescription: "Weaviate connection URL. Defaults to `http://localhost:8080`.",
 				Default:             stringdefault.StaticString("http://localhost:8080"),
 			},
 			"weaviate_grpc_url": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Weaviate gRPC connection URL Defaults to \"localhost:50051\".",
-				MarkdownDescription: "Weaviate gRPC connection URL Defaults to `localhost:50051`.",
+				Description:         "Weaviate gRPC connection URL. Defaults to \"localhost:50051\".",
+				MarkdownDescription: "Weaviate gRPC connection URL. Defaults to `localhost:50051`.",
 				Default:             stringdefault.StaticString("localhost:50051"),
 			},
 			"weaviate_grpc_secured": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Enable TLS encryption for gRPC connection Defaults to false.",
-				MarkdownDescription: "Enable TLS encryption for gRPC connection Defaults to `false`.",
+				Description:         "Enable TLS encryption for gRPC connection. Defaults to false.",
+				MarkdownDescription: "Enable TLS encryption for gRPC connection. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"weaviate_auth_scheme": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Authentication mechanism to use to connect to Weaviate Defaults to \"NONE\". Valid values: NONE, API_KEY, OIDC_CLIENT_CREDENTIALS.",
-				MarkdownDescription: "Authentication mechanism to use to connect to Weaviate Defaults to `NONE`. Valid values: `NONE`, `API_KEY`, `OIDC_CLIENT_CREDENTIALS`.",
+				Description:         "Authentication mechanism to use to connect to Weaviate. Defaults to \"NONE\". Valid values: NONE, API_KEY, OIDC_CLIENT_CREDENTIALS.",
+				MarkdownDescription: "Authentication mechanism to use to connect to Weaviate. Defaults to `NONE`. Valid values: `NONE`, `API_KEY`, `OIDC_CLIENT_CREDENTIALS`.",
 				Default:             stringdefault.StaticString("NONE"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("NONE", "API_KEY", "OIDC_CLIENT_CREDENTIALS"),
@@ -128,8 +128,8 @@ func DestinationWeaviateSchema() schema.Schema {
 			"weaviate_oidc_scopes": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "OIDC client scopes (comma-separated) Defaults to \"openid\".",
-				MarkdownDescription: "OIDC client scopes (comma-separated) Defaults to `openid`.",
+				Description:         "OIDC client scopes (comma-separated). Defaults to \"openid\".",
+				MarkdownDescription: "OIDC client scopes (comma-separated). Defaults to `openid`.",
 				Default:             stringdefault.StaticString("openid"),
 			},
 			"weaviate_headers": schema.StringAttribute{
@@ -140,15 +140,15 @@ func DestinationWeaviateSchema() schema.Schema {
 			"collection_mapping": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Mapping between Kafka topic and Weaviate collection. Use ${topic} for dynamic topic name substitution Defaults to \"${topic}\".",
-				MarkdownDescription: "Mapping between Kafka topic and Weaviate collection. Use ${topic} for dynamic topic name substitution Defaults to `${topic}`.",
+				Description:         "Mapping between Kafka topic and Weaviate collection. Use ${topic} for dynamic topic name substitution. Defaults to \"${topic}\".",
+				MarkdownDescription: "Mapping between Kafka topic and Weaviate collection. Use ${topic} for dynamic topic name substitution. Defaults to `${topic}`.",
 				Default:             stringdefault.StaticString("${topic}"),
 			},
 			"schema_evolution": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to \"basic\". Valid values: basic, none.",
-				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE` Defaults to `basic`. Valid values: `basic`, `none`.",
+				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to \"basic\". Valid values: basic, none.",
+				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.",
 				Default:             stringdefault.StaticString("basic"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("basic", "none"),
@@ -157,8 +157,8 @@ func DestinationWeaviateSchema() schema.Schema {
 			"document_id_strategy": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Strategy to generate document IDs Defaults to \"None\". Valid values: None, Kafka ID, Field ID.",
-				MarkdownDescription: "Strategy to generate document IDs Defaults to `None`. Valid values: `None`, `Kafka ID`, `Field ID`.",
+				Description:         "Strategy to generate document IDs. Defaults to \"None\". Valid values: None, Kafka ID, Field ID.",
+				MarkdownDescription: "Strategy to generate document IDs. Defaults to `None`. Valid values: `None`, `Kafka ID`, `Field ID`.",
 				Default:             stringdefault.StaticString("None"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("None", "Kafka ID", "Field ID"),
@@ -167,15 +167,15 @@ func DestinationWeaviateSchema() schema.Schema {
 			"document_id_field_name": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Field name containing the ID in Kafka record Defaults to \"id\".",
-				MarkdownDescription: "Field name containing the ID in Kafka record Defaults to `id`.",
+				Description:         "Field name containing the ID in Kafka record. Defaults to \"id\".",
+				MarkdownDescription: "Field name containing the ID in Kafka record. Defaults to `id`.",
 				Default:             stringdefault.StaticString("id"),
 			},
 			"vector_strategy": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Strategy to generate or extract document embeddings Defaults to \"None\". Valid values: None, Field Vector.",
-				MarkdownDescription: "Strategy to generate or extract document embeddings Defaults to `None`. Valid values: `None`, `Field Vector`.",
+				Description:         "Strategy to generate or extract document embeddings. Defaults to \"None\". Valid values: None, Field Vector.",
+				MarkdownDescription: "Strategy to generate or extract document embeddings. Defaults to `None`. Valid values: `None`, `Field Vector`.",
 				Default:             stringdefault.StaticString("None"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("None", "Field Vector"),
@@ -184,8 +184,8 @@ func DestinationWeaviateSchema() schema.Schema {
 			"vector_field_name": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Field name containing the embedding vector Defaults to \"vector\".",
-				MarkdownDescription: "Field name containing the embedding vector Defaults to `vector`.",
+				Description:         "Field name containing the embedding vector. Defaults to \"vector\".",
+				MarkdownDescription: "Field name containing the embedding vector. Defaults to `vector`.",
 				Default:             stringdefault.StaticString("vector"),
 			},
 			"weaviate_vectorizer": schema.StringAttribute{
@@ -201,64 +201,64 @@ func DestinationWeaviateSchema() schema.Schema {
 			"delete_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Treat null record values as deletes. Requires Document ID Strategy to be set to either 'Kafka ID' or 'Field ID' (not 'None') Defaults to false.",
-				MarkdownDescription: "Treat null record values as deletes. Requires Document ID Strategy to be set to either 'Kafka ID' or 'Field ID' (not 'None') Defaults to `false`.",
+				Description:         "Treat null record values as deletes. Requires Document ID Strategy to be set to either 'Kafka ID' or 'Field ID' (not 'None'). Defaults to false.",
+				MarkdownDescription: "Treat null record values as deletes. Requires Document ID Strategy to be set to either 'Kafka ID' or 'Field ID' (not 'None'). Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"batch_size": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Number of records per batch Defaults to \"100\".",
-				MarkdownDescription: "Number of records per batch Defaults to `100`.",
+				Description:         "Number of records per batch. Defaults to \"100\".",
+				MarkdownDescription: "Number of records per batch. Defaults to `100`.",
 				Default:             stringdefault.StaticString("100"),
 			},
 			"pool_size": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Number of thread pools to process batches Defaults to \"1\".",
-				MarkdownDescription: "Number of thread pools to process batches Defaults to `1`.",
+				Description:         "Number of thread pools to process batches. Defaults to \"1\".",
+				MarkdownDescription: "Number of thread pools to process batches. Defaults to `1`.",
 				Default:             stringdefault.StaticString("1"),
 			},
 			"await_termination_ms": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Timeout for batch processing in milliseconds Defaults to \"10000\".",
-				MarkdownDescription: "Timeout for batch processing in milliseconds Defaults to `10000`.",
+				Description:         "Timeout for batch processing in milliseconds. Defaults to \"10000\".",
+				MarkdownDescription: "Timeout for batch processing in milliseconds. Defaults to `10000`.",
 				Default:             stringdefault.StaticString("10000"),
 			},
 			"max_connection_retries": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Maximum number of retries for connection issues Defaults to \"3\".",
-				MarkdownDescription: "Maximum number of retries for connection issues Defaults to `3`.",
+				Description:         "Maximum number of retries for connection issues. Defaults to \"3\".",
+				MarkdownDescription: "Maximum number of retries for connection issues. Defaults to `3`.",
 				Default:             stringdefault.StaticString("3"),
 			},
 			"max_timeout_retries": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Maximum number of retries for timeout issues Defaults to \"3\".",
-				MarkdownDescription: "Maximum number of retries for timeout issues Defaults to `3`.",
+				Description:         "Maximum number of retries for timeout issues. Defaults to \"3\".",
+				MarkdownDescription: "Maximum number of retries for timeout issues. Defaults to `3`.",
 				Default:             stringdefault.StaticString("3"),
 			},
 			"retry_interval": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Interval between retries in milliseconds Defaults to \"2000\".",
-				MarkdownDescription: "Interval between retries in milliseconds Defaults to `2000`.",
+				Description:         "Interval between retries in milliseconds. Defaults to \"2000\".",
+				MarkdownDescription: "Interval between retries in milliseconds. Defaults to `2000`.",
 				Default:             stringdefault.StaticString("2000"),
 			},
 			"retry_backoff_ms": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Backoff time between retries in milliseconds Defaults to \"1000\".",
-				MarkdownDescription: "Backoff time between retries in milliseconds Defaults to `1000`.",
+				Description:         "Backoff time between retries in milliseconds. Defaults to \"1000\".",
+				MarkdownDescription: "Backoff time between retries in milliseconds. Defaults to `1000`.",
 				Default:             stringdefault.StaticString("1000"),
 			},
 			"consistency_level": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Consistency level for writes (ALL, ONE, QUORUM) Defaults to \"QUORUM\". Valid values: ALL, ONE, QUORUM.",
-				MarkdownDescription: "Consistency level for writes (ALL, ONE, QUORUM) Defaults to `QUORUM`. Valid values: `ALL`, `ONE`, `QUORUM`.",
+				Description:         "Consistency level for writes (ALL, ONE, QUORUM). Defaults to \"QUORUM\". Valid values: ALL, ONE, QUORUM.",
+				MarkdownDescription: "Consistency level for writes (ALL, ONE, QUORUM). Defaults to `QUORUM`. Valid values: `ALL`, `ONE`, `QUORUM`.",
 				Default:             stringdefault.StaticString("QUORUM"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("ALL", "ONE", "QUORUM"),

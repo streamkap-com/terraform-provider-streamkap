@@ -62,7 +62,7 @@ func (r *ClientCredentialResource) Schema(ctx context.Context, req res.SchemaReq
 			"The secret is only returned on creation and cannot be retrieved afterwards.\n\n" +
 			"**Note:** This resource does not support updates. Any change to configuration will " +
 			"destroy the existing credential and create a new one.\n\n" +
-			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
+			"[Documentation](https://docs.streamkap.com/api-tokens)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description:         "Unique identifier for the client credential. Same as client_id.",

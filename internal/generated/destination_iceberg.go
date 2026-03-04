@@ -38,9 +38,9 @@ type DestinationIcebergModel struct {
 // DestinationIcebergSchema returns the Terraform schema for the iceberg destination.
 func DestinationIcebergSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Iceberg destination connector. Use with streamkap_pipeline to build data pipelines.",
-		MarkdownDescription: "Manages a **Iceberg destination connector**.\n\n" +
-			"This resource creates and manages a Iceberg destination for Streamkap data pipelines. " +
+		Description: "Manages an Iceberg destination connector. Use with streamkap_pipeline to build data pipelines.",
+		MarkdownDescription: "Manages an **Iceberg destination connector**.\n\n" +
+			"This resource creates and manages an Iceberg destination for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
@@ -73,8 +73,8 @@ func DestinationIcebergSchema() schema.Schema {
 			"iceberg_catalog_type": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Type of Iceberg catalog Defaults to \"rest\". Valid values: rest, hive, glue.",
-				MarkdownDescription: "Type of Iceberg catalog Defaults to `rest`. Valid values: `rest`, `hive`, `glue`.",
+				Description:         "Type of Iceberg catalog. Defaults to \"rest\". Valid values: rest, hive, glue.",
+				MarkdownDescription: "Type of Iceberg catalog. Defaults to `rest`. Valid values: `rest`, `hive`, `glue`.",
 				Default:             stringdefault.StaticString("rest"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("rest", "hive", "glue"),
@@ -131,8 +131,8 @@ func DestinationIcebergSchema() schema.Schema {
 			"iceberg_catalog_client_region": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The AWS region to be used Defaults to \"us-west-2\". Valid values: ap-south-1, eu-west-2, eu-west-1, ap-northeast-2, ap-northeast-1, ca-central-1, sa-east-1, cn-north-1, us-gov-west-1, ap-southeast-1, ap-southeast-2, eu-central-1, us-east-1, us-east-2, us-west-1, us-west-2, auto.",
-				MarkdownDescription: "The AWS region to be used Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`, `auto`.",
+				Description:         "The AWS region to be used. Defaults to \"us-west-2\". Valid values: ap-south-1, eu-west-2, eu-west-1, ap-northeast-2, ap-northeast-1, ca-central-1, sa-east-1, cn-north-1, us-gov-west-1, ap-southeast-1, ap-southeast-2, eu-central-1, us-east-1, us-east-2, us-west-1, us-west-2, auto.",
+				MarkdownDescription: "The AWS region to be used. Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`, `auto`.",
 				Default:             stringdefault.StaticString("us-west-2"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("ap-south-1", "eu-west-2", "eu-west-1", "ap-northeast-2", "ap-northeast-1", "ca-central-1", "sa-east-1", "cn-north-1", "us-gov-west-1", "ap-southeast-1", "ap-southeast-2", "eu-central-1", "us-east-1", "us-east-2", "us-west-1", "us-west-2", "auto"),
@@ -151,8 +151,8 @@ func DestinationIcebergSchema() schema.Schema {
 			"insert_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Specifies the strategy used to insert events into the database Defaults to \"insert\". Valid values: insert, upsert.",
-				MarkdownDescription: "Specifies the strategy used to insert events into the database Defaults to `insert`. Valid values: `insert`, `upsert`.",
+				Description:         "Specifies the strategy used to insert events into the database. Defaults to \"insert\". Valid values: insert, upsert.",
+				MarkdownDescription: "Specifies the strategy used to insert events into the database. Defaults to `insert`. Valid values: `insert`, `upsert`.",
 				Default:             stringdefault.StaticString("insert"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("insert", "upsert"),

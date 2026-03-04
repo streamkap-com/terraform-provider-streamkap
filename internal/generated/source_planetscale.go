@@ -106,8 +106,8 @@ func SourcePlanetscaleSchema() schema.Schema {
 			"vitess_tablet_type": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The type of Tablet (hence MySQL) from which to stream the changes Defaults to \"MASTER\". Valid values: MASTER, REPLICA, RDONLY.",
-				MarkdownDescription: "The type of Tablet (hence MySQL) from which to stream the changes Defaults to `MASTER`. Valid values: `MASTER`, `REPLICA`, `RDONLY`.",
+				Description:         "The type of Tablet (hence MySQL) from which to stream the changes. Defaults to \"MASTER\". Valid values: MASTER, REPLICA, RDONLY.",
+				MarkdownDescription: "The type of Tablet (hence MySQL) from which to stream the changes. Defaults to `MASTER`. Valid values: `MASTER`, `REPLICA`, `RDONLY`.",
 				Default:             stringdefault.StaticString("MASTER"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("MASTER", "REPLICA", "RDONLY"),
@@ -116,8 +116,8 @@ func SourcePlanetscaleSchema() schema.Schema {
 			"converter_tinyint_bool": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Convert tinyInt(1) columns to boolean Defaults to false.",
-				MarkdownDescription: "Convert tinyInt(1) columns to boolean Defaults to `false`.",
+				Description:         "Convert tinyInt(1) columns to boolean. Defaults to false.",
+				MarkdownDescription: "Convert tinyInt(1) columns to boolean. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"table_include_list": schema.StringAttribute{
@@ -154,15 +154,15 @@ func SourcePlanetscaleSchema() schema.Schema {
 			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to 22.",
-				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
+				Description:         "Port of your SSH server. Defaults to 22.",
+				MarkdownDescription: "Port of your SSH server. Defaults to `22`.",
 				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "User that allows Streamkap to connect to SSH server Defaults to \"streamkap\".",
-				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
+				Description:         "User that allows Streamkap to connect to SSH server. Defaults to \"streamkap\".",
+				MarkdownDescription: "User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
 			"column_exclude_list": schema.StringAttribute{
@@ -173,8 +173,8 @@ func SourcePlanetscaleSchema() schema.Schema {
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Public key to add to SSH server Defaults to \"<SSH.PUBLIC.KEY>\".",
-				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
+				Description:         "Public key to add to SSH server. Defaults to \"<SSH.PUBLIC.KEY>\".",
+				MarkdownDescription: "Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
 		},

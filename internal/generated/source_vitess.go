@@ -107,8 +107,8 @@ func SourceVitessSchema() schema.Schema {
 			"vitess_tablet_type": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The type of Tablet (hence MySQL) from which to stream the changes Defaults to \"MASTER\". Valid values: MASTER, REPLICA, RDONLY.",
-				MarkdownDescription: "The type of Tablet (hence MySQL) from which to stream the changes Defaults to `MASTER`. Valid values: `MASTER`, `REPLICA`, `RDONLY`.",
+				Description:         "The type of Tablet (hence MySQL) from which to stream the changes. Defaults to \"MASTER\". Valid values: MASTER, REPLICA, RDONLY.",
+				MarkdownDescription: "The type of Tablet (hence MySQL) from which to stream the changes. Defaults to `MASTER`. Valid values: `MASTER`, `REPLICA`, `RDONLY`.",
 				Default:             stringdefault.StaticString("MASTER"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("MASTER", "REPLICA", "RDONLY"),
@@ -157,15 +157,15 @@ func SourceVitessSchema() schema.Schema {
 			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to 22.",
-				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
+				Description:         "Port of your SSH server. Defaults to 22.",
+				MarkdownDescription: "Port of your SSH server. Defaults to `22`.",
 				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "User that allows Streamkap to connect to SSH server Defaults to \"streamkap\".",
-				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
+				Description:         "User that allows Streamkap to connect to SSH server. Defaults to \"streamkap\".",
+				MarkdownDescription: "User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
 			"column_exclude_list": schema.StringAttribute{
@@ -176,8 +176,8 @@ func SourceVitessSchema() schema.Schema {
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Public key to add to SSH server Defaults to \"<SSH.PUBLIC.KEY>\".",
-				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
+				Description:         "Public key to add to SSH server. Defaults to \"<SSH.PUBLIC.KEY>\".",
+				MarkdownDescription: "Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
 		},

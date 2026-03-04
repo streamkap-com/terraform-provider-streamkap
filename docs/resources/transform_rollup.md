@@ -32,11 +32,11 @@ This resource creates and manages a Rollup transform for Streamkap data pipeline
 **Note:** If not specified, the implementation is managed outside Terraform (e.g., via Streamkap UI).
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_input_job_parallelism` (Number) The number of parallel tasks this transform should be using. Recommended: 1-5 for most workloads. Higher values increase throughput but consume more resources. Start low and increase based on lag metrics. Defaults to `5`.
-- `transforms_input_serialization_format` (String) Format of the input topics Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.
-- `transforms_input_topic_pattern` (String) Regex pattern to search for the input topics Defaults to `placeholder-input-topic-pattern-to-be-revised-during-implementation`.
+- `transforms_input_serialization_format` (String) Format of the input topics. Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.
+- `transforms_input_topic_pattern` (String) Regex pattern to search for the input topics. Defaults to `placeholder-input-topic-pattern-to-be-revised-during-implementation`.
 - `transforms_language` (String) Language of the transform. Defaults to `SQL`. Valid values: `SQL`.
-- `transforms_output_serialization_format` (String) Format of the output topics Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.
-- `transforms_output_topic_pattern` (String) String pattern to save the output topics Defaults to `placeholder-output-replacement-pattern-to-be-revised-during-implementation`.
+- `transforms_output_serialization_format` (String) Format of the output topics. Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.
+- `transforms_output_topic_pattern` (String) String pattern to save the output topics. Defaults to `placeholder-output-replacement-pattern-to-be-revised-during-implementation`.
 
 ### Read-Only
 

@@ -51,7 +51,7 @@ func SourceMongodbhostedSchema() schema.Schema {
 		MarkdownDescription: "Manages a **MongoDB source connector**.\n\n" +
 			"This resource creates and manages a MongoDB source for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
-			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
+			"[Documentation](https://docs.streamkap.com/mongodb-1)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -88,8 +88,8 @@ func SourceMongodbhostedSchema() schema.Schema {
 			"transforms_unwrap_array_encoding": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types Defaults to \"array_string\". Valid values: array, array_string.",
-				MarkdownDescription: "How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types Defaults to `array_string`. Valid values: `array`, `array_string`.",
+				Description:         "How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types. Defaults to \"array_string\". Valid values: array, array_string.",
+				MarkdownDescription: "How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types. Defaults to `array_string`. Valid values: `array`, `array_string`.",
 				Default:             stringdefault.StaticString("array_string"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("array", "array_string"),
@@ -98,8 +98,8 @@ func SourceMongodbhostedSchema() schema.Schema {
 			"transforms_unwrap_document_encoding": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "How to encode nested documents. 'Document' encodes them as JSON Objects, 'String' encodes them as JSON Strings Defaults to \"document\". Valid values: document, string.",
-				MarkdownDescription: "How to encode nested documents. 'Document' encodes them as JSON Objects, 'String' encodes them as JSON Strings Defaults to `document`. Valid values: `document`, `string`.",
+				Description:         "How to encode nested documents. 'Document' encodes them as JSON Objects, 'String' encodes them as JSON Strings. Defaults to \"document\". Valid values: document, string.",
+				MarkdownDescription: "How to encode nested documents. 'Document' encodes them as JSON Objects, 'String' encodes them as JSON Strings. Defaults to `document`. Valid values: `document`, `string`.",
 				Default:             stringdefault.StaticString("document"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("document", "string"),
@@ -182,22 +182,22 @@ func SourceMongodbhostedSchema() schema.Schema {
 			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server Defaults to 22.",
-				MarkdownDescription: "Port of your SSH server Defaults to `22`.",
+				Description:         "Port of your SSH server. Defaults to 22.",
+				MarkdownDescription: "Port of your SSH server. Defaults to `22`.",
 				Default:             int64default.StaticInt64(22),
 			},
 			"ssh_user": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "User that allows Streamkap to connect to SSH server Defaults to \"streamkap\".",
-				MarkdownDescription: "User that allows Streamkap to connect to SSH server Defaults to `streamkap`.",
+				Description:         "User that allows Streamkap to connect to SSH server. Defaults to \"streamkap\".",
+				MarkdownDescription: "User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Public key to add to SSH server Defaults to \"<SSH.PUBLIC.KEY>\".",
-				MarkdownDescription: "Public key to add to SSH server Defaults to `<SSH.PUBLIC.KEY>`.",
+				Description:         "Public key to add to SSH server. Defaults to \"<SSH.PUBLIC.KEY>\".",
+				MarkdownDescription: "Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.",
 				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
 			},
 		},

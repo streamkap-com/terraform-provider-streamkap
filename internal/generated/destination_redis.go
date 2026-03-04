@@ -76,8 +76,8 @@ func DestinationRedisSchema() schema.Schema {
 			"redis_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Redis Port. For example, 6379 Defaults to 6379.",
-				MarkdownDescription: "Redis Port. For example, 6379 Defaults to `6379`.",
+				Description:         "Redis Port. For example, 6379. Defaults to 6379.",
+				MarkdownDescription: "Redis Port. For example, 6379. Defaults to `6379`.",
 				Default:             int64default.StaticInt64(6379),
 			},
 			"redis_username": schema.StringAttribute{
@@ -94,8 +94,8 @@ func DestinationRedisSchema() schema.Schema {
 			"ssl_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Enable TLS for network connections Defaults to true.",
-				MarkdownDescription: "Enable TLS for network connections Defaults to `true`.",
+				Description:         "Enable TLS for network connections. Defaults to true.",
+				MarkdownDescription: "Enable TLS for network connections. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"redis_key": schema.StringAttribute{
@@ -106,8 +106,8 @@ func DestinationRedisSchema() schema.Schema {
 			"redis_key_data_type": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Data Type of Redis Key. At the moment, only Stream and List are supported Defaults to \"Stream\". Valid values: Stream, List, Hash.",
-				MarkdownDescription: "Data Type of Redis Key. At the moment, only Stream and List are supported Defaults to `Stream`. Valid values: `Stream`, `List`, `Hash`.",
+				Description:         "Data Type of Redis Key. At the moment, only Stream and List are supported. Defaults to \"Stream\". Valid values: Stream, List, Hash.",
+				MarkdownDescription: "Data Type of Redis Key. At the moment, only Stream and List are supported. Defaults to `Stream`. Valid values: `Stream`, `List`, `Hash`.",
 				Default:             stringdefault.StaticString("Stream"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("Stream", "List", "Hash"),
@@ -116,8 +116,8 @@ func DestinationRedisSchema() schema.Schema {
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The maximum number of active tasks Defaults to 5.",
-				MarkdownDescription: "The maximum number of active tasks Defaults to `5`.",
+				Description:         "The maximum number of active tasks. Defaults to 5.",
+				MarkdownDescription: "The maximum number of active tasks. Defaults to `5`.",
 				Default:             int64default.StaticInt64(5),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 10),

@@ -36,7 +36,7 @@ func DestinationKafkaSchema() schema.Schema {
 		MarkdownDescription: "Manages a **Kafka destination connector**.\n\n" +
 			"This resource creates and manages a Kafka destination for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
-			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
+			"[Documentation](https://docs.streamkap.com/kafka-to-kafka)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -72,8 +72,8 @@ func DestinationKafkaSchema() schema.Schema {
 			"destination_format": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The format to use when writing data to kafka Defaults to \"json\". Valid values: avro, json.",
-				MarkdownDescription: "The format to use when writing data to kafka Defaults to `json`. Valid values: `avro`, `json`.",
+				Description:         "The format to use when writing data to kafka. Defaults to \"json\". Valid values: avro, json.",
+				MarkdownDescription: "The format to use when writing data to kafka. Defaults to `json`. Valid values: `avro`, `json`.",
 				Default:             stringdefault.StaticString("json"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("avro", "json"),
@@ -82,8 +82,8 @@ func DestinationKafkaSchema() schema.Schema {
 			"json_schema_enable": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Include schema in json message Defaults to false.",
-				MarkdownDescription: "Include schema in json message Defaults to `false`.",
+				Description:         "Include schema in json message. Defaults to false.",
+				MarkdownDescription: "Include schema in json message. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"schema_registry_url": schema.StringAttribute{
