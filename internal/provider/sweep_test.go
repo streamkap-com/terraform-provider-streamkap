@@ -36,15 +36,6 @@ func init() {
 		Dependencies: []string{"streamkap_source", "streamkap_destination", "streamkap_transform"},
 	})
 
-	resource.AddTestSweepers("streamkap_kafka_user", &resource.Sweeper{
-		Name: "streamkap_kafka_user",
-		F:    sweepKafkaUsers,
-	})
-
-	resource.AddTestSweepers("streamkap_client_credential", &resource.Sweeper{
-		Name: "streamkap_client_credential",
-		F:    sweepClientCredentials,
-	})
 }
 
 func sweepSources(_ string) error {
@@ -205,73 +196,6 @@ func newSweepClient() (api.StreamkapAPI, error) {
 // TestMain enables the sweeper functionality
 func TestMain(m *testing.M) {
 	resource.TestMain(m)
-}
-
-func sweepKafkaUsers(_ string) error {
-	client, err := newSweepClient()
-	if err != nil {
-		return fmt.Errorf("error creating sweep client: %w", err)
-	}
-
-	ctx := context.Background()
-
-	users, err := client.ListKafkaUsers(ctx)
-	if err != nil {
-		return fmt.Errorf("error listing kafka users: %w", err)
-	}
-
-	var errs []error
-	for _, user := range users {
-		if isTestResource(user.Username) {
-			log.Printf("[INFO] Sweeping kafka user: %s", user.Username)
-			if err := client.DeleteKafkaUser(ctx, user.Username); err != nil {
-				log.Printf("[ERROR] Failed to delete kafka user %s: %v", user.Username, err)
-				errs = append(errs, fmt.Errorf("failed to delete kafka user %s: %w", user.Username, err))
-			} else {
-				log.Printf("[INFO] Successfully deleted kafka user: %s", user.Username)
-			}
-		}
-	}
-
-	if len(errs) > 0 {
-		return fmt.Errorf("errors during kafka user sweep: %v", errs)
-	}
-
-	return nil
-}
-
-func sweepClientCredentials(_ string) error {
-	client, err := newSweepClient()
-	if err != nil {
-		return fmt.Errorf("error creating sweep client: %w", err)
-	}
-
-	ctx := context.Background()
-
-	credentials, err := client.ListClientCredentials(ctx)
-	if err != nil {
-		return fmt.Errorf("error listing client credentials: %w", err)
-	}
-
-	var errs []error
-	for _, cred := range credentials {
-		// Client credentials have no Name field; use Description as the test resource identifier.
-		if isTestResource(cred.Description) {
-			log.Printf("[INFO] Sweeping client credential: %s (ID: %s)", cred.Description, cred.ClientID)
-			if err := client.DeleteClientCredential(ctx, cred.ClientID); err != nil {
-				log.Printf("[ERROR] Failed to delete client credential %s: %v", cred.ClientID, err)
-				errs = append(errs, fmt.Errorf("failed to delete client credential %s: %w", cred.ClientID, err))
-			} else {
-				log.Printf("[INFO] Successfully deleted client credential: %s", cred.ClientID)
-			}
-		}
-	}
-
-	if len(errs) > 0 {
-		return fmt.Errorf("errors during client credential sweep: %v", errs)
-	}
-
-	return nil
 }
 
 // isTestResource checks if a resource name indicates it was created by tests

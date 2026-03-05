@@ -11,9 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/stretchr/testify/require"
 
-	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/client_credential"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/destination"
-	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/kafka_user"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/pipeline"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/tag"
@@ -586,18 +584,3 @@ func TestSchemaBackwardsCompatibility_Tag(t *testing.T) {
 	})
 }
 
-func TestSchemaBackwardsCompatibility_KafkaUser(t *testing.T) {
-	runSchemaCompatTest(t, schemaCompatTestCase{
-		name:            "kafka_user",
-		snapshotFile:    "kafka_user_v1.json",
-		resourceFactory: kafka_user.NewKafkaUserResource,
-	})
-}
-
-func TestSchemaBackwardsCompatibility_ClientCredential(t *testing.T) {
-	runSchemaCompatTest(t, schemaCompatTestCase{
-		name:            "client_credential",
-		snapshotFile:    "client_credential_v1.json",
-		resourceFactory: client_credential.NewClientCredentialResource,
-	})
-}

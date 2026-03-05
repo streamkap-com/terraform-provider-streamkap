@@ -16,9 +16,7 @@ import (
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	ds "github.com/streamkap-com/terraform-provider-streamkap/internal/datasource"
-	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/client_credential"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/destination"
-	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/kafka_user"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/pipeline"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/tag"
@@ -214,7 +212,6 @@ func (p *streamkapProvider) DataSources(_ context.Context) []func() datasource.D
 		ds.NewTopicsDataSource,
 		ds.NewTopicDataSource,
 		ds.NewTopicMetricsDataSource,
-		ds.NewRolesDataSource,
 	}
 }
 
@@ -273,7 +270,5 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		transform.NewSqlJoinResource,
 		transform.NewRollupResource,
 		transform.NewFanOutResource,
-		kafka_user.NewKafkaUserResource,
-		client_credential.NewClientCredentialResource,
 	}
 }
