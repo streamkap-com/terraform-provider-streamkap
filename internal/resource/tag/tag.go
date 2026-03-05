@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -33,7 +34,7 @@ type TagResourceModel struct {
 	ID          types.String   `tfsdk:"id"`
 	Name        types.String   `tfsdk:"name"`
 	Description types.String   `tfsdk:"description"`
-	Type        []types.String `tfsdk:"type"`
+	Type        types.Set      `tfsdk:"type"`
 	System      types.Bool     `tfsdk:"system"`
 	Custom      types.Bool     `tfsdk:"custom"`
 }
@@ -68,9 +69,9 @@ func (r *TagResource) Schema(ctx context.Context, req res.SchemaRequest, resp *r
 				MarkdownDescription: "Optional description of the tag's purpose.",
 				Optional:            true,
 			},
-			"type": schema.ListAttribute{
-				Description:         "List of entity types this tag can be applied to. Valid values: sources, destinations, pipelines.",
-				MarkdownDescription: "List of entity types this tag can be applied to. Valid values: `sources`, `destinations`, `pipelines`.",
+			"type": schema.SetAttribute{
+				Description:         "Set of entity types this tag can be applied to. Valid values: sources, destinations, pipelines.",
+				MarkdownDescription: "Set of entity types this tag can be applied to. Valid values: `sources`, `destinations`, `pipelines`.",
 				Required:            true,
 				ElementType:         types.StringType,
 			},
@@ -110,8 +111,13 @@ func (r *TagResource) Create(ctx context.Context, req res.CreateRequest, resp *r
 		return
 	}
 
-	tagTypes := make([]string, len(plan.Type))
-	for i, t := range plan.Type {
+	var planTypes []types.String
+	resp.Diagnostics.Append(plan.Type.ElementsAs(ctx, &planTypes, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	tagTypes := make([]string, len(planTypes))
+	for i, t := range planTypes {
 		tagTypes[i] = t.ValueString()
 	}
 
@@ -158,8 +164,13 @@ func (r *TagResource) Update(ctx context.Context, req res.UpdateRequest, resp *r
 		return
 	}
 
-	tagTypes := make([]string, len(plan.Type))
-	for i, t := range plan.Type {
+	var planTypes []types.String
+	resp.Diagnostics.Append(plan.Type.ElementsAs(ctx, &planTypes, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	tagTypes := make([]string, len(planTypes))
+	for i, t := range planTypes {
 		tagTypes[i] = t.ValueString()
 	}
 
@@ -202,11 +213,11 @@ func (r *TagResource) modelFromAPIObject(apiObject api.Tag, model *TagResourceMo
 	model.Name = types.StringValue(apiObject.Name)
 	model.Description = types.StringValue(apiObject.Description)
 
-	tagTypes := make([]types.String, len(apiObject.Type))
+	tagTypes := make([]attr.Value, len(apiObject.Type))
 	for i, t := range apiObject.Type {
 		tagTypes[i] = types.StringValue(t)
 	}
-	model.Type = tagTypes
+	model.Type, _ = types.SetValue(types.StringType, tagTypes)
 
 	model.System = types.BoolValue(apiObject.System)
 	model.Custom = types.BoolPointerValue(apiObject.Custom)
