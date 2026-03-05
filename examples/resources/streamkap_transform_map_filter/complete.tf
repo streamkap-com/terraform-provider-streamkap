@@ -32,6 +32,19 @@ resource "streamkap_transform_map_filter" "example" {
 
   # Output serialization format: Any, Avro, or Json
   transforms_output_serialization_format = "Avro"
+
+  # Optional: manage transform implementation code via Terraform
+  implementation_json = jsonencode({
+    language        = "JAVASCRIPT"
+    value_transform = "function _streamkap_transform(inputObj) { return inputObj; }"
+  })
+
+  # Optional: auto-deploy the transform to Flink after create/update
+  deploy = true
+
+  # Optional: replay window for deployment (how much historical data to reprocess)
+  # Valid values: "7d", "3d", "24h", "10m", "0" (continue from last position)
+  replay_window = "0"
 }
 
 output "transform_map_filter_id" {

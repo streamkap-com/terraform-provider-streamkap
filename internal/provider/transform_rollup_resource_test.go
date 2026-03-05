@@ -31,7 +31,7 @@ func TestAccTransformRollupResource_basic(t *testing.T) {
 				ResourceName:            "streamkap_transform_rollup.test",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"implementation_json"},
+				ImportStateVerifyIgnore: []string{"implementation_json", "deploy", "replay_window"},
 			},
 			// Update
 			{
@@ -67,7 +67,7 @@ func TestAccTransformRollupResource_withImplementation(t *testing.T) {
 				ResourceName:            "streamkap_transform_rollup.test_impl",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"implementation_json"},
+				ImportStateVerifyIgnore: []string{"implementation_json", "deploy", "replay_window"},
 			},
 		},
 	})

@@ -28,6 +28,9 @@ type TransformEnrichModel struct {
 	TransformsInputSerializationFormat  types.String         `tfsdk:"transforms_input_serialization_format"`
 	TransformsOutputSerializationFormat types.String         `tfsdk:"transforms_output_serialization_format"`
 	ImplementationJSON                  jsontypes.Normalized `tfsdk:"implementation_json"`
+	Deploy                              types.Bool           `tfsdk:"deploy"`
+	ReplayWindow                        types.String         `tfsdk:"replay_window"`
+	ConnectorStatus                     types.String         `tfsdk:"connector_status"`
 	Timeouts                            timeouts.Value       `tfsdk:"timeouts"`
 }
 

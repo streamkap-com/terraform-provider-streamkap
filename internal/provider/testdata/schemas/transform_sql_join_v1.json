@@ -1,6 +1,18 @@
 {
   "version": "v3.0.0",
   "attributes": {
+    "connector_status": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
+    "deploy": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "id": {
       "required": false,
       "optional": false,
@@ -16,6 +28,12 @@
     "name": {
       "required": true,
       "optional": false,
+      "computed": false,
+      "sensitive": false
+    },
+    "replay_window": {
+      "required": false,
+      "optional": true,
       "computed": false,
       "sensitive": false
     },

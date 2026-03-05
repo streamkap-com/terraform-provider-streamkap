@@ -27,9 +27,13 @@ This resource creates and manages a Fan Out transform for Streamkap data pipelin
 
 ### Optional
 
+- `deploy` (Boolean) Whether to automatically deploy the transform after creation or update. When `true`, the transform will be deployed to Flink after apply. Defaults to `false`.
 - `implementation_json` (String) Transform implementation as JSON. Structure varies by transform type (`map_filter`, `enrich`, `sql_join`, `rollup`, etc.).
 
 **Note:** If not specified, the implementation is managed outside Terraform (e.g., via Streamkap UI).
+- `replay_window` (String) Replay window for deployment. Specifies how much historical data to reprocess on deploy.
+
+Valid values: `7d`, `3d`, `24h`, `10m`, `0` (continue from last position). Only used when `deploy` is `true`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_input_job_parallelism` (Number) The number of parallel tasks this transform should be using. Recommended: 1-5 for most workloads. Higher values increase throughput but consume more resources. Start low and increase based on lag metrics. Defaults to `5`.
 - `transforms_input_serialization_format` (String) Format of the input topics. Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.
@@ -40,6 +44,9 @@ This resource creates and manages a Fan Out transform for Streamkap data pipelin
 
 ### Read-Only
 
+- `connector_status` (String) Current deployment status of the transform. **Read-only**.
+
+Values: `RUNNING`, `INITIALIZING`, `DEPLOYING`, `STOPPED`, `FAILED`, `UNKNOWN`.
 - `id` (String) Unique identifier for the transform
 - `transform_type` (String) Transform type
 

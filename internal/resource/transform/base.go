@@ -7,17 +7,25 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/shared"
 )
@@ -84,6 +92,32 @@ func (r *BaseTransformResource) Schema(ctx context.Context, req resource.SchemaR
 		PlanModifiers: []planmodifier.String{
 			stringplanmodifier.UseStateForUnknown(),
 		},
+	}
+
+	// Add deploy attribute for auto-deploying transforms to Flink
+	baseSchema.Attributes["deploy"] = schema.BoolAttribute{
+		Description:         "Whether to automatically deploy the transform after creation or update. When true, the transform will be deployed to Flink after apply. Defaults to false.",
+		MarkdownDescription: "Whether to automatically deploy the transform after creation or update. When `true`, the transform will be deployed to Flink after apply. Defaults to `false`.",
+		Optional:            true,
+		Computed:            true,
+		Default:             booldefault.StaticBool(false),
+	}
+
+	// Add replay_window attribute for deployment replay configuration
+	baseSchema.Attributes["replay_window"] = schema.StringAttribute{
+		Description:         "Replay window for deployment. Specifies how much historical data to reprocess on deploy. Valid values: \"7d\", \"3d\", \"24h\", \"10m\", \"0\" (continue from last position). Only used when deploy is true.",
+		MarkdownDescription: "Replay window for deployment. Specifies how much historical data to reprocess on deploy.\n\nValid values: `7d`, `3d`, `24h`, `10m`, `0` (continue from last position). Only used when `deploy` is `true`.",
+		Optional:            true,
+		Validators: []validator.String{
+			stringvalidator.OneOf("7d", "3d", "24h", "10m", "0"),
+		},
+	}
+
+	// Add connector_status attribute for reading the current Flink job status
+	baseSchema.Attributes["connector_status"] = schema.StringAttribute{
+		Description:         "Current deployment status of the transform. Read-only. Values: RUNNING, INITIALIZING, DEPLOYING, STOPPED, FAILED, UNKNOWN.",
+		MarkdownDescription: "Current deployment status of the transform. **Read-only**.\n\nValues: `RUNNING`, `INITIALIZING`, `DEPLOYING`, `STOPPED`, `FAILED`, `UNKNOWN`.",
+		Computed:            true,
 	}
 
 	// Add timeouts block to the schema
@@ -247,6 +281,9 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
 		}
 	}
+
+	// Deploy if requested and read connector_status
+	r.deployFromPlan(ctx, transform.ID, req.Plan, &resp.Diagnostics, resp.State)
 }
 
 // Read reads the transform resource.
@@ -343,6 +380,20 @@ func (r *BaseTransformResource) Read(ctx context.Context, req resource.ReadReque
 		}
 	} else {
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
+	}
+
+	// Read connector_status — only call API if transform was previously deployed
+	var currentStatus types.String
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("connector_status"), &currentStatus)...)
+	if !currentStatus.IsNull() && currentStatus.ValueString() != constants.JobStatusUnknown {
+		status, err := r.client.GetTransformJobStatus(ctx, id)
+		if err == nil && status != nil {
+			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("connector_status"), types.StringValue(status.Status))...)
+		} else {
+			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("connector_status"), types.StringValue(constants.JobStatusUnknown))...)
+		}
+	} else {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("connector_status"), types.StringValue(constants.JobStatusUnknown))...)
 	}
 }
 
@@ -512,6 +563,9 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
 		}
 	}
+
+	// Deploy if requested and read connector_status
+	r.deployFromPlan(ctx, id, req.Plan, &resp.Diagnostics, resp.State)
 }
 
 // Delete deletes the transform resource.
@@ -576,6 +630,103 @@ func (r *BaseTransformResource) Delete(ctx context.Context, req resource.DeleteR
 // ImportState imports an existing resource by ID.
 func (r *BaseTransformResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// deployFromPlan reads deploy/replay_window from the plan and handles deployment + status.
+// Used by both Create and Update to avoid duplication.
+func (r *BaseTransformResource) deployFromPlan(ctx context.Context, transformID string, plan tfsdk.Plan, diagnostics *diag.Diagnostics, state tfsdk.State) {
+	// Set initial connector_status so state is complete even if deploy fails
+	diagnostics.Append(state.SetAttribute(ctx, path.Root("connector_status"), types.StringValue(constants.JobStatusUnknown))...)
+	if diagnostics.HasError() {
+		return
+	}
+
+	var deploy types.Bool
+	diagnostics.Append(plan.GetAttribute(ctx, path.Root("deploy"), &deploy)...)
+	if diagnostics.HasError() {
+		return
+	}
+
+	if !deploy.IsNull() && deploy.ValueBool() {
+		var replayWindow types.String
+		diagnostics.Append(plan.GetAttribute(ctx, path.Root("replay_window"), &replayWindow)...)
+		if diagnostics.HasError() {
+			return
+		}
+
+		replayWindowValue := ""
+		if !replayWindow.IsNull() {
+			replayWindowValue = replayWindow.ValueString()
+		}
+
+		// Deploy preview first (matches frontend flow)
+		err := r.client.DeployTransformPreview(ctx, transformID, constants.DeployVersionLatest, replayWindowValue)
+		if err != nil {
+			diagnostics.AddError("Error deploying transform preview",
+				fmt.Sprintf("Transform saved successfully but preview deployment failed: %s", err))
+			return
+		}
+
+		// Deploy live
+		err = r.client.DeployTransformLive(ctx, transformID, constants.DeployVersionLatest)
+		if err != nil {
+			diagnostics.AddError("Error deploying transform live",
+				fmt.Sprintf("Transform saved successfully but live deployment failed: %s", err))
+			return
+		}
+
+		// Poll for RUNNING status — returns final status to avoid redundant API call
+		finalStatus, err := r.waitForDeployment(ctx, transformID)
+		if err != nil {
+			diagnostics.AddWarning("Transform deployed but not yet active",
+				fmt.Sprintf("Deployment initiated but status check timed out: %s", err))
+		}
+		if finalStatus != nil {
+			diagnostics.Append(state.SetAttribute(ctx, path.Root("connector_status"), types.StringValue(finalStatus.Status))...)
+			return
+		}
+	}
+
+	// Read connector_status (for non-deploy path or if polling returned no status)
+	status, err := r.client.GetTransformJobStatus(ctx, transformID)
+	if err == nil && status != nil {
+		diagnostics.Append(state.SetAttribute(ctx, path.Root("connector_status"), types.StringValue(status.Status))...)
+	}
+}
+
+// waitForDeployment polls the transform job status until it reaches a terminal state.
+// Returns the final status to avoid redundant API calls.
+// Relies on the parent context's deadline for timeout enforcement.
+func (r *BaseTransformResource) waitForDeployment(ctx context.Context, transformID string) (*api.TransformJobStatus, error) {
+	tflog.Info(ctx, fmt.Sprintf("Waiting for transform deployment to complete (transform_id: %s)", transformID))
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("deployment timed out: %w", ctx.Err())
+		case <-ticker.C:
+			status, err := r.client.GetTransformJobStatus(ctx, transformID)
+			if err != nil {
+				tflog.Debug(ctx, fmt.Sprintf("Transient error polling job status: %s", err))
+				continue
+			}
+			if status == nil {
+				continue
+			}
+			tflog.Debug(ctx, fmt.Sprintf("Transform %s deployment status: %s", transformID, status.Status))
+			switch status.Status {
+			case constants.JobStatusRunning:
+				return status, nil
+			case constants.JobStatusFailed:
+				return status, fmt.Errorf("transform deployment failed (Flink status: %s)", constants.JobStatusFailed)
+			case constants.JobStatusCanceled, constants.JobStatusStopped:
+				return status, fmt.Errorf("transform deployment stopped (status: %s)", status.Status)
+			// INITIALIZING, DEPLOYING, CREATED, RESTARTING — keep polling
+			}
+		}
+	}
 }
 
 // stripNullValues recursively removes null values from a map.

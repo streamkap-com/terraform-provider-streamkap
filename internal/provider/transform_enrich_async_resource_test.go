@@ -33,7 +33,7 @@ func TestAccTransformEnrichAsyncResource_basic(t *testing.T) {
 				ResourceName:            "streamkap_transform_enrich_async.test",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"implementation_json"},
+				ImportStateVerifyIgnore: []string{"implementation_json", "deploy", "replay_window"},
 			},
 			// Update
 			{
@@ -72,7 +72,7 @@ func TestAccTransformEnrichAsyncResource_withImplementation(t *testing.T) {
 				ResourceName:            "streamkap_transform_enrich_async.test_impl",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"implementation_json"},
+				ImportStateVerifyIgnore: []string{"implementation_json", "deploy", "replay_window"},
 			},
 		},
 	})
