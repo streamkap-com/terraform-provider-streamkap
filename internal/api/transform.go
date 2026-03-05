@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
@@ -180,6 +181,14 @@ func (s *streamkapAPI) DeleteTransform(ctx context.Context, transformID string) 
 	return nil
 }
 
+// TransformJobStatus represents the deployment status of a transform's Flink job
+type TransformJobStatus struct {
+	ID        string `json:"id"`
+	JobName   string `json:"job_name"`
+	Status    string `json:"status"`
+	StartTime string `json:"start_time"`
+}
+
 // TransformImplementationDetails represents the implementation details for a transform
 type TransformImplementationDetails struct {
 	TransformID    string         `json:"transform_id"`
@@ -242,6 +251,72 @@ func (s *streamkapAPI) UpdateTransformImplementationDetails(ctx context.Context,
 	))
 	var resp TransformImplementationDetails
 	err = s.doRequestWithRetry(ctx, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+// DeployTransformPreview triggers a preview deployment for a transform.
+// versionID should be "no-version" (backend normalizes to "0").
+// replayWindow examples: "7d", "24h", "10m", "0", "" (empty = latest offset).
+func (s *streamkapAPI) DeployTransformPreview(ctx context.Context, transformID, versionID, replayWindow string) error {
+	reqURL := s.cfg.BaseURL + "/transforms/" + transformID + "/deploy-job-preview/" + versionID
+	if replayWindow != "" {
+		reqURL += "?replay_window=" + url.QueryEscape(replayWindow)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, reqURL, http.NoBody)
+	if err != nil {
+		return err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"DeployTransformPreview request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n",
+		req.Method,
+		req.URL.String(),
+	))
+	var resp map[string]any
+	return s.doRequestWithRetry(ctx, req, &resp)
+}
+
+// DeployTransformLive triggers a live deployment for a transform.
+// versionID should be "no-version".
+func (s *streamkapAPI) DeployTransformLive(ctx context.Context, transformID, versionID string) error {
+	reqURL := s.cfg.BaseURL + "/transforms/" + transformID + "/deploy-job-live/" + versionID
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, reqURL, http.NoBody)
+	if err != nil {
+		return err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"DeployTransformLive request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n",
+		req.Method,
+		req.URL.String(),
+	))
+	var resp map[string]any
+	return s.doRequestWithRetry(ctx, req, &resp)
+}
+
+// GetTransformJobStatus retrieves the current Flink job status for a transform.
+func (s *streamkapAPI) GetTransformJobStatus(ctx context.Context, transformID string) (*TransformJobStatus, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/transforms/"+transformID+"/job_status", http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"GetTransformJobStatus request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n",
+		req.Method,
+		req.URL.String(),
+	))
+	var resp TransformJobStatus
+	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}

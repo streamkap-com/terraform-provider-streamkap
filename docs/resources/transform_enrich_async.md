@@ -27,9 +27,13 @@ This resource creates and manages an Enrich Async transform for Streamkap data p
 
 ### Optional
 
+- `deploy` (Boolean) Whether to automatically deploy the transform after creation or update. When `true`, the transform will be deployed to Flink after apply. Defaults to `false`.
 - `implementation_json` (String) Transform implementation as JSON. Structure varies by transform type (`map_filter`, `enrich`, `sql_join`, `rollup`, etc.).
 
 **Note:** If not specified, the implementation is managed outside Terraform (e.g., via Streamkap UI).
+- `replay_window` (String) Replay window for deployment. Specifies how much historical data to reprocess on deploy.
+
+Valid values: `7d`, `3d`, `24h`, `10m`, `0` (continue from last position). Only used when `deploy` is `true`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_async_capacity` (Number) If one async call takes 10ms and the target throughput per task is 1000 records per second, then the capacity should be 1000 * 10ms = 10 parallel requests. Defaults to `10`.
 - `transforms_async_timeout_ms` (Number) Timeout to wait for async operation to complete. Defaults to `1000`.
@@ -42,6 +46,9 @@ This resource creates and manages an Enrich Async transform for Streamkap data p
 
 ### Read-Only
 
+- `connector_status` (String) Current deployment status of the transform. **Read-only**.
+
+Values: `RUNNING`, `INITIALIZING`, `DEPLOYING`, `STOPPED`, `FAILED`, `UNKNOWN`.
 - `id` (String) Unique identifier for the transform
 - `transform_type` (String) Transform type
 

@@ -45,6 +45,9 @@ type StreamkapAPI interface {
 	DeleteTransform(ctx context.Context, transformID string) error
 	GetTransformImplementationDetails(ctx context.Context, transformID string) (*TransformImplementationDetailsResponse, error)
 	UpdateTransformImplementationDetails(ctx context.Context, transformID string, details TransformImplementationDetails) (*TransformImplementationDetails, error)
+	DeployTransformPreview(ctx context.Context, transformID string, versionID string, replayWindow string) error
+	DeployTransformLive(ctx context.Context, transformID string, versionID string) error
+	GetTransformJobStatus(ctx context.Context, transformID string) (*TransformJobStatus, error)
 
 	// Tags APIs
 	GetTag(ctx context.Context, TagID string) (*Tag, error)

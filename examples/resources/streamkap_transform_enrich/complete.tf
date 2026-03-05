@@ -25,6 +25,13 @@ resource "streamkap_transform_enrich" "example" {
   # Output topic pattern for enriched records
   # $0 refers to the matched input topic name
   transforms_output_topic_pattern = "enriched-$0"
+
+  # Optional: auto-deploy the transform to Flink after create/update
+  deploy = true
+
+  # Optional: replay window for deployment
+  # Valid values: "7d", "3d", "24h", "10m", "0" (continue from last position)
+  replay_window = "0"
 }
 
 output "transform_enrich_id" {

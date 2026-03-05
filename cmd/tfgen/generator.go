@@ -1239,6 +1239,9 @@ type {{ .ModelName }} struct {
 {{- end }}
 {{- if eq .EntityType "transform" }}
 	ImplementationJSON jsontypes.Normalized ` + "`" + `tfsdk:"implementation_json"` + "`" + `
+	Deploy             types.Bool           ` + "`" + `tfsdk:"deploy"` + "`" + `
+	ReplayWindow       types.String         ` + "`" + `tfsdk:"replay_window"` + "`" + `
+	ConnectorStatus    types.String         ` + "`" + `tfsdk:"connector_status"` + "`" + `
 {{- end }}
 	Timeouts timeouts.Value ` + "`" + `tfsdk:"timeouts"` + "`" + `
 }
