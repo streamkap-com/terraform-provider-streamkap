@@ -21,8 +21,8 @@ type Tag struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
 	Type        []string `json:"type"`
-	System      bool     `json:"system"`
-	Custom      *bool    `json:"custom"`
+	System      bool     `json:"system,omitempty"`
+	Custom      *bool    `json:"custom,omitempty"`
 }
 
 func (s *streamkapAPI) GetTag(ctx context.Context, TagID string) (*Tag, error) {
