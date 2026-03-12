@@ -51,6 +51,7 @@ type DestinationKafkaResourceModel struct {
 	TopicPrefix        types.String `tfsdk:"topic_prefix"`
 	TopicSuffix        types.String `tfsdk:"topic_suffix"`
 	TasksMax           types.Int64  `tfsdk:"tasks_max"`
+	OffsetField        types.String `tfsdk:"offset_field"`
 }
 
 func (r *DestinationKafkaResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -133,6 +134,13 @@ func (r *DestinationKafkaResource) Schema(ctx context.Context, req res.SchemaReq
 				Validators: []validator.Int64{
 					int64validator.Between(1, 100),
 				},
+			},
+			"offset_field": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString("_streamkap_offset"),
+				Description:         "Streamkap offset metadata field name. Rename to _streamkap_offset_sync or _streamkap_offset_transform to avoid conflicts when using Kafka destination to sync data between services or apply transformations.",
+				MarkdownDescription: "Streamkap offset metadata field name. Rename to `_streamkap_offset_sync` or `_streamkap_offset_transform` to avoid conflicts when using Kafka destination to sync data between services or apply transformations.",
 			},
 		},
 	}
@@ -321,6 +329,7 @@ func (r *DestinationKafkaResource) model2ConfigMap(model DestinationKafkaResourc
 		"topic.prefix":                     model.TopicPrefix.ValueString(),
 		"topic.suffix":                     model.TopicSuffix.ValueString(),
 		"tasks.max":                        model.TasksMax.ValueInt64(),
+		"transforms.InsertField.offset.field": model.OffsetField.ValueString(),
 	}, nil
 }
 
@@ -333,4 +342,5 @@ func (r *DestinationKafkaResource) configMap2Model(cfg map[string]any, model *De
 	model.TopicPrefix = helper.GetTfCfgString(cfg, "topic.prefix")
 	model.TopicSuffix = helper.GetTfCfgString(cfg, "topic.suffix")
 	model.TasksMax = helper.GetTfCfgInt64(cfg, "tasks.max")
+	model.OffsetField = helper.GetTfCfgString(cfg, "transforms.InsertField.offset.field")
 }
