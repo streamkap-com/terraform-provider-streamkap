@@ -52,6 +52,7 @@ type DestinationKafkaResourceModel struct {
 	TopicSuffix        types.String `tfsdk:"topic_suffix"`
 	TasksMax           types.Int64  `tfsdk:"tasks_max"`
 	OffsetField        types.String `tfsdk:"offset_field"`
+	AddOriginalTopic   types.String `tfsdk:"add_original_topic"`
 }
 
 func (r *DestinationKafkaResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -141,6 +142,20 @@ func (r *DestinationKafkaResource) Schema(ctx context.Context, req res.SchemaReq
 				Default:             stringdefault.StaticString("_streamkap_offset"),
 				Description:         "Streamkap offset metadata field name. Rename to _streamkap_offset_sync or _streamkap_offset_transform to avoid conflicts when using Kafka destination to sync data between services or apply transformations.",
 				MarkdownDescription: "Streamkap offset metadata field name. Rename to `_streamkap_offset_sync` or `_streamkap_offset_transform` to avoid conflicts when using Kafka destination to sync data between services or apply transformations.",
+			},
+			"add_original_topic": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString("off"),
+				Description:         "Add the original topic name to the output record. 'off' disables it, 'header' adds it as a Kafka header, 'field' adds it as a _streamkap_topic column in the destination table.",
+				MarkdownDescription: "Add the original topic name to the output record. `off` disables it, `header` adds it as a Kafka header, `field` adds it as a `_streamkap_topic` column in the destination table.",
+				Validators: []validator.String{
+					stringvalidator.OneOf(
+						"off",
+						"header",
+						"field",
+					),
+				},
 			},
 		},
 	}
@@ -329,7 +344,8 @@ func (r *DestinationKafkaResource) model2ConfigMap(model DestinationKafkaResourc
 		"topic.prefix":                     model.TopicPrefix.ValueString(),
 		"topic.suffix":                     model.TopicSuffix.ValueString(),
 		"tasks.max":                        model.TasksMax.ValueInt64(),
-		"transforms.InsertField.offset.field": model.OffsetField.ValueString(),
+		"transforms.InsertField.offset.field":            model.OffsetField.ValueString(),
+		"transforms.changeTopicName.add.original.topic": model.AddOriginalTopic.ValueString(),
 	}, nil
 }
 
@@ -343,4 +359,5 @@ func (r *DestinationKafkaResource) configMap2Model(cfg map[string]any, model *De
 	model.TopicSuffix = helper.GetTfCfgString(cfg, "topic.suffix")
 	model.TasksMax = helper.GetTfCfgInt64(cfg, "tasks.max")
 	model.OffsetField = helper.GetTfCfgString(cfg, "transforms.InsertField.offset.field")
+	model.AddOriginalTopic = helper.GetTfCfgString(cfg, "transforms.changeTopicName.add.original.topic")
 }
