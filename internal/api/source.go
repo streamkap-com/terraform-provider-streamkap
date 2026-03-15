@@ -44,7 +44,7 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/sources?secret_returned=true", bytes.NewBuffer(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/sources?secret_returned=true&wait=false", bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) (*Source,
 }
 
 func (s *streamkapAPI) DeleteSource(ctx context.Context, sourceID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/sources/"+sourceID+"?secret_returned=true", http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/sources/"+sourceID+"?secret_returned=true&wait=false", http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,7 @@ func (s *streamkapAPI) UpdateSource(ctx context.Context, sourceID string, reqPay
 		return nil, err
 	}
 	req, err := http.NewRequestWithContext(
-		ctx, http.MethodPut, s.cfg.BaseURL+"/sources/"+sourceID+"?secret_returned=true", bytes.NewBuffer(payload))
+		ctx, http.MethodPut, s.cfg.BaseURL+"/sources/"+sourceID+"?secret_returned=true&wait=false", bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
