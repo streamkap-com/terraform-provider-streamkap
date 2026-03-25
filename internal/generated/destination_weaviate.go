@@ -191,9 +191,9 @@ func DestinationWeaviateSchema() schema.Schema {
 			"weaviate_vectorizer": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Sets the default Weaviate vectorizer to use for objects without explicit vector data. Applies to new collections only. Defaults to \"basic\". Valid values: none, text2vec-weaviate, text2vec-cohere, text2vec-jinaai, text2vec-openai, text2vec-voyageai.",
-				MarkdownDescription: "Sets the default Weaviate vectorizer to use for objects without explicit vector data. Applies to new collections only. Defaults to `basic`. Valid values: `none`, `text2vec-weaviate`, `text2vec-cohere`, `text2vec-jinaai`, `text2vec-openai`, `text2vec-voyageai`.",
-				Default:             stringdefault.StaticString("basic"),
+				Description:         "Sets the default Weaviate vectorizer to use for objects without explicit vector data. Applies to new collections only. Defaults to \"text2vec-weaviate\". Valid values: none, text2vec-weaviate, text2vec-cohere, text2vec-jinaai, text2vec-openai, text2vec-voyageai.",
+				MarkdownDescription: "Sets the default Weaviate vectorizer to use for objects without explicit vector data. Applies to new collections only. Defaults to `text2vec-weaviate`. Valid values: `none`, `text2vec-weaviate`, `text2vec-cohere`, `text2vec-jinaai`, `text2vec-openai`, `text2vec-voyageai`.",
+				Default:             stringdefault.StaticString("text2vec-weaviate"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("none", "text2vec-weaviate", "text2vec-cohere", "text2vec-jinaai", "text2vec-openai", "text2vec-voyageai"),
 				},

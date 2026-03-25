@@ -25,6 +25,12 @@
       "computed": true,
       "sensitive": false
     },
+    "iceberg_catalog_credential": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": true
+    },
     "iceberg_catalog_name": {
       "required": false,
       "optional": true,
@@ -48,6 +54,12 @@
       "optional": true,
       "computed": false,
       "sensitive": true
+    },
+    "iceberg_catalog_scope": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
     },
     "iceberg_catalog_token": {
       "required": false,
@@ -73,10 +85,58 @@
       "computed": false,
       "sensitive": false
     },
+    "iceberg_tables_compaction_commit_threshold": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "iceberg_tables_compaction_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "iceberg_tables_compaction_expire_snapshots": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "iceberg_tables_compaction_max_files_per_run": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "iceberg_tables_compaction_min_small_files": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "iceberg_tables_compaction_retain_last": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "iceberg_tables_compaction_target_file_size_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "iceberg_tables_default_id_columns": {
       "required": false,
       "optional": true,
       "computed": false,
+      "sensitive": false
+    },
+    "iceberg_tables_hard_delete_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
       "sensitive": false
     },
     "id": {

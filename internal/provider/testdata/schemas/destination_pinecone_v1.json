@@ -1,6 +1,18 @@
 {
   "version": "v3.0.0",
   "attributes": {
+    "batch_size": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "collection_mapping": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "connector": {
       "required": false,
       "optional": false,
@@ -13,7 +25,19 @@
       "computed": true,
       "sensitive": false
     },
-    "destination_format": {
+    "delete_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "document_id_field_name": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "document_id_strategy": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -25,55 +49,55 @@
       "computed": true,
       "sensitive": false
     },
-    "json_schema_enable": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "kafka_sink_bootstrap": {
-      "required": true,
-      "optional": false,
-      "computed": false,
-      "sensitive": false
-    },
     "name": {
       "required": true,
       "optional": false,
       "computed": false,
       "sensitive": false
     },
-    "schema_registry_url": {
+    "pinecone_api_key": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": true
+    },
+    "pinecone_index_name": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false
+    },
+    "pinecone_proxy_host": {
       "required": false,
       "optional": true,
       "computed": false,
       "sensitive": false
     },
-    "tasks_max": {
+    "pinecone_proxy_port": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "retry_backoff_ms": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false
     },
-    "topic_prefix": {
-      "required": false,
-      "optional": true,
-      "computed": false,
-      "sensitive": false
-    },
-    "topic_suffix": {
-      "required": false,
-      "optional": true,
-      "computed": false,
-      "sensitive": false
-    },
-    "transforms_change_topic_name_add_original_topic": {
+    "retry_max": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false
     },
-    "transforms_insert_field_offset_field": {
+    "schema_evolution": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "vector_field_name": {
       "required": false,
       "optional": true,
       "computed": true,

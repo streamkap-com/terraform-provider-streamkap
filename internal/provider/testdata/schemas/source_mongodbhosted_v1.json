@@ -31,6 +31,12 @@
       "computed": true,
       "sensitive": false
     },
+    "mongodb_connection_hostname": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "mongodb_connection_string": {
       "required": true,
       "optional": false,

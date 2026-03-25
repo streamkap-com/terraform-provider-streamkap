@@ -4,9 +4,11 @@ package generated
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -16,17 +18,20 @@ import (
 
 // DestinationKafkaModel is the Terraform model for the kafka destination.
 type DestinationKafkaModel struct {
-	ID                 types.String   `tfsdk:"id"`
-	Name               types.String   `tfsdk:"name"`
-	Connector          types.String   `tfsdk:"connector"`
-	ConnectorStatus    types.String   `tfsdk:"connector_status"`
-	KafkaSinkBootstrap types.String   `tfsdk:"kafka_sink_bootstrap"`
-	DestinationFormat  types.String   `tfsdk:"destination_format"`
-	JsonSchemaEnable   types.Bool     `tfsdk:"json_schema_enable"`
-	SchemaRegistryURL  types.String   `tfsdk:"schema_registry_url"`
-	TopicPrefix        types.String   `tfsdk:"topic_prefix"`
-	TopicSuffix        types.String   `tfsdk:"topic_suffix"`
-	Timeouts           timeouts.Value `tfsdk:"timeouts"`
+	ID                                        types.String   `tfsdk:"id"`
+	Name                                      types.String   `tfsdk:"name"`
+	Connector                                 types.String   `tfsdk:"connector"`
+	ConnectorStatus                           types.String   `tfsdk:"connector_status"`
+	KafkaSinkBootstrap                        types.String   `tfsdk:"kafka_sink_bootstrap"`
+	DestinationFormat                         types.String   `tfsdk:"destination_format"`
+	JsonSchemaEnable                          types.Bool     `tfsdk:"json_schema_enable"`
+	SchemaRegistryURL                         types.String   `tfsdk:"schema_registry_url"`
+	TopicPrefix                               types.String   `tfsdk:"topic_prefix"`
+	TopicSuffix                               types.String   `tfsdk:"topic_suffix"`
+	TransformsInsertFieldOffsetField          types.String   `tfsdk:"transforms_insert_field_offset_field"`
+	TransformsChangeTopicNameAddOriginalTopic types.String   `tfsdk:"transforms_change_topic_name_add_original_topic"`
+	TasksMax                                  types.Int64    `tfsdk:"tasks_max"`
+	Timeouts                                  timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationKafkaSchema returns the Terraform schema for the kafka destination.
@@ -101,16 +106,46 @@ func DestinationKafkaSchema() schema.Schema {
 				Description:         "Suffix for destination topics",
 				MarkdownDescription: "Suffix for destination topics",
 			},
+			"transforms_insert_field_offset_field": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "If Kafka destination is used to sync data between services or to apply some transformations, it would be better to rename this field to _streamkap_offset_sync or _streamkap_offset_transform to avoid conflicts with the destination on the other service. Defaults to \"_streamkap_offset\".",
+				MarkdownDescription: "If Kafka destination is used to sync data between services or to apply some transformations, it would be better to rename this field to _streamkap_offset_sync or _streamkap_offset_transform to avoid conflicts with the destination on the other service. Defaults to `_streamkap_offset`.",
+				Default:             stringdefault.StaticString("_streamkap_offset"),
+			},
+			"transforms_change_topic_name_add_original_topic": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Add the original topic name to the output record. 'off' disables it, 'header' adds it as a Kafka header, 'field' adds it as a _streamkap_topic column in the destination table. Defaults to \"off\". Valid values: off, header, field.",
+				MarkdownDescription: "Add the original topic name to the output record. 'off' disables it, 'header' adds it as a Kafka header, 'field' adds it as a _streamkap_topic column in the destination table. Defaults to `off`. Valid values: `off`, `header`, `field`.",
+				Default:             stringdefault.StaticString("off"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("off", "header", "field"),
+				},
+			},
+			"tasks_max": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Maximum number of tasks for the connector. Defaults to 5.",
+				MarkdownDescription: "Maximum number of tasks for the connector. Defaults to `5`.",
+				Default:             int64default.StaticInt64(5),
+				Validators: []validator.Int64{
+					int64validator.Between(1, 100),
+				},
+			},
 		},
 	}
 }
 
 // DestinationKafkaFieldMappings maps Terraform attribute names to API field names.
 var DestinationKafkaFieldMappings = map[string]string{
-	"kafka_sink_bootstrap": "kafka.sink.bootstrap",
-	"destination_format":   "destination.format",
-	"json_schema_enable":   "json.schema.enable",
-	"schema_registry_url":  "schema.registry.url.user.defined",
-	"topic_prefix":         "topic.prefix",
-	"topic_suffix":         "topic.suffix",
+	"kafka_sink_bootstrap":                            "kafka.sink.bootstrap",
+	"destination_format":                              "destination.format",
+	"json_schema_enable":                              "json.schema.enable",
+	"schema_registry_url":                             "schema.registry.url.user.defined",
+	"topic_prefix":                                    "topic.prefix",
+	"topic_suffix":                                    "topic.suffix",
+	"transforms_insert_field_offset_field":            "transforms.InsertField.offset.field",
+	"transforms_change_topic_name_add_original_topic": "transforms.changeTopicName.add.original.topic",
+	"tasks_max":                                       "tasks.max",
 }
