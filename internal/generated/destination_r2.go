@@ -68,8 +68,8 @@ func DestinationR2Schema() schema.Schema {
 			},
 			"r2_account": schema.StringAttribute{
 				Required:            true,
-				Description:         "your Cloudflare R2 account ID. This is the account ID you see in the Cloudflare dashboard.",
-				MarkdownDescription: "your Cloudflare R2 account ID. This is the account ID you see in the Cloudflare dashboard.",
+				Description:         "Cloudflare R2 account ID. This is the account ID you see in the Cloudflare dashboard.",
+				MarkdownDescription: "Cloudflare R2 account ID. This is the account ID you see in the Cloudflare dashboard.",
 			},
 			"aws_access_key_id": schema.StringAttribute{
 				Required:            true,

@@ -261,6 +261,7 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		destination.NewSQLServerDestResource,
 		destination.NewStarburstResource,
 		destination.NewWeaviateResource,
+		destination.NewPineconeDestResource,
 		pipeline.NewPipelineResource,
 		topic.NewTopicResource,
 		tag.NewTagResource,

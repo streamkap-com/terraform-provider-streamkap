@@ -532,6 +532,14 @@ func TestSchemaBackwardsCompatibility_DestinationWeaviate(t *testing.T) {
 	})
 }
 
+func TestSchemaBackwardsCompatibility_DestinationPinecone(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "destination_pinecone",
+		snapshotFile:    "destination_pinecone_v1.json",
+		resourceFactory: destination.NewPineconeDestResource,
+	})
+}
+
 // --- Transforms (missing) ---
 
 func TestSchemaBackwardsCompatibility_TransformEnrichAsync(t *testing.T) {

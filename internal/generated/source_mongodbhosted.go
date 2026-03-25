@@ -22,6 +22,7 @@ type SourceMongodbhostedModel struct {
 	Connector                               types.String   `tfsdk:"connector"`
 	ConnectorStatus                         types.String   `tfsdk:"connector_status"`
 	MongodbConnectionString                 types.String   `tfsdk:"mongodb_connection_string"`
+	MongodbConnectionHostname               types.String   `tfsdk:"mongodb_connection_hostname"`
 	TransformsUnwrapArrayEncoding           types.String   `tfsdk:"transforms_unwrap_array_encoding"`
 	TransformsUnwrapDocumentEncoding        types.String   `tfsdk:"transforms_unwrap_document_encoding"`
 	DatabaseIncludeList                     types.String   `tfsdk:"database_include_list"`
@@ -84,6 +85,13 @@ func SourceMongodbhostedSchema() schema.Schema {
 				Sensitive:           true,
 				Description:         "Mongodb Connection String. See Mongodb documentation for further details. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "Mongodb Connection String. See Mongodb documentation for further details.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+			},
+			"mongodb_connection_hostname": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The hostname(s) extracted from the MongoDB connection string. Defaults to \"\".",
+				MarkdownDescription: "The hostname(s) extracted from the MongoDB connection string. Defaults to ``.",
+				Default:             stringdefault.StaticString(""),
 			},
 			"transforms_unwrap_array_encoding": schema.StringAttribute{
 				Optional:            true,
@@ -207,6 +215,7 @@ func SourceMongodbhostedSchema() schema.Schema {
 // SourceMongodbhostedFieldMappings maps Terraform attribute names to API field names.
 var SourceMongodbhostedFieldMappings = map[string]string{
 	"mongodb_connection_string":                    "mongodb.connection.string.user.defined",
+	"mongodb_connection_hostname":                  "mongodb.connection.hostname",
 	"transforms_unwrap_array_encoding":             "transforms.unwrap.array.encoding",
 	"transforms_unwrap_document_encoding":          "transforms.unwrap.document.encoding",
 	"database_include_list":                        "database.include.list",

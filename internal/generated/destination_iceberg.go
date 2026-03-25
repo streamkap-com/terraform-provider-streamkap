@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -15,24 +16,34 @@ import (
 
 // DestinationIcebergModel is the Terraform model for the iceberg destination.
 type DestinationIcebergModel struct {
-	ID                                types.String   `tfsdk:"id"`
-	Name                              types.String   `tfsdk:"name"`
-	Connector                         types.String   `tfsdk:"connector"`
-	ConnectorStatus                   types.String   `tfsdk:"connector_status"`
-	IcebergCatalogType                types.String   `tfsdk:"iceberg_catalog_type"`
-	IcebergCatalogRestProvider        types.String   `tfsdk:"iceberg_catalog_rest_provider"`
-	IcebergCatalogName                types.String   `tfsdk:"iceberg_catalog_name"`
-	IcebergCatalogClientAssumeRoleARN types.String   `tfsdk:"iceberg_catalog_client_assume_role_arn"`
-	IcebergCatalogUri                 types.String   `tfsdk:"iceberg_catalog_uri"`
-	IcebergCatalogToken               types.String   `tfsdk:"iceberg_catalog_token"`
-	IcebergCatalogS3AccessKeyID       types.String   `tfsdk:"iceberg_catalog_s3_access_key_id"`
-	IcebergCatalogS3SecretAccessKey   types.String   `tfsdk:"iceberg_catalog_s3_secret_access_key"`
-	IcebergCatalogClientRegion        types.String   `tfsdk:"iceberg_catalog_client_region"`
-	IcebergCatalogWarehouse           types.String   `tfsdk:"iceberg_catalog_warehouse"`
-	TableNamePrefix                   types.String   `tfsdk:"table_name_prefix"`
-	InsertMode                        types.String   `tfsdk:"insert_mode"`
-	IcebergTablesDefaultIDColumns     types.String   `tfsdk:"iceberg_tables_default_id_columns"`
-	Timeouts                          timeouts.Value `tfsdk:"timeouts"`
+	ID                                         types.String   `tfsdk:"id"`
+	Name                                       types.String   `tfsdk:"name"`
+	Connector                                  types.String   `tfsdk:"connector"`
+	ConnectorStatus                            types.String   `tfsdk:"connector_status"`
+	IcebergCatalogType                         types.String   `tfsdk:"iceberg_catalog_type"`
+	IcebergCatalogRestProvider                 types.String   `tfsdk:"iceberg_catalog_rest_provider"`
+	IcebergCatalogName                         types.String   `tfsdk:"iceberg_catalog_name"`
+	IcebergCatalogClientAssumeRoleARN          types.String   `tfsdk:"iceberg_catalog_client_assume_role_arn"`
+	IcebergCatalogUri                          types.String   `tfsdk:"iceberg_catalog_uri"`
+	IcebergCatalogToken                        types.String   `tfsdk:"iceberg_catalog_token"`
+	IcebergCatalogCredential                   types.String   `tfsdk:"iceberg_catalog_credential"`
+	IcebergCatalogScope                        types.String   `tfsdk:"iceberg_catalog_scope"`
+	IcebergCatalogS3AccessKeyID                types.String   `tfsdk:"iceberg_catalog_s3_access_key_id"`
+	IcebergCatalogS3SecretAccessKey            types.String   `tfsdk:"iceberg_catalog_s3_secret_access_key"`
+	IcebergCatalogClientRegion                 types.String   `tfsdk:"iceberg_catalog_client_region"`
+	IcebergCatalogWarehouse                    types.String   `tfsdk:"iceberg_catalog_warehouse"`
+	TableNamePrefix                            types.String   `tfsdk:"table_name_prefix"`
+	InsertMode                                 types.String   `tfsdk:"insert_mode"`
+	IcebergTablesDefaultIDColumns              types.String   `tfsdk:"iceberg_tables_default_id_columns"`
+	IcebergTablesHardDeleteEnabled             types.Bool     `tfsdk:"iceberg_tables_hard_delete_enabled"`
+	IcebergTablesCompactionEnabled             types.Bool     `tfsdk:"iceberg_tables_compaction_enabled"`
+	IcebergTablesCompactionTargetFileSizeBytes types.String   `tfsdk:"iceberg_tables_compaction_target_file_size_bytes"`
+	IcebergTablesCompactionMinSmallFiles       types.String   `tfsdk:"iceberg_tables_compaction_min_small_files"`
+	IcebergTablesCompactionMaxFilesPerRun      types.String   `tfsdk:"iceberg_tables_compaction_max_files_per_run"`
+	IcebergTablesCompactionCommitThreshold     types.String   `tfsdk:"iceberg_tables_compaction_commit_threshold"`
+	IcebergTablesCompactionExpireSnapshots     types.Bool     `tfsdk:"iceberg_tables_compaction_expire_snapshots"`
+	IcebergTablesCompactionRetainLast          types.String   `tfsdk:"iceberg_tables_compaction_retain_last"`
+	Timeouts                                   timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationIcebergSchema returns the Terraform schema for the iceberg destination.
@@ -86,11 +97,11 @@ func DestinationIcebergSchema() schema.Schema {
 			"iceberg_catalog_rest_provider": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Select the Iceberg REST catalog provider. Defaults to \"generic\". Valid values: generic, r2.",
-				MarkdownDescription: "Select the Iceberg REST catalog provider. Defaults to `generic`. Valid values: `generic`, `r2`.",
+				Description:         "Select the Iceberg REST catalog provider. Defaults to \"generic\". Valid values: generic, r2, polaris.",
+				MarkdownDescription: "Select the Iceberg REST catalog provider. Defaults to `generic`. Valid values: `generic`, `r2`, `polaris`.",
 				Default:             stringdefault.StaticString("generic"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("generic", "r2"),
+					stringvalidator.OneOf("generic", "r2", "polaris"),
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -116,6 +127,19 @@ func DestinationIcebergSchema() schema.Schema {
 				Sensitive:           true,
 				Description:         "Cloudflare R2 Data Catalog API token used for bearer authentication. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "Cloudflare R2 Data Catalog API token used for bearer authentication.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+			},
+			"iceberg_catalog_credential": schema.StringAttribute{
+				Optional:            true,
+				Sensitive:           true,
+				Description:         "OAuth2 client credential in <client_id>:<client_secret> format for Apache Polaris authentication. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "OAuth2 client credential in <client_id>:<client_secret> format for Apache Polaris authentication.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+			},
+			"iceberg_catalog_scope": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "OAuth2 scope for Apache Polaris authentication. Defaults to \"PRINCIPAL_ROLE:ALL\".",
+				MarkdownDescription: "OAuth2 scope for Apache Polaris authentication. Defaults to `PRINCIPAL_ROLE:ALL`.",
+				Default:             stringdefault.StaticString("PRINCIPAL_ROLE:ALL"),
 			},
 			"iceberg_catalog_s3_access_key_id": schema.StringAttribute{
 				Optional:            true,
@@ -163,23 +187,89 @@ func DestinationIcebergSchema() schema.Schema {
 				Description:         "Optional. A comma-separated list of field names to use as record identifiers when key fields are not present in Kafka messages",
 				MarkdownDescription: "Optional. A comma-separated list of field names to use as record identifiers when key fields are not present in Kafka messages",
 			},
+			"iceberg_tables_hard_delete_enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only). Defaults to true.",
+				MarkdownDescription: "Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only). Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
+			"iceberg_tables_compaction_enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Enable lightweight compaction of small data files after commits. Defaults to false.",
+				MarkdownDescription: "Enable lightweight compaction of small data files after commits. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"iceberg_tables_compaction_target_file_size_bytes": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Target file size in bytes for compaction. Files smaller than this are candidates for merging. Defaults to \"134217728\".",
+				MarkdownDescription: "Target file size in bytes for compaction. Files smaller than this are candidates for merging. Defaults to `134217728`.",
+				Default:             stringdefault.StaticString("134217728"),
+			},
+			"iceberg_tables_compaction_min_small_files": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Minimum number of small files required before triggering compaction. Defaults to \"5\".",
+				MarkdownDescription: "Minimum number of small files required before triggering compaction. Defaults to `5`.",
+				Default:             stringdefault.StaticString("5"),
+			},
+			"iceberg_tables_compaction_max_files_per_run": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Maximum number of small files to compact in a single run. Defaults to \"100\".",
+				MarkdownDescription: "Maximum number of small files to compact in a single run. Defaults to `100`.",
+				Default:             stringdefault.StaticString("100"),
+			},
+			"iceberg_tables_compaction_commit_threshold": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Number of Iceberg commits between compaction checks. Defaults to \"5\".",
+				MarkdownDescription: "Number of Iceberg commits between compaction checks. Defaults to `5`.",
+				Default:             stringdefault.StaticString("5"),
+			},
+			"iceberg_tables_compaction_expire_snapshots": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Expire old snapshots and delete unreferenced data files after compaction. Defaults to false.",
+				MarkdownDescription: "Expire old snapshots and delete unreferenced data files after compaction. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"iceberg_tables_compaction_retain_last": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Number of most recent snapshots to retain when expiring snapshots after compaction. Defaults to \"1\".",
+				MarkdownDescription: "Number of most recent snapshots to retain when expiring snapshots after compaction. Defaults to `1`.",
+				Default:             stringdefault.StaticString("1"),
+			},
 		},
 	}
 }
 
 // DestinationIcebergFieldMappings maps Terraform attribute names to API field names.
 var DestinationIcebergFieldMappings = map[string]string{
-	"iceberg_catalog_type":                   "iceberg.catalog.type",
-	"iceberg_catalog_rest_provider":          "iceberg.catalog.rest.provider",
-	"iceberg_catalog_name":                   "iceberg.catalog.name",
-	"iceberg_catalog_client_assume_role_arn": "iceberg.catalog.client.assume-role.arn",
-	"iceberg_catalog_uri":                    "iceberg.catalog.uri",
-	"iceberg_catalog_token":                  "iceberg.catalog.token",
-	"iceberg_catalog_s3_access_key_id":       "iceberg.catalog.s3.access-key-id",
-	"iceberg_catalog_s3_secret_access_key":   "iceberg.catalog.s3.secret-access-key",
-	"iceberg_catalog_client_region":          "iceberg.catalog.client.region.user.defined",
-	"iceberg_catalog_warehouse":              "iceberg.catalog.warehouse",
-	"table_name_prefix":                      "table.name.prefix",
-	"insert_mode":                            "insert.mode.user.defined",
-	"iceberg_tables_default_id_columns":      "iceberg.tables.default-id-columns",
+	"iceberg_catalog_type":                             "iceberg.catalog.type",
+	"iceberg_catalog_rest_provider":                    "iceberg.catalog.rest.provider",
+	"iceberg_catalog_name":                             "iceberg.catalog.name",
+	"iceberg_catalog_client_assume_role_arn":           "iceberg.catalog.client.assume-role.arn",
+	"iceberg_catalog_uri":                              "iceberg.catalog.uri",
+	"iceberg_catalog_token":                            "iceberg.catalog.token",
+	"iceberg_catalog_credential":                       "iceberg.catalog.credential",
+	"iceberg_catalog_scope":                            "iceberg.catalog.scope",
+	"iceberg_catalog_s3_access_key_id":                 "iceberg.catalog.s3.access-key-id",
+	"iceberg_catalog_s3_secret_access_key":             "iceberg.catalog.s3.secret-access-key",
+	"iceberg_catalog_client_region":                    "iceberg.catalog.client.region.user.defined",
+	"iceberg_catalog_warehouse":                        "iceberg.catalog.warehouse",
+	"table_name_prefix":                                "table.name.prefix",
+	"insert_mode":                                      "insert.mode.user.defined",
+	"iceberg_tables_default_id_columns":                "iceberg.tables.default-id-columns",
+	"iceberg_tables_hard_delete_enabled":               "iceberg.tables.hard-delete-enabled",
+	"iceberg_tables_compaction_enabled":                "iceberg.tables.compaction.enabled",
+	"iceberg_tables_compaction_target_file_size_bytes": "iceberg.tables.compaction.target-file-size-bytes",
+	"iceberg_tables_compaction_min_small_files":        "iceberg.tables.compaction.min-small-files",
+	"iceberg_tables_compaction_max_files_per_run":      "iceberg.tables.compaction.max-files-per-run",
+	"iceberg_tables_compaction_commit_threshold":       "iceberg.tables.compaction.commit-threshold",
+	"iceberg_tables_compaction_expire_snapshots":       "iceberg.tables.compaction.expire-snapshots",
+	"iceberg_tables_compaction_retain_last":            "iceberg.tables.compaction.retain-last",
 }
