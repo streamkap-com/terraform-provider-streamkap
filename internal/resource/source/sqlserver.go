@@ -68,6 +68,7 @@ type SourceSQLServerResourceModel struct {
 	SnapshotParallelism                     types.Int64 `tfsdk:"snapshot_parallelism"`
 	SnapshotLargeTableThreshold             types.Int64 `tfsdk:"snapshot_large_table_threshold"`
 	SnapshotCustomTableConfig               map[string]snapshotCustomTableConfigModel `tfsdk:"snapshot_custom_table_config"`
+	KcClusterId                             types.String `tfsdk:"kc_cluster_id"`
 }
 
 type snapshotCustomTableConfigModel struct {
@@ -267,6 +268,10 @@ func (r *SourceSQLServerResource) Schema(ctx context.Context, req res.SchemaRequ
 				},
 				Description:         "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",
 				MarkdownDescription: "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 		},
 	}
@@ -500,6 +505,7 @@ func (r *SourceSQLServerResource) model2ConfigMap(model SourceSQLServerResourceM
 		"streamkap.snapshot.parallelism":               model.SnapshotParallelism.ValueInt64(),
 		"streamkap.snapshot.large.table.threshold":     model.SnapshotLargeTableThreshold.ValueInt64(),
 		"streamkap.snapshot.custom.table.config.user.defined": expectedSnapshotCustomTableConfig,
+		"kc.cluster.id": model.KcClusterId.ValueStringPointer(),
 	}
 
 	return configMap, nil
@@ -558,5 +564,6 @@ func (r *SourceSQLServerResource) configMap2Model(cfg map[string]any, model *Sou
 		}
 	}
 	model.SnapshotCustomTableConfig = snapshotCustomTableConfig
+	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 	return
 }

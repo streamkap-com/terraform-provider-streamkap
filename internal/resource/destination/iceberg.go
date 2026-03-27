@@ -54,6 +54,7 @@ type DestinationIcebergResourceModel struct {
 	InsertMode       types.String `tfsdk:"insert_mode"`
 	PrimaryKeyFields types.String `tfsdk:"primary_key_fields"`
 	QuoteIdentifiers types.Bool   `tfsdk:"quote_identifiers"`
+	KcClusterId      types.String `tfsdk:"kc_cluster_id"`
 }
 
 func (r *DestinationIcebergResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -185,6 +186,10 @@ func (r *DestinationIcebergResource) Schema(ctx context.Context, req res.SchemaR
 				Default:             booldefault.StaticBool(true),
 				Description:         "Whether to quote identifiers in SQL statements",
 				MarkdownDescription: "Whether to quote identifiers in SQL statements",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 		},
 	}
@@ -363,6 +368,7 @@ func (r *DestinationIcebergResource) model2ConfigMap(model DestinationIcebergRes
 		"insert.mode.user.defined":                   model.InsertMode.ValueString(),
 		"iceberg.tables.default-id-columns":          model.PrimaryKeyFields.ValueString(),
 		"quote.identifiers":                          model.QuoteIdentifiers.ValueBool(),
+		"kc.cluster.id":                              model.KcClusterId.ValueStringPointer(),
 	}
 
 	return configMap
@@ -382,4 +388,5 @@ func (r *DestinationIcebergResource) configMap2Model(cfg map[string]any, model *
 	model.InsertMode = helper.GetTfCfgString(cfg, "insert.mode.user.defined")
 	model.PrimaryKeyFields = helper.GetTfCfgString(cfg, "iceberg.tables.default-id-columns")
 	model.QuoteIdentifiers = helper.GetTfCfgBool(cfg, "quote.identifiers")
+	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }

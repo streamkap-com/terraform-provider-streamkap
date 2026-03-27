@@ -46,6 +46,7 @@ type SourceKafkaDirectResourceModel struct {
 	KafkaFormat      types.String `tfsdk:"kafka_format"`
 	SchemasEnable    types.Bool   `tfsdk:"schemas_enable"`
 	TopicIncludeList types.String `tfsdk:"topic_include_list"`
+	KcClusterId      types.String `tfsdk:"kc_cluster_id"`
 }
 
 func (r *SourceKafkaDirectResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -106,6 +107,10 @@ func (r *SourceKafkaDirectResource) Schema(ctx context.Context, req res.SchemaRe
 				Required:            true,
 				Description:         "Topics to sync",
 				MarkdownDescription: "Topics to sync",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 		},
 	}
@@ -273,6 +278,7 @@ func (r *SourceKafkaDirectResource) model2ConfigMap(model SourceKafkaDirectResou
 		"format":                          model.KafkaFormat.ValueString(),
 		"topic.include.list.user.defined": model.TopicIncludeList.ValueString(),
 		"schemas.enable":                  model.SchemasEnable.ValueBool(),
+		"kc.cluster.id":                   model.KcClusterId.ValueStringPointer(),
 	}
 }
 
@@ -282,4 +288,5 @@ func (r *SourceKafkaDirectResource) configMap2Model(cfg map[string]any, model *S
 	model.KafkaFormat = helper.GetTfCfgString(cfg, "format")
 	model.TopicIncludeList = helper.GetTfCfgString(cfg, "topic.include.list.user.defined")
 	model.SchemasEnable = helper.GetTfCfgBool(cfg, "schemas.enable")
+	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }

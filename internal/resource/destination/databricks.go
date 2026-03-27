@@ -55,6 +55,7 @@ type DestinationDatabricksResourceModel struct {
 	TasksMax                         types.Int64  `tfsdk:"tasks_max"`
 	ConsumerWaitTimeForLargerBatchMs types.Int64  `tfsdk:"consumer_wait_time_for_larger_batch_ms"`
 	QuoteIdentifiers                 types.Bool   `tfsdk:"quote_identifiers"`
+	KcClusterId                      types.String `tfsdk:"kc_cluster_id"`
 }
 
 func (r *DestinationDatabricksResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -181,6 +182,10 @@ func (r *DestinationDatabricksResource) Schema(ctx context.Context, req res.Sche
 				Default:             booldefault.StaticBool(true),
 				Description:         "Whether to quote identifiers in SQL statements",
 				MarkdownDescription: "Whether to quote identifiers in SQL statements",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 		},
 	}
@@ -364,6 +369,7 @@ func (r *DestinationDatabricksResource) model2ConfigMap(_ context.Context, model
 		"tasks.max":                              model.TasksMax.ValueInt64(),
 		"consumer.wait.time.for.larger.batch.ms": model.ConsumerWaitTimeForLargerBatchMs.ValueInt64(),
 		"quote.identifiers":                      model.QuoteIdentifiers.ValueBool(),
+		"kc.cluster.id":                          model.KcClusterId.ValueStringPointer(),
 	}
 
 	return configMap
@@ -382,4 +388,5 @@ func (r *DestinationDatabricksResource) configMap2Model(ctx context.Context, cfg
 	model.TasksMax = helper.GetTfCfgInt64(cfg, "tasks.max")
 	model.ConsumerWaitTimeForLargerBatchMs = helper.GetTfCfgInt64(cfg, "consumer.wait.time.for.larger.batch.ms")
 	model.QuoteIdentifiers = helper.GetTfCfgBool(cfg, "quote.identifiers")
+	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }

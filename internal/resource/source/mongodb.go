@@ -61,6 +61,7 @@ type SourceMongoDBResourceModel struct {
 	InsertStaticKeyValue2                   types.String `tfsdk:"insert_static_key_value_2"`
 	InsertStaticValueField2                 types.String `tfsdk:"insert_static_value_field_2"`
 	InsertStaticValue2                      types.String `tfsdk:"insert_static_value_2"`
+	KcClusterId                             types.String `tfsdk:"kc_cluster_id"`
 }
 
 func (r *SourceMongoDBResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -226,6 +227,10 @@ func (r *SourceMongoDBResource) Schema(ctx context.Context, req res.SchemaReques
 				Default:             stringdefault.StaticString(""),
 				Description:         "The value of the static field to be added to the message value.",
 				MarkdownDescription: "The value of the static field to be added to the message value.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 		},
 	}
@@ -408,6 +413,7 @@ func (r *SourceMongoDBResource) model2ConfigMap(model SourceMongoDBResourceModel
 		"transforms.InsertStaticKey2.static.value":      model.InsertStaticKeyValue2.ValueString(),
 		"transforms.InsertStaticValue2.static.field":    model.InsertStaticValueField2.ValueString(),
 		"transforms.InsertStaticValue2.static.value":    model.InsertStaticValue2.ValueString(),
+		"kc.cluster.id": model.KcClusterId.ValueStringPointer(),
 	}
 }
 
@@ -432,4 +438,5 @@ func (r *SourceMongoDBResource) configMap2Model(cfg map[string]any, model *Sourc
 	model.InsertStaticKeyValue2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey2.static.value")
 	model.InsertStaticValueField2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue2.static.field")
 	model.InsertStaticValue2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue2.static.value")
+	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }

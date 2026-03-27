@@ -58,6 +58,7 @@ type DestinationClickHouseResourceModel struct {
 	TopicsConfigMap    map[string]clickHouseTopicsConfigMapItemModel `tfsdk:"topics_config_map"`
 	SchemaEvolution    types.String                                  `tfsdk:"schema_evolution"`
 	QuoteIdentifiers   types.Bool                                    `tfsdk:"quote_identifiers"`
+	KcClusterId        types.String                                  `tfsdk:"kc_cluster_id"`
 }
 
 type clickHouseTopicsConfigMapItemModel struct {
@@ -188,6 +189,10 @@ func (r *DestinationClickHouseResource) Schema(ctx context.Context, req res.Sche
 				Default:             booldefault.StaticBool(false),
 				Description:         "Whether to quote identifiers in SQL statements",
 				MarkdownDescription: "Whether to quote identifiers in SQL statements",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 		},
 	}
@@ -415,6 +420,7 @@ func (r *DestinationClickHouseResource) model2ConfigMap(model DestinationClickHo
 		"topics.config.map": topicsConfigMapStr,
 		"schema.evolution":  model.SchemaEvolution.ValueString(),
 		"quote.identifiers": model.QuoteIdentifiers.ValueBool(),
+		"kc.cluster.id":     model.KcClusterId.ValueStringPointer(),
 	}, nil
 }
 
@@ -432,6 +438,7 @@ func (r *DestinationClickHouseResource) configMap2Model(cfg map[string]any, mode
 	model.SSL = helper.GetTfCfgBool(cfg, "ssl")
 	model.SchemaEvolution = helper.GetTfCfgString(cfg, "schema.evolution")
 	model.QuoteIdentifiers = helper.GetTfCfgBool(cfg, "quote.identifiers")
+	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 
 	// Parse topics config map
 	// Example:
