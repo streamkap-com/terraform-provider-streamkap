@@ -70,6 +70,7 @@ type SourceMySQLResourceModel struct {
 	SSHPort                                 types.String `tfsdk:"ssh_port"`
 	SSHUser                                 types.String `tfsdk:"ssh_user"`
 	PredicatesIsTopicToEnrichPattern        types.String `tfsdk:"predicates_istopictoenrich_pattern"`
+	KcClusterId                             types.String `tfsdk:"kc_cluster_id"`
 }
 
 func (r *SourceMySQLResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -369,6 +370,10 @@ func (r *SourceMySQLResource) Schema(ctx context.Context, req res.SchemaRequest,
 				Description:         "Regex pattern to match topics for enrichment",
 				MarkdownDescription: "Regex pattern to match topics for enrichment",
 			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "KC cluster ID to deploy this connector to. Omit for default cluster.",
+			},
 		},
 	}
 }
@@ -579,6 +584,7 @@ func (r *SourceMySQLResource) model2ConfigMap(model SourceMySQLResourceModel) (m
 		"ssh.port":                                     model.SSHPort.ValueString(),
 		"ssh.user":                                     model.SSHUser.ValueString(),
 		"predicates.IsTopicToEnrich.pattern":    model.PredicatesIsTopicToEnrichPattern.ValueString(),
+		"kc.cluster.id": model.KcClusterId.ValueStringPointer(),
 	}
 
 	if !model.ColumnIncludeList.IsNull() {
@@ -621,4 +627,5 @@ func (r *SourceMySQLResource) configMap2Model(cfg map[string]any, model *SourceM
 	model.SSHPort = helper.GetTfCfgString(cfg, "ssh.port")
 	model.SSHUser = helper.GetTfCfgString(cfg, "ssh.user")
 	model.PredicatesIsTopicToEnrichPattern = helper.GetTfCfgString(cfg, "predicates.IsTopicToEnrich.pattern")
+	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }

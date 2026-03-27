@@ -57,6 +57,7 @@ type SourceDynamoDBResourceModel struct {
 	ArrayEncodingJson             types.Bool   `tfsdk:"array_encoding_json"`
 	StructEncodingJson            types.Bool   `tfsdk:"struct_encoding_json"`
 	TasksMax                      types.Int64  `tfsdk:"tasks_max"`
+	KcClusterId                   types.String `tfsdk:"kc_cluster_id"`
 }
 
 func (r *SourceDynamoDBResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -183,6 +184,10 @@ func (r *SourceDynamoDBResource) Schema(ctx context.Context, req res.SchemaReque
 				Validators: []validator.Int64{
 					int64validator.Between(1, 40),
 				},
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 		},
 	}
@@ -361,6 +366,7 @@ func (r *SourceDynamoDBResource) model2ConfigMap(model SourceDynamoDBResourceMod
 		"array.encoding.json":              model.ArrayEncodingJson.ValueBool(),
 		"struct.encoding.json":             model.StructEncodingJson.ValueBool(),
 		"tasks.max":                        model.TasksMax.ValueInt64(),
+		"kc.cluster.id":                    model.KcClusterId.ValueStringPointer(),
 	}
 }
 
@@ -381,4 +387,5 @@ func (r *SourceDynamoDBResource) configMap2Model(cfg map[string]any, model *Sour
 	model.ArrayEncodingJson = helper.GetTfCfgBool(cfg, "array.encoding.json")
 	model.StructEncodingJson = helper.GetTfCfgBool(cfg, "struct.encoding.json")
 	model.TasksMax = helper.GetTfCfgInt64(cfg, "tasks.max")
+	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }

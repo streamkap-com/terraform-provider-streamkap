@@ -53,6 +53,7 @@ type DestinationKafkaResourceModel struct {
 	TasksMax           types.Int64  `tfsdk:"tasks_max"`
 	OffsetField        types.String `tfsdk:"offset_field"`
 	AddOriginalTopic   types.String `tfsdk:"add_original_topic"`
+	KcClusterId        types.String `tfsdk:"kc_cluster_id"`
 }
 
 func (r *DestinationKafkaResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -156,6 +157,10 @@ func (r *DestinationKafkaResource) Schema(ctx context.Context, req res.SchemaReq
 						"field",
 					),
 				},
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 		},
 	}
@@ -346,6 +351,7 @@ func (r *DestinationKafkaResource) model2ConfigMap(model DestinationKafkaResourc
 		"tasks.max":                        model.TasksMax.ValueInt64(),
 		"transforms.InsertField.offset.field":            model.OffsetField.ValueString(),
 		"transforms.changeTopicName.add.original.topic": model.AddOriginalTopic.ValueString(),
+		"kc.cluster.id": model.KcClusterId.ValueStringPointer(),
 	}, nil
 }
 
@@ -360,4 +366,5 @@ func (r *DestinationKafkaResource) configMap2Model(cfg map[string]any, model *De
 	model.TasksMax = helper.GetTfCfgInt64(cfg, "tasks.max")
 	model.OffsetField = helper.GetTfCfgString(cfg, "transforms.InsertField.offset.field")
 	model.AddOriginalTopic = helper.GetTfCfgString(cfg, "transforms.changeTopicName.add.original.topic")
+	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }

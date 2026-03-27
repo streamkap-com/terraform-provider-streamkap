@@ -63,6 +63,7 @@ type DestinationSnowflakeResourceModel struct {
 	AutoQADedupeTableMapping      map[string]types.String `tfsdk:"auto_qa_dedupe_table_mapping"`
 	SnowflakeTopic2TableMap       types.String            `tfsdk:"snowflake_topic2table_map"`
 	QuoteIdentifiers              types.Bool              `tfsdk:"quote_identifiers"`
+	KcClusterId                   types.String            `tfsdk:"kc_cluster_id"`
 }
 
 func (r *DestinationSnowflakeResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -252,6 +253,10 @@ func (r *DestinationSnowflakeResource) Schema(ctx context.Context, req res.Schem
 				Default:             booldefault.StaticBool(true),
 				Description:         "Whether to quote identifiers in SQL statements",
 				MarkdownDescription: "Whether to quote identifiers in SQL statements",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 		},
 	}
@@ -457,6 +462,7 @@ func (r *DestinationSnowflakeResource) model2ConfigMap(_ context.Context, model 
 		"auto.qa.dedupe.table.mapping":             autoQADedupeTableMappingStr,
 		"snowflake.topic2table.map":                model.SnowflakeTopic2TableMap.ValueStringPointer(),
 		"quote.identifiers":                        model.QuoteIdentifiers.ValueBool(),
+		"kc.cluster.id":                            model.KcClusterId.ValueStringPointer(),
 	}
 
 	if model.SnowflakePrivateKeyPassphrase.IsNull() {
@@ -487,6 +493,7 @@ func (r *DestinationSnowflakeResource) configMap2Model(ctx context.Context, cfg 
 	model.SQLTableName = helper.GetTfCfgString(cfg, "sql.table.name")
 	model.SnowflakeTopic2TableMap = helper.GetTfCfgString(cfg, "snowflake.topic2table.map")
 	model.QuoteIdentifiers = helper.GetTfCfgBool(cfg, "quote.identifiers")
+	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 
 	// Parse auto QA deduplication table mapping
 	// Example:

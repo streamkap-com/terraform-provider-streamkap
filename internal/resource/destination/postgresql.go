@@ -61,6 +61,7 @@ type DestinationPostgresqlResourceModel struct {
 	SSHPort            types.String `tfsdk:"ssh_port"`
 	SSHUser            types.String `tfsdk:"ssh_user"`
 	QuoteIdentifiers   types.Bool   `tfsdk:"quote_identifiers"`
+	KcClusterId        types.String `tfsdk:"kc_cluster_id"`
 }
 
 func (r *DestinationPostgresqlResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -219,6 +220,10 @@ func (r *DestinationPostgresqlResource) Schema(ctx context.Context, req res.Sche
 				Default:             booldefault.StaticBool(true),
 				Description:         "Whether to quote identifiers in SQL statements",
 				MarkdownDescription: "Whether to quote identifiers in SQL statements",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 		},
 	}
@@ -402,6 +407,7 @@ func (r *DestinationPostgresqlResource) model2ConfigMap(model DestinationPostgre
 		"ssh.port":                       model.SSHPort.ValueString(),
 		"ssh.user":                       model.SSHUser.ValueString(),
 		"quote.identifiers":              model.QuoteIdentifiers.ValueBool(),
+		"kc.cluster.id":                  model.KcClusterId.ValueStringPointer(),
 	}
 
 	return configMap
@@ -426,4 +432,5 @@ func (r *DestinationPostgresqlResource) configMap2Model(cfg map[string]any, mode
 	model.SSHPort = helper.GetTfCfgString(cfg, "ssh.port")
 	model.SSHUser = helper.GetTfCfgString(cfg, "ssh.user")
 	model.QuoteIdentifiers = helper.GetTfCfgBool(cfg, "quote.identifiers")
+	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }

@@ -54,6 +54,7 @@ type DestinationS3ResourceModel struct {
 	FilenamePrefix   types.String `tfsdk:"filename_prefix"`
 	CompressionType  types.String `tfsdk:"compression_type"`
 	OutputFields     types.List   `tfsdk:"output_fields"`
+	KcClusterId      types.String `tfsdk:"kc_cluster_id"`
 }
 
 func (r *DestinationS3Resource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -188,6 +189,10 @@ func (r *DestinationS3Resource) Schema(ctx context.Context, req res.SchemaReques
 						),
 					)),
 				},
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:    true,
+				Description: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 		},
 	}
@@ -378,6 +383,7 @@ func (r *DestinationS3Resource) model2ConfigMap(model DestinationS3ResourceModel
 		"file.name.prefix":                  model.FilenamePrefix.ValueString(),
 		"file.compression.type":             model.CompressionType.ValueString(),
 		"format.output.fields.user.defined": outputFields,
+		"kc.cluster.id":                     model.KcClusterId.ValueStringPointer(),
 	}
 
 	return configMap, nil
@@ -394,4 +400,5 @@ func (r *DestinationS3Resource) configMap2Model(cfg map[string]any, model *Desti
 	model.FilenamePrefix = helper.GetTfCfgString(cfg, "file.name.prefix")
 	model.CompressionType = helper.GetTfCfgString(cfg, "file.compression.type")
 	model.OutputFields = helper.GetTfCfgListString(ctx, cfg, "format.output.fields.user.defined")
+	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }
