@@ -31,9 +31,12 @@ This resource creates and manages a Kafka destination for Streamkap data pipelin
 - `destination_format` (String) The format to use when writing data to kafka. Defaults to `json`. Valid values: `avro`, `json`.
 - `json_schema_enable` (Boolean) Include schema in json message. Defaults to `false`.
 - `schema_registry_url` (String) Destination kafka schema registry url
+- `tasks_max` (Number) Maximum number of tasks for the connector. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `topic_prefix` (String) Prefix for destination topics
 - `topic_suffix` (String) Suffix for destination topics
+- `transforms_change_topic_name_add_original_topic` (String) Add the original topic name to the output record. 'off' disables it, 'header' adds it as a Kafka header, 'field' adds it as a _streamkap_topic column in the destination table. Defaults to `off`. Valid values: `off`, `header`, `field`.
+- `transforms_insert_field_offset_field` (String) If Kafka destination is used to sync data between services or to apply some transformations, it would be better to rename this field to _streamkap_offset_sync or _streamkap_offset_transform to avoid conflicts with the destination on the other service. Defaults to `_streamkap_offset`.
 
 ### Read-Only
 

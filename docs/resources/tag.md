@@ -24,7 +24,7 @@ Tags can be applied to sources, destinations, and pipelines to help organize and
 ### Required
 
 - `name` (String) Display name of the tag. This is shown in the Streamkap UI.
-- `type` (List of String) List of entity types this tag can be applied to. Valid values: `sources`, `destinations`, `pipelines`.
+- `type` (Set of String) Set of entity types this tag can be applied to. Valid values: `sources`, `destinations`, `pipelines`.
 
 ### Optional
 

@@ -55,7 +55,7 @@ This resource creates and manages a Weaviate destination for Streamkap data pipe
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `weaviate_oidc_scopes` (String) OIDC client scopes (comma-separated). Defaults to `openid`.
-- `weaviate_vectorizer` (String) Sets the default Weaviate vectorizer to use for objects without explicit vector data. Applies to new collections only. Defaults to `basic`. Valid values: `none`, `text2vec-weaviate`, `text2vec-cohere`, `text2vec-jinaai`, `text2vec-openai`, `text2vec-voyageai`.
+- `weaviate_vectorizer` (String) Sets the default Weaviate vectorizer to use for objects without explicit vector data. Applies to new collections only. Defaults to `text2vec-weaviate`. Valid values: `none`, `text2vec-weaviate`, `text2vec-cohere`, `text2vec-jinaai`, `text2vec-openai`, `text2vec-voyageai`.
 
 ### Read-Only
 
