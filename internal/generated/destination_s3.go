@@ -19,6 +19,7 @@ type DestinationS3Model struct {
 	Name                types.String   `tfsdk:"name"`
 	Connector           types.String   `tfsdk:"connector"`
 	ConnectorStatus     types.String   `tfsdk:"connector_status"`
+	KcClusterId         types.String   `tfsdk:"kc_cluster_id"`
 	AWSAccessKeyID      types.String   `tfsdk:"aws_access_key_id"`
 	AWSSecretAccessKey  types.String   `tfsdk:"aws_secret_access_key"`
 	AWSS3Region         types.String   `tfsdk:"aws_s3_region"`
@@ -65,6 +66,11 @@ func DestinationS3Schema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"aws_access_key_id": schema.StringAttribute{
 				Optional:            true,
@@ -137,6 +143,7 @@ func DestinationS3Schema() schema.Schema {
 
 // DestinationS3FieldMappings maps Terraform attribute names to API field names.
 var DestinationS3FieldMappings = map[string]string{
+	"kc_cluster_id":         "kc.cluster.id",
 	"aws_access_key_id":     "aws.access.key.id",
 	"aws_secret_access_key": "aws.secret.access.key",
 	"aws_s3_region":         "aws.s3.region",

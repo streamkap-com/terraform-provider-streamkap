@@ -23,6 +23,7 @@ type DestinationBigqueryModel struct {
 	Name                         types.String         `tfsdk:"name"`
 	Connector                    types.String         `tfsdk:"connector"`
 	ConnectorStatus              types.String         `tfsdk:"connector_status"`
+	KcClusterId                  types.String         `tfsdk:"kc_cluster_id"`
 	BigqueryJson                 jsontypes.Normalized `tfsdk:"bigquery_json"`
 	TableNamePrefix              types.String         `tfsdk:"table_name_prefix"`
 	BigqueryRegion               types.String         `tfsdk:"bigquery_region"`
@@ -67,6 +68,11 @@ func DestinationBigquerySchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"bigquery_json": schema.StringAttribute{
 				Required:            true,
@@ -123,6 +129,7 @@ func DestinationBigquerySchema() schema.Schema {
 
 // DestinationBigqueryFieldMappings maps Terraform attribute names to API field names.
 var DestinationBigqueryFieldMappings = map[string]string{
+	"kc_cluster_id":                   "kc.cluster.id",
 	"bigquery_json":                   "bigquery.json",
 	"table_name_prefix":               "table.name.prefix",
 	"bigquery_region":                 "bigquery.region",

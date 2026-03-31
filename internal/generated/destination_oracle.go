@@ -22,6 +22,7 @@ type DestinationOracleModel struct {
 	Name                                types.String   `tfsdk:"name"`
 	Connector                           types.String   `tfsdk:"connector"`
 	ConnectorStatus                     types.String   `tfsdk:"connector_status"`
+	KcClusterId                         types.String   `tfsdk:"kc_cluster_id"`
 	DatabaseHostname                    types.String   `tfsdk:"database_hostname"`
 	DatabasePort                        types.Int64    `tfsdk:"database_port"`
 	DatabaseDatabase                    types.String   `tfsdk:"database_database"`
@@ -73,6 +74,11 @@ func DestinationOracleSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"database_hostname": schema.StringAttribute{
 				Required:            true,
@@ -177,6 +183,7 @@ func DestinationOracleSchema() schema.Schema {
 
 // DestinationOracleFieldMappings maps Terraform attribute names to API field names.
 var DestinationOracleFieldMappings = map[string]string{
+	"kc_cluster_id":                            "kc.cluster.id",
 	"database_hostname":                        "database.hostname.user.defined",
 	"database_port":                            "database.port.user.defined",
 	"database_database":                        "database.database.user.defined",

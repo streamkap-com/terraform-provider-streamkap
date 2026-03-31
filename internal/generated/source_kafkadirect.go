@@ -20,6 +20,7 @@ type SourceKafkadirectModel struct {
 	Name             types.String   `tfsdk:"name"`
 	Connector        types.String   `tfsdk:"connector"`
 	ConnectorStatus  types.String   `tfsdk:"connector_status"`
+	KcClusterId      types.String   `tfsdk:"kc_cluster_id"`
 	TopicPrefix      types.String   `tfsdk:"topic_prefix"`
 	TopicIncludeList types.String   `tfsdk:"topic_include_list"`
 	Format           types.String   `tfsdk:"format"`
@@ -62,6 +63,11 @@ func SourceKafkadirectSchema() schema.Schema {
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
+			},
 			"topic_prefix": schema.StringAttribute{
 				Required:            true,
 				Description:         "Prefix for the topic",
@@ -95,6 +101,7 @@ func SourceKafkadirectSchema() schema.Schema {
 
 // SourceKafkadirectFieldMappings maps Terraform attribute names to API field names.
 var SourceKafkadirectFieldMappings = map[string]string{
+	"kc_cluster_id":      "kc.cluster.id",
 	"topic_prefix":       "topic.prefix",
 	"topic_include_list": "topic.include.list.user.defined",
 	"format":             "format",

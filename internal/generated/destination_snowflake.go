@@ -20,6 +20,7 @@ type DestinationSnowflakeModel struct {
 	Name                                 types.String   `tfsdk:"name"`
 	Connector                            types.String   `tfsdk:"connector"`
 	ConnectorStatus                      types.String   `tfsdk:"connector_status"`
+	KcClusterId                          types.String   `tfsdk:"kc_cluster_id"`
 	SnowflakeURLName                     types.String   `tfsdk:"snowflake_url_name"`
 	SnowflakeUserName                    types.String   `tfsdk:"snowflake_user_name"`
 	SnowflakePrivateKey                  types.String   `tfsdk:"snowflake_private_key"`
@@ -77,6 +78,11 @@ func DestinationSnowflakeSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"snowflake_url_name": schema.StringAttribute{
 				Optional:            true,
@@ -219,6 +225,7 @@ func DestinationSnowflakeSchema() schema.Schema {
 
 // DestinationSnowflakeFieldMappings maps Terraform attribute names to API field names.
 var DestinationSnowflakeFieldMappings = map[string]string{
+	"kc_cluster_id":                            "kc.cluster.id",
 	"snowflake_url_name":                       "snowflake.url.name",
 	"snowflake_user_name":                      "snowflake.user.name",
 	"snowflake_private_key":                    "snowflake.private.key",

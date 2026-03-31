@@ -21,6 +21,7 @@ type DestinationAzblobModel struct {
 	Name                   types.String   `tfsdk:"name"`
 	Connector              types.String   `tfsdk:"connector"`
 	ConnectorStatus        types.String   `tfsdk:"connector_status"`
+	KcClusterId            types.String   `tfsdk:"kc_cluster_id"`
 	AzblobConnectionString types.String   `tfsdk:"azblob_connection_string"`
 	AzblobContainerName    types.String   `tfsdk:"azblob_container_name"`
 	Format                 types.String   `tfsdk:"format"`
@@ -68,6 +69,11 @@ func DestinationAzblobSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"azblob_connection_string": schema.StringAttribute{
 				Required:            true,
@@ -141,6 +147,7 @@ func DestinationAzblobSchema() schema.Schema {
 
 // DestinationAzblobFieldMappings maps Terraform attribute names to API field names.
 var DestinationAzblobFieldMappings = map[string]string{
+	"kc_cluster_id":            "kc.cluster.id",
 	"azblob_connection_string": "azblob.connection.string.user.defined",
 	"azblob_container_name":    "azblob.container.name",
 	"format":                   "format.user.defined",

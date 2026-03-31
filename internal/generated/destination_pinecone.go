@@ -20,6 +20,7 @@ type DestinationPineconeModel struct {
 	Name                types.String   `tfsdk:"name"`
 	Connector           types.String   `tfsdk:"connector"`
 	ConnectorStatus     types.String   `tfsdk:"connector_status"`
+	KcClusterId         types.String   `tfsdk:"kc_cluster_id"`
 	PineconeAPIKey      types.String   `tfsdk:"pinecone_api_key"`
 	PineconeIndexName   types.String   `tfsdk:"pinecone_index_name"`
 	PineconeProxyHost   types.String   `tfsdk:"pinecone_proxy_host"`
@@ -70,6 +71,11 @@ func DestinationPineconeSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"pinecone_api_key": schema.StringAttribute{
 				Required:            true,
@@ -167,6 +173,7 @@ func DestinationPineconeSchema() schema.Schema {
 
 // DestinationPineconeFieldMappings maps Terraform attribute names to API field names.
 var DestinationPineconeFieldMappings = map[string]string{
+	"kc_cluster_id":          "kc.cluster.id",
 	"pinecone_api_key":       "pinecone.api.key",
 	"pinecone_index_name":    "pinecone.index.name",
 	"pinecone_proxy_host":    "pinecone.proxy.host",

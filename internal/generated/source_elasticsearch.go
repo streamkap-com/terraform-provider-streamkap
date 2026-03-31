@@ -21,6 +21,7 @@ type SourceElasticsearchModel struct {
 	Name                types.String   `tfsdk:"name"`
 	Connector           types.String   `tfsdk:"connector"`
 	ConnectorStatus     types.String   `tfsdk:"connector_status"`
+	KcClusterId         types.String   `tfsdk:"kc_cluster_id"`
 	EsHost              types.String   `tfsdk:"es_host"`
 	EsScheme            types.String   `tfsdk:"es_scheme"`
 	EsPort              types.Int64    `tfsdk:"es_port"`
@@ -68,6 +69,11 @@ func SourceElasticsearchSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"es_host": schema.StringAttribute{
 				Required:            true,
@@ -143,6 +149,7 @@ func SourceElasticsearchSchema() schema.Schema {
 
 // SourceElasticsearchFieldMappings maps Terraform attribute names to API field names.
 var SourceElasticsearchFieldMappings = map[string]string{
+	"kc_cluster_id":         "kc.cluster.id",
 	"es_host":               "es.host",
 	"es_scheme":             "es.scheme",
 	"es_port":               "es.port",

@@ -22,6 +22,7 @@ type DestinationKafkaModel struct {
 	Name                                      types.String   `tfsdk:"name"`
 	Connector                                 types.String   `tfsdk:"connector"`
 	ConnectorStatus                           types.String   `tfsdk:"connector_status"`
+	KcClusterId                               types.String   `tfsdk:"kc_cluster_id"`
 	KafkaSinkBootstrap                        types.String   `tfsdk:"kafka_sink_bootstrap"`
 	DestinationFormat                         types.String   `tfsdk:"destination_format"`
 	JsonSchemaEnable                          types.Bool     `tfsdk:"json_schema_enable"`
@@ -68,6 +69,11 @@ func DestinationKafkaSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"kafka_sink_bootstrap": schema.StringAttribute{
 				Required:            true,
@@ -139,13 +145,14 @@ func DestinationKafkaSchema() schema.Schema {
 
 // DestinationKafkaFieldMappings maps Terraform attribute names to API field names.
 var DestinationKafkaFieldMappings = map[string]string{
-	"kafka_sink_bootstrap":                            "kafka.sink.bootstrap",
-	"destination_format":                              "destination.format",
-	"json_schema_enable":                              "json.schema.enable",
-	"schema_registry_url":                             "schema.registry.url.user.defined",
-	"topic_prefix":                                    "topic.prefix",
-	"topic_suffix":                                    "topic.suffix",
-	"transforms_insert_field_offset_field":            "transforms.InsertField.offset.field",
+	"kc_cluster_id":                        "kc.cluster.id",
+	"kafka_sink_bootstrap":                 "kafka.sink.bootstrap",
+	"destination_format":                   "destination.format",
+	"json_schema_enable":                   "json.schema.enable",
+	"schema_registry_url":                  "schema.registry.url.user.defined",
+	"topic_prefix":                         "topic.prefix",
+	"topic_suffix":                         "topic.suffix",
+	"transforms_insert_field_offset_field": "transforms.InsertField.offset.field",
 	"transforms_change_topic_name_add_original_topic": "transforms.changeTopicName.add.original.topic",
-	"tasks_max":                                       "tasks.max",
+	"tasks_max": "tasks.max",
 }

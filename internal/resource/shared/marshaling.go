@@ -144,6 +144,9 @@ func ModelToConfigMap(ctx context.Context, model any, mappings map[string]string
 
 		fieldValue := v.Field(fieldIdx)
 		apiValue := ExtractTerraformValue(ctx, fieldValue, extraFn)
+		if apiValue == nil {
+			continue // Omit null/unknown Terraform values from the API payload
+		}
 		configMap[apiField] = apiValue
 	}
 

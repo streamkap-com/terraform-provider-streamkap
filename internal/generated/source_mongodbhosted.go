@@ -21,6 +21,7 @@ type SourceMongodbhostedModel struct {
 	Name                                    types.String   `tfsdk:"name"`
 	Connector                               types.String   `tfsdk:"connector"`
 	ConnectorStatus                         types.String   `tfsdk:"connector_status"`
+	KcClusterId                             types.String   `tfsdk:"kc_cluster_id"`
 	MongodbConnectionString                 types.String   `tfsdk:"mongodb_connection_string"`
 	MongodbConnectionHostname               types.String   `tfsdk:"mongodb_connection_hostname"`
 	TransformsUnwrapArrayEncoding           types.String   `tfsdk:"transforms_unwrap_array_encoding"`
@@ -79,6 +80,11 @@ func SourceMongodbhostedSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"mongodb_connection_string": schema.StringAttribute{
 				Required:            true,
@@ -214,6 +220,7 @@ func SourceMongodbhostedSchema() schema.Schema {
 
 // SourceMongodbhostedFieldMappings maps Terraform attribute names to API field names.
 var SourceMongodbhostedFieldMappings = map[string]string{
+	"kc_cluster_id":                                "kc.cluster.id",
 	"mongodb_connection_string":                    "mongodb.connection.string.user.defined",
 	"mongodb_connection_hostname":                  "mongodb.connection.hostname",
 	"transforms_unwrap_array_encoding":             "transforms.unwrap.array.encoding",

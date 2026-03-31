@@ -19,6 +19,7 @@ type DestinationR2Model struct {
 	Name                types.String   `tfsdk:"name"`
 	Connector           types.String   `tfsdk:"connector"`
 	ConnectorStatus     types.String   `tfsdk:"connector_status"`
+	KcClusterId         types.String   `tfsdk:"kc_cluster_id"`
 	R2Account           types.String   `tfsdk:"r2_account"`
 	AWSAccessKeyID      types.String   `tfsdk:"aws_access_key_id"`
 	AWSSecretAccessKey  types.String   `tfsdk:"aws_secret_access_key"`
@@ -65,6 +66,11 @@ func DestinationR2Schema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"r2_account": schema.StringAttribute{
 				Required:            true,
@@ -132,6 +138,7 @@ func DestinationR2Schema() schema.Schema {
 
 // DestinationR2FieldMappings maps Terraform attribute names to API field names.
 var DestinationR2FieldMappings = map[string]string{
+	"kc_cluster_id":         "kc.cluster.id",
 	"r2_account":            "r2.account.user.defined",
 	"aws_access_key_id":     "aws.access.key.id",
 	"aws_secret_access_key": "aws.secret.access.key",
