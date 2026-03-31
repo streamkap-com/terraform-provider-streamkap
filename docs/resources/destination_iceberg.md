@@ -31,18 +31,30 @@ This resource creates and manages an Iceberg destination for Streamkap data pipe
 
 - `iceberg_catalog_client_assume_role_arn` (String) AWS IAM role (e.g., arn:aws:iam::<your-account>:role/<role-name>)
 - `iceberg_catalog_client_region` (String) The AWS region to be used. Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`, `auto`.
+- `iceberg_catalog_credential` (String, Sensitive) OAuth2 client credential in <client_id>:<client_secret> format for Apache Polaris authentication.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `iceberg_catalog_name` (String) Iceberg catalog name
-- `iceberg_catalog_rest_provider` (String) Select the Iceberg REST catalog provider. Defaults to `generic`. Valid values: `generic`, `r2`.
+- `iceberg_catalog_rest_provider` (String) Select the Iceberg REST catalog provider. Defaults to `generic`. Valid values: `generic`, `r2`, `polaris`.
 - `iceberg_catalog_s3_access_key_id` (String) The AWS Access Key ID used to connect to S3.
 - `iceberg_catalog_s3_secret_access_key` (String, Sensitive) The AWS Secret Access Key used to connect to S3.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
+- `iceberg_catalog_scope` (String) OAuth2 scope for Apache Polaris authentication. Defaults to `PRINCIPAL_ROLE:ALL`.
 - `iceberg_catalog_token` (String, Sensitive) Cloudflare R2 Data Catalog API token used for bearer authentication.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `iceberg_catalog_type` (String) Type of Iceberg catalog. Defaults to `rest`. Valid values: `rest`, `hive`, `glue`.
 - `iceberg_catalog_uri` (String) Iceberg catalog uri
+- `iceberg_tables_compaction_commit_threshold` (String) Number of Iceberg commits between compaction checks. Defaults to `5`.
+- `iceberg_tables_compaction_enabled` (Boolean) Enable lightweight compaction of small data files after commits. Defaults to `false`.
+- `iceberg_tables_compaction_expire_snapshots` (Boolean) Expire old snapshots and delete unreferenced data files after compaction. Defaults to `false`.
+- `iceberg_tables_compaction_max_files_per_run` (String) Maximum number of small files to compact in a single run. Defaults to `100`.
+- `iceberg_tables_compaction_min_small_files` (String) Minimum number of small files required before triggering compaction. Defaults to `5`.
+- `iceberg_tables_compaction_retain_last` (String) Number of most recent snapshots to retain when expiring snapshots after compaction. Defaults to `1`.
+- `iceberg_tables_compaction_target_file_size_bytes` (String) Target file size in bytes for compaction. Files smaller than this are candidates for merging. Defaults to `134217728`.
 - `iceberg_tables_default_id_columns` (String) Optional. A comma-separated list of field names to use as record identifiers when key fields are not present in Kafka messages
+- `iceberg_tables_hard_delete_enabled` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only). Defaults to `true`.
 - `insert_mode` (String) Specifies the strategy used to insert events into the database. Defaults to `insert`. Valid values: `insert`, `upsert`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 

@@ -33,6 +33,7 @@ This resource creates and manages a MongoDB source for Streamkap data pipelines.
 
 ### Optional
 
+- `mongodb_connection_hostname` (String) The hostname(s) extracted from the MongoDB connection string. Defaults to ``.
 - `predicates_is_topic_to_enrich_pattern` (String) Regex pattern to match topics for enrichment. Defaults to `$^`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server

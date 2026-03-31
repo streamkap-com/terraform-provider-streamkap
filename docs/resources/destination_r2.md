@@ -29,7 +29,7 @@ This resource creates and manages a R2 destination for Streamkap data pipelines.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `name` (String) Name of the destination
-- `r2_account` (String) your Cloudflare R2 account ID. This is the account ID you see in the Cloudflare dashboard.
+- `r2_account` (String) Cloudflare R2 account ID. This is the account ID you see in the Cloudflare dashboard.
 
 ### Optional
 

@@ -16,30 +16,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-type clickHouseTopicsConfigMapItemModel struct {
-	DeleteSQLExecute types.String `tfsdk:"delete_sql_execute"`
-}
-
 // DestinationClickhouseModel is the Terraform model for the clickhouse destination.
 type DestinationClickhouseModel struct {
-	ID                    types.String                                  `tfsdk:"id"`
-	Name                  types.String                                  `tfsdk:"name"`
-	Connector             types.String                                  `tfsdk:"connector"`
-	ConnectorStatus       types.String                                  `tfsdk:"connector_status"`
-	IngestionMode         types.String                                  `tfsdk:"ingestion_mode"`
-	HardDelete            types.Bool                                    `tfsdk:"hard_delete"`
-	TasksMax              types.Int64                                   `tfsdk:"tasks_max"`
-	QuoteIdentifiers      types.Bool                                    `tfsdk:"quote_identifiers"`
-	Hostname              types.String                                  `tfsdk:"hostname"`
-	ConnectionUsername    types.String                                  `tfsdk:"connection_username"`
-	ConnectionPassword    types.String                                  `tfsdk:"connection_password"`
-	Port                  types.Int64                                   `tfsdk:"port"`
-	Database              types.String                                  `tfsdk:"database"`
-	SSL                   types.Bool                                    `tfsdk:"ssl"`
-	ClickhouseJsonSupport types.Bool                                    `tfsdk:"clickhouse_json_support"`
-	SchemaEvolution       types.String                                  `tfsdk:"schema_evolution"`
-	TopicsConfigMap       map[string]clickHouseTopicsConfigMapItemModel `tfsdk:"topics_config_map"`
-	Timeouts              timeouts.Value                                `tfsdk:"timeouts"`
+	ID                    types.String   `tfsdk:"id"`
+	Name                  types.String   `tfsdk:"name"`
+	Connector             types.String   `tfsdk:"connector"`
+	ConnectorStatus       types.String   `tfsdk:"connector_status"`
+	IngestionMode         types.String   `tfsdk:"ingestion_mode"`
+	HardDelete            types.Bool     `tfsdk:"hard_delete"`
+	TasksMax              types.Int64    `tfsdk:"tasks_max"`
+	QuoteIdentifiers      types.Bool     `tfsdk:"quote_identifiers"`
+	Hostname              types.String   `tfsdk:"hostname"`
+	ConnectionUsername    types.String   `tfsdk:"connection_username"`
+	ConnectionPassword    types.String   `tfsdk:"connection_password"`
+	Port                  types.Int64    `tfsdk:"port"`
+	Database              types.String   `tfsdk:"database"`
+	SSL                   types.Bool     `tfsdk:"ssl"`
+	TopicsConfigMap       types.String   `tfsdk:"topics_config_map"`
+	ClickhouseJsonSupport types.Bool     `tfsdk:"clickhouse_json_support"`
+	SchemaEvolution       types.String   `tfsdk:"schema_evolution"`
+	Timeouts              timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationClickhouseSchema returns the Terraform schema for the clickhouse destination.
@@ -146,6 +142,11 @@ func DestinationClickhouseSchema() schema.Schema {
 				MarkdownDescription: "Enable TLS for network connections. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
+			"topics_config_map": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Per topic configuration in JSON format",
+				MarkdownDescription: "Per topic configuration in JSON format",
+			},
 			"clickhouse_json_support": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -163,18 +164,6 @@ func DestinationClickhouseSchema() schema.Schema {
 					stringvalidator.OneOf("basic", "none"),
 				},
 			},
-			"topics_config_map": schema.MapNestedAttribute{
-				Optional: true,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						"delete_sql_execute": schema.StringAttribute{
-							Optional: true,
-						},
-					},
-				},
-				Description:         "Per topic configuration in JSON format",
-				MarkdownDescription: "Per topic configuration in JSON format",
-			},
 		},
 	}
 }
@@ -191,7 +180,7 @@ var DestinationClickhouseFieldMappings = map[string]string{
 	"port":                    "port",
 	"database":                "database",
 	"ssl":                     "ssl",
+	"topics_config_map":       "topics.config.map",
 	"clickhouse_json_support": "clickhouse.json.support",
 	"schema_evolution":        "schema.evolution",
-	"topics_config_map":       "topics.config.map",
 }

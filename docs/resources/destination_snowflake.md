@@ -28,7 +28,7 @@ This resource creates and manages a Snowflake destination for Streamkap data pip
 ### Optional
 
 - `apply_dynamic_table_script` (Boolean) Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only). Defaults to `false`.
-- `auto_qa_dedupe_table_mapping` (String) Mapping between the tables that store append-only data and the deduplicated tables. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.
+- `auto_qa_dedupe_table_mapping` (Map of String) Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.
 - `auto_schema_creation` (Boolean, Deprecated) DEPRECATED: Use 'create_schema_auto' instead.
 - `create_schema_auto` (Boolean) Automatically generates a Snowflake schema if it does not already exist. Defaults to `true`.
 - `create_sql_data` (String) Use <code>{"TABLE_DATA": {"{table_name}": {"{key}": "{value}"}, ...}, ...}</code> to set table specific data. This data will be available in the custom SQL templates e.g. <code>SELECT {{key}}</code>.
@@ -36,7 +36,7 @@ This resource creates and manages a Snowflake destination for Streamkap data pip
 CREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);
 ALTER TASK {{table}}_CT RESUME`.
 - `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only). Defaults to `true`.
-- `ingestion_mode` (String) <span>Upsert or append modes are available. NOTE: when switching append to upsert, existing data must be deduplicated or deleted. <a href='https://docs.streamkap.com/docs/snowflake#upsert-mode' class='docs-url' target='_blank'>Read more about upsert mode</a> </span>. Defaults to `append`. Valid values: `upsert`, `append`.
+- `ingestion_mode` (String) <span>Upsert or append modes are available. NOTE: when switching append to upsert, existing data must be deduplicated or deleted. <a href='https://docs.streamkap.com/snowflake#upsert-mode' class='docs-url' target='_blank'>Read more about upsert mode</a> </span>. Defaults to `append`. Valid values: `upsert`, `append`.
 - `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `sfwarehouse` (String) The name of the snowflake warehouse. Defaults to `STREAMKAP_WH`.
 - `snowflake_database_name` (String) The name of the database that contains the table to insert rows into.

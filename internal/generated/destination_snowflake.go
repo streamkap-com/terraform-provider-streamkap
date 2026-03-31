@@ -16,33 +16,31 @@ import (
 
 // DestinationSnowflakeModel is the Terraform model for the snowflake destination.
 type DestinationSnowflakeModel struct {
-	ID                                   types.String            `tfsdk:"id"`
-	Name                                 types.String            `tfsdk:"name"`
-	Connector                            types.String            `tfsdk:"connector"`
-	ConnectorStatus                      types.String            `tfsdk:"connector_status"`
-	SnowflakeURLName                     types.String            `tfsdk:"snowflake_url_name"`
-	SnowflakeUserName                    types.String            `tfsdk:"snowflake_user_name"`
-	SnowflakePrivateKey                  types.String            `tfsdk:"snowflake_private_key"`
-	SnowflakePrivateKeyPassphraseSecured types.Bool              `tfsdk:"snowflake_private_key_passphrase_secured"`
-	SnowflakePrivateKeyPassphrase        types.String            `tfsdk:"snowflake_private_key_passphrase"`
-	Sfwarehouse                          types.String            `tfsdk:"sfwarehouse"`
-	SnowflakeDatabaseName                types.String            `tfsdk:"snowflake_database_name"`
-	SnowflakeSchemaName                  types.String            `tfsdk:"snowflake_schema_name"`
-	CreateSchemaAuto                     types.Bool              `tfsdk:"create_schema_auto"`
-	SnowflakeRoleName                    types.String            `tfsdk:"snowflake_role_name"`
-	IngestionMode                        types.String            `tfsdk:"ingestion_mode"`
-	HardDelete                           types.Bool              `tfsdk:"hard_delete"`
-	SchemaEvolution                      types.String            `tfsdk:"schema_evolution"`
-	UseHybridTables                      types.Bool              `tfsdk:"use_hybrid_tables"`
-	ApplyDynamicTableScript              types.Bool              `tfsdk:"apply_dynamic_table_script"`
-	CreateSQLExecute                     types.String            `tfsdk:"create_sql_execute"`
-	SQLTableName                         types.String            `tfsdk:"sql_table_name"`
-	CreateSQLData                        types.String            `tfsdk:"create_sql_data"`
-	SnowflakeTopic2tableMap              types.String            `tfsdk:"snowflake_topic2table_map"`
-	AutoQADedupeTableMapping             map[string]types.String `tfsdk:"auto_qa_dedupe_table_mapping"`
-	// Deprecated fields - kept for backward compatibility
-	AutoSchemaCreation types.Bool     `tfsdk:"auto_schema_creation"`
-	Timeouts           timeouts.Value `tfsdk:"timeouts"`
+	ID                                   types.String   `tfsdk:"id"`
+	Name                                 types.String   `tfsdk:"name"`
+	Connector                            types.String   `tfsdk:"connector"`
+	ConnectorStatus                      types.String   `tfsdk:"connector_status"`
+	SnowflakeURLName                     types.String   `tfsdk:"snowflake_url_name"`
+	SnowflakeUserName                    types.String   `tfsdk:"snowflake_user_name"`
+	SnowflakePrivateKey                  types.String   `tfsdk:"snowflake_private_key"`
+	SnowflakePrivateKeyPassphraseSecured types.Bool     `tfsdk:"snowflake_private_key_passphrase_secured"`
+	SnowflakePrivateKeyPassphrase        types.String   `tfsdk:"snowflake_private_key_passphrase"`
+	Sfwarehouse                          types.String   `tfsdk:"sfwarehouse"`
+	SnowflakeDatabaseName                types.String   `tfsdk:"snowflake_database_name"`
+	SnowflakeSchemaName                  types.String   `tfsdk:"snowflake_schema_name"`
+	CreateSchemaAuto                     types.Bool     `tfsdk:"create_schema_auto"`
+	SnowflakeRoleName                    types.String   `tfsdk:"snowflake_role_name"`
+	IngestionMode                        types.String   `tfsdk:"ingestion_mode"`
+	HardDelete                           types.Bool     `tfsdk:"hard_delete"`
+	SchemaEvolution                      types.String   `tfsdk:"schema_evolution"`
+	UseHybridTables                      types.Bool     `tfsdk:"use_hybrid_tables"`
+	ApplyDynamicTableScript              types.Bool     `tfsdk:"apply_dynamic_table_script"`
+	CreateSQLExecute                     types.String   `tfsdk:"create_sql_execute"`
+	SQLTableName                         types.String   `tfsdk:"sql_table_name"`
+	CreateSQLData                        types.String   `tfsdk:"create_sql_data"`
+	AutoQADedupeTableMapping             types.String   `tfsdk:"auto_qa_dedupe_table_mapping"`
+	SnowflakeTopic2tableMap              types.String   `tfsdk:"snowflake_topic2table_map"`
+	Timeouts                             timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationSnowflakeSchema returns the Terraform schema for the snowflake destination.
@@ -203,18 +201,17 @@ func DestinationSnowflakeSchema() schema.Schema {
 				Description:         "Use <code>{\"TABLE_DATA\": {\"{table_name}\": {\"{key}\": \"{value}\"}, ...}, ...}</code> to set table specific data. This data will be available in the custom SQL templates e.g. <code>SELECT {{key}}</code>.",
 				MarkdownDescription: "Use <code>{\"TABLE_DATA\": {\"{table_name}\": {\"{key}\": \"{value}\"}, ...}, ...}</code> to set table specific data. This data will be available in the custom SQL templates e.g. <code>SELECT {{key}}</code>.",
 			},
+			"auto_qa_dedupe_table_mapping": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Mapping between the tables that store append-only data and the deduplicated tables. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
+				MarkdownDescription: "Mapping between the tables that store append-only data and the deduplicated tables. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
+			},
 			"snowflake_topic2table_map": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Description:         "Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5</code> uses only the last segment as table name. Defaults to \"REGEX_MATCHER>^([-\\\\w]+\\\\.)([-\\\\w]+\\\\.)?([-\\\\w]+\\\\.)?([-\\\\w]+\\\\.)?([-\\\\w]+):$5\".",
 				MarkdownDescription: "Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5</code> uses only the last segment as table name. Defaults to `REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5`.",
 				Default:             stringdefault.StaticString("REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5"),
-			},
-			"auto_qa_dedupe_table_mapping": schema.MapAttribute{
-				Optional:            true,
-				ElementType:         types.StringType,
-				Description:         "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
-				MarkdownDescription: "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
 			},
 		},
 	}
@@ -240,6 +237,6 @@ var DestinationSnowflakeFieldMappings = map[string]string{
 	"create_sql_execute":                       "create.sql.execute",
 	"sql_table_name":                           "sql.table.name",
 	"create_sql_data":                          "create.sql.data",
-	"snowflake_topic2table_map":                "snowflake.topic2table.map",
 	"auto_qa_dedupe_table_mapping":             "auto.qa.dedupe.table.mapping",
+	"snowflake_topic2table_map":                "snowflake.topic2table.map",
 }
