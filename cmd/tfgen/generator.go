@@ -910,6 +910,17 @@ func (g *Generator) commonFields() []FieldData {
 			NeedsPlanMod:        false, // Status is volatile — always read fresh from API
 			APIFieldName:        "",    // ConnectorStatus is handled separately
 		})
+		fields = append(fields, FieldData{
+			GoFieldName:         "KcClusterId",
+			GoType:              "types.String",
+			TfsdkTag:            "kc_cluster_id",
+			TfAttrName:          "kc_cluster_id",
+			SchemaAttrType:      "schema.StringAttribute",
+			Optional:            true,
+			Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+			MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
+			APIFieldName:        "kc.cluster.id",
+		})
 	}
 
 	return fields

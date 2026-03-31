@@ -25,6 +25,12 @@
       "computed": true,
       "sensitive": false
     },
+    "kc_cluster_id": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
     "mode": {
       "required": false,
       "optional": true,

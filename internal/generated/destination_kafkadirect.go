@@ -16,6 +16,7 @@ type DestinationKafkadirectModel struct {
 	Name            types.String   `tfsdk:"name"`
 	Connector       types.String   `tfsdk:"connector"`
 	ConnectorStatus types.String   `tfsdk:"connector_status"`
+	KcClusterId     types.String   `tfsdk:"kc_cluster_id"`
 	Password        types.String   `tfsdk:"password"`
 	WhitelistIps    types.String   `tfsdk:"whitelist_ips"`
 	Timeouts        timeouts.Value `tfsdk:"timeouts"`
@@ -56,6 +57,11 @@ func DestinationKafkadirectSchema() schema.Schema {
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
+			},
 			"password": schema.StringAttribute{
 				Required:            true,
 				Sensitive:           true,
@@ -73,6 +79,7 @@ func DestinationKafkadirectSchema() schema.Schema {
 
 // DestinationKafkadirectFieldMappings maps Terraform attribute names to API field names.
 var DestinationKafkadirectFieldMappings = map[string]string{
+	"kc_cluster_id": "kc.cluster.id",
 	"password":      "password",
 	"whitelist_ips": "whitelist.ips.user.defined",
 }

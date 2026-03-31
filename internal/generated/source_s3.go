@@ -21,6 +21,7 @@ type SourceS3Model struct {
 	Name                 types.String   `tfsdk:"name"`
 	Connector            types.String   `tfsdk:"connector"`
 	ConnectorStatus      types.String   `tfsdk:"connector_status"`
+	KcClusterId          types.String   `tfsdk:"kc_cluster_id"`
 	Format               types.String   `tfsdk:"format"`
 	TopicPostfix         types.String   `tfsdk:"topic_postfix"`
 	AWSAccessKeyID       types.String   `tfsdk:"aws_access_key_id"`
@@ -68,6 +69,11 @@ func SourceS3Schema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"format": schema.StringAttribute{
 				Optional:            true,
@@ -161,6 +167,7 @@ func SourceS3Schema() schema.Schema {
 
 // SourceS3FieldMappings maps Terraform attribute names to API field names.
 var SourceS3FieldMappings = map[string]string{
+	"kc_cluster_id":           "kc.cluster.id",
 	"format":                  "format",
 	"topic_postfix":           "topic.postfix",
 	"aws_access_key_id":       "aws.access.key.id",

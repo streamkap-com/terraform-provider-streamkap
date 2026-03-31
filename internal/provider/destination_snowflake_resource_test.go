@@ -170,8 +170,6 @@ resource "streamkap_destination_snowflake" "test" {
 			// 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "schema_evolution", "basic"),
 			// 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "use_hybrid_tables", "false"),
 			// 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "apply_dynamic_table_script", "false"),
-			// 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "dynamic_table_target_lag", "15"),
-			// 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "cleanup_task_schedule", "60"),
 			// 					resource.TestCheckResourceAttrSet("streamkap_destination_snowflake.test", "id"),
 			// 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "connector", "snowflake"),
 			// 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "auto_qa_dedupe_table_mapping.users", "JUNIT.USERS"),

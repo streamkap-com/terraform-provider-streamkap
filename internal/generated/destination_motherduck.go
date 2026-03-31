@@ -22,6 +22,7 @@ type DestinationMotherduckModel struct {
 	Name                                types.String   `tfsdk:"name"`
 	Connector                           types.String   `tfsdk:"connector"`
 	ConnectorStatus                     types.String   `tfsdk:"connector_status"`
+	KcClusterId                         types.String   `tfsdk:"kc_cluster_id"`
 	IngestionMode                       types.String   `tfsdk:"ingestion_mode"`
 	MotherduckToken                     types.String   `tfsdk:"motherduck_token"`
 	MotherduckCatalog                   types.String   `tfsdk:"motherduck_catalog"`
@@ -69,6 +70,11 @@ func DestinationMotherduckSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"ingestion_mode": schema.StringAttribute{
 				Optional:            true,
@@ -148,6 +154,7 @@ func DestinationMotherduckSchema() schema.Schema {
 
 // DestinationMotherduckFieldMappings maps Terraform attribute names to API field names.
 var DestinationMotherduckFieldMappings = map[string]string{
+	"kc_cluster_id":      "kc.cluster.id",
 	"ingestion_mode":     "ingestion.mode",
 	"motherduck_token":   "motherduck.token",
 	"motherduck_catalog": "motherduck.catalog.user.defined",

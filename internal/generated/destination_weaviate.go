@@ -20,6 +20,7 @@ type DestinationWeaviateModel struct {
 	Name                     types.String   `tfsdk:"name"`
 	Connector                types.String   `tfsdk:"connector"`
 	ConnectorStatus          types.String   `tfsdk:"connector_status"`
+	KcClusterId              types.String   `tfsdk:"kc_cluster_id"`
 	WeaviateConnectionURL    types.String   `tfsdk:"weaviate_connection_url"`
 	WeaviateGrpcURL          types.String   `tfsdk:"weaviate_grpc_url"`
 	WeaviateGrpcSecured      types.Bool     `tfsdk:"weaviate_grpc_secured"`
@@ -81,6 +82,11 @@ func DestinationWeaviateSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"weaviate_connection_url": schema.StringAttribute{
 				Optional:            true,
@@ -270,6 +276,7 @@ func DestinationWeaviateSchema() schema.Schema {
 
 // DestinationWeaviateFieldMappings maps Terraform attribute names to API field names.
 var DestinationWeaviateFieldMappings = map[string]string{
+	"kc_cluster_id":               "kc.cluster.id",
 	"weaviate_connection_url":     "weaviate.connection.url",
 	"weaviate_grpc_url":           "weaviate.grpc.url",
 	"weaviate_grpc_secured":       "weaviate.grpc.secured",

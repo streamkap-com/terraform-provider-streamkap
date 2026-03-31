@@ -22,6 +22,7 @@ type DestinationRedisModel struct {
 	Name             types.String   `tfsdk:"name"`
 	Connector        types.String   `tfsdk:"connector"`
 	ConnectorStatus  types.String   `tfsdk:"connector_status"`
+	KcClusterId      types.String   `tfsdk:"kc_cluster_id"`
 	RedisHost        types.String   `tfsdk:"redis_host"`
 	RedisPort        types.Int64    `tfsdk:"redis_port"`
 	RedisUsername    types.String   `tfsdk:"redis_username"`
@@ -67,6 +68,11 @@ func DestinationRedisSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"redis_host": schema.StringAttribute{
 				Required:            true,
@@ -129,6 +135,7 @@ func DestinationRedisSchema() schema.Schema {
 
 // DestinationRedisFieldMappings maps Terraform attribute names to API field names.
 var DestinationRedisFieldMappings = map[string]string{
+	"kc_cluster_id":       "kc.cluster.id",
 	"redis_host":          "redis.host.user.defined",
 	"redis_port":          "redis.port.user.defined",
 	"redis_username":      "redis.username",

@@ -31,6 +31,12 @@
       "computed": true,
       "sensitive": false
     },
+    "kc_cluster_id": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
     "mongodb_connection_string": {
       "required": true,
       "optional": false,

@@ -21,6 +21,7 @@ type DestinationRedshiftModel struct {
 	Name                types.String   `tfsdk:"name"`
 	Connector           types.String   `tfsdk:"connector"`
 	ConnectorStatus     types.String   `tfsdk:"connector_status"`
+	KcClusterId         types.String   `tfsdk:"kc_cluster_id"`
 	TasksMax            types.Int64    `tfsdk:"tasks_max"`
 	AWSRedshiftDomain   types.String   `tfsdk:"aws_redshift_domain"`
 	AWSRedshiftPort     types.Int64    `tfsdk:"aws_redshift_port"`
@@ -67,6 +68,11 @@ func DestinationRedshiftSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
@@ -134,6 +140,7 @@ func DestinationRedshiftSchema() schema.Schema {
 
 // DestinationRedshiftFieldMappings maps Terraform attribute names to API field names.
 var DestinationRedshiftFieldMappings = map[string]string{
+	"kc_cluster_id":         "kc.cluster.id",
 	"tasks_max":             "tasks.max",
 	"aws_redshift_domain":   "aws.redshift.domain",
 	"aws_redshift_port":     "aws.redshift.port",

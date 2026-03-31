@@ -20,6 +20,7 @@ type DestinationIcebergModel struct {
 	Name                                       types.String   `tfsdk:"name"`
 	Connector                                  types.String   `tfsdk:"connector"`
 	ConnectorStatus                            types.String   `tfsdk:"connector_status"`
+	KcClusterId                                types.String   `tfsdk:"kc_cluster_id"`
 	IcebergCatalogType                         types.String   `tfsdk:"iceberg_catalog_type"`
 	IcebergCatalogAuthMode                     types.String   `tfsdk:"iceberg_catalog_auth_mode"`
 	IcebergCatalogName                         types.String   `tfsdk:"iceberg_catalog_name"`
@@ -81,6 +82,11 @@ func DestinationIcebergSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"iceberg_catalog_type": schema.StringAttribute{
 				Optional:            true,
@@ -254,6 +260,7 @@ func DestinationIcebergSchema() schema.Schema {
 
 // DestinationIcebergFieldMappings maps Terraform attribute names to API field names.
 var DestinationIcebergFieldMappings = map[string]string{
+	"kc_cluster_id":                                    "kc.cluster.id",
 	"iceberg_catalog_type":                             "iceberg.catalog.type",
 	"iceberg_catalog_auth_mode":                        "iceberg.catalog.auth.mode",
 	"iceberg_catalog_name":                             "iceberg.catalog.name",

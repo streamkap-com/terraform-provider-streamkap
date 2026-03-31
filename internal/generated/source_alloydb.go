@@ -21,6 +21,7 @@ type SourceAlloydbModel struct {
 	Name                                    types.String   `tfsdk:"name"`
 	Connector                               types.String   `tfsdk:"connector"`
 	ConnectorStatus                         types.String   `tfsdk:"connector_status"`
+	KcClusterId                             types.String   `tfsdk:"kc_cluster_id"`
 	DatabaseHostname                        types.String   `tfsdk:"database_hostname"`
 	DatabasePort                            types.Int64    `tfsdk:"database_port"`
 	DatabaseUser                            types.String   `tfsdk:"database_user"`
@@ -91,6 +92,11 @@ func SourceAlloydbSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"database_hostname": schema.StringAttribute{
 				Required:            true,
@@ -301,12 +307,13 @@ func SourceAlloydbSchema() schema.Schema {
 
 // SourceAlloydbFieldMappings maps Terraform attribute names to API field names.
 var SourceAlloydbFieldMappings = map[string]string{
-	"database_hostname":                            "database.hostname.user.defined",
-	"database_port":                                "database.port.user.defined",
-	"database_user":                                "database.user",
-	"database_password":                            "database.password",
-	"database_dbname":                              "database.dbname",
-	"snapshot_read_only":                           "snapshot.read.only.user.defined",
+	"kc_cluster_id":      "kc.cluster.id",
+	"database_hostname":  "database.hostname.user.defined",
+	"database_port":      "database.port.user.defined",
+	"database_user":      "database.user",
+	"database_password":  "database.password",
+	"database_dbname":    "database.dbname",
+	"snapshot_read_only": "snapshot.read.only.user.defined",
 	"signal_data_collection_schema_or_database":    "signal.data.collection.schema.or.database",
 	"column_include_list_toggled":                  "column.include.list.toggled",
 	"column_include_list":                          "column.include.list.user.defined",

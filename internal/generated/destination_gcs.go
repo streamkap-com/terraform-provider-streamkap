@@ -19,6 +19,7 @@ type DestinationGcsModel struct {
 	Name                types.String   `tfsdk:"name"`
 	Connector           types.String   `tfsdk:"connector"`
 	ConnectorStatus     types.String   `tfsdk:"connector_status"`
+	KcClusterId         types.String   `tfsdk:"kc_cluster_id"`
 	GcsCredentialsJson  types.String   `tfsdk:"gcs_credentials_json"`
 	GcsBucketName       types.String   `tfsdk:"gcs_bucket_name"`
 	Format              types.String   `tfsdk:"format"`
@@ -63,6 +64,11 @@ func DestinationGcsSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"gcs_credentials_json": schema.StringAttribute{
 				Optional:            true,
@@ -120,6 +126,7 @@ func DestinationGcsSchema() schema.Schema {
 
 // DestinationGcsFieldMappings maps Terraform attribute names to API field names.
 var DestinationGcsFieldMappings = map[string]string{
+	"kc_cluster_id":         "kc.cluster.id",
 	"gcs_credentials_json":  "gcs.credentials.json",
 	"gcs_bucket_name":       "gcs.bucket.name",
 	"format":                "format.user.defined",

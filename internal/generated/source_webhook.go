@@ -20,6 +20,7 @@ type SourceWebhookModel struct {
 	Name                                types.String   `tfsdk:"name"`
 	Connector                           types.String   `tfsdk:"connector"`
 	ConnectorStatus                     types.String   `tfsdk:"connector_status"`
+	KcClusterId                         types.String   `tfsdk:"kc_cluster_id"`
 	WebhookURL                          types.String   `tfsdk:"webhook_url"`
 	APIKey                              types.String   `tfsdk:"api_key"`
 	CamelSourceCamelMessageHeaderKey    types.String   `tfsdk:"camel_source_camel_message_header_key"`
@@ -63,6 +64,11 @@ func SourceWebhookSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "KC cluster ID to deploy this connector to. Omit for default cluster.",
+				MarkdownDescription: "KC cluster ID to deploy this connector to. Omit for default cluster.",
 			},
 			"webhook_url": schema.StringAttribute{
 				Optional:            true,
@@ -115,6 +121,7 @@ func SourceWebhookSchema() schema.Schema {
 
 // SourceWebhookFieldMappings maps Terraform attribute names to API field names.
 var SourceWebhookFieldMappings = map[string]string{
+	"kc_cluster_id":                         "kc.cluster.id",
 	"webhook_url":                           "webhook.url",
 	"api_key":                               "api.key",
 	"camel_source_camel_message_header_key": "camel.source.camelMessageHeaderKey",
