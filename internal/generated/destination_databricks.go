@@ -22,6 +22,7 @@ type DestinationDatabricksModel struct {
 	Name                                types.String   `tfsdk:"name"`
 	Connector                           types.String   `tfsdk:"connector"`
 	ConnectorStatus                     types.String   `tfsdk:"connector_status"`
+	KcClusterId                         types.String   `tfsdk:"kc_cluster_id"`
 	IngestionMode                       types.String   `tfsdk:"ingestion_mode"`
 	DatabricksToken                     types.String   `tfsdk:"databricks_token"`
 	ConnectionURL                       types.String   `tfsdk:"connection_url"`
@@ -73,6 +74,13 @@ func DestinationDatabricksSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				Default:             stringdefault.StaticString(""),
 			},
 			"ingestion_mode": schema.StringAttribute{
 				Optional:            true,
