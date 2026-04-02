@@ -417,9 +417,10 @@ func (r *SourceMySQLResource) Create(ctx context.Context, req res.CreateRequest,
 	}
 
 	source, err := r.client.CreateSource(ctx, api.Source{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 
 	if err != nil {
@@ -472,6 +473,11 @@ func (r *SourceMySQLResource) Read(ctx context.Context, req res.ReadRequest, res
 	state.Name = types.StringValue(source.Name)
 	state.Connector = types.StringValue(source.Connector)
 	r.configMap2Model(source.Config, &state)
+	if source.KcClusterId != nil {
+		state.KcClusterId = types.StringValue(*source.KcClusterId)
+	} else {
+		state.KcClusterId = types.StringNull()
+	}
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -499,9 +505,10 @@ func (r *SourceMySQLResource) Update(ctx context.Context, req res.UpdateRequest,
 	}
 
 	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 
 	if err != nil {
@@ -584,7 +591,6 @@ func (r *SourceMySQLResource) model2ConfigMap(model SourceMySQLResourceModel) (m
 		"ssh.port":                                     model.SSHPort.ValueString(),
 		"ssh.user":                                     model.SSHUser.ValueString(),
 		"predicates.IsTopicToEnrich.pattern":    model.PredicatesIsTopicToEnrichPattern.ValueString(),
-		"kc.cluster.id": model.KcClusterId.ValueStringPointer(),
 	}
 
 	if !model.ColumnIncludeList.IsNull() {
@@ -627,5 +633,4 @@ func (r *SourceMySQLResource) configMap2Model(cfg map[string]any, model *SourceM
 	model.SSHPort = helper.GetTfCfgString(cfg, "ssh.port")
 	model.SSHUser = helper.GetTfCfgString(cfg, "ssh.user")
 	model.PredicatesIsTopicToEnrichPattern = helper.GetTfCfgString(cfg, "predicates.IsTopicToEnrich.pattern")
-	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }

@@ -207,9 +207,10 @@ func (r *DestinationKafkaResource) Create(ctx context.Context, req res.CreateReq
 
 	tflog.Debug(ctx, "Pre CREATE ===> config: "+fmt.Sprintf("%+v", config))
 	destination, err := r.client.CreateDestination(ctx, api.Destination{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -263,6 +264,11 @@ func (r *DestinationKafkaResource) Read(ctx context.Context, req res.ReadRequest
 	state.Name = types.StringValue(destination.Name)
 	state.Connector = types.StringValue(destination.Connector)
 	r.configMap2Model(destination.Config, &state)
+	if destination.KcClusterId != nil {
+		state.KcClusterId = types.StringValue(*destination.KcClusterId)
+	} else {
+		state.KcClusterId = types.StringNull()
+	}
 	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", state))
 
 	// Save updated data into Terraform state
@@ -291,9 +297,10 @@ func (r *DestinationKafkaResource) Update(ctx context.Context, req res.UpdateReq
 	}
 
 	destination, err := r.client.UpdateDestination(ctx, plan.ID.ValueString(), api.Destination{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -351,7 +358,6 @@ func (r *DestinationKafkaResource) model2ConfigMap(model DestinationKafkaResourc
 		"tasks.max":                        model.TasksMax.ValueInt64(),
 		"transforms.InsertField.offset.field":            model.OffsetField.ValueString(),
 		"transforms.changeTopicName.add.original.topic": model.AddOriginalTopic.ValueString(),
-		"kc.cluster.id": model.KcClusterId.ValueStringPointer(),
 	}, nil
 }
 
@@ -366,5 +372,4 @@ func (r *DestinationKafkaResource) configMap2Model(cfg map[string]any, model *De
 	model.TasksMax = helper.GetTfCfgInt64(cfg, "tasks.max")
 	model.OffsetField = helper.GetTfCfgString(cfg, "transforms.InsertField.offset.field")
 	model.AddOriginalTopic = helper.GetTfCfgString(cfg, "transforms.changeTopicName.add.original.topic")
-	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }

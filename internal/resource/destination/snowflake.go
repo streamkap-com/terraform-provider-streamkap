@@ -296,9 +296,10 @@ func (r *DestinationSnowflakeResource) Create(ctx context.Context, req res.Creat
 
 	tflog.Debug(ctx, "Pre CREATE ===> config: "+fmt.Sprintf("%+v", config))
 	destination, err := r.client.CreateDestination(ctx, api.Destination{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 
 	if err != nil {
@@ -353,6 +354,11 @@ func (r *DestinationSnowflakeResource) Read(ctx context.Context, req res.ReadReq
 	state.Name = types.StringValue(destination.Name)
 	state.Connector = types.StringValue(destination.Connector)
 	r.configMap2Model(ctx, destination.Config, &state)
+	if destination.KcClusterId != nil {
+		state.KcClusterId = types.StringValue(*destination.KcClusterId)
+	} else {
+		state.KcClusterId = types.StringNull()
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -375,9 +381,10 @@ func (r *DestinationSnowflakeResource) Update(ctx context.Context, req res.Updat
 
 	tflog.Debug(ctx, "Pre UPDATE ===> config: "+fmt.Sprintf("%+v", config))
 	destination, err := r.client.UpdateDestination(ctx, plan.ID.ValueString(), api.Destination{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 
 	if err != nil {
@@ -462,7 +469,6 @@ func (r *DestinationSnowflakeResource) model2ConfigMap(_ context.Context, model 
 		"auto.qa.dedupe.table.mapping":             autoQADedupeTableMappingStr,
 		"snowflake.topic2table.map":                model.SnowflakeTopic2TableMap.ValueStringPointer(),
 		"quote.identifiers":                        model.QuoteIdentifiers.ValueBool(),
-		"kc.cluster.id":                            model.KcClusterId.ValueStringPointer(),
 	}
 
 	if model.SnowflakePrivateKeyPassphrase.IsNull() {
@@ -493,7 +499,6 @@ func (r *DestinationSnowflakeResource) configMap2Model(ctx context.Context, cfg 
 	model.SQLTableName = helper.GetTfCfgString(cfg, "sql.table.name")
 	model.SnowflakeTopic2TableMap = helper.GetTfCfgString(cfg, "snowflake.topic2table.map")
 	model.QuoteIdentifiers = helper.GetTfCfgBool(cfg, "quote.identifiers")
-	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 
 	// Parse auto QA deduplication table mapping
 	// Example:

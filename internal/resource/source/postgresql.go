@@ -378,9 +378,10 @@ func (r *SourcePostgreSQLResource) Create(ctx context.Context, req res.CreateReq
 	}
 
 	source, err := r.client.CreateSource(ctx, api.Source{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 
 	if err != nil {
@@ -433,6 +434,11 @@ func (r *SourcePostgreSQLResource) Read(ctx context.Context, req res.ReadRequest
 	state.Name = types.StringValue(source.Name)
 	state.Connector = types.StringValue(source.Connector)
 	r.configMap2Model(source.Config, &state)
+	if source.KcClusterId != nil {
+		state.KcClusterId = types.StringValue(*source.KcClusterId)
+	} else {
+		state.KcClusterId = types.StringNull()
+	}
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -460,9 +466,10 @@ func (r *SourcePostgreSQLResource) Update(ctx context.Context, req res.UpdateReq
 	}
 
 	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 
 	if err != nil {
@@ -545,7 +552,6 @@ func (r *SourcePostgreSQLResource) model2ConfigMap(model SourcePostgreSQLResourc
 		"transforms.InsertStaticKey2.static.value":      model.InsertStaticKeyValue2.ValueString(),
 		"transforms.InsertStaticValue2.static.field":    model.InsertStaticValueField2.ValueString(),
 		"transforms.InsertStaticValue2.static.value":    model.InsertStaticValue2.ValueString(),
-		"kc.cluster.id": model.KcClusterId.ValueStringPointer(),
 	}
 
 	if !model.ColumnIncludeList.IsNull() {
@@ -592,5 +598,4 @@ func (r *SourcePostgreSQLResource) configMap2Model(cfg map[string]any, model *So
 	model.InsertStaticKeyValue2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticKey2.static.value")
 	model.InsertStaticValueField2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue2.static.field")
 	model.InsertStaticValue2 = helper.GetTfCfgString(cfg, "transforms.InsertStaticValue2.static.value")
-	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }

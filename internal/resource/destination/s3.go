@@ -236,9 +236,10 @@ func (r *DestinationS3Resource) Create(ctx context.Context, req res.CreateReques
 
 	tflog.Debug(ctx, "Pre CREATE ===> config: "+fmt.Sprintf("%+v", config))
 	destination, err := r.client.CreateDestination(ctx, api.Destination{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -292,6 +293,11 @@ func (r *DestinationS3Resource) Read(ctx context.Context, req res.ReadRequest, r
 	state.Name = types.StringValue(destination.Name)
 	state.Connector = types.StringValue(destination.Connector)
 	r.configMap2Model(destination.Config, &state, ctx)
+	if destination.KcClusterId != nil {
+		state.KcClusterId = types.StringValue(*destination.KcClusterId)
+	} else {
+		state.KcClusterId = types.StringNull()
+	}
 	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", state))
 
 	// Save updated data into Terraform state
@@ -317,9 +323,10 @@ func (r *DestinationS3Resource) Update(ctx context.Context, req res.UpdateReques
 	}
 
 	destination, err := r.client.UpdateDestination(ctx, plan.ID.ValueString(), api.Destination{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -383,7 +390,6 @@ func (r *DestinationS3Resource) model2ConfigMap(model DestinationS3ResourceModel
 		"file.name.prefix":                  model.FilenamePrefix.ValueString(),
 		"file.compression.type":             model.CompressionType.ValueString(),
 		"format.output.fields.user.defined": outputFields,
-		"kc.cluster.id":                     model.KcClusterId.ValueStringPointer(),
 	}
 
 	return configMap, nil
@@ -400,5 +406,4 @@ func (r *DestinationS3Resource) configMap2Model(cfg map[string]any, model *Desti
 	model.FilenamePrefix = helper.GetTfCfgString(cfg, "file.name.prefix")
 	model.CompressionType = helper.GetTfCfgString(cfg, "file.compression.type")
 	model.OutputFields = helper.GetTfCfgListString(ctx, cfg, "format.output.fields.user.defined")
-	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }

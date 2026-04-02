@@ -34,6 +34,10 @@ type StreamkapAPI interface {
 
 	// Transform APIs
 	GetTransform(ctx context.Context, transformID string) (*Transform, error)
+	CreateTransform(ctx context.Context, reqPayload Transform) (*Transform, error)
+	UpdateTransform(ctx context.Context, transformID string, reqPayload Transform) (*Transform, error)
+	DeleteTransform(ctx context.Context, transformID string) error
+	DeployTransformLive(ctx context.Context, transformID string, versionID string) error
 
 	// Tags APIs
 	GetTag(ctx context.Context, TagID string) (*Tag, error)

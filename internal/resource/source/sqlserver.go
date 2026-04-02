@@ -316,9 +316,10 @@ func (r *SourceSQLServerResource) Create(ctx context.Context, req res.CreateRequ
 	}
 
 	source, err := r.client.CreateSource(ctx, api.Source{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 
 
@@ -372,6 +373,11 @@ func (r *SourceSQLServerResource) Read(ctx context.Context, req res.ReadRequest,
 	state.Name = types.StringValue(source.Name)
 	state.Connector = types.StringValue(source.Connector)
 	r.configMap2Model(source.Config, &state)
+	if source.KcClusterId != nil {
+		state.KcClusterId = types.StringValue(*source.KcClusterId)
+	} else {
+		state.KcClusterId = types.StringNull()
+	}
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -399,9 +405,10 @@ func (r *SourceSQLServerResource) Update(ctx context.Context, req res.UpdateRequ
 	}
 
 	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 
 	if err != nil {
@@ -505,7 +512,6 @@ func (r *SourceSQLServerResource) model2ConfigMap(model SourceSQLServerResourceM
 		"streamkap.snapshot.parallelism":               model.SnapshotParallelism.ValueInt64(),
 		"streamkap.snapshot.large.table.threshold":     model.SnapshotLargeTableThreshold.ValueInt64(),
 		"streamkap.snapshot.custom.table.config.user.defined": expectedSnapshotCustomTableConfig,
-		"kc.cluster.id": model.KcClusterId.ValueStringPointer(),
 	}
 
 	return configMap, nil
@@ -564,6 +570,5 @@ func (r *SourceSQLServerResource) configMap2Model(cfg map[string]any, model *Sou
 		}
 	}
 	model.SnapshotCustomTableConfig = snapshotCustomTableConfig
-	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 	return
 }

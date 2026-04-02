@@ -239,9 +239,10 @@ func (r *DestinationClickHouseResource) Create(ctx context.Context, req res.Crea
 
 	tflog.Debug(ctx, "Pre CREATE ===> config: "+fmt.Sprintf("%+v", config))
 	destination, err := r.client.CreateDestination(ctx, api.Destination{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -295,6 +296,11 @@ func (r *DestinationClickHouseResource) Read(ctx context.Context, req res.ReadRe
 	state.Name = types.StringValue(destination.Name)
 	state.Connector = types.StringValue(destination.Connector)
 	r.configMap2Model(destination.Config, &state)
+	if destination.KcClusterId != nil {
+		state.KcClusterId = types.StringValue(*destination.KcClusterId)
+	} else {
+		state.KcClusterId = types.StringNull()
+	}
 	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", state))
 
 	// Save updated data into Terraform state
@@ -323,9 +329,10 @@ func (r *DestinationClickHouseResource) Update(ctx context.Context, req res.Upda
 	}
 
 	destination, err := r.client.UpdateDestination(ctx, plan.ID.ValueString(), api.Destination{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -420,7 +427,6 @@ func (r *DestinationClickHouseResource) model2ConfigMap(model DestinationClickHo
 		"topics.config.map": topicsConfigMapStr,
 		"schema.evolution":  model.SchemaEvolution.ValueString(),
 		"quote.identifiers": model.QuoteIdentifiers.ValueBool(),
-		"kc.cluster.id":     model.KcClusterId.ValueStringPointer(),
 	}, nil
 }
 
@@ -438,7 +444,6 @@ func (r *DestinationClickHouseResource) configMap2Model(cfg map[string]any, mode
 	model.SSL = helper.GetTfCfgBool(cfg, "ssl")
 	model.SchemaEvolution = helper.GetTfCfgString(cfg, "schema.evolution")
 	model.QuoteIdentifiers = helper.GetTfCfgBool(cfg, "quote.identifiers")
-	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 
 	// Parse topics config map
 	// Example:
