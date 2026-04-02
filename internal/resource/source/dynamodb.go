@@ -225,9 +225,10 @@ func (r *SourceDynamoDBResource) Create(ctx context.Context, req res.CreateReque
 	config := r.model2ConfigMap(plan)
 
 	source, err := r.client.CreateSource(ctx, api.Source{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 
 	if err != nil {
@@ -280,6 +281,11 @@ func (r *SourceDynamoDBResource) Read(ctx context.Context, req res.ReadRequest, 
 	state.Name = types.StringValue(source.Name)
 	state.Connector = types.StringValue(source.Connector)
 	r.configMap2Model(source.Config, &state)
+	if source.KcClusterId != nil {
+		state.KcClusterId = types.StringValue(*source.KcClusterId)
+	} else {
+		state.KcClusterId = types.StringNull()
+	}
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -300,9 +306,10 @@ func (r *SourceDynamoDBResource) Update(ctx context.Context, req res.UpdateReque
 	config := r.model2ConfigMap(plan)
 
 	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 
 	if err != nil {
@@ -366,7 +373,6 @@ func (r *SourceDynamoDBResource) model2ConfigMap(model SourceDynamoDBResourceMod
 		"array.encoding.json":              model.ArrayEncodingJson.ValueBool(),
 		"struct.encoding.json":             model.StructEncodingJson.ValueBool(),
 		"tasks.max":                        model.TasksMax.ValueInt64(),
-		"kc.cluster.id":                    model.KcClusterId.ValueStringPointer(),
 	}
 }
 
@@ -387,5 +393,4 @@ func (r *SourceDynamoDBResource) configMap2Model(cfg map[string]any, model *Sour
 	model.ArrayEncodingJson = helper.GetTfCfgBool(cfg, "array.encoding.json")
 	model.StructEncodingJson = helper.GetTfCfgBool(cfg, "struct.encoding.json")
 	model.TasksMax = helper.GetTfCfgInt64(cfg, "tasks.max")
-	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }

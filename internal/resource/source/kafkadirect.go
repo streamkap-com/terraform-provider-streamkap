@@ -148,9 +148,10 @@ func (r *SourceKafkaDirectResource) Create(ctx context.Context, req res.CreateRe
 	config := r.model2ConfigMap(plan)
 
 	source, err := r.client.CreateSource(ctx, api.Source{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 
 	if err != nil {
@@ -203,6 +204,11 @@ func (r *SourceKafkaDirectResource) Read(ctx context.Context, req res.ReadReques
 	state.Name = types.StringValue(source.Name)
 	state.Connector = types.StringValue(source.Connector)
 	r.configMap2Model(source.Config, &state)
+	if source.KcClusterId != nil {
+		state.KcClusterId = types.StringValue(*source.KcClusterId)
+	} else {
+		state.KcClusterId = types.StringNull()
+	}
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -223,9 +229,10 @@ func (r *SourceKafkaDirectResource) Update(ctx context.Context, req res.UpdateRe
 	config := r.model2ConfigMap(plan)
 
 	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 
 	if err != nil {
@@ -278,7 +285,6 @@ func (r *SourceKafkaDirectResource) model2ConfigMap(model SourceKafkaDirectResou
 		"format":                          model.KafkaFormat.ValueString(),
 		"topic.include.list.user.defined": model.TopicIncludeList.ValueString(),
 		"schemas.enable":                  model.SchemasEnable.ValueBool(),
-		"kc.cluster.id":                   model.KcClusterId.ValueStringPointer(),
 	}
 }
 
@@ -288,5 +294,4 @@ func (r *SourceKafkaDirectResource) configMap2Model(cfg map[string]any, model *S
 	model.KafkaFormat = helper.GetTfCfgString(cfg, "format")
 	model.TopicIncludeList = helper.GetTfCfgString(cfg, "topic.include.list.user.defined")
 	model.SchemasEnable = helper.GetTfCfgBool(cfg, "schemas.enable")
-	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }

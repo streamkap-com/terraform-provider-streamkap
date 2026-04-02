@@ -19,10 +19,11 @@ type GetSourceResponse struct {
 }
 
 type Source struct {
-	ID        string         `json:"id,omitempty"`
-	Name      string         `json:"name"`
-	Connector string         `json:"connector"`
-	Config    map[string]any `json:"config"`
+	ID          string         `json:"id,omitempty"`
+	Name        string         `json:"name"`
+	Connector   string         `json:"connector"`
+	Config      map[string]any `json:"config"`
+	KcClusterId *string        `json:"kc_cluster_id,omitempty"`
 }
 
 func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*Source, error) {

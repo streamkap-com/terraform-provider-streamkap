@@ -20,6 +20,7 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/pipeline"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/topic"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/transform"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -222,5 +223,6 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		destination.NewDestinationKafkaResource,
 		pipeline.NewPipelineResource,
 		topic.NewTopicResource,
+		transform.NewTransformTopicRouterResource,
 	}
 }

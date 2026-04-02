@@ -229,9 +229,10 @@ func (r *DestinationIcebergResource) Create(ctx context.Context, req res.CreateR
 
 	tflog.Debug(ctx, "Pre CREATE ===> config: "+fmt.Sprintf("%+v", config))
 	destination, err := r.client.CreateDestination(ctx, api.Destination{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -285,6 +286,11 @@ func (r *DestinationIcebergResource) Read(ctx context.Context, req res.ReadReque
 	state.Name = types.StringValue(destination.Name)
 	state.Connector = types.StringValue(destination.Connector)
 	r.configMap2Model(destination.Config, &state, ctx)
+	if destination.KcClusterId != nil {
+		state.KcClusterId = types.StringValue(*destination.KcClusterId)
+	} else {
+		state.KcClusterId = types.StringNull()
+	}
 	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", state))
 
 	// Save updated data into Terraform state
@@ -306,9 +312,10 @@ func (r *DestinationIcebergResource) Update(ctx context.Context, req res.UpdateR
 	config := r.model2ConfigMap(plan)
 
 	destination, err := r.client.UpdateDestination(ctx, plan.ID.ValueString(), api.Destination{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -368,7 +375,6 @@ func (r *DestinationIcebergResource) model2ConfigMap(model DestinationIcebergRes
 		"insert.mode.user.defined":                   model.InsertMode.ValueString(),
 		"iceberg.tables.default-id-columns":          model.PrimaryKeyFields.ValueString(),
 		"quote.identifiers":                          model.QuoteIdentifiers.ValueBool(),
-		"kc.cluster.id":                              model.KcClusterId.ValueStringPointer(),
 	}
 
 	return configMap
@@ -388,5 +394,4 @@ func (r *DestinationIcebergResource) configMap2Model(cfg map[string]any, model *
 	model.InsertMode = helper.GetTfCfgString(cfg, "insert.mode.user.defined")
 	model.PrimaryKeyFields = helper.GetTfCfgString(cfg, "iceberg.tables.default-id-columns")
 	model.QuoteIdentifiers = helper.GetTfCfgBool(cfg, "quote.identifiers")
-	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }

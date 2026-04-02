@@ -225,9 +225,10 @@ func (r *DestinationDatabricksResource) Create(ctx context.Context, req res.Crea
 
 	tflog.Debug(ctx, "Pre CREATE ===> config: "+fmt.Sprintf("%+v", config))
 	destination, err := r.client.CreateDestination(ctx, api.Destination{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 
 	if err != nil {
@@ -282,6 +283,11 @@ func (r *DestinationDatabricksResource) Read(ctx context.Context, req res.ReadRe
 	state.Name = types.StringValue(destination.Name)
 	state.Connector = types.StringValue(destination.Connector)
 	r.configMap2Model(ctx, destination.Config, &state)
+	if destination.KcClusterId != nil {
+		state.KcClusterId = types.StringValue(*destination.KcClusterId)
+	} else {
+		state.KcClusterId = types.StringNull()
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -304,9 +310,10 @@ func (r *DestinationDatabricksResource) Update(ctx context.Context, req res.Upda
 
 	tflog.Debug(ctx, "Pre UPDATE ===> config: "+fmt.Sprintf("%+v", config))
 	destination, err := r.client.UpdateDestination(ctx, plan.ID.ValueString(), api.Destination{
-		Name:      plan.Name.ValueString(),
-		Connector: plan.Connector.ValueString(),
-		Config:    config,
+		Name:        plan.Name.ValueString(),
+		Connector:   plan.Connector.ValueString(),
+		Config:      config,
+		KcClusterId: plan.KcClusterId.ValueStringPointer(),
 	})
 
 	if err != nil {
@@ -369,7 +376,6 @@ func (r *DestinationDatabricksResource) model2ConfigMap(_ context.Context, model
 		"tasks.max":                              model.TasksMax.ValueInt64(),
 		"consumer.wait.time.for.larger.batch.ms": model.ConsumerWaitTimeForLargerBatchMs.ValueInt64(),
 		"quote.identifiers":                      model.QuoteIdentifiers.ValueBool(),
-		"kc.cluster.id":                          model.KcClusterId.ValueStringPointer(),
 	}
 
 	return configMap
@@ -388,5 +394,4 @@ func (r *DestinationDatabricksResource) configMap2Model(ctx context.Context, cfg
 	model.TasksMax = helper.GetTfCfgInt64(cfg, "tasks.max")
 	model.ConsumerWaitTimeForLargerBatchMs = helper.GetTfCfgInt64(cfg, "consumer.wait.time.for.larger.batch.ms")
 	model.QuoteIdentifiers = helper.GetTfCfgBool(cfg, "quote.identifiers")
-	model.KcClusterId = helper.GetTfCfgString(cfg, "kc.cluster.id")
 }
