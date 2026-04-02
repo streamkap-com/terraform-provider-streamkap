@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -16,6 +17,7 @@ type DestinationKafkadirectModel struct {
 	Name            types.String   `tfsdk:"name"`
 	Connector       types.String   `tfsdk:"connector"`
 	ConnectorStatus types.String   `tfsdk:"connector_status"`
+	KcClusterId     types.String   `tfsdk:"kc_cluster_id"`
 	Password        types.String   `tfsdk:"password"`
 	WhitelistIps    types.String   `tfsdk:"whitelist_ips"`
 	Timeouts        timeouts.Value `tfsdk:"timeouts"`
@@ -55,6 +57,13 @@ func DestinationKafkadirectSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				Default:             stringdefault.StaticString(""),
 			},
 			"password": schema.StringAttribute{
 				Required:            true,

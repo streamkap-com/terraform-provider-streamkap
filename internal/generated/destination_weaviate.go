@@ -20,6 +20,7 @@ type DestinationWeaviateModel struct {
 	Name                     types.String   `tfsdk:"name"`
 	Connector                types.String   `tfsdk:"connector"`
 	ConnectorStatus          types.String   `tfsdk:"connector_status"`
+	KcClusterId              types.String   `tfsdk:"kc_cluster_id"`
 	WeaviateConnectionURL    types.String   `tfsdk:"weaviate_connection_url"`
 	WeaviateGrpcURL          types.String   `tfsdk:"weaviate_grpc_url"`
 	WeaviateGrpcSecured      types.Bool     `tfsdk:"weaviate_grpc_secured"`
@@ -81,6 +82,13 @@ func DestinationWeaviateSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				Default:             stringdefault.StaticString(""),
 			},
 			"weaviate_connection_url": schema.StringAttribute{
 				Optional:            true,

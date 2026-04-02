@@ -21,6 +21,7 @@ type DestinationHttpsinkModel struct {
 	Name                     types.String   `tfsdk:"name"`
 	Connector                types.String   `tfsdk:"connector"`
 	ConnectorStatus          types.String   `tfsdk:"connector_status"`
+	KcClusterId              types.String   `tfsdk:"kc_cluster_id"`
 	HttpURL                  types.String   `tfsdk:"http_url"`
 	HttpAuthorizationType    types.String   `tfsdk:"http_authorization_type"`
 	HttpHeadersAuthorization types.String   `tfsdk:"http_headers_authorization"`
@@ -81,6 +82,13 @@ func DestinationHttpsinkSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				Default:             stringdefault.StaticString(""),
 			},
 			"http_url": schema.StringAttribute{
 				Required:            true,
