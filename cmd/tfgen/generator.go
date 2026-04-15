@@ -439,8 +439,20 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 		"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts": true,
 	}
 
-	// Add common fields first (id, name, connector/transform_type)
-	data.Fields = append(data.Fields, g.commonFields()...)
+	// Add common fields first (id, name, connector/transform_type, kc_cluster_id)
+	commonFields := g.commonFields()
+	data.Fields = append(data.Fields, commonFields...)
+
+	// Track imports required by common fields (e.g., kc_cluster_id has a string default)
+	for _, cf := range commonFields {
+		if cf.HasDefault && cf.GoType == "types.String" {
+			imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"] = true
+		}
+		if cf.NeedsPlanMod {
+			imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"] = true
+			imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"] = true
+		}
+	}
 
 	// Track seen Terraform attribute names to prevent duplicates
 	// (backend configs can define the same field in multiple sections)
@@ -909,6 +921,20 @@ func (g *Generator) commonFields() []FieldData {
 			MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			NeedsPlanMod:        false, // Status is volatile — always read fresh from API
 			APIFieldName:        "",    // ConnectorStatus is handled separately
+		})
+		fields = append(fields, FieldData{
+			GoFieldName:         "KcClusterId",
+			GoType:              "types.String",
+			TfsdkTag:            "kc_cluster_id",
+			TfAttrName:          "kc_cluster_id",
+			SchemaAttrType:      "schema.StringAttribute",
+			Optional:            true,
+			Computed:            true,
+			HasDefault:          true,
+			DefaultFunc:         `stringdefault.StaticString("")`,
+			Description:         "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+			MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+			APIFieldName:        "", // KcClusterId is handled separately by base connector
 		})
 	}
 
