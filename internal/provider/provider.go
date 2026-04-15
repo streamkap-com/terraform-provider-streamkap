@@ -271,5 +271,6 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		transform.NewSqlJoinResource,
 		transform.NewRollupResource,
 		transform.NewFanOutResource,
+		transform.NewTopicRouterResource,
 	}
 }

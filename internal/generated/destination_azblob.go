@@ -21,6 +21,7 @@ type DestinationAzblobModel struct {
 	Name                   types.String   `tfsdk:"name"`
 	Connector              types.String   `tfsdk:"connector"`
 	ConnectorStatus        types.String   `tfsdk:"connector_status"`
+	KcClusterId            types.String   `tfsdk:"kc_cluster_id"`
 	AzblobConnectionString types.String   `tfsdk:"azblob_connection_string"`
 	AzblobContainerName    types.String   `tfsdk:"azblob_container_name"`
 	Format                 types.String   `tfsdk:"format"`
@@ -68,6 +69,13 @@ func DestinationAzblobSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				Default:             stringdefault.StaticString(""),
 			},
 			"azblob_connection_string": schema.StringAttribute{
 				Required:            true,

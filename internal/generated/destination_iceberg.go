@@ -20,6 +20,7 @@ type DestinationIcebergModel struct {
 	Name                                       types.String   `tfsdk:"name"`
 	Connector                                  types.String   `tfsdk:"connector"`
 	ConnectorStatus                            types.String   `tfsdk:"connector_status"`
+	KcClusterId                                types.String   `tfsdk:"kc_cluster_id"`
 	IcebergCatalogType                         types.String   `tfsdk:"iceberg_catalog_type"`
 	IcebergCatalogAuthMode                     types.String   `tfsdk:"iceberg_catalog_auth_mode"`
 	IcebergCatalogName                         types.String   `tfsdk:"iceberg_catalog_name"`
@@ -81,6 +82,13 @@ func DestinationIcebergSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				Default:             stringdefault.StaticString(""),
 			},
 			"iceberg_catalog_type": schema.StringAttribute{
 				Optional:            true,

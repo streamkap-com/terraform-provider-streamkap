@@ -233,12 +233,15 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	var connectorStatus string
 	var responseConfig map[string]any
 
+	kcClusterId := r.getStringField(model, "KcClusterId")
+
 	switch r.config.GetConnectorType() {
 	case ConnectorTypeSource:
 		source, err := r.client.CreateSource(ctx, api.Source{
-			Name:      name,
-			Connector: r.config.GetConnectorCode(),
-			Config:    configMap,
+			Name:        name,
+			Connector:   r.config.GetConnectorCode(),
+			Config:      configMap,
+			KcClusterId: kcClusterId,
 		})
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -255,9 +258,10 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 
 	case ConnectorTypeDestination:
 		destination, err := r.client.CreateDestination(ctx, api.Destination{
-			Name:      name,
-			Connector: r.config.GetConnectorCode(),
-			Config:    configMap,
+			Name:        name,
+			Connector:   r.config.GetConnectorCode(),
+			Config:      configMap,
+			KcClusterId: kcClusterId,
 		})
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -319,6 +323,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 	var connectorName string
 	var connectorCode string
 	var connectorStatus string
+	var kcClusterId string
 	var responseConfig map[string]any
 
 	switch r.config.GetConnectorType() {
@@ -338,6 +343,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 		connectorName = source.Name
 		connectorCode = source.Connector
 		connectorStatus = source.ConnectorStatus
+		kcClusterId = source.KcClusterId
 		responseConfig = source.Config
 
 	case ConnectorTypeDestination:
@@ -356,6 +362,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 		connectorName = destination.Name
 		connectorCode = destination.Connector
 		connectorStatus = destination.ConnectorStatus
+		kcClusterId = destination.KcClusterId
 		responseConfig = destination.Config
 	}
 
@@ -363,6 +370,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 	r.setStringField(model, "Name", connectorName)
 	r.setStringField(model, "Connector", connectorCode)
 	r.setStringField(model, "ConnectorStatus", connectorStatus)
+	r.setStringField(model, "KcClusterId", kcClusterId)
 	r.configMapToModel(ctx, responseConfig, model)
 
 	// Save updated data into Terraform state
@@ -434,12 +442,15 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 	var connectorStatus string
 	var responseConfig map[string]any
 
+	kcClusterId := r.getStringField(model, "KcClusterId")
+
 	switch r.config.GetConnectorType() {
 	case ConnectorTypeSource:
 		source, err := r.client.UpdateSource(ctx, id, api.Source{
-			Name:      name,
-			Connector: r.config.GetConnectorCode(),
-			Config:    configMap,
+			Name:        name,
+			Connector:   r.config.GetConnectorCode(),
+			Config:      configMap,
+			KcClusterId: kcClusterId,
 		})
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -455,9 +466,10 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 
 	case ConnectorTypeDestination:
 		destination, err := r.client.UpdateDestination(ctx, id, api.Destination{
-			Name:      name,
-			Connector: r.config.GetConnectorCode(),
-			Config:    configMap,
+			Name:        name,
+			Connector:   r.config.GetConnectorCode(),
+			Config:      configMap,
+			KcClusterId: kcClusterId,
 		})
 		if err != nil {
 			resp.Diagnostics.AddError(

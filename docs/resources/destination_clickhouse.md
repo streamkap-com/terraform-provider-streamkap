@@ -42,7 +42,7 @@ This resource creates and manages a ClickHouse destination for Streamkap data pi
 - `ssl` (Boolean) Enable TLS for network connections. Defaults to `true`.
 - `tasks_max` (Number) The maximum number of active task. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `topics_config_map` (Attributes Map) Per topic configuration in JSON format (see [below for nested schema](#nestedatt--topics_config_map))
+- `topics_config_map` (String) Per topic configuration in JSON format
 
 ### Read-Only
 
@@ -58,14 +58,6 @@ Optional:
 - `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 - `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
 - `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
-
-
-<a id="nestedatt--topics_config_map"></a>
-### Nested Schema for `topics_config_map`
-
-Optional:
-
-- `delete_sql_execute` (String)
 
 ## Import
 

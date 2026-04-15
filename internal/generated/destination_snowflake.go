@@ -20,6 +20,7 @@ type DestinationSnowflakeModel struct {
 	Name                                 types.String   `tfsdk:"name"`
 	Connector                            types.String   `tfsdk:"connector"`
 	ConnectorStatus                      types.String   `tfsdk:"connector_status"`
+	KcClusterId                          types.String   `tfsdk:"kc_cluster_id"`
 	SnowflakeURLName                     types.String   `tfsdk:"snowflake_url_name"`
 	SnowflakeUserName                    types.String   `tfsdk:"snowflake_user_name"`
 	SnowflakePrivateKey                  types.String   `tfsdk:"snowflake_private_key"`
@@ -77,6 +78,13 @@ func DestinationSnowflakeSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				Default:             stringdefault.StaticString(""),
 			},
 			"snowflake_url_name": schema.StringAttribute{
 				Optional:            true,

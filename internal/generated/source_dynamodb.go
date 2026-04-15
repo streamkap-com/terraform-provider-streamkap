@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -20,6 +21,7 @@ type SourceDynamodbModel struct {
 	Name                          types.String   `tfsdk:"name"`
 	Connector                     types.String   `tfsdk:"connector"`
 	ConnectorStatus               types.String   `tfsdk:"connector_status"`
+	KcClusterId                   types.String   `tfsdk:"kc_cluster_id"`
 	AWSRegion                     types.String   `tfsdk:"aws_region"`
 	AWSAccessKeyID                types.String   `tfsdk:"aws_access_key_id"`
 	AWSSecretKey                  types.String   `tfsdk:"aws_secret_key"`
@@ -73,6 +75,13 @@ func SourceDynamodbSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				Default:             stringdefault.StaticString(""),
 			},
 			"aws_region": schema.StringAttribute{
 				Required:            true,

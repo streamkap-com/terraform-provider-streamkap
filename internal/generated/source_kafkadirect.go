@@ -20,6 +20,7 @@ type SourceKafkadirectModel struct {
 	Name             types.String   `tfsdk:"name"`
 	Connector        types.String   `tfsdk:"connector"`
 	ConnectorStatus  types.String   `tfsdk:"connector_status"`
+	KcClusterId      types.String   `tfsdk:"kc_cluster_id"`
 	TopicPrefix      types.String   `tfsdk:"topic_prefix"`
 	TopicIncludeList types.String   `tfsdk:"topic_include_list"`
 	Format           types.String   `tfsdk:"format"`
@@ -61,6 +62,13 @@ func SourceKafkadirectSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				Default:             stringdefault.StaticString(""),
 			},
 			"topic_prefix": schema.StringAttribute{
 				Required:            true,

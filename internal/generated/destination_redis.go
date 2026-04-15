@@ -22,6 +22,7 @@ type DestinationRedisModel struct {
 	Name             types.String   `tfsdk:"name"`
 	Connector        types.String   `tfsdk:"connector"`
 	ConnectorStatus  types.String   `tfsdk:"connector_status"`
+	KcClusterId      types.String   `tfsdk:"kc_cluster_id"`
 	RedisHost        types.String   `tfsdk:"redis_host"`
 	RedisPort        types.Int64    `tfsdk:"redis_port"`
 	RedisUsername    types.String   `tfsdk:"redis_username"`
@@ -67,6 +68,13 @@ func DestinationRedisSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Current status of the connector. Refreshed on each plan/apply. Values: Active, Paused, Stopped, Broken, Starting, Unassigned, Unknown.",
 				MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
+			},
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
+				Default:             stringdefault.StaticString(""),
 			},
 			"redis_host": schema.StringAttribute{
 				Required:            true,
