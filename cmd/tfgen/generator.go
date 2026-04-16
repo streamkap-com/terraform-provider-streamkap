@@ -264,29 +264,40 @@ func (g *Generator) getDeprecationsForConnector(connectorCode string) []Deprecat
 	return result
 }
 
-// loadCommonTransformConfig loads the configurations_for_all.json file for transforms.
-func (g *Generator) loadCommonTransformConfig(backendPath string) (*ConnectorConfig, error) {
-	commonPath := filepath.Join(backendPath, "app/transforms/configurations_for_all.json")
+// loadCommonConfig loads the configurations_for_all.json file for a given entity type.
+func (g *Generator) loadCommonConfig(backendPath string) (*ConnectorConfig, error) {
+	var subdir string
+	switch g.entityType {
+	case "source":
+		subdir = "sources"
+	case "destination":
+		subdir = "destinations"
+	case "transform":
+		subdir = "transforms"
+	default:
+		return nil, nil
+	}
+	commonPath := filepath.Join(backendPath, "app", subdir, "configurations_for_all.json")
 	return ParseConnectorConfig(commonPath)
 }
 
 // Generate creates Terraform schema files from a ConnectorConfig.
-// For transforms, it also merges common config fields from configurations_for_all.json.
+// It merges common config fields from configurations_for_all.json for all entity types.
 func (g *Generator) Generate(config *ConnectorConfig, connectorCode string, backendPath string) error {
 	// Ensure output directory exists
 	if err := os.MkdirAll(g.outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory %s: %w", g.outputDir, err)
 	}
 
-	// For transforms, merge common config fields from configurations_for_all.json
-	if g.entityType == "transform" && backendPath != "" {
-		commonConfig, err := g.loadCommonTransformConfig(backendPath)
+	// Merge common config fields from configurations_for_all.json
+	if backendPath != "" {
+		commonConfig, err := g.loadCommonConfig(backendPath)
 		if err != nil {
 			// Log warning but don't fail - common config is optional
-			fmt.Printf("Warning: Could not load common transform config: %v\n", err)
+			fmt.Printf("Warning: Could not load common %s config: %v\n", g.entityType, err)
 		} else if commonConfig != nil {
-			// Merge common config entries into the transform config
-			// Only add entries that don't already exist (per-transform takes precedence)
+			// Merge common config entries into the connector config
+			// Only add entries that don't already exist (per-connector takes precedence)
 			existingNames := make(map[string]bool)
 			for _, entry := range config.Config {
 				existingNames[entry.Name] = true

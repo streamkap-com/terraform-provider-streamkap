@@ -18,30 +18,42 @@ import (
 
 // SourceRedisModel is the Terraform model for the redis source.
 type SourceRedisModel struct {
-	ID                       types.String   `tfsdk:"id"`
-	Name                     types.String   `tfsdk:"name"`
-	Connector                types.String   `tfsdk:"connector"`
-	ConnectorStatus          types.String   `tfsdk:"connector_status"`
-	KcClusterId              types.String   `tfsdk:"kc_cluster_id"`
-	ConnectorClassType       types.String   `tfsdk:"connector_class_type"`
-	RedisHost                types.String   `tfsdk:"redis_host"`
-	RedisPort                types.Int64    `tfsdk:"redis_port"`
-	RedisUsername            types.String   `tfsdk:"redis_username"`
-	RedisPassword            types.String   `tfsdk:"redis_password"`
-	SSLEnabled               types.Bool     `tfsdk:"ssl_enabled"`
-	RedisStreamName          types.String   `tfsdk:"redis_stream_name"`
-	RedisStreamOffset        types.String   `tfsdk:"redis_stream_offset"`
-	RedisStreamDelivery      types.String   `tfsdk:"redis_stream_delivery"`
-	RedisStreamBlockSeconds  types.Int64    `tfsdk:"redis_stream_block_seconds"`
-	RedisStreamConsumerGroup types.String   `tfsdk:"redis_stream_consumer_group"`
-	RedisStreamConsumerName  types.String   `tfsdk:"redis_stream_consumer_name"`
-	RedisKeysPattern         types.String   `tfsdk:"redis_keys_pattern"`
-	RedisKeysTimeoutSeconds  types.Int64    `tfsdk:"redis_keys_timeout_seconds"`
-	Mode                     types.String   `tfsdk:"mode"`
-	TopicUseStreamName       types.Bool     `tfsdk:"topic_use_stream_name"`
-	Topic                    types.String   `tfsdk:"topic"`
-	TasksMax                 types.Int64    `tfsdk:"tasks_max"`
-	Timeouts                 timeouts.Value `tfsdk:"timeouts"`
+	ID                                               types.String   `tfsdk:"id"`
+	Name                                             types.String   `tfsdk:"name"`
+	Connector                                        types.String   `tfsdk:"connector"`
+	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
+	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
+	ConnectorClassType                               types.String   `tfsdk:"connector_class_type"`
+	RedisHost                                        types.String   `tfsdk:"redis_host"`
+	RedisPort                                        types.Int64    `tfsdk:"redis_port"`
+	RedisUsername                                    types.String   `tfsdk:"redis_username"`
+	RedisPassword                                    types.String   `tfsdk:"redis_password"`
+	SSLEnabled                                       types.Bool     `tfsdk:"ssl_enabled"`
+	RedisStreamName                                  types.String   `tfsdk:"redis_stream_name"`
+	RedisStreamOffset                                types.String   `tfsdk:"redis_stream_offset"`
+	RedisStreamDelivery                              types.String   `tfsdk:"redis_stream_delivery"`
+	RedisStreamBlockSeconds                          types.Int64    `tfsdk:"redis_stream_block_seconds"`
+	RedisStreamConsumerGroup                         types.String   `tfsdk:"redis_stream_consumer_group"`
+	RedisStreamConsumerName                          types.String   `tfsdk:"redis_stream_consumer_name"`
+	RedisKeysPattern                                 types.String   `tfsdk:"redis_keys_pattern"`
+	RedisKeysTimeoutSeconds                          types.Int64    `tfsdk:"redis_keys_timeout_seconds"`
+	Mode                                             types.String   `tfsdk:"mode"`
+	TopicUseStreamName                               types.Bool     `tfsdk:"topic_use_stream_name"`
+	Topic                                            types.String   `tfsdk:"topic"`
+	TasksMax                                         types.Int64    `tfsdk:"tasks_max"`
+	TransformsValueToKeyFieldsIncludeList            types.String   `tfsdk:"transforms_value_to_key_fields_include_list"`
+	TransformsValueToKeyReplaceNullWithDefault       types.Bool     `tfsdk:"transforms_value_to_key_replace_null_with_default"`
+	PreserveNullValues                               types.Bool     `tfsdk:"preserve_null_values"`
+	TransformsOversizedRecordsFieldsIncludeList      types.String   `tfsdk:"transforms_oversized_records_fields_include_list"`
+	TransformsOversizedRecordsFieldsExcludeList      types.String   `tfsdk:"transforms_oversized_records_fields_exclude_list"`
+	TransformsOversizedRecordsMaxFieldSizeBytes      types.Int64    `tfsdk:"transforms_oversized_records_max_field_size_bytes"`
+	TransformsOversizedRecordsOversizedFieldBehavior types.String   `tfsdk:"transforms_oversized_records_oversized_field_behavior"`
+	TransformsOversizedRecordsTruncationSuffix       types.String   `tfsdk:"transforms_oversized_records_truncation_suffix"`
+	TransformsOversizedRecordsMaxRecordSizeBytes     types.Int64    `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
+	TransformsOversizedRecordsSemanticTypesExclude   types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
+	TransformsOversizedRecordsReplaceNullWithDefault types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
+	InsertTopicNameEnabled                           types.Bool     `tfsdk:"insert_topic_name_enabled"`
+	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourceRedisSchema returns the Terraform schema for the redis source.
@@ -224,6 +236,93 @@ func SourceRedisSchema() schema.Schema {
 					int64validator.Between(1, 10),
 				},
 			},
+			"transforms_value_to_key_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				MarkdownDescription: "Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+			},
+			"transforms_value_to_key_replace_null_with_default": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to true.",
+				MarkdownDescription: "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
+			"preserve_null_values": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to false.",
+				MarkdownDescription: "When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"transforms_oversized_records_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
+				MarkdownDescription: "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
+			},
+			"transforms_oversized_records_fields_exclude_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
+				MarkdownDescription: "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
+			},
+			"transforms_oversized_records_max_field_size_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to 1048576.",
+				MarkdownDescription: "Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.",
+				Default:             int64default.StaticInt64(1048576),
+				Validators: []validator.Int64{
+					int64validator.Between(1048576, 104857600),
+				},
+			},
+			"transforms_oversized_records_oversized_field_behavior": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to \"TRUNCATE\". Valid values: TRUNCATE, NULLIFY.",
+				MarkdownDescription: "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.",
+				Default:             stringdefault.StaticString("TRUNCATE"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("TRUNCATE", "NULLIFY"),
+				},
+			},
+			"transforms_oversized_records_truncation_suffix": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to \"\".",
+				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.",
+				Default:             stringdefault.StaticString(""),
+			},
+			"transforms_oversized_records_max_record_size_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to -1.",
+				MarkdownDescription: "Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to `-1`.",
+				Default:             int64default.StaticInt64(-1),
+				Validators: []validator.Int64{
+					int64validator.Between(-1, 104857600),
+				},
+			},
+			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
+			},
+			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to true.",
+				MarkdownDescription: "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
+			"insert_topic_name_enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to false.",
+				MarkdownDescription: "Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
 		},
 	}
 }
@@ -248,4 +347,16 @@ var SourceRedisFieldMappings = map[string]string{
 	"topic_use_stream_name":       "topic.use.stream.name",
 	"topic":                       "topic.user.defined",
 	"tasks_max":                   "tasks.max",
+	"transforms_value_to_key_fields_include_list":            "transforms.ValueToKey.fields.include.list",
+	"transforms_value_to_key_replace_null_with_default":      "transforms.ValueToKey.replace.null.with.default",
+	"preserve_null_values":                                   "preserve.null.values",
+	"transforms_oversized_records_fields_include_list":       "transforms.OversizedRecords.fields.include.list",
+	"transforms_oversized_records_fields_exclude_list":       "transforms.OversizedRecords.fields.exclude.list",
+	"transforms_oversized_records_max_field_size_bytes":      "transforms.OversizedRecords.max.field.size.bytes",
+	"transforms_oversized_records_oversized_field_behavior":  "transforms.OversizedRecords.oversized.field.behavior",
+	"transforms_oversized_records_truncation_suffix":         "transforms.OversizedRecords.truncation.suffix",
+	"transforms_oversized_records_max_record_size_bytes":     "transforms.OversizedRecords.max.record.size.bytes",
+	"transforms_oversized_records_semantic_types_exclude":    "transforms.OversizedRecords.semantic.types.exclude",
+	"transforms_oversized_records_replace_null_with_default": "transforms.OversizedRecords.replace.null.with.default",
+	"insert_topic_name_enabled":                              "InsertTopicName.enabled",
 }
