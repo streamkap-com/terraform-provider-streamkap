@@ -39,6 +39,11 @@ func (c *SqlJoinConfig) NewModelInstance() any {
 	return &generated.TransformSQLJoinModel{}
 }
 
+// SupportsPreviewDeploy returns true because sql_join is Flink-based.
+func (c *SqlJoinConfig) SupportsPreviewDeploy() bool {
+	return true
+}
+
 // NewSqlJoinResource creates a new sql_join transform resource.
 func NewSqlJoinResource() resource.Resource {
 	return NewBaseTransformResource(&SqlJoinConfig{})

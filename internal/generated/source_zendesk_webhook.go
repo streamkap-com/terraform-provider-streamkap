@@ -16,34 +16,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// SourceMongodbModel is the Terraform model for the mongodb source.
-type SourceMongodbModel struct {
+// SourceZendeskWebhookModel is the Terraform model for the zendesk_webhook source.
+type SourceZendeskWebhookModel struct {
 	ID                                               types.String   `tfsdk:"id"`
 	Name                                             types.String   `tfsdk:"name"`
 	Connector                                        types.String   `tfsdk:"connector"`
 	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
 	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
-	MongodbConnectionString                          types.String   `tfsdk:"mongodb_connection_string"`
-	MongodbConnectionHostname                        types.String   `tfsdk:"mongodb_connection_hostname"`
-	TransformsUnwrapArrayEncoding                    types.String   `tfsdk:"transforms_unwrap_array_encoding"`
-	TransformsUnwrapDocumentEncoding                 types.String   `tfsdk:"transforms_unwrap_document_encoding"`
-	DatabaseIncludeList                              types.String   `tfsdk:"database_include_list"`
-	CollectionIncludeList                            types.String   `tfsdk:"collection_include_list"`
-	SignalDataCollectionSchemaOrDatabase             types.String   `tfsdk:"signal_data_collection_schema_or_database"`
-	TransformsInsertStaticKey1StaticField            types.String   `tfsdk:"transforms_insert_static_key1_static_field"`
-	TransformsInsertStaticKey1StaticValue            types.String   `tfsdk:"transforms_insert_static_key1_static_value"`
-	TransformsInsertStaticValue1StaticField          types.String   `tfsdk:"transforms_insert_static_value1_static_field"`
-	TransformsInsertStaticValue1StaticValue          types.String   `tfsdk:"transforms_insert_static_value1_static_value"`
-	TransformsInsertStaticKey2StaticField            types.String   `tfsdk:"transforms_insert_static_key2_static_field"`
-	TransformsInsertStaticKey2StaticValue            types.String   `tfsdk:"transforms_insert_static_key2_static_value"`
-	TransformsInsertStaticValue2StaticField          types.String   `tfsdk:"transforms_insert_static_value2_static_field"`
-	TransformsInsertStaticValue2StaticValue          types.String   `tfsdk:"transforms_insert_static_value2_static_value"`
-	PredicatesIsTopicToEnrichPattern                 types.String   `tfsdk:"predicates_is_topic_to_enrich_pattern"`
-	SSHEnabled                                       types.Bool     `tfsdk:"ssh_enabled"`
-	SSHHost                                          types.String   `tfsdk:"ssh_host"`
-	SSHPort                                          types.Int64    `tfsdk:"ssh_port"`
-	SSHUser                                          types.String   `tfsdk:"ssh_user"`
-	SSHPublicKey                                     types.String   `tfsdk:"ssh_public_key"`
+	WebhookURL                                       types.String   `tfsdk:"webhook_url"`
+	APIKey                                           types.String   `tfsdk:"api_key"`
+	CamelSourcePayloadRouterUnknownTypeBehavior      types.String   `tfsdk:"camel_source_payload_router_unknown_type_behavior"`
+	CamelSourcePayloadRouterUnknownTypeDefaultTopic  types.String   `tfsdk:"camel_source_payload_router_unknown_type_default_topic"`
+	CamelSourcePayloadRouterFlattenDetail            types.Bool     `tfsdk:"camel_source_payload_router_flatten_detail"`
+	CamelSourcePayloadRouterFlattenDetailPrefix      types.String   `tfsdk:"camel_source_payload_router_flatten_detail_prefix"`
+	CamelSourcePayloadRouterIncludeEvent             types.Bool     `tfsdk:"camel_source_payload_router_include_event"`
+	CamelSourcePayloadRouterFanoutFields             types.String   `tfsdk:"camel_source_payload_router_fanout_fields"`
+	CamelSourceDlqEnabled                            types.Bool     `tfsdk:"camel_source_dlq_enabled"`
 	TransformsValueToKeyFieldsIncludeList            types.String   `tfsdk:"transforms_value_to_key_fields_include_list"`
 	TransformsValueToKeyReplaceNullWithDefault       types.Bool     `tfsdk:"transforms_value_to_key_replace_null_with_default"`
 	PreserveNullValues                               types.Bool     `tfsdk:"preserve_null_values"`
@@ -59,14 +47,14 @@ type SourceMongodbModel struct {
 	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
 }
 
-// SourceMongodbSchema returns the Terraform schema for the mongodb source.
-func SourceMongodbSchema() schema.Schema {
+// SourceZendeskWebhookSchema returns the Terraform schema for the zendesk_webhook source.
+func SourceZendeskWebhookSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a MongoDB Atlas source connector. Use with streamkap_pipeline to build data pipelines.",
-		MarkdownDescription: "Manages a **MongoDB Atlas source connector**.\n\n" +
-			"This resource creates and manages a MongoDB Atlas source for Streamkap data pipelines. " +
+		Description: "Manages a Zendesk Webhook source connector. Use with streamkap_pipeline to build data pipelines.",
+		MarkdownDescription: "Manages a **Zendesk Webhook source connector**.\n\n" +
+			"This resource creates and manages a Zendesk Webhook source for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
-			"[Documentation](https://docs.streamkap.com/mongodb-atlas)",
+			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -101,133 +89,72 @@ func SourceMongodbSchema() schema.Schema {
 				MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
 				Default:             stringdefault.StaticString(""),
 			},
-			"mongodb_connection_string": schema.StringAttribute{
-				Required:            true,
-				Sensitive:           true,
-				Description:         "Mongodb Connection String. See Mongodb documentation for further details. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Mongodb Connection String. See Mongodb documentation for further details.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
-			},
-			"mongodb_connection_hostname": schema.StringAttribute{
+			"webhook_url": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The hostname(s) extracted from the MongoDB connection string. Defaults to \"\".",
-				MarkdownDescription: "The hostname(s) extracted from the MongoDB connection string. Defaults to ``.",
+				Description:         "Webhook URL. This URL will be generated after the source is created. Defaults to \"\".",
+				MarkdownDescription: "Webhook URL. This URL will be generated after the source is created. Defaults to ``.",
 				Default:             stringdefault.StaticString(""),
 			},
-			"transforms_unwrap_array_encoding": schema.StringAttribute{
+			"api_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types. Defaults to \"array_string\". Valid values: array, array_string.",
-				MarkdownDescription: "How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types. Defaults to `array_string`. Valid values: `array`, `array_string`.",
-				Default:             stringdefault.StaticString("array_string"),
+				Sensitive:           true,
+				Description:         "API Key. This key will be generated after the source is created. Defaults to \"<API_KEY>\". This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "API Key. This key will be generated after the source is created. Defaults to `<API_KEY>`.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Default:             stringdefault.StaticString("<API_KEY>"),
+			},
+			"camel_source_payload_router_unknown_type_behavior": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Behavior when an unknown Zendesk event type is encountered. Defaults to \"DEFAULT_TOPIC\". Valid values: DEFAULT_TOPIC, SKIP, FAIL.",
+				MarkdownDescription: "Behavior when an unknown Zendesk event type is encountered. Defaults to `DEFAULT_TOPIC`. Valid values: `DEFAULT_TOPIC`, `SKIP`, `FAIL`.",
+				Default:             stringdefault.StaticString("DEFAULT_TOPIC"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("array", "array_string"),
+					stringvalidator.OneOf("DEFAULT_TOPIC", "SKIP", "FAIL"),
 				},
 			},
-			"transforms_unwrap_document_encoding": schema.StringAttribute{
+			"camel_source_payload_router_unknown_type_default_topic": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "How to encode nested documents. 'Document' encodes them as JSON Objects, 'String' encodes them as JSON Strings. Defaults to \"document\". Valid values: document, string.",
-				MarkdownDescription: "How to encode nested documents. 'Document' encodes them as JSON Objects, 'String' encodes them as JSON Strings. Defaults to `document`. Valid values: `document`, `string`.",
-				Default:             stringdefault.StaticString("document"),
-				Validators: []validator.String{
-					stringvalidator.OneOf("document", "string"),
-				},
+				Description:         "Topic name for unknown event types (used when Unknown Event Behavior is DEFAULT_TOPIC). Defaults to \"unknown\".",
+				MarkdownDescription: "Topic name for unknown event types (used when Unknown Event Behavior is DEFAULT_TOPIC). Defaults to `unknown`.",
+				Default:             stringdefault.StaticString("unknown"),
 			},
-			"database_include_list": schema.StringAttribute{
-				Required:            true,
-				Description:         "Source databases to sync.",
-				MarkdownDescription: "Source databases to sync.",
-			},
-			"collection_include_list": schema.StringAttribute{
-				Required:            true,
-				Description:         "Source collections to sync.",
-				MarkdownDescription: "Source collections to sync.",
-			},
-			"signal_data_collection_schema_or_database": schema.StringAttribute{
-				Required:            true,
-				Description:         "Streamkap will use a collection in this database to monitor incremental snapshotting. Follow the instructions in the documentation for creating this collection and specify which database to use here.",
-				MarkdownDescription: "Streamkap will use a collection in this database to monitor incremental snapshotting. Follow the instructions in the documentation for creating this collection and specify which database to use here.",
-			},
-			"transforms_insert_static_key1_static_field": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The name of the static field to be added to the message key.",
-				MarkdownDescription: "The name of the static field to be added to the message key.",
-			},
-			"transforms_insert_static_key1_static_value": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The value of the static field to be added to the message key.",
-				MarkdownDescription: "The value of the static field to be added to the message key.",
-			},
-			"transforms_insert_static_value1_static_field": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The name of the static field to be added to the message value.",
-				MarkdownDescription: "The name of the static field to be added to the message value.",
-			},
-			"transforms_insert_static_value1_static_value": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The value of the static field to be added to the message value.",
-				MarkdownDescription: "The value of the static field to be added to the message value.",
-			},
-			"transforms_insert_static_key2_static_field": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The name of the static field to be added to the message key.",
-				MarkdownDescription: "The name of the static field to be added to the message key.",
-			},
-			"transforms_insert_static_key2_static_value": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The value of the static field to be added to the message key.",
-				MarkdownDescription: "The value of the static field to be added to the message key.",
-			},
-			"transforms_insert_static_value2_static_field": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The name of the static field to be added to the message value.",
-				MarkdownDescription: "The name of the static field to be added to the message value.",
-			},
-			"transforms_insert_static_value2_static_value": schema.StringAttribute{
-				Optional:            true,
-				Description:         "The value of the static field to be added to the message value.",
-				MarkdownDescription: "The value of the static field to be added to the message value.",
-			},
-			"predicates_is_topic_to_enrich_pattern": schema.StringAttribute{
+			"camel_source_payload_router_flatten_detail": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Regex pattern to match topics for enrichment. Defaults to \"$^\".",
-				MarkdownDescription: "Regex pattern to match topics for enrichment. Defaults to `$^`.",
-				Default:             stringdefault.StaticString("$^"),
-			},
-			"ssh_enabled": schema.BoolAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to false.",
-				MarkdownDescription: "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.",
+				Description:         "Flatten nested detail fields to top-level with a prefix. Recommended for destinations that do not support nested objects. Defaults to false.",
+				MarkdownDescription: "Flatten nested detail fields to top-level with a prefix. Recommended for destinations that do not support nested objects. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
-			"ssh_host": schema.StringAttribute{
-				Optional:            true,
-				Description:         "Hostname of your SSH server",
-				MarkdownDescription: "Hostname of your SSH server",
-			},
-			"ssh_port": schema.Int64Attribute{
+			"camel_source_payload_router_flatten_detail_prefix": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server. Defaults to 22.",
-				MarkdownDescription: "Port of your SSH server. Defaults to `22`.",
-				Default:             int64default.StaticInt64(22),
+				Description:         "Prefix for flattened detail fields to avoid name collisions (e.g. detail.id becomes detail_id). Defaults to \"detail_\".",
+				MarkdownDescription: "Prefix for flattened detail fields to avoid name collisions (e.g. detail.id becomes detail_id). Defaults to `detail_`.",
+				Default:             stringdefault.StaticString("detail_"),
 			},
-			"ssh_user": schema.StringAttribute{
+			"camel_source_payload_router_include_event": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "User that allows Streamkap to connect to SSH server. Defaults to \"streamkap\".",
-				MarkdownDescription: "User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.",
-				Default:             stringdefault.StaticString("streamkap"),
+				Description:         "Include the event field in output records. Enable for audit-log use cases (append mode). Disable for state-table use cases (upsert mode) where only the entity state matters. Defaults to true.",
+				MarkdownDescription: "Include the event field in output records. Enable for audit-log use cases (append mode). Disable for state-table use cases (upsert mode) where only the entity state matters. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
 			},
-			"ssh_public_key": schema.StringAttribute{
+			"camel_source_payload_router_fanout_fields": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Public key to add to SSH server. Defaults to \"<SSH.PUBLIC.KEY>\".",
-				MarkdownDescription: "Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.",
-				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
+				Description:         "Comma-separated list of domain-scoped fields to fan out into separate topics (e.g. ticket.tags, ticket.custom_fields, organization.tags). When empty, arrays stay inline. Defaults to \"\".",
+				MarkdownDescription: "Comma-separated list of domain-scoped fields to fan out into separate topics (e.g. ticket.tags, ticket.custom_fields, organization.tags). When empty, arrays stay inline. Defaults to ``.",
+				Default:             stringdefault.StaticString(""),
+			},
+			"camel_source_dlq_enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Enable dead letter queue. Failed records are written to a DLQ topic instead of crashing the connector. Defaults to false.",
+				MarkdownDescription: "Enable dead letter queue. Failed records are written to a DLQ topic instead of crashing the connector. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
 			},
 			"transforms_value_to_key_fields_include_list": schema.StringAttribute{
 				Optional:            true,
@@ -320,29 +247,17 @@ func SourceMongodbSchema() schema.Schema {
 	}
 }
 
-// SourceMongodbFieldMappings maps Terraform attribute names to API field names.
-var SourceMongodbFieldMappings = map[string]string{
-	"mongodb_connection_string":                              "mongodb.connection.string.user.defined",
-	"mongodb_connection_hostname":                            "mongodb.connection.hostname",
-	"transforms_unwrap_array_encoding":                       "transforms.unwrap.array.encoding",
-	"transforms_unwrap_document_encoding":                    "transforms.unwrap.document.encoding",
-	"database_include_list":                                  "database.include.list",
-	"collection_include_list":                                "collection.include.list.user.defined",
-	"signal_data_collection_schema_or_database":              "signal.data.collection.schema.or.database",
-	"transforms_insert_static_key1_static_field":             "transforms.InsertStaticKey1.static.field",
-	"transforms_insert_static_key1_static_value":             "transforms.InsertStaticKey1.static.value",
-	"transforms_insert_static_value1_static_field":           "transforms.InsertStaticValue1.static.field",
-	"transforms_insert_static_value1_static_value":           "transforms.InsertStaticValue1.static.value",
-	"transforms_insert_static_key2_static_field":             "transforms.InsertStaticKey2.static.field",
-	"transforms_insert_static_key2_static_value":             "transforms.InsertStaticKey2.static.value",
-	"transforms_insert_static_value2_static_field":           "transforms.InsertStaticValue2.static.field",
-	"transforms_insert_static_value2_static_value":           "transforms.InsertStaticValue2.static.value",
-	"predicates_is_topic_to_enrich_pattern":                  "predicates.IsTopicToEnrich.pattern",
-	"ssh_enabled":                                            "ssh.enabled",
-	"ssh_host":                                               "ssh.host",
-	"ssh_port":                                               "ssh.port",
-	"ssh_user":                                               "ssh.user",
-	"ssh_public_key":                                         "ssh.public.key.user.displayed",
+// SourceZendeskWebhookFieldMappings maps Terraform attribute names to API field names.
+var SourceZendeskWebhookFieldMappings = map[string]string{
+	"webhook_url": "webhook.url",
+	"api_key":     "api.key",
+	"camel_source_payload_router_unknown_type_behavior":      "camel.source.payload.router.unknown.type.behavior",
+	"camel_source_payload_router_unknown_type_default_topic": "camel.source.payload.router.unknown.type.default.topic",
+	"camel_source_payload_router_flatten_detail":             "camel.source.payload.router.flatten.detail",
+	"camel_source_payload_router_flatten_detail_prefix":      "camel.source.payload.router.flatten.detail.prefix",
+	"camel_source_payload_router_include_event":              "camel.source.payload.router.include.event",
+	"camel_source_payload_router_fanout_fields":              "camel.source.payload.router.fanout.fields",
+	"camel_source_dlq_enabled":                               "camel.source.dlq.enabled",
 	"transforms_value_to_key_fields_include_list":            "transforms.ValueToKey.fields.include.list",
 	"transforms_value_to_key_replace_null_with_default":      "transforms.ValueToKey.replace.null.with.default",
 	"preserve_null_values":                                   "preserve.null.values",

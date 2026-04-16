@@ -39,6 +39,11 @@ func (c *RollupConfig) NewModelInstance() any {
 	return &generated.TransformRollupModel{}
 }
 
+// SupportsPreviewDeploy returns true because rollup is Flink-based.
+func (c *RollupConfig) SupportsPreviewDeploy() bool {
+	return true
+}
+
 // NewRollupResource creates a new rollup transform resource.
 func NewRollupResource() resource.Resource {
 	return NewBaseTransformResource(&RollupConfig{})

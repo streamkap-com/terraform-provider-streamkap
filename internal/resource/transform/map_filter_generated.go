@@ -39,6 +39,11 @@ func (c *MapFilterConfig) NewModelInstance() any {
 	return &generated.TransformMapFilterModel{}
 }
 
+// SupportsPreviewDeploy returns true because map_filter is Flink-based.
+func (c *MapFilterConfig) SupportsPreviewDeploy() bool {
+	return true
+}
+
 // NewMapFilterResource creates a new map_filter transform resource.
 func NewMapFilterResource() resource.Resource {
 	return NewBaseTransformResource(&MapFilterConfig{})
