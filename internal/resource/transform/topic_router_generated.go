@@ -39,6 +39,11 @@ func (c *TopicRouterConfig) NewModelInstance() any {
 	return &generated.TransformTopicRouterModel{}
 }
 
+// SupportsPreviewDeploy returns false because topic_router is KC-based, not Flink-based.
+func (c *TopicRouterConfig) SupportsPreviewDeploy() bool {
+	return false
+}
+
 // NewTopicRouterResource creates a new topic_router transform resource.
 func NewTopicRouterResource() resource.Resource {
 	return NewBaseTransformResource(&TopicRouterConfig{})

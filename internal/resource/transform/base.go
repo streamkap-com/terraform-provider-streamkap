@@ -49,6 +49,10 @@ type TransformConfig interface {
 	// NewModelInstance creates a new instance of the transform's model struct.
 	// This is needed for reflection-based operations.
 	NewModelInstance() any
+
+	// SupportsPreviewDeploy returns whether this transform supports preview deployment.
+	// Flink-based transforms support preview; KC-based transforms (topic_router) do not.
+	SupportsPreviewDeploy() bool
 }
 
 // Ensure BaseTransformResource satisfies framework interfaces.
@@ -118,6 +122,9 @@ func (r *BaseTransformResource) Schema(ctx context.Context, req resource.SchemaR
 		Description:         "Current deployment status of the transform. Read-only. Values: RUNNING, INITIALIZING, DEPLOYING, STOPPED, FAILED, UNKNOWN.",
 		MarkdownDescription: "Current deployment status of the transform. **Read-only**.\n\nValues: `RUNNING`, `INITIALIZING`, `DEPLOYING`, `STOPPED`, `FAILED`, `UNKNOWN`.",
 		Computed:            true,
+		PlanModifiers: []planmodifier.String{
+			stringplanmodifier.UseStateForUnknown(),
+		},
 	}
 
 	// Add timeouts block to the schema
@@ -227,6 +234,7 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 	r.setStringField(model, "ID", transform.ID)
 	r.setStringField(model, "Name", transform.Name)
 	r.setStringField(model, "TransformType", transform.TransformType)
+	r.setStringField(model, "ConnectorStatus", constants.JobStatusUnknown)
 	r.configMapToModel(ctx, transform.Config, model)
 
 	// Save data into Terraform state
@@ -283,7 +291,7 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	// Deploy if requested and read connector_status
-	r.deployFromPlan(ctx, transform.ID, req.Plan, &resp.Diagnostics, resp.State)
+	r.deployFromPlan(ctx, transform.ID, req.Plan, &resp.Diagnostics, &resp.State)
 }
 
 // Read reads the transform resource.
@@ -565,7 +573,7 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Deploy if requested and read connector_status
-	r.deployFromPlan(ctx, id, req.Plan, &resp.Diagnostics, resp.State)
+	r.deployFromPlan(ctx, id, req.Plan, &resp.Diagnostics, &resp.State)
 }
 
 // Delete deletes the transform resource.
@@ -634,7 +642,7 @@ func (r *BaseTransformResource) ImportState(ctx context.Context, req resource.Im
 
 // deployFromPlan reads deploy/replay_window from the plan and handles deployment + status.
 // Used by both Create and Update to avoid duplication.
-func (r *BaseTransformResource) deployFromPlan(ctx context.Context, transformID string, plan tfsdk.Plan, diagnostics *diag.Diagnostics, state tfsdk.State) {
+func (r *BaseTransformResource) deployFromPlan(ctx context.Context, transformID string, plan tfsdk.Plan, diagnostics *diag.Diagnostics, state *tfsdk.State) {
 	// Set initial connector_status so state is complete even if deploy fails
 	diagnostics.Append(state.SetAttribute(ctx, path.Root("connector_status"), types.StringValue(constants.JobStatusUnknown))...)
 	if diagnostics.HasError() {
@@ -659,16 +667,18 @@ func (r *BaseTransformResource) deployFromPlan(ctx context.Context, transformID 
 			replayWindowValue = replayWindow.ValueString()
 		}
 
-		// Deploy preview first (matches frontend flow)
-		err := r.client.DeployTransformPreview(ctx, transformID, constants.DeployVersionLatest, replayWindowValue)
-		if err != nil {
-			diagnostics.AddError("Error deploying transform preview",
-				fmt.Sprintf("Transform saved successfully but preview deployment failed: %s", err))
-			return
+		// Deploy preview first for Flink-based transforms (matches frontend flow)
+		if r.config.SupportsPreviewDeploy() {
+			err := r.client.DeployTransformPreview(ctx, transformID, constants.DeployVersionLatest, replayWindowValue)
+			if err != nil {
+				diagnostics.AddError("Error deploying transform preview",
+					fmt.Sprintf("Transform saved successfully but preview deployment failed: %s", err))
+				return
+			}
 		}
 
 		// Deploy live
-		err = r.client.DeployTransformLive(ctx, transformID, constants.DeployVersionLatest)
+		err := r.client.DeployTransformLive(ctx, transformID, constants.DeployVersionLatest)
 		if err != nil {
 			diagnostics.AddError("Error deploying transform live",
 				fmt.Sprintf("Transform saved successfully but live deployment failed: %s", err))
