@@ -189,27 +189,16 @@ func (r *TopicResource) Update(ctx context.Context, req res.UpdateRequest, resp 
 }
 
 func (r *TopicResource) Delete(ctx context.Context, req res.DeleteRequest, resp *res.DeleteResponse) {
+	// This resource manages partition count only, not the topic lifecycle.
+	// The underlying Kafka topic is owned by its producer (source or transform)
+	// and must not be deleted here. Destroying the resource simply drops it
+	// from Terraform state; the topic remains in Kafka.
 	var state TopicResourceModel
-
-	// Read Terraform prior state data into the model
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	topicID := state.TopicID.ValueString()
-	tflog.Debug(ctx, "Deleting topic: "+topicID)
-
-	err := r.client.DeleteTopic(ctx, topicID)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting topic",
-			fmt.Sprintf("Unable to delete topic %s, got error: %s", topicID, err),
-		)
-		return
-	}
-
-	tflog.Info(ctx, "Deleted topic: "+topicID)
+	tflog.Info(ctx, "Removing topic from Terraform state (partition-count-only resource; Kafka topic is not deleted): "+state.TopicID.ValueString())
 }
 
 func (r *TopicResource) ImportState(ctx context.Context, req res.ImportStateRequest, resp *res.ImportStateResponse) {

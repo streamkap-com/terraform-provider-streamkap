@@ -23,6 +23,7 @@ func IsRetryableError(err error) bool {
 	retryablePatterns := []string{
 		"kafkaconnecttimeout",    // Backend's custom timeout exception
 		"request timed out",      // KC timeout message
+		"timed out on all nodes", // Backend exhausted all KC servers
 		"sockettimeoutexception", // Java socket timeout
 	}
 
@@ -45,11 +46,14 @@ func IsRetryableError(err error) bool {
 		"i/o timeout",
 	}
 
-	// Kafka-specific transient errors
+	// Kafka Connect transient errors (error format: "Kafka Connect API call failed with status code NNN and response ...")
 	kafkaPatterns := []string{
 		"rebalance_in_progress",
+		"rebalance is expected",                          // KC 500: "Request cannot be completed because a rebalance is expected"
 		"leader_not_available",
 		"not_leader_for_partition",
+		"kafka connect api call failed with status code 404", // Connector not yet deployed (PENDING destination/source)
+		"kafka connect api call failed with status code 409", // Conflict during concurrent connector updates
 	}
 
 	allPatterns := append(retryablePatterns, gatewayPatterns...)
@@ -75,7 +79,7 @@ type RetryConfig struct {
 // Uses conservative delays because the backend already retries KC operations.
 func DefaultRetryConfig() RetryConfig {
 	return RetryConfig{
-		MaxRetries: 3,
+		MaxRetries: 5,
 		MinDelay:   10 * time.Second, // Conservative: backend may be retrying
 		MaxDelay:   60 * time.Second, // Cap to avoid excessive waits
 	}
