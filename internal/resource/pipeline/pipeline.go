@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -472,17 +473,17 @@ func (r *PipelineResource) model2APITransforms(ctx context.Context, modelTransfo
 		}
 
 		for _, strModelTransformTopic := range strModelTransformTopics {
+			topicID := strModelTransformTopic
 			if topicIdx := r.idxStringInSlice(strModelTransformTopic, transform.Topics); topicIdx >= 0 {
-				res = append(res, &api.PipelineTransform{
-					ID:        transform.ID,
-					Name:      transform.Name,
-					StartTime: transform.StartTime,
-					Topic:     strModelTransformTopic,
-					TopicID:   transform.TopicIDs[topicIdx],
-				})
-			} else {
-				return nil, fmt.Errorf("topic %s not found in transform %s", strModelTransformTopic, transformID)
+				topicID = transform.TopicIDs[topicIdx]
 			}
+			res = append(res, &api.PipelineTransform{
+				ID:        transform.ID,
+				Name:      transform.Name,
+				StartTime: transform.StartTime,
+				Topic:     strModelTransformTopic,
+				TopicID:   topicID,
+			})
 		}
 	}
 
@@ -509,8 +510,19 @@ func (r *PipelineResource) api2ModelTransforms(_ context.Context, apiTransforms 
 	currentTransformTopics := make([]string, 0, len(apiTransforms))
 
 	for _, apiTransform := range apiTransforms {
+		// For topic_router transforms, the API's "topic" field strips the transform prefix
+		// (e.g., "merged.Orders" instead of "transform_<id>_0.merged.Orders").
+		// Use TopicID which preserves the full name, matching the terraform config.
+		topicName := apiTransform.Topic
+		if strings.HasPrefix(apiTransform.TopicID, "transform_") {
+			topicName = apiTransform.TopicID
+		}
+		// Skip entries with empty topic names (stale data from failed applies)
+		if topicName == "" {
+			continue
+		}
 		if apiTransform.ID == currentTransformID {
-			currentTransformTopics = append(currentTransformTopics, apiTransform.Topic)
+			currentTransformTopics = append(currentTransformTopics, topicName)
 		} else {
 			modelTransformTopics, diags := types.SetValue(types.StringType, r.strListToTfStrList(currentTransformTopics))
 			if diags.HasError() {
@@ -522,7 +534,7 @@ func (r *PipelineResource) api2ModelTransforms(_ context.Context, apiTransforms 
 			})
 			currentTransformID = apiTransform.ID
 			currentTransformTopics = make([]string, 0, len(apiTransforms))
-			currentTransformTopics = append(currentTransformTopics, apiTransform.Topic)
+			currentTransformTopics = append(currentTransformTopics, topicName)
 		}
 	}
 
