@@ -5,6 +5,7 @@ package generated
 import (
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
@@ -17,28 +18,40 @@ import (
 
 // SourceDynamodbModel is the Terraform model for the dynamodb source.
 type SourceDynamodbModel struct {
-	ID                            types.String   `tfsdk:"id"`
-	Name                          types.String   `tfsdk:"name"`
-	Connector                     types.String   `tfsdk:"connector"`
-	ConnectorStatus               types.String   `tfsdk:"connector_status"`
-	KcClusterId                   types.String   `tfsdk:"kc_cluster_id"`
-	AWSRegion                     types.String   `tfsdk:"aws_region"`
-	AWSAccessKeyID                types.String   `tfsdk:"aws_access_key_id"`
-	AWSSecretKey                  types.String   `tfsdk:"aws_secret_key"`
-	S3ExportBucketName            types.String   `tfsdk:"s3_export_bucket_name"`
-	TableIncludeList              types.String   `tfsdk:"table_include_list"`
-	BatchSize                     types.Int64    `tfsdk:"batch_size"`
-	DynamodbServiceEndpoint       types.String   `tfsdk:"dynamodb_service_endpoint"`
-	TasksMax                      types.Int64    `tfsdk:"tasks_max"`
-	SnapshotParallelTimeOffset    types.Int64    `tfsdk:"snapshot_parallel_time_offset"`
-	PollTimeoutMs                 types.Int64    `tfsdk:"poll_timeout_ms"`
-	IncrementalSnapshotChunkSize  types.Int64    `tfsdk:"incremental_snapshot_chunk_size"`
-	IncrementalSnapshotMaxThreads types.Int64    `tfsdk:"incremental_snapshot_max_threads"`
-	FullExportExpirationTimeMs    types.Int64    `tfsdk:"full_export_expiration_time_ms"`
-	SignalKafkaPollTimeoutMs      types.Int64    `tfsdk:"signal_kafka_poll_timeout_ms"`
-	ArrayEncodingJson             types.Bool     `tfsdk:"array_encoding_json"`
-	StructEncodingJson            types.Bool     `tfsdk:"struct_encoding_json"`
-	Timeouts                      timeouts.Value `tfsdk:"timeouts"`
+	ID                                               types.String   `tfsdk:"id"`
+	Name                                             types.String   `tfsdk:"name"`
+	Connector                                        types.String   `tfsdk:"connector"`
+	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
+	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
+	AWSRegion                                        types.String   `tfsdk:"aws_region"`
+	AWSAccessKeyID                                   types.String   `tfsdk:"aws_access_key_id"`
+	AWSSecretKey                                     types.String   `tfsdk:"aws_secret_key"`
+	S3ExportBucketName                               types.String   `tfsdk:"s3_export_bucket_name"`
+	TableIncludeList                                 types.String   `tfsdk:"table_include_list"`
+	BatchSize                                        types.Int64    `tfsdk:"batch_size"`
+	DynamodbServiceEndpoint                          types.String   `tfsdk:"dynamodb_service_endpoint"`
+	TasksMax                                         types.Int64    `tfsdk:"tasks_max"`
+	SnapshotParallelTimeOffset                       types.Int64    `tfsdk:"snapshot_parallel_time_offset"`
+	PollTimeoutMs                                    types.Int64    `tfsdk:"poll_timeout_ms"`
+	IncrementalSnapshotChunkSize                     types.Int64    `tfsdk:"incremental_snapshot_chunk_size"`
+	IncrementalSnapshotMaxThreads                    types.Int64    `tfsdk:"incremental_snapshot_max_threads"`
+	FullExportExpirationTimeMs                       types.Int64    `tfsdk:"full_export_expiration_time_ms"`
+	SignalKafkaPollTimeoutMs                         types.Int64    `tfsdk:"signal_kafka_poll_timeout_ms"`
+	ArrayEncodingJson                                types.Bool     `tfsdk:"array_encoding_json"`
+	StructEncodingJson                               types.Bool     `tfsdk:"struct_encoding_json"`
+	TransformsValueToKeyFieldsIncludeList            types.String   `tfsdk:"transforms_value_to_key_fields_include_list"`
+	TransformsValueToKeyReplaceNullWithDefault       types.Bool     `tfsdk:"transforms_value_to_key_replace_null_with_default"`
+	PreserveNullValues                               types.Bool     `tfsdk:"preserve_null_values"`
+	TransformsOversizedRecordsFieldsIncludeList      types.String   `tfsdk:"transforms_oversized_records_fields_include_list"`
+	TransformsOversizedRecordsFieldsExcludeList      types.String   `tfsdk:"transforms_oversized_records_fields_exclude_list"`
+	TransformsOversizedRecordsMaxFieldSizeBytes      types.Int64    `tfsdk:"transforms_oversized_records_max_field_size_bytes"`
+	TransformsOversizedRecordsOversizedFieldBehavior types.String   `tfsdk:"transforms_oversized_records_oversized_field_behavior"`
+	TransformsOversizedRecordsTruncationSuffix       types.String   `tfsdk:"transforms_oversized_records_truncation_suffix"`
+	TransformsOversizedRecordsMaxRecordSizeBytes     types.Int64    `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
+	TransformsOversizedRecordsSemanticTypesExclude   types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
+	TransformsOversizedRecordsReplaceNullWithDefault types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
+	InsertTopicNameEnabled                           types.Bool     `tfsdk:"insert_topic_name_enabled"`
+	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourceDynamodbSchema returns the Terraform schema for the dynamodb source.
@@ -187,26 +200,125 @@ func SourceDynamodbSchema() schema.Schema {
 				MarkdownDescription: "Force nested maps as JSON string. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
+			"transforms_value_to_key_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				MarkdownDescription: "Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+			},
+			"transforms_value_to_key_replace_null_with_default": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to true.",
+				MarkdownDescription: "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
+			"preserve_null_values": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to false.",
+				MarkdownDescription: "When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"transforms_oversized_records_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
+				MarkdownDescription: "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
+			},
+			"transforms_oversized_records_fields_exclude_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
+				MarkdownDescription: "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
+			},
+			"transforms_oversized_records_max_field_size_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to 1048576.",
+				MarkdownDescription: "Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.",
+				Default:             int64default.StaticInt64(1048576),
+				Validators: []validator.Int64{
+					int64validator.Between(1048576, 104857600),
+				},
+			},
+			"transforms_oversized_records_oversized_field_behavior": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to \"TRUNCATE\". Valid values: TRUNCATE, NULLIFY.",
+				MarkdownDescription: "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.",
+				Default:             stringdefault.StaticString("TRUNCATE"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("TRUNCATE", "NULLIFY"),
+				},
+			},
+			"transforms_oversized_records_truncation_suffix": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to \"\".",
+				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.",
+				Default:             stringdefault.StaticString(""),
+			},
+			"transforms_oversized_records_max_record_size_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to -1.",
+				MarkdownDescription: "Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to `-1`.",
+				Default:             int64default.StaticInt64(-1),
+				Validators: []validator.Int64{
+					int64validator.Between(-1, 104857600),
+				},
+			},
+			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
+			},
+			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to true.",
+				MarkdownDescription: "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
+			"insert_topic_name_enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to false.",
+				MarkdownDescription: "Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
 		},
 	}
 }
 
 // SourceDynamodbFieldMappings maps Terraform attribute names to API field names.
 var SourceDynamodbFieldMappings = map[string]string{
-	"aws_region":                       "aws.region",
-	"aws_access_key_id":                "aws.access.key.id",
-	"aws_secret_key":                   "aws.secret.key",
-	"s3_export_bucket_name":            "s3.export.bucket.name",
-	"table_include_list":               "table.include.list.user.defined",
-	"batch_size":                       "batch.size",
-	"dynamodb_service_endpoint":        "dynamodb.service.endpoint",
-	"tasks_max":                        "tasks.max",
-	"snapshot_parallel_time_offset":    "snapshot.parallel.time.offset",
-	"poll_timeout_ms":                  "poll.timeout.ms",
-	"incremental_snapshot_chunk_size":  "incremental.snapshot.chunk.size",
-	"incremental_snapshot_max_threads": "incremental.snapshot.max.threads",
-	"full_export_expiration_time_ms":   "full.export.expiration.time.ms",
-	"signal_kafka_poll_timeout_ms":     "signal.kafka.poll.timeout.ms",
-	"array_encoding_json":              "array.encoding.json",
-	"struct_encoding_json":             "struct.encoding.json",
+	"aws_region":                                             "aws.region",
+	"aws_access_key_id":                                      "aws.access.key.id",
+	"aws_secret_key":                                         "aws.secret.key",
+	"s3_export_bucket_name":                                  "s3.export.bucket.name",
+	"table_include_list":                                     "table.include.list.user.defined",
+	"batch_size":                                             "batch.size",
+	"dynamodb_service_endpoint":                              "dynamodb.service.endpoint",
+	"tasks_max":                                              "tasks.max",
+	"snapshot_parallel_time_offset":                          "snapshot.parallel.time.offset",
+	"poll_timeout_ms":                                        "poll.timeout.ms",
+	"incremental_snapshot_chunk_size":                        "incremental.snapshot.chunk.size",
+	"incremental_snapshot_max_threads":                       "incremental.snapshot.max.threads",
+	"full_export_expiration_time_ms":                         "full.export.expiration.time.ms",
+	"signal_kafka_poll_timeout_ms":                           "signal.kafka.poll.timeout.ms",
+	"array_encoding_json":                                    "array.encoding.json",
+	"struct_encoding_json":                                   "struct.encoding.json",
+	"transforms_value_to_key_fields_include_list":            "transforms.ValueToKey.fields.include.list",
+	"transforms_value_to_key_replace_null_with_default":      "transforms.ValueToKey.replace.null.with.default",
+	"preserve_null_values":                                   "preserve.null.values",
+	"transforms_oversized_records_fields_include_list":       "transforms.OversizedRecords.fields.include.list",
+	"transforms_oversized_records_fields_exclude_list":       "transforms.OversizedRecords.fields.exclude.list",
+	"transforms_oversized_records_max_field_size_bytes":      "transforms.OversizedRecords.max.field.size.bytes",
+	"transforms_oversized_records_oversized_field_behavior":  "transforms.OversizedRecords.oversized.field.behavior",
+	"transforms_oversized_records_truncation_suffix":         "transforms.OversizedRecords.truncation.suffix",
+	"transforms_oversized_records_max_record_size_bytes":     "transforms.OversizedRecords.max.record.size.bytes",
+	"transforms_oversized_records_semantic_types_exclude":    "transforms.OversizedRecords.semantic.types.exclude",
+	"transforms_oversized_records_replace_null_with_default": "transforms.OversizedRecords.replace.null.with.default",
+	"insert_topic_name_enabled":                              "InsertTopicName.enabled",
 }

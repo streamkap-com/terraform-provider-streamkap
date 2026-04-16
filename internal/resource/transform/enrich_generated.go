@@ -39,6 +39,11 @@ func (c *EnrichConfig) NewModelInstance() any {
 	return &generated.TransformEnrichModel{}
 }
 
+// SupportsPreviewDeploy returns true because enrich is Flink-based.
+func (c *EnrichConfig) SupportsPreviewDeploy() bool {
+	return true
+}
+
 // NewEnrichResource creates a new enrich transform resource.
 func NewEnrichResource() resource.Resource {
 	return NewBaseTransformResource(&EnrichConfig{})

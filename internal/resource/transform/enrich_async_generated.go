@@ -39,6 +39,11 @@ func (c *EnrichAsyncConfig) NewModelInstance() any {
 	return &generated.TransformEnrichAsyncModel{}
 }
 
+// SupportsPreviewDeploy returns true because enrich_async is Flink-based.
+func (c *EnrichAsyncConfig) SupportsPreviewDeploy() bool {
+	return true
+}
+
 // NewEnrichAsyncResource creates a new enrich_async transform resource.
 func NewEnrichAsyncResource() resource.Resource {
 	return NewBaseTransformResource(&EnrichAsyncConfig{})

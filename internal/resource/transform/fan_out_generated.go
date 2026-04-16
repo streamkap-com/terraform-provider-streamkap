@@ -39,6 +39,11 @@ func (c *FanOutConfig) NewModelInstance() any {
 	return &generated.TransformFanOutModel{}
 }
 
+// SupportsPreviewDeploy returns true because fan_out is Flink-based.
+func (c *FanOutConfig) SupportsPreviewDeploy() bool {
+	return true
+}
+
 // NewFanOutResource creates a new fan_out transform resource.
 func NewFanOutResource() resource.Resource {
 	return NewBaseTransformResource(&FanOutConfig{})

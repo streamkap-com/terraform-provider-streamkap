@@ -25,7 +25,7 @@ type TransformTopicRouterModel struct {
 	TransformsOutputTopicPattern        types.String         `tfsdk:"transforms_output_topic_pattern"`
 	TransformsInputSerializationFormat  types.String         `tfsdk:"transforms_input_serialization_format"`
 	TransformsOutputSerializationFormat types.String         `tfsdk:"transforms_output_serialization_format"`
-	TopicPrefix                         types.String         `tfsdk:"topic_prefix"`
+	KcClusterID                         types.String         `tfsdk:"kc_cluster_id"`
 	TransformsInputJobParallelism       types.Int64          `tfsdk:"transforms_input_job_parallelism"`
 	ImplementationJSON                  jsontypes.Normalized `tfsdk:"implementation_json"`
 	Deploy                              types.Bool           `tfsdk:"deploy"`
@@ -70,11 +70,9 @@ func TransformTopicRouterSchema() schema.Schema {
 				MarkdownDescription: "Comma-separated list of input topic names to route",
 			},
 			"transforms_output_topic_pattern": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Output topic pattern (auto-generated from topic_prefix). Defaults to \"\".",
-				MarkdownDescription: "Output topic pattern (auto-generated from topic_prefix). Defaults to ``.",
-				Default:             stringdefault.StaticString(""),
+				Required:            true,
+				Description:         "Output topic replacement pattern for RegexRouter (e.g. 'merged.$1')",
+				MarkdownDescription: "Output topic replacement pattern for RegexRouter (e.g. 'merged.$1')",
 			},
 			"transforms_input_serialization_format": schema.StringAttribute{
 				Optional:            true,
@@ -96,10 +94,12 @@ func TransformTopicRouterSchema() schema.Schema {
 					stringvalidator.OneOf("Any", "Avro", "Json"),
 				},
 			},
-			"topic_prefix": schema.StringAttribute{
-				Required:            true,
-				Description:         "Output topic prefix for merged topics (e.g. 'merged.dbo.')",
-				MarkdownDescription: "Output topic prefix for merged topics (e.g. 'merged.dbo.')",
+			"kc_cluster_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "KC cluster to deploy the connector to. Leave empty for default cluster. Defaults to \"\".",
+				MarkdownDescription: "KC cluster to deploy the connector to. Leave empty for default cluster. Defaults to ``.",
+				Default:             stringdefault.StaticString(""),
 			},
 			"transforms_input_job_parallelism": schema.Int64Attribute{
 				Optional:            true,
@@ -121,6 +121,6 @@ var TransformTopicRouterFieldMappings = map[string]string{
 	"transforms_output_topic_pattern":        "transforms.output.topic.pattern",
 	"transforms_input_serialization_format":  "transforms.input.serialization.format",
 	"transforms_output_serialization_format": "transforms.output.serialization.format",
-	"topic_prefix":                           "topic.prefix",
+	"kc_cluster_id":                          "kc.cluster.id",
 	"transforms_input_job_parallelism":       "transforms.input.job.parallelism",
 }
