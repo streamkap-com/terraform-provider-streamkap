@@ -3,6 +3,7 @@ package topic
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
@@ -131,6 +132,15 @@ func (r *TopicResource) Read(ctx context.Context, req res.ReadRequest, resp *res
 	topicID := state.TopicID.ValueString()
 	topic, err := r.client.GetTopic(ctx, topicID)
 	if err != nil {
+		// Topic doesn't exist yet — keep state so Create/Update can auto-create via PUT.
+		// The backend's update_topic() has create-if-not-exists logic that creates the
+		// Kafka topic with the source connector's default settings.
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "not found") || strings.Contains(errMsg, "not owned") {
+			tflog.Info(ctx, "Topic not found during read, keeping state for create: "+topicID)
+			resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+			return
+		}
 		resp.Diagnostics.AddError(
 			"Error reading topic",
 			fmt.Sprintf("Unable to read topic, got error: %s", err),
