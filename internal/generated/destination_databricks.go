@@ -164,11 +164,11 @@ func DestinationDatabricksSchema() schema.Schema {
 			"consumer_wait_time_for_larger_batch_ms": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The max wait time for larger batch size (in ms). The bigger the batch size, the the more cost effective loading will be on databricks but latency will grow as a trade-off. Defaults to 10000.",
-				MarkdownDescription: "The max wait time for larger batch size (in ms). The bigger the batch size, the the more cost effective loading will be on databricks but latency will grow as a trade-off. Defaults to `10000`.",
+				Description:         "The max wait time for larger batch size (in ms). The bigger the batch size, the more cost effective loading will be on databricks but latency will grow as a trade-off. Also controls consumer timeout chain and batch size settings. Defaults to 10000.",
+				MarkdownDescription: "The max wait time for larger batch size (in ms). The bigger the batch size, the more cost effective loading will be on databricks but latency will grow as a trade-off. Also controls consumer timeout chain and batch size settings. Defaults to `10000`.",
 				Default:             int64default.StaticInt64(10000),
 				Validators: []validator.Int64{
-					int64validator.Between(500, 300000),
+					int64validator.Between(500, 1200000),
 				},
 			},
 			"topic2table_map": schema.BoolAttribute{
