@@ -85,7 +85,9 @@ type APIErrorResponse struct {
 }
 
 type Config struct {
-	BaseURL string `mapstructure:"base_url"`
+	BaseURL        string `mapstructure:"base_url"`
+	AdminTenantID  string
+	AdminServiceID string
 }
 
 type streamkapAPI struct {
@@ -113,12 +115,24 @@ func (s *streamkapAPI) doRequest(ctx context.Context, req *http.Request, result 
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.token.AccessToken))
 	}
 
+	if s.cfg.AdminTenantID != "" {
+		req.Header.Set("X-Admin-Tenant-Id", s.cfg.AdminTenantID)
+	}
+	if s.cfg.AdminServiceID != "" {
+		req.Header.Set("X-Admin-Service-Id", s.cfg.AdminServiceID)
+	}
+
 	resp, err := s.client.Do(req)
 	if err != nil {
 		return err
 	}
 
 	defer resp.Body.Close()
+
+	requestID := resp.Header.Get("X-Request-Id")
+	if requestID != "" {
+		tflog.Debug(ctx, fmt.Sprintf("%s %s → %d (request_id=%s)", req.Method, req.URL, resp.StatusCode, requestID))
+	}
 
 	respBodyDecoder := json.NewDecoder(resp.Body)
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
@@ -134,7 +148,11 @@ func (s *streamkapAPI) doRequest(ctx context.Context, req *http.Request, result 
 			)
 			return err
 		} else {
-			return errors.New(apiErr.Detail)
+			detail := apiErr.Detail
+			if requestID != "" {
+				detail = fmt.Sprintf("%s (request_id=%s)", detail, requestID)
+			}
+			return errors.New(detail)
 		}
 	}
 

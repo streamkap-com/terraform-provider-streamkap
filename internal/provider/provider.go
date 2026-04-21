@@ -48,9 +48,11 @@ type streamkapProvider struct {
 }
 
 type streamkapProviderModel struct {
-	Host     types.String `tfsdk:"host"`
-	ClientID types.String `tfsdk:"client_id"`
-	Secret   types.String `tfsdk:"secret"`
+	Host           types.String `tfsdk:"host"`
+	ClientID       types.String `tfsdk:"client_id"`
+	Secret         types.String `tfsdk:"secret"`
+	AdminTenantID  types.String `tfsdk:"admin_tenant_id"`
+	AdminServiceID types.String `tfsdk:"admin_service_id"`
 }
 
 // Metadata returns the provider type name.
@@ -84,6 +86,16 @@ func (p *streamkapProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 				MarkdownDescription: "The Streamkap API secret. If not set, Streamkap will use environment variable `STREAMKAP_SECRET`",
 				Optional:            true,
 				Sensitive:           true,
+			},
+			"admin_tenant_id": schema.StringAttribute{
+				Description:         "Admin tenant ID for cross-tenant access. If not set, Streamkap will use environment variable `STREAMKAP_ADMIN_TENANT_ID`.",
+				MarkdownDescription: "Admin tenant ID for cross-tenant access. If not set, Streamkap will use environment variable `STREAMKAP_ADMIN_TENANT_ID`.",
+				Optional:            true,
+			},
+			"admin_service_id": schema.StringAttribute{
+				Description:         "Admin service ID for cross-tenant access. If not set, Streamkap will use environment variable `STREAMKAP_ADMIN_SERVICE_ID`.",
+				MarkdownDescription: "Admin service ID for cross-tenant access. If not set, Streamkap will use environment variable `STREAMKAP_ADMIN_SERVICE_ID`.",
+				Optional:            true,
 			},
 		},
 	}
@@ -139,6 +151,8 @@ func (p *streamkapProvider) Configure(ctx context.Context, req provider.Configur
 	host := os.Getenv("STREAMKAP_HOST")
 	clientID := os.Getenv("STREAMKAP_CLIENT_ID")
 	secret := os.Getenv("STREAMKAP_SECRET")
+	adminTenantID := os.Getenv("STREAMKAP_ADMIN_TENANT_ID")
+	adminServiceID := os.Getenv("STREAMKAP_ADMIN_SERVICE_ID")
 
 	if !config.Host.IsNull() {
 		host = config.Host.ValueString()
@@ -150,6 +164,14 @@ func (p *streamkapProvider) Configure(ctx context.Context, req provider.Configur
 
 	if !config.Secret.IsNull() {
 		secret = config.Secret.ValueString()
+	}
+
+	if !config.AdminTenantID.IsNull() {
+		adminTenantID = config.AdminTenantID.ValueString()
+	}
+
+	if !config.AdminServiceID.IsNull() {
+		adminServiceID = config.AdminServiceID.ValueString()
 	}
 
 	// If any of the expected configurations are missing, return
@@ -183,7 +205,9 @@ func (p *streamkapProvider) Configure(ctx context.Context, req provider.Configur
 	}
 
 	p.client = api.NewClient(&api.Config{
-		BaseURL: host,
+		BaseURL:        host,
+		AdminTenantID:  adminTenantID,
+		AdminServiceID: adminServiceID,
 	})
 	// Create a new Streamkap client using the configuration values
 	token, err := p.client.GetAccessToken(clientID, secret)
