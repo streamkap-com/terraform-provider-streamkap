@@ -72,6 +72,7 @@ output "example-destination-iceberg" {
 - `catalog_uri` (String) Iceberg catalog uri. Required for rest and hive.
 - `insert_mode` (String) Specifies the strategy used to insert events into the database
 - `primary_key_fields` (String) Optional (upsert). A comma-separated list of field names to use as record identifiers when key fields are not present in Kafka messages
+- `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements
 
 ### Read-Only
 

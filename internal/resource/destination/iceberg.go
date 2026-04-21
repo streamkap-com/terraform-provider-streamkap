@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -52,6 +53,7 @@ type DestinationIcebergResourceModel struct {
 	Schema           types.String `tfsdk:"schema"`
 	InsertMode       types.String `tfsdk:"insert_mode"`
 	PrimaryKeyFields types.String `tfsdk:"primary_key_fields"`
+	QuoteIdentifiers types.Bool   `tfsdk:"quote_identifiers"`
 }
 
 func (r *DestinationIcebergResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -176,6 +178,13 @@ func (r *DestinationIcebergResource) Schema(ctx context.Context, req res.SchemaR
 				Default:             stringdefault.StaticString(""),
 				Description:         "Optional (upsert). A comma-separated list of field names to use as record identifiers when key fields are not present in Kafka messages",
 				MarkdownDescription: "Optional (upsert). A comma-separated list of field names to use as record identifiers when key fields are not present in Kafka messages",
+			},
+			"quote_identifiers": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(true),
+				Description:         "Whether to quote identifiers in SQL statements",
+				MarkdownDescription: "Whether to quote identifiers in SQL statements",
 			},
 		},
 	}
@@ -353,6 +362,7 @@ func (r *DestinationIcebergResource) model2ConfigMap(model DestinationIcebergRes
 		"table.name.prefix":                          model.Schema.ValueString(),
 		"insert.mode.user.defined":                   model.InsertMode.ValueString(),
 		"iceberg.tables.default-id-columns":          model.PrimaryKeyFields.ValueString(),
+		"quote.identifiers":                          model.QuoteIdentifiers.ValueBool(),
 	}
 
 	return configMap
@@ -371,4 +381,5 @@ func (r *DestinationIcebergResource) configMap2Model(cfg map[string]any, model *
 	model.Schema = helper.GetTfCfgString(cfg, "table.name.prefix")
 	model.InsertMode = helper.GetTfCfgString(cfg, "insert.mode.user.defined")
 	model.PrimaryKeyFields = helper.GetTfCfgString(cfg, "iceberg.tables.default-id-columns")
+	model.QuoteIdentifiers = helper.GetTfCfgBool(cfg, "quote.identifiers")
 }
