@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
@@ -68,7 +69,7 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload Pipeline) 
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/pipelines?secret_returned=true", bytes.NewBuffer(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/pipelines?secret_returned=true&wait=false", bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -84,10 +85,32 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload Pipeline) 
 	var resp Pipeline
 	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
+		// Create-or-adopt: if a pipeline with this name already exists (409 from a
+		// previous timed-out create), adopt the existing one instead of failing.
+		if strings.Contains(err.Error(), "already exists") {
+			tflog.Info(ctx, fmt.Sprintf(
+				"Pipeline %q already exists — adopting existing resource", reqPayload.Name))
+			return s.adoptPipelineByName(ctx, reqPayload.Name)
+		}
 		return nil, err
 	}
 
 	return &resp, nil
+}
+
+// adoptPipelineByName finds an existing pipeline by name and returns it,
+// allowing Terraform to adopt it into state after a 409 conflict.
+func (s *streamkapAPI) adoptPipelineByName(ctx context.Context, name string) (*Pipeline, error) {
+	pipelines, err := s.ListPipelines(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list pipelines while adopting %q: %w", name, err)
+	}
+	for i := range pipelines {
+		if pipelines[i].Name == name {
+			return &pipelines[i], nil
+		}
+	}
+	return nil, fmt.Errorf("pipeline %q reported as existing but not found in list", name)
 }
 
 func (s *streamkapAPI) GetPipeline(ctx context.Context, pipelineID string) (*Pipeline, error) {
@@ -163,7 +186,7 @@ func (s *streamkapAPI) UpdatePipeline(ctx context.Context, pipelineID string, re
 		return nil, err
 	}
 	req, err := http.NewRequestWithContext(
-		ctx, http.MethodPut, s.cfg.BaseURL+"/pipelines/"+pipelineID+"?secret_returned=true", bytes.NewBuffer(payload))
+		ctx, http.MethodPut, s.cfg.BaseURL+"/pipelines/"+pipelineID+"?secret_returned=true&wait=false", bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}

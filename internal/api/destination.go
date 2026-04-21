@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
@@ -62,10 +63,30 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destina
 	var resp Destination
 	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			tflog.Info(ctx, fmt.Sprintf(
+				"Destination %q already exists — adopting existing resource", reqPayload.Name))
+			return s.adoptDestinationByName(ctx, reqPayload.Name)
+		}
 		return nil, err
 	}
 
 	return &resp, nil
+}
+
+// adoptDestinationByName finds an existing destination by name and returns it,
+// allowing Terraform to adopt it into state after a 409 conflict.
+func (s *streamkapAPI) adoptDestinationByName(ctx context.Context, name string) (*Destination, error) {
+	destinations, err := s.ListDestinations(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list destinations while adopting %q: %w", name, err)
+	}
+	for i := range destinations {
+		if destinations[i].Name == name {
+			return &destinations[i], nil
+		}
+	}
+	return nil, fmt.Errorf("destination %q reported as existing but not found in list", name)
 }
 
 func (s *streamkapAPI) GetDestination(ctx context.Context, destinationID string) (*Destination, error) {

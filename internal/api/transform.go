@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
@@ -121,10 +122,31 @@ func (s *streamkapAPI) CreateTransform(ctx context.Context, reqPayload CreateTra
 	var resp Transform
 	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			name, _ := reqPayload.Config["name"].(string)
+			tflog.Info(ctx, fmt.Sprintf(
+				"Transform %q already exists — adopting existing resource", name))
+			return s.adoptTransformByName(ctx, name)
+		}
 		return nil, err
 	}
 
 	return &resp, nil
+}
+
+// adoptTransformByName finds an existing transform by name and returns it,
+// allowing Terraform to adopt it into state after a 409 conflict.
+func (s *streamkapAPI) adoptTransformByName(ctx context.Context, name string) (*Transform, error) {
+	transforms, err := s.ListTransforms(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list transforms while adopting %q: %w", name, err)
+	}
+	for i := range transforms {
+		if transforms[i].Name == name {
+			return &transforms[i], nil
+		}
+	}
+	return nil, fmt.Errorf("transform %q reported as existing but not found in list", name)
 }
 
 func (s *streamkapAPI) UpdateTransform(ctx context.Context, transformID string, reqPayload UpdateTransformRequest) (*Transform, error) {

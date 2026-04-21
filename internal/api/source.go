@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
@@ -62,10 +63,30 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 	var resp Source
 	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			tflog.Info(ctx, fmt.Sprintf(
+				"Source %q already exists — adopting existing resource", reqPayload.Name))
+			return s.adoptSourceByName(ctx, reqPayload.Name)
+		}
 		return nil, err
 	}
 
 	return &resp, nil
+}
+
+// adoptSourceByName finds an existing source by name and returns it,
+// allowing Terraform to adopt it into state after a 409 conflict.
+func (s *streamkapAPI) adoptSourceByName(ctx context.Context, name string) (*Source, error) {
+	sources, err := s.ListSources(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list sources while adopting %q: %w", name, err)
+	}
+	for i := range sources {
+		if sources[i].Name == name {
+			return &sources[i], nil
+		}
+	}
+	return nil, fmt.Errorf("source %q reported as existing but not found in list", name)
 }
 
 func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) (*Source, error) {
