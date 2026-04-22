@@ -66,8 +66,13 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destina
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
 			tflog.Info(ctx, fmt.Sprintf(
-				"Destination %q already exists — adopting existing resource", reqPayload.Name))
-			return s.adoptDestinationByName(ctx, reqPayload.Name)
+				"Destination %q already exists — attempting to adopt existing resource", reqPayload.Name))
+			adopted, adoptErr := s.adoptDestinationByName(ctx, reqPayload.Name)
+			if adoptErr == nil {
+				return adopted, nil
+			}
+			// See matching comment in source.go CreateSource.
+			return nil, fmt.Errorf("%w (also tried to adopt the existing resource but could not locate it via the list endpoint: %v)", err, adoptErr)
 		}
 		return nil, err
 	}
