@@ -106,9 +106,11 @@ func SourceSalesforceWebhookSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "API Key for webhook authentication. Generated after source is created. Defaults to \"<API_KEY>\". This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "API Key for webhook authentication. Generated after source is created. Defaults to `<API_KEY>`.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
-				Default:             stringdefault.StaticString("<API_KEY>"),
+				Description:         "API Key for webhook authentication. Generated after source is created. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "API Key for webhook authentication. Generated after source is created.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"camel_source_snapshot_salesforce_instance_url": schema.StringAttribute{
 				Optional:            true,

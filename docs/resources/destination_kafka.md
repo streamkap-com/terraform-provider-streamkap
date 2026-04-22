@@ -25,7 +25,6 @@ This resource creates and manages a Kafka destination for Streamkap data pipelin
 
 - `kafka_sink_bootstrap` (String) A comma-separated list of host and port pairs that are the addresses of the Destination Kafka brokers. This list should be in the form host1:port1,host2:port2,...
 - `name` (String) Name of the destination
-- `schema_registry_url` (String) Destination kafka schema registry url
 
 ### Optional
 
@@ -35,6 +34,7 @@ This resource creates and manages a Kafka destination for Streamkap data pipelin
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
+- `schema_registry_url` (String) Destination kafka schema registry url
 - `tasks_max` (Number) Maximum number of tasks for the connector. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `topic_prefix` (String) Prefix for destination topics

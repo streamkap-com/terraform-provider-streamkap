@@ -29,11 +29,8 @@ This resource creates and manages a Supabase source for Streamkap data pipelines
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `database_user` (String) Username to access the database
-- `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.
 - `name` (String) Name of the source
 - `schema_include_list` (String) Schemas to include.
-- `signal_data_collection_schema_or_database` (String) Full path to the signal table including schema and table name (e.g., 'public.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.
-- `ssh_host` (String) Hostname of your SSH server
 - `table_include_list` (String) Source tables to sync.
 
 ### Optional
@@ -44,6 +41,7 @@ This resource creates and manages a Supabase source for Streamkap data pipelines
 - `column_include_list_toggled` (Boolean) Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to `true`.
 - `database_port` (Number) PostgreSQL Port. For example, 5432. Defaults to `5432`.
 - `database_sslmode` (String) Whether to use an encrypted connection to the PostgreSQL server. Defaults to `require`. Valid values: `require`, `disable`.
+- `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.
 - `heartbeat_enabled` (Boolean) Heartbeats are used to monitor whether the connector is still receiving change events from the database, especially when there is low and intermittent traffic. Defaults to `true`.
 - `include_source_db_name_in_table_name` (Boolean) Changes the format of topics to 'DatabaseName_TopicName'. Defaults to `false`.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
@@ -51,9 +49,11 @@ This resource creates and manages a Supabase source for Streamkap data pipelines
 - `predicates_is_topic_to_enrich_pattern` (String) Regex pattern to match topics for enrichment. Defaults to `$^`.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `publication_name` (String) The name of the publication for the connector to use. Defaults to `streamkap_pub`.
+- `signal_data_collection_schema_or_database` (String) Full path to the signal table including schema and table name (e.g., 'public.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.
 - `slot_name` (String) The name of the replication slot for the connector to use. Defaults to `streamkap_pgoutput_slot`.
 - `snapshot_read_only` (String) When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots. Defaults to `Yes`. Valid values: `Yes`, `No`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
+- `ssh_host` (String) Hostname of your SSH server
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.

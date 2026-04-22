@@ -502,6 +502,12 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 	// Update model with response data
 	r.setStringField(model, "Name", transform.Name)
 	r.setStringField(model, "TransformType", transform.TransformType)
+	// req.Plan.Get() above populated model.ConnectorStatus with the plan's
+	// Unknown placeholder. Overwrite to a Known value before saving state —
+	// deployFromPlan will refine it below if the transform is deployed. Without
+	// this, state.connector_status ends Unknown, tripping Terraform's
+	// "All values must be known after apply" consistency check (issue #71).
+	r.setStringField(model, "ConnectorStatus", constants.JobStatusUnknown)
 	r.configMapToModel(ctx, transform.Config, model)
 
 	// Save updated data into Terraform state

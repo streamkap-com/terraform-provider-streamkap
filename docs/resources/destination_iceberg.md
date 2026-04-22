@@ -23,16 +23,6 @@ This resource creates and manages an Iceberg destination for Streamkap data pipe
 
 ### Required
 
-- `iceberg_catalog_credential` (String, Sensitive) OAuth2 client credential in client_id:client_secret format.
-
-**Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `iceberg_catalog_s3_access_key_id` (String) The access key ID used to connect to S3 or S3-compatible storage.
-- `iceberg_catalog_s3_secret_access_key` (String, Sensitive) The secret access key used to connect to S3 or S3-compatible storage.
-
-**Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `iceberg_catalog_token` (String, Sensitive) Bearer token used for catalog authentication.
-
-**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `iceberg_catalog_warehouse` (String) The Iceberg warehouse identifier. For R2 Data Catalog, this should be the warehouse name configured in the catalog. For S3-based catalogs, this is typically an S3 or S3-compatible path (e.g., s3://bucket/path).
 - `name` (String) Name of the destination
 - `table_name_prefix` (String) Name of the database schema that contains the table (e.g., public, sales, analytics).
@@ -43,9 +33,19 @@ This resource creates and manages an Iceberg destination for Streamkap data pipe
 - `iceberg_catalog_auth_mode` (String) How to authenticate with the Iceberg catalog. 'No Auth' for catalogs that don't require authentication. 'Token' for bearer token authentication (e.g., Cloudflare R2). 'OAuth2 Credential' for OAuth2 client credential authentication (e.g., Polaris, DataHub). Defaults to `none`. Valid values: `none`, `token`, `oauth2`.
 - `iceberg_catalog_client_assume_role_arn` (String) AWS IAM role (e.g., arn:aws:iam::<your-account>:role/<role-name>)
 - `iceberg_catalog_client_region` (String) The AWS region to be used. For Cloudflare R2, select 'auto'. Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`, `auto`.
+- `iceberg_catalog_credential` (String, Sensitive) OAuth2 client credential in client_id:client_secret format.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `iceberg_catalog_name` (String) Iceberg catalog name
+- `iceberg_catalog_s3_access_key_id` (String) The access key ID used to connect to S3 or S3-compatible storage.
 - `iceberg_catalog_s3_credentials_enabled` (Boolean) Enable to provide your own S3 access key and secret. Disable if the catalog vends storage credentials automatically. Defaults to `false`.
+- `iceberg_catalog_s3_secret_access_key` (String, Sensitive) The secret access key used to connect to S3 or S3-compatible storage.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `iceberg_catalog_scope` (String) OAuth2 scope for catalog authentication (e.g., PRINCIPAL_ROLE:ALL). Defaults to `PRINCIPAL_ROLE:ALL`.
+- `iceberg_catalog_token` (String, Sensitive) Bearer token used for catalog authentication.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `iceberg_catalog_type` (String) Type of Iceberg catalog. Defaults to `rest`. Valid values: `rest`, `hive`, `glue`.
 - `iceberg_catalog_uri` (String) Catalog endpoint URL. For REST catalogs use https://… ; for Hive Metastore use thrift://… ; AWS Glue uses the regional endpoint.
 - `iceberg_tables_compaction_commit_threshold` (String) Number of Iceberg commits between compaction checks. Defaults to `5`.

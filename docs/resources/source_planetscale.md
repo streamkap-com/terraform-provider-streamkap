@@ -29,7 +29,6 @@ This resource creates and manages a Planetscale Vitess source for Streamkap data
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `database_user` (String) Username of the PlanetScale database server (VTGate).
 - `name` (String) Name of the source
-- `ssh_host` (String) Hostname of your SSH server
 - `table_include_list` (String) Source tables to sync.
 - `vitess_keyspace` (String) The name of the keyspace from which to stream the changes.
 
@@ -44,6 +43,7 @@ This resource creates and manages a Planetscale Vitess source for Streamkap data
 - `schema_history_internal_store_only_captured_databases_ddl` (Boolean) Specifies whether the connector records schema structures from all logical databases in the database instance or only captured databases. Enabling this when you have many databases in your instance can improve performance and avoid timeouts. Defaults to `false`.
 - `schema_history_internal_store_only_captured_tables_ddl` (Boolean) Specifies whether the connector records schema structures from all logical tables in the captured schemas or databases, or only captured tables. Enabling this when you have many tables can improve performance and avoid timeouts. Defaults to `false`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
+- `ssh_host` (String) Hostname of your SSH server
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.

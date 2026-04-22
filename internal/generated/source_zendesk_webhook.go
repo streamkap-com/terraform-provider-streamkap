@@ -100,9 +100,11 @@ func SourceZendeskWebhookSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "API Key. This key will be generated after the source is created. Defaults to \"<API_KEY>\". This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "API Key. This key will be generated after the source is created. Defaults to `<API_KEY>`.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
-				Default:             stringdefault.StaticString("<API_KEY>"),
+				Description:         "API Key. This key will be generated after the source is created This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "API Key. This key will be generated after the source is created\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"camel_source_payload_router_unknown_type_behavior": schema.StringAttribute{
 				Optional:            true,

@@ -30,7 +30,6 @@ This resource creates and manages a PostgreSQL destination for Streamkap data pi
 - `database_database` (String) Database name
 - `database_hostname` (String) PostgreSQL Hostname
 - `name` (String) Name of the destination
-- `ssh_host` (String) Hostname of your SSH server
 - `table_name_prefix` (String) Schema for the associated table name
 
 ### Optional
@@ -46,6 +45,7 @@ This resource creates and manages a PostgreSQL destination for Streamkap data pi
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
 - `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
+- `ssh_host` (String) Hostname of your SSH server
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.

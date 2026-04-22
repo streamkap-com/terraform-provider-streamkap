@@ -372,9 +372,11 @@ func SourcePostgresqlSchema() schema.Schema {
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Public key to add to SSH server. Defaults to \"<SSH.PUBLIC.KEY>\".",
-				MarkdownDescription: "Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.",
-				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
+				Description:         "Public key to add to SSH server",
+				MarkdownDescription: "Public key to add to SSH server",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_value_to_key_fields_include_list": schema.StringAttribute{
 				Optional:            true,

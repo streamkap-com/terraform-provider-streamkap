@@ -25,12 +25,6 @@ This resource creates and manages an HTTP Sink destination for Streamkap data pi
 
 - `http_url` (String) The URL to send data to.
 - `name` (String) Name of the destination
-- `oauth2_access_token_url` (String) URL for fetching OAuth2 access token.
-- `oauth2_client_id` (String) OAuth2 client id.
-- `oauth2_client_secret` (String, Sensitive) OAuth2 client secret.
-
-**Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `oauth2_scope` (String) OAuth2 client scope.
 
 ### Optional
 
@@ -53,6 +47,12 @@ This resource creates and manages an HTTP Sink destination for Streamkap data pi
 - `http_timeout` (Number) HTTP response timeout in seconds. Defaults to `30`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `max_retries` (Number) Maximum number of retries on errors. Defaults to `1`.
+- `oauth2_access_token_url` (String) URL for fetching OAuth2 access token.
+- `oauth2_client_id` (String) OAuth2 client id.
+- `oauth2_client_secret` (String, Sensitive) OAuth2 client secret.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
+- `oauth2_scope` (String) OAuth2 client scope.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
 - `retry_backoff_ms` (Number) Time in ms to wait before retrying. Defaults to `3000`.

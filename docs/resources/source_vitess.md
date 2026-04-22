@@ -29,7 +29,6 @@ This resource creates and manages a Vitess source for Streamkap data pipelines. 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `database_user` (String) An optional username of the Vitess database server (VTGate). If not configured, unauthenticated VTGate gRPC is used.
 - `name` (String) Name of the source
-- `ssh_host` (String) Hostname of your SSH server
 - `table_include_list` (String) Source tables to sync.
 - `vitess_keyspace` (String) The name of the keyspace from which to stream the changes.
 - `vitess_vtctld_host` (String) IP address or hostname of the VTCtld server.
@@ -46,6 +45,7 @@ This resource creates and manages a Vitess source for Streamkap data pipelines. 
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
+- `ssh_host` (String) Hostname of your SSH server
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
