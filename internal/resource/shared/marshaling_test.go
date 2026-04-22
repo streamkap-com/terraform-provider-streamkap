@@ -52,6 +52,49 @@ func TestBuildTfsdkFieldIndex_NonPointer(t *testing.T) {
 	}
 }
 
+// testModelWithDeprecated embeds testModel and adds deprecated aliases,
+// mirroring the pattern used for connector deprecated field support.
+type testModelWithDeprecated struct {
+	testModel
+	OldName types.String `tfsdk:"old_name"`
+}
+
+func TestBuildTfsdkFieldIndex_EmbeddedStruct(t *testing.T) {
+	model := &testModelWithDeprecated{}
+
+	v, index := BuildTfsdkFieldIndex(model)
+
+	if v.Kind() != reflect.Struct {
+		t.Errorf("Expected struct kind, got %s", v.Kind())
+	}
+
+	// Should find both embedded fields and direct fields
+	expectedFields := []string{"id", "name", "port", "enabled", "rate", "tags", "old_name"}
+	for _, field := range expectedFields {
+		if _, ok := index[field]; !ok {
+			t.Errorf("Expected field %q in index", field)
+		}
+	}
+
+	if len(index) != len(expectedFields) {
+		t.Errorf("Expected %d fields, got %d", len(expectedFields), len(index))
+	}
+
+	// Verify we can access embedded fields via FieldByIndex
+	namePath := index["name"]
+	nameField := v.FieldByIndex(namePath)
+	if !nameField.IsValid() {
+		t.Error("Expected valid field for 'name'")
+	}
+
+	// Verify we can access the outer deprecated field
+	oldNamePath := index["old_name"]
+	oldNameField := v.FieldByIndex(oldNamePath)
+	if !oldNameField.IsValid() {
+		t.Error("Expected valid field for 'old_name'")
+	}
+}
+
 func TestExtractTerraformValue(t *testing.T) {
 	ctx := context.Background()
 

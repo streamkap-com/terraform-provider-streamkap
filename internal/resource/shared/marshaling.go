@@ -6,30 +6,43 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
 )
 
-// BuildTfsdkFieldIndex builds a map from tfsdk struct tag to field index for
-// quick lookup during reflection-based marshaling.
-func BuildTfsdkFieldIndex(model any) (reflect.Value, map[string]int) {
+// BuildTfsdkFieldIndex builds a map from tfsdk struct tag to field index path
+// for quick lookup during reflection-based marshaling. It recurses into
+// anonymous (embedded) struct fields so promoted fields are discoverable.
+func BuildTfsdkFieldIndex(model any) (reflect.Value, map[string][]int) {
 	v := reflect.ValueOf(model)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
-	t := v.Type()
 
-	tfsdkToField := make(map[string]int, t.NumField())
-	for i := 0; i < t.NumField(); i++ {
-		tag := t.Field(i).Tag.Get("tfsdk")
-		if tag != "" && tag != "-" {
-			tfsdkToField[tag] = i
-		}
-	}
+	tfsdkToField := make(map[string][]int, v.Type().NumField())
+	buildFieldIndex(v.Type(), nil, tfsdkToField)
 
 	return v, tfsdkToField
+}
+
+func buildFieldIndex(t reflect.Type, prefix []int, out map[string][]int) {
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		path := append(slices.Clone(prefix), i)
+
+		if field.Anonymous && field.Type.Kind() == reflect.Struct {
+			buildFieldIndex(field.Type, path, out)
+			continue
+		}
+
+		tag := field.Tag.Get("tfsdk")
+		if tag != "" && tag != "-" {
+			out[tag] = path
+		}
+	}
 }
 
 // ExtractValueFunc is a hook that allows callers to handle additional types
@@ -136,13 +149,13 @@ func ModelToConfigMap(ctx context.Context, model any, mappings map[string]string
 	v, tfsdkToField := BuildTfsdkFieldIndex(model)
 
 	for tfAttr, apiField := range mappings {
-		fieldIdx, ok := tfsdkToField[tfAttr]
+		fieldPath, ok := tfsdkToField[tfAttr]
 		if !ok {
 			tflog.Warn(ctx, fmt.Sprintf("Field mapping for '%s' not found in model", tfAttr))
 			continue
 		}
 
-		fieldValue := v.Field(fieldIdx)
+		fieldValue := v.FieldByIndex(fieldPath)
 		apiValue := ExtractTerraformValue(ctx, fieldValue, extraFn)
 		configMap[apiField] = apiValue
 	}
@@ -156,12 +169,12 @@ func ConfigMapToModel(ctx context.Context, cfg map[string]any, model any, mappin
 	v, tfsdkToField := BuildTfsdkFieldIndex(model)
 
 	for tfAttr, apiField := range mappings {
-		fieldIdx, ok := tfsdkToField[tfAttr]
+		fieldPath, ok := tfsdkToField[tfAttr]
 		if !ok {
 			continue
 		}
 
-		fieldValue := v.Field(fieldIdx)
+		fieldValue := v.FieldByIndex(fieldPath)
 		if !fieldValue.CanSet() {
 			continue
 		}
