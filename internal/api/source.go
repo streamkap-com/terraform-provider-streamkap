@@ -66,8 +66,18 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
 			tflog.Info(ctx, fmt.Sprintf(
-				"Source %q already exists — adopting existing resource", reqPayload.Name))
-			return s.adoptSourceByName(ctx, reqPayload.Name)
+				"Source %q already exists — attempting to adopt existing resource", reqPayload.Name))
+			adopted, adoptErr := s.adoptSourceByName(ctx, reqPayload.Name)
+			if adoptErr == nil {
+				return adopted, nil
+			}
+			// Adopt lookup failed — surface the original "already exists"
+			// error so the user sees something actionable (clean up the
+			// orphan) instead of the cryptic "reported as existing but
+			// not found in list" that can happen when the backend's
+			// dup-name check is scoped differently from the list endpoint
+			// (e.g. orphans in a different service of the same tenant).
+			return nil, fmt.Errorf("%w (also tried to adopt the existing resource but could not locate it via the list endpoint: %v)", err, adoptErr)
 		}
 		return nil, err
 	}

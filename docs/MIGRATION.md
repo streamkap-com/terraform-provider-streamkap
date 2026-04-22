@@ -197,6 +197,26 @@ resource "streamkap_destination_databricks" "example" {
 }
 ```
 
+#### `ssh_public_key` is server-assigned — don't set it in Terraform
+
+For every source/destination that supports SSH tunnelling (`streamkap_source_*`
+with `ssh_enabled`, `streamkap_destination_postgresql`, etc.), the
+`ssh_public_key` attribute is **computed** — the backend generates and returns
+the real key, and the provider stores it in Terraform state. v2.1.x and early
+v3.x betas (<= beta.9) emitted a placeholder default (`"<SSH.PUBLIC.KEY>"`)
+that caused a "provider produced inconsistent result after apply" error on
+first apply (GitHub issue #72).
+
+**Action:**
+- If you previously set `ssh_public_key = "<SSH.PUBLIC.KEY>"` or any explicit
+  value in your `.tf` files, **remove the line**. Leave the attribute unset.
+- If an old state file already contains the literal `"<SSH.PUBLIC.KEY>"` (from
+  the bug), the next `terraform apply` will show state drift once the backend
+  returns the real key; accept the drift. A `terraform refresh` before the
+  apply is also safe.
+- If you truly need to set a specific SSH public key, work directly with
+  Streamkap support — the backend currently overrides user-provided values.
+
 #### PostgreSQL Source
 
 ##### Type Change: database_port

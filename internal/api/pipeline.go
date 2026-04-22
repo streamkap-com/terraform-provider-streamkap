@@ -90,8 +90,13 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload Pipeline) 
 		// previous timed-out create), adopt the existing one instead of failing.
 		if strings.Contains(err.Error(), "already exists") {
 			tflog.Info(ctx, fmt.Sprintf(
-				"Pipeline %q already exists — adopting existing resource", reqPayload.Name))
-			return s.adoptPipelineByName(ctx, reqPayload.Name)
+				"Pipeline %q already exists — attempting to adopt existing resource", reqPayload.Name))
+			adopted, adoptErr := s.adoptPipelineByName(ctx, reqPayload.Name)
+			if adoptErr == nil {
+				return adopted, nil
+			}
+			// See matching comment in source.go CreateSource.
+			return nil, fmt.Errorf("%w (also tried to adopt the existing resource but could not locate it via the list endpoint: %v)", err, adoptErr)
 		}
 		return nil, err
 	}
