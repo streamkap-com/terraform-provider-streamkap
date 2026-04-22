@@ -75,24 +75,29 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destina
 	return &resp, nil
 }
 
-// adoptDestinationByName finds an existing destination by name and returns it,
-// allowing Terraform to adopt it into state after a 409/422 conflict.
-// The /destinations endpoint only accepts a `partial_name` filter, so we
-// narrow server-side with partial_name (max page_size=100) and match
-// exactly client-side.
+// adoptDestinationByName — see adoptSourceByName for rationale (paginates
+// through all partial_name matches to find the exact-name destination).
 func (s *streamkapAPI) adoptDestinationByName(ctx context.Context, name string) (*Destination, error) {
-	reqURL := fmt.Sprintf("%s/destinations?secret_returned=true&page_size=100&partial_name=%s", s.cfg.BaseURL, url.QueryEscape(name))
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build adopt request for %q: %w", name, err)
-	}
-	var resp GetDestinationResponse
-	if err := s.doRequest(ctx, req, &resp); err != nil {
-		return nil, fmt.Errorf("failed to list destinations while adopting %q: %w", name, err)
-	}
-	for i := range resp.Result {
-		if resp.Result[i].Name == name {
-			return &resp.Result[i], nil
+	const pageSize = 100
+	const maxPages = 1000
+	for page := 1; page <= maxPages; page++ {
+		reqURL := fmt.Sprintf("%s/destinations?secret_returned=true&page=%d&page_size=%d&partial_name=%s",
+			s.cfg.BaseURL, page, pageSize, url.QueryEscape(name))
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build adopt request for %q: %w", name, err)
+		}
+		var resp GetDestinationResponse
+		if err := s.doRequest(ctx, req, &resp); err != nil {
+			return nil, fmt.Errorf("failed to list destinations while adopting %q: %w", name, err)
+		}
+		for i := range resp.Result {
+			if resp.Result[i].Name == name {
+				return &resp.Result[i], nil
+			}
+		}
+		if len(resp.Result) < pageSize {
+			break
 		}
 	}
 	return nil, fmt.Errorf("destination %q reported as existing but not found in list", name)
@@ -126,8 +131,9 @@ func (s *streamkapAPI) GetDestination(ctx context.Context, destinationID string)
 func (s *streamkapAPI) ListDestinations(ctx context.Context) ([]Destination, error) {
 	// Backend default page_size is 10 (max 100); iterate to return all pages.
 	const pageSize = 100
+	const maxPages = 1000
 	var all []Destination
-	for page := 1; ; page++ {
+	for page := 1; page <= maxPages; page++ {
 		reqURL := fmt.Sprintf("%s/destinations?secret_returned=true&page=%d&page_size=%d", s.cfg.BaseURL, page, pageSize)
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
 		if err != nil {

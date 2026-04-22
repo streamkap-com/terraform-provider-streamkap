@@ -79,21 +79,29 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 // allowing Terraform to adopt it into state after a 409/422 conflict.
 // The /sources endpoint only accepts a `partial_name` filter — there is no
 // exact-name filter — so we narrow server-side with partial_name and match
-// exactly client-side. page_size is maxed at 100 because a single prefix
-// could match many sources.
+// exactly client-side. Iterates all pages: a single prefix can legitimately
+// match many sources, and stopping at page 1 would miss the exact match.
 func (s *streamkapAPI) adoptSourceByName(ctx context.Context, name string) (*Source, error) {
-	reqURL := fmt.Sprintf("%s/sources?secret_returned=true&page_size=100&partial_name=%s", s.cfg.BaseURL, url.QueryEscape(name))
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build adopt request for %q: %w", name, err)
-	}
-	var resp GetSourceResponse
-	if err := s.doRequest(ctx, req, &resp); err != nil {
-		return nil, fmt.Errorf("failed to list sources while adopting %q: %w", name, err)
-	}
-	for i := range resp.Result {
-		if resp.Result[i].Name == name {
-			return &resp.Result[i], nil
+	const pageSize = 100
+	const maxPages = 1000 // hard cap as a runaway safeguard
+	for page := 1; page <= maxPages; page++ {
+		reqURL := fmt.Sprintf("%s/sources?secret_returned=true&page=%d&page_size=%d&partial_name=%s",
+			s.cfg.BaseURL, page, pageSize, url.QueryEscape(name))
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build adopt request for %q: %w", name, err)
+		}
+		var resp GetSourceResponse
+		if err := s.doRequest(ctx, req, &resp); err != nil {
+			return nil, fmt.Errorf("failed to list sources while adopting %q: %w", name, err)
+		}
+		for i := range resp.Result {
+			if resp.Result[i].Name == name {
+				return &resp.Result[i], nil
+			}
+		}
+		if len(resp.Result) < pageSize {
+			break
 		}
 	}
 	return nil, fmt.Errorf("source %q reported as existing but not found in list", name)
@@ -128,8 +136,9 @@ func (s *streamkapAPI) ListSources(ctx context.Context) ([]Source, error) {
 	// Backend default page_size is 10 (max 100). Iterate until we have all
 	// results so callers (adopt, sweepers) see the full tenant, not just page 1.
 	const pageSize = 100
+	const maxPages = 1000 // safeguard against runaway if Total/page_size semantics drift
 	var all []Source
-	for page := 1; ; page++ {
+	for page := 1; page <= maxPages; page++ {
 		reqURL := fmt.Sprintf("%s/sources?secret_returned=true&page=%d&page_size=%d", s.cfg.BaseURL, page, pageSize)
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
 		if err != nil {

@@ -52,8 +52,10 @@ func TestBuildTfsdkFieldIndex_NonPointer(t *testing.T) {
 	}
 }
 
-// testModelWithDeprecated embeds testModel and adds deprecated aliases,
-// mirroring the pattern used for connector deprecated field support.
+// testModelWithDeprecated embeds testModel and adds a deprecated-alias
+// field, mirroring the pattern used for connector deprecated field support.
+// The `old_name` alias targets the same API field as `name` in tests that
+// exercise `ModelToConfigMap` with overlapping mappings.
 type testModelWithDeprecated struct {
 	testModel
 	OldName types.String `tfsdk:"old_name"`
@@ -233,6 +235,41 @@ func TestModelToConfigMap(t *testing.T) {
 	// ID should NOT be in configMap because it's not in the mappings
 	if _, ok := configMap["id"]; ok {
 		t.Error("ID should not be in config map (not in mappings)")
+	}
+}
+
+// TestModelToConfigMap_AliasedFields_NonNilWins asserts that when two tfsdk
+// attributes map to the same API field (deprecated-alias pattern), a nil
+// (unset) value from one attribute does NOT clobber a non-nil value from
+// the other. Map iteration order in Go is randomized, so before this guard
+// the outcome was non-deterministic and could silently drop a user-set
+// value on Create/Update.
+func TestModelToConfigMap_AliasedFields_NonNilWins(t *testing.T) {
+	ctx := context.Background()
+
+	// Two tfsdk keys → same API field, simulating the old/new alias pattern.
+	mappings := map[string]string{
+		"name":    "api.field",
+		"old_name": "api.field",
+	}
+
+	// Run many iterations to beat map randomization.
+	for i := 0; i < 500; i++ {
+		model := &testModelWithDeprecated{
+			testModel: testModel{Name: types.StringValue("user-value")},
+			// OldName left as zero-value types.String → null
+		}
+		cfg, err := ModelToConfigMap(ctx, model, mappings, nil)
+		if err != nil {
+			t.Fatalf("ModelToConfigMap error: %v", err)
+		}
+		got, ok := cfg["api.field"]
+		if !ok {
+			t.Fatal("api.field was not set")
+		}
+		if got != "user-value" {
+			t.Fatalf("iter %d: expected %q, got %v (nil-clobber regression)", i, "user-value", got)
+		}
 	}
 }
 

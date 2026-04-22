@@ -395,23 +395,27 @@ func (e *ConfigEntry) GetRawValues() []string {
 				result = append(result, fmt.Sprintf("%v", val))
 			}
 		case map[string]any:
-			if inner, ok := val["value"]; ok {
-				switch iv := inner.(type) {
-				case string:
-					result = append(result, strings.TrimSpace(iv))
-				case bool:
-					result = append(result, fmt.Sprintf("%t", iv))
-				case float64:
-					if iv == float64(int64(iv)) {
-						result = append(result, fmt.Sprintf("%d", int64(iv)))
-					} else {
-						result = append(result, fmt.Sprintf("%v", iv))
-					}
-				default:
+			inner, ok := val["value"]
+			if !ok {
+				// Loud fail rather than silent `fmt.Sprintf("%v", map)` fallback.
+				// That fallback is what emitted "map[label:... value:...]" into
+				// OneOf validators in the first place. If a future backend
+				// change drops `value`, we want to catch it early.
+				panic(fmt.Sprintf("raw_values entry is a map but lacks a `value` key: %v — backend schema contract broken", v))
+			}
+			switch iv := inner.(type) {
+			case string:
+				result = append(result, strings.TrimSpace(iv))
+			case bool:
+				result = append(result, fmt.Sprintf("%t", iv))
+			case float64:
+				if iv == float64(int64(iv)) {
+					result = append(result, fmt.Sprintf("%d", int64(iv)))
+				} else {
 					result = append(result, fmt.Sprintf("%v", iv))
 				}
-			} else {
-				result = append(result, fmt.Sprintf("%v", v))
+			default:
+				result = append(result, fmt.Sprintf("%v", iv))
 			}
 		default:
 			result = append(result, fmt.Sprintf("%v", v))

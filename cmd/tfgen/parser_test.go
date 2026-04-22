@@ -162,6 +162,20 @@ func TestGetRawValues_ObjectForm(t *testing.T) {
 			want: []string{"true", "false"},
 		},
 	}
+
+	// Object without a `value` key should panic rather than silently fall
+	// back to the map's %v repr (which is what caused the original bug).
+	t.Run("object missing value key panics", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("expected panic for raw_values object without `value` key")
+			}
+		}()
+		e := &ConfigEntry{Value: ValueObject{RawValues: []any{
+			map[string]any{"label": "Orphan"},
+		}}}
+		_ = e.GetRawValues()
+	})
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			e := &ConfigEntry{Value: ValueObject{RawValues: tc.input}}
