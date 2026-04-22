@@ -30,7 +30,6 @@ This resource creates and manages a MongoDB source for Streamkap data pipelines.
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `name` (String) Name of the source
 - `signal_data_collection_schema_or_database` (String) Full path to the signal collection including database and collection name (e.g., 'mydb.streamkap_signal'). This collection is used for incremental snapshotting. Follow the documentation for creating this collection.
-- `ssh_host` (String) Hostname of your SSH server
 
 ### Optional
 
@@ -43,6 +42,7 @@ This resource creates and manages a MongoDB source for Streamkap data pipelines.
 - `predicates_is_topic_to_enrich_pattern` (String) Regex pattern to match topics for enrichment. Defaults to `$^`.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
+- `ssh_host` (String) Hostname of your SSH server
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.

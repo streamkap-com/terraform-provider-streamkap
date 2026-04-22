@@ -216,6 +216,23 @@ func (e *ConfigEntry) HasDefault() bool {
 	return e.Value.Default != nil
 }
 
+// HasPlaceholderDefault returns true if the default value is a placeholder
+// string like "<SSH.PUBLIC.KEY>" or "<API_KEY>" that the backend resolves
+// to a real value server-side. These must not be emitted as Terraform
+// `Default` — the placeholder would appear in the plan but the server
+// returns the resolved value, causing "provider produced inconsistent
+// result after apply" errors (GitHub issue #72).
+func (e *ConfigEntry) HasPlaceholderDefault() bool {
+	if !e.HasDefault() {
+		return false
+	}
+	s, ok := e.Value.Default.(string)
+	if !ok {
+		return false
+	}
+	return len(s) >= 2 && s[0] == '<' && s[len(s)-1] == '>'
+}
+
 // GetDefault returns the default value for this config entry.
 // Returns nil if no default is set.
 func (e *ConfigEntry) GetDefault() any {

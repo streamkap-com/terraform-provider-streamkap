@@ -24,12 +24,6 @@ This resource creates and manages a Weaviate destination for Streamkap data pipe
 ### Required
 
 - `name` (String) Name of the destination
-- `weaviate_api_key` (String, Sensitive) User API Key for API Key authentication
-
-**Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `weaviate_oidc_client_secret` (String, Sensitive) User OIDC client secret for OIDC authentication
-
-**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 
 ### Optional
 
@@ -90,11 +84,17 @@ Example:
 - `transforms_to_string_j_fields_include_list` (String) Convert column(s) to String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `vector_field_name` (String) Field name containing the embedding vector. Defaults to `vector`.
 - `vector_strategy` (String) Strategy to generate or extract document embeddings. Defaults to `None`. Valid values: `None`, `Field Vector`.
+- `weaviate_api_key` (String, Sensitive) User API Key for API Key authentication
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `weaviate_auth_scheme` (String) Authentication mechanism to use to connect to Weaviate. Defaults to `NONE`. Valid values: `NONE`, `API_KEY`, `OIDC_CLIENT_CREDENTIALS`.
 - `weaviate_connection_url` (String) Weaviate connection URL. Defaults to `http://localhost:8080`.
 - `weaviate_grpc_secured` (Boolean) Enable TLS encryption for gRPC connection. Defaults to `false`.
 - `weaviate_grpc_url` (String) Weaviate gRPC connection URL. Defaults to `localhost:50051`.
 - `weaviate_headers` (String) Custom headers to provide (format: key=value, one per line). Example: X-OpenAI-Api-Key=your-key
+- `weaviate_oidc_client_secret` (String, Sensitive) User OIDC client secret for OIDC authentication
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `weaviate_oidc_scopes` (String) OIDC client scopes (comma-separated). Defaults to `openid`.
 - `weaviate_vectorizer` (String) Sets the default Weaviate vectorizer to use for objects without explicit vector data. Applies to new collections only. Defaults to `text2vec-weaviate`. Valid values: `none`, `text2vec-weaviate`, `text2vec-cohere`, `text2vec-jinaai`, `text2vec-openai`, `text2vec-voyageai`.
 

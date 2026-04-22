@@ -28,9 +28,6 @@ This resource creates and manages a Snowflake destination for Streamkap data pip
 - `snowflake_private_key` (String, Sensitive) The private key to authenticate the user. Include only the key, not the header or footer. If the key is split across multiple lines, remove the line breaks.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `snowflake_private_key_passphrase` (String, Sensitive) The passphrase is used to decrypt the private key.
-
-**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `snowflake_schema_name` (String) The name of the schema that contains the table to insert rows into.
 - `snowflake_url_name` (String) The URL for accessing your Snowflake account. This URL must include your account identifier. Note that the protocol (https://) and port number are optional.
 - `snowflake_user_name` (String) User login name for the Snowflake account.
@@ -53,6 +50,9 @@ ALTER TASK {{table}}_CT RESUME`.
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
 - `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `sfwarehouse` (String) The name of the snowflake warehouse. Defaults to `STREAMKAP_WH`.
+- `snowflake_private_key_passphrase` (String, Sensitive) The passphrase is used to decrypt the private key.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `snowflake_private_key_passphrase_secured` (Boolean) If checked (default), provide your SSH key's passphrase, otherwise, uncheck for SSH keys without passphrase. Defaults to `true`.
 - `snowflake_role_name` (String) The name of an existing role with necessary privileges (for Streamkap) assigned to the <Username>. Defaults to `STREAMKAP_ROLE`.
 - `snowflake_topic2table_map` (String) Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>^([-\w]+\.)([-\w]+\.)?([-\w]+\.)?([-\w]+\.)?([-\w]+):$5</code> uses only the last segment as table name. Defaults to `REGEX_MATCHER>^([-\w]+\.)([-\w]+\.)?([-\w]+\.)?([-\w]+\.)?([-\w]+):$5`.

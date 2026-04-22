@@ -96,9 +96,11 @@ func SourceWebhookSchema() schema.Schema {
 			"api_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "API. This key will be generated after the source is created. Defaults to \"<API_KEY>\".",
-				MarkdownDescription: "API. This key will be generated after the source is created. Defaults to `<API_KEY>`.",
-				Default:             stringdefault.StaticString("<API_KEY>"),
+				Description:         "API. This key will be generated after the source is created",
+				MarkdownDescription: "API. This key will be generated after the source is created",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"camel_source_camel_message_header_key": schema.StringAttribute{
 				Optional:            true,

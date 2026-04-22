@@ -31,7 +31,6 @@ This resource creates and manages a SQL Server source for Streamkap data pipelin
 - `database_user` (String) Username to access the database
 - `name` (String) Name of the source
 - `schema_include_list` (String) Schemas to include.
-- `ssh_host` (String) Hostname of your SSH server
 - `table_include_list` (String) Source tables to sync.
 
 ### Optional
@@ -55,6 +54,7 @@ This resource creates and manages a SQL Server source for Streamkap data pipelin
 - `snapshot_large_table_threshold` (Number, Deprecated) DEPRECATED: Use 'streamkap_snapshot_large_table_threshold' instead.
 - `snapshot_parallelism` (Number, Deprecated) DEPRECATED: Use 'streamkap_snapshot_parallelism' instead.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
+- `ssh_host` (String) Hostname of your SSH server
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.

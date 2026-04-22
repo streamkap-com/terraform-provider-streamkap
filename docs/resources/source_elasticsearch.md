@@ -26,10 +26,6 @@ This resource creates and manages an ElasticSearch source for Streamkap data pip
 - `datetime_field_name` (String) The name of datetime field to use to detect new records.
 - `endpoint_include_list` (String) The name of ElasticSearch indices
 - `es_host` (String) ElasticSearch host. Optionally it is possible to specify many hosts using ; as separator (host1;host2;host3)
-- `http_auth_password` (String, Sensitive) Elasticsearch password
-
-**Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `http_auth_user` (String) Elasticsearch username
 - `name` (String) Name of the source
 
 ### Optional
@@ -38,6 +34,10 @@ This resource creates and manages an ElasticSearch source for Streamkap data pip
 - `es_port` (Number) Port for ElasticSearch HTTP/HTTPS REST API. For example, 443 or 9200. Defaults to `443`.
 - `es_scheme` (String) ElasticSearch protocol (http/https). Defaults to `https`. Valid values: `http`, `https`.
 - `http_auth` (String) Type of Authentication. Defaults to `Basic`. Valid values: `None`, `Basic`.
+- `http_auth_password` (String, Sensitive) Elasticsearch password
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
+- `http_auth_user` (String) Elasticsearch username
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.

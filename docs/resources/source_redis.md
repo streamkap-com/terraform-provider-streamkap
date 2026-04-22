@@ -28,9 +28,7 @@ This resource creates and manages a Redis source for Streamkap data pipelines. U
 - `redis_password` (String, Sensitive) Redis password (optional)
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `redis_stream_name` (String) Name of the Redis stream to read from
 - `redis_username` (String) Redis username (optional, for Redis 6+ ACL)
-- `topic` (String) Kafka topic name to publish messages to
 
 ### Optional
 
@@ -46,10 +44,12 @@ This resource creates and manages a Redis source for Streamkap data pipelines. U
 - `redis_stream_consumer_group` (String) Consumer group name for coordinating multiple consumers. Defaults to `kafka-consumer-group`.
 - `redis_stream_consumer_name` (String) Base name for consumer instances. Defaults to `consumer`.
 - `redis_stream_delivery` (String) Delivery guarantee mode. Defaults to `At Least Once`. Valid values: `At Least Once`, `At Most Once`.
+- `redis_stream_name` (String) Name of the Redis stream to read from
 - `redis_stream_offset` (String) Starting point for reading from the stream. Defaults to `Latest`. Valid values: `Latest`, `Earliest`.
 - `ssl_enabled` (Boolean) Enable TLS/SSL for secure connections. Defaults to `true`.
 - `tasks_max` (Number) Number of parallel tasks (Stream: 1-10, Keys: always 1). Defaults to `1`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `topic` (String) Kafka topic name to publish messages to
 - `topic_use_stream_name` (Boolean) Use Redis stream name as Kafka topic name (only for Stream connectors). Defaults to `false`.
 - `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
 - `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
