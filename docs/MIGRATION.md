@@ -146,7 +146,9 @@ deprecation warnings.
 |-----------------------|----------|--------|
 | `auto_schema_creation` | `create_schema_auto` | Rename in config |
 
-> **Note:** Deprecated attributes will be removed in v3.0. Please migrate before then.
+> **Note:** Deprecated attributes work with a warning during v3.x and are
+> scheduled for removal in the next major version (v4.0). Migrate at your
+> convenience; no immediate action is required.
 
 #### Non-Aliasable Renames (Config Edit Required)
 

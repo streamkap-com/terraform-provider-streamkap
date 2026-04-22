@@ -157,7 +157,19 @@ func ModelToConfigMap(ctx context.Context, model any, mappings map[string]string
 
 		fieldValue := v.FieldByIndex(fieldPath)
 		apiValue := ExtractTerraformValue(ctx, fieldValue, extraFn)
-		configMap[apiField] = apiValue
+		// Multiple tfsdk attributes can map to the same API field — this is how
+		// deprecated aliases work (e.g. both `insert_static_key_field_2` and
+		// `transforms_insert_static_key2_static_field` target
+		// `transforms.InsertStaticKey2.static.field`). ConflictsWith validators
+		// ensure only one side is user-set, but Go's map-iteration order is
+		// randomized. Without the non-nil guard below, a nil from the unset
+		// alias can overwrite the user's real value and silently blank the
+		// field on Create/Update.
+		if apiValue != nil {
+			configMap[apiField] = apiValue
+		} else if _, alreadySet := configMap[apiField]; !alreadySet {
+			configMap[apiField] = nil
+		}
 	}
 
 	return configMap, nil

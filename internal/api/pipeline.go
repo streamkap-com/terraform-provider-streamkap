@@ -99,25 +99,29 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload Pipeline) 
 	return &resp, nil
 }
 
-// adoptPipelineByName finds an existing pipeline by name and returns it,
-// allowing Terraform to adopt it into state after a 409/422 conflict.
-// The pipelines endpoint only supports a `partial_name` filter, so we pass
-// the name through that filter (max page_size=100) and then match exactly
-// client-side. Without this, the default page_size of 10 would silently
-// miss pipelines on later pages.
+// adoptPipelineByName — see adoptSourceByName for rationale (paginates
+// through all partial_name matches to find the exact-name pipeline).
 func (s *streamkapAPI) adoptPipelineByName(ctx context.Context, name string) (*Pipeline, error) {
-	reqURL := s.cfg.BaseURL + "/pipelines?secret_returned=true&page_size=100&partial_name=" + url.QueryEscape(name)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build adopt request for %q: %w", name, err)
-	}
-	var resp GetPipelineResponse
-	if err := s.doRequest(ctx, req, &resp); err != nil {
-		return nil, fmt.Errorf("failed to list pipelines while adopting %q: %w", name, err)
-	}
-	for i := range resp.Result {
-		if resp.Result[i].Name == name {
-			return &resp.Result[i], nil
+	const pageSize = 100
+	const maxPages = 1000
+	for page := 1; page <= maxPages; page++ {
+		reqURL := fmt.Sprintf("%s/pipelines?secret_returned=true&page=%d&page_size=%d&partial_name=%s",
+			s.cfg.BaseURL, page, pageSize, url.QueryEscape(name))
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build adopt request for %q: %w", name, err)
+		}
+		var resp GetPipelineResponse
+		if err := s.doRequest(ctx, req, &resp); err != nil {
+			return nil, fmt.Errorf("failed to list pipelines while adopting %q: %w", name, err)
+		}
+		for i := range resp.Result {
+			if resp.Result[i].Name == name {
+				return &resp.Result[i], nil
+			}
+		}
+		if len(resp.Result) < pageSize {
+			break
 		}
 	}
 	return nil, fmt.Errorf("pipeline %q reported as existing but not found in list", name)
@@ -151,8 +155,9 @@ func (s *streamkapAPI) GetPipeline(ctx context.Context, pipelineID string) (*Pip
 func (s *streamkapAPI) ListPipelines(ctx context.Context) ([]Pipeline, error) {
 	// Backend default page_size is 10 (max 100); iterate to return all pages.
 	const pageSize = 100
+	const maxPages = 1000
 	var all []Pipeline
-	for page := 1; ; page++ {
+	for page := 1; page <= maxPages; page++ {
 		reqURL := fmt.Sprintf("%s/pipelines?secret_returned=true&page=%d&page_size=%d", s.cfg.BaseURL, page, pageSize)
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
 		if err != nil {
