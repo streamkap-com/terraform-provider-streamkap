@@ -88,6 +88,58 @@ These old attribute names still work but show deprecation warnings:
 | `insert_static_value_2` | `transforms_insert_static_value2_static_value` | Rename in config |
 | `predicates_istopictoenrich_pattern` | `predicates_is_topic_to_enrich_pattern` | Rename in config |
 
+##### MySQL Source
+
+| Deprecated (Old) Name | New Name | Action |
+|-----------------------|----------|--------|
+| `insert_static_key_field_1` | `transforms_insert_static_key1_static_field` | Rename in config |
+| `insert_static_key_value_1` | `transforms_insert_static_key1_static_value` | Rename in config |
+| `insert_static_value_field_1` | `transforms_insert_static_value1_static_field` | Rename in config |
+| `insert_static_value_1` | `transforms_insert_static_value1_static_value` | Rename in config |
+| `insert_static_key_field_2` | `transforms_insert_static_key2_static_field` | Rename in config |
+| `insert_static_key_value_2` | `transforms_insert_static_key2_static_value` | Rename in config |
+| `insert_static_value_field_2` | `transforms_insert_static_value2_static_field` | Rename in config |
+| `insert_static_value_2` | `transforms_insert_static_value2_static_value` | Rename in config |
+| `predicates_istopictoenrich_pattern` | `predicates_is_topic_to_enrich_pattern` | Rename in config |
+| `database_connection_timezone` | `database_connection_time_zone` | Rename in config |
+
+##### MongoDB Source
+
+| Deprecated (Old) Name | New Name | Action |
+|-----------------------|----------|--------|
+| `insert_static_key_field_1` | `transforms_insert_static_key1_static_field` | Rename in config |
+| `insert_static_key_value_1` | `transforms_insert_static_key1_static_value` | Rename in config |
+| `insert_static_value_field_1` | `transforms_insert_static_value1_static_field` | Rename in config |
+| `insert_static_value_1` | `transforms_insert_static_value1_static_value` | Rename in config |
+| `insert_static_key_field_2` | `transforms_insert_static_key2_static_field` | Rename in config |
+| `insert_static_key_value_2` | `transforms_insert_static_key2_static_value` | Rename in config |
+| `insert_static_value_field_2` | `transforms_insert_static_value2_static_field` | Rename in config |
+| `insert_static_value_2` | `transforms_insert_static_value2_static_value` | Rename in config |
+| `predicates_istopictoenrich_pattern` | `predicates_is_topic_to_enrich_pattern` | Rename in config |
+| `array_encoding` | `transforms_unwrap_array_encoding` | Rename in config |
+| `nested_document_encoding` | `transforms_unwrap_document_encoding` | Rename in config |
+
+##### SQL Server Source
+
+The v2.1.19 schema had a single `insert_static_*` pair without a numeric suffix. v3.x
+uses the `_1` suffix to align with the other connectors. All aliases below work with
+deprecation warnings.
+
+| Deprecated (Old) Name | New Name | Action |
+|-----------------------|----------|--------|
+| `insert_static_key_field` | `transforms_insert_static_key1_static_field` | Rename in config |
+| `insert_static_key_value` | `transforms_insert_static_key1_static_value` | Rename in config |
+| `insert_static_value_field` | `transforms_insert_static_value1_static_field` | Rename in config |
+| `insert_static_value` | `transforms_insert_static_value1_static_value` | Rename in config |
+| `snapshot_parallelism` | `streamkap_snapshot_parallelism` | Rename in config |
+| `snapshot_large_table_threshold` | `streamkap_snapshot_large_table_threshold` | Rename in config |
+
+##### KafkaDirect Source
+
+| Deprecated (Old) Name | New Name | Action |
+|-----------------------|----------|--------|
+| `kafka_format` | `format` | Rename in config |
+
 ##### Snowflake Destination
 
 | Deprecated (Old) Name | New Name | Action |
@@ -95,6 +147,24 @@ These old attribute names still work but show deprecation warnings:
 | `auto_schema_creation` | `create_schema_auto` | Rename in config |
 
 > **Note:** Deprecated attributes will be removed in v3.0. Please migrate before then.
+
+#### Non-Aliasable Renames (Config Edit Required)
+
+The following v2.1.19 attributes cannot be aliased because the underlying API contract
+changed. If your v2.1.19 configuration uses them, rename them before upgrading to v3.x.
+
+##### SQL Server Source
+
+| v2.1.19 Name | v3.x Name | Why no alias |
+|--------------|-----------|---------------|
+| `database_dbname` (string) | `database_names` (comma-separated) | Backend API field changed from `database.dbname` to `database.names` to support multiple databases per connector. |
+| `snapshot_custom_table_config` (map of objects) | `streamkap_snapshot_custom_table_config` (JSON string) | Type changed from `map<string, {chunks: int}>` to a JSON-serialized string, so the attribute's type definition cannot be aliased. |
+
+##### DynamoDB Source
+
+| v2.1.19 Name | v3.x Name | Why no alias |
+|--------------|-----------|---------------|
+| `table_include_list_user_defined` | `table_include_list` | v2.1.19 field was `Required`, so a deprecated alias would still force a plan-time choice between names. A straight rename is the cleanest migration. |
 
 ### Breaking Changes (Require Immediate Action)
 
