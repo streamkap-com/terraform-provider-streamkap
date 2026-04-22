@@ -757,10 +757,10 @@ func TestAPIError422_DuplicateName(t *testing.T) {
 		},
 	)
 
-	// Mock the list-for-adopt follow-up: return the pre-existing source.
+	// Mock the partial_name-filtered list-for-adopt follow-up.
 	httpmock.RegisterResponder(
 		http.MethodGet,
-		baseURL+"/sources?secret_returned=true",
+		baseURL+"/sources?secret_returned=true&page_size=100&partial_name=existing-source",
 		func(req *http.Request) (*http.Response, error) {
 			return httpmock.NewJsonResponse(http.StatusOK, api.GetSourceResponse{
 				Total: 1,

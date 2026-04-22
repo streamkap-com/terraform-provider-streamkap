@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -75,15 +76,24 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 }
 
 // adoptSourceByName finds an existing source by name and returns it,
-// allowing Terraform to adopt it into state after a 409 conflict.
+// allowing Terraform to adopt it into state after a 409/422 conflict.
+// The /sources endpoint only accepts a `partial_name` filter — there is no
+// exact-name filter — so we narrow server-side with partial_name and match
+// exactly client-side. page_size is maxed at 100 because a single prefix
+// could match many sources.
 func (s *streamkapAPI) adoptSourceByName(ctx context.Context, name string) (*Source, error) {
-	sources, err := s.ListSources(ctx)
+	reqURL := fmt.Sprintf("%s/sources?secret_returned=true&page_size=100&partial_name=%s", s.cfg.BaseURL, url.QueryEscape(name))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
+		return nil, fmt.Errorf("failed to build adopt request for %q: %w", name, err)
+	}
+	var resp GetSourceResponse
+	if err := s.doRequest(ctx, req, &resp); err != nil {
 		return nil, fmt.Errorf("failed to list sources while adopting %q: %w", name, err)
 	}
-	for i := range sources {
-		if sources[i].Name == name {
-			return &sources[i], nil
+	for i := range resp.Result {
+		if resp.Result[i].Name == name {
+			return &resp.Result[i], nil
 		}
 	}
 	return nil, fmt.Errorf("source %q reported as existing but not found in list", name)
@@ -115,24 +125,27 @@ func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) (*Source,
 }
 
 func (s *streamkapAPI) ListSources(ctx context.Context) ([]Source, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/sources?secret_returned=true", http.NoBody)
-	if err != nil {
-		return nil, err
+	// Backend default page_size is 10 (max 100). Iterate until we have all
+	// results so callers (adopt, sweepers) see the full tenant, not just page 1.
+	const pageSize = 100
+	var all []Source
+	for page := 1; ; page++ {
+		reqURL := fmt.Sprintf("%s/sources?secret_returned=true&page=%d&page_size=%d", s.cfg.BaseURL, page, pageSize)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+		if err != nil {
+			return nil, err
+		}
+		tflog.Debug(ctx, fmt.Sprintf("ListSources request details:\n\tMethod: %s\n\tURL: %s\n", req.Method, req.URL.String()))
+		var resp GetSourceResponse
+		if err := s.doRequest(ctx, req, &resp); err != nil {
+			return nil, err
+		}
+		all = append(all, resp.Result...)
+		if len(resp.Result) < pageSize || len(all) >= resp.Total {
+			break
+		}
 	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"ListSources request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n",
-		req.Method,
-		req.URL.String(),
-	))
-	var resp GetSourceResponse
-	err = s.doRequest(ctx, req, &resp)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.Result, nil
+	return all, nil
 }
 
 func (s *streamkapAPI) DeleteSource(ctx context.Context, sourceID string) error {
