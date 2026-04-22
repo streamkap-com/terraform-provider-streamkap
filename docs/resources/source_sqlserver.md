@@ -36,7 +36,7 @@ This resource creates and manages a SQL Server source for Streamkap data pipelin
 
 ### Optional
 
-- `binary_handling_mode` (String) Specifies how the data for binary columns e.g. blob, binary, varbinary should be represented. This setting depends on what the destination is. See the documentation for more details. Defaults to `bytes`. Valid values: `map[label:Bytes value:bytes]`, `map[label:Base64 value:base64]`, `map[label:Base64 (URL-safe) value:base64-url-safe]`, `map[label:Hex value:hex]`.
+- `binary_handling_mode` (String) Specifies how the data for binary columns e.g. blob, binary, varbinary should be represented. This setting depends on what the destination is. See the documentation for more details. Defaults to `bytes`. Valid values: `bytes`, `base64`, `base64-url-safe`, `hex`.
 - `column_exclude_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.
 - `database_encrypt` (Boolean) Use TLS encryption with the SQL Server?. Defaults to `true`.
 - `database_port` (Number) SQL Server Port. For example, 1433. Defaults to `1433`.

@@ -145,23 +145,23 @@ func DestinationHttpsinkSchema() schema.Schema {
 				MarkdownDescription: "Static content of Authorization header (required for STATIC authorization).",
 			},
 			"oauth2_access_token_url": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "URL for fetching OAuth2 access token.",
 				MarkdownDescription: "URL for fetching OAuth2 access token.",
 			},
 			"oauth2_client_id": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "OAuth2 client id.",
 				MarkdownDescription: "OAuth2 client id.",
 			},
 			"oauth2_client_secret": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Sensitive:           true,
 				Description:         "OAuth2 client secret. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "OAuth2 client secret.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"oauth2_scope": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "OAuth2 client scope.",
 				MarkdownDescription: "OAuth2 client scope.",
 			},

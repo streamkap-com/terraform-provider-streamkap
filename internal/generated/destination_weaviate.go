@@ -157,13 +157,13 @@ func DestinationWeaviateSchema() schema.Schema {
 				},
 			},
 			"weaviate_api_key": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Sensitive:           true,
 				Description:         "User API Key for API Key authentication This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "User API Key for API Key authentication\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"weaviate_oidc_client_secret": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Sensitive:           true,
 				Description:         "User OIDC client secret for OIDC authentication This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "User OIDC client secret for OIDC authentication\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",

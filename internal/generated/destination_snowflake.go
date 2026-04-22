@@ -145,7 +145,7 @@ func DestinationSnowflakeSchema() schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"snowflake_private_key_passphrase": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Sensitive:           true,
 				Description:         "The passphrase is used to decrypt the private key. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "The passphrase is used to decrypt the private key.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",

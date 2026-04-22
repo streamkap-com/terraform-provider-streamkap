@@ -38,8 +38,8 @@
       "sensitive": false
     },
     "iceberg_catalog_credential": {
-      "required": true,
-      "optional": false,
+      "required": false,
+      "optional": true,
       "computed": false,
       "sensitive": true
     },
@@ -50,8 +50,8 @@
       "sensitive": false
     },
     "iceberg_catalog_s3_access_key_id": {
-      "required": true,
-      "optional": false,
+      "required": false,
+      "optional": true,
       "computed": false,
       "sensitive": false
     },
@@ -62,8 +62,8 @@
       "sensitive": false
     },
     "iceberg_catalog_s3_secret_access_key": {
-      "required": true,
-      "optional": false,
+      "required": false,
+      "optional": true,
       "computed": false,
       "sensitive": true
     },
@@ -74,8 +74,8 @@
       "sensitive": false
     },
     "iceberg_catalog_token": {
-      "required": true,
-      "optional": false,
+      "required": false,
+      "optional": true,
       "computed": false,
       "sensitive": true
     },

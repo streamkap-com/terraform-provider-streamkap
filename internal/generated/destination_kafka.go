@@ -133,7 +133,7 @@ func DestinationKafkaSchema() schema.Schema {
 				Default:             booldefault.StaticBool(false),
 			},
 			"schema_registry_url": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "Destination kafka schema registry url",
 				MarkdownDescription: "Destination kafka schema registry url",
 			},

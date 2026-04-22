@@ -156,7 +156,7 @@ func SourceOracleSchema() schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
 				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
 			},
@@ -192,7 +192,7 @@ func SourceOracleSchema() schema.Schema {
 				Default:             booldefault.StaticBool(false),
 			},
 			"ssh_host": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
 			},

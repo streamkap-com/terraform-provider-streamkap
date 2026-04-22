@@ -123,12 +123,12 @@ func SourceElasticsearchSchema() schema.Schema {
 				},
 			},
 			"http_auth_user": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "Elasticsearch username",
 				MarkdownDescription: "Elasticsearch username",
 			},
 			"http_auth_password": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Sensitive:           true,
 				Description:         "Elasticsearch password This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "Elasticsearch password\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",

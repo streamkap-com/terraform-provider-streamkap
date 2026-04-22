@@ -161,7 +161,7 @@ func SourceDb2Schema() schema.Schema {
 				Default:             booldefault.StaticBool(false),
 			},
 			"ssh_host": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
 			},

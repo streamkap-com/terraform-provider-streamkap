@@ -139,7 +139,7 @@ func SourceRedisSchema() schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"redis_stream_name": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "Name of the Redis stream to read from",
 				MarkdownDescription: "Name of the Redis stream to read from",
 			},
@@ -222,7 +222,7 @@ func SourceRedisSchema() schema.Schema {
 				Default:             booldefault.StaticBool(false),
 			},
 			"topic": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "Kafka topic name to publish messages to",
 				MarkdownDescription: "Kafka topic name to publish messages to",
 			},

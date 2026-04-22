@@ -164,13 +164,13 @@ func DestinationIcebergSchema() schema.Schema {
 				MarkdownDescription: "Catalog endpoint URL. For REST catalogs use https://… ; for Hive Metastore use thrift://… ; AWS Glue uses the regional endpoint.",
 			},
 			"iceberg_catalog_token": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Sensitive:           true,
 				Description:         "Bearer token used for catalog authentication. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "Bearer token used for catalog authentication.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"iceberg_catalog_credential": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Sensitive:           true,
 				Description:         "OAuth2 client credential in client_id:client_secret format. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "OAuth2 client credential in client_id:client_secret format.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
@@ -190,12 +190,12 @@ func DestinationIcebergSchema() schema.Schema {
 				Default:             booldefault.StaticBool(false),
 			},
 			"iceberg_catalog_s3_access_key_id": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "The access key ID used to connect to S3 or S3-compatible storage.",
 				MarkdownDescription: "The access key ID used to connect to S3 or S3-compatible storage.",
 			},
 			"iceberg_catalog_s3_secret_access_key": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Sensitive:           true,
 				Description:         "The secret access key used to connect to S3 or S3-compatible storage. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "The secret access key used to connect to S3 or S3-compatible storage.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
