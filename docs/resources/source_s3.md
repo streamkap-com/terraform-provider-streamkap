@@ -30,16 +30,29 @@ This resource creates and manages an S3 source for Streamkap data pipelines. Use
 - `aws_access_key_id` (String) The AWS Access Key ID used to connect to S3. Defaults to ``.
 - `aws_s3_bucket_name` (String) The S3 Bucket to use. Defaults to ``.
 - `aws_s3_object_prefix` (String) Prefix for S3 objects to scan. Can be used to specify a directory. Defaults to `file-pulse/`.
-- `aws_s3_region` (String) The AWS region to be used. Defaults to `us-west-2`. Valid values: `eu-west-2`, `eu-west-1`, `eu-central-1`, `ap-south-1`, `ap-northeast-2`, `ap-northeast-1`, `ap-southeast-1`, `ap-southeast-2`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.
+- `aws_s3_region` (String) The AWS region to be used. Defaults to `us-west-2`. Valid values: `map[label:Europe (London) — eu-west-2 value:eu-west-2]`, `map[label:Europe (Ireland) — eu-west-1 value:eu-west-1]`, `map[label:Europe (Frankfurt) — eu-central-1 value:eu-central-1]`, `map[label:Asia Pacific (Mumbai) — ap-south-1 value:ap-south-1]`, `map[label:Asia Pacific (Seoul) — ap-northeast-2 value:ap-northeast-2]`, `map[label:Asia Pacific (Tokyo) — ap-northeast-1 value:ap-northeast-1]`, `map[label:Asia Pacific (Singapore) — ap-southeast-1 value:ap-southeast-1]`, `map[label:Asia Pacific (Sydney) — ap-southeast-2 value:ap-southeast-2]`, `map[label:US East (N. Virginia) — us-east-1 value:us-east-1]`, `map[label:US East (Ohio) — us-east-2 value:us-east-2]`, `map[label:US West (N. California) — us-west-1 value:us-west-1]`, `map[label:US West (Oregon) — us-west-2 value:us-west-2]`.
 - `aws_secret_access_key` (String, Sensitive) The AWS Secret Access Key used to connect to S3. Defaults to ``.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `format` (String) The input file format. Defaults to `json`. Valid values: `json`, `csv`, `avro`.
 - `fs_cleanup_policy_class` (String) The policy to use for cleaning up files after processing. Defaults to `io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy`. Valid values: `io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy`, `io.streamthoughts.kafka.connect.filepulse.fs.clean.DeleteCleanupPolicy`.
 - `fs_scan_interval_ms` (Number) The interval in milliseconds at which to scan for new files. Defaults to `10000`.
+- `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
+- `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
+- `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `topic_postfix` (String) The postfix of the topic to be used, for example source_[UUID].s3.[postfix]. Defaults to `default`.
+- `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
+- `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
+- `transforms_oversized_records_max_field_size_bytes` (Number) Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.
+- `transforms_oversized_records_max_record_size_bytes` (Number) Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to `-1`.
+- `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
+- `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
+- `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 
 ### Read-Only
 

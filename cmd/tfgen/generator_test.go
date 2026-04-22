@@ -37,9 +37,9 @@ func TestCommonFields(t *testing.T) {
 			g := NewGenerator("/tmp", tt.entityType)
 			fields := g.commonFields()
 
-			// Sources/destinations have 4 common fields (id, name, connector, connector_status)
+			// Sources/destinations have 5 common fields (id, name, connector, connector_status, kc_cluster_id)
 			// Transforms have 3 common fields (id, name, transform_type)
-			wantCount := 4
+			wantCount := 5
 			if tt.entityType == "transform" {
 				wantCount = 3
 			}
@@ -597,10 +597,10 @@ func TestPrepareTemplateData(t *testing.T) {
 		t.Errorf("FieldMappingsName = %q, want %q", data.FieldMappingsName, "SourcePostgresqlFieldMappings")
 	}
 
-	// Should have 4 common fields + 1 user-defined field = 5 fields total
-	// (common: id, name, connector, connector_status)
-	if len(data.Fields) != 5 {
-		t.Errorf("len(Fields) = %d, want 5", len(data.Fields))
+	// Should have 5 common fields + 1 user-defined field = 6 fields total
+	// (common: id, name, connector, connector_status, kc_cluster_id)
+	if len(data.Fields) != 6 {
+		t.Errorf("len(Fields) = %d, want 6", len(data.Fields))
 	}
 
 	// Verify imports include required packages

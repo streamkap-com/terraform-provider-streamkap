@@ -149,8 +149,8 @@ func TestRetryWithBackoff_MaxRetriesExhausted(t *testing.T) {
 func TestDefaultRetryConfig(t *testing.T) {
 	cfg := DefaultRetryConfig()
 
-	if cfg.MaxRetries != 3 {
-		t.Errorf("Expected MaxRetries=3, got %d", cfg.MaxRetries)
+	if cfg.MaxRetries != 5 {
+		t.Errorf("Expected MaxRetries=5, got %d", cfg.MaxRetries)
 	}
 	if cfg.MinDelay != 10*time.Second {
 		t.Errorf("Expected MinDelay=10s, got %v", cfg.MinDelay)
