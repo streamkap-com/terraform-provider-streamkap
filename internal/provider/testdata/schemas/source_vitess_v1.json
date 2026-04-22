@@ -80,8 +80,8 @@
       "sensitive": false
     },
     "ssh_host": {
-      "required": true,
-      "optional": false,
+      "required": false,
+      "optional": true,
       "computed": false,
       "sensitive": false
     },

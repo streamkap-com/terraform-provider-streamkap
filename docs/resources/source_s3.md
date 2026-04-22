@@ -30,7 +30,7 @@ This resource creates and manages an S3 source for Streamkap data pipelines. Use
 - `aws_access_key_id` (String) The AWS Access Key ID used to connect to S3. Defaults to ``.
 - `aws_s3_bucket_name` (String) The S3 Bucket to use. Defaults to ``.
 - `aws_s3_object_prefix` (String) Prefix for S3 objects to scan. Can be used to specify a directory. Defaults to `file-pulse/`.
-- `aws_s3_region` (String) The AWS region to be used. Defaults to `us-west-2`. Valid values: `map[label:Europe (London) — eu-west-2 value:eu-west-2]`, `map[label:Europe (Ireland) — eu-west-1 value:eu-west-1]`, `map[label:Europe (Frankfurt) — eu-central-1 value:eu-central-1]`, `map[label:Asia Pacific (Mumbai) — ap-south-1 value:ap-south-1]`, `map[label:Asia Pacific (Seoul) — ap-northeast-2 value:ap-northeast-2]`, `map[label:Asia Pacific (Tokyo) — ap-northeast-1 value:ap-northeast-1]`, `map[label:Asia Pacific (Singapore) — ap-southeast-1 value:ap-southeast-1]`, `map[label:Asia Pacific (Sydney) — ap-southeast-2 value:ap-southeast-2]`, `map[label:US East (N. Virginia) — us-east-1 value:us-east-1]`, `map[label:US East (Ohio) — us-east-2 value:us-east-2]`, `map[label:US West (N. California) — us-west-1 value:us-west-1]`, `map[label:US West (Oregon) — us-west-2 value:us-west-2]`.
+- `aws_s3_region` (String) The AWS region to be used. Defaults to `us-west-2`. Valid values: `eu-west-2`, `eu-west-1`, `eu-central-1`, `ap-south-1`, `ap-northeast-2`, `ap-northeast-1`, `ap-southeast-1`, `ap-southeast-2`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.
 - `aws_secret_access_key` (String, Sensitive) The AWS Secret Access Key used to connect to S3. Defaults to ``.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.

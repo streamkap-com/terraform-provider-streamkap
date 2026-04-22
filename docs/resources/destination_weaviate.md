@@ -49,7 +49,7 @@ This resource creates and manages a Weaviate destination for Streamkap data pipe
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
 - `retry_backoff_ms` (String) Backoff time between retries in milliseconds. Defaults to `1000`.
 - `retry_interval` (String) Interval between retries in milliseconds. Defaults to `2000`.
-- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `map[label:Basic value:basic]`, `map[label:None value:none]`.
+- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_add_string_suffix_fields_include_list` (String) Warning: Should only be used in conjunction with numeric conversion or other conversions. If field remained string after previous conversion, rename to field to <previous-field-name>_str. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_change_topic_name_match_regex` (String) Regular expression for matching topic name parts to use as the destination table (database) or file (file storage) name

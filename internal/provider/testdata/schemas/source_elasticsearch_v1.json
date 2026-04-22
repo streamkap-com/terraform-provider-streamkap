@@ -56,14 +56,14 @@
       "sensitive": false
     },
     "http_auth_password": {
-      "required": true,
-      "optional": false,
+      "required": false,
+      "optional": true,
       "computed": false,
       "sensitive": true
     },
     "http_auth_user": {
-      "required": true,
-      "optional": false,
+      "required": false,
+      "optional": true,
       "computed": false,
       "sensitive": false
     },

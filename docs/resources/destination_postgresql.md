@@ -44,7 +44,7 @@ This resource creates and manages a PostgreSQL destination for Streamkap data pi
 - `primary_key_fields` (String) Optional. Either the name of the primary key column or a comma-separated list of fields to derive the primary key from.
 - `primary_key_mode` (String) Specifies how the connector resolves the primary key columns from the event. Defaults to `record_key`. Valid values: `none`, `record_key`, `record_value`.
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
-- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `map[label:Basic value:basic]`, `map[label:None value:none]`.
+- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.

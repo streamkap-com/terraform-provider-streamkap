@@ -1013,8 +1013,12 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 		}
 	}
 
-	// Determine Required/Optional/Computed
-	if entry.IsRequired() && !entry.HasDefault() {
+	// Determine Required/Optional/Computed.
+	// Conditionally-visible fields (e.g. ssh_host only applies when ssh_enabled=true)
+	// must be Optional in the Terraform schema — making them always-Required would
+	// break plans that don't enable the gating flag. The backend enforces the
+	// conditional requirement at the API layer.
+	if entry.IsRequired() && !entry.HasDefault() && !entry.IsConditional() {
 		field.Required = true
 	} else if entry.HasDefault() {
 		field.Optional = true

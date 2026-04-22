@@ -68,8 +68,8 @@
       "sensitive": false
     },
     "schema_registry_url": {
-      "required": true,
-      "optional": false,
+      "required": false,
+      "optional": true,
       "computed": false,
       "sensitive": false
     },

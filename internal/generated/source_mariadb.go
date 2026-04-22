@@ -139,7 +139,7 @@ func SourceMariadbSchema() schema.Schema {
 				MarkdownDescription: "Source tables to sync. The connector does not capture changes in any table that is not included.",
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "Full path to the signal table including database and table name (e.g., 'mydb.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.",
 				MarkdownDescription: "Full path to the signal table including database and table name (e.g., 'mydb.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.",
 			},
@@ -151,7 +151,7 @@ func SourceMariadbSchema() schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
 				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
 			},
@@ -245,7 +245,7 @@ func SourceMariadbSchema() schema.Schema {
 				Default:             booldefault.StaticBool(false),
 			},
 			"ssh_host": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
 			},

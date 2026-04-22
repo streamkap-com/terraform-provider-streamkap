@@ -35,12 +35,12 @@ This resource creates and manages a Databricks destination for Streamkap data pi
 - `consumer_wait_time_for_larger_batch_ms` (Number) The max wait time for larger batch size (in ms). The bigger the batch size, the more cost effective loading will be on databricks but latency will grow as a trade-off. Also controls consumer timeout chain and batch size settings. Defaults to `10000`.
 - `databricks_catalog` (String) The name of the Databricks catalog to use. Defaults to `hive_metastore`.
 - `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. Defaults to `false`.
-- `ingestion_mode` (String) Upsert or append modes are available. Defaults to `upsert`. Valid values: `map[label:Upsert (merge) value:upsert]`, `map[label:Append only value:append]`.
+- `ingestion_mode` (String) Upsert or append modes are available. Defaults to `upsert`. Valid values: `upsert`, `append`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `partition_mode` (String) Partition tables or not. Defaults to `by_topic`. Valid values: `by_topic`, `by_partition`, `by_topic_and_partition`.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
-- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `map[label:Basic value:basic]`, `map[label:None value:none]`.
+- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `table_name_prefix` (String) Schema for the associated table name. Defaults to `streamkap`.
 - `tasks_max` (Number) The maximum number of active tasks. NOTE: Increasing this value may increase parallelism and throughput but can also lead to higher costs on databricks side. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))

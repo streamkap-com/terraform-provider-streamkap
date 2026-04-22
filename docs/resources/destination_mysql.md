@@ -42,7 +42,7 @@ This resource creates and manages a MySQL destination for Streamkap data pipelin
 - `primary_key_fields` (String) Optional. Either the name of the primary key column or a comma-separated list of fields to derive the primary key from.
 - `primary_key_mode` (String) Specifies how the connector resolves the primary key columns from the event. Defaults to `record_key`. Valid values: `none`, `record_key`, `record_value`.
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
-- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `map[label:Basic value:basic]`, `map[label:None value:none]`.
+- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `topic2table_map` (Boolean) Falls back to Streamkap's default for tables where no match is found. Defaults to `false`.

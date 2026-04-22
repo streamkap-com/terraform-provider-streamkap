@@ -40,13 +40,13 @@ This resource creates and manages an Iceberg destination for Streamkap data pipe
 ### Optional
 
 - `consumer_override_max_poll_records` (Number) The maximum number of records returned in a single call to poll(). Defaults to `10000`.
-- `iceberg_catalog_auth_mode` (String) How to authenticate with the Iceberg catalog. 'No Auth' for catalogs that don't require authentication. 'Token' for bearer token authentication (e.g., Cloudflare R2). 'OAuth2 Credential' for OAuth2 client credential authentication (e.g., Polaris, DataHub). Defaults to `none`. Valid values: `map[label:None (no auth) value:none]`, `map[label:Token value:token]`, `map[label:OAuth 2.0 value:oauth2]`.
+- `iceberg_catalog_auth_mode` (String) How to authenticate with the Iceberg catalog. 'No Auth' for catalogs that don't require authentication. 'Token' for bearer token authentication (e.g., Cloudflare R2). 'OAuth2 Credential' for OAuth2 client credential authentication (e.g., Polaris, DataHub). Defaults to `none`. Valid values: `none`, `token`, `oauth2`.
 - `iceberg_catalog_client_assume_role_arn` (String) AWS IAM role (e.g., arn:aws:iam::<your-account>:role/<role-name>)
 - `iceberg_catalog_client_region` (String) The AWS region to be used. For Cloudflare R2, select 'auto'. Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`, `auto`.
 - `iceberg_catalog_name` (String) Iceberg catalog name
 - `iceberg_catalog_s3_credentials_enabled` (Boolean) Enable to provide your own S3 access key and secret. Disable if the catalog vends storage credentials automatically. Defaults to `false`.
 - `iceberg_catalog_scope` (String) OAuth2 scope for catalog authentication (e.g., PRINCIPAL_ROLE:ALL). Defaults to `PRINCIPAL_ROLE:ALL`.
-- `iceberg_catalog_type` (String) Type of Iceberg catalog. Defaults to `rest`. Valid values: `map[label:REST value:rest]`, `map[label:Hive value:hive]`, `map[label:AWS Glue value:glue]`.
+- `iceberg_catalog_type` (String) Type of Iceberg catalog. Defaults to `rest`. Valid values: `rest`, `hive`, `glue`.
 - `iceberg_catalog_uri` (String) Catalog endpoint URL. For REST catalogs use https://… ; for Hive Metastore use thrift://… ; AWS Glue uses the regional endpoint.
 - `iceberg_tables_compaction_commit_threshold` (String) Number of Iceberg commits between compaction checks. Defaults to `5`.
 - `iceberg_tables_compaction_enabled` (Boolean) Enable lightweight compaction of small data files after commits. Defaults to `false`.
@@ -57,7 +57,7 @@ This resource creates and manages an Iceberg destination for Streamkap data pipe
 - `iceberg_tables_compaction_target_file_size_bytes` (String) Target file size in bytes for compaction. Files smaller than this are candidates for merging. Defaults to `134217728`.
 - `iceberg_tables_default_id_columns` (String) Optional. A comma-separated list of field names to use as record identifiers when key fields are not present in Kafka messages
 - `iceberg_tables_hard_delete_enabled` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only). Defaults to `true`.
-- `insert_mode` (String) Specifies the strategy used to insert events into the database. Defaults to `insert`. Valid values: `map[label:Insert only value:insert]`, `map[label:Upsert (merge) value:upsert]`.
+- `insert_mode` (String) Specifies the strategy used to insert events into the database. Defaults to `insert`. Valid values: `insert`, `upsert`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.

@@ -40,7 +40,7 @@ This resource creates and manages a Redshift destination for Streamkap data pipe
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `primary_key_fields` (String) List of comma-separated primary key field names. Defaults to `id`.
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
-- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `map[label:Basic value:basic]`, `map[label:None value:none]`.
+- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_add_string_suffix_fields_include_list` (String) Warning: Should only be used in conjunction with numeric conversion or other conversions. If field remained string after previous conversion, rename to field to <previous-field-name>_str. Comma separated list of table columns in format 'table1.column1,table2.column2'

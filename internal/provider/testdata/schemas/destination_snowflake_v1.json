@@ -122,8 +122,8 @@
       "sensitive": true
     },
     "snowflake_private_key_passphrase": {
-      "required": true,
-      "optional": false,
+      "required": false,
+      "optional": true,
       "computed": false,
       "sensitive": true
     },
