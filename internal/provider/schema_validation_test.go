@@ -85,12 +85,14 @@ func TestSchemaValidation_MissingRequiredField_BigQuery(t *testing.T) {
 func TestSchemaValidation_MissingRequiredField_ClickHouse(t *testing.T) {
 	schema := generated.DestinationClickhouseSchema()
 
-	// Required fields - using actual field names from generated schema
+	// Required fields - using actual field names from generated schema.
+	// Note: `database` is also required in the current backend schema.
 	requiredFields := []string{
 		"name",
 		"hostname",
 		"connection_username",
 		"connection_password",
+		"database",
 	}
 
 	for _, field := range requiredFields {
@@ -100,13 +102,6 @@ func TestSchemaValidation_MissingRequiredField_ClickHouse(t *testing.T) {
 			require.True(t, attr.IsRequired(), "%s should be required", field)
 		})
 	}
-
-	// database is optional (has default value)
-	t.Run("optional_database", func(t *testing.T) {
-		attr, ok := schema.Attributes["database"]
-		require.True(t, ok, "database attribute should exist")
-		require.True(t, attr.IsOptional(), "database should be optional (has default)")
-	})
 }
 
 // TestSchemaValidation_MissingRequiredField_Elasticsearch tests Elasticsearch source

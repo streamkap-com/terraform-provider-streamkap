@@ -211,6 +211,27 @@ Validators: []validator.Int64{
 },
 ```
 
+#### raw_values shapes
+
+Backend `raw_values` may be either bare strings or `{value, label}` objects. Both forms are unwrapped to the `value` string in `parser.go:GetRawValues` — add coverage in `parser_test.go:TestGetRawValues_ObjectForm` when touching that path.
+
+```json
+// Bare string form:
+"raw_values": ["insert", "upsert"]
+
+// Object form (newer backend):
+"raw_values": [
+  {"value": "insert", "label": "Insert"},
+  {"value": "upsert", "label": "Upsert"}
+]
+```
+
+If the unwrapping breaks, descriptions and OneOf validators both emit Go's `fmt.Sprintf("%v", map)` repr (e.g. `"map[label:Insert value:insert]"`), which is how we caught the regression.
+
+### Required vs Optional with Conditional Fields
+
+A backend config entry marked `"required": true` but with a non-empty `conditions: [...]` array is only required when the gating field matches. **Do not emit `Required: true` for these** — the Terraform schema would reject any plan that leaves the gating field disabled. The generator routes conditional-required fields through the `Optional: true` branch and lets the backend enforce the conditional requirement at apply time. See `generator.go:entryToFieldData` around the `Determine Required/Optional/Computed` block.
+
 ## overrides.json
 
 The `cmd/tfgen/overrides.json` file defines custom field handling for complex types that can't be automatically inferred from the backend config.

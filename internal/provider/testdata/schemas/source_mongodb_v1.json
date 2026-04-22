@@ -1,6 +1,12 @@
 {
   "version": "v3.0.0",
   "attributes": {
+    "array_encoding": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "collection_include_list": {
       "required": true,
       "optional": false,
@@ -19,6 +25,24 @@
       "computed": true,
       "sensitive": false
     },
+    "cursor_oversize_handling_mode": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "cursor_oversize_skip_threshold": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "cursor_pipeline": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
     "database_include_list": {
       "required": true,
       "optional": false,
@@ -28,6 +52,66 @@
     "id": {
       "required": false,
       "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_static_key_field_1": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_static_key_field_2": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_static_key_value_1": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_static_key_value_2": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_static_value_1": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_static_value_2": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_static_value_field_1": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_static_value_field_2": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_topic_name_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "kc_cluster_id": {
+      "required": false,
+      "optional": true,
       "computed": true,
       "sensitive": false
     },
@@ -49,7 +133,25 @@
       "computed": false,
       "sensitive": false
     },
+    "nested_document_encoding": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "predicates_is_topic_to_enrich_pattern": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "predicates_istopictoenrich_pattern": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "preserve_null_values": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -139,6 +241,54 @@
       "computed": false,
       "sensitive": false
     },
+    "transforms_oversized_records_fields_exclude_list": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_oversized_records_fields_include_list": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_oversized_records_max_field_size_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_oversized_records_max_record_size_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_oversized_records_oversized_field_behavior": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_oversized_records_replace_null_with_default": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_oversized_records_semantic_types_exclude": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_oversized_records_truncation_suffix": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "transforms_unwrap_array_encoding": {
       "required": false,
       "optional": true,
@@ -146,6 +296,18 @@
       "sensitive": false
     },
     "transforms_unwrap_document_encoding": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_value_to_key_fields_include_list": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_value_to_key_replace_null_with_default": {
       "required": false,
       "optional": true,
       "computed": true,

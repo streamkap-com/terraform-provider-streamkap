@@ -29,7 +29,6 @@ This resource creates and manages a MySQL source for Streamkap data pipelines. U
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `database_user` (String) Username to access the database
-- `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.
 - `name` (String) Name of the source
 - `table_include_list` (String) Source tables to sync.
 
@@ -40,12 +39,26 @@ This resource creates and manages a MySQL source for Streamkap data pipelines. U
 - `column_include_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form schemaName[.]tableName[.](columnName1|columnName2)
 - `column_include_list_toggled` (Boolean) Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to `true`.
 - `database_connection_time_zone` (String) Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MySQL server session variables 'time_zone' or 'system_time_zone'. Defaults to `SERVER`. Valid values: `SERVER`, `UTC`, `Africa/Cairo`, `Asia/Riyadh`, `Africa/Casablanca`, `Asia/Seoul`, `Africa/Harare`, `Asia/Shanghai`, `Africa/Monrovia`, `Asia/Singapore`, `Africa/Nairobi`, `Asia/Taipei`, `Africa/Tripoli`, `Asia/Tehran`, `Africa/Windhoek`, `Asia/Tokyo`, `America/Araguaina`, `Asia/Ulaanbaatar`, `America/Asuncion`, `Asia/Vladivostok`, `America/Bogota`, `Asia/Yakutsk`, `America/Buenos_Aires`, `Asia/Yerevan`, `America/Caracas`, `Atlantic/Azores`, `America/Chihuahua`, `Australia/Adelaide`, `America/Cuiaba`, `Australia/Brisbane`, `America/Denver`, `Australia/Darwin`, `America/Fortaleza`, `Australia/Hobart`, `America/Guatemala`, `Australia/Perth`, `America/Halifax`, `Australia/Sydney`, `America/Manaus`, `Brazil/East`, `America/Matamoros`, `Canada/Newfoundland`, `America/Monterrey`, `Canada/Saskatchewan`, `America/Montevideo`, `Canada/Yukon`, `America/Phoenix`, `Europe/Amsterdam`, `America/Santiago`, `Europe/Athens`, `America/Tijuana`, `Europe/Dublin`, `Asia/Amman`, `Europe/Helsinki`, `Asia/Ashgabat`, `Europe/Istanbul`, `Asia/Baghdad`, `Europe/Kaliningrad`, `Asia/Baku`, `Europe/Moscow`, `Asia/Bangkok`, `Europe/Paris`, `Asia/Beirut`, `Europe/Prague`, `Asia/Calcutta`, `Europe/Sarajevo`, `Asia/Damascus`, `Pacific/Auckland`, `Asia/Dhaka`, `Pacific/Fiji`, `Asia/Irkutsk`, `Pacific/Guam`, `Asia/Jerusalem`, `Pacific/Honolulu`, `Asia/Kabul`, `Pacific/Samoa`, `Asia/Karachi`, `US/Alaska`, `Asia/Kathmandu`, `US/Central`, `Asia/Krasnoyarsk`, `US/Eastern`, `Asia/Magadan`, `US/East-Indiana`, `Asia/Muscat`, `US/Pacific`, `Asia/Novosibirsk`.
+- `database_connection_timezone` (String, Deprecated) DEPRECATED: Use 'database_connection_time_zone' instead.
 - `database_port` (Number) MySQL Port. For example, 3306. Defaults to `3306`.
+- `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.
 - `heartbeat_enabled` (Boolean) Heartbeats are used to monitor whether the connector is still receiving change events from the database, especially when there is low and intermittent traffic. Defaults to `true`.
+- `insert_static_key_field_1` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key1_static_field' instead.
+- `insert_static_key_field_2` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key2_static_field' instead.
+- `insert_static_key_value_1` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key1_static_value' instead.
+- `insert_static_key_value_2` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key2_static_value' instead.
+- `insert_static_value_1` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_value1_static_value' instead.
+- `insert_static_value_2` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_value2_static_value' instead.
+- `insert_static_value_field_1` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_value1_static_field' instead.
+- `insert_static_value_field_2` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_value2_static_field' instead.
+- `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
+- `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `predicates_is_topic_to_enrich_pattern` (String) Regex pattern to match topics for enrichment. Defaults to `$^`.
+- `predicates_istopictoenrich_pattern` (String, Deprecated) DEPRECATED: Use 'predicates_is_topic_to_enrich_pattern' instead.
+- `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `schema_history_internal_store_only_captured_databases_ddl` (Boolean) Specifies whether the connector records schema structures from all logical databases in the database instance or only captured databases. Enabling this when you have many databases in your instance can improve performance and avoid timeouts. Defaults to `false`.
 - `schema_history_internal_store_only_captured_tables_ddl` (Boolean) Specifies whether the connector records schema structures from all logical tables in the captured schemas or databases, or only captured tables. Enabling this when you have many tables can improve performance and avoid timeouts. Defaults to `false`.
-- `signal_data_collection_schema_or_database` (String) Streamkap will use a table in this database to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which database to use here.
+- `signal_data_collection_schema_or_database` (String) Full path to the signal table including database and table name (e.g., 'mydb.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.
 - `snapshot_gtid` (String) Whether or not to use a read-only connection. Requires GTID mode to be enabled on the source database. Defaults to `Yes`. Valid values: `Yes`, `No`.
 - `source_regex_support_enabled` (Boolean) Enable regex support. Useful for merging multiple tables into the same output topic. NOTE: most times when regex support is enabled there will be 100s of 1000s of tables and "Capture Only Captured Tables DDL?" must also be enabled. Defaults to `false`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
@@ -62,9 +75,19 @@ This resource creates and manages a MySQL source for Streamkap data pipelines. U
 - `transforms_insert_static_value1_static_value` (String) The value of the static field to be added to the message value.
 - `transforms_insert_static_value2_static_field` (String) The name of the static field to be added to the message value.
 - `transforms_insert_static_value2_static_value` (String) The value of the static field to be added to the message value.
+- `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
+- `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
+- `transforms_oversized_records_max_field_size_bytes` (Number) Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.
+- `transforms_oversized_records_max_record_size_bytes` (Number) Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to `-1`.
+- `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
+- `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
+- `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
 - `transforms_source_regex_support_key_field_template` (String) Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId. Defaults to `{{database}}.{{table}}`.
 - `transforms_source_regex_support_metadata_field_name` (String) Name of the extra metadata field to store source information and ensure uniqueness across all tables when regex support is enabled. Defaults to `_streamkap_source_metadata`.
 - `transforms_source_regex_support_regex_replacement` (String) Replacement string for matching regex snippets. Defaults to `_REGEX_`.
+- `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 
 ### Read-Only
 

@@ -194,9 +194,11 @@ func SourcePlanetscaleSchema() schema.Schema {
 			"ssh_public_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Public key to add to SSH server. Defaults to \"<SSH.PUBLIC.KEY>\".",
-				MarkdownDescription: "Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.",
-				Default:             stringdefault.StaticString("<SSH.PUBLIC.KEY>"),
+				Description:         "Public key to add to SSH server",
+				MarkdownDescription: "Public key to add to SSH server",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_value_to_key_fields_include_list": schema.StringAttribute{
 				Optional:            true,
@@ -267,8 +269,8 @@ func SourcePlanetscaleSchema() schema.Schema {
 			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
-				MarkdownDescription: "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
 				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
 			},
 			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{

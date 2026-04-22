@@ -216,6 +216,23 @@ func (e *ConfigEntry) HasDefault() bool {
 	return e.Value.Default != nil
 }
 
+// HasPlaceholderDefault returns true if the default value is a placeholder
+// string like "<SSH.PUBLIC.KEY>" or "<API_KEY>" that the backend resolves
+// to a real value server-side. These must not be emitted as Terraform
+// `Default` — the placeholder would appear in the plan but the server
+// returns the resolved value, causing "provider produced inconsistent
+// result after apply" errors (GitHub issue #72).
+func (e *ConfigEntry) HasPlaceholderDefault() bool {
+	if !e.HasDefault() {
+		return false
+	}
+	s, ok := e.Value.Default.(string)
+	if !ok {
+		return false
+	}
+	return len(s) >= 2 && s[0] == '<' && s[len(s)-1] == '>'
+}
+
 // GetDefault returns the default value for this config entry.
 // Returns nil if no default is set.
 func (e *ConfigEntry) GetDefault() any {
@@ -377,7 +394,9 @@ func camelToSnake(s string) string {
 }
 
 // GetRawValues returns the list of allowed values for one-select or multi-select controls.
-// Converts any boolean or numeric values to their string representation.
+// Converts any boolean or numeric values to their string representation. Backend may
+// return either flat strings ("array") or {value, label} objects ({"value":"array",
+// "label":"Native array"}); the latter is unwrapped to just the value.
 func (e *ConfigEntry) GetRawValues() []string {
 	result := make([]string, 0, len(e.Value.RawValues))
 	for _, v := range e.Value.RawValues {
@@ -391,6 +410,32 @@ func (e *ConfigEntry) GetRawValues() []string {
 				result = append(result, fmt.Sprintf("%d", int64(val)))
 			} else {
 				result = append(result, fmt.Sprintf("%v", val))
+			}
+		case map[string]any:
+			inner, ok := val["value"]
+			if !ok {
+				// Loud fail rather than silent `fmt.Sprintf("%v", map)` fallback.
+				// That fallback is what emitted "map[label:... value:...]" into
+				// OneOf validators in the first place. If a future backend
+				// change drops `value`, we want to catch it early.
+				panic(fmt.Sprintf("raw_values entry is a map but lacks a `value` key: %v — backend schema contract broken", v))
+			}
+			switch iv := inner.(type) {
+			case string:
+				result = append(result, strings.TrimSpace(iv))
+			case bool:
+				result = append(result, fmt.Sprintf("%t", iv))
+			case float64:
+				if iv == float64(int64(iv)) {
+					result = append(result, fmt.Sprintf("%d", int64(iv)))
+				} else {
+					result = append(result, fmt.Sprintf("%v", iv))
+				}
+			default:
+				// Same reasoning as the outer panic: silently emitting %v
+				// for nil/unsupported types would land junk strings back
+				// inside OneOf validators. Fail loudly instead.
+				panic(fmt.Sprintf("raw_values entry has unsupported `value` type %T: %v — backend schema contract broken", iv, iv))
 			}
 		default:
 			result = append(result, fmt.Sprintf("%v", v))

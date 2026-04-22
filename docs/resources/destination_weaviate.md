@@ -31,16 +31,57 @@ This resource creates and manages a Weaviate destination for Streamkap data pipe
 - `batch_size` (String) Number of records per batch. Defaults to `100`.
 - `collection_mapping` (String) Mapping between Kafka topic and Weaviate collection. Use ${topic} for dynamic topic name substitution. Defaults to `${topic}`.
 - `consistency_level` (String) Consistency level for writes (ALL, ONE, QUORUM). Defaults to `QUORUM`. Valid values: `ALL`, `ONE`, `QUORUM`.
+- `consumer_override_max_poll_records` (Number) The maximum number of records returned in a single call to poll(). Defaults to `10000`.
 - `delete_enabled` (Boolean) Treat null record values as deletes. Requires Document ID Strategy to be set to either 'Kafka ID' or 'Field ID' (not 'None'). Defaults to `false`.
 - `document_id_field_name` (String) Field name containing the ID in Kafka record. Defaults to `id`.
 - `document_id_strategy` (String) Strategy to generate document IDs. Defaults to `None`. Valid values: `None`, `Kafka ID`, `Field ID`.
+- `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `max_connection_retries` (String) Maximum number of retries for connection issues. Defaults to `3`.
 - `max_timeout_retries` (String) Maximum number of retries for timeout issues. Defaults to `3`.
 - `pool_size` (String) Number of thread pools to process batches. Defaults to `1`.
+- `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
+- `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
 - `retry_backoff_ms` (String) Backoff time between retries in milliseconds. Defaults to `1000`.
 - `retry_interval` (String) Interval between retries in milliseconds. Defaults to `2000`.
 - `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `transforms_add_string_suffix_fields_include_list` (String) Warning: Should only be used in conjunction with numeric conversion or other conversions. If field remained string after previous conversion, rename to field to <previous-field-name>_str. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_change_topic_name_match_regex` (String) Regular expression for matching topic name parts to use as the destination table (database) or file (file storage) name
+- `transforms_copy_field_copy_field_mapping` (String) Comma-separated list of field mappings e.g. <code>field1:newField1,field2:newField2</code>.
+- `transforms_drop_fields_fields_include_list` (String) Drop columns. Comma separated list of table columns to drop in format 'table1.column1,table2.column2'
+- `transforms_header_to_field_custom_header_mappings` (String) Headers to columns. Comma separated list of headers using format <code><header name>:<header type>[:field name]</code> e.g. 'headerKey1:STRING,headerKey2:INT32:customKey2Name'
+- `transforms_mark_columns_as_optional_fields_include_list` (String) Mark columns as optional/nullable. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_mark_columns_as_required_fields_include_all` (Boolean) When enabled, converts ALL optional columns to required (NOT NULL). The exclude list is still respected. Enabling this automatically disables 'Mark Column(s) as Optional'. Defaults to `false`.
+- `transforms_mark_columns_as_required_null_sentinel_mode` (String) Controls how NULL values are handled when columns become required. NONE: throws an error on NULL values. TYPE_MIN: replaces NULLs with type-specific sentinel values (e.g. MIN_VALUE for integers, '__null__' for strings, epoch for dates). Defaults to `NONE`. Valid values: `NONE`, `TYPE_MIN`.
+- `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
+- `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
+- `transforms_oversized_records_max_field_size_bytes` (Number) Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.
+- `transforms_oversized_records_max_record_size_bytes` (Number) Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to `-1`.
+- `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
+- `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
+- `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_rename_fields_renames` (String) JSON mapping of source to target column names. Keys should be schema.table.column, table.column or just column. Values must be valid column names (no dots or spaces).
+
+Example:
+{
+  "public.orders.amount": "Amount",
+  "orders.quantity": "Qty",
+  "customer_id": "CustomerId"
+}
+- `transforms_string_replace_fields_include_list` (String) Replaces column(s) value with a user-defined string. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_string_replace_regex_patterns` (String) List of regex patterns to search for. Comma separated list in format 'regex1,regex2'
+- `transforms_string_replace_replacement_values` (String) List of replacement values for each regex pattern. Comma separated list in format 'regex1,regex2'
+- `transforms_to_decimal_j_fields_include_list` (String) Convert column(s) to Decimal - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_to_decimal_j_truncate_to_max_precision` (Boolean) If true, truncate decimals to a 38 precision. Defaults to `false`.
+- `transforms_to_float_j_fields_include_list` (String) Convert column(s) to Float - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_to_int_j_fields_include_list` (String) Convert column(s) to Integer - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_to_json_j_convert_all_complex_types` (Boolean) Convert all Structs and Arrays to JSON String? - if possible. Defaults to `false`.
+- `transforms_to_json_j_fields_include_list` (String) Convert column(s) to JSON String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_to_jsonb_j_convert_all_complex_types` (Boolean) Convert all Structs and Arrays to Binary JSON? - if possible. Defaults to `false`.
+- `transforms_to_jsonb_j_convert_all_json` (Boolean) Converts all JSON String column(s) to Binary JSON - if possible. Defaults to `false`.
+- `transforms_to_jsonb_j_fields_include_list` (String) Convert column(s) to Binary JSON - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_to_string_j_fields_include_list` (String) Convert column(s) to String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `vector_field_name` (String) Field name containing the embedding vector. Defaults to `vector`.
 - `vector_strategy` (String) Strategy to generate or extract document embeddings. Defaults to `None`. Valid values: `None`, `Field Vector`.
 - `weaviate_api_key` (String, Sensitive) User API Key for API Key authentication

@@ -29,18 +29,33 @@ This resource creates and manages a DocumentDB source for Streamkap data pipelin
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `name` (String) Name of the source
-- `signal_data_collection_schema_or_database` (String) Streamkap will use a collection in this database to monitor incremental snapshotting. Follow the instructions in the documentation for creating this collection and specify which database to use here.
+- `signal_data_collection_schema_or_database` (String) Full path to the signal collection including database and collection name (e.g., 'mydb.streamkap_signal'). This collection is used for incremental snapshotting. Follow the documentation for creating this collection.
 
 ### Optional
 
+- `cursor_oversize_handling_mode` (String) The strategy used to handle change events for documents exceeding specified BSON size. Defaults to `skip`. Valid values: `skip`, `split`.
+- `cursor_oversize_skip_threshold` (Number) The maximum allowed size in bytes of the stored document for which change events are processed. This includes both, the size before and after database operation, more specifically this limits the size of fullDocument and fullDocumentBeforeChange filed of MongoDB change events. Defaults to `16000000`.
+- `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
+- `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
+- `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
+- `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
+- `transforms_oversized_records_max_field_size_bytes` (Number) Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.
+- `transforms_oversized_records_max_record_size_bytes` (Number) Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to `-1`.
+- `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
+- `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
+- `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
 - `transforms_unwrap_array_encoding` (String) How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types. Defaults to `array_string`. Valid values: `array`, `array_string`.
 - `transforms_unwrap_document_encoding` (String) How to encode nested documents. 'Document' encodes them as JSON Objects, 'String' encodes them as JSON Strings. Defaults to `document`. Valid values: `document`, `string`.
+- `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 
 ### Read-Only
 

@@ -30,9 +30,22 @@ This resource creates and manages a Webhook source for Streamkap data pipelines.
 - `api_key` (String) API. This key will be generated after the source is created. Defaults to `<API_KEY>`.
 - `camel_source_camel_message_header_key` (String) Camel Message Header contains key field details for Kafka Message, default is 'key'. Defaults to `key`.
 - `format` (String) The incoming format of the data receive by webhook. Defaults to `json`. Valid values: `json`, `string`.
+- `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
+- `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
+- `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `topic_include_list` (String) Topic names to use as output. Defaults to `default_topic`.
 - `transforms_infer_schema_add_delete_field` (Boolean) Whether to add a 'delete' field to the schema when DELETE HTTP method is used. Defaults to `false`.
+- `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
+- `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
+- `transforms_oversized_records_max_field_size_bytes` (Number) Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.
+- `transforms_oversized_records_max_record_size_bytes` (Number) Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to `-1`.
+- `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
+- `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
+- `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `webhook_url` (String) Webhook URL. This URL will be generated after the source is created. Defaults to ``.
 
 ### Read-Only

@@ -37,13 +37,22 @@ This resource creates and manages a SQL Server source for Streamkap data pipelin
 
 - `binary_handling_mode` (String) Specifies how the data for binary columns e.g. blob, binary, varbinary should be represented. This setting depends on what the destination is. See the documentation for more details. Defaults to `bytes`. Valid values: `bytes`, `base64`, `base64-url-safe`, `hex`.
 - `column_exclude_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.
-- `database_encrypt` (String) Use TLS encryption with the SQL Server?. Defaults to `true`. Valid values: `true`, `false`.
+- `database_encrypt` (Boolean) Use TLS encryption with the SQL Server?. Defaults to `true`.
 - `database_port` (Number) SQL Server Port. For example, 1433. Defaults to `1433`.
 - `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'. Defaults to `streamkap`.
 - `heartbeat_enabled` (Boolean) Heartbeats are used to monitor whether the connector is still receiving change events from the database, especially when there is low and intermittent traffic. Defaults to `true`.
+- `insert_static_key_field` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key1_static_field' instead.
+- `insert_static_key_value` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key1_static_value' instead.
+- `insert_static_value` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_value1_static_value' instead.
+- `insert_static_value_field` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_value1_static_field' instead.
+- `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
+- `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
+- `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `schema_history_internal_store_only_captured_databases_ddl` (Boolean) Specifies whether the connector records schema structures from all logical databases in the database instance or only captured databases. Enabling this when you have many databases in your instance can improve performance and avoid timeouts. Defaults to `false`.
 - `schema_history_internal_store_only_captured_tables_ddl` (Boolean) Specifies whether the connector records schema structures from all logical tables in the captured schemas or databases, or only captured tables. Enabling this when you have many tables can improve performance and avoid timeouts. Defaults to `false`.
-- `signal_data_collection_schema_or_database` (String) Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here. Defaults to `streamkap`.
+- `signal_data_collection_schema_or_database` (String) Path to the signal table as schema.table (e.g., 'dbo.streamkap_signal'). The database name will be added automatically. This table is used for incremental snapshotting. Defaults to `streamkap`.
+- `snapshot_large_table_threshold` (Number, Deprecated) DEPRECATED: Use 'streamkap_snapshot_large_table_threshold' instead.
+- `snapshot_parallelism` (Number, Deprecated) DEPRECATED: Use 'streamkap_snapshot_parallelism' instead.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
@@ -57,6 +66,16 @@ This resource creates and manages a SQL Server source for Streamkap data pipelin
 - `transforms_insert_static_key1_static_value` (String) The value of the static field to be added to the message key.
 - `transforms_insert_static_value1_static_field` (String) The name of the static field to be added to the message value.
 - `transforms_insert_static_value1_static_value` (String) The value of the static field to be added to the message value.
+- `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
+- `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
+- `transforms_oversized_records_max_field_size_bytes` (Number) Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.
+- `transforms_oversized_records_max_record_size_bytes` (Number) Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to `-1`.
+- `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
+- `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
+- `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 
 ### Read-Only
 

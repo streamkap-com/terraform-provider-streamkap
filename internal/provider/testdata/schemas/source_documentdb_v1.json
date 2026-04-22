@@ -19,6 +19,18 @@
       "computed": true,
       "sensitive": false
     },
+    "cursor_oversize_handling_mode": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "cursor_oversize_skip_threshold": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "database_include_list": {
       "required": true,
       "optional": false,
@@ -28,6 +40,18 @@
     "id": {
       "required": false,
       "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_topic_name_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "kc_cluster_id": {
+      "required": false,
+      "optional": true,
       "computed": true,
       "sensitive": false
     },
@@ -41,6 +65,12 @@
       "required": true,
       "optional": false,
       "computed": false,
+      "sensitive": false
+    },
+    "preserve_null_values": {
+      "required": false,
+      "optional": true,
+      "computed": true,
       "sensitive": false
     },
     "signal_data_collection_schema_or_database": {
@@ -79,6 +109,54 @@
       "computed": true,
       "sensitive": false
     },
+    "transforms_oversized_records_fields_exclude_list": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_oversized_records_fields_include_list": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_oversized_records_max_field_size_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_oversized_records_max_record_size_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_oversized_records_oversized_field_behavior": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_oversized_records_replace_null_with_default": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_oversized_records_semantic_types_exclude": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_oversized_records_truncation_suffix": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "transforms_unwrap_array_encoding": {
       "required": false,
       "optional": true,
@@ -86,6 +164,18 @@
       "sensitive": false
     },
     "transforms_unwrap_document_encoding": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_value_to_key_fields_include_list": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_value_to_key_replace_null_with_default": {
       "required": false,
       "optional": true,
       "computed": true,

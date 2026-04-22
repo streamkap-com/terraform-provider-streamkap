@@ -29,10 +29,9 @@ This resource creates and manages an Oracle source for Streamkap data pipelines.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `database_user` (String) Username to access the database
-- `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.
 - `name` (String) Name of the source
 - `schema_include_list` (String) Schemas to include.
-- `signal_data_collection_schema_or_database` (String) Streamkap will use a table in this schema to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which schema to use here.
+- `signal_data_collection_schema_or_database` (String) Full path to the signal table including schema and table name (e.g., 'MYSCHEMA.STREAMKAP_SIGNAL'). This table is used for incremental snapshotting. Follow the documentation for creating this table.
 - `table_include_list` (String) Source tables to sync.
 
 ### Optional
@@ -41,7 +40,11 @@ This resource creates and manages an Oracle source for Streamkap data pipelines.
 - `column_exclude_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.
 - `database_pdb_name` (String) Pluggable database from which to stream data. Use this for container database (CDB) installations only.
 - `database_port` (Number) Oracle Port. For example, 1521. Defaults to `1521`.
+- `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.
 - `heartbeat_enabled` (Boolean) Heartbeats are used to monitor whether the connector is still receiving change events from the database, especially when there is low and intermittent traffic. Defaults to `true`.
+- `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
+- `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
+- `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `schema_history_internal_store_only_captured_databases_ddl` (Boolean) Specifies whether the connector records schema structures from all logical databases in the database instance or only captured databases. Enabling this when you have many databases in your instance can improve performance and avoid timeouts. Defaults to `false`.
 - `schema_history_internal_store_only_captured_tables_ddl` (Boolean) Specifies whether the connector records schema structures from all logical tables in the captured schemas or databases, or only captured tables. Enabling this when you have many tables can improve performance and avoid timeouts. Defaults to `false`.
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
@@ -50,6 +53,16 @@ This resource creates and manages an Oracle source for Streamkap data pipelines.
 - `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
+- `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
+- `transforms_oversized_records_max_field_size_bytes` (Number) Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.
+- `transforms_oversized_records_max_record_size_bytes` (Number) Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to `-1`.
+- `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
+- `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
+- `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 
 ### Read-Only
 

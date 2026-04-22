@@ -121,12 +121,12 @@ func SourceRedisSchema() schema.Schema {
 				Default:             int64default.StaticInt64(6379),
 			},
 			"redis_username": schema.StringAttribute{
-				Optional:            true,
+				Required:            true,
 				Description:         "Redis username (optional, for Redis 6+ ACL)",
 				MarkdownDescription: "Redis username (optional, for Redis 6+ ACL)",
 			},
 			"redis_password": schema.StringAttribute{
-				Optional:            true,
+				Required:            true,
 				Sensitive:           true,
 				Description:         "Redis password (optional) This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "Redis password (optional)\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
@@ -139,7 +139,7 @@ func SourceRedisSchema() schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"redis_stream_name": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "Name of the Redis stream to read from",
 				MarkdownDescription: "Name of the Redis stream to read from",
 			},
@@ -222,7 +222,7 @@ func SourceRedisSchema() schema.Schema {
 				Default:             booldefault.StaticBool(false),
 			},
 			"topic": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "Kafka topic name to publish messages to",
 				MarkdownDescription: "Kafka topic name to publish messages to",
 			},
@@ -305,8 +305,8 @@ func SourceRedisSchema() schema.Schema {
 			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
-				MarkdownDescription: "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
 				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
 			},
 			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{

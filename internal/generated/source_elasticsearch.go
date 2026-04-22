@@ -123,12 +123,12 @@ func SourceElasticsearchSchema() schema.Schema {
 				},
 			},
 			"http_auth_user": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Description:         "Elasticsearch username",
 				MarkdownDescription: "Elasticsearch username",
 			},
 			"http_auth_password": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Sensitive:           true,
 				Description:         "Elasticsearch password This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "Elasticsearch password\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
@@ -227,8 +227,8 @@ func SourceElasticsearchSchema() schema.Schema {
 			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
-				MarkdownDescription: "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
 				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
 			},
 			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{

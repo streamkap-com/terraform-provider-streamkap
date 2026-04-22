@@ -25,29 +25,42 @@ This resource creates and manages a Redis source for Streamkap data pipelines. U
 
 - `name` (String) Name of the source
 - `redis_host` (String) Redis hostname (e.g., redis.example.com or 127.0.0.1)
-- `redis_stream_name` (String) Name of the Redis stream to read from
-- `topic` (String) Kafka topic name to publish messages to
+- `redis_password` (String, Sensitive) Redis password (optional)
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
+- `redis_username` (String) Redis username (optional, for Redis 6+ ACL)
 
 ### Optional
 
 - `connector_class_type` (String) Type of Redis source connector. Defaults to `Stream`. Valid values: `Stream`, `Keys`.
+- `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
+- `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `mode` (String) LIVE performs initial snapshot then streams updates. LIVEONLY only streams updates. Defaults to `LIVE`. Valid values: `LIVE`, `LIVEONLY`.
+- `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `redis_keys_pattern` (String) Key pattern to monitor (e.g., user:*, order:*, or * for all keys). Defaults to `*`.
 - `redis_keys_timeout_seconds` (Number) Idle timeout before connector stops if no activity. Defaults to `300`.
-- `redis_password` (String, Sensitive) Redis password (optional)
-
-**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `redis_port` (Number) Redis port number. Defaults to `6379`.
 - `redis_stream_block_seconds` (Number) Block duration when waiting for new messages. Defaults to `1`.
 - `redis_stream_consumer_group` (String) Consumer group name for coordinating multiple consumers. Defaults to `kafka-consumer-group`.
 - `redis_stream_consumer_name` (String) Base name for consumer instances. Defaults to `consumer`.
 - `redis_stream_delivery` (String) Delivery guarantee mode. Defaults to `At Least Once`. Valid values: `At Least Once`, `At Most Once`.
+- `redis_stream_name` (String) Name of the Redis stream to read from
 - `redis_stream_offset` (String) Starting point for reading from the stream. Defaults to `Latest`. Valid values: `Latest`, `Earliest`.
-- `redis_username` (String) Redis username (optional, for Redis 6+ ACL)
 - `ssl_enabled` (Boolean) Enable TLS/SSL for secure connections. Defaults to `true`.
 - `tasks_max` (Number) Number of parallel tasks (Stream: 1-10, Keys: always 1). Defaults to `1`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `topic` (String) Kafka topic name to publish messages to
 - `topic_use_stream_name` (Boolean) Use Redis stream name as Kafka topic name (only for Stream connectors). Defaults to `false`.
+- `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
+- `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
+- `transforms_oversized_records_max_field_size_bytes` (Number) Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.
+- `transforms_oversized_records_max_record_size_bytes` (Number) Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to `-1`.
+- `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
+- `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
+- `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 
 ### Read-Only
 

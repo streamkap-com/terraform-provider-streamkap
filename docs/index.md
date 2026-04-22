@@ -38,6 +38,8 @@ provider "streamkap" {}
 
 ### Optional
 
+- `admin_service_id` (String) Admin service ID for cross-tenant access. If not set, Streamkap will use environment variable `STREAMKAP_ADMIN_SERVICE_ID`.
+- `admin_tenant_id` (String) Admin tenant ID for cross-tenant access. If not set, Streamkap will use environment variable `STREAMKAP_ADMIN_TENANT_ID`.
 - `client_id` (String) The Streamkap API client_id. If not set, Streamkap will use environment variable `STREAMKAP_CLIENT_ID`
 - `host` (String) The Streamkap API host. If not set, Streamkap will use environment variable `STREAMKAP_HOST`. Defaults to https://api.streamkap.com if both are not set.
 - `secret` (String, Sensitive) The Streamkap API secret. If not set, Streamkap will use environment variable `STREAMKAP_SECRET`

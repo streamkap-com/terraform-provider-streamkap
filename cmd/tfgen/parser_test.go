@@ -123,6 +123,75 @@ func TestParseConnectorConfig_PostgreSQL(t *testing.T) {
 	}
 }
 
+// TestGetRawValues_ObjectForm locks in the parser's support for the newer
+// backend format where raw_values entries are {"value": "...", "label": "..."}
+// objects instead of bare strings. Both forms must work.
+func TestGetRawValues_ObjectForm(t *testing.T) {
+	tests := []struct {
+		name  string
+		input []any
+		want  []string
+	}{
+		{
+			name:  "bare strings",
+			input: []any{"array", "array_string"},
+			want:  []string{"array", "array_string"},
+		},
+		{
+			name: "value/label objects",
+			input: []any{
+				map[string]any{"value": "array", "label": "Native array"},
+				map[string]any{"value": "array_string", "label": "Stringified JSON array"},
+			},
+			want: []string{"array", "array_string"},
+		},
+		{
+			name: "mixed forms",
+			input: []any{
+				"plain",
+				map[string]any{"value": "wrapped", "label": "Wrapped"},
+			},
+			want: []string{"plain", "wrapped"},
+		},
+		{
+			name: "object with bool value",
+			input: []any{
+				map[string]any{"value": true, "label": "Yes"},
+				map[string]any{"value": false, "label": "No"},
+			},
+			want: []string{"true", "false"},
+		},
+	}
+
+	// Object without a `value` key should panic rather than silently fall
+	// back to the map's %v repr (which is what caused the original bug).
+	t.Run("object missing value key panics", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("expected panic for raw_values object without `value` key")
+			}
+		}()
+		e := &ConfigEntry{Value: ValueObject{RawValues: []any{
+			map[string]any{"label": "Orphan"},
+		}}}
+		_ = e.GetRawValues()
+	})
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			e := &ConfigEntry{Value: ValueObject{RawValues: tc.input}}
+			got := e.GetRawValues()
+			if len(got) != len(tc.want) {
+				t.Fatalf("got %d values, want %d: %v", len(got), len(tc.want), got)
+			}
+			for i := range got {
+				if got[i] != tc.want[i] {
+					t.Errorf("index %d: got %q, want %q", i, got[i], tc.want[i])
+				}
+			}
+		})
+	}
+}
+
 func TestParseConnectorConfig_Snowflake(t *testing.T) {
 	// This test requires access to the backend repository
 	// Set STREAMKAP_BACKEND_PATH environment variable to your backend repo path
