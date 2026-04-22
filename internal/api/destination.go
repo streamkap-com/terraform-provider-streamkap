@@ -145,7 +145,9 @@ func (s *streamkapAPI) ListDestinations(ctx context.Context) ([]Destination, err
 			return nil, err
 		}
 		all = append(all, resp.Result...)
-		if len(resp.Result) < pageSize || len(all) >= resp.Total {
+		// Short-page termination only; Total can lie under concurrent
+		// deletes (coderabbit PR #70 comment). maxPages caps runaway.
+		if len(resp.Result) < pageSize {
 			break
 		}
 	}
