@@ -432,7 +432,10 @@ func (e *ConfigEntry) GetRawValues() []string {
 					result = append(result, fmt.Sprintf("%v", iv))
 				}
 			default:
-				result = append(result, fmt.Sprintf("%v", iv))
+				// Same reasoning as the outer panic: silently emitting %v
+				// for nil/unsupported types would land junk strings back
+				// inside OneOf validators. Fail loudly instead.
+				panic(fmt.Sprintf("raw_values entry has unsupported `value` type %T: %v — backend schema contract broken", iv, iv))
 			}
 		default:
 			result = append(result, fmt.Sprintf("%v", v))

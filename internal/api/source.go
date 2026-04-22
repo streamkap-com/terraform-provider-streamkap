@@ -150,7 +150,12 @@ func (s *streamkapAPI) ListSources(ctx context.Context) ([]Source, error) {
 			return nil, err
 		}
 		all = append(all, resp.Result...)
-		if len(resp.Result) < pageSize || len(all) >= resp.Total {
+		// Terminate only on a short page. `resp.Total` can lie under
+		// concurrent deletes or when the server returns 0 inconsistently,
+		// and using it as a second termination clause risks truncating
+		// the result (coderabbit PR #70 comment). maxPages above caps
+		// runaway if the server consistently returns full pages.
+		if len(resp.Result) < pageSize {
 			break
 		}
 	}

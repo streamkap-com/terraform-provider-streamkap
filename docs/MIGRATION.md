@@ -172,6 +172,31 @@ changed. If your v2.1.19 configuration uses them, rename them before upgrading t
 
 These changes do NOT have backward compatibility and require updates:
 
+#### Newly Required Fields (added in v3.x)
+
+Some destination fields that were optional in v2.1.x have become required in the
+current backend schema. Update your `.tf` files to set them explicitly before
+upgrading, or `terraform plan` will fail with "Missing required argument".
+
+| Resource | Field | Action |
+|----------|-------|--------|
+| `streamkap_destination_cockroachdb` | `database_database` | Add `database_database = "<db_name>"` |
+| `streamkap_destination_databricks` | `connection_url` | Add `connection_url = "<JDBC_URL>"` |
+| `streamkap_destination_databricks` | `databricks_token` (sensitive) | Add `databricks_token = "<TOKEN>"`. Keep the value out of source control — source from a variable or secret manager. |
+| `streamkap_destination_clickhouse` | `database` | Add `database = "<db_name>"` (was Optional with a default in v2.1.x). |
+
+Example for Databricks:
+
+```hcl
+resource "streamkap_destination_databricks" "example" {
+  name             = "my-warehouse"
+  hostname         = "dbc-xxxx.cloud.databricks.com"
+  connection_url   = var.databricks_jdbc_url    # now required
+  databricks_token = var.databricks_token       # now required, sensitive
+  # ...existing fields...
+}
+```
+
 #### PostgreSQL Source
 
 ##### Type Change: database_port
