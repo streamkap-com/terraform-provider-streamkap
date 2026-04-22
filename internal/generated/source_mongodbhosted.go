@@ -30,6 +30,9 @@ type SourceMongodbhostedModel struct {
 	DatabaseIncludeList                              types.String   `tfsdk:"database_include_list"`
 	CollectionIncludeList                            types.String   `tfsdk:"collection_include_list"`
 	SignalDataCollectionSchemaOrDatabase             types.String   `tfsdk:"signal_data_collection_schema_or_database"`
+	CursorPipeline                                   types.String   `tfsdk:"cursor_pipeline"`
+	CursorOversizeHandlingMode                       types.String   `tfsdk:"cursor_oversize_handling_mode"`
+	CursorOversizeSkipThreshold                      types.Int64    `tfsdk:"cursor_oversize_skip_threshold"`
 	TransformsInsertStaticKey1StaticField            types.String   `tfsdk:"transforms_insert_static_key1_static_field"`
 	TransformsInsertStaticKey1StaticValue            types.String   `tfsdk:"transforms_insert_static_key1_static_value"`
 	TransformsInsertStaticValue1StaticField          types.String   `tfsdk:"transforms_insert_static_value1_static_field"`
@@ -117,11 +120,11 @@ func SourceMongodbhostedSchema() schema.Schema {
 			"transforms_unwrap_array_encoding": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types. Defaults to \"array_string\". Valid values: array, array_string.",
-				MarkdownDescription: "How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types. Defaults to `array_string`. Valid values: `array`, `array_string`.",
+				Description:         "How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types. 'String' is deprecated, use 'Array_String' instead. Defaults to \"array_string\". Valid values: array, array_string, string.",
+				MarkdownDescription: "How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types. 'String' is deprecated, use 'Array_String' instead. Defaults to `array_string`. Valid values: `array`, `array_string`, `string`.",
 				Default:             stringdefault.StaticString("array_string"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("array", "array_string"),
+					stringvalidator.OneOf("array", "array_string", "string"),
 				},
 			},
 			"transforms_unwrap_document_encoding": schema.StringAttribute{
@@ -146,8 +149,33 @@ func SourceMongodbhostedSchema() schema.Schema {
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
 				Required:            true,
-				Description:         "Streamkap will use a collection in this database to monitor incremental snapshotting. Follow the instructions in the documentation for creating this collection and specify which database to use here.",
-				MarkdownDescription: "Streamkap will use a collection in this database to monitor incremental snapshotting. Follow the instructions in the documentation for creating this collection and specify which database to use here.",
+				Description:         "Full path to the signal collection including database and collection name (e.g., 'mydb.streamkap_signal'). This collection is used for incremental snapshotting. Follow the documentation for creating this collection.",
+				MarkdownDescription: "Full path to the signal collection including database and collection name (e.g., 'mydb.streamkap_signal'). This collection is used for incremental snapshotting. Follow the documentation for creating this collection.",
+			},
+			"cursor_pipeline": schema.StringAttribute{
+				Optional:            true,
+				Description:         "A JSON array of additional pipeline stages to apply when reading change events from MongoDB. This can be used to filter or transform change stream events before they are processed by the connector",
+				MarkdownDescription: "A JSON array of additional pipeline stages to apply when reading change events from MongoDB. This can be used to filter or transform change stream events before they are processed by the connector",
+			},
+			"cursor_oversize_handling_mode": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The strategy used to handle change events for documents exceeding specified BSON size. 'Skip' ignores oversized documents, 'Split' breaks them into smaller chunks. Defaults to \"skip\". Valid values: skip, split.",
+				MarkdownDescription: "The strategy used to handle change events for documents exceeding specified BSON size. 'Skip' ignores oversized documents, 'Split' breaks them into smaller chunks. Defaults to `skip`. Valid values: `skip`, `split`.",
+				Default:             stringdefault.StaticString("skip"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("skip", "split"),
+				},
+			},
+			"cursor_oversize_skip_threshold": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The maximum allowed size in bytes of the stored document for which change events are processed. This includes both the size before and after the database operation, specifically this limits the size of fullDocument and fullDocumentBeforeChange fields of MongoDB change events. Defaults to 16000000.",
+				MarkdownDescription: "The maximum allowed size in bytes of the stored document for which change events are processed. This includes both the size before and after the database operation, specifically this limits the size of fullDocument and fullDocumentBeforeChange fields of MongoDB change events. Defaults to `16000000`.",
+				Default:             int64default.StaticInt64(16000000),
+				Validators: []validator.Int64{
+					int64validator.Between(1000000, 16000000),
+				},
 			},
 			"transforms_insert_static_key1_static_field": schema.StringAttribute{
 				Optional:            true,
@@ -204,7 +232,7 @@ func SourceMongodbhostedSchema() schema.Schema {
 				Default:             booldefault.StaticBool(false),
 			},
 			"ssh_host": schema.StringAttribute{
-				Optional:            true,
+				Required:            true,
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
 			},
@@ -298,8 +326,8 @@ func SourceMongodbhostedSchema() schema.Schema {
 			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
-				MarkdownDescription: "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
 				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
 			},
 			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{
@@ -329,6 +357,9 @@ var SourceMongodbhostedFieldMappings = map[string]string{
 	"database_include_list":                                  "database.include.list",
 	"collection_include_list":                                "collection.include.list.user.defined",
 	"signal_data_collection_schema_or_database":              "signal.data.collection.schema.or.database",
+	"cursor_pipeline":                                        "cursor.pipeline",
+	"cursor_oversize_handling_mode":                          "cursor.oversize.handling.mode",
+	"cursor_oversize_skip_threshold":                         "cursor.oversize.skip.threshold",
 	"transforms_insert_static_key1_static_field":             "transforms.InsertStaticKey1.static.field",
 	"transforms_insert_static_key1_static_value":             "transforms.InsertStaticKey1.static.value",
 	"transforms_insert_static_value1_static_field":           "transforms.InsertStaticValue1.static.field",

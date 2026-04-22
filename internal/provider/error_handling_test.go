@@ -135,7 +135,7 @@ func TestAPIError401_CreateSource(t *testing.T) {
 	// Mock 401 response
 	httpmock.RegisterResponder(
 		http.MethodPost,
-		baseURL+"/sources?secret_returned=true",
+		baseURL+"/sources?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: "Authentication required",
@@ -171,7 +171,7 @@ func TestAPIError401_UpdateDestination(t *testing.T) {
 	// Mock 401 response for revoked token
 	httpmock.RegisterResponder(
 		http.MethodPut,
-		baseURL+"/destinations/dest-123?secret_returned=true",
+		baseURL+"/destinations/dest-123?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: "Token has been revoked",
@@ -343,7 +343,7 @@ func TestAPIError404_DeleteSource(t *testing.T) {
 	// Mock 404 response for delete of non-existent source
 	httpmock.RegisterResponder(
 		http.MethodDelete,
-		baseURL+"/sources/already-deleted?secret_returned=true",
+		baseURL+"/sources/already-deleted?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: "Source 'already-deleted' not found",
@@ -377,7 +377,7 @@ func TestAPIError404_UpdateSource(t *testing.T) {
 	// Mock 404 response for update of non-existent source
 	httpmock.RegisterResponder(
 		http.MethodPut,
-		baseURL+"/sources/non-existent-source?secret_returned=true",
+		baseURL+"/sources/non-existent-source?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: "Cannot update: source 'non-existent-source' not found",
@@ -405,7 +405,7 @@ func TestAPIError404_DeleteDestination(t *testing.T) {
 	// Mock 404 response
 	httpmock.RegisterResponder(
 		http.MethodDelete,
-		baseURL+"/destinations/ghost-dest?secret_returned=true",
+		baseURL+"/destinations/ghost-dest?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: "Destination 'ghost-dest' does not exist",
@@ -567,7 +567,7 @@ func TestAPIError422_MissingRequiredField(t *testing.T) {
 	// Mock 422 response for validation error
 	httpmock.RegisterResponder(
 		http.MethodPost,
-		baseURL+"/sources?secret_returned=true",
+		baseURL+"/sources?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: "Validation error: 'database.hostname.user.defined' is a required field",
@@ -603,7 +603,7 @@ func TestAPIError422_InvalidEnumValue(t *testing.T) {
 	// Mock 422 response for invalid enum
 	httpmock.RegisterResponder(
 		http.MethodPost,
-		baseURL+"/destinations?secret_returned=true",
+		baseURL+"/destinations?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: "Validation error: 'insert_mode' must be one of: insert, upsert",
@@ -641,7 +641,7 @@ func TestAPIError422_InvalidPortRange(t *testing.T) {
 	// Mock 422 response for invalid range
 	httpmock.RegisterResponder(
 		http.MethodPost,
-		baseURL+"/sources?secret_returned=true",
+		baseURL+"/sources?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: "Validation error: 'database.port' must be between 1 and 65535",
@@ -678,7 +678,7 @@ func TestAPIError422_InvalidFieldType(t *testing.T) {
 	// Mock 422 response for type error
 	httpmock.RegisterResponder(
 		http.MethodPost,
-		baseURL+"/sources?secret_returned=true",
+		baseURL+"/sources?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: "Validation error: 'database.port' expects integer, got string",
@@ -713,7 +713,7 @@ func TestAPIError422_UpdateValidation(t *testing.T) {
 	// Mock 422 response for update validation
 	httpmock.RegisterResponder(
 		http.MethodPut,
-		baseURL+"/destinations/dest-123?secret_returned=true",
+		baseURL+"/destinations/dest-123?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: "Validation error: 'name' cannot be empty",
@@ -744,10 +744,11 @@ func TestAPIError422_DuplicateName(t *testing.T) {
 		Config:    map[string]any{},
 	}
 
-	// Mock 422 response for duplicate name
+	// Mock 422 response for duplicate name — provider treats "already exists"
+	// as a signal to adopt the existing source instead of erroring.
 	httpmock.RegisterResponder(
 		http.MethodPost,
-		baseURL+"/sources?secret_returned=true",
+		baseURL+"/sources?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: "Validation error: A source with name 'existing-source' already exists",
@@ -756,12 +757,27 @@ func TestAPIError422_DuplicateName(t *testing.T) {
 		},
 	)
 
+	// Mock the list-for-adopt follow-up: return the pre-existing source.
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		baseURL+"/sources?secret_returned=true",
+		func(req *http.Request) (*http.Response, error) {
+			return httpmock.NewJsonResponse(http.StatusOK, api.GetSourceResponse{
+				Total: 1,
+				Result: []api.Source{
+					{ID: "adopted-source-id", Name: "existing-source", Connector: "mongodb"},
+				},
+			})
+		},
+	)
+
 	ctx := context.Background()
 	result, err := client.CreateSource(ctx, source)
 
-	require.Error(t, err, "Expected error for duplicate name")
-	assert.Nil(t, result, "Result should be nil when validation fails")
-	assert.Contains(t, err.Error(), "already exists", "Error message should indicate duplicate")
+	require.NoError(t, err, "Duplicate name should trigger adoption, not an error")
+	require.NotNil(t, result, "Adopted source should be returned")
+	assert.Equal(t, "adopted-source-id", result.ID, "Should return the existing source's ID")
+	assert.Equal(t, "existing-source", result.Name)
 }
 
 // TestAPIError422_TransformInvalidConfig tests 422 for transform-specific validation
@@ -829,7 +845,7 @@ func TestAPIError422_PipelineInvalidReferences(t *testing.T) {
 	// Mock 422 response for invalid reference
 	httpmock.RegisterResponder(
 		http.MethodPost,
-		baseURL+"/pipelines?secret_returned=true",
+		baseURL+"/pipelines?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: "Validation error: Source with ID 'non-existent-source' does not exist",
@@ -865,7 +881,7 @@ func TestAPIError422_NoRetry(t *testing.T) {
 	// Mock 422 response and count requests
 	httpmock.RegisterResponder(
 		http.MethodPost,
-		baseURL+"/sources?secret_returned=true",
+		baseURL+"/sources?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			requestCount++
 			errResponse := api.APIErrorResponse{
@@ -1015,7 +1031,7 @@ func TestAPIError5xx_CreateOperation(t *testing.T) {
 	// Mock 500 response for create
 	httpmock.RegisterResponder(
 		http.MethodPost,
-		baseURL+"/sources?secret_returned=true",
+		baseURL+"/sources?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: "Internal error: failed to connect to Kafka Connect cluster",
@@ -1050,7 +1066,7 @@ func TestAPIError5xx_UpdateOperation(t *testing.T) {
 	// Mock 500 response for update
 	httpmock.RegisterResponder(
 		http.MethodPut,
-		baseURL+"/destinations/dest-123?secret_returned=true",
+		baseURL+"/destinations/dest-123?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: "Internal error: database transaction failed",
@@ -1078,7 +1094,7 @@ func TestAPIError5xx_DeleteOperation(t *testing.T) {
 	// Mock 500 response for delete
 	httpmock.RegisterResponder(
 		http.MethodDelete,
-		baseURL+"/sources/source-to-delete?secret_returned=true",
+		baseURL+"/sources/source-to-delete?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: "Internal error: failed to stop connector tasks",

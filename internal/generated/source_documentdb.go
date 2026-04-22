@@ -29,6 +29,8 @@ type SourceDocumentdbModel struct {
 	DatabaseIncludeList                              types.String   `tfsdk:"database_include_list"`
 	CollectionIncludeList                            types.String   `tfsdk:"collection_include_list"`
 	SignalDataCollectionSchemaOrDatabase             types.String   `tfsdk:"signal_data_collection_schema_or_database"`
+	CursorOversizeHandlingMode                       types.String   `tfsdk:"cursor_oversize_handling_mode"`
+	CursorOversizeSkipThreshold                      types.Int64    `tfsdk:"cursor_oversize_skip_threshold"`
 	SSHEnabled                                       types.Bool     `tfsdk:"ssh_enabled"`
 	SSHHost                                          types.String   `tfsdk:"ssh_host"`
 	SSHPort                                          types.Int64    `tfsdk:"ssh_port"`
@@ -129,8 +131,28 @@ func SourceDocumentdbSchema() schema.Schema {
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
 				Required:            true,
-				Description:         "Streamkap will use a collection in this database to monitor incremental snapshotting. Follow the instructions in the documentation for creating this collection and specify which database to use here.",
-				MarkdownDescription: "Streamkap will use a collection in this database to monitor incremental snapshotting. Follow the instructions in the documentation for creating this collection and specify which database to use here.",
+				Description:         "Full path to the signal collection including database and collection name (e.g., 'mydb.streamkap_signal'). This collection is used for incremental snapshotting. Follow the documentation for creating this collection.",
+				MarkdownDescription: "Full path to the signal collection including database and collection name (e.g., 'mydb.streamkap_signal'). This collection is used for incremental snapshotting. Follow the documentation for creating this collection.",
+			},
+			"cursor_oversize_handling_mode": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The strategy used to handle change events for documents exceeding specified BSON size. Defaults to \"skip\". Valid values: skip, split.",
+				MarkdownDescription: "The strategy used to handle change events for documents exceeding specified BSON size. Defaults to `skip`. Valid values: `skip`, `split`.",
+				Default:             stringdefault.StaticString("skip"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("skip", "split"),
+				},
+			},
+			"cursor_oversize_skip_threshold": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The maximum allowed size in bytes of the stored document for which change events are processed. This includes both, the size before and after database operation, more specifically this limits the size of fullDocument and fullDocumentBeforeChange filed of MongoDB change events. Defaults to 16000000.",
+				MarkdownDescription: "The maximum allowed size in bytes of the stored document for which change events are processed. This includes both, the size before and after database operation, more specifically this limits the size of fullDocument and fullDocumentBeforeChange filed of MongoDB change events. Defaults to `16000000`.",
+				Default:             int64default.StaticInt64(16000000),
+				Validators: []validator.Int64{
+					int64validator.Between(1000000, 16000000),
+				},
 			},
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
@@ -140,7 +162,7 @@ func SourceDocumentdbSchema() schema.Schema {
 				Default:             booldefault.StaticBool(false),
 			},
 			"ssh_host": schema.StringAttribute{
-				Optional:            true,
+				Required:            true,
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
 			},
@@ -234,8 +256,8 @@ func SourceDocumentdbSchema() schema.Schema {
 			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
-				MarkdownDescription: "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
 				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
 			},
 			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{
@@ -264,6 +286,8 @@ var SourceDocumentdbFieldMappings = map[string]string{
 	"database_include_list":                                  "database.include.list",
 	"collection_include_list":                                "collection.include.list.user.defined",
 	"signal_data_collection_schema_or_database":              "signal.data.collection.schema.or.database",
+	"cursor_oversize_handling_mode":                          "cursor.oversize.handling.mode",
+	"cursor_oversize_skip_threshold":                         "cursor.oversize.skip.threshold",
 	"ssh_enabled":                                            "ssh.enabled",
 	"ssh_host":                                               "ssh.host",
 	"ssh_port":                                               "ssh.port",

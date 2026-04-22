@@ -110,12 +110,12 @@ func SourceVitessSchema() schema.Schema {
 				Default:             int64default.StaticInt64(15991),
 			},
 			"database_user": schema.StringAttribute{
-				Optional:            true,
+				Required:            true,
 				Description:         "An optional username of the Vitess database server (VTGate). If not configured, unauthenticated VTGate gRPC is used.",
 				MarkdownDescription: "An optional username of the Vitess database server (VTGate). If not configured, unauthenticated VTGate gRPC is used.",
 			},
 			"database_password": schema.StringAttribute{
-				Optional:            true,
+				Required:            true,
 				Sensitive:           true,
 				Description:         "An optional password of the Vitess database server (VTGate). If not configured, unauthenticated VTGate gRPC is used. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "An optional password of the Vitess database server (VTGate). If not configured, unauthenticated VTGate gRPC is used.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
@@ -171,7 +171,7 @@ func SourceVitessSchema() schema.Schema {
 				Default:             booldefault.StaticBool(false),
 			},
 			"ssh_host": schema.StringAttribute{
-				Optional:            true,
+				Required:            true,
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
 			},
@@ -270,8 +270,8 @@ func SourceVitessSchema() schema.Schema {
 			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
-				MarkdownDescription: "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
 				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
 			},
 			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{

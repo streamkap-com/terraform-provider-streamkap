@@ -377,7 +377,9 @@ func camelToSnake(s string) string {
 }
 
 // GetRawValues returns the list of allowed values for one-select or multi-select controls.
-// Converts any boolean or numeric values to their string representation.
+// Converts any boolean or numeric values to their string representation. Backend may
+// return either flat strings ("array") or {value, label} objects ({"value":"array",
+// "label":"Native array"}); the latter is unwrapped to just the value.
 func (e *ConfigEntry) GetRawValues() []string {
 	result := make([]string, 0, len(e.Value.RawValues))
 	for _, v := range e.Value.RawValues {
@@ -391,6 +393,25 @@ func (e *ConfigEntry) GetRawValues() []string {
 				result = append(result, fmt.Sprintf("%d", int64(val)))
 			} else {
 				result = append(result, fmt.Sprintf("%v", val))
+			}
+		case map[string]any:
+			if inner, ok := val["value"]; ok {
+				switch iv := inner.(type) {
+				case string:
+					result = append(result, strings.TrimSpace(iv))
+				case bool:
+					result = append(result, fmt.Sprintf("%t", iv))
+				case float64:
+					if iv == float64(int64(iv)) {
+						result = append(result, fmt.Sprintf("%d", int64(iv)))
+					} else {
+						result = append(result, fmt.Sprintf("%v", iv))
+					}
+				default:
+					result = append(result, fmt.Sprintf("%v", iv))
+				}
+			} else {
+				result = append(result, fmt.Sprintf("%v", v))
 			}
 		default:
 			result = append(result, fmt.Sprintf("%v", v))

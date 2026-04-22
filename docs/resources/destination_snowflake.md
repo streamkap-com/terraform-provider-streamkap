@@ -24,21 +24,6 @@ This resource creates and manages a Snowflake destination for Streamkap data pip
 ### Required
 
 - `name` (String) Name of the destination
-
-### Optional
-
-- `apply_dynamic_table_script` (Boolean) Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only). Defaults to `false`.
-- `auto_qa_dedupe_table_mapping` (String) Mapping between the tables that store append-only data and the deduplicated tables. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.
-- `auto_schema_creation` (Boolean, Deprecated) DEPRECATED: Use 'create_schema_auto' instead.
-- `create_schema_auto` (Boolean) Automatically generates a Snowflake schema if it does not already exist. Defaults to `true`.
-- `create_sql_data` (String) Use <code>{"TABLE_DATA": {"{table_name}": {"{key}": "{value}"}, ...}, ...}</code> to set table specific data. This data will be available in the custom SQL templates e.g. <code>SELECT {{key}}</code>.
-- `create_sql_execute` (String) These template queries run for each table the first time a record is streamed for them. Defaults to `CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';
-CREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);
-ALTER TASK {{table}}_CT RESUME`.
-- `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only). Defaults to `true`.
-- `ingestion_mode` (String) <span>Upsert or append modes are available. NOTE: when switching append to upsert, existing data must be deduplicated or deleted. <a href='https://docs.streamkap.com/snowflake#upsert-mode' class='docs-url' target='_blank'>Read more about upsert mode</a> </span>. Defaults to `append`. Valid values: `upsert`, `append`.
-- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
-- `sfwarehouse` (String) The name of the snowflake warehouse. Defaults to `STREAMKAP_WH`.
 - `snowflake_database_name` (String) The name of the database that contains the table to insert rows into.
 - `snowflake_private_key` (String, Sensitive) The private key to authenticate the user. Include only the key, not the header or footer. If the key is split across multiple lines, remove the line breaks.
 
@@ -46,14 +31,70 @@ ALTER TASK {{table}}_CT RESUME`.
 - `snowflake_private_key_passphrase` (String, Sensitive) The passphrase is used to decrypt the private key.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `snowflake_private_key_passphrase_secured` (Boolean) If checked (default), provide your SSH key's passphrase, otherwise, uncheck for SSH keys without passphrase. Defaults to `true`.
-- `snowflake_role_name` (String) The name of an existing role with necessary privileges (for Streamkap) assigned to the <Username>. Defaults to `STREAMKAP_ROLE`.
 - `snowflake_schema_name` (String) The name of the schema that contains the table to insert rows into.
-- `snowflake_topic2table_map` (String) Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>^([-\w]+\.)([-\w]+\.)?([-\w]+\.)?([-\w]+\.)?([-\w]+):$5</code> uses only the last segment as table name. Defaults to `REGEX_MATCHER>^([-\w]+\.)([-\w]+\.)?([-\w]+\.)?([-\w]+\.)?([-\w]+):$5`.
 - `snowflake_url_name` (String) The URL for accessing your Snowflake account. This URL must include your account identifier. Note that the protocol (https://) and port number are optional.
 - `snowflake_user_name` (String) User login name for the Snowflake account.
+
+### Optional
+
+- `apply_dynamic_table_script` (Boolean) Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only). Defaults to `false`.
+- `auto_qa_dedupe_table_mapping` (String) Mapping between the tables that store append-only data and the deduplicated tables. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.
+- `auto_schema_creation` (Boolean, Deprecated) DEPRECATED: Use 'create_schema_auto' instead.
+- `consumer_override_max_poll_records` (Number) The maximum number of records returned in a single call to poll(). Defaults to `10000`.
+- `create_schema_auto` (Boolean) Automatically generates a Snowflake schema if it does not already exist. Defaults to `true`.
+- `create_sql_data` (String) Use <code>{"TABLE_DATA": {"{table_name}": {"{key}": "{value}"}, ...}, ...}</code> to set table specific data. This data will be available in the custom SQL templates e.g. <code>SELECT {{key}}</code>.
+- `create_sql_execute` (String) These template queries run for each table the first time a record is streamed for them. Defaults to `CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';
+CREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);
+ALTER TASK {{table}}_CT RESUME`.
+- `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only). Defaults to `true`.
+- `ingestion_mode` (String) <span>Upsert or append modes are available. NOTE: when switching append to upsert, existing data must be deduplicated or deleted. <a href='https://docs.streamkap.com/snowflake#upsert-mode' class='docs-url' target='_blank'>Read more about upsert mode</a> </span>. Defaults to `append`. Valid values: `map[label:Upsert (merge) value:upsert]`, `map[label:Append only value:append]`.
+- `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
+- `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
+- `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
+- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `map[label:Basic value:basic]`, `map[label:None value:none]`.
+- `sfwarehouse` (String) The name of the snowflake warehouse. Defaults to `STREAMKAP_WH`.
+- `snowflake_private_key_passphrase_secured` (Boolean) If checked (default), provide your SSH key's passphrase, otherwise, uncheck for SSH keys without passphrase. Defaults to `true`.
+- `snowflake_role_name` (String) The name of an existing role with necessary privileges (for Streamkap) assigned to the <Username>. Defaults to `STREAMKAP_ROLE`.
+- `snowflake_topic2table_map` (String) Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>^([-\w]+\.)([-\w]+\.)?([-\w]+\.)?([-\w]+\.)?([-\w]+):$5</code> uses only the last segment as table name. Defaults to `REGEX_MATCHER>^([-\w]+\.)([-\w]+\.)?([-\w]+\.)?([-\w]+\.)?([-\w]+):$5`.
 - `sql_table_name` (String) Can be used as <code>{{dynamicTableName}}</code> in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic. Defaults to `{{table}}_DT`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `transforms_add_string_suffix_fields_include_list` (String) Warning: Should only be used in conjunction with numeric conversion or other conversions. If field remained string after previous conversion, rename to field to <previous-field-name>_str. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_change_topic_name_match_regex` (String) Regular expression for matching topic name parts to use as the destination table (database) or file (file storage) name
+- `transforms_copy_field_copy_field_mapping` (String) Comma-separated list of field mappings e.g. <code>field1:newField1,field2:newField2</code>.
+- `transforms_drop_fields_fields_include_list` (String) Drop columns. Comma separated list of table columns to drop in format 'table1.column1,table2.column2'
+- `transforms_header_to_field_custom_header_mappings` (String) Headers to columns. Comma separated list of headers using format <code><header name>:<header type>[:field name]</code> e.g. 'headerKey1:STRING,headerKey2:INT32:customKey2Name'
+- `transforms_mark_columns_as_optional_fields_include_list` (String) Mark columns as optional/nullable. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_mark_columns_as_required_fields_include_all` (Boolean) When enabled, converts ALL optional columns to required (NOT NULL). The exclude list is still respected. Enabling this automatically disables 'Mark Column(s) as Optional'. Defaults to `false`.
+- `transforms_mark_columns_as_required_null_sentinel_mode` (String) Controls how NULL values are handled when columns become required. NONE: throws an error on NULL values. TYPE_MIN: replaces NULLs with type-specific sentinel values (e.g. MIN_VALUE for integers, '__null__' for strings, epoch for dates). Defaults to `NONE`. Valid values: `NONE`, `TYPE_MIN`.
+- `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
+- `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
+- `transforms_oversized_records_max_field_size_bytes` (Number) Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.
+- `transforms_oversized_records_max_record_size_bytes` (Number) Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to `-1`.
+- `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
+- `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
+- `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_rename_fields_renames` (String) JSON mapping of source to target column names. Keys should be schema.table.column, table.column or just column. Values must be valid column names (no dots or spaces).
+
+Example:
+{
+  "public.orders.amount": "Amount",
+  "orders.quantity": "Qty",
+  "customer_id": "CustomerId"
+}
+- `transforms_string_replace_fields_include_list` (String) Replaces column(s) value with a user-defined string. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_string_replace_regex_patterns` (String) List of regex patterns to search for. Comma separated list in format 'regex1,regex2'
+- `transforms_string_replace_replacement_values` (String) List of replacement values for each regex pattern. Comma separated list in format 'regex1,regex2'
+- `transforms_to_decimal_j_fields_include_list` (String) Convert column(s) to Decimal - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_to_decimal_j_truncate_to_max_precision` (Boolean) If true, truncate decimals to a 38 precision. Defaults to `false`.
+- `transforms_to_float_j_fields_include_list` (String) Convert column(s) to Float - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_to_int_j_fields_include_list` (String) Convert column(s) to Integer - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_to_json_j_convert_all_complex_types` (Boolean) Convert all Structs and Arrays to JSON String? - if possible. Defaults to `false`.
+- `transforms_to_json_j_fields_include_list` (String) Convert column(s) to JSON String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_to_jsonb_j_convert_all_complex_types` (Boolean) Convert all Structs and Arrays to Binary JSON? - if possible. Defaults to `false`.
+- `transforms_to_jsonb_j_convert_all_json` (Boolean) Converts all JSON String column(s) to Binary JSON - if possible. Defaults to `false`.
+- `transforms_to_jsonb_j_fields_include_list` (String) Convert column(s) to Binary JSON - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_to_string_j_fields_include_list` (String) Convert column(s) to String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `use_hybrid_tables` (Boolean) Specifies whether the connector should create Hybrid Tables (applies to `upsert` only). Defaults to `false`.
 
 ### Read-Only

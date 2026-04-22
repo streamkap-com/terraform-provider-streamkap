@@ -139,9 +139,9 @@ func SourceMariadbSchema() schema.Schema {
 				MarkdownDescription: "Source tables to sync. The connector does not capture changes in any table that is not included.",
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
-				Optional:            true,
-				Description:         "Streamkap will use a table in this database to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which database to use here.",
-				MarkdownDescription: "Streamkap will use a table in this database to monitor incremental snapshotting. Follow the instructions in the documentation for creating this table and specify which database to use here.",
+				Required:            true,
+				Description:         "Full path to the signal table including database and table name (e.g., 'mydb.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.",
+				MarkdownDescription: "Full path to the signal table including database and table name (e.g., 'mydb.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.",
 			},
 			"heartbeat_enabled": schema.BoolAttribute{
 				Optional:            true,
@@ -245,7 +245,7 @@ func SourceMariadbSchema() schema.Schema {
 				Default:             booldefault.StaticBool(false),
 			},
 			"ssh_host": schema.StringAttribute{
-				Optional:            true,
+				Required:            true,
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
 			},
@@ -344,8 +344,8 @@ func SourceMariadbSchema() schema.Schema {
 			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
-				MarkdownDescription: "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
 				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
 			},
 			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{
