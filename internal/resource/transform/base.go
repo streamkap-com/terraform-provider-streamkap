@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -390,19 +391,74 @@ func (r *BaseTransformResource) Read(ctx context.Context, req resource.ReadReque
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), jsontypes.NewNormalizedNull())...)
 	}
 
-	// Read connector_status — only call API if transform was previously deployed
+	// Read connector_status.
+	//
+	// Three incoming cases via req.State.connector_status:
+	//   - null           → import path (no prior state). Must call the API or
+	//                      the imported resource will show UNKNOWN even when
+	//                      the transform is RUNNING, causing a spurious diff
+	//                      on the first post-import plan.
+	//   - "UNKNOWN"      → never deployed or deploy skipped. Skip the API
+	//                      call (cheap refresh for the common case).
+	//   - known non-null → refresh from the API; on API error, preserve the
+	//                      prior value rather than silently demoting to
+	//                      UNKNOWN, so a transient 5xx or network blip does
+	//                      not rewrite a confirmed RUNNING transform in
+	//                      state (users rely on this field for automation
+	//                      gates).
+	//
+	// The backend's /job_status endpoint rewrites HTTPException(404) into 400
+	// through a broad except-clause (see app/api/transforms_api.py::
+	// get_jobs_status), so we cannot rely on the HTTP status to tell
+	// "transform truly not deployed" apart from "transient failure".
+	// We fall back to matching the detail string: "Job not found" /
+	// "Transform not found" are authoritative "not deployed" signals and
+	// should demote prior state to UNKNOWN. Any other error is treated as
+	// transient — preserve the prior value so a 5xx or network blip does
+	// not silently rewrite a confirmed RUNNING transform in state.
 	var currentStatus types.String
 	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("connector_status"), &currentStatus)...)
-	if !currentStatus.IsNull() && currentStatus.ValueString() != constants.JobStatusUnknown {
-		status, err := r.client.GetTransformJobStatus(ctx, id)
-		if err == nil && status != nil {
-			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("connector_status"), types.StringValue(status.Status))...)
-		} else {
-			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("connector_status"), types.StringValue(constants.JobStatusUnknown))...)
+
+	priorKnown := !currentStatus.IsNull() && currentStatus.ValueString() != constants.JobStatusUnknown
+	shouldRefresh := currentStatus.IsNull() || priorKnown
+
+	if !shouldRefresh {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("connector_status"), types.StringValue(constants.JobStatusUnknown))...)
+		return
+	}
+
+	status, err := r.client.GetTransformJobStatus(ctx, id)
+	switch {
+	case err == nil && status != nil:
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("connector_status"), types.StringValue(status.Status))...)
+	case err != nil && isJobNotDeployedError(err):
+		// Authoritative "no deployment exists" — demote prior state so the
+		// Terraform plan surfaces the drift on the next apply.
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("connector_status"), types.StringValue(constants.JobStatusUnknown))...)
+	case priorKnown:
+		tflog.Warn(ctx, fmt.Sprintf("Failed to refresh job status for transform %s; preserving prior value %q: %v", id, currentStatus.ValueString(), err))
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("connector_status"), currentStatus)...)
+	default:
+		// Import path (currentStatus was null) and the API call failed —
+		// fall back to UNKNOWN so the attribute is populated.
+		if err != nil {
+			tflog.Warn(ctx, fmt.Sprintf("Failed to read job status on import for transform %s; defaulting to UNKNOWN: %v", id, err))
 		}
-	} else {
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("connector_status"), types.StringValue(constants.JobStatusUnknown))...)
 	}
+}
+
+// isJobNotDeployedError returns true when the backend's /job_status response
+// means "no deployment exists" as opposed to a transient failure. The backend
+// rewrites its 404 into a 400 via a broad except-clause, so we match on the
+// detail string the handler emits for both transform-level and job-level
+// misses (see app/api/transforms_api.py::get_jobs_status).
+func isJobNotDeployedError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "Job not found") || strings.Contains(msg, "Transform not found")
 }
 
 // Update updates the transform resource.

@@ -160,11 +160,20 @@ func (r *TransformDataSource) modelFromAPIObject(apiObject api.Transform, model 
 	}
 	model.TopicIDs = topicIDs
 
+	// The API returns topic_ids and topics as two parallel slices, but they
+	// are not guaranteed to be the same length (e.g., a transform whose output
+	// topics are not yet resolved can return ids without names). Iterate by
+	// index and fall back to a null name when there is no paired entry to
+	// avoid a runtime panic.
 	topicMap := []TopicModel{}
 	for i, topicID := range apiObject.TopicIDs {
+		name := types.StringNull()
+		if i < len(apiObject.Topics) {
+			name = types.StringValue(apiObject.Topics[i])
+		}
 		topicMap = append(topicMap, TopicModel{
 			ID:   types.StringValue(topicID),
-			Name: types.StringValue(apiObject.Topics[i]),
+			Name: name,
 		})
 	}
 	model.TopicMap = topicMap
