@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -89,8 +90,13 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload Pipeline) 
 		// previous timed-out create), adopt the existing one instead of failing.
 		if strings.Contains(err.Error(), "already exists") {
 			tflog.Info(ctx, fmt.Sprintf(
-				"Pipeline %q already exists — adopting existing resource", reqPayload.Name))
-			return s.adoptPipelineByName(ctx, reqPayload.Name)
+				"Pipeline %q already exists — attempting to adopt existing resource", reqPayload.Name))
+			adopted, adoptErr := s.adoptPipelineByName(ctx, reqPayload.Name)
+			if adoptErr == nil {
+				return adopted, nil
+			}
+			// See matching comment in source.go CreateSource.
+			return nil, fmt.Errorf("%w (also tried to adopt the existing resource but could not locate it via the list endpoint: %v)", err, adoptErr)
 		}
 		return nil, err
 	}
@@ -98,16 +104,29 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload Pipeline) 
 	return &resp, nil
 }
 
-// adoptPipelineByName finds an existing pipeline by name and returns it,
-// allowing Terraform to adopt it into state after a 409 conflict.
+// adoptPipelineByName — see adoptSourceByName for rationale (paginates
+// through all partial_name matches to find the exact-name pipeline).
 func (s *streamkapAPI) adoptPipelineByName(ctx context.Context, name string) (*Pipeline, error) {
-	pipelines, err := s.ListPipelines(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list pipelines while adopting %q: %w", name, err)
-	}
-	for i := range pipelines {
-		if pipelines[i].Name == name {
-			return &pipelines[i], nil
+	const pageSize = 100
+	const maxPages = 1000
+	for page := 1; page <= maxPages; page++ {
+		reqURL := fmt.Sprintf("%s/pipelines?secret_returned=true&page=%d&page_size=%d&partial_name=%s",
+			s.cfg.BaseURL, page, pageSize, url.QueryEscape(name))
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build adopt request for %q: %w", name, err)
+		}
+		var resp GetPipelineResponse
+		if err := s.doRequest(ctx, req, &resp); err != nil {
+			return nil, fmt.Errorf("failed to list pipelines while adopting %q: %w", name, err)
+		}
+		for i := range resp.Result {
+			if resp.Result[i].Name == name {
+				return &resp.Result[i], nil
+			}
+		}
+		if len(resp.Result) < pageSize {
+			break
 		}
 	}
 	return nil, fmt.Errorf("pipeline %q reported as existing but not found in list", name)
@@ -139,24 +158,29 @@ func (s *streamkapAPI) GetPipeline(ctx context.Context, pipelineID string) (*Pip
 }
 
 func (s *streamkapAPI) ListPipelines(ctx context.Context) ([]Pipeline, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/pipelines?secret_returned=true", http.NoBody)
-	if err != nil {
-		return nil, err
+	// Backend default page_size is 10 (max 100); iterate to return all pages.
+	const pageSize = 100
+	const maxPages = 1000
+	var all []Pipeline
+	for page := 1; page <= maxPages; page++ {
+		reqURL := fmt.Sprintf("%s/pipelines?secret_returned=true&page=%d&page_size=%d", s.cfg.BaseURL, page, pageSize)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+		if err != nil {
+			return nil, err
+		}
+		tflog.Debug(ctx, fmt.Sprintf("ListPipelines request details:\n\tMethod: %s\n\tURL: %s\n", req.Method, req.URL.String()))
+		var resp GetPipelineResponse
+		if err := s.doRequest(ctx, req, &resp); err != nil {
+			return nil, err
+		}
+		all = append(all, resp.Result...)
+		// Short-page termination only; Total can lie under concurrent
+		// deletes (coderabbit PR #70 comment). maxPages caps runaway.
+		if len(resp.Result) < pageSize {
+			break
+		}
 	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"ListPipelines request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n",
-		req.Method,
-		req.URL.String(),
-	))
-	var resp GetPipelineResponse
-	err = s.doRequest(ctx, req, &resp)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.Result, nil
+	return all, nil
 }
 
 func (s *streamkapAPI) DeletePipeline(ctx context.Context, pipelineID string) error {

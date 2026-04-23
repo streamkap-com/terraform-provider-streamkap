@@ -4,9 +4,11 @@ package generated
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -16,36 +18,69 @@ import (
 
 // DestinationIcebergModel is the Terraform model for the iceberg destination.
 type DestinationIcebergModel struct {
-	ID                                         types.String   `tfsdk:"id"`
-	Name                                       types.String   `tfsdk:"name"`
-	Connector                                  types.String   `tfsdk:"connector"`
-	ConnectorStatus                            types.String   `tfsdk:"connector_status"`
-	KcClusterId                                types.String   `tfsdk:"kc_cluster_id"`
-	IcebergCatalogType                         types.String   `tfsdk:"iceberg_catalog_type"`
-	IcebergCatalogAuthMode                     types.String   `tfsdk:"iceberg_catalog_auth_mode"`
-	IcebergCatalogName                         types.String   `tfsdk:"iceberg_catalog_name"`
-	IcebergCatalogClientAssumeRoleARN          types.String   `tfsdk:"iceberg_catalog_client_assume_role_arn"`
-	IcebergCatalogUri                          types.String   `tfsdk:"iceberg_catalog_uri"`
-	IcebergCatalogToken                        types.String   `tfsdk:"iceberg_catalog_token"`
-	IcebergCatalogCredential                   types.String   `tfsdk:"iceberg_catalog_credential"`
-	IcebergCatalogScope                        types.String   `tfsdk:"iceberg_catalog_scope"`
-	IcebergCatalogS3CredentialsEnabled         types.Bool     `tfsdk:"iceberg_catalog_s3_credentials_enabled"`
-	IcebergCatalogS3AccessKeyID                types.String   `tfsdk:"iceberg_catalog_s3_access_key_id"`
-	IcebergCatalogS3SecretAccessKey            types.String   `tfsdk:"iceberg_catalog_s3_secret_access_key"`
-	IcebergCatalogClientRegion                 types.String   `tfsdk:"iceberg_catalog_client_region"`
-	IcebergCatalogWarehouse                    types.String   `tfsdk:"iceberg_catalog_warehouse"`
-	TableNamePrefix                            types.String   `tfsdk:"table_name_prefix"`
-	InsertMode                                 types.String   `tfsdk:"insert_mode"`
-	IcebergTablesDefaultIDColumns              types.String   `tfsdk:"iceberg_tables_default_id_columns"`
-	IcebergTablesHardDeleteEnabled             types.Bool     `tfsdk:"iceberg_tables_hard_delete_enabled"`
-	IcebergTablesCompactionEnabled             types.Bool     `tfsdk:"iceberg_tables_compaction_enabled"`
-	IcebergTablesCompactionTargetFileSizeBytes types.String   `tfsdk:"iceberg_tables_compaction_target_file_size_bytes"`
-	IcebergTablesCompactionMinSmallFiles       types.String   `tfsdk:"iceberg_tables_compaction_min_small_files"`
-	IcebergTablesCompactionMaxFilesPerRun      types.String   `tfsdk:"iceberg_tables_compaction_max_files_per_run"`
-	IcebergTablesCompactionCommitThreshold     types.String   `tfsdk:"iceberg_tables_compaction_commit_threshold"`
-	IcebergTablesCompactionExpireSnapshots     types.Bool     `tfsdk:"iceberg_tables_compaction_expire_snapshots"`
-	IcebergTablesCompactionRetainLast          types.String   `tfsdk:"iceberg_tables_compaction_retain_last"`
-	Timeouts                                   timeouts.Value `tfsdk:"timeouts"`
+	ID                                               types.String   `tfsdk:"id"`
+	Name                                             types.String   `tfsdk:"name"`
+	Connector                                        types.String   `tfsdk:"connector"`
+	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
+	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
+	IcebergCatalogType                               types.String   `tfsdk:"iceberg_catalog_type"`
+	IcebergCatalogAuthMode                           types.String   `tfsdk:"iceberg_catalog_auth_mode"`
+	IcebergCatalogName                               types.String   `tfsdk:"iceberg_catalog_name"`
+	IcebergCatalogClientAssumeRoleARN                types.String   `tfsdk:"iceberg_catalog_client_assume_role_arn"`
+	IcebergCatalogUri                                types.String   `tfsdk:"iceberg_catalog_uri"`
+	IcebergCatalogToken                              types.String   `tfsdk:"iceberg_catalog_token"`
+	IcebergCatalogCredential                         types.String   `tfsdk:"iceberg_catalog_credential"`
+	IcebergCatalogScope                              types.String   `tfsdk:"iceberg_catalog_scope"`
+	IcebergCatalogS3CredentialsEnabled               types.Bool     `tfsdk:"iceberg_catalog_s3_credentials_enabled"`
+	IcebergCatalogS3AccessKeyID                      types.String   `tfsdk:"iceberg_catalog_s3_access_key_id"`
+	IcebergCatalogS3SecretAccessKey                  types.String   `tfsdk:"iceberg_catalog_s3_secret_access_key"`
+	IcebergCatalogClientRegion                       types.String   `tfsdk:"iceberg_catalog_client_region"`
+	IcebergCatalogWarehouse                          types.String   `tfsdk:"iceberg_catalog_warehouse"`
+	TableNamePrefix                                  types.String   `tfsdk:"table_name_prefix"`
+	InsertMode                                       types.String   `tfsdk:"insert_mode"`
+	IcebergTablesDefaultIDColumns                    types.String   `tfsdk:"iceberg_tables_default_id_columns"`
+	IcebergTablesHardDeleteEnabled                   types.Bool     `tfsdk:"iceberg_tables_hard_delete_enabled"`
+	IcebergTablesCompactionEnabled                   types.Bool     `tfsdk:"iceberg_tables_compaction_enabled"`
+	IcebergTablesCompactionTargetFileSizeBytes       types.String   `tfsdk:"iceberg_tables_compaction_target_file_size_bytes"`
+	IcebergTablesCompactionMinSmallFiles             types.String   `tfsdk:"iceberg_tables_compaction_min_small_files"`
+	IcebergTablesCompactionMaxFilesPerRun            types.String   `tfsdk:"iceberg_tables_compaction_max_files_per_run"`
+	IcebergTablesCompactionCommitThreshold           types.String   `tfsdk:"iceberg_tables_compaction_commit_threshold"`
+	IcebergTablesCompactionExpireSnapshots           types.Bool     `tfsdk:"iceberg_tables_compaction_expire_snapshots"`
+	IcebergTablesCompactionRetainLast                types.String   `tfsdk:"iceberg_tables_compaction_retain_last"`
+	ConsumerOverrideMaxPollRecords                   types.Int64    `tfsdk:"consumer_override_max_poll_records"`
+	PreserveNullValues                               types.Bool     `tfsdk:"preserve_null_values"`
+	QuoteIdentifiers                                 types.Bool     `tfsdk:"quote_identifiers"`
+	TransformsToIntJFieldsIncludeList                types.String   `tfsdk:"transforms_to_int_j_fields_include_list"`
+	TransformsToFloatJFieldsIncludeList              types.String   `tfsdk:"transforms_to_float_j_fields_include_list"`
+	TransformsToDecimalJFieldsIncludeList            types.String   `tfsdk:"transforms_to_decimal_j_fields_include_list"`
+	TransformsToDecimalJTruncateToMaxPrecision       types.Bool     `tfsdk:"transforms_to_decimal_j_truncate_to_max_precision"`
+	TransformsToStringJFieldsIncludeList             types.String   `tfsdk:"transforms_to_string_j_fields_include_list"`
+	TransformsToJsonJFieldsIncludeList               types.String   `tfsdk:"transforms_to_json_j_fields_include_list"`
+	TransformsToJsonJConvertAllComplexTypes          types.Bool     `tfsdk:"transforms_to_json_j_convert_all_complex_types"`
+	TransformsToJsonbJFieldsIncludeList              types.String   `tfsdk:"transforms_to_jsonb_j_fields_include_list"`
+	TransformsToJsonbJConvertAllComplexTypes         types.Bool     `tfsdk:"transforms_to_jsonb_j_convert_all_complex_types"`
+	TransformsToJsonbJConvertAllJson                 types.Bool     `tfsdk:"transforms_to_jsonb_j_convert_all_json"`
+	TransformsStringReplaceFieldsIncludeList         types.String   `tfsdk:"transforms_string_replace_fields_include_list"`
+	TransformsStringReplaceRegexPatterns             types.String   `tfsdk:"transforms_string_replace_regex_patterns"`
+	TransformsStringReplaceReplacementValues         types.String   `tfsdk:"transforms_string_replace_replacement_values"`
+	TransformsOversizedRecordsFieldsIncludeList      types.String   `tfsdk:"transforms_oversized_records_fields_include_list"`
+	TransformsOversizedRecordsFieldsExcludeList      types.String   `tfsdk:"transforms_oversized_records_fields_exclude_list"`
+	TransformsOversizedRecordsMaxFieldSizeBytes      types.Int64    `tfsdk:"transforms_oversized_records_max_field_size_bytes"`
+	TransformsOversizedRecordsOversizedFieldBehavior types.String   `tfsdk:"transforms_oversized_records_oversized_field_behavior"`
+	TransformsOversizedRecordsTruncationSuffix       types.String   `tfsdk:"transforms_oversized_records_truncation_suffix"`
+	TransformsOversizedRecordsMaxRecordSizeBytes     types.Int64    `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
+	TransformsOversizedRecordsSemanticTypesExclude   types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
+	TransformsOversizedRecordsReplaceNullWithDefault types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
+	TransformsAddStringSuffixFieldsIncludeList       types.String   `tfsdk:"transforms_add_string_suffix_fields_include_list"`
+	TransformsChangeTopicNameMatchRegex              types.String   `tfsdk:"transforms_change_topic_name_match_regex"`
+	TransformsRenameFieldsRenames                    types.String   `tfsdk:"transforms_rename_fields_renames"`
+	TransformsDropFieldsFieldsIncludeList            types.String   `tfsdk:"transforms_drop_fields_fields_include_list"`
+	TransformsMarkColumnsAsRequiredFieldsIncludeAll  types.Bool     `tfsdk:"transforms_mark_columns_as_required_fields_include_all"`
+	TransformsMarkColumnsAsRequiredNullSentinelMode  types.String   `tfsdk:"transforms_mark_columns_as_required_null_sentinel_mode"`
+	TransformsMarkColumnsAsOptionalFieldsIncludeList types.String   `tfsdk:"transforms_mark_columns_as_optional_fields_include_list"`
+	TransformsCopyFieldCopyFieldMapping              types.String   `tfsdk:"transforms_copy_field_copy_field_mapping"`
+	TransformsHeaderToFieldCustomHeaderMappings      types.String   `tfsdk:"transforms_header_to_field_custom_header_mappings"`
+	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationIcebergSchema returns the Terraform schema for the iceberg destination.
@@ -125,8 +160,8 @@ func DestinationIcebergSchema() schema.Schema {
 			},
 			"iceberg_catalog_uri": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Iceberg catalog uri",
-				MarkdownDescription: "Iceberg catalog uri",
+				Description:         "Catalog endpoint URL. For REST catalogs use https://… ; for Hive Metastore use thrift://… ; AWS Glue uses the regional endpoint.",
+				MarkdownDescription: "Catalog endpoint URL. For REST catalogs use https://… ; for Hive Metastore use thrift://… ; AWS Glue uses the regional endpoint.",
 			},
 			"iceberg_catalog_token": schema.StringAttribute{
 				Optional:            true,
@@ -256,34 +291,277 @@ func DestinationIcebergSchema() schema.Schema {
 				MarkdownDescription: "Number of most recent snapshots to retain when expiring snapshots after compaction. Defaults to `1`.",
 				Default:             stringdefault.StaticString("1"),
 			},
+			"consumer_override_max_poll_records": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The maximum number of records returned in a single call to poll(). Defaults to 10000.",
+				MarkdownDescription: "The maximum number of records returned in a single call to poll(). Defaults to `10000`.",
+				Default:             int64default.StaticInt64(10000),
+				Validators: []validator.Int64{
+					int64validator.Between(1, 100000),
+				},
+			},
+			"preserve_null_values": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to false.",
+				MarkdownDescription: "When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"quote_identifiers": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Whether to quote identifiers in SQL statements. Defaults to true.",
+				MarkdownDescription: "Whether to quote identifiers in SQL statements. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
+			"transforms_to_int_j_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Convert column(s) to Integer - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				MarkdownDescription: "Convert column(s) to Integer - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+			},
+			"transforms_to_float_j_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Convert column(s) to Float - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				MarkdownDescription: "Convert column(s) to Float - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+			},
+			"transforms_to_decimal_j_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Convert column(s) to Decimal - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				MarkdownDescription: "Convert column(s) to Decimal - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+			},
+			"transforms_to_decimal_j_truncate_to_max_precision": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "If true, truncate decimals to a 38 precision. Defaults to false.",
+				MarkdownDescription: "If true, truncate decimals to a 38 precision. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"transforms_to_string_j_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Convert column(s) to String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				MarkdownDescription: "Convert column(s) to String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+			},
+			"transforms_to_json_j_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Convert column(s) to JSON String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				MarkdownDescription: "Convert column(s) to JSON String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+			},
+			"transforms_to_json_j_convert_all_complex_types": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Convert all Structs and Arrays to JSON String? - if possible. Defaults to false.",
+				MarkdownDescription: "Convert all Structs and Arrays to JSON String? - if possible. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"transforms_to_jsonb_j_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Convert column(s) to Binary JSON - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				MarkdownDescription: "Convert column(s) to Binary JSON - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+			},
+			"transforms_to_jsonb_j_convert_all_complex_types": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Convert all Structs and Arrays to Binary JSON? - if possible. Defaults to false.",
+				MarkdownDescription: "Convert all Structs and Arrays to Binary JSON? - if possible. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"transforms_to_jsonb_j_convert_all_json": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Converts all JSON String column(s) to Binary JSON - if possible. Defaults to false.",
+				MarkdownDescription: "Converts all JSON String column(s) to Binary JSON - if possible. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"transforms_string_replace_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Replaces column(s) value with a user-defined string. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				MarkdownDescription: "Replaces column(s) value with a user-defined string. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+			},
+			"transforms_string_replace_regex_patterns": schema.StringAttribute{
+				Optional:            true,
+				Description:         "List of regex patterns to search for. Comma separated list in format 'regex1,regex2'",
+				MarkdownDescription: "List of regex patterns to search for. Comma separated list in format 'regex1,regex2'",
+			},
+			"transforms_string_replace_replacement_values": schema.StringAttribute{
+				Optional:            true,
+				Description:         "List of replacement values for each regex pattern. Comma separated list in format 'regex1,regex2'",
+				MarkdownDescription: "List of replacement values for each regex pattern. Comma separated list in format 'regex1,regex2'",
+			},
+			"transforms_oversized_records_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
+				MarkdownDescription: "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
+			},
+			"transforms_oversized_records_fields_exclude_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
+				MarkdownDescription: "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
+			},
+			"transforms_oversized_records_max_field_size_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to 1048576.",
+				MarkdownDescription: "Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.",
+				Default:             int64default.StaticInt64(1048576),
+				Validators: []validator.Int64{
+					int64validator.Between(1048576, 104857600),
+				},
+			},
+			"transforms_oversized_records_oversized_field_behavior": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to \"TRUNCATE\". Valid values: TRUNCATE, NULLIFY.",
+				MarkdownDescription: "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.",
+				Default:             stringdefault.StaticString("TRUNCATE"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("TRUNCATE", "NULLIFY"),
+				},
+			},
+			"transforms_oversized_records_truncation_suffix": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to \"\".",
+				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.",
+				Default:             stringdefault.StaticString(""),
+			},
+			"transforms_oversized_records_max_record_size_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to -1.",
+				MarkdownDescription: "Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to `-1`.",
+				Default:             int64default.StaticInt64(-1),
+				Validators: []validator.Int64{
+					int64validator.Between(-1, 104857600),
+				},
+			},
+			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
+			},
+			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to true.",
+				MarkdownDescription: "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
+			"transforms_add_string_suffix_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Warning: Should only be used in conjunction with numeric conversion or other conversions. If field remained string after previous conversion, rename to field to <previous-field-name>_str. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				MarkdownDescription: "Warning: Should only be used in conjunction with numeric conversion or other conversions. If field remained string after previous conversion, rename to field to <previous-field-name>_str. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+			},
+			"transforms_change_topic_name_match_regex": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Regular expression for matching topic name parts to use as the destination table (database) or file (file storage) name",
+				MarkdownDescription: "Regular expression for matching topic name parts to use as the destination table (database) or file (file storage) name",
+			},
+			"transforms_rename_fields_renames": schema.StringAttribute{
+				Optional:            true,
+				Description:         "JSON mapping of source to target column names. Keys should be schema.table.column, table.column or just column. Values must be valid column names (no dots or spaces).\n\nExample:\n{\n  \"public.orders.amount\": \"Amount\",\n  \"orders.quantity\": \"Qty\",\n  \"customer_id\": \"CustomerId\"\n}",
+				MarkdownDescription: "JSON mapping of source to target column names. Keys should be schema.table.column, table.column or just column. Values must be valid column names (no dots or spaces).\n\nExample:\n{\n  \"public.orders.amount\": \"Amount\",\n  \"orders.quantity\": \"Qty\",\n  \"customer_id\": \"CustomerId\"\n}",
+			},
+			"transforms_drop_fields_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Drop columns. Comma separated list of table columns to drop in format 'table1.column1,table2.column2'",
+				MarkdownDescription: "Drop columns. Comma separated list of table columns to drop in format 'table1.column1,table2.column2'",
+			},
+			"transforms_mark_columns_as_required_fields_include_all": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "When enabled, converts ALL optional columns to required (NOT NULL). The exclude list is still respected. Enabling this automatically disables 'Mark Column(s) as Optional'. Defaults to false.",
+				MarkdownDescription: "When enabled, converts ALL optional columns to required (NOT NULL). The exclude list is still respected. Enabling this automatically disables 'Mark Column(s) as Optional'. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"transforms_mark_columns_as_required_null_sentinel_mode": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Controls how NULL values are handled when columns become required. NONE: throws an error on NULL values. TYPE_MIN: replaces NULLs with type-specific sentinel values (e.g. MIN_VALUE for integers, '__null__' for strings, epoch for dates). Defaults to \"NONE\". Valid values: NONE, TYPE_MIN.",
+				MarkdownDescription: "Controls how NULL values are handled when columns become required. NONE: throws an error on NULL values. TYPE_MIN: replaces NULLs with type-specific sentinel values (e.g. MIN_VALUE for integers, '__null__' for strings, epoch for dates). Defaults to `NONE`. Valid values: `NONE`, `TYPE_MIN`.",
+				Default:             stringdefault.StaticString("NONE"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("NONE", "TYPE_MIN"),
+				},
+			},
+			"transforms_mark_columns_as_optional_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Mark columns as optional/nullable. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				MarkdownDescription: "Mark columns as optional/nullable. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+			},
+			"transforms_copy_field_copy_field_mapping": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Comma-separated list of field mappings e.g. <code>field1:newField1,field2:newField2</code>.",
+				MarkdownDescription: "Comma-separated list of field mappings e.g. <code>field1:newField1,field2:newField2</code>.",
+			},
+			"transforms_header_to_field_custom_header_mappings": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Headers to columns. Comma separated list of headers using format <code><header name>:<header type>[:field name]</code> e.g. 'headerKey1:STRING,headerKey2:INT32:customKey2Name'",
+				MarkdownDescription: "Headers to columns. Comma separated list of headers using format <code><header name>:<header type>[:field name]</code> e.g. 'headerKey1:STRING,headerKey2:INT32:customKey2Name'",
+			},
 		},
 	}
 }
 
 // DestinationIcebergFieldMappings maps Terraform attribute names to API field names.
 var DestinationIcebergFieldMappings = map[string]string{
-	"iceberg_catalog_type":                             "iceberg.catalog.type",
-	"iceberg_catalog_auth_mode":                        "iceberg.catalog.auth.mode",
-	"iceberg_catalog_name":                             "iceberg.catalog.name",
-	"iceberg_catalog_client_assume_role_arn":           "iceberg.catalog.client.assume-role.arn",
-	"iceberg_catalog_uri":                              "iceberg.catalog.uri",
-	"iceberg_catalog_token":                            "iceberg.catalog.token",
-	"iceberg_catalog_credential":                       "iceberg.catalog.credential",
-	"iceberg_catalog_scope":                            "iceberg.catalog.scope",
-	"iceberg_catalog_s3_credentials_enabled":           "iceberg.catalog.s3.credentials.enabled",
-	"iceberg_catalog_s3_access_key_id":                 "iceberg.catalog.s3.access-key-id",
-	"iceberg_catalog_s3_secret_access_key":             "iceberg.catalog.s3.secret-access-key",
-	"iceberg_catalog_client_region":                    "iceberg.catalog.client.region.user.defined",
-	"iceberg_catalog_warehouse":                        "iceberg.catalog.warehouse",
-	"table_name_prefix":                                "table.name.prefix",
-	"insert_mode":                                      "insert.mode.user.defined",
-	"iceberg_tables_default_id_columns":                "iceberg.tables.default-id-columns",
-	"iceberg_tables_hard_delete_enabled":               "iceberg.tables.hard-delete-enabled",
-	"iceberg_tables_compaction_enabled":                "iceberg.tables.compaction.enabled",
-	"iceberg_tables_compaction_target_file_size_bytes": "iceberg.tables.compaction.target-file-size-bytes",
-	"iceberg_tables_compaction_min_small_files":        "iceberg.tables.compaction.min-small-files",
-	"iceberg_tables_compaction_max_files_per_run":      "iceberg.tables.compaction.max-files-per-run",
-	"iceberg_tables_compaction_commit_threshold":       "iceberg.tables.compaction.commit-threshold",
-	"iceberg_tables_compaction_expire_snapshots":       "iceberg.tables.compaction.expire-snapshots",
-	"iceberg_tables_compaction_retain_last":            "iceberg.tables.compaction.retain-last",
+	"iceberg_catalog_type":                                    "iceberg.catalog.type",
+	"iceberg_catalog_auth_mode":                               "iceberg.catalog.auth.mode",
+	"iceberg_catalog_name":                                    "iceberg.catalog.name",
+	"iceberg_catalog_client_assume_role_arn":                  "iceberg.catalog.client.assume-role.arn",
+	"iceberg_catalog_uri":                                     "iceberg.catalog.uri",
+	"iceberg_catalog_token":                                   "iceberg.catalog.token",
+	"iceberg_catalog_credential":                              "iceberg.catalog.credential",
+	"iceberg_catalog_scope":                                   "iceberg.catalog.scope",
+	"iceberg_catalog_s3_credentials_enabled":                  "iceberg.catalog.s3.credentials.enabled",
+	"iceberg_catalog_s3_access_key_id":                        "iceberg.catalog.s3.access-key-id",
+	"iceberg_catalog_s3_secret_access_key":                    "iceberg.catalog.s3.secret-access-key",
+	"iceberg_catalog_client_region":                           "iceberg.catalog.client.region.user.defined",
+	"iceberg_catalog_warehouse":                               "iceberg.catalog.warehouse",
+	"table_name_prefix":                                       "table.name.prefix",
+	"insert_mode":                                             "insert.mode.user.defined",
+	"iceberg_tables_default_id_columns":                       "iceberg.tables.default-id-columns",
+	"iceberg_tables_hard_delete_enabled":                      "iceberg.tables.hard-delete-enabled",
+	"iceberg_tables_compaction_enabled":                       "iceberg.tables.compaction.enabled",
+	"iceberg_tables_compaction_target_file_size_bytes":        "iceberg.tables.compaction.target-file-size-bytes",
+	"iceberg_tables_compaction_min_small_files":               "iceberg.tables.compaction.min-small-files",
+	"iceberg_tables_compaction_max_files_per_run":             "iceberg.tables.compaction.max-files-per-run",
+	"iceberg_tables_compaction_commit_threshold":              "iceberg.tables.compaction.commit-threshold",
+	"iceberg_tables_compaction_expire_snapshots":              "iceberg.tables.compaction.expire-snapshots",
+	"iceberg_tables_compaction_retain_last":                   "iceberg.tables.compaction.retain-last",
+	"consumer_override_max_poll_records":                      "consumer.override.max.poll.records",
+	"preserve_null_values":                                    "preserve.null.values",
+	"quote_identifiers":                                       "quote.identifiers",
+	"transforms_to_int_j_fields_include_list":                 "transforms.ToIntJ.fields.include.list",
+	"transforms_to_float_j_fields_include_list":               "transforms.ToFloatJ.fields.include.list",
+	"transforms_to_decimal_j_fields_include_list":             "transforms.ToDecimalJ.fields.include.list",
+	"transforms_to_decimal_j_truncate_to_max_precision":       "transforms.ToDecimalJ.truncate.to.max.precision",
+	"transforms_to_string_j_fields_include_list":              "transforms.ToStringJ.fields.include.list",
+	"transforms_to_json_j_fields_include_list":                "transforms.ToJsonJ.fields.include.list",
+	"transforms_to_json_j_convert_all_complex_types":          "transforms.ToJsonJ.convert.all.complex.types.user.defined",
+	"transforms_to_jsonb_j_fields_include_list":               "transforms.ToJsonbJ.fields.include.list",
+	"transforms_to_jsonb_j_convert_all_complex_types":         "transforms.ToJsonbJ.convert.all.complex.types.user.defined",
+	"transforms_to_jsonb_j_convert_all_json":                  "transforms.ToJsonbJ.convert.all.json",
+	"transforms_string_replace_fields_include_list":           "transforms.StringReplace.fields.include.list",
+	"transforms_string_replace_regex_patterns":                "transforms.StringReplace.regex.patterns",
+	"transforms_string_replace_replacement_values":            "transforms.StringReplace.replacement.values",
+	"transforms_oversized_records_fields_include_list":        "transforms.OversizedRecords.fields.include.list",
+	"transforms_oversized_records_fields_exclude_list":        "transforms.OversizedRecords.fields.exclude.list",
+	"transforms_oversized_records_max_field_size_bytes":       "transforms.OversizedRecords.max.field.size.bytes",
+	"transforms_oversized_records_oversized_field_behavior":   "transforms.OversizedRecords.oversized.field.behavior",
+	"transforms_oversized_records_truncation_suffix":          "transforms.OversizedRecords.truncation.suffix",
+	"transforms_oversized_records_max_record_size_bytes":      "transforms.OversizedRecords.max.record.size.bytes",
+	"transforms_oversized_records_semantic_types_exclude":     "transforms.OversizedRecords.semantic.types.exclude",
+	"transforms_oversized_records_replace_null_with_default":  "transforms.OversizedRecords.replace.null.with.default",
+	"transforms_add_string_suffix_fields_include_list":        "transforms.AddStringSuffix.fields.include.list",
+	"transforms_change_topic_name_match_regex":                "transforms.changeTopicName.match.regex.user.defined",
+	"transforms_rename_fields_renames":                        "transforms.RenameFields.renames.user.defined",
+	"transforms_drop_fields_fields_include_list":              "transforms.DropFields.fields.include.list",
+	"transforms_mark_columns_as_required_fields_include_all":  "transforms.MarkColumnsAsRequired.fields.include.all",
+	"transforms_mark_columns_as_required_null_sentinel_mode":  "transforms.MarkColumnsAsRequired.null.sentinel.mode",
+	"transforms_mark_columns_as_optional_fields_include_list": "transforms.MarkColumnsAsOptional.fields.include.list",
+	"transforms_copy_field_copy_field_mapping":                "transforms.CopyField.copy.field.mapping",
+	"transforms_header_to_field_custom_header_mappings":       "transforms.HeaderToFieldCustom.header.mappings",
 }

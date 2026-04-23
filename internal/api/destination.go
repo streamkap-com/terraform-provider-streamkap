@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -65,8 +66,13 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destina
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
 			tflog.Info(ctx, fmt.Sprintf(
-				"Destination %q already exists — adopting existing resource", reqPayload.Name))
-			return s.adoptDestinationByName(ctx, reqPayload.Name)
+				"Destination %q already exists — attempting to adopt existing resource", reqPayload.Name))
+			adopted, adoptErr := s.adoptDestinationByName(ctx, reqPayload.Name)
+			if adoptErr == nil {
+				return adopted, nil
+			}
+			// See matching comment in source.go CreateSource.
+			return nil, fmt.Errorf("%w (also tried to adopt the existing resource but could not locate it via the list endpoint: %v)", err, adoptErr)
 		}
 		return nil, err
 	}
@@ -74,16 +80,29 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destina
 	return &resp, nil
 }
 
-// adoptDestinationByName finds an existing destination by name and returns it,
-// allowing Terraform to adopt it into state after a 409 conflict.
+// adoptDestinationByName — see adoptSourceByName for rationale (paginates
+// through all partial_name matches to find the exact-name destination).
 func (s *streamkapAPI) adoptDestinationByName(ctx context.Context, name string) (*Destination, error) {
-	destinations, err := s.ListDestinations(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list destinations while adopting %q: %w", name, err)
-	}
-	for i := range destinations {
-		if destinations[i].Name == name {
-			return &destinations[i], nil
+	const pageSize = 100
+	const maxPages = 1000
+	for page := 1; page <= maxPages; page++ {
+		reqURL := fmt.Sprintf("%s/destinations?secret_returned=true&page=%d&page_size=%d&partial_name=%s",
+			s.cfg.BaseURL, page, pageSize, url.QueryEscape(name))
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build adopt request for %q: %w", name, err)
+		}
+		var resp GetDestinationResponse
+		if err := s.doRequest(ctx, req, &resp); err != nil {
+			return nil, fmt.Errorf("failed to list destinations while adopting %q: %w", name, err)
+		}
+		for i := range resp.Result {
+			if resp.Result[i].Name == name {
+				return &resp.Result[i], nil
+			}
+		}
+		if len(resp.Result) < pageSize {
+			break
 		}
 	}
 	return nil, fmt.Errorf("destination %q reported as existing but not found in list", name)
@@ -115,24 +134,29 @@ func (s *streamkapAPI) GetDestination(ctx context.Context, destinationID string)
 }
 
 func (s *streamkapAPI) ListDestinations(ctx context.Context) ([]Destination, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/destinations?secret_returned=true", http.NoBody)
-	if err != nil {
-		return nil, err
+	// Backend default page_size is 10 (max 100); iterate to return all pages.
+	const pageSize = 100
+	const maxPages = 1000
+	var all []Destination
+	for page := 1; page <= maxPages; page++ {
+		reqURL := fmt.Sprintf("%s/destinations?secret_returned=true&page=%d&page_size=%d", s.cfg.BaseURL, page, pageSize)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+		if err != nil {
+			return nil, err
+		}
+		tflog.Debug(ctx, fmt.Sprintf("ListDestinations request details:\n\tMethod: %s\n\tURL: %s\n", req.Method, req.URL.String()))
+		var resp GetDestinationResponse
+		if err := s.doRequest(ctx, req, &resp); err != nil {
+			return nil, err
+		}
+		all = append(all, resp.Result...)
+		// Short-page termination only; Total can lie under concurrent
+		// deletes (coderabbit PR #70 comment). maxPages caps runaway.
+		if len(resp.Result) < pageSize {
+			break
+		}
 	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"ListDestinations request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n",
-		req.Method,
-		req.URL.String(),
-	))
-	var resp GetDestinationResponse
-	err = s.doRequest(ctx, req, &resp)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.Result, nil
+	return all, nil
 }
 
 func (s *streamkapAPI) DeleteDestination(ctx context.Context, destinationID string) error {

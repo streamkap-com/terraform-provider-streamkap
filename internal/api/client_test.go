@@ -152,7 +152,7 @@ func TestCreateSource_Success(t *testing.T) {
 	// Mock the API response
 	httpmock.RegisterResponder(
 		http.MethodPost,
-		baseURL+"/sources?secret_returned=true",
+		baseURL+"/sources?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			// Verify authorization header
 			assert.Equal(t, "Bearer test-token", req.Header.Get("Authorization"))
@@ -206,7 +206,7 @@ func TestCreateSource_ValidationError(t *testing.T) {
 	// Mock validation error response
 	httpmock.RegisterResponder(
 		http.MethodPost,
-		baseURL+"/sources?secret_returned=true",
+		baseURL+"/sources?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := APIErrorResponse{
 				Detail: "Validation error: name is required",
@@ -241,7 +241,7 @@ func TestCreateSource_Unauthorized(t *testing.T) {
 	// Mock unauthorized response
 	httpmock.RegisterResponder(
 		http.MethodPost,
-		baseURL+"/sources?secret_returned=true",
+		baseURL+"/sources?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			// Verify no authorization header when token is not set
 			assert.Empty(t, req.Header.Get("Authorization"))
@@ -272,7 +272,7 @@ func TestDeleteSource_Success(t *testing.T) {
 	// Mock successful delete response
 	httpmock.RegisterResponder(
 		http.MethodDelete,
-		baseURL+"/sources/source-to-delete?secret_returned=true",
+		baseURL+"/sources/source-to-delete?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			// Verify authorization header
 			assert.Equal(t, "Bearer test-token", req.Header.Get("Authorization"))
@@ -306,7 +306,7 @@ func TestDeleteSource_NotFound(t *testing.T) {
 	// Mock not found response
 	httpmock.RegisterResponder(
 		http.MethodDelete,
-		baseURL+"/sources/non-existent?secret_returned=true",
+		baseURL+"/sources/non-existent?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := APIErrorResponse{
 				Detail: "Source not found",
@@ -344,7 +344,7 @@ func TestUpdateSource_Success(t *testing.T) {
 	// Mock successful update response
 	httpmock.RegisterResponder(
 		http.MethodPut,
-		baseURL+"/sources/source-123?secret_returned=true",
+		baseURL+"/sources/source-123?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			// Verify authorization header
 			assert.Equal(t, "Bearer test-token", req.Header.Get("Authorization"))

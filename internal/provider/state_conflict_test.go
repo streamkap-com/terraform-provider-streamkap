@@ -675,7 +675,7 @@ func TestExternalDeletion_UpdateAfterDelete(t *testing.T) {
 	// Update fails because resource was deleted
 	httpmock.RegisterResponder(
 		http.MethodPut,
-		baseURL+"/sources/"+sourceID+"?secret_returned=true",
+		baseURL+"/sources/"+sourceID+"?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: fmt.Sprintf("Source with ID '%s' not found", sourceID),
@@ -717,7 +717,7 @@ func TestExternalDeletion_DeleteAfterDelete(t *testing.T) {
 
 	httpmock.RegisterResponder(
 		http.MethodDelete,
-		baseURL+"/sources/"+sourceID+"?secret_returned=true",
+		baseURL+"/sources/"+sourceID+"?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
 			errResponse := api.APIErrorResponse{
 				Detail: fmt.Sprintf("Source with ID '%s' not found", sourceID),

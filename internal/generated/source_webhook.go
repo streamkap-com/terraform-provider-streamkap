@@ -96,9 +96,11 @@ func SourceWebhookSchema() schema.Schema {
 			"api_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "API. This key will be generated after the source is created. Defaults to \"<API_KEY>\".",
-				MarkdownDescription: "API. This key will be generated after the source is created. Defaults to `<API_KEY>`.",
-				Default:             stringdefault.StaticString("<API_KEY>"),
+				Description:         "API. This key will be generated after the source is created",
+				MarkdownDescription: "API. This key will be generated after the source is created",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"camel_source_camel_message_header_key": schema.StringAttribute{
 				Optional:            true,
@@ -200,8 +202,8 @@ func SourceWebhookSchema() schema.Schema {
 			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
-				MarkdownDescription: "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
 				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
 			},
 			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{

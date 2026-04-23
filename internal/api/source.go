@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -65,8 +66,18 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
 			tflog.Info(ctx, fmt.Sprintf(
-				"Source %q already exists — adopting existing resource", reqPayload.Name))
-			return s.adoptSourceByName(ctx, reqPayload.Name)
+				"Source %q already exists — attempting to adopt existing resource", reqPayload.Name))
+			adopted, adoptErr := s.adoptSourceByName(ctx, reqPayload.Name)
+			if adoptErr == nil {
+				return adopted, nil
+			}
+			// Adopt lookup failed — surface the original "already exists"
+			// error so the user sees something actionable (clean up the
+			// orphan) instead of the cryptic "reported as existing but
+			// not found in list" that can happen when the backend's
+			// dup-name check is scoped differently from the list endpoint
+			// (e.g. orphans in a different service of the same tenant).
+			return nil, fmt.Errorf("%w (also tried to adopt the existing resource but could not locate it via the list endpoint: %v)", err, adoptErr)
 		}
 		return nil, err
 	}
@@ -75,15 +86,32 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 }
 
 // adoptSourceByName finds an existing source by name and returns it,
-// allowing Terraform to adopt it into state after a 409 conflict.
+// allowing Terraform to adopt it into state after a 409/422 conflict.
+// The /sources endpoint only accepts a `partial_name` filter — there is no
+// exact-name filter — so we narrow server-side with partial_name and match
+// exactly client-side. Iterates all pages: a single prefix can legitimately
+// match many sources, and stopping at page 1 would miss the exact match.
 func (s *streamkapAPI) adoptSourceByName(ctx context.Context, name string) (*Source, error) {
-	sources, err := s.ListSources(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list sources while adopting %q: %w", name, err)
-	}
-	for i := range sources {
-		if sources[i].Name == name {
-			return &sources[i], nil
+	const pageSize = 100
+	const maxPages = 1000 // hard cap as a runaway safeguard
+	for page := 1; page <= maxPages; page++ {
+		reqURL := fmt.Sprintf("%s/sources?secret_returned=true&page=%d&page_size=%d&partial_name=%s",
+			s.cfg.BaseURL, page, pageSize, url.QueryEscape(name))
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build adopt request for %q: %w", name, err)
+		}
+		var resp GetSourceResponse
+		if err := s.doRequest(ctx, req, &resp); err != nil {
+			return nil, fmt.Errorf("failed to list sources while adopting %q: %w", name, err)
+		}
+		for i := range resp.Result {
+			if resp.Result[i].Name == name {
+				return &resp.Result[i], nil
+			}
+		}
+		if len(resp.Result) < pageSize {
+			break
 		}
 	}
 	return nil, fmt.Errorf("source %q reported as existing but not found in list", name)
@@ -115,24 +143,33 @@ func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) (*Source,
 }
 
 func (s *streamkapAPI) ListSources(ctx context.Context) ([]Source, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/sources?secret_returned=true", http.NoBody)
-	if err != nil {
-		return nil, err
+	// Backend default page_size is 10 (max 100). Iterate until we have all
+	// results so callers (adopt, sweepers) see the full tenant, not just page 1.
+	const pageSize = 100
+	const maxPages = 1000 // safeguard against runaway if Total/page_size semantics drift
+	var all []Source
+	for page := 1; page <= maxPages; page++ {
+		reqURL := fmt.Sprintf("%s/sources?secret_returned=true&page=%d&page_size=%d", s.cfg.BaseURL, page, pageSize)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+		if err != nil {
+			return nil, err
+		}
+		tflog.Debug(ctx, fmt.Sprintf("ListSources request details:\n\tMethod: %s\n\tURL: %s\n", req.Method, req.URL.String()))
+		var resp GetSourceResponse
+		if err := s.doRequest(ctx, req, &resp); err != nil {
+			return nil, err
+		}
+		all = append(all, resp.Result...)
+		// Terminate only on a short page. `resp.Total` can lie under
+		// concurrent deletes or when the server returns 0 inconsistently,
+		// and using it as a second termination clause risks truncating
+		// the result (coderabbit PR #70 comment). maxPages above caps
+		// runaway if the server consistently returns full pages.
+		if len(resp.Result) < pageSize {
+			break
+		}
 	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"ListSources request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n",
-		req.Method,
-		req.URL.String(),
-	))
-	var resp GetSourceResponse
-	err = s.doRequest(ctx, req, &resp)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.Result, nil
+	return all, nil
 }
 
 func (s *streamkapAPI) DeleteSource(ctx context.Context, sourceID string) error {

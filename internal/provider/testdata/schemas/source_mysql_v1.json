@@ -43,6 +43,12 @@
       "computed": true,
       "sensitive": false
     },
+    "database_connection_timezone": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "database_hostname": {
       "required": true,
       "optional": false,
@@ -74,8 +80,8 @@
       "sensitive": false
     },
     "heartbeat_data_collection_schema_or_database": {
-      "required": true,
-      "optional": false,
+      "required": false,
+      "optional": true,
       "computed": false,
       "sensitive": false
     },
@@ -91,6 +97,66 @@
       "computed": true,
       "sensitive": false
     },
+    "insert_static_key_field_1": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_static_key_field_2": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_static_key_value_1": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_static_key_value_2": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_static_value_1": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_static_value_2": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_static_value_field_1": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_static_value_field_2": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_topic_name_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "kc_cluster_id": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "name": {
       "required": true,
       "optional": false,
@@ -98,6 +164,18 @@
       "sensitive": false
     },
     "predicates_is_topic_to_enrich_pattern": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "predicates_istopictoenrich_pattern": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "preserve_null_values": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -217,6 +295,54 @@
       "computed": false,
       "sensitive": false
     },
+    "transforms_oversized_records_fields_exclude_list": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_oversized_records_fields_include_list": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_oversized_records_max_field_size_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_oversized_records_max_record_size_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_oversized_records_oversized_field_behavior": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_oversized_records_replace_null_with_default": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_oversized_records_semantic_types_exclude": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_oversized_records_truncation_suffix": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "transforms_source_regex_support_key_field_template": {
       "required": false,
       "optional": true,
@@ -230,6 +356,18 @@
       "sensitive": false
     },
     "transforms_source_regex_support_regex_replacement": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_value_to_key_fields_include_list": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false
+    },
+    "transforms_value_to_key_replace_null_with_default": {
       "required": false,
       "optional": true,
       "computed": true,

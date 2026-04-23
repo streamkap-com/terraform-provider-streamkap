@@ -100,9 +100,11 @@ func SourceZendeskWebhookSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "API Key. This key will be generated after the source is created. Defaults to \"<API_KEY>\". This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "API Key. This key will be generated after the source is created. Defaults to `<API_KEY>`.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
-				Default:             stringdefault.StaticString("<API_KEY>"),
+				Description:         "API Key. This key will be generated after the source is created This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "API Key. This key will be generated after the source is created\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"camel_source_payload_router_unknown_type_behavior": schema.StringAttribute{
 				Optional:            true,
@@ -225,8 +227,8 @@ func SourceZendeskWebhookSchema() schema.Schema {
 			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
-				MarkdownDescription: "Schema names (semantic types) to exclude from truncation. Comma separated. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
 				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
 			},
 			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{

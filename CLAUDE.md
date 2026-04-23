@@ -153,6 +153,32 @@ For detailed architecture, see `docs/ARCHITECTURE.md`.
 ### API Quirks
 - Source Create/Read operations use `?secret_returned=true` query parameter to include sensitive fields in response
 - Use `stringplanmodifier.UseStateForUnknown()` for computed fields to prevent spurious diffs
+- POST, PUT, DELETE on `/sources`, `/destinations`, `/pipelines` must include `&wait=false` — tests that mock these URLs need it too
+- List endpoints default to `page_size=10` (max 100). `ListSources/ListDestinations/ListPipelines` iterate pages until `resp.Total` is reached; anything else silently truncates tenants with >10 resources (affects sweepers and adopt-on-exists)
+- `/sources`, `/destinations`, `/pipelines` list endpoints accept `partial_name` — there is **no** exact-name query filter. Adopt-by-name uses `partial_name=<name>&page_size=100` then matches exactly client-side
+- Create returns 422 "already exists" when a non-deleted record with the same `{tenant_id, name}` exists. The list endpoint additionally filters by `service_id`, so a source orphaned in a different service of the same tenant triggers 422 but is invisible to list → adopt legitimately fails with "reported as existing but not found in list". This is a known backend asymmetry
+
+### Deprecated Attribute Pattern (v2 → v3 aliases)
+When the backend renames a config field (e.g. `transforms.InsertStaticKey2.static.field` stays, but the Terraform attribute changed from `insert_static_key_field_2` to `transforms_insert_static_key2_static_field`), add a deprecated alias so existing v2 configs keep working:
+
+1. In `internal/resource/source/<connector>_generated.go`, define a wrapper struct embedding the generated model:
+   ```go
+   type source<Name>ModelWithDeprecated struct {
+       generated.Source<Name>Model
+       InsertStaticKeyField2Old types.String `tfsdk:"insert_static_key_field_2"`
+   }
+   ```
+2. Override `NewModelInstance()` to return the wrapper so reflection-based marshaling sees the extra fields.
+3. Override `GetSchema()` to register the old name as `Optional: true, Computed: true, DeprecationMessage: "Use 'new_name' instead."` plus `stringvalidator.ConflictsWith(path.MatchRoot("new_name"))`.
+4. Extend the field-mapping map: `mappings["insert_static_key_field_2"] = "transforms.InsertStaticKey2.static.field"` — same API target as the new name.
+5. Add the old name to the per-connector list in `internal/provider/v2_backward_compat_test.go` and to `docs/MIGRATION.md`.
+
+Int64 aliases follow the same pattern with `schema.Int64Attribute` and `int64validator.ConflictsWith`.
+
+Not aliasable (document in MIGRATION.md + exceptions map):
+- Required fields (alias needs `Optional`; a required alias is pointless)
+- API-field renames where old and new map to different backend fields
+- Type changes (e.g. map-of-objects → JSON string)
 
 ## Testing
 
