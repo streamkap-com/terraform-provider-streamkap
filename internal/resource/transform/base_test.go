@@ -1,8 +1,40 @@
 package transform
 
 import (
+	"errors"
 	"testing"
 )
+
+// TestIsJobNotDeployedError validates the string match that distinguishes
+// an authoritative "no deployment exists" signal from a transient backend
+// failure. The backend's /job_status handler rewrites HTTPException(404) into
+// 400 with either "Job not found" or "Transform not found" — those two detail
+// strings are the only signals we can rely on to demote connector_status to
+// UNKNOWN without letting transient 5xx errors silently lose state.
+func TestIsJobNotDeployedError(t *testing.T) {
+	cases := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "nil error is not a not-deployed signal", err: nil, want: false},
+		{name: "job not found is authoritative", err: errors.New(`API error: {"detail":"Job not found"}`), want: true},
+		{name: "transform not found is authoritative", err: errors.New(`API error: {"detail":"Transform not found"}`), want: true},
+		{name: "job not found with request_id suffix", err: errors.New(`Job not found (request_id=abc123)`), want: true},
+		{name: "transient 500 is not a not-deployed signal", err: errors.New("500 Internal Server Error"), want: false},
+		{name: "network timeout is not a not-deployed signal", err: errors.New("context deadline exceeded"), want: false},
+		{name: "unrelated 400 is not a not-deployed signal", err: errors.New("validation error: bad request"), want: false},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			got := isJobNotDeployedError(tc.err)
+			if got != tc.want {
+				t.Fatalf("isJobNotDeployedError(%v) = %v, want %v", tc.err, got, tc.want)
+			}
+		})
+	}
+}
 
 func TestStripNullValues(t *testing.T) {
 	tests := []struct {

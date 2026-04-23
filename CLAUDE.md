@@ -2,6 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Public Repository — Content Hygiene
+
+**This repository is public.** Everything committed — code, comments, commit messages, PR descriptions, test fixtures, documentation — is visible to the world. Be deliberate about what goes in.
+
+Do **not** write any of the following into files, commits, or PRs:
+- Internal ticket IDs or internal URLs (Jira/Linear, internal wikis, Slack links, internal dashboards)
+- Customer names, tenant IDs, service IDs, email addresses, real credentials, or API tokens
+- Internal hostnames, staging URLs, or private infrastructure details
+- Verbatim error traces from production or private log snippets
+- Internal-only roadmap details, unannounced features, or internal team names
+
+When you need to reference something for context:
+- Public GitHub issue numbers (e.g. `#75`) are fine — they live in this repo.
+- Prefer the public `https://api.streamkap.com` and `https://docs.streamkap.com` surfaces.
+- Strip ticket prefixes from commit messages and code comments unless they're already public.
+- If you find existing internal references during other work, flag them — a previous commit (`chore: scrub internal references for public repo hygiene`) did one sweep, but drift happens.
+
+If you're unsure whether something is safe to commit, ask before writing it.
+
 ## Overview
 
 Terraform provider for Streamkap (data streaming platform). Built with Terraform Plugin Framework (Go 1.24+). Provider address: `github.com/streamkap-com/streamkap`

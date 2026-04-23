@@ -4,6 +4,7 @@ package provider
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -778,6 +779,161 @@ func TestAPIError422_DuplicateName(t *testing.T) {
 	require.NotNil(t, result, "Adopted source should be returned")
 	assert.Equal(t, "adopted-source-id", result.ID, "Should return the existing source's ID")
 	assert.Equal(t, "existing-source", result.Name)
+}
+
+// TestListTransforms_Paginates exercises the paginated iteration in
+// ListTransforms so callers (sweepers, adopt fallbacks) see the full tenant,
+// not just page 1. The backend defaults to page_size=10; the client must
+// request page_size=100 and keep paging until a short page is returned.
+func TestListTransforms_Paginates(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	baseURL := "https://api.test.streamkap.com"
+	client := newTestAPIClient(baseURL)
+
+	// Page 1: 100 results (a full page) → client must request page 2.
+	page1 := make([]api.Transform, 100)
+	for i := range page1 {
+		page1[i] = api.Transform{ID: fmt.Sprintf("t-page1-%d", i), Name: fmt.Sprintf("transform-%d", i), TransformType: "map_filter"}
+	}
+	// Page 2: 5 results (short page) → client stops here.
+	page2 := []api.Transform{
+		{ID: "t-page2-0", Name: "transform-100", TransformType: "map_filter"},
+		{ID: "t-page2-1", Name: "transform-101", TransformType: "map_filter"},
+		{ID: "t-page2-2", Name: "transform-102", TransformType: "map_filter"},
+		{ID: "t-page2-3", Name: "transform-103", TransformType: "map_filter"},
+		{ID: "t-page2-4", Name: "transform-104", TransformType: "map_filter"},
+	}
+
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		baseURL+"/transforms?secret_returned=true&page=1&page_size=100",
+		httpmock.NewJsonResponderOrPanic(http.StatusOK, api.GetTransformResponse{
+			Total: 105, PageSize: 100, Page: 1, Result: page1,
+		}),
+	)
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		baseURL+"/transforms?secret_returned=true&page=2&page_size=100",
+		httpmock.NewJsonResponderOrPanic(http.StatusOK, api.GetTransformResponse{
+			Total: 105, PageSize: 100, Page: 2, Result: page2,
+		}),
+	)
+
+	ctx := context.Background()
+	result, err := client.ListTransforms(ctx)
+
+	require.NoError(t, err)
+	assert.Len(t, result, 105, "all 105 transforms across both pages must be returned")
+	assert.Equal(t, "t-page1-0", result[0].ID)
+	assert.Equal(t, "t-page2-4", result[104].ID)
+}
+
+// TestAPIError422_TransformDuplicateName is a regression test for issue #75:
+// when a transform with the same name already exists, the create path must
+// adopt it. The transform name lives in Config["transforms.name"] (backend
+// alias), not Config["name"], so the adopt lookup previously searched for an
+// empty string and surfaced "transform \"\" reported as existing but not
+// found in list".
+func TestAPIError422_TransformDuplicateName(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	baseURL := "https://api.test.streamkap.com"
+	client := newTestAPIClient(baseURL)
+
+	transform := api.CreateTransformRequest{
+		Transform: "sql_join",
+		Config: map[string]any{
+			"transforms.name":     "existing-transform",
+			"transforms.language": "SQL",
+		},
+	}
+
+	httpmock.RegisterResponder(
+		http.MethodPost,
+		baseURL+"/transforms?secret_returned=true",
+		func(req *http.Request) (*http.Response, error) {
+			errResponse := api.APIErrorResponse{
+				Detail: "A transform with name 'existing-transform' already exists",
+			}
+			return httpmock.NewJsonResponse(http.StatusUnprocessableEntity, errResponse)
+		},
+	)
+
+	// Mock the paginated partial_name-filtered list-for-adopt follow-up.
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		baseURL+"/transforms?secret_returned=true&page=1&page_size=100&partial_name=existing-transform",
+		func(req *http.Request) (*http.Response, error) {
+			return httpmock.NewJsonResponse(http.StatusOK, api.GetTransformResponse{
+				Total: 1,
+				Result: []api.Transform{
+					{ID: "adopted-transform-id", Name: "existing-transform", TransformType: "sql_join"},
+				},
+			})
+		},
+	)
+
+	ctx := context.Background()
+	result, err := client.CreateTransform(ctx, transform)
+
+	require.NoError(t, err, "Duplicate name should trigger adoption, not an error")
+	require.NotNil(t, result, "Adopted transform should be returned")
+	assert.Equal(t, "adopted-transform-id", result.ID, "Should return the existing transform's ID")
+	assert.Equal(t, "existing-transform", result.Name)
+}
+
+// TestAPIError422_TransformDuplicateName_AdoptNotFound covers the path where
+// the backend reports "already exists" but the list endpoint can't locate the
+// transform (e.g. orphan in a different service of the same tenant). The
+// original error must be preserved so the user sees something actionable.
+func TestAPIError422_TransformDuplicateName_AdoptNotFound(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	baseURL := "https://api.test.streamkap.com"
+	client := newTestAPIClient(baseURL)
+
+	transform := api.CreateTransformRequest{
+		Transform: "sql_join",
+		Config: map[string]any{
+			"transforms.name":     "orphan-transform",
+			"transforms.language": "SQL",
+		},
+	}
+
+	httpmock.RegisterResponder(
+		http.MethodPost,
+		baseURL+"/transforms?secret_returned=true",
+		func(req *http.Request) (*http.Response, error) {
+			errResponse := api.APIErrorResponse{
+				Detail: "A transform with name 'orphan-transform' already exists",
+			}
+			return httpmock.NewJsonResponse(http.StatusUnprocessableEntity, errResponse)
+		},
+	)
+
+	// List endpoint returns zero results — the adopt lookup cannot locate it.
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		baseURL+"/transforms?secret_returned=true&page=1&page_size=100&partial_name=orphan-transform",
+		func(req *http.Request) (*http.Response, error) {
+			return httpmock.NewJsonResponse(http.StatusOK, api.GetTransformResponse{
+				Total:  0,
+				Result: []api.Transform{},
+			})
+		},
+	)
+
+	ctx := context.Background()
+	result, err := client.CreateTransform(ctx, transform)
+
+	require.Error(t, err, "Expected error when adopt lookup fails")
+	assert.Nil(t, result, "Result should be nil when adopt fails")
+	assert.Contains(t, err.Error(), "already exists", "Original error must be preserved")
+	assert.Contains(t, err.Error(), "could not locate it via the list endpoint", "Should explain the adopt failure")
 }
 
 // TestAPIError422_TransformInvalidConfig tests 422 for transform-specific validation

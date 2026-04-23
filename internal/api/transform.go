@@ -77,24 +77,29 @@ func (s *streamkapAPI) GetTransform(ctx context.Context, TransformID string) (*T
 }
 
 func (s *streamkapAPI) ListTransforms(ctx context.Context) ([]Transform, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+"/transforms?secret_returned=true", http.NoBody)
-	if err != nil {
-		return nil, err
+	// Backend default page_size is 10 (max 100). Iterate until we have all
+	// results so callers (sweepers, adopt fallbacks) see the full tenant, not
+	// just page 1. See ListSources for the equivalent pattern.
+	const pageSize = 100
+	const maxPages = 1000
+	var all []Transform
+	for page := 1; page <= maxPages; page++ {
+		reqURL := fmt.Sprintf("%s/transforms?secret_returned=true&page=%d&page_size=%d", s.cfg.BaseURL, page, pageSize)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+		if err != nil {
+			return nil, err
+		}
+		tflog.Debug(ctx, fmt.Sprintf("ListTransforms request details:\n\tMethod: %s\n\tURL: %s\n", req.Method, req.URL.String()))
+		var resp GetTransformResponse
+		if err := s.doRequest(ctx, req, &resp); err != nil {
+			return nil, err
+		}
+		all = append(all, resp.Result...)
+		if len(resp.Result) < pageSize {
+			break
+		}
 	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"ListTransforms request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n",
-		req.Method,
-		req.URL.String(),
-	))
-	var resp GetTransformResponse
-	err = s.doRequest(ctx, req, &resp)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.Result, nil
+	return all, nil
 }
 
 func (s *streamkapAPI) CreateTransform(ctx context.Context, reqPayload CreateTransformRequest) (*Transform, error) {
@@ -123,10 +128,18 @@ func (s *streamkapAPI) CreateTransform(ctx context.Context, reqPayload CreateTra
 	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
 		if strings.Contains(err.Error(), "already exists") {
-			name, _ := reqPayload.Config["name"].(string)
+			// The transform name lives inside the config map under the
+			// backend's alias "transforms.name" (see base.go Create), not at
+			// the top level like sources/destinations.
+			name, _ := reqPayload.Config["transforms.name"].(string)
 			tflog.Info(ctx, fmt.Sprintf(
-				"Transform %q already exists — adopting existing resource", name))
-			return s.adoptTransformByName(ctx, name)
+				"Transform %q already exists — attempting to adopt existing resource", name))
+			adopted, adoptErr := s.adoptTransformByName(ctx, name)
+			if adoptErr == nil {
+				return adopted, nil
+			}
+			// See matching comment in source.go CreateSource.
+			return nil, fmt.Errorf("%w (also tried to adopt the existing resource but could not locate it via the list endpoint: %v)", err, adoptErr)
 		}
 		return nil, err
 	}
@@ -134,16 +147,29 @@ func (s *streamkapAPI) CreateTransform(ctx context.Context, reqPayload CreateTra
 	return &resp, nil
 }
 
-// adoptTransformByName finds an existing transform by name and returns it,
-// allowing Terraform to adopt it into state after a 409 conflict.
+// adoptTransformByName — see adoptSourceByName for rationale (paginates
+// through all partial_name matches to find the exact-name transform).
 func (s *streamkapAPI) adoptTransformByName(ctx context.Context, name string) (*Transform, error) {
-	transforms, err := s.ListTransforms(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list transforms while adopting %q: %w", name, err)
-	}
-	for i := range transforms {
-		if transforms[i].Name == name {
-			return &transforms[i], nil
+	const pageSize = 100
+	const maxPages = 1000
+	for page := 1; page <= maxPages; page++ {
+		reqURL := fmt.Sprintf("%s/transforms?secret_returned=true&page=%d&page_size=%d&partial_name=%s",
+			s.cfg.BaseURL, page, pageSize, url.QueryEscape(name))
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build adopt request for %q: %w", name, err)
+		}
+		var resp GetTransformResponse
+		if err := s.doRequest(ctx, req, &resp); err != nil {
+			return nil, fmt.Errorf("failed to list transforms while adopting %q: %w", name, err)
+		}
+		for i := range resp.Result {
+			if resp.Result[i].Name == name {
+				return &resp.Result[i], nil
+			}
+		}
+		if len(resp.Result) < pageSize {
+			break
 		}
 	}
 	return nil, fmt.Errorf("transform %q reported as existing but not found in list", name)
