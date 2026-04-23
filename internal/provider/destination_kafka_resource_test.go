@@ -57,7 +57,7 @@ resource "streamkap_destination_kafka" "test" {
   name              = "tf-acc-test-destination-kafka"
   kafka_sink_bootstrap = var.destination_kafka_bootstrap_servers
   destination_format   = "avro"
-  schema_registry_url  = "https://schema-registry-dev.streamkap.net"
+  schema_registry_url  = "https://schema-registry.example.com"
 }
 `
 }
