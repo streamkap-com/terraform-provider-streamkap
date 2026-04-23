@@ -108,7 +108,7 @@ func TransformTopicRouterSchema() schema.Schema {
 				MarkdownDescription: "The number of parallel tasks this transform should be using. Recommended: 1-5 for most workloads. Higher values increase throughput but consume more resources. Start low and increase based on lag metrics. Defaults to `5`.",
 				Default:             int64default.StaticInt64(5),
 				Validators: []validator.Int64{
-					int64validator.Between(1, 20),
+					int64validator.Between(1, 100),
 				},
 			},
 		},
