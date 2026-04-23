@@ -16,7 +16,7 @@ Manages sources, destinations, pipelines, transforms, and topics.
 
 **Version guidance:** The latest stable release is **v2.1.19**. v3.x is currently in **beta** — pin `version = "~> 2.1"` for production use.
 
-[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
+[User documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
 ## Example Usage
 
@@ -43,3 +43,11 @@ provider "streamkap" {}
 - `client_id` (String) The Streamkap API client_id. If not set, Streamkap will use environment variable `STREAMKAP_CLIENT_ID`
 - `host` (String) The Streamkap API host. If not set, Streamkap will use environment variable `STREAMKAP_HOST`. Defaults to https://api.streamkap.com if both are not set.
 - `secret` (String, Sensitive) The Streamkap API secret. If not set, Streamkap will use environment variable `STREAMKAP_SECRET`
+
+## Developer Documentation
+
+For contributors and developers working on the provider itself:
+
+- [Architecture Overview](ARCHITECTURE.md) — high-level design of resources, the API client, reflection-based marshaling, and the `BaseConnectorResource` pattern.
+- [Code Generator (`cmd/tfgen`)](CODE_GENERATOR.md) — how Terraform schemas are generated from backend `configuration.latest.json` files, type mappings, override system, and regeneration workflow.
+- [Migration Guide](MIGRATION.md) — v2 → v3 deprecated-attribute migration reference.

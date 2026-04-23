@@ -56,7 +56,7 @@ This resource creates and manages a SQL Server source for Streamkap data pipelin
 - `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
-- `ssh_public_key` (String) Public key to add to SSH server. Defaults to `<SSH.PUBLIC.KEY>`.
+- `ssh_public_key` (String) Public key to add to SSH server
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
 - `streamkap_snapshot_custom_table_config` (String) Explicitly set nb of parallel chunks for tables. Format: {"db.Some_Tbl": {"chunks": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.
 - `streamkap_snapshot_large_table_threshold` (Number) The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to `20000`.
