@@ -89,7 +89,7 @@ func (s *streamkapAPI) CreateTag(ctx context.Context, reqPayload Tag) (*Tag, err
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 	var resp Tag
 	err = s.doRequestWithRetry(ctx, req, &resp)
@@ -115,7 +115,7 @@ func (s *streamkapAPI) UpdateTag(ctx context.Context, tagID string, reqPayload T
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 	var resp Tag
 	err = s.doRequestWithRetry(ctx, req, &resp)

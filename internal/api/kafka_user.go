@@ -72,7 +72,7 @@ func (s *streamkapAPI) CreateKafkaUser(ctx context.Context, reqPayload CreateKaf
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 	var resp KafkaUser
 	err = s.doRequestWithRetry(ctx, req, &resp)
@@ -134,7 +134,7 @@ func (s *streamkapAPI) UpdateKafkaUser(ctx context.Context, username string, req
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 	var resp KafkaUser
 	err = s.doRequestWithRetry(ctx, req, &resp)

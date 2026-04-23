@@ -453,7 +453,23 @@ func (r *PipelineResource) idxStringInSlice(a string, list []string) int {
 	return -1
 }
 
-func (r *PipelineResource) model2APITransforms(ctx context.Context, modelTransforms []*PipelineTransformModel) (res []*api.PipelineTransform, err error) {
+// model2APITransforms unwinds the Terraform model into the backend's
+// PipelineTransform representation (one entry per (transform, topic) pair).
+//
+// For each topic the user wrote in transforms[].topics, the backend persists a
+// topic_id and, on read, reconstructs the pretty topic via
+// get_pretty_topic_name_from_id which strips everything up to (and including)
+// the first ".". So the topic_id we send MUST have the form
+// "<prefix>.<user-supplied-topic-name>", or the round-trip will return a
+// truncated name and Terraform will fail with "planned set element ... does
+// not correlate with any element in actual" (issue #78).
+//
+// Preferred path: look up the topic on the transform's own topics list and use
+// the backend-issued topic_id verbatim. Fallback (transform not yet deployed,
+// so its Topics/TopicIDs are empty): synthesize "source_<sourceID>.<topic>",
+// which matches the backend convention in get_topic_id_from_pretty_name for
+// source-originated topics and round-trips safely.
+func (r *PipelineResource) model2APITransforms(ctx context.Context, modelTransforms []*PipelineTransformModel, sourceID string) (res []*api.PipelineTransform, err error) {
 	res = []*api.PipelineTransform{}
 
 	for _, modelTransform := range modelTransforms {
@@ -473,10 +489,7 @@ func (r *PipelineResource) model2APITransforms(ctx context.Context, modelTransfo
 		}
 
 		for _, strModelTransformTopic := range strModelTransformTopics {
-			topicID := strModelTransformTopic
-			if topicIdx := r.idxStringInSlice(strModelTransformTopic, transform.Topics); topicIdx >= 0 {
-				topicID = transform.TopicIDs[topicIdx]
-			}
+			topicID := r.resolveTransformTopicID(transform, strModelTransformTopic, sourceID)
 			res = append(res, &api.PipelineTransform{
 				ID:        transform.ID,
 				Name:      transform.Name,
@@ -488,6 +501,23 @@ func (r *PipelineResource) model2APITransforms(ctx context.Context, modelTransfo
 	}
 
 	return res, nil
+}
+
+// resolveTransformTopicID picks a topic_id for a (transform, topic) pair that
+// will survive the backend's first-segment-strip reconstruction. See the
+// doc-comment on model2APITransforms for the rationale.
+func (r *PipelineResource) resolveTransformTopicID(transform *api.Transform, topic string, sourceID string) string {
+	if idx := r.idxStringInSlice(topic, transform.Topics); idx >= 0 && idx < len(transform.TopicIDs) {
+		return transform.TopicIDs[idx]
+	}
+	if sourceID != "" {
+		return fmt.Sprintf("source_%s.%s", sourceID, topic)
+	}
+	// Last resort — preserves old behavior when sourceID isn't available. The
+	// backend will strip the first segment, so this still fails round-trip for
+	// dotted topic names. model2API always passes sourceID in practice; this
+	// branch only triggers for edge-case direct callers (e.g. future tests).
+	return topic
 }
 
 func (r *PipelineResource) strListToTfStrList(strList []string) (tfStrList []attr.Value) {
@@ -557,8 +587,10 @@ func (r *PipelineResource) model2API(ctx context.Context, model PipelineResource
 		return nil, fmt.Errorf("error converting model source topics: %s", diags)
 	}
 
-	// Loop through all model.Transforms and fetch unwinded transform data
-	apiTransforms, err := r.model2APITransforms(ctx, model.Transforms)
+	// Loop through all model.Transforms and fetch unwinded transform data.
+	// Pass the source ID so topic_ids can be synthesized correctly when a
+	// transform hasn't been deployed yet and has no Topics/TopicIDs of its own.
+	apiTransforms, err := r.model2APITransforms(ctx, model.Transforms, model.Source.ID.ValueString())
 	if err != nil {
 		// Log error and continue to next transform
 		fmt.Printf("error enriching model Transforms: %s\n", err)

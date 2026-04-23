@@ -81,7 +81,7 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload Pipeline) 
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 	var resp Pipeline
 	err = s.doRequestWithRetry(ctx, req, &resp)
@@ -221,7 +221,7 @@ func (s *streamkapAPI) UpdatePipeline(ctx context.Context, pipelineID string, re
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 	var resp Pipeline
 	err = s.doRequestWithRetry(ctx, req, &resp)

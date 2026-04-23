@@ -122,7 +122,7 @@ func (s *streamkapAPI) CreateTransform(ctx context.Context, reqPayload CreateTra
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 	var resp Transform
 	err = s.doRequestWithRetry(ctx, req, &resp)
@@ -196,7 +196,7 @@ func (s *streamkapAPI) UpdateTransform(ctx context.Context, transformID string, 
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 	var resp Transform
 	err = s.doRequestWithRetry(ctx, req, &resp)
@@ -295,7 +295,7 @@ func (s *streamkapAPI) UpdateTransformImplementationDetails(ctx context.Context,
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 	var resp TransformImplementationDetails
 	err = s.doRequestWithRetry(ctx, req, &resp)

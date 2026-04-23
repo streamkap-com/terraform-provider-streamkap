@@ -51,11 +51,6 @@ Each connector plugin folder contains:
 ### Connector Status Values
 The `connector_status` field (read-only, computed) can be: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`
 
-### Detailed Reference Documents
-For in-depth understanding of backend patterns, see the audit documents in `docs/audits/`:
-- **Entity Configuration Schema Audit** (`docs/audits/entity-config-schema-audit.md`) — Complete reference for `configuration.latest.json` schema structure, control types, value objects, conditional logic, and Terraform mapping rules
-- **Backend Code Reference Guide** (`docs/audits/backend-code-reference.md`) — API endpoints, Pydantic models, CRUD flows, dynamic resolution, multi-tenancy, and debugging guide
-
 ## Commands
 
 ### Build and Install
@@ -166,8 +161,6 @@ The `cmd/tfgen` tool generates Terraform provider schemas from backend `configur
 - **Parser** (`cmd/tfgen/parser.go`): Reads JSON config, extracts field metadata (name, type, control, default, required, sensitive)
 - **Generator** (`cmd/tfgen/generator.go`): Converts config entries to Go code with schema attributes, validators, defaults
 - **Generated Output** (`internal/generated/`): Schema functions, model structs, field mappings (DO NOT EDIT directly)
-
-For detailed architecture, see `docs/ARCHITECTURE.md`.
 
 ### API Quirks
 - Source Create/Read operations use `?secret_returned=true` query parameter to include sensitive fields in response
@@ -299,8 +292,6 @@ For Snowflake PEM keys (multiline content), use: `source scripts/load-pem-keys.s
 | `UPDATE_SNAPSHOTS` | Optional | Update schema snapshots |
 | `TF_LOG` | Optional | TRACE/DEBUG/INFO/WARN/ERROR |
 
-See `docs/TESTING.md` for complete environment variable reference.
-
 ## AI-Agent Description Standards
 
 This provider is optimized for the Terraform MCP Server. When adding or modifying resources, follow these patterns:
@@ -352,7 +343,6 @@ STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap go generate ./...
 go run ./cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH --entity-type sources --connector postgresql
 ```
 
-See `docs/AI_AGENT_COMPATIBILITY.md` for complete AI integration guidelines.
 
 
 ## Workflow Orchestration
