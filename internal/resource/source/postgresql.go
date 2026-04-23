@@ -168,8 +168,8 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 				Computed:            true,
 				Optional:            true,
 				Default:             stringdefault.StaticString("public"),
-				Description:         "Schema for signal data collection",
-				MarkdownDescription: "Schema for signal data collection",
+				Description:         "Full path to the signal table including schema and table name (e.g., 'public.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.",
+				MarkdownDescription: "Full path to the signal table including schema and table name (e.g., `public.streamkap_signal`). This table is used for incremental snapshotting. Follow the documentation for creating this table.",
 			},
 			"column_include_list": schema.StringAttribute{
 				Optional: true,

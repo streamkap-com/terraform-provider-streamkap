@@ -142,8 +142,8 @@ func (r *SourceSQLServerResource) Schema(ctx context.Context, req res.SchemaRequ
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Schema for signal data collection. If connector is in read-only mode (snapshot_gtid=\"Yes\"), set this to null.",
-				MarkdownDescription: "Schema for signal data collection. If connector is in read-only mode (snapshot_gtid=\"Yes\"), set this to null.",
+				Description:         "Path to the signal table as schema.table (e.g., 'dbo.streamkap_signal'). The database name will be added automatically. This table is used for incremental snapshotting.",
+				MarkdownDescription: "Path to the signal table as `schema.table` (e.g., `dbo.streamkap_signal`). The database name will be added automatically. This table is used for incremental snapshotting.",
 			},
 			"column_exclude_list": schema.StringAttribute{
 				Optional:            true,

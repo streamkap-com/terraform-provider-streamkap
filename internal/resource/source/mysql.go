@@ -135,8 +135,8 @@ func (r *SourceMySQLResource) Schema(ctx context.Context, req res.SchemaRequest,
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Schema for signal data collection. If connector is in read-only mode (snapshot_gtid=\"Yes\"), set this to null.",
-				MarkdownDescription: "Schema for signal data collection. If connector is in read-only mode (snapshot_gtid=\"Yes\"), set this to null.",
+				Description:         "Full path to the signal table including database and table name (e.g., 'mydb.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.",
+				MarkdownDescription: "Full path to the signal table including database and table name (e.g., `mydb.streamkap_signal`). This table is used for incremental snapshotting. Follow the documentation for creating this table.",
 			},
 			"column_include_list": schema.StringAttribute{
 				Optional:            true,
