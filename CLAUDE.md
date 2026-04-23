@@ -162,6 +162,46 @@ The `cmd/tfgen` tool generates Terraform provider schemas from backend `configur
 - **Generator** (`cmd/tfgen/generator.go`): Converts config entries to Go code with schema attributes, validators, defaults
 - **Generated Output** (`internal/generated/`): Schema functions, model structs, field mappings (DO NOT EDIT directly)
 
+**Type mapping (backend control → Terraform):**
+
+| Backend Control | TF Type | Schema Attribute |
+|---|---|---|
+| `string`, `textarea`, `json`, `datetime`, `one-select` | String | `schema.StringAttribute` |
+| `password` | String (Sensitive) | `schema.StringAttribute` |
+| `number`, `slider` | Int64 | `schema.Int64Attribute` |
+| `boolean`, `toggle` | Bool | `schema.BoolAttribute` |
+| `multi-select` | List[String] | `schema.ListAttribute` |
+
+**Automatic port conversion**: fields named `port` or ending `_port` are converted String → Int64 even when backend says `control: "string"`.
+
+**Go abbreviation conventions** (applied to PascalCase field names): `ID`, `SSH`, `SSL`, `SQL`, `DB`, `URL`, `API`, `AWS`, `ARN`, `QA` stay uppercase. E.g., `ssh_port` → `SSHPort`, `role_arn` → `RoleARN`.
+
+**Required / Optional / Computed logic:**
+- `required: true`, no default → `Required: true`
+- `required: true`, has default → `Optional: true, Computed: true`
+- `required: false` → `Optional: true`
+- `user_defined: false` → field skipped entirely
+
+**Sensitive detection**: `control: "password"` OR `encrypt: true` → `Sensitive: true`.
+
+**Override system** (`cmd/tfgen/overrides.json`): some fields cannot be auto-generated and need explicit wiring.
+- `map_string` — a plain `map[string]types.String`. Example: snowflake `auto_qa_dedupe_table_mapping`.
+- `map_nested` — a map of nested objects. Examples: clickhouse `topics_config_map`, sqlserveraws `snapshot_custom_table_config`.
+When an override's `api_field_name` matches a backend field, the override wins; the auto-parsed version is skipped.
+
+**Reflection-based marshaling** (`internal/resource/shared/marshaling.go`):
+- `ModelToAPIConfig(ctx, model, fieldMappings)` walks the model struct by reflection, reads each `tfsdk:"..."` tag, looks up the API field name via `fieldMappings`, and writes typed values into a `map[string]any`.
+- `APIConfigToModel` reverses the direction on Read.
+- `BuildTfsdkFieldIndex` recurses into embedded structs — this is why deprecated-alias wrappers work (see "Deprecated Attribute Pattern" below).
+
+**CRUD flow for connectors (BaseConnectorResource)**:
+1. Create: Plan → `ModelToAPIConfig` → API POST → response → `APIConfigToModel` → state.
+2. Read: API GET → `APIConfigToModel` → state. 404 → `resp.State.RemoveResource`.
+3. Update: Plan → `ModelToAPIConfig` → API PUT → response → `APIConfigToModel` → state.
+4. Delete: API DELETE → `resp.State.RemoveResource`.
+
+Non-connector resources (pipeline, topic, tag, kafka_user, client_credential) implement their own Create/Read/Update/Delete directly.
+
 ### API Quirks
 - Source Create/Read operations use `?secret_returned=true` query parameter to include sensitive fields in response
 - Use `stringplanmodifier.UseStateForUnknown()` for computed fields to prevent spurious diffs
