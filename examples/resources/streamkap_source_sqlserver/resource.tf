@@ -29,7 +29,7 @@ resource "streamkap_source_sqlserver" "example-source-sqlserver" {
   database_dbname                              = "sqlserverdemo"
   schema_include_list                          = "dbo"
   table_include_list                           = "dbo.Orders"
-  signal_data_collection_schema_or_database    = "streamkap"
+  signal_data_collection_schema_or_database    = "dbo.streamkap_signal"
   heartbeat_enabled                            = false
   heartbeat_data_collection_schema_or_database = null
   binary_handling_mode                         = "bytes"
