@@ -573,6 +573,12 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 
 		data.MapFields = append(data.MapFields, mapField)
 
+		// Map overrides always emit Optional+Computed+UseStateForUnknown (issue
+		// #80 rule applies to maps too). Pull in the map plan-modifier
+		// packages so the generated file compiles.
+		imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"] = true
+		imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"] = true
+
 		// Add nested model if this is a nested map
 		if override.Type == "map_nested" && len(override.NestedFields) > 0 {
 			nestedModel := g.overrideToNestedModelData(&override)
@@ -1065,7 +1071,29 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 			}
 		}
 	} else {
+		// required: false, no static default, no placeholder.
+		// These fields must still be Computed, because the Streamkap backend
+		// may dynamically backfill a value at apply time based on cross-resource
+		// state (see app/destinations/dynamic_utils.py for concrete examples —
+		// e.g. `transforms.MarkColumnsAsOptional.fields.include.list` is
+		// auto-set to "*" when the paired source is DynamoDB/MongoDB/DocumentDB
+		// and the destination isn't a blob store).
+		//
+		// Without Computed, a user who plans `field = null` while state holds
+		// the backend-backfilled value sees:
+		//   "planned set element null, but now StringVal(...)"
+		// which surfaces to users as "Provider produced inconsistent result
+		// after apply" (GitHub issue #80).
+		//
+		// With Optional + Computed + UseStateForUnknown:
+		//   - User may explicitly set the value — planner uses their value.
+		//   - User omits — planner preserves existing state (no spurious diff
+		//     on refresh, no "inconsistent result" when backend backfills).
+		//   - User removes a previously-set value — planner treats as unchanged
+		//     rather than attempting to null-out a backend-managed field.
 		field.Optional = true
+		field.Computed = true
+		field.NeedsPlanMod = true
 	}
 
 	// Handle validators for one-select fields
@@ -1349,11 +1377,14 @@ func {{ .SchemaFuncName }}() schema.Schema {
 {{- end }}
 			},
 {{- end }}
-{{- /* Generate map field schema attributes */ -}}
+{{- /* Generate map field schema attributes. Optional+Computed+UseStateForUnknown
+      mirrors the rule applied to scalar Optional fields — see issue #80 and
+      the doc-comment on scalar Optional-only in entryToFieldData. */ -}}
 {{- range .MapFields }}
 {{- if .IsNested }}
 			"{{ .TfAttrName }}": schema.MapNestedAttribute{
 				Optional: {{ .Optional }},
+				Computed: {{ .Optional }},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 {{- range .NestedAttributes }}
@@ -1373,13 +1404,24 @@ func {{ .SchemaFuncName }}() schema.Schema {
 {{- end }}
 					},
 				},
+{{- if .Optional }}
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.UseStateForUnknown(),
+				},
+{{- end }}
 				Description:         {{ printf "%q" .Description }},
 				MarkdownDescription: {{ printf "%q" .MarkdownDescription }},
 			},
 {{- else }}
 			"{{ .TfAttrName }}": schema.MapAttribute{
 				Optional:            {{ .Optional }},
+				Computed:            {{ .Optional }},
 				ElementType:         types.StringType,
+{{- if .Optional }}
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.UseStateForUnknown(),
+				},
+{{- end }}
 				Description:         {{ printf "%q" .Description }},
 				MarkdownDescription: {{ printf "%q" .MarkdownDescription }},
 			},

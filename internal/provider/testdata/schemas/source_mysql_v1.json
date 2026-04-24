@@ -10,13 +10,13 @@
     "column_exclude_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "column_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "column_include_list_toggled": {
@@ -82,7 +82,7 @@
     "heartbeat_data_collection_schema_or_database": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "heartbeat_enabled": {
@@ -196,7 +196,7 @@
     "signal_data_collection_schema_or_database": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "snapshot_gtid": {
@@ -220,7 +220,7 @@
     "ssh_host": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "ssh_port": {
@@ -250,61 +250,61 @@
     "transforms_insert_static_key1_static_field": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_key1_static_value": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_key2_static_field": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_key2_static_value": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_value1_static_field": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_value1_static_value": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_value2_static_field": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_value2_static_value": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_oversized_records_fields_exclude_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_oversized_records_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_oversized_records_max_field_size_bytes": {
@@ -364,7 +364,7 @@
     "transforms_value_to_key_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_value_to_key_replace_null_with_default": {

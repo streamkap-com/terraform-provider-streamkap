@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -16,59 +17,63 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type clickHouseTopicsConfigMapItemModel struct {
+	DeleteSQLExecute types.String `tfsdk:"delete_sql_execute"`
+}
+
 // DestinationClickhouseModel is the Terraform model for the clickhouse destination.
 type DestinationClickhouseModel struct {
-	ID                                               types.String   `tfsdk:"id"`
-	Name                                             types.String   `tfsdk:"name"`
-	Connector                                        types.String   `tfsdk:"connector"`
-	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
-	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
-	IngestionMode                                    types.String   `tfsdk:"ingestion_mode"`
-	HardDelete                                       types.Bool     `tfsdk:"hard_delete"`
-	TasksMax                                         types.Int64    `tfsdk:"tasks_max"`
-	QuoteIdentifiers                                 types.Bool     `tfsdk:"quote_identifiers"`
-	Hostname                                         types.String   `tfsdk:"hostname"`
-	ConnectionUsername                               types.String   `tfsdk:"connection_username"`
-	ConnectionPassword                               types.String   `tfsdk:"connection_password"`
-	Port                                             types.Int64    `tfsdk:"port"`
-	Database                                         types.String   `tfsdk:"database"`
-	SSL                                              types.Bool     `tfsdk:"ssl"`
-	TopicsConfigMap                                  types.String   `tfsdk:"topics_config_map"`
-	ClickhouseJsonSupport                            types.Bool     `tfsdk:"clickhouse_json_support"`
-	SchemaEvolution                                  types.String   `tfsdk:"schema_evolution"`
-	ConsumerOverrideMaxPollRecords                   types.Int64    `tfsdk:"consumer_override_max_poll_records"`
-	PreserveNullValues                               types.Bool     `tfsdk:"preserve_null_values"`
-	TransformsToIntJFieldsIncludeList                types.String   `tfsdk:"transforms_to_int_j_fields_include_list"`
-	TransformsToFloatJFieldsIncludeList              types.String   `tfsdk:"transforms_to_float_j_fields_include_list"`
-	TransformsToDecimalJFieldsIncludeList            types.String   `tfsdk:"transforms_to_decimal_j_fields_include_list"`
-	TransformsToDecimalJTruncateToMaxPrecision       types.Bool     `tfsdk:"transforms_to_decimal_j_truncate_to_max_precision"`
-	TransformsToStringJFieldsIncludeList             types.String   `tfsdk:"transforms_to_string_j_fields_include_list"`
-	TransformsToJsonJFieldsIncludeList               types.String   `tfsdk:"transforms_to_json_j_fields_include_list"`
-	TransformsToJsonJConvertAllComplexTypes          types.Bool     `tfsdk:"transforms_to_json_j_convert_all_complex_types"`
-	TransformsToJsonbJFieldsIncludeList              types.String   `tfsdk:"transforms_to_jsonb_j_fields_include_list"`
-	TransformsToJsonbJConvertAllComplexTypes         types.Bool     `tfsdk:"transforms_to_jsonb_j_convert_all_complex_types"`
-	TransformsToJsonbJConvertAllJson                 types.Bool     `tfsdk:"transforms_to_jsonb_j_convert_all_json"`
-	TransformsStringReplaceFieldsIncludeList         types.String   `tfsdk:"transforms_string_replace_fields_include_list"`
-	TransformsStringReplaceRegexPatterns             types.String   `tfsdk:"transforms_string_replace_regex_patterns"`
-	TransformsStringReplaceReplacementValues         types.String   `tfsdk:"transforms_string_replace_replacement_values"`
-	TransformsOversizedRecordsFieldsIncludeList      types.String   `tfsdk:"transforms_oversized_records_fields_include_list"`
-	TransformsOversizedRecordsFieldsExcludeList      types.String   `tfsdk:"transforms_oversized_records_fields_exclude_list"`
-	TransformsOversizedRecordsMaxFieldSizeBytes      types.Int64    `tfsdk:"transforms_oversized_records_max_field_size_bytes"`
-	TransformsOversizedRecordsOversizedFieldBehavior types.String   `tfsdk:"transforms_oversized_records_oversized_field_behavior"`
-	TransformsOversizedRecordsTruncationSuffix       types.String   `tfsdk:"transforms_oversized_records_truncation_suffix"`
-	TransformsOversizedRecordsMaxRecordSizeBytes     types.Int64    `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
-	TransformsOversizedRecordsSemanticTypesExclude   types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
-	TransformsOversizedRecordsReplaceNullWithDefault types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
-	TransformsAddStringSuffixFieldsIncludeList       types.String   `tfsdk:"transforms_add_string_suffix_fields_include_list"`
-	TransformsChangeTopicNameMatchRegex              types.String   `tfsdk:"transforms_change_topic_name_match_regex"`
-	TransformsRenameFieldsRenames                    types.String   `tfsdk:"transforms_rename_fields_renames"`
-	TransformsDropFieldsFieldsIncludeList            types.String   `tfsdk:"transforms_drop_fields_fields_include_list"`
-	TransformsMarkColumnsAsRequiredFieldsIncludeAll  types.Bool     `tfsdk:"transforms_mark_columns_as_required_fields_include_all"`
-	TransformsMarkColumnsAsRequiredNullSentinelMode  types.String   `tfsdk:"transforms_mark_columns_as_required_null_sentinel_mode"`
-	TransformsMarkColumnsAsOptionalFieldsIncludeList types.String   `tfsdk:"transforms_mark_columns_as_optional_fields_include_list"`
-	TransformsCopyFieldCopyFieldMapping              types.String   `tfsdk:"transforms_copy_field_copy_field_mapping"`
-	TransformsHeaderToFieldCustomHeaderMappings      types.String   `tfsdk:"transforms_header_to_field_custom_header_mappings"`
-	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
+	ID                                               types.String                                  `tfsdk:"id"`
+	Name                                             types.String                                  `tfsdk:"name"`
+	Connector                                        types.String                                  `tfsdk:"connector"`
+	ConnectorStatus                                  types.String                                  `tfsdk:"connector_status"`
+	KcClusterId                                      types.String                                  `tfsdk:"kc_cluster_id"`
+	IngestionMode                                    types.String                                  `tfsdk:"ingestion_mode"`
+	HardDelete                                       types.Bool                                    `tfsdk:"hard_delete"`
+	TasksMax                                         types.Int64                                   `tfsdk:"tasks_max"`
+	QuoteIdentifiers                                 types.Bool                                    `tfsdk:"quote_identifiers"`
+	Hostname                                         types.String                                  `tfsdk:"hostname"`
+	ConnectionUsername                               types.String                                  `tfsdk:"connection_username"`
+	ConnectionPassword                               types.String                                  `tfsdk:"connection_password"`
+	Port                                             types.Int64                                   `tfsdk:"port"`
+	Database                                         types.String                                  `tfsdk:"database"`
+	SSL                                              types.Bool                                    `tfsdk:"ssl"`
+	ClickhouseJsonSupport                            types.Bool                                    `tfsdk:"clickhouse_json_support"`
+	SchemaEvolution                                  types.String                                  `tfsdk:"schema_evolution"`
+	ConsumerOverrideMaxPollRecords                   types.Int64                                   `tfsdk:"consumer_override_max_poll_records"`
+	PreserveNullValues                               types.Bool                                    `tfsdk:"preserve_null_values"`
+	TransformsToIntJFieldsIncludeList                types.String                                  `tfsdk:"transforms_to_int_j_fields_include_list"`
+	TransformsToFloatJFieldsIncludeList              types.String                                  `tfsdk:"transforms_to_float_j_fields_include_list"`
+	TransformsToDecimalJFieldsIncludeList            types.String                                  `tfsdk:"transforms_to_decimal_j_fields_include_list"`
+	TransformsToDecimalJTruncateToMaxPrecision       types.Bool                                    `tfsdk:"transforms_to_decimal_j_truncate_to_max_precision"`
+	TransformsToStringJFieldsIncludeList             types.String                                  `tfsdk:"transforms_to_string_j_fields_include_list"`
+	TransformsToJsonJFieldsIncludeList               types.String                                  `tfsdk:"transforms_to_json_j_fields_include_list"`
+	TransformsToJsonJConvertAllComplexTypes          types.Bool                                    `tfsdk:"transforms_to_json_j_convert_all_complex_types"`
+	TransformsToJsonbJFieldsIncludeList              types.String                                  `tfsdk:"transforms_to_jsonb_j_fields_include_list"`
+	TransformsToJsonbJConvertAllComplexTypes         types.Bool                                    `tfsdk:"transforms_to_jsonb_j_convert_all_complex_types"`
+	TransformsToJsonbJConvertAllJson                 types.Bool                                    `tfsdk:"transforms_to_jsonb_j_convert_all_json"`
+	TransformsStringReplaceFieldsIncludeList         types.String                                  `tfsdk:"transforms_string_replace_fields_include_list"`
+	TransformsStringReplaceRegexPatterns             types.String                                  `tfsdk:"transforms_string_replace_regex_patterns"`
+	TransformsStringReplaceReplacementValues         types.String                                  `tfsdk:"transforms_string_replace_replacement_values"`
+	TransformsOversizedRecordsFieldsIncludeList      types.String                                  `tfsdk:"transforms_oversized_records_fields_include_list"`
+	TransformsOversizedRecordsFieldsExcludeList      types.String                                  `tfsdk:"transforms_oversized_records_fields_exclude_list"`
+	TransformsOversizedRecordsMaxFieldSizeBytes      types.Int64                                   `tfsdk:"transforms_oversized_records_max_field_size_bytes"`
+	TransformsOversizedRecordsOversizedFieldBehavior types.String                                  `tfsdk:"transforms_oversized_records_oversized_field_behavior"`
+	TransformsOversizedRecordsTruncationSuffix       types.String                                  `tfsdk:"transforms_oversized_records_truncation_suffix"`
+	TransformsOversizedRecordsMaxRecordSizeBytes     types.Int64                                   `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
+	TransformsOversizedRecordsSemanticTypesExclude   types.String                                  `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
+	TransformsOversizedRecordsReplaceNullWithDefault types.Bool                                    `tfsdk:"transforms_oversized_records_replace_null_with_default"`
+	TransformsAddStringSuffixFieldsIncludeList       types.String                                  `tfsdk:"transforms_add_string_suffix_fields_include_list"`
+	TransformsChangeTopicNameMatchRegex              types.String                                  `tfsdk:"transforms_change_topic_name_match_regex"`
+	TransformsRenameFieldsRenames                    types.String                                  `tfsdk:"transforms_rename_fields_renames"`
+	TransformsDropFieldsFieldsIncludeList            types.String                                  `tfsdk:"transforms_drop_fields_fields_include_list"`
+	TransformsMarkColumnsAsRequiredFieldsIncludeAll  types.Bool                                    `tfsdk:"transforms_mark_columns_as_required_fields_include_all"`
+	TransformsMarkColumnsAsRequiredNullSentinelMode  types.String                                  `tfsdk:"transforms_mark_columns_as_required_null_sentinel_mode"`
+	TransformsMarkColumnsAsOptionalFieldsIncludeList types.String                                  `tfsdk:"transforms_mark_columns_as_optional_fields_include_list"`
+	TransformsCopyFieldCopyFieldMapping              types.String                                  `tfsdk:"transforms_copy_field_copy_field_mapping"`
+	TransformsHeaderToFieldCustomHeaderMappings      types.String                                  `tfsdk:"transforms_header_to_field_custom_header_mappings"`
+	TopicsConfigMap                                  map[string]clickHouseTopicsConfigMapItemModel `tfsdk:"topics_config_map"`
+	Timeouts                                         timeouts.Value                                `tfsdk:"timeouts"`
 }
 
 // DestinationClickhouseSchema returns the Terraform schema for the clickhouse destination.
@@ -182,11 +187,6 @@ func DestinationClickhouseSchema() schema.Schema {
 				MarkdownDescription: "Enable TLS for network connections. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
-			"topics_config_map": schema.StringAttribute{
-				Optional:            true,
-				Description:         "Per topic configuration in JSON format",
-				MarkdownDescription: "Per topic configuration in JSON format",
-			},
 			"clickhouse_json_support": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -223,18 +223,30 @@ func DestinationClickhouseSchema() schema.Schema {
 			},
 			"transforms_to_int_j_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Convert column(s) to Integer - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Convert column(s) to Integer - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_to_float_j_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Convert column(s) to Float - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Convert column(s) to Float - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_to_decimal_j_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Convert column(s) to Decimal - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Convert column(s) to Decimal - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_to_decimal_j_truncate_to_max_precision": schema.BoolAttribute{
 				Optional:            true,
@@ -245,13 +257,21 @@ func DestinationClickhouseSchema() schema.Schema {
 			},
 			"transforms_to_string_j_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Convert column(s) to String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Convert column(s) to String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_to_json_j_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Convert column(s) to JSON String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Convert column(s) to JSON String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_to_json_j_convert_all_complex_types": schema.BoolAttribute{
 				Optional:            true,
@@ -262,8 +282,12 @@ func DestinationClickhouseSchema() schema.Schema {
 			},
 			"transforms_to_jsonb_j_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Convert column(s) to Binary JSON - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Convert column(s) to Binary JSON - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_to_jsonb_j_convert_all_complex_types": schema.BoolAttribute{
 				Optional:            true,
@@ -281,28 +305,48 @@ func DestinationClickhouseSchema() schema.Schema {
 			},
 			"transforms_string_replace_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Replaces column(s) value with a user-defined string. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Replaces column(s) value with a user-defined string. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_string_replace_regex_patterns": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "List of regex patterns to search for. Comma separated list in format 'regex1,regex2'",
 				MarkdownDescription: "List of regex patterns to search for. Comma separated list in format 'regex1,regex2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_string_replace_replacement_values": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "List of replacement values for each regex pattern. Comma separated list in format 'regex1,regex2'",
 				MarkdownDescription: "List of replacement values for each regex pattern. Comma separated list in format 'regex1,regex2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
 				MarkdownDescription: "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_fields_exclude_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
 				MarkdownDescription: "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_max_field_size_bytes": schema.Int64Attribute{
 				Optional:            true,
@@ -357,23 +401,39 @@ func DestinationClickhouseSchema() schema.Schema {
 			},
 			"transforms_add_string_suffix_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Warning: Should only be used in conjunction with numeric conversion or other conversions. If field remained string after previous conversion, rename to field to <previous-field-name>_str. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Warning: Should only be used in conjunction with numeric conversion or other conversions. If field remained string after previous conversion, rename to field to <previous-field-name>_str. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_change_topic_name_match_regex": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Regular expression for matching topic name parts to use as the destination table (database) or file (file storage) name",
 				MarkdownDescription: "Regular expression for matching topic name parts to use as the destination table (database) or file (file storage) name",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_rename_fields_renames": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "JSON mapping of source to target column names. Keys should be schema.table.column, table.column or just column. Values must be valid column names (no dots or spaces).\n\nExample:\n{\n  \"public.orders.amount\": \"Amount\",\n  \"orders.quantity\": \"Qty\",\n  \"customer_id\": \"CustomerId\"\n}",
 				MarkdownDescription: "JSON mapping of source to target column names. Keys should be schema.table.column, table.column or just column. Values must be valid column names (no dots or spaces).\n\nExample:\n{\n  \"public.orders.amount\": \"Amount\",\n  \"orders.quantity\": \"Qty\",\n  \"customer_id\": \"CustomerId\"\n}",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_drop_fields_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Drop columns. Comma separated list of table columns to drop in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Drop columns. Comma separated list of table columns to drop in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_mark_columns_as_required_fields_include_all": schema.BoolAttribute{
 				Optional:            true,
@@ -394,18 +454,46 @@ func DestinationClickhouseSchema() schema.Schema {
 			},
 			"transforms_mark_columns_as_optional_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Mark columns as optional/nullable. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Mark columns as optional/nullable. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_copy_field_copy_field_mapping": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Comma-separated list of field mappings e.g. <code>field1:newField1,field2:newField2</code>.",
 				MarkdownDescription: "Comma-separated list of field mappings e.g. <code>field1:newField1,field2:newField2</code>.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_header_to_field_custom_header_mappings": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Headers to columns. Comma separated list of headers using format <code><header name>:<header type>[:field name]</code> e.g. 'headerKey1:STRING,headerKey2:INT32:customKey2Name'",
 				MarkdownDescription: "Headers to columns. Comma separated list of headers using format <code><header name>:<header type>[:field name]</code> e.g. 'headerKey1:STRING,headerKey2:INT32:customKey2Name'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"topics_config_map": schema.MapNestedAttribute{
+				Optional: true,
+				Computed: true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"delete_sql_execute": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+				},
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.UseStateForUnknown(),
+				},
+				Description:         "Per topic configuration in JSON format",
+				MarkdownDescription: "Per topic configuration in JSON format",
 			},
 		},
 	}
@@ -423,7 +511,6 @@ var DestinationClickhouseFieldMappings = map[string]string{
 	"port":                               "port",
 	"database":                           "database",
 	"ssl":                                "ssl",
-	"topics_config_map":                  "topics.config.map",
 	"clickhouse_json_support":            "clickhouse.json.support",
 	"schema_evolution":                   "schema.evolution",
 	"consumer_override_max_poll_records": "consumer.override.max.poll.records",
@@ -458,4 +545,5 @@ var DestinationClickhouseFieldMappings = map[string]string{
 	"transforms_mark_columns_as_optional_fields_include_list": "transforms.MarkColumnsAsOptional.fields.include.list",
 	"transforms_copy_field_copy_field_mapping":                "transforms.CopyField.copy.field.mapping",
 	"transforms_header_to_field_custom_header_mappings":       "transforms.HeaderToFieldCustom.header.mappings",
+	"topics_config_map":                                       "topics.config.map",
 }

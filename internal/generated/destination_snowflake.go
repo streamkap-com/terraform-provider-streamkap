@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -18,65 +19,67 @@ import (
 
 // DestinationSnowflakeModel is the Terraform model for the snowflake destination.
 type DestinationSnowflakeModel struct {
-	ID                                               types.String   `tfsdk:"id"`
-	Name                                             types.String   `tfsdk:"name"`
-	Connector                                        types.String   `tfsdk:"connector"`
-	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
-	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
-	SnowflakeURLName                                 types.String   `tfsdk:"snowflake_url_name"`
-	SnowflakeUserName                                types.String   `tfsdk:"snowflake_user_name"`
-	SnowflakePrivateKey                              types.String   `tfsdk:"snowflake_private_key"`
-	SnowflakePrivateKeyPassphraseSecured             types.Bool     `tfsdk:"snowflake_private_key_passphrase_secured"`
-	SnowflakePrivateKeyPassphrase                    types.String   `tfsdk:"snowflake_private_key_passphrase"`
-	Sfwarehouse                                      types.String   `tfsdk:"sfwarehouse"`
-	SnowflakeDatabaseName                            types.String   `tfsdk:"snowflake_database_name"`
-	SnowflakeSchemaName                              types.String   `tfsdk:"snowflake_schema_name"`
-	CreateSchemaAuto                                 types.Bool     `tfsdk:"create_schema_auto"`
-	SnowflakeRoleName                                types.String   `tfsdk:"snowflake_role_name"`
-	IngestionMode                                    types.String   `tfsdk:"ingestion_mode"`
-	HardDelete                                       types.Bool     `tfsdk:"hard_delete"`
-	SchemaEvolution                                  types.String   `tfsdk:"schema_evolution"`
-	UseHybridTables                                  types.Bool     `tfsdk:"use_hybrid_tables"`
-	ApplyDynamicTableScript                          types.Bool     `tfsdk:"apply_dynamic_table_script"`
-	CreateSQLExecute                                 types.String   `tfsdk:"create_sql_execute"`
-	SQLTableName                                     types.String   `tfsdk:"sql_table_name"`
-	CreateSQLData                                    types.String   `tfsdk:"create_sql_data"`
-	AutoQADedupeTableMapping                         types.String   `tfsdk:"auto_qa_dedupe_table_mapping"`
-	SnowflakeTopic2tableMap                          types.String   `tfsdk:"snowflake_topic2table_map"`
-	ConsumerOverrideMaxPollRecords                   types.Int64    `tfsdk:"consumer_override_max_poll_records"`
-	PreserveNullValues                               types.Bool     `tfsdk:"preserve_null_values"`
-	QuoteIdentifiers                                 types.Bool     `tfsdk:"quote_identifiers"`
-	TransformsToIntJFieldsIncludeList                types.String   `tfsdk:"transforms_to_int_j_fields_include_list"`
-	TransformsToFloatJFieldsIncludeList              types.String   `tfsdk:"transforms_to_float_j_fields_include_list"`
-	TransformsToDecimalJFieldsIncludeList            types.String   `tfsdk:"transforms_to_decimal_j_fields_include_list"`
-	TransformsToDecimalJTruncateToMaxPrecision       types.Bool     `tfsdk:"transforms_to_decimal_j_truncate_to_max_precision"`
-	TransformsToStringJFieldsIncludeList             types.String   `tfsdk:"transforms_to_string_j_fields_include_list"`
-	TransformsToJsonJFieldsIncludeList               types.String   `tfsdk:"transforms_to_json_j_fields_include_list"`
-	TransformsToJsonJConvertAllComplexTypes          types.Bool     `tfsdk:"transforms_to_json_j_convert_all_complex_types"`
-	TransformsToJsonbJFieldsIncludeList              types.String   `tfsdk:"transforms_to_jsonb_j_fields_include_list"`
-	TransformsToJsonbJConvertAllComplexTypes         types.Bool     `tfsdk:"transforms_to_jsonb_j_convert_all_complex_types"`
-	TransformsToJsonbJConvertAllJson                 types.Bool     `tfsdk:"transforms_to_jsonb_j_convert_all_json"`
-	TransformsStringReplaceFieldsIncludeList         types.String   `tfsdk:"transforms_string_replace_fields_include_list"`
-	TransformsStringReplaceRegexPatterns             types.String   `tfsdk:"transforms_string_replace_regex_patterns"`
-	TransformsStringReplaceReplacementValues         types.String   `tfsdk:"transforms_string_replace_replacement_values"`
-	TransformsOversizedRecordsFieldsIncludeList      types.String   `tfsdk:"transforms_oversized_records_fields_include_list"`
-	TransformsOversizedRecordsFieldsExcludeList      types.String   `tfsdk:"transforms_oversized_records_fields_exclude_list"`
-	TransformsOversizedRecordsMaxFieldSizeBytes      types.Int64    `tfsdk:"transforms_oversized_records_max_field_size_bytes"`
-	TransformsOversizedRecordsOversizedFieldBehavior types.String   `tfsdk:"transforms_oversized_records_oversized_field_behavior"`
-	TransformsOversizedRecordsTruncationSuffix       types.String   `tfsdk:"transforms_oversized_records_truncation_suffix"`
-	TransformsOversizedRecordsMaxRecordSizeBytes     types.Int64    `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
-	TransformsOversizedRecordsSemanticTypesExclude   types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
-	TransformsOversizedRecordsReplaceNullWithDefault types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
-	TransformsAddStringSuffixFieldsIncludeList       types.String   `tfsdk:"transforms_add_string_suffix_fields_include_list"`
-	TransformsChangeTopicNameMatchRegex              types.String   `tfsdk:"transforms_change_topic_name_match_regex"`
-	TransformsRenameFieldsRenames                    types.String   `tfsdk:"transforms_rename_fields_renames"`
-	TransformsDropFieldsFieldsIncludeList            types.String   `tfsdk:"transforms_drop_fields_fields_include_list"`
-	TransformsMarkColumnsAsRequiredFieldsIncludeAll  types.Bool     `tfsdk:"transforms_mark_columns_as_required_fields_include_all"`
-	TransformsMarkColumnsAsRequiredNullSentinelMode  types.String   `tfsdk:"transforms_mark_columns_as_required_null_sentinel_mode"`
-	TransformsMarkColumnsAsOptionalFieldsIncludeList types.String   `tfsdk:"transforms_mark_columns_as_optional_fields_include_list"`
-	TransformsCopyFieldCopyFieldMapping              types.String   `tfsdk:"transforms_copy_field_copy_field_mapping"`
-	TransformsHeaderToFieldCustomHeaderMappings      types.String   `tfsdk:"transforms_header_to_field_custom_header_mappings"`
-	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
+	ID                                               types.String            `tfsdk:"id"`
+	Name                                             types.String            `tfsdk:"name"`
+	Connector                                        types.String            `tfsdk:"connector"`
+	ConnectorStatus                                  types.String            `tfsdk:"connector_status"`
+	KcClusterId                                      types.String            `tfsdk:"kc_cluster_id"`
+	SnowflakeURLName                                 types.String            `tfsdk:"snowflake_url_name"`
+	SnowflakeUserName                                types.String            `tfsdk:"snowflake_user_name"`
+	SnowflakePrivateKey                              types.String            `tfsdk:"snowflake_private_key"`
+	SnowflakePrivateKeyPassphraseSecured             types.Bool              `tfsdk:"snowflake_private_key_passphrase_secured"`
+	SnowflakePrivateKeyPassphrase                    types.String            `tfsdk:"snowflake_private_key_passphrase"`
+	Sfwarehouse                                      types.String            `tfsdk:"sfwarehouse"`
+	SnowflakeDatabaseName                            types.String            `tfsdk:"snowflake_database_name"`
+	SnowflakeSchemaName                              types.String            `tfsdk:"snowflake_schema_name"`
+	CreateSchemaAuto                                 types.Bool              `tfsdk:"create_schema_auto"`
+	SnowflakeRoleName                                types.String            `tfsdk:"snowflake_role_name"`
+	IngestionMode                                    types.String            `tfsdk:"ingestion_mode"`
+	HardDelete                                       types.Bool              `tfsdk:"hard_delete"`
+	SchemaEvolution                                  types.String            `tfsdk:"schema_evolution"`
+	UseHybridTables                                  types.Bool              `tfsdk:"use_hybrid_tables"`
+	ApplyDynamicTableScript                          types.Bool              `tfsdk:"apply_dynamic_table_script"`
+	CreateSQLExecute                                 types.String            `tfsdk:"create_sql_execute"`
+	SQLTableName                                     types.String            `tfsdk:"sql_table_name"`
+	CreateSQLData                                    types.String            `tfsdk:"create_sql_data"`
+	SnowflakeTopic2tableMap                          types.String            `tfsdk:"snowflake_topic2table_map"`
+	ConsumerOverrideMaxPollRecords                   types.Int64             `tfsdk:"consumer_override_max_poll_records"`
+	PreserveNullValues                               types.Bool              `tfsdk:"preserve_null_values"`
+	QuoteIdentifiers                                 types.Bool              `tfsdk:"quote_identifiers"`
+	TransformsToIntJFieldsIncludeList                types.String            `tfsdk:"transforms_to_int_j_fields_include_list"`
+	TransformsToFloatJFieldsIncludeList              types.String            `tfsdk:"transforms_to_float_j_fields_include_list"`
+	TransformsToDecimalJFieldsIncludeList            types.String            `tfsdk:"transforms_to_decimal_j_fields_include_list"`
+	TransformsToDecimalJTruncateToMaxPrecision       types.Bool              `tfsdk:"transforms_to_decimal_j_truncate_to_max_precision"`
+	TransformsToStringJFieldsIncludeList             types.String            `tfsdk:"transforms_to_string_j_fields_include_list"`
+	TransformsToJsonJFieldsIncludeList               types.String            `tfsdk:"transforms_to_json_j_fields_include_list"`
+	TransformsToJsonJConvertAllComplexTypes          types.Bool              `tfsdk:"transforms_to_json_j_convert_all_complex_types"`
+	TransformsToJsonbJFieldsIncludeList              types.String            `tfsdk:"transforms_to_jsonb_j_fields_include_list"`
+	TransformsToJsonbJConvertAllComplexTypes         types.Bool              `tfsdk:"transforms_to_jsonb_j_convert_all_complex_types"`
+	TransformsToJsonbJConvertAllJson                 types.Bool              `tfsdk:"transforms_to_jsonb_j_convert_all_json"`
+	TransformsStringReplaceFieldsIncludeList         types.String            `tfsdk:"transforms_string_replace_fields_include_list"`
+	TransformsStringReplaceRegexPatterns             types.String            `tfsdk:"transforms_string_replace_regex_patterns"`
+	TransformsStringReplaceReplacementValues         types.String            `tfsdk:"transforms_string_replace_replacement_values"`
+	TransformsOversizedRecordsFieldsIncludeList      types.String            `tfsdk:"transforms_oversized_records_fields_include_list"`
+	TransformsOversizedRecordsFieldsExcludeList      types.String            `tfsdk:"transforms_oversized_records_fields_exclude_list"`
+	TransformsOversizedRecordsMaxFieldSizeBytes      types.Int64             `tfsdk:"transforms_oversized_records_max_field_size_bytes"`
+	TransformsOversizedRecordsOversizedFieldBehavior types.String            `tfsdk:"transforms_oversized_records_oversized_field_behavior"`
+	TransformsOversizedRecordsTruncationSuffix       types.String            `tfsdk:"transforms_oversized_records_truncation_suffix"`
+	TransformsOversizedRecordsMaxRecordSizeBytes     types.Int64             `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
+	TransformsOversizedRecordsSemanticTypesExclude   types.String            `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
+	TransformsOversizedRecordsReplaceNullWithDefault types.Bool              `tfsdk:"transforms_oversized_records_replace_null_with_default"`
+	TransformsAddStringSuffixFieldsIncludeList       types.String            `tfsdk:"transforms_add_string_suffix_fields_include_list"`
+	TransformsChangeTopicNameMatchRegex              types.String            `tfsdk:"transforms_change_topic_name_match_regex"`
+	TransformsRenameFieldsRenames                    types.String            `tfsdk:"transforms_rename_fields_renames"`
+	TransformsDropFieldsFieldsIncludeList            types.String            `tfsdk:"transforms_drop_fields_fields_include_list"`
+	TransformsMarkColumnsAsRequiredFieldsIncludeAll  types.Bool              `tfsdk:"transforms_mark_columns_as_required_fields_include_all"`
+	TransformsMarkColumnsAsRequiredNullSentinelMode  types.String            `tfsdk:"transforms_mark_columns_as_required_null_sentinel_mode"`
+	TransformsMarkColumnsAsOptionalFieldsIncludeList types.String            `tfsdk:"transforms_mark_columns_as_optional_fields_include_list"`
+	TransformsCopyFieldCopyFieldMapping              types.String            `tfsdk:"transforms_copy_field_copy_field_mapping"`
+	TransformsHeaderToFieldCustomHeaderMappings      types.String            `tfsdk:"transforms_header_to_field_custom_header_mappings"`
+	AutoQADedupeTableMapping                         map[string]types.String `tfsdk:"auto_qa_dedupe_table_mapping"`
+	// Deprecated fields - kept for backward compatibility
+	AutoSchemaCreation types.Bool     `tfsdk:"auto_schema_creation"`
+	Timeouts           timeouts.Value `tfsdk:"timeouts"`
 }
 
 // DestinationSnowflakeSchema returns the Terraform schema for the snowflake destination.
@@ -146,9 +149,13 @@ func DestinationSnowflakeSchema() schema.Schema {
 			},
 			"snowflake_private_key_passphrase": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Sensitive:           true,
 				Description:         "The passphrase is used to decrypt the private key. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "The passphrase is used to decrypt the private key.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"sfwarehouse": schema.StringAttribute{
 				Optional:            true,
@@ -241,13 +248,12 @@ func DestinationSnowflakeSchema() schema.Schema {
 			},
 			"create_sql_data": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Use <code>{\"TABLE_DATA\": {\"{table_name}\": {\"{key}\": \"{value}\"}, ...}, ...}</code> to set table specific data. This data will be available in the custom SQL templates e.g. <code>SELECT {{key}}</code>.",
 				MarkdownDescription: "Use <code>{\"TABLE_DATA\": {\"{table_name}\": {\"{key}\": \"{value}\"}, ...}, ...}</code> to set table specific data. This data will be available in the custom SQL templates e.g. <code>SELECT {{key}}</code>.",
-			},
-			"auto_qa_dedupe_table_mapping": schema.StringAttribute{
-				Optional:            true,
-				Description:         "Mapping between the tables that store append-only data and the deduplicated tables. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
-				MarkdownDescription: "Mapping between the tables that store append-only data and the deduplicated tables. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"snowflake_topic2table_map": schema.StringAttribute{
 				Optional:            true,
@@ -282,18 +288,30 @@ func DestinationSnowflakeSchema() schema.Schema {
 			},
 			"transforms_to_int_j_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Convert column(s) to Integer - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Convert column(s) to Integer - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_to_float_j_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Convert column(s) to Float - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Convert column(s) to Float - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_to_decimal_j_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Convert column(s) to Decimal - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Convert column(s) to Decimal - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_to_decimal_j_truncate_to_max_precision": schema.BoolAttribute{
 				Optional:            true,
@@ -304,13 +322,21 @@ func DestinationSnowflakeSchema() schema.Schema {
 			},
 			"transforms_to_string_j_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Convert column(s) to String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Convert column(s) to String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_to_json_j_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Convert column(s) to JSON String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Convert column(s) to JSON String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_to_json_j_convert_all_complex_types": schema.BoolAttribute{
 				Optional:            true,
@@ -321,8 +347,12 @@ func DestinationSnowflakeSchema() schema.Schema {
 			},
 			"transforms_to_jsonb_j_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Convert column(s) to Binary JSON - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Convert column(s) to Binary JSON - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_to_jsonb_j_convert_all_complex_types": schema.BoolAttribute{
 				Optional:            true,
@@ -340,28 +370,48 @@ func DestinationSnowflakeSchema() schema.Schema {
 			},
 			"transforms_string_replace_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Replaces column(s) value with a user-defined string. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Replaces column(s) value with a user-defined string. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_string_replace_regex_patterns": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "List of regex patterns to search for. Comma separated list in format 'regex1,regex2'",
 				MarkdownDescription: "List of regex patterns to search for. Comma separated list in format 'regex1,regex2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_string_replace_replacement_values": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "List of replacement values for each regex pattern. Comma separated list in format 'regex1,regex2'",
 				MarkdownDescription: "List of replacement values for each regex pattern. Comma separated list in format 'regex1,regex2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
 				MarkdownDescription: "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_fields_exclude_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
 				MarkdownDescription: "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_max_field_size_bytes": schema.Int64Attribute{
 				Optional:            true,
@@ -416,23 +466,39 @@ func DestinationSnowflakeSchema() schema.Schema {
 			},
 			"transforms_add_string_suffix_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Warning: Should only be used in conjunction with numeric conversion or other conversions. If field remained string after previous conversion, rename to field to <previous-field-name>_str. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Warning: Should only be used in conjunction with numeric conversion or other conversions. If field remained string after previous conversion, rename to field to <previous-field-name>_str. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_change_topic_name_match_regex": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Regular expression for matching topic name parts to use as the destination table (database) or file (file storage) name",
 				MarkdownDescription: "Regular expression for matching topic name parts to use as the destination table (database) or file (file storage) name",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_rename_fields_renames": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "JSON mapping of source to target column names. Keys should be schema.table.column, table.column or just column. Values must be valid column names (no dots or spaces).\n\nExample:\n{\n  \"public.orders.amount\": \"Amount\",\n  \"orders.quantity\": \"Qty\",\n  \"customer_id\": \"CustomerId\"\n}",
 				MarkdownDescription: "JSON mapping of source to target column names. Keys should be schema.table.column, table.column or just column. Values must be valid column names (no dots or spaces).\n\nExample:\n{\n  \"public.orders.amount\": \"Amount\",\n  \"orders.quantity\": \"Qty\",\n  \"customer_id\": \"CustomerId\"\n}",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_drop_fields_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Drop columns. Comma separated list of table columns to drop in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Drop columns. Comma separated list of table columns to drop in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_mark_columns_as_required_fields_include_all": schema.BoolAttribute{
 				Optional:            true,
@@ -453,18 +519,40 @@ func DestinationSnowflakeSchema() schema.Schema {
 			},
 			"transforms_mark_columns_as_optional_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Mark columns as optional/nullable. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Mark columns as optional/nullable. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_copy_field_copy_field_mapping": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Comma-separated list of field mappings e.g. <code>field1:newField1,field2:newField2</code>.",
 				MarkdownDescription: "Comma-separated list of field mappings e.g. <code>field1:newField1,field2:newField2</code>.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_header_to_field_custom_header_mappings": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Headers to columns. Comma separated list of headers using format <code><header name>:<header type>[:field name]</code> e.g. 'headerKey1:STRING,headerKey2:INT32:customKey2Name'",
 				MarkdownDescription: "Headers to columns. Comma separated list of headers using format <code><header name>:<header type>[:field name]</code> e.g. 'headerKey1:STRING,headerKey2:INT32:customKey2Name'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"auto_qa_dedupe_table_mapping": schema.MapAttribute{
+				Optional:    true,
+				Computed:    true,
+				ElementType: types.StringType,
+				PlanModifiers: []planmodifier.Map{
+					mapplanmodifier.UseStateForUnknown(),
+				},
+				Description:         "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
+				MarkdownDescription: "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
 			},
 		},
 	}
@@ -490,7 +578,6 @@ var DestinationSnowflakeFieldMappings = map[string]string{
 	"create_sql_execute":                                      "create.sql.execute",
 	"sql_table_name":                                          "sql.table.name",
 	"create_sql_data":                                         "create.sql.data",
-	"auto_qa_dedupe_table_mapping":                            "auto.qa.dedupe.table.mapping",
 	"snowflake_topic2table_map":                               "snowflake.topic2table.map",
 	"consumer_override_max_poll_records":                      "consumer.override.max.poll.records",
 	"preserve_null_values":                                    "preserve.null.values",
@@ -525,4 +612,5 @@ var DestinationSnowflakeFieldMappings = map[string]string{
 	"transforms_mark_columns_as_optional_fields_include_list": "transforms.MarkColumnsAsOptional.fields.include.list",
 	"transforms_copy_field_copy_field_mapping":                "transforms.CopyField.copy.field.mapping",
 	"transforms_header_to_field_custom_header_mappings":       "transforms.HeaderToFieldCustom.header.mappings",
+	"auto_qa_dedupe_table_mapping":                            "auto.qa.dedupe.table.mapping",
 }

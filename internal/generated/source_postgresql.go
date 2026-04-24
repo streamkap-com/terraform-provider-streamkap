@@ -18,64 +18,74 @@ import (
 
 // SourcePostgresqlModel is the Terraform model for the postgresql source.
 type SourcePostgresqlModel struct {
-	ID                                               types.String   `tfsdk:"id"`
-	Name                                             types.String   `tfsdk:"name"`
-	Connector                                        types.String   `tfsdk:"connector"`
-	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
-	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
-	DatabaseHostname                                 types.String   `tfsdk:"database_hostname"`
-	DatabasePort                                     types.Int64    `tfsdk:"database_port"`
-	DatabaseUser                                     types.String   `tfsdk:"database_user"`
-	DatabasePassword                                 types.String   `tfsdk:"database_password"`
-	DatabaseDbname                                   types.String   `tfsdk:"database_dbname"`
-	SnapshotReadOnly                                 types.String   `tfsdk:"snapshot_read_only"`
-	SignalDataCollectionSchemaOrDatabase             types.String   `tfsdk:"signal_data_collection_schema_or_database"`
-	ColumnIncludeListToggled                         types.Bool     `tfsdk:"column_include_list_toggled"`
-	SourceRegexSupportEnabled                        types.Bool     `tfsdk:"source_regex_support_enabled"`
-	TransformsSourceRegexSupportRegexReplacement     types.String   `tfsdk:"transforms_source_regex_support_regex_replacement"`
-	TransformsSourceRegexSupportKeyFieldTemplate     types.String   `tfsdk:"transforms_source_regex_support_key_field_template"`
-	TransformsSourceRegexSupportMetadataFieldName    types.String   `tfsdk:"transforms_source_regex_support_metadata_field_name"`
-	ColumnIncludeList                                types.String   `tfsdk:"column_include_list"`
-	ColumnExcludeList                                types.String   `tfsdk:"column_exclude_list"`
-	HeartbeatEnabled                                 types.Bool     `tfsdk:"heartbeat_enabled"`
-	HeartbeatDataCollectionSchemaOrDatabase          types.String   `tfsdk:"heartbeat_data_collection_schema_or_database"`
-	SlotName                                         types.String   `tfsdk:"slot_name"`
-	PublicationName                                  types.String   `tfsdk:"publication_name"`
-	SchemaIncludeList                                types.String   `tfsdk:"schema_include_list"`
-	TableIncludeList                                 types.String   `tfsdk:"table_include_list"`
-	DatabaseSslmode                                  types.String   `tfsdk:"database_sslmode"`
-	IncludeSourceDBNameInTableName                   types.Bool     `tfsdk:"include_source_db_name_in_table_name"`
-	BinaryHandlingMode                               types.String   `tfsdk:"binary_handling_mode"`
-	TransformsInsertStaticKey1StaticField            types.String   `tfsdk:"transforms_insert_static_key1_static_field"`
-	TransformsInsertStaticKey1StaticValue            types.String   `tfsdk:"transforms_insert_static_key1_static_value"`
-	TransformsInsertStaticValue1StaticField          types.String   `tfsdk:"transforms_insert_static_value1_static_field"`
-	TransformsInsertStaticValue1StaticValue          types.String   `tfsdk:"transforms_insert_static_value1_static_value"`
-	TransformsInsertStaticKey2StaticField            types.String   `tfsdk:"transforms_insert_static_key2_static_field"`
-	TransformsInsertStaticKey2StaticValue            types.String   `tfsdk:"transforms_insert_static_key2_static_value"`
-	TransformsInsertStaticValue2StaticField          types.String   `tfsdk:"transforms_insert_static_value2_static_field"`
-	TransformsInsertStaticValue2StaticValue          types.String   `tfsdk:"transforms_insert_static_value2_static_value"`
-	PredicatesIsTopicToEnrichPattern                 types.String   `tfsdk:"predicates_is_topic_to_enrich_pattern"`
-	StreamkapSnapshotParallelism                     types.Int64    `tfsdk:"streamkap_snapshot_parallelism"`
-	StreamkapSnapshotLargeTableThreshold             types.Int64    `tfsdk:"streamkap_snapshot_large_table_threshold"`
-	StreamkapSnapshotCustomTableConfig               types.String   `tfsdk:"streamkap_snapshot_custom_table_config"`
-	SSHEnabled                                       types.Bool     `tfsdk:"ssh_enabled"`
-	SSHHost                                          types.String   `tfsdk:"ssh_host"`
-	SSHPort                                          types.Int64    `tfsdk:"ssh_port"`
-	SSHUser                                          types.String   `tfsdk:"ssh_user"`
-	SSHPublicKey                                     types.String   `tfsdk:"ssh_public_key"`
-	TransformsValueToKeyFieldsIncludeList            types.String   `tfsdk:"transforms_value_to_key_fields_include_list"`
-	TransformsValueToKeyReplaceNullWithDefault       types.Bool     `tfsdk:"transforms_value_to_key_replace_null_with_default"`
-	PreserveNullValues                               types.Bool     `tfsdk:"preserve_null_values"`
-	TransformsOversizedRecordsFieldsIncludeList      types.String   `tfsdk:"transforms_oversized_records_fields_include_list"`
-	TransformsOversizedRecordsFieldsExcludeList      types.String   `tfsdk:"transforms_oversized_records_fields_exclude_list"`
-	TransformsOversizedRecordsMaxFieldSizeBytes      types.Int64    `tfsdk:"transforms_oversized_records_max_field_size_bytes"`
-	TransformsOversizedRecordsOversizedFieldBehavior types.String   `tfsdk:"transforms_oversized_records_oversized_field_behavior"`
-	TransformsOversizedRecordsTruncationSuffix       types.String   `tfsdk:"transforms_oversized_records_truncation_suffix"`
-	TransformsOversizedRecordsMaxRecordSizeBytes     types.Int64    `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
-	TransformsOversizedRecordsSemanticTypesExclude   types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
-	TransformsOversizedRecordsReplaceNullWithDefault types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
-	InsertTopicNameEnabled                           types.Bool     `tfsdk:"insert_topic_name_enabled"`
-	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
+	ID                                               types.String `tfsdk:"id"`
+	Name                                             types.String `tfsdk:"name"`
+	Connector                                        types.String `tfsdk:"connector"`
+	ConnectorStatus                                  types.String `tfsdk:"connector_status"`
+	KcClusterId                                      types.String `tfsdk:"kc_cluster_id"`
+	DatabaseHostname                                 types.String `tfsdk:"database_hostname"`
+	DatabasePort                                     types.Int64  `tfsdk:"database_port"`
+	DatabaseUser                                     types.String `tfsdk:"database_user"`
+	DatabasePassword                                 types.String `tfsdk:"database_password"`
+	DatabaseDbname                                   types.String `tfsdk:"database_dbname"`
+	SnapshotReadOnly                                 types.String `tfsdk:"snapshot_read_only"`
+	SignalDataCollectionSchemaOrDatabase             types.String `tfsdk:"signal_data_collection_schema_or_database"`
+	ColumnIncludeListToggled                         types.Bool   `tfsdk:"column_include_list_toggled"`
+	SourceRegexSupportEnabled                        types.Bool   `tfsdk:"source_regex_support_enabled"`
+	TransformsSourceRegexSupportRegexReplacement     types.String `tfsdk:"transforms_source_regex_support_regex_replacement"`
+	TransformsSourceRegexSupportKeyFieldTemplate     types.String `tfsdk:"transforms_source_regex_support_key_field_template"`
+	TransformsSourceRegexSupportMetadataFieldName    types.String `tfsdk:"transforms_source_regex_support_metadata_field_name"`
+	ColumnIncludeList                                types.String `tfsdk:"column_include_list"`
+	ColumnExcludeList                                types.String `tfsdk:"column_exclude_list"`
+	HeartbeatEnabled                                 types.Bool   `tfsdk:"heartbeat_enabled"`
+	HeartbeatDataCollectionSchemaOrDatabase          types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
+	SlotName                                         types.String `tfsdk:"slot_name"`
+	PublicationName                                  types.String `tfsdk:"publication_name"`
+	SchemaIncludeList                                types.String `tfsdk:"schema_include_list"`
+	TableIncludeList                                 types.String `tfsdk:"table_include_list"`
+	DatabaseSslmode                                  types.String `tfsdk:"database_sslmode"`
+	IncludeSourceDBNameInTableName                   types.Bool   `tfsdk:"include_source_db_name_in_table_name"`
+	BinaryHandlingMode                               types.String `tfsdk:"binary_handling_mode"`
+	TransformsInsertStaticKey1StaticField            types.String `tfsdk:"transforms_insert_static_key1_static_field"`
+	TransformsInsertStaticKey1StaticValue            types.String `tfsdk:"transforms_insert_static_key1_static_value"`
+	TransformsInsertStaticValue1StaticField          types.String `tfsdk:"transforms_insert_static_value1_static_field"`
+	TransformsInsertStaticValue1StaticValue          types.String `tfsdk:"transforms_insert_static_value1_static_value"`
+	TransformsInsertStaticKey2StaticField            types.String `tfsdk:"transforms_insert_static_key2_static_field"`
+	TransformsInsertStaticKey2StaticValue            types.String `tfsdk:"transforms_insert_static_key2_static_value"`
+	TransformsInsertStaticValue2StaticField          types.String `tfsdk:"transforms_insert_static_value2_static_field"`
+	TransformsInsertStaticValue2StaticValue          types.String `tfsdk:"transforms_insert_static_value2_static_value"`
+	PredicatesIsTopicToEnrichPattern                 types.String `tfsdk:"predicates_is_topic_to_enrich_pattern"`
+	StreamkapSnapshotLargeTableThreshold             types.Int64  `tfsdk:"streamkap_snapshot_large_table_threshold"`
+	StreamkapSnapshotCustomTableConfig               types.String `tfsdk:"streamkap_snapshot_custom_table_config"`
+	StreamkapSnapshotParallelism                     types.Int64  `tfsdk:"streamkap_snapshot_parallelism"`
+	SSHEnabled                                       types.Bool   `tfsdk:"ssh_enabled"`
+	SSHHost                                          types.String `tfsdk:"ssh_host"`
+	SSHPort                                          types.Int64  `tfsdk:"ssh_port"`
+	SSHUser                                          types.String `tfsdk:"ssh_user"`
+	SSHPublicKey                                     types.String `tfsdk:"ssh_public_key"`
+	TransformsValueToKeyFieldsIncludeList            types.String `tfsdk:"transforms_value_to_key_fields_include_list"`
+	TransformsValueToKeyReplaceNullWithDefault       types.Bool   `tfsdk:"transforms_value_to_key_replace_null_with_default"`
+	PreserveNullValues                               types.Bool   `tfsdk:"preserve_null_values"`
+	TransformsOversizedRecordsFieldsIncludeList      types.String `tfsdk:"transforms_oversized_records_fields_include_list"`
+	TransformsOversizedRecordsFieldsExcludeList      types.String `tfsdk:"transforms_oversized_records_fields_exclude_list"`
+	TransformsOversizedRecordsMaxFieldSizeBytes      types.Int64  `tfsdk:"transforms_oversized_records_max_field_size_bytes"`
+	TransformsOversizedRecordsOversizedFieldBehavior types.String `tfsdk:"transforms_oversized_records_oversized_field_behavior"`
+	TransformsOversizedRecordsTruncationSuffix       types.String `tfsdk:"transforms_oversized_records_truncation_suffix"`
+	TransformsOversizedRecordsMaxRecordSizeBytes     types.Int64  `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
+	TransformsOversizedRecordsSemanticTypesExclude   types.String `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
+	TransformsOversizedRecordsReplaceNullWithDefault types.Bool   `tfsdk:"transforms_oversized_records_replace_null_with_default"`
+	InsertTopicNameEnabled                           types.Bool   `tfsdk:"insert_topic_name_enabled"`
+	// Deprecated fields - kept for backward compatibility
+	InsertStaticKeyField1            types.String   `tfsdk:"insert_static_key_field_1"`
+	InsertStaticKeyValue1            types.String   `tfsdk:"insert_static_key_value_1"`
+	InsertStaticValueField1          types.String   `tfsdk:"insert_static_value_field_1"`
+	InsertStaticValue1               types.String   `tfsdk:"insert_static_value_1"`
+	InsertStaticKeyField2            types.String   `tfsdk:"insert_static_key_field_2"`
+	InsertStaticKeyValue2            types.String   `tfsdk:"insert_static_key_value_2"`
+	InsertStaticValueField2          types.String   `tfsdk:"insert_static_value_field_2"`
+	InsertStaticValue2               types.String   `tfsdk:"insert_static_value_2"`
+	PredicatesIstopictoenrichPattern types.String   `tfsdk:"predicates_istopictoenrich_pattern"`
+	Timeouts                         timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourcePostgresqlSchema returns the Terraform schema for the postgresql source.
@@ -160,8 +170,12 @@ func SourcePostgresqlSchema() schema.Schema {
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Full path to the signal table including schema and table name (e.g., 'public.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.",
 				MarkdownDescription: "Full path to the signal table including schema and table name (e.g., 'public.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"column_include_list_toggled": schema.BoolAttribute{
 				Optional:            true,
@@ -200,13 +214,21 @@ func SourcePostgresqlSchema() schema.Schema {
 			},
 			"column_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form schemaName[.]tableName[.](columnName1|columnName2)",
 				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form schemaName[.]tableName[.](columnName1|columnName2)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"column_exclude_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
 				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"heartbeat_enabled": schema.BoolAttribute{
 				Optional:            true,
@@ -217,8 +239,12 @@ func SourcePostgresqlSchema() schema.Schema {
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
-				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
+				Computed:            true,
+				Description:         "Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'.",
+				MarkdownDescription: "Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"slot_name": schema.StringAttribute{
 				Optional:            true,
@@ -273,43 +299,75 @@ func SourcePostgresqlSchema() schema.Schema {
 			},
 			"transforms_insert_static_key1_static_field": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The name of the static field to be added to the message key.",
 				MarkdownDescription: "The name of the static field to be added to the message key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_key1_static_value": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The value of the static field to be added to the message key.",
 				MarkdownDescription: "The value of the static field to be added to the message key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_value1_static_field": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The name of the static field to be added to the message value.",
 				MarkdownDescription: "The name of the static field to be added to the message value.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_value1_static_value": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The value of the static field to be added to the message value.",
 				MarkdownDescription: "The value of the static field to be added to the message value.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_key2_static_field": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The name of the static field to be added to the message key.",
 				MarkdownDescription: "The name of the static field to be added to the message key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_key2_static_value": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The value of the static field to be added to the message key.",
 				MarkdownDescription: "The value of the static field to be added to the message key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_value2_static_field": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The name of the static field to be added to the message value.",
 				MarkdownDescription: "The name of the static field to be added to the message value.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_value2_static_value": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The value of the static field to be added to the message value.",
 				MarkdownDescription: "The value of the static field to be added to the message value.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"predicates_is_topic_to_enrich_pattern": schema.StringAttribute{
 				Optional:            true,
@@ -317,16 +375,6 @@ func SourcePostgresqlSchema() schema.Schema {
 				Description:         "Regex pattern to match topics for enrichment. Defaults to \"$^\".",
 				MarkdownDescription: "Regex pattern to match topics for enrichment. Defaults to `$^`.",
 				Default:             stringdefault.StaticString("$^"),
-			},
-			"streamkap_snapshot_parallelism": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "How many parallel chunk requests to send to the source DB. Defaults to 1.",
-				MarkdownDescription: "How many parallel chunk requests to send to the source DB. Defaults to `1`.",
-				Default:             int64default.StaticInt64(1),
-				Validators: []validator.Int64{
-					int64validator.Between(1, 50),
-				},
 			},
 			"streamkap_snapshot_large_table_threshold": schema.Int64Attribute{
 				Optional:            true,
@@ -340,8 +388,22 @@ func SourcePostgresqlSchema() schema.Schema {
 			},
 			"streamkap_snapshot_custom_table_config": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.",
 				MarkdownDescription: "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"streamkap_snapshot_parallelism": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How many parallel chunk requests to send to the source DB. Defaults to 1.",
+				MarkdownDescription: "How many parallel chunk requests to send to the source DB. Defaults to `1`.",
+				Default:             int64default.StaticInt64(1),
+				Validators: []validator.Int64{
+					int64validator.Between(1, 10),
+				},
 			},
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
@@ -352,8 +414,12 @@ func SourcePostgresqlSchema() schema.Schema {
 			},
 			"ssh_host": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
@@ -380,8 +446,12 @@ func SourcePostgresqlSchema() schema.Schema {
 			},
 			"transforms_value_to_key_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_value_to_key_replace_null_with_default": schema.BoolAttribute{
 				Optional:            true,
@@ -399,13 +469,21 @@ func SourcePostgresqlSchema() schema.Schema {
 			},
 			"transforms_oversized_records_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
 				MarkdownDescription: "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_fields_exclude_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
 				MarkdownDescription: "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_max_field_size_bytes": schema.Int64Attribute{
 				Optional:            true,
@@ -503,9 +581,9 @@ var SourcePostgresqlFieldMappings = map[string]string{
 	"transforms_insert_static_value2_static_field":           "transforms.InsertStaticValue2.static.field",
 	"transforms_insert_static_value2_static_value":           "transforms.InsertStaticValue2.static.value",
 	"predicates_is_topic_to_enrich_pattern":                  "predicates.IsTopicToEnrich.pattern",
-	"streamkap_snapshot_parallelism":                         "streamkap.snapshot.parallelism",
 	"streamkap_snapshot_large_table_threshold":               "streamkap.snapshot.large.table.threshold",
 	"streamkap_snapshot_custom_table_config":                 "streamkap.snapshot.custom.table.config.user.defined",
+	"streamkap_snapshot_parallelism":                         "streamkap.snapshot.parallelism",
 	"ssh_enabled":                                            "ssh.enabled",
 	"ssh_host":                                               "ssh.host",
 	"ssh_port":                                               "ssh.port",

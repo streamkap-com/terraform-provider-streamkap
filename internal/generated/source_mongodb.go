@@ -154,8 +154,12 @@ func SourceMongodbSchema() schema.Schema {
 			},
 			"cursor_pipeline": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "A JSON array of additional pipeline stages to apply when reading change events from MongoDB. This can be used to filter or transform change stream events before they are processed by the connector",
 				MarkdownDescription: "A JSON array of additional pipeline stages to apply when reading change events from MongoDB. This can be used to filter or transform change stream events before they are processed by the connector",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"cursor_oversize_handling_mode": schema.StringAttribute{
 				Optional:            true,
@@ -179,43 +183,75 @@ func SourceMongodbSchema() schema.Schema {
 			},
 			"transforms_insert_static_key1_static_field": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The name of the static field to be added to the message key.",
 				MarkdownDescription: "The name of the static field to be added to the message key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_key1_static_value": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The value of the static field to be added to the message key.",
 				MarkdownDescription: "The value of the static field to be added to the message key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_value1_static_field": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The name of the static field to be added to the message value.",
 				MarkdownDescription: "The name of the static field to be added to the message value.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_value1_static_value": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The value of the static field to be added to the message value.",
 				MarkdownDescription: "The value of the static field to be added to the message value.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_key2_static_field": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The name of the static field to be added to the message key.",
 				MarkdownDescription: "The name of the static field to be added to the message key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_key2_static_value": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The value of the static field to be added to the message key.",
 				MarkdownDescription: "The value of the static field to be added to the message key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_value2_static_field": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The name of the static field to be added to the message value.",
 				MarkdownDescription: "The name of the static field to be added to the message value.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_value2_static_value": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The value of the static field to be added to the message value.",
 				MarkdownDescription: "The value of the static field to be added to the message value.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"predicates_is_topic_to_enrich_pattern": schema.StringAttribute{
 				Optional:            true,
@@ -233,8 +269,12 @@ func SourceMongodbSchema() schema.Schema {
 			},
 			"ssh_host": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
@@ -261,8 +301,12 @@ func SourceMongodbSchema() schema.Schema {
 			},
 			"transforms_value_to_key_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_value_to_key_replace_null_with_default": schema.BoolAttribute{
 				Optional:            true,
@@ -280,13 +324,21 @@ func SourceMongodbSchema() schema.Schema {
 			},
 			"transforms_oversized_records_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
 				MarkdownDescription: "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_fields_exclude_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
 				MarkdownDescription: "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_max_field_size_bytes": schema.Int64Attribute{
 				Optional:            true,

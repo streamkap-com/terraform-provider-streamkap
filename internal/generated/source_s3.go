@@ -24,12 +24,18 @@ type SourceS3Model struct {
 	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
 	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
 	Format                                           types.String   `tfsdk:"format"`
+	CsvHasHeaders                                    types.Bool     `tfsdk:"csv_has_headers"`
+	TopicRoutingEnabled                              types.Bool     `tfsdk:"topic_routing_enabled"`
+	TopicRoutingFolderSkip                           types.Int64    `tfsdk:"topic_routing_folder_skip"`
+	TopicRoutingFolderLevels                         types.Int64    `tfsdk:"topic_routing_folder_levels"`
+	TopicRoutingAdvancedExpression                   types.String   `tfsdk:"topic_routing_advanced_expression"`
 	TopicPostfix                                     types.String   `tfsdk:"topic_postfix"`
+	TopicIncludeList                                 types.String   `tfsdk:"topic_include_list"`
 	AWSAccessKeyID                                   types.String   `tfsdk:"aws_access_key_id"`
 	AWSSecretAccessKey                               types.String   `tfsdk:"aws_secret_access_key"`
 	AWSS3Region                                      types.String   `tfsdk:"aws_s3_region"`
 	AWSS3BucketName                                  types.String   `tfsdk:"aws_s3_bucket_name"`
-	AWSS3ObjectPrefix                                types.String   `tfsdk:"aws_s3_object_prefix"`
+	AWSS3BucketPrefix                                types.String   `tfsdk:"aws_s3_bucket_prefix"`
 	FsScanIntervalMs                                 types.Int64    `tfsdk:"fs_scan_interval_ms"`
 	FsCleanupPolicyClass                             types.String   `tfsdk:"fs_cleanup_policy_class"`
 	TasksMax                                         types.Int64    `tfsdk:"tasks_max"`
@@ -100,12 +106,54 @@ func SourceS3Schema() schema.Schema {
 					stringvalidator.OneOf("json", "csv", "avro"),
 				},
 			},
+			"csv_has_headers": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "When enabled, treat the first row of each CSV file as column names. When disabled, columns are auto-generated as column1, column2, ... Defaults to true.",
+				MarkdownDescription: "When enabled, treat the first row of each CSV file as column names. When disabled, columns are auto-generated as column1, column2, ... Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
+			"topic_routing_enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "When enabled, derive the Kafka topic name per file from the S3 key. When disabled, all files go to the single default topic. Defaults to false.",
+				MarkdownDescription: "When enabled, derive the Kafka topic name per file from the S3 key. When disabled, all files go to the single default topic. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"topic_routing_folder_skip": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Number of leading path segments to drop from the S3 key before using folders for the topic name. Example: with key 'archive/public/users/file.csv' set 2 to drop 'archive/public'. Defaults to 0.",
+				MarkdownDescription: "Number of leading path segments to drop from the S3 key before using folders for the topic name. Example: with key 'archive/public/users/file.csv' set 2 to drop 'archive/public'. Defaults to `0`.",
+				Default:             int64default.StaticInt64(0),
+			},
+			"topic_routing_folder_levels": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Number of folder segments (after the skip) to include in the topic name, joined with dots. Set 0 to skip folder-based routing entirely. Defaults to 0.",
+				MarkdownDescription: "Number of folder segments (after the skip) to include in the topic name, joined with dots. Set 0 to skip folder-based routing entirely. Defaults to `0`.",
+				Default:             int64default.StaticInt64(0),
+			},
+			"topic_routing_advanced_expression": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "ScEL expression for building the topic suffix. When set, overrides Folder Skip and Folder Levels. The connector ID is always prepended. See the S3 Source documentation for available functions and examples. Defaults to \"\".",
+				MarkdownDescription: "ScEL expression for building the topic suffix. When set, overrides Folder Skip and Folder Levels. The connector ID is always prepended. See the S3 Source documentation for available functions and examples. Defaults to ``.",
+				Default:             stringdefault.StaticString(""),
+			},
 			"topic_postfix": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The postfix of the topic to be used, for example source_[UUID].s3.[postfix]. Defaults to \"default\".",
-				MarkdownDescription: "The postfix of the topic to be used, for example source_[UUID].s3.[postfix]. Defaults to `default`.",
+				Description:         "The default topic name suffix. When Dynamic Topic Routing is disabled, all files are streamed to this single topic. When enabled, this is used as a fallback for files that do not match the routing rules. Defaults to \"default\".",
+				MarkdownDescription: "The default topic name suffix. When Dynamic Topic Routing is disabled, all files are streamed to this single topic. When enabled, this is used as a fallback for files that do not match the routing rules. Defaults to `default`.",
 				Default:             stringdefault.StaticString("default"),
+			},
+			"topic_include_list": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Topics produced by this S3 source. Populated automatically as topics are discovered. Defaults to \"\".",
+				MarkdownDescription: "Topics produced by this S3 source. Populated automatically as topics are discovered. Defaults to ``.",
+				Default:             stringdefault.StaticString(""),
 			},
 			"aws_access_key_id": schema.StringAttribute{
 				Optional:            true,
@@ -139,11 +187,11 @@ func SourceS3Schema() schema.Schema {
 				MarkdownDescription: "The S3 Bucket to use. Defaults to ``.",
 				Default:             stringdefault.StaticString(""),
 			},
-			"aws_s3_object_prefix": schema.StringAttribute{
+			"aws_s3_bucket_prefix": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Prefix for S3 objects to scan. Can be used to specify a directory. Defaults to \"file-pulse/\".",
-				MarkdownDescription: "Prefix for S3 objects to scan. Can be used to specify a directory. Defaults to `file-pulse/`.",
+				Description:         "Prefix for S3 object keys to scan (e.g. \"data/2024/\"). Can be used to specify a directory. Defaults to \"file-pulse/\".",
+				MarkdownDescription: "Prefix for S3 object keys to scan (e.g. \"data/2024/\"). Can be used to specify a directory. Defaults to `file-pulse/`.",
 				Default:             stringdefault.StaticString("file-pulse/"),
 			},
 			"fs_scan_interval_ms": schema.Int64Attribute{
@@ -159,11 +207,11 @@ func SourceS3Schema() schema.Schema {
 			"fs_cleanup_policy_class": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The policy to use for cleaning up files after processing. Defaults to \"io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy\". Valid values: io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy, io.streamthoughts.kafka.connect.filepulse.fs.clean.DeleteCleanupPolicy.",
-				MarkdownDescription: "The policy to use for cleaning up files after processing. Defaults to `io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy`. Valid values: `io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy`, `io.streamthoughts.kafka.connect.filepulse.fs.clean.DeleteCleanupPolicy`.",
-				Default:             stringdefault.StaticString("io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy"),
+				Description:         "The policy to use for cleaning up files after processing. Log marks files as processed without deleting. Delete removes files from S3 after processing. Defaults to \"Log\". Valid values: Log, Delete.",
+				MarkdownDescription: "The policy to use for cleaning up files after processing. Log marks files as processed without deleting. Delete removes files from S3 after processing. Defaults to `Log`. Valid values: `Log`, `Delete`.",
+				Default:             stringdefault.StaticString("Log"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy", "io.streamthoughts.kafka.connect.filepulse.fs.clean.DeleteCleanupPolicy"),
+					stringvalidator.OneOf("Log", "Delete"),
 				},
 			},
 			"tasks_max": schema.Int64Attribute{
@@ -178,8 +226,12 @@ func SourceS3Schema() schema.Schema {
 			},
 			"transforms_value_to_key_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_value_to_key_replace_null_with_default": schema.BoolAttribute{
 				Optional:            true,
@@ -197,13 +249,21 @@ func SourceS3Schema() schema.Schema {
 			},
 			"transforms_oversized_records_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
 				MarkdownDescription: "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_fields_exclude_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
 				MarkdownDescription: "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_max_field_size_bytes": schema.Int64Attribute{
 				Optional:            true,
@@ -269,16 +329,22 @@ func SourceS3Schema() schema.Schema {
 
 // SourceS3FieldMappings maps Terraform attribute names to API field names.
 var SourceS3FieldMappings = map[string]string{
-	"format":                  "format",
-	"topic_postfix":           "topic.postfix",
-	"aws_access_key_id":       "aws.access.key.id",
-	"aws_secret_access_key":   "aws.secret.access.key",
-	"aws_s3_region":           "aws.s3.region",
-	"aws_s3_bucket_name":      "aws.s3.bucket.name",
-	"aws_s3_object_prefix":    "aws.s3.object.prefix",
-	"fs_scan_interval_ms":     "fs.scan.interval.ms",
-	"fs_cleanup_policy_class": "fs.cleanup.policy.class",
-	"tasks_max":               "tasks.max",
+	"format":                                                 "format",
+	"csv_has_headers":                                        "csv.has.headers",
+	"topic_routing_enabled":                                  "topic.routing.enabled",
+	"topic_routing_folder_skip":                              "topic.routing.folder.skip",
+	"topic_routing_folder_levels":                            "topic.routing.folder.levels",
+	"topic_routing_advanced_expression":                      "topic.routing.advanced.expression",
+	"topic_postfix":                                          "topic.postfix",
+	"topic_include_list":                                     "topic.include.list.user.defined",
+	"aws_access_key_id":                                      "aws.access.key.id",
+	"aws_secret_access_key":                                  "aws.secret.access.key",
+	"aws_s3_region":                                          "aws.s3.region",
+	"aws_s3_bucket_name":                                     "aws.s3.bucket.name",
+	"aws_s3_bucket_prefix":                                   "aws.s3.bucket.prefix",
+	"fs_scan_interval_ms":                                    "fs.scan.interval.ms",
+	"fs_cleanup_policy_class":                                "fs.cleanup.policy.class.user.defined",
+	"tasks_max":                                              "tasks.max",
 	"transforms_value_to_key_fields_include_list":            "transforms.ValueToKey.fields.include.list",
 	"transforms_value_to_key_replace_null_with_default":      "transforms.ValueToKey.replace.null.with.default",
 	"preserve_null_values":                                   "preserve.null.values",

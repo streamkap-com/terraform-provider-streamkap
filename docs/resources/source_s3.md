@@ -29,20 +29,26 @@ This resource creates and manages an S3 source for Streamkap data pipelines. Use
 
 - `aws_access_key_id` (String) The AWS Access Key ID used to connect to S3. Defaults to ``.
 - `aws_s3_bucket_name` (String) The S3 Bucket to use. Defaults to ``.
-- `aws_s3_object_prefix` (String) Prefix for S3 objects to scan. Can be used to specify a directory. Defaults to `file-pulse/`.
+- `aws_s3_bucket_prefix` (String) Prefix for S3 object keys to scan (e.g. "data/2024/"). Can be used to specify a directory. Defaults to `file-pulse/`.
 - `aws_s3_region` (String) The AWS region to be used. Defaults to `us-west-2`. Valid values: `eu-west-2`, `eu-west-1`, `eu-central-1`, `ap-south-1`, `ap-northeast-2`, `ap-northeast-1`, `ap-southeast-1`, `ap-southeast-2`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.
 - `aws_secret_access_key` (String, Sensitive) The AWS Secret Access Key used to connect to S3. Defaults to ``.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
+- `csv_has_headers` (Boolean) When enabled, treat the first row of each CSV file as column names. When disabled, columns are auto-generated as column1, column2, ... Defaults to `true`.
 - `format` (String) The input file format. Defaults to `json`. Valid values: `json`, `csv`, `avro`.
-- `fs_cleanup_policy_class` (String) The policy to use for cleaning up files after processing. Defaults to `io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy`. Valid values: `io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy`, `io.streamthoughts.kafka.connect.filepulse.fs.clean.DeleteCleanupPolicy`.
+- `fs_cleanup_policy_class` (String) The policy to use for cleaning up files after processing. Log marks files as processed without deleting. Delete removes files from S3 after processing. Defaults to `Log`. Valid values: `Log`, `Delete`.
 - `fs_scan_interval_ms` (Number) The interval in milliseconds at which to scan for new files. Defaults to `10000`.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `topic_postfix` (String) The postfix of the topic to be used, for example source_[UUID].s3.[postfix]. Defaults to `default`.
+- `topic_include_list` (String) Topics produced by this S3 source. Populated automatically as topics are discovered. Defaults to ``.
+- `topic_postfix` (String) The default topic name suffix. When Dynamic Topic Routing is disabled, all files are streamed to this single topic. When enabled, this is used as a fallback for files that do not match the routing rules. Defaults to `default`.
+- `topic_routing_advanced_expression` (String) ScEL expression for building the topic suffix. When set, overrides Folder Skip and Folder Levels. The connector ID is always prepended. See the S3 Source documentation for available functions and examples. Defaults to ``.
+- `topic_routing_enabled` (Boolean) When enabled, derive the Kafka topic name per file from the S3 key. When disabled, all files go to the single default topic. Defaults to `false`.
+- `topic_routing_folder_levels` (Number) Number of folder segments (after the skip) to include in the topic name, joined with dots. Set 0 to skip folder-based routing entirely. Defaults to `0`.
+- `topic_routing_folder_skip` (Number) Number of leading path segments to drop from the S3 key before using folders for the topic name. Example: with key 'archive/public/users/file.csv' set 2 to drop 'archive/public'. Defaults to `0`.
 - `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
 - `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
 - `transforms_oversized_records_max_field_size_bytes` (Number) Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.

@@ -28,7 +28,7 @@
     "iceberg_catalog_client_assume_role_arn": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "iceberg_catalog_client_region": {
@@ -40,19 +40,19 @@
     "iceberg_catalog_credential": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": true
     },
     "iceberg_catalog_name": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "iceberg_catalog_s3_access_key_id": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "iceberg_catalog_s3_credentials_enabled": {
@@ -64,7 +64,7 @@
     "iceberg_catalog_s3_secret_access_key": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": true
     },
     "iceberg_catalog_scope": {
@@ -76,7 +76,7 @@
     "iceberg_catalog_token": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": true
     },
     "iceberg_catalog_type": {
@@ -88,7 +88,7 @@
     "iceberg_catalog_uri": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "iceberg_catalog_warehouse": {
@@ -142,7 +142,7 @@
     "iceberg_tables_default_id_columns": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "iceberg_tables_hard_delete_enabled": {
@@ -196,37 +196,37 @@
     "transforms_add_string_suffix_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_change_topic_name_match_regex": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_copy_field_copy_field_mapping": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_drop_fields_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_header_to_field_custom_header_mappings": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_mark_columns_as_optional_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_mark_columns_as_required_fields_include_all": {
@@ -244,13 +244,13 @@
     "transforms_oversized_records_fields_exclude_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_oversized_records_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_oversized_records_max_field_size_bytes": {
@@ -292,31 +292,31 @@
     "transforms_rename_fields_renames": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_string_replace_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_string_replace_regex_patterns": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_string_replace_replacement_values": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_to_decimal_j_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_to_decimal_j_truncate_to_max_precision": {
@@ -328,13 +328,13 @@
     "transforms_to_float_j_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_to_int_j_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_to_json_j_convert_all_complex_types": {
@@ -346,7 +346,7 @@
     "transforms_to_json_j_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_to_jsonb_j_convert_all_complex_types": {
@@ -364,13 +364,13 @@
     "transforms_to_jsonb_j_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_to_string_j_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     }
   }

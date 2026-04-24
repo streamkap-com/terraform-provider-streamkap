@@ -13,7 +13,7 @@
       "computed": true,
       "sensitive": false
     },
-    "aws_s3_object_prefix": {
+    "aws_s3_bucket_prefix": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -40,6 +40,12 @@
     "connector_status": {
       "required": false,
       "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
+    "csv_has_headers": {
+      "required": false,
+      "optional": true,
       "computed": true,
       "sensitive": false
     },
@@ -97,7 +103,37 @@
       "computed": true,
       "sensitive": false
     },
+    "topic_include_list": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "topic_postfix": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "topic_routing_advanced_expression": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "topic_routing_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "topic_routing_folder_levels": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "topic_routing_folder_skip": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -106,13 +142,13 @@
     "transforms_oversized_records_fields_exclude_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_oversized_records_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_oversized_records_max_field_size_bytes": {
@@ -154,7 +190,7 @@
     "transforms_value_to_key_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_value_to_key_replace_null_with_default": {

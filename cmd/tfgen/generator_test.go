@@ -436,7 +436,15 @@ func TestRequiredOptionalComputed(t *testing.T) {
 		}
 	})
 
-	t.Run("optional field without default", func(t *testing.T) {
+	t.Run("optional field without default — Optional+Computed+UseStateForUnknown (issue #80)", func(t *testing.T) {
+		// The Streamkap backend may dynamically backfill a value at apply time
+		// based on cross-resource state (e.g. app/destinations/dynamic_utils.py
+		// sets transforms.MarkColumnsAsOptional.fields.include.list = "*" for
+		// MongoDB→PostgreSQL pipelines). A pure Optional field surfaces this
+		// as "Provider produced inconsistent result after apply" (#80). The
+		// generator must emit every required=false, no-default user field as
+		// Optional+Computed with UseStateForUnknown so the plan tolerates a
+		// backend-owned value without going unknown on every refresh.
 		entry := &ConfigEntry{
 			Name:        "test.field",
 			UserDefined: true,
@@ -453,8 +461,11 @@ func TestRequiredOptionalComputed(t *testing.T) {
 		if !field.Optional {
 			t.Error("optional field should be Optional")
 		}
-		if field.Computed {
-			t.Error("optional field without default should not be Computed")
+		if !field.Computed {
+			t.Error("optional field without default should be Computed to tolerate backend backfill (#80)")
+		}
+		if !field.NeedsPlanMod {
+			t.Error("optional+computed field should set UseStateForUnknown so refresh doesn't churn (#80)")
 		}
 	})
 }

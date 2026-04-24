@@ -108,11 +108,19 @@ func (r *BaseTransformResource) Schema(ctx context.Context, req resource.SchemaR
 		Default:             booldefault.StaticBool(false),
 	}
 
-	// Add replay_window attribute for deployment replay configuration
+	// Add replay_window attribute for deployment replay configuration. The
+	// backend never returns this field on Read (it's a deployment-time action
+	// param), so we mark it Optional+Computed+UseStateForUnknown to keep the
+	// plan stable — this matches the generator-wide rule from issue #80 and
+	// prevents "planned value was X, but now null" on refresh.
 	baseSchema.Attributes["replay_window"] = schema.StringAttribute{
 		Description:         "Replay window for deployment. Specifies how much historical data to reprocess on deploy. Valid values: \"7d\", \"3d\", \"24h\", \"10m\", \"0\" (continue from last position). Only used when deploy is true.",
 		MarkdownDescription: "Replay window for deployment. Specifies how much historical data to reprocess on deploy.\n\nValid values: `7d`, `3d`, `24h`, `10m`, `0` (continue from last position). Only used when `deploy` is `true`.",
 		Optional:            true,
+		Computed:            true,
+		PlanModifiers: []planmodifier.String{
+			stringplanmodifier.UseStateForUnknown(),
+		},
 		Validators: []validator.String{
 			stringvalidator.OneOf("7d", "3d", "24h", "10m", "0"),
 		},
