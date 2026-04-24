@@ -63,3 +63,12 @@ logs.md
 scripts/ralph
 env.md
 .claude
+docs/plans
+docs/audits
+
+# Internal development docs — not intended for the public Terraform registry.
+# Kept locally for contributors; excluded from the published repo. If a doc
+# here needs to become public, remove the matching entry below and commit.
+docs/AI_AGENT_COMPATIBILITY.md
+docs/DEVELOPMENT.md
+docs/TESTING.md

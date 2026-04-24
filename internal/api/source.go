@@ -59,7 +59,7 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 	var resp Source
 	err = s.doRequestWithRetry(ctx, req, &resp)
@@ -210,7 +210,7 @@ func (s *streamkapAPI) UpdateSource(ctx context.Context, sourceID string, reqPay
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 	var resp Source
 	err = s.doRequestWithRetry(ctx, req, &resp)

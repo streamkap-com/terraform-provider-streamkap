@@ -133,7 +133,7 @@ func (s *streamkapAPI) UpdateTopic(ctx context.Context, topicID string, reqPaylo
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 	var rep any
 	err = s.doRequestWithRetry(ctx, req, &rep)
@@ -252,7 +252,7 @@ func (s *streamkapAPI) GetTopicTableMetrics(ctx context.Context, reqPayload Topi
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 
 	var resp TopicTableMetricsResponse

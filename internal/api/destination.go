@@ -59,7 +59,7 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destina
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 	var resp Destination
 	err = s.doRequestWithRetry(ctx, req, &resp)
@@ -197,7 +197,7 @@ func (s *streamkapAPI) UpdateDestination(ctx context.Context, destinationID stri
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 	var resp Destination
 	err = s.doRequestWithRetry(ctx, req, &resp)

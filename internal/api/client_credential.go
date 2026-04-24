@@ -62,7 +62,7 @@ func (s *streamkapAPI) CreateClientCredential(ctx context.Context, reqPayload Cr
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		payload,
+		redactSensitiveJSON(payload),
 	))
 	var resp ClientCredential
 	err = s.doRequestWithRetry(ctx, req, &resp)
