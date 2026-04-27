@@ -34,7 +34,7 @@
     "replay_window": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transform_type": {

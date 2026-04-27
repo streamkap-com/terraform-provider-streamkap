@@ -37,7 +37,7 @@ This resource creates and manages a DynamoDB source for Streamkap data pipelines
 ### Optional
 
 - `array_encoding_json` (Boolean) Force nested lists as JSON string. Defaults to `true`.
-- `batch_size` (Number)
+- `batch_size` (Number) Batch Size
 - `dynamodb_service_endpoint` (String) Dynamodb Service Endpoint (optional)
 - `full_export_expiration_time_ms` (Number) Full Export Expiration Time (ms). Defaults to `0`.
 - `incremental_snapshot_chunk_size` (Number) Incremental snapshot chunk size. Defaults to `0`.

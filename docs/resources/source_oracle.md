@@ -40,7 +40,7 @@ This resource creates and manages an Oracle source for Streamkap data pipelines.
 - `column_exclude_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.
 - `database_pdb_name` (String) Pluggable database from which to stream data. Use this for container database (CDB) installations only.
 - `database_port` (Number) Oracle Port. For example, 1521. Defaults to `1521`.
-- `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.
+- `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'.
 - `heartbeat_enabled` (Boolean) Heartbeats are used to monitor whether the connector is still receiving change events from the database, especially when there is low and intermittent traffic. Defaults to `true`.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.

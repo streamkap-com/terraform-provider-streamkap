@@ -40,7 +40,7 @@
     "cursor_pipeline": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "database_include_list": {
@@ -172,7 +172,7 @@
     "ssh_host": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "ssh_port": {
@@ -196,61 +196,61 @@
     "transforms_insert_static_key1_static_field": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_key1_static_value": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_key2_static_field": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_key2_static_value": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_value1_static_field": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_value1_static_value": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_value2_static_field": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_value2_static_value": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_oversized_records_fields_exclude_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_oversized_records_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_oversized_records_max_field_size_bytes": {
@@ -304,7 +304,7 @@
     "transforms_value_to_key_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_value_to_key_replace_null_with_default": {

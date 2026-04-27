@@ -4,7 +4,7 @@
     "column_exclude_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "connector": {
@@ -82,7 +82,7 @@
     "ssh_host": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "ssh_port": {
@@ -112,13 +112,13 @@
     "transforms_oversized_records_fields_exclude_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_oversized_records_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_oversized_records_max_field_size_bytes": {
@@ -160,7 +160,7 @@
     "transforms_value_to_key_fields_include_list": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false
     },
     "transforms_value_to_key_replace_null_with_default": {

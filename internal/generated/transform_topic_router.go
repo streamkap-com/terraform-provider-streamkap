@@ -21,12 +21,12 @@ type TransformTopicRouterModel struct {
 	ID                                  types.String         `tfsdk:"id"`
 	Name                                types.String         `tfsdk:"name"`
 	TransformType                       types.String         `tfsdk:"transform_type"`
+	TransformsInputJobParallelism       types.Int64          `tfsdk:"transforms_input_job_parallelism"`
 	TransformsInputTopicPattern         types.String         `tfsdk:"transforms_input_topic_pattern"`
 	TransformsOutputTopicPattern        types.String         `tfsdk:"transforms_output_topic_pattern"`
 	TransformsInputSerializationFormat  types.String         `tfsdk:"transforms_input_serialization_format"`
 	TransformsOutputSerializationFormat types.String         `tfsdk:"transforms_output_serialization_format"`
 	KcClusterID                         types.String         `tfsdk:"kc_cluster_id"`
-	TransformsInputJobParallelism       types.Int64          `tfsdk:"transforms_input_job_parallelism"`
 	ImplementationJSON                  jsontypes.Normalized `tfsdk:"implementation_json"`
 	Deploy                              types.Bool           `tfsdk:"deploy"`
 	ReplayWindow                        types.String         `tfsdk:"replay_window"`
@@ -62,6 +62,16 @@ func TransformTopicRouterSchema() schema.Schema {
 				MarkdownDescription: "Transform type",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_input_job_parallelism": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The number of parallel tasks this transform should be using. Recommended: 1-5 for most workloads. Higher values increase throughput but consume more resources. Start low and increase based on lag metrics. Defaults to 5.",
+				MarkdownDescription: "The number of parallel tasks this transform should be using. Recommended: 1-5 for most workloads. Higher values increase throughput but consume more resources. Start low and increase based on lag metrics. Defaults to `5`.",
+				Default:             int64default.StaticInt64(5),
+				Validators: []validator.Int64{
+					int64validator.Between(1, 100),
 				},
 			},
 			"transforms_input_topic_pattern": schema.StringAttribute{
@@ -101,26 +111,16 @@ func TransformTopicRouterSchema() schema.Schema {
 				MarkdownDescription: "KC cluster to deploy the connector to. Leave empty for default cluster. Defaults to ``.",
 				Default:             stringdefault.StaticString(""),
 			},
-			"transforms_input_job_parallelism": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "The number of parallel tasks this transform should be using. Recommended: 1-5 for most workloads. Higher values increase throughput but consume more resources. Start low and increase based on lag metrics. Defaults to 5.",
-				MarkdownDescription: "The number of parallel tasks this transform should be using. Recommended: 1-5 for most workloads. Higher values increase throughput but consume more resources. Start low and increase based on lag metrics. Defaults to `5`.",
-				Default:             int64default.StaticInt64(5),
-				Validators: []validator.Int64{
-					int64validator.Between(1, 100),
-				},
-			},
 		},
 	}
 }
 
 // TransformTopicRouterFieldMappings maps Terraform attribute names to API field names.
 var TransformTopicRouterFieldMappings = map[string]string{
+	"transforms_input_job_parallelism":       "transforms.input.job.parallelism",
 	"transforms_input_topic_pattern":         "transforms.input.topic.pattern",
 	"transforms_output_topic_pattern":        "transforms.output.topic.pattern",
 	"transforms_input_serialization_format":  "transforms.input.serialization.format",
 	"transforms_output_serialization_format": "transforms.output.serialization.format",
 	"kc_cluster_id":                          "kc.cluster.id",
-	"transforms_input_job_parallelism":       "transforms.input.job.parallelism",
 }

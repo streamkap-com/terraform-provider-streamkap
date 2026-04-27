@@ -153,8 +153,12 @@ func SourceSupabaseSchema() schema.Schema {
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Full path to the signal table including schema and table name (e.g., 'public.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.",
 				MarkdownDescription: "Full path to the signal table including schema and table name (e.g., 'public.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"column_include_list_toggled": schema.BoolAttribute{
 				Optional:            true,
@@ -165,13 +169,21 @@ func SourceSupabaseSchema() schema.Schema {
 			},
 			"column_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form schemaName[.]tableName[.](columnName1|columnName2)",
 				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form schemaName[.]tableName[.](columnName1|columnName2)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"column_exclude_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
 				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"heartbeat_enabled": schema.BoolAttribute{
 				Optional:            true,
@@ -182,8 +194,12 @@ func SourceSupabaseSchema() schema.Schema {
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
-				MarkdownDescription: "Streamkap will use a table in this database to simulate activity from the source database to keep the database transaction log 'alive'.",
+				Computed:            true,
+				Description:         "Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'.",
+				MarkdownDescription: "Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"slot_name": schema.StringAttribute{
 				Optional:            true,
@@ -238,43 +254,75 @@ func SourceSupabaseSchema() schema.Schema {
 			},
 			"transforms_insert_static_key1_static_field": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The name of the static field to be added to the message key.",
 				MarkdownDescription: "The name of the static field to be added to the message key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_key1_static_value": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The value of the static field to be added to the message key.",
 				MarkdownDescription: "The value of the static field to be added to the message key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_value1_static_field": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The name of the static field to be added to the message value.",
 				MarkdownDescription: "The name of the static field to be added to the message value.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_value1_static_value": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The value of the static field to be added to the message value.",
 				MarkdownDescription: "The value of the static field to be added to the message value.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_key2_static_field": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The name of the static field to be added to the message key.",
 				MarkdownDescription: "The name of the static field to be added to the message key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_key2_static_value": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The value of the static field to be added to the message key.",
 				MarkdownDescription: "The value of the static field to be added to the message key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_value2_static_field": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The name of the static field to be added to the message value.",
 				MarkdownDescription: "The name of the static field to be added to the message value.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_insert_static_value2_static_value": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The value of the static field to be added to the message value.",
 				MarkdownDescription: "The value of the static field to be added to the message value.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"predicates_is_topic_to_enrich_pattern": schema.StringAttribute{
 				Optional:            true,
@@ -292,8 +340,12 @@ func SourceSupabaseSchema() schema.Schema {
 			},
 			"ssh_host": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Hostname of your SSH server",
 				MarkdownDescription: "Hostname of your SSH server",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"ssh_port": schema.Int64Attribute{
 				Optional:            true,
@@ -320,8 +372,12 @@ func SourceSupabaseSchema() schema.Schema {
 			},
 			"transforms_value_to_key_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_value_to_key_replace_null_with_default": schema.BoolAttribute{
 				Optional:            true,
@@ -339,13 +395,21 @@ func SourceSupabaseSchema() schema.Schema {
 			},
 			"transforms_oversized_records_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
 				MarkdownDescription: "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_fields_exclude_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
 				MarkdownDescription: "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_max_field_size_bytes": schema.Int64Attribute{
 				Optional:            true,

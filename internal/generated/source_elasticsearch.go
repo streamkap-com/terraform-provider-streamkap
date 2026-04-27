@@ -124,14 +124,22 @@ func SourceElasticsearchSchema() schema.Schema {
 			},
 			"http_auth_user": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Elasticsearch username",
 				MarkdownDescription: "Elasticsearch username",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"http_auth_password": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Sensitive:           true,
 				Description:         "Elasticsearch password This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "Elasticsearch password\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"endpoint_include_list": schema.StringAttribute{
 				Required:            true,
@@ -145,8 +153,12 @@ func SourceElasticsearchSchema() schema.Schema {
 			},
 			"datetime_field_value": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The day and time to start consuming records from. Leave it empty if you want to consume records as of now.",
 				MarkdownDescription: "The day and time to start consuming records from. Leave it empty if you want to consume records as of now.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
@@ -160,8 +172,12 @@ func SourceElasticsearchSchema() schema.Schema {
 			},
 			"transforms_value_to_key_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'",
 				MarkdownDescription: "Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_value_to_key_replace_null_with_default": schema.BoolAttribute{
 				Optional:            true,
@@ -179,13 +195,21 @@ func SourceElasticsearchSchema() schema.Schema {
 			},
 			"transforms_oversized_records_fields_include_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
 				MarkdownDescription: "Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_fields_exclude_list": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
 				MarkdownDescription: "Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_oversized_records_max_field_size_bytes": schema.Int64Attribute{
 				Optional:            true,
