@@ -34,6 +34,14 @@ import (
 // can't invisibly backfill a value the user must provide, and fields with
 // static defaults already settle the plan. Deprecated-alias attributes are
 // also exempt (they're hand-wrapped with their own precedence rules).
+//
+// Map-override fields (the `map_string` / `map_nested` overrides in
+// cmd/tfgen/overrides.json) are also exempt — see issue82MapOverrideFields
+// below. Their Go model field is a plain Go map that physically cannot hold
+// an unknown value, so they MUST stay Optional-only. They are pure
+// `user_defined: true` config (verified against backend
+// configuration.latest.json) and not subject to dynamic backfill, so the
+// issue-#80 failure mode doesn't apply to them.
 func TestIssue80_OptionalFieldsArePlanStable(t *testing.T) {
 	factories := []struct {
 		name string
@@ -116,9 +124,67 @@ func TestIssue80_OptionalFieldsArePlanStable(t *testing.T) {
 				if attr.GetDeprecationMessage() != "" {
 					continue
 				}
+				if issue82MapOverrideFields[f.name+"."+name] {
+					continue
+				}
 				t.Errorf("%s.%s is Optional but not Computed — exposes issue-#80 "+
 					"inconsistent-result-after-apply when the backend dynamically backfills this field",
 					f.name, name)
+			}
+		})
+	}
+}
+
+// issue82MapOverrideFields lists the `map_string` / `map_nested` override
+// attributes that MUST stay `Optional: true` only (no Computed). The Go model
+// type for these fields is a plain Go map (`map[string]types.String` or
+// `map[string]<NestedModel>`) which physically cannot hold an unknown value,
+// and Computed forces the framework to plan an unknown on Create. See
+// TestIssue82_MapOverridesAreOptionalOnly for the affirmative assertion.
+var issue82MapOverrideFields = map[string]bool{
+	"destination_snowflake.auto_qa_dedupe_table_mapping": true,
+	"destination_clickhouse.topics_config_map":           true,
+	"source_sqlserver.snapshot_custom_table_config":      true,
+}
+
+// TestIssue82_MapOverridesAreOptionalOnly is the regression guard for issue
+// #82: the three map-override fields above must be `Optional: true` and NOT
+// `Computed: true`, otherwise the framework crashes on Create with
+// "Received unknown value, however the target type cannot handle unknown
+// values" (path: <map field>, target type: map[string]…).
+//
+// If a future codegen change reintroduces Computed on these, this test
+// catches it before users do.
+func TestIssue82_MapOverridesAreOptionalOnly(t *testing.T) {
+	cases := []struct {
+		resourceName string
+		attrName     string
+		newResource  func() resource.Resource
+	}{
+		{"destination_snowflake", "auto_qa_dedupe_table_mapping", destination.NewSnowflakeResource},
+		{"destination_clickhouse", "topics_config_map", destination.NewClickHouseResource},
+		{"source_sqlserver", "snapshot_custom_table_config", source.NewSQLServerResource},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.resourceName+"."+tc.attrName, func(t *testing.T) {
+			ctx := context.Background()
+			schemaResp := &resource.SchemaResponse{}
+			tc.newResource().Schema(ctx, resource.SchemaRequest{}, schemaResp)
+			if schemaResp.Diagnostics.HasError() {
+				t.Fatalf("schema errors: %v", schemaResp.Diagnostics)
+			}
+
+			attr, ok := schemaResp.Schema.Attributes[tc.attrName]
+			if !ok {
+				t.Fatalf("attribute %s not found on %s", tc.attrName, tc.resourceName)
+			}
+			if !attr.IsOptional() {
+				t.Errorf("%s.%s must be Optional", tc.resourceName, tc.attrName)
+			}
+			if attr.IsComputed() {
+				t.Errorf("%s.%s must NOT be Computed — Go map type can't hold unknown (issue #82)",
+					tc.resourceName, tc.attrName)
 			}
 		})
 	}

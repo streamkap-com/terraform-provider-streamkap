@@ -573,11 +573,23 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 
 		data.MapFields = append(data.MapFields, mapField)
 
-		// Map overrides always emit Optional+Computed+UseStateForUnknown (issue
-		// #80 rule applies to maps too). Pull in the map plan-modifier
-		// packages so the generated file compiles.
-		imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"] = true
-		imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"] = true
+		// Map overrides emit `Optional: true` only — NOT Computed.
+		//
+		// The model field for a `map_string` / `map_nested` override is a plain
+		// Go map (`map[string]types.String` or `map[string]<NestedModel>`) that
+		// physically cannot hold an unknown value. Marking the schema attribute
+		// `Computed: true` forces the framework to plan an unknown on Create
+		// (no prior state, no static default), which then crashes during plan
+		// build with "Received unknown value, however the target type cannot
+		// handle unknown values" (issue #82).
+		//
+		// The blanket Computed rule from issue #80 only made sense for scalar
+		// `types.{String,Int64,Bool}` fields, which DO accept unknown.
+		// The three map overrides covered here (snowflake auto_qa_dedupe_table_mapping,
+		// clickhouse topics_config_map, sqlserveraws snapshot_custom_table_config)
+		// are all `user_defined: true` with no backend dynamic backfill, so the
+		// "planned null, got X" failure mode that motivated #80 doesn't apply.
+		// If we ever migrate these to `types.Map`, Computed can come back.
 
 		// Add nested model if this is a nested map
 		if override.Type == "map_nested" && len(override.NestedFields) > 0 {
@@ -1377,14 +1389,13 @@ func {{ .SchemaFuncName }}() schema.Schema {
 {{- end }}
 			},
 {{- end }}
-{{- /* Generate map field schema attributes. Optional+Computed+UseStateForUnknown
-      mirrors the rule applied to scalar Optional fields — see issue #80 and
-      the doc-comment on scalar Optional-only in entryToFieldData. */ -}}
+{{- /* Generate map field schema attributes. These stay Optional-only; see the
+      long comment in the map-override branch of generateConnector for why
+      Computed was reverted for map_string / map_nested. */ -}}
 {{- range .MapFields }}
 {{- if .IsNested }}
 			"{{ .TfAttrName }}": schema.MapNestedAttribute{
 				Optional: {{ .Optional }},
-				Computed: {{ .Optional }},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 {{- range .NestedAttributes }}
@@ -1404,24 +1415,13 @@ func {{ .SchemaFuncName }}() schema.Schema {
 {{- end }}
 					},
 				},
-{{- if .Optional }}
-				PlanModifiers: []planmodifier.Map{
-					mapplanmodifier.UseStateForUnknown(),
-				},
-{{- end }}
 				Description:         {{ printf "%q" .Description }},
 				MarkdownDescription: {{ printf "%q" .MarkdownDescription }},
 			},
 {{- else }}
 			"{{ .TfAttrName }}": schema.MapAttribute{
 				Optional:            {{ .Optional }},
-				Computed:            {{ .Optional }},
 				ElementType:         types.StringType,
-{{- if .Optional }}
-				PlanModifiers: []planmodifier.Map{
-					mapplanmodifier.UseStateForUnknown(),
-				},
-{{- end }}
 				Description:         {{ printf "%q" .Description }},
 				MarkdownDescription: {{ printf "%q" .MarkdownDescription }},
 			},

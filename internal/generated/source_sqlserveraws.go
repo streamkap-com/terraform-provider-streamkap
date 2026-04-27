@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -407,7 +406,6 @@ func SourceSqlserverawsSchema() schema.Schema {
 			},
 			"snapshot_custom_table_config": schema.MapNestedAttribute{
 				Optional: true,
-				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"chunks": schema.Int64Attribute{
@@ -417,9 +415,6 @@ func SourceSqlserverawsSchema() schema.Schema {
 							},
 						},
 					},
-				},
-				PlanModifiers: []planmodifier.Map{
-					mapplanmodifier.UseStateForUnknown(),
 				},
 				Description:         "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",
 				MarkdownDescription: "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",

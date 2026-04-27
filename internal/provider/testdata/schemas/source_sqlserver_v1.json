@@ -154,7 +154,7 @@
     "snapshot_custom_table_config": {
       "required": false,
       "optional": true,
-      "computed": true,
+      "computed": false,
       "sensitive": false
     },
     "snapshot_large_table_threshold": {

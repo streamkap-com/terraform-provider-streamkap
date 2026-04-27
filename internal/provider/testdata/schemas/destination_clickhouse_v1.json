@@ -118,7 +118,7 @@
     "topics_config_map": {
       "required": false,
       "optional": true,
-      "computed": true,
+      "computed": false,
       "sensitive": false
     },
     "transforms_add_string_suffix_fields_include_list": {

@@ -10,7 +10,7 @@
     "auto_qa_dedupe_table_mapping": {
       "required": false,
       "optional": true,
-      "computed": true,
+      "computed": false,
       "sensitive": false
     },
     "auto_schema_creation": {

@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -481,16 +480,12 @@ func DestinationClickhouseSchema() schema.Schema {
 			},
 			"topics_config_map": schema.MapNestedAttribute{
 				Optional: true,
-				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"delete_sql_execute": schema.StringAttribute{
 							Optional: true,
 						},
 					},
-				},
-				PlanModifiers: []planmodifier.Map{
-					mapplanmodifier.UseStateForUnknown(),
 				},
 				Description:         "Per topic configuration in JSON format",
 				MarkdownDescription: "Per topic configuration in JSON format",
