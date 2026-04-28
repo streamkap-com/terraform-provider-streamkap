@@ -2,169 +2,117 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Public Repository — Content Hygiene
+## Documentation map
 
-**This repository is public.** Everything committed — code, comments, commit messages, PR descriptions, test fixtures, documentation — is visible to the world. Be deliberate about what goes in.
+| Doc | What it covers |
+|---|---|
+| `README.md` | User-facing intro, install, basic usage. |
+| `AGENTS.md` | AI-agent guide for *consumers* of the provider — resource catalog, common patterns. |
+| `docs/index.md` | Auto-generated registry landing page (do not hand-edit; regen via `go generate`). |
+| `docs/resources/`, `docs/data-sources/` | Auto-generated per-resource pages (regen via `go generate`). |
+| `docs/ARCHITECTURE.md` | Layered diagram + CRUD flow + design rationale. |
+| `docs/CODE_GENERATOR.md` | tfgen internals: parser, generator, overrides.json, deprecations.json, "adding a new connector" walkthrough. |
+| `docs/MIGRATION.md` | v2 → v3 deprecations, removed attributes, action items for users. |
+| `docs/audits/<date>/`, `docs/plans/<date>-*.md` | Point-in-time audit reports and execution plans. Append new files; do not rewrite history. |
+| `CHANGELOG.md` | User-visible changes per release. Update before tagging. |
+| `env.md` | Local env-var setup notes. |
 
-Do **not** write any of the following into files, commits, or PRs:
-- Internal ticket IDs or internal URLs (Jira/Linear, internal wikis, Slack links, internal dashboards)
-- Customer names, tenant IDs, service IDs, email addresses, real credentials, or API tokens
-- Internal hostnames, staging URLs, or private infrastructure details
-- Verbatim error traces from production or private log snippets
-- Internal-only roadmap details, unannounced features, or internal team names
+### Keep docs in sync
 
-When you need to reference something for context:
-- Public GitHub issue numbers (e.g. `#75`) are fine — they live in this repo.
-- Prefer the public `https://api.streamkap.com` and `https://docs.streamkap.com` surfaces.
-- Strip ticket prefixes from commit messages and code comments unless they're already public.
-- If you find existing internal references during other work, flag them — a previous commit (`chore: scrub internal references for public repo hygiene`) did one sweep, but drift happens.
+When you change something in this list, update the matching doc in the same PR:
 
-If you're unsure whether something is safe to commit, ask before writing it.
+| Change | Update |
+|---|---|
+| Add/remove a resource or data source | `AGENTS.md` resource tables, `docs/ARCHITECTURE.md` counts, run `go generate` for `docs/resources/` and `docs/index.md`. |
+| Add a connector via tfgen | run `go generate ./...`; if the override system grew (new `map_string`/`map_nested` case) update `docs/CODE_GENERATOR.md`. |
+| Add a deprecated alias | add to `internal/provider/v2_backward_compat_test.go` and `docs/MIGRATION.md`. |
+| Plan to remove a deprecated attribute | move it into the "Deprecated Attribute Removal" table in `docs/MIGRATION.md`. |
+| Change tfgen type mapping or special-case rules | update the table in `docs/CODE_GENERATOR.md` and the table in this file. |
+| Change CRUD flow, retry, or pagination behavior | update `docs/ARCHITECTURE.md` and the API quirks list below. |
+| User-visible behavior change | add an entry to `CHANGELOG.md`. |
+| New env var or test command | update `env.md` and `GNUmakefile`. |
 
-## Overview
+If a doc is wrong, fix it — don't write a parallel one. New doc files belong only in `docs/audits/` (dated audit reports) and `docs/plans/` (dated execution plans).
 
-Terraform provider for Streamkap (data streaming platform). Built with Terraform Plugin Framework (Go 1.24+). Provider address: `github.com/streamkap-com/streamkap`
+## Branches
 
-## Related Backend
+- **`main`** — v2.x stable (current released line). Bug fixes and back-compatible changes only.
+- **`develop`** — v3.x beta (new). Default target for feature branches and PRs.
 
-This Terraform provider is built against the Streamkap Python FastAPI backend. Set the `STREAMKAP_BACKEND_PATH` environment variable to point to your local clone of the backend repository. Use this repository to validate API logic, understand endpoint behavior, check request/response schemas, and debug integration issues.
+**Do not merge `develop` into `main`** until v3 is promoted from beta to stable. Until then, treat the two lines as independent: a fix that needs to ship to v2 users goes to `main` directly (and may need a separate cherry-pick to `develop`); v3-only work stays on `develop`. Cut feature branches from the line you're targeting.
 
-**OpenAPI Specification**: https://api.streamkap.com/openapi.json — use this to explore available endpoints, request/response schemas, and API documentation.
+## Public repository — content hygiene
 
-### Key Backend Files
-When debugging or adding new connectors, these backend locations are most relevant:
-- `app/api/sources_api.py`, `app/api/destinations_api.py` — API endpoint definitions
-- `app/models/api/sources/common.py`, `app/models/api/destinations/common.py` — Pydantic request/response models
-- `app/sources/plugins/{connector}/` — Source connector plugins (config schemas, validation)
-- `app/destinations/plugins/{connector}/` — Destination connector plugins
-- `app/utils/entity_changes.py` — CRUD logic, `created_from` handling
-- `app/api/kafka_access_api.py` — Kafka user management endpoints
-- `app/models/api/kafka_access.py` — Kafka user/ACL Pydantic models
-- `app/api/auth_api.py` — Client credential and role endpoints
-- `app/models/api/app_auth.py` — Client credential/role Pydantic models
+This repo is public. Do not commit internal ticket IDs/URLs, customer or tenant identifiers, real credentials, internal hostnames, verbatim production traces, or unannounced roadmap details. Public GitHub issue numbers (`#75`) are fine. Prefer `https://api.streamkap.com` and `https://docs.streamkap.com` when referencing surfaces. A previous sweep (`chore: scrub internal references for public repo hygiene`) cleaned existing drift; flag any new occurrences you find.
 
-### Plugin Structure
-Each connector plugin folder contains:
-- `configuration.latest.json` — Current config schema (required fields, defaults, validation rules)
-- `dynamic_utils.py` — Runtime config resolution and derived values
+## Related backend
 
-### Connector Status Values
-The `connector_status` field (read-only, computed) can be: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`
+The provider is built against the Streamkap Python FastAPI backend. Set `STREAMKAP_BACKEND_PATH` to your local clone — `cmd/tfgen` reads `configuration.latest.json` plugin specs from there. OpenAPI: `https://api.streamkap.com/openapi.json`.
+
+Backend areas worth knowing:
+- `app/api/{sources,destinations,kafka_access,auth}_api.py` — endpoint definitions
+- `app/models/api/{sources,destinations,kafka_access,app_auth}/` — Pydantic request/response models
+- `app/{sources,destinations}/plugins/<connector>/` — `configuration.latest.json` (schema source for tfgen) and `dynamic_utils.py`
+- `app/utils/entity_changes.py` — CRUD logic and `created_from` handling
 
 ## Commands
 
-### Build and Install
-```bash
-go install .              # Build and install provider to $GOPATH/bin
-go generate              # Generate/update documentation
-```
+Use `make help` for the full list. Common ones:
 
-### Testing
-See the comprehensive [Testing](#testing) section below for all test commands and documentation.
+| Make target | What it does |
+|---|---|
+| `make install` | `go install .` to `$GOBIN` (used by `dev_overrides`) |
+| `make test` | Unit tests (`-short`, no API) |
+| `make test-all` | Unit + schema-compat + validators + integration (VCR) |
+| `make testacc` | Acceptance tests, `TF_ACC=1`, ~15m, hits real API |
+| `make test-migration` | v2→v3 migration acceptance tests |
+| `make cassettes` | Re-record VCR cassettes (`UPDATE_CASSETTES=1`) |
+| `make snapshots` | Update schema-compat snapshots after intentional schema changes |
+| `make sweep` | Clean orphaned test resources |
+| `make lint` / `make fmt` | golangci-lint / gofmt |
 
-### Local Development Setup
-Configure `~/.terraformrc` to use local build:
+Schema regeneration: `STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap go generate ./...` (or run `cmd/tfgen` directly per-connector with `--entity-type sources --connector postgresql`).
+
+`.env` is auto-loaded by tests via godotenv. For Snowflake PEM keys (multiline), `source scripts/load-pem-keys.sh`.
+
+Local dev override in `~/.terraformrc`:
 ```hcl
 provider_installation {
-  dev_overrides {
-    "github.com/streamkap-com/streamkap" = "$GOBIN_PATH"  # Replace with your $GOPATH/bin
-  }
+  dev_overrides { "github.com/streamkap-com/streamkap" = "<your $GOPATH/bin>" }
   direct {}
 }
 ```
 
-After setup: `go install .` then use provider in Terraform configs. See examples in `examples/` directory.
-
 ## Architecture
 
-### Core Components
-- **Provider** (`internal/provider/provider.go`): Registers all resources/datasources, handles authentication via OAuth2 token exchange
-- **API Client** (`internal/api/`): HTTP client implementing `StreamkapAPI` interface with methods for each resource type
-- **Resources** (`internal/resource/`): Source connectors (PostgreSQL, MySQL, MongoDB, DynamoDB, SQL Server, KafkaDirect), Destination connectors (Snowflake, ClickHouse, Databricks, PostgreSQL, S3, Iceberg, Kafka, Weaviate), Transform resources (MapFilter, Enrich, EnrichAsync, SQLJoin, Rollup, FanOut), Pipelines, Topics, Kafka Users (`internal/resource/kafka_user/`), Client Credentials (`internal/resource/client_credential/`)
-- **Data Sources** (`internal/datasource/`): Transforms, Tags, Topics, Topic, Topic Metrics, Roles
+### Layers
+- `internal/provider/` — provider entrypoint, resource/datasource registration, `*_test.go` (acceptance + integration + schema-compat).
+- `internal/api/` — `StreamkapAPI` HTTP client. All requests funnel through `doRequest` (bearer token, error unwrapping from `detail`, retry with backoff in `retry.go`). Create operations inject `created_from: TERRAFORM`.
+- `internal/resource/` — connector resources (sources, destinations, transforms) plus pipelines, topics, kafka_user, client_credential.
+- `internal/datasource/` — read-only listings (transforms, tags, topics, topic, topic_metrics, roles).
+- `internal/generated/` — schemas, model structs, field mappings produced by tfgen. **Do not hand-edit.**
+- `internal/helper/` — type conversion, deprecation utilities, timeouts.
+- `internal/resource/shared/marshaling.go` — reflection bridge between models and the API.
+- `cmd/tfgen/` — code generator (parser + generator + `overrides.json`).
 
-### Transform API
-The API client provides CRUD operations for Transform resources:
-- `CreateTransform` - Create a new transform
-- `GetTransform` - Retrieve a transform by ID
-- `UpdateTransform` - Update an existing transform
-- `DeleteTransform` - Delete a transform
-- `GetTransformImplementationDetails` - Get implementation with version history
-- `UpdateTransformImplementationDetails` - Update transform implementation code
+### Connector resources (BaseConnectorResource)
+Each connector has a `connector_code` and a flat `Config map[string]any`. CRUD flow:
 
-### Transform Implementation Management
-All transforms support an `implementation_json` attribute for managing transform code/logic via Terraform:
-```hcl
-resource "streamkap_transform_map_filter" "example" {
-  name = "my-transform"
-  implementation_json = jsonencode({
-    language        = "JavaScript"
-    value_transform = "return record;"
-  })
-}
-```
-If not specified, implementation is managed outside Terraform and preserved during updates.
+1. **Create**: plan → `ModelToAPIConfig` → POST → response → `APIConfigToModel` → state.
+2. **Read**: GET → `APIConfigToModel` → state. 404 → `resp.State.RemoveResource`.
+3. **Update**: plan → `ModelToAPIConfig` → PUT → response → `APIConfigToModel` → state.
+4. **Delete**: DELETE → `RemoveResource`.
 
-### Nested Map Types
-The base connector supports nested map types (`map[string]struct`) for:
-- **ClickHouse**: `topics_config_map` - per-topic delete SQL configuration
-- **SQL Server AWS**: `snapshot_custom_table_config` - custom snapshot parallelism
+`ModelToAPIConfig` walks the model by reflection, reads `tfsdk:"..."` tags, and maps to API fields via the per-connector `fieldMappings` map. `BuildTfsdkFieldIndex` recurses into embedded structs — that is what makes the deprecated-alias wrapper pattern work.
 
-### Deprecated Attributes
-Some attribute names have been deprecated but still work with backward compatibility. See [MIGRATION.md](docs/MIGRATION.md) for the full list of deprecated attributes and migration guidance.
+Non-connector resources (pipeline, topic, tag, kafka_user, client_credential) implement CRUD directly without the reflection layer.
 
-### Helpers
-- **`internal/helper/helper.go`**: Type conversion between API responses and Terraform types
-- **`internal/helper/deprecated.go`**: Deprecation handling utilities
-- **`internal/helper/timeouts.go`**: Timeout configuration helpers
+### tfgen (code generator)
+Reads backend `configuration.latest.json`, emits Go schemas + models + field mappings.
 
-### API Client Pattern
-All API operations go through `streamkapAPI.doRequest()` which:
-- Adds `Authorization: Bearer <token>` header
-- Handles errors from API `detail` field
-- All Create operations inject `created_from: constants.TERRAFORM` to track resource origin
-- Includes retry logic with exponential backoff for transient failures (`internal/api/retry.go`)
+Backend control → Terraform type:
 
-### Non-Connector Resource APIs
-- **Kafka Users** (`internal/api/kafka_user.go`): CRUD via `/kafka-access/kafka-users`. Username is the resource ID. Password is write-only. No individual GET endpoint (filters from list).
-- **Client Credentials** (`internal/api/client_credential.go`): Create/List/Delete via `/auth/client-credentials`. No Update endpoint — all fields are ForceNew. Secret only returned on creation.
-- **Roles** (`internal/api/role.go`): List via `/auth/roles`. Used to discover role IDs for client credential creation.
-
-### Resource Implementation Pattern
-Each resource (source/destination):
-1. Has a `connector_code` string identifying the integration type (e.g., "postgresql", "snowflake")
-2. Stores connector-specific config in `Config map[string]any` field (flat structure, not nested)
-3. Implements standard Terraform Plugin Framework interfaces: `Resource`, `ResourceWithConfigure`, `ResourceWithImportState`
-4. Uses helper functions to convert API map responses to typed Terraform attributes:
-   - `helper.GetTfCfgString(cfg, "key")` → `types.String`
-   - `helper.GetTfCfgInt64(cfg, "key")` → `types.Int64` (handles string or numeric)
-   - `helper.GetTfCfgBool(cfg, "key")` → `types.Bool`
-   - `helper.GetTfCfgListString(ctx, cfg, "key")` → `types.List`
-
-### Provider Configuration
-Three parameters (all support env vars as fallback):
-- `host` - API endpoint (default: `https://api.streamkap.com`, env: `STREAMKAP_HOST`)
-- `client_id` - Required (env: `STREAMKAP_CLIENT_ID`)
-- `secret` - Required, sensitive (env: `STREAMKAP_SECRET`)
-
-### Adding New Resources
-1. Create file in `internal/resource/source/` or `internal/resource/destination/`
-2. Define model struct with `tfsdk` tags
-3. Implement Schema() with fields, defaults, validators, plan modifiers
-4. Implement CRUD methods using generic API client methods
-5. Register in `internal/provider/provider.go` Resources() list
-6. Add example to `examples/resources/streamkap_<name>/`
-7. Add test in `internal/provider/<name>_resource_test.go`
-
-### Code Generation Architecture
-The `cmd/tfgen` tool generates Terraform provider schemas from backend `configuration.latest.json` files:
-- **Parser** (`cmd/tfgen/parser.go`): Reads JSON config, extracts field metadata (name, type, control, default, required, sensitive)
-- **Generator** (`cmd/tfgen/generator.go`): Converts config entries to Go code with schema attributes, validators, defaults
-- **Generated Output** (`internal/generated/`): Schema functions, model structs, field mappings (DO NOT EDIT directly)
-
-**Type mapping (backend control → Terraform):**
-
-| Backend Control | TF Type | Schema Attribute |
+| Control | TF type | Schema attribute |
 |---|---|---|
 | `string`, `textarea`, `json`, `datetime`, `one-select` | String | `schema.StringAttribute` |
 | `password` | String (Sensitive) | `schema.StringAttribute` |
@@ -172,268 +120,88 @@ The `cmd/tfgen` tool generates Terraform provider schemas from backend `configur
 | `boolean`, `toggle` | Bool | `schema.BoolAttribute` |
 | `multi-select` | List[String] | `schema.ListAttribute` |
 
-**Automatic port conversion**: fields named `port` or ending `_port` are converted String → Int64 even when backend says `control: "string"`.
+Special cases:
+- Fields named `port` or ending `_port` are forced to Int64 even if the backend says `control: "string"`.
+- Required+default → `Optional: true, Computed: true` (a Required field cannot have a default in TF).
+- `user_defined: false` → field skipped entirely.
+- `control: "password"` OR `encrypt: true` → `Sensitive: true`.
+- Go field naming preserves: `ID SSH SSL SQL DB URL API AWS ARN QA` uppercase. So `ssh_port` → `SSHPort`, `role_arn` → `RoleARN`.
 
-**Go abbreviation conventions** (applied to PascalCase field names): `ID`, `SSH`, `SSL`, `SQL`, `DB`, `URL`, `API`, `AWS`, `ARN`, `QA` stay uppercase. E.g., `ssh_port` → `SSHPort`, `role_arn` → `RoleARN`.
+`cmd/tfgen/overrides.json` handles fields the parser can't synthesize:
+- `map_string` — `map[string]types.String` (e.g. snowflake `auto_qa_dedupe_table_mapping`).
+- `map_nested` — map of nested objects (e.g. clickhouse `topics_config_map`, sqlserveraws `snapshot_custom_table_config`).
+When an override's `api_field_name` matches a backend field, the override wins and the auto-parsed version is dropped.
 
-**Required / Optional / Computed logic:**
-- `required: true`, no default → `Required: true`
-- `required: true`, has default → `Optional: true, Computed: true`
-- `required: false` → `Optional: true`
-- `user_defined: false` → field skipped entirely
+### Transforms
+The API client exposes `CreateTransform / GetTransform / UpdateTransform / DeleteTransform / GetTransformImplementationDetails / UpdateTransformImplementationDetails`. All transform resources accept `implementation_json`:
 
-**Sensitive detection**: `control: "password"` OR `encrypt: true` → `Sensitive: true`.
+```hcl
+implementation_json = jsonencode({
+  language        = "JavaScript"
+  value_transform = "return record;"
+})
+```
 
-**Override system** (`cmd/tfgen/overrides.json`): some fields cannot be auto-generated and need explicit wiring.
-- `map_string` — a plain `map[string]types.String`. Example: snowflake `auto_qa_dedupe_table_mapping`.
-- `map_nested` — a map of nested objects. Examples: clickhouse `topics_config_map`, sqlserveraws `snapshot_custom_table_config`.
-When an override's `api_field_name` matches a backend field, the override wins; the auto-parsed version is skipped.
+If unset, implementation is managed outside Terraform and preserved on update.
 
-**Reflection-based marshaling** (`internal/resource/shared/marshaling.go`):
-- `ModelToAPIConfig(ctx, model, fieldMappings)` walks the model struct by reflection, reads each `tfsdk:"..."` tag, looks up the API field name via `fieldMappings`, and writes typed values into a `map[string]any`.
-- `APIConfigToModel` reverses the direction on Read.
-- `BuildTfsdkFieldIndex` recurses into embedded structs — this is why deprecated-alias wrappers work (see "Deprecated Attribute Pattern" below).
+## API quirks (non-obvious)
 
-**CRUD flow for connectors (BaseConnectorResource)**:
-1. Create: Plan → `ModelToAPIConfig` → API POST → response → `APIConfigToModel` → state.
-2. Read: API GET → `APIConfigToModel` → state. 404 → `resp.State.RemoveResource`.
-3. Update: Plan → `ModelToAPIConfig` → API PUT → response → `APIConfigToModel` → state.
-4. Delete: API DELETE → `resp.State.RemoveResource`.
+- Sources Read uses `?secret_returned=true` to get sensitive fields back.
+- POST/PUT/DELETE on `/sources`, `/destinations`, `/pipelines` must include `&wait=false` — VCR/mock URLs need it too.
+- List endpoints default `page_size=10` (max 100). `ListSources/ListDestinations/ListPipelines` paginate until `resp.Total`; anything else silently truncates tenants with >10 resources (affects sweepers and adopt-on-exists).
+- `/sources`, `/destinations`, `/pipelines` accept `partial_name` only — there is no exact-name filter. Adopt-by-name uses `partial_name=<name>&page_size=100` and matches client-side.
+- Create returns 422 "already exists" when a non-deleted record with the same `{tenant_id, name}` exists. List additionally filters by `service_id`, so a source orphaned in a different service of the same tenant triggers 422 but is invisible to list — adopt fails with "reported as existing but not found in list". Known backend asymmetry.
+- Use `stringplanmodifier.UseStateForUnknown()` for computed fields that don't change to avoid spurious diffs.
+- Kafka Users (`/kafka-access/kafka-users`): username is the resource ID; password is write-only; no individual GET — Read filters from list.
+- Client Credentials (`/auth/client-credentials`): no Update endpoint, all fields are ForceNew; secret is only returned at creation.
 
-Non-connector resources (pipeline, topic, tag, kafka_user, client_credential) implement their own Create/Read/Update/Delete directly.
+## Deprecated attribute pattern (v2 → v3 aliases)
 
-### API Quirks
-- Source Create/Read operations use `?secret_returned=true` query parameter to include sensitive fields in response
-- Use `stringplanmodifier.UseStateForUnknown()` for computed fields to prevent spurious diffs
-- POST, PUT, DELETE on `/sources`, `/destinations`, `/pipelines` must include `&wait=false` — tests that mock these URLs need it too
-- List endpoints default to `page_size=10` (max 100). `ListSources/ListDestinations/ListPipelines` iterate pages until `resp.Total` is reached; anything else silently truncates tenants with >10 resources (affects sweepers and adopt-on-exists)
-- `/sources`, `/destinations`, `/pipelines` list endpoints accept `partial_name` — there is **no** exact-name query filter. Adopt-by-name uses `partial_name=<name>&page_size=100` then matches exactly client-side
-- Create returns 422 "already exists" when a non-deleted record with the same `{tenant_id, name}` exists. The list endpoint additionally filters by `service_id`, so a source orphaned in a different service of the same tenant triggers 422 but is invisible to list → adopt legitimately fails with "reported as existing but not found in list". This is a known backend asymmetry
+When the backend keeps a config field but the Terraform attribute name changes, add a deprecated alias so existing v2 configs keep working:
 
-### Deprecated Attribute Pattern (v2 → v3 aliases)
-When the backend renames a config field (e.g. `transforms.InsertStaticKey2.static.field` stays, but the Terraform attribute changed from `insert_static_key_field_2` to `transforms_insert_static_key2_static_field`), add a deprecated alias so existing v2 configs keep working:
-
-1. In `internal/resource/source/<connector>_generated.go`, define a wrapper struct embedding the generated model:
+1. In `internal/resource/source/<connector>_generated.go` (or destination), define a wrapper struct embedding the generated model:
    ```go
    type source<Name>ModelWithDeprecated struct {
        generated.Source<Name>Model
        InsertStaticKeyField2Old types.String `tfsdk:"insert_static_key_field_2"`
    }
    ```
-2. Override `NewModelInstance()` to return the wrapper so reflection-based marshaling sees the extra fields.
+2. Override `NewModelInstance()` to return the wrapper (so reflection sees the extra fields).
 3. Override `GetSchema()` to register the old name as `Optional: true, Computed: true, DeprecationMessage: "Use 'new_name' instead."` plus `stringvalidator.ConflictsWith(path.MatchRoot("new_name"))`.
-4. Extend the field-mapping map: `mappings["insert_static_key_field_2"] = "transforms.InsertStaticKey2.static.field"` — same API target as the new name.
-5. Add the old name to the per-connector list in `internal/provider/v2_backward_compat_test.go` and to `docs/MIGRATION.md`.
+4. Add to the field-mapping map: `mappings["insert_static_key_field_2"] = "transforms.InsertStaticKey2.static.field"` — same API target as the new name.
+5. Add to `internal/provider/v2_backward_compat_test.go` and `docs/MIGRATION.md`.
 
-Int64 aliases follow the same pattern with `schema.Int64Attribute` and `int64validator.ConflictsWith`.
+Int64 aliases follow the same shape with `int64validator.ConflictsWith`.
 
 Not aliasable (document in MIGRATION.md + exceptions map):
-- Required fields (alias needs `Optional`; a required alias is pointless)
-- API-field renames where old and new map to different backend fields
-- Type changes (e.g. map-of-objects → JSON string)
+- Required fields (alias must be `Optional`, so required-only renames force a breaking change).
+- API-field renames where old and new map to different backend fields.
+- Type changes (e.g. map-of-objects → JSON string).
 
 ## Testing
 
-### Test Commands
+| Tier | Pattern | API | Duration |
+|---|---|---|---|
+| Unit | `Test[^Acc]` (`-short`) | No | ~5s |
+| Schema compat | `TestSchemaBackwardsCompatibility` | No | ~2s |
+| Validators | `Test.*Validator` | No | ~2s |
+| Integration (VCR) | `TestIntegration_` | No | ~30s |
+| Acceptance | `TestAcc` | Yes | ~15m |
+| Migration | `TestAcc.*Migration` | Yes | ~30m |
 
-```bash
-# Run all unit tests (fast, no API needed)
-go test -v -short ./...
+Schema-compat detects: required attribute removed (breaking), optional→required (breaking), computed removed (warning). After an intentional schema change run `make snapshots`.
 
-# Run schema compatibility tests
-go test -v -run 'TestSchemaBackwardsCompatibility' ./internal/provider/...
+If `TestAcc.*Migration` produces a non-empty plan, the new provider diverges from v2.1.18 — inspect the plan to see which attribute differs; that signals a potential breaking change.
 
-# Run validator tests
-go test -v -run 'Test.*Validator' ./internal/provider/...
+VCR cassettes live next to their test files. Re-record with `make cassettes` (needs API credentials).
 
-# Run integration tests with recorded responses (VCR)
-go test -v -run 'TestIntegration_' ./internal/provider/...
+Required env vars for acceptance: `TF_ACC=1`, `STREAMKAP_CLIENT_ID`, `STREAMKAP_SECRET`. Optional: `STREAMKAP_HOST`, `UPDATE_CASSETTES`, `UPDATE_SNAPSHOTS`, `TF_LOG`.
 
-# Run acceptance tests (auto-loads .env via godotenv)
-# Simply run - no manual export needed if .env exists!
-go test -v -timeout 120m -run 'TestAcc' ./internal/provider/...
+## Conventions
 
-# Run migration tests (validates old→new equivalence)
-TF_ACC=1 go test -v -timeout 180m -run 'TestAcc.*Migration' ./internal/provider/...
+- AI-agent-friendly schema descriptions: every resource/data source needs both `Description` and `MarkdownDescription`. tfgen emits these automatically; if you add an attribute by hand, document enums (list valid values), defaults, and `**Security:**` notes for sensitive fields.
+- Each resource needs `examples/resources/streamkap_<name>/{basic,complete}.tf`.
+- Provider address: `github.com/streamkap-com/streamkap`. Go 1.24+, Terraform Plugin Framework.
+- Connector status values (read-only): `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
 
-# Run specific resource tests
-go test -v -run 'TestAccSourcePostgreSQL' ./internal/provider/...
-
-# Get structured JSON output
-go install gotest.tools/gotestsum@latest
-gotestsum --jsonfile results.json -- -v ./...
-
-# Update schema snapshots after intentional changes
-UPDATE_SNAPSHOTS=1 go test -v -run 'TestSchemaBackwardsCompatibility' ./internal/provider/...
-```
-
-### Test Tiers
-
-| Tier | Pattern | API Needed | Duration | When |
-|------|---------|------------|----------|------|
-| Unit | `Test[^Acc]` | No | ~5s | Every commit |
-| Schema Compat | `TestSchemaBackwardsCompatibility` | No | ~2s | Every PR |
-| Validators | `Test.*Validator` | No | ~2s | Every commit |
-| Integration | `TestIntegration_` | No | ~30s | Every PR |
-| Acceptance | `TestAcc` | Yes | ~15m | Nightly |
-| Migration | `TestAcc.*Migration` | Yes | ~30m | Pre-release |
-
-### Schema Backwards Compatibility
-
-Schema snapshots detect breaking changes:
-- Required attribute removed → **BREAKING**
-- Optional changed to required → **BREAKING**
-- Computed attribute removed → Warning (may break references)
-
-Update snapshots after intentional changes:
-```bash
-UPDATE_SNAPSHOTS=1 go test -v -run 'TestSchemaBackwardsCompatibility' ./internal/provider/...
-```
-
-### Migration Test Interpretation
-
-If `TestAcc.*Migration` tests fail with non-empty plan:
-- The new provider behaves differently than v2.1.18
-- Check the plan output for which attributes differ
-- This indicates a potential breaking change
-
-### Recording VCR Cassettes
-
-When the Streamkap API changes:
-```bash
-UPDATE_CASSETTES=1 go test -v -run 'TestIntegration_' ./internal/provider/...
-```
-
-VCR cassettes are stored alongside test files and record HTTP interactions for replay during CI without API access.
-
-### Test Sweepers
-
-Test sweepers clean up orphaned resources from failed test runs:
-```bash
-# Run sweepers to clean up test resources (uses naming convention prefix)
-go test -v -run 'TestSweep' ./internal/provider/...
-```
-
-See `internal/provider/sweep_test.go` for sweeper implementation.
-
-### Environment Variables
-
-**Automatic Loading**: Tests auto-load `.env` via [godotenv](https://github.com/joho/godotenv). No manual `source .env` needed!
-
-For Snowflake PEM keys (multiline content), use: `source scripts/load-pem-keys.sh`
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `TF_ACC` | For acceptance | Set to `1` to enable |
-| `STREAMKAP_CLIENT_ID` | For acceptance | OAuth2 client ID |
-| `STREAMKAP_SECRET` | For acceptance | OAuth2 client secret |
-| `STREAMKAP_HOST` | Optional | Override API URL |
-| `UPDATE_CASSETTES` | Optional | Re-record HTTP cassettes |
-| `UPDATE_SNAPSHOTS` | Optional | Update schema snapshots |
-| `TF_LOG` | Optional | TRACE/DEBUG/INFO/WARN/ERROR |
-
-## AI-Agent Description Standards
-
-This provider is optimized for the Terraform MCP Server. When adding or modifying resources, follow these patterns:
-
-### Schema-Level Descriptions
-Every resource/data source must have both `Description` and `MarkdownDescription`:
-
-```go
-Description: "Manages a PostgreSQL source connector.",
-MarkdownDescription: "Manages a **PostgreSQL source connector**.\n\n" +
-    "This resource creates and manages a PostgreSQL source for Streamkap data pipelines.\n\n" +
-    "[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
-```
-
-### Attribute Descriptions
-All attributes must include:
-
-1. **Enum fields** - List valid values:
-   ```go
-   Description: "Insert mode. Valid values: insert, upsert."
-   MarkdownDescription: "Insert mode. Valid values: `insert`, `upsert`."
-   ```
-
-2. **Fields with defaults** - Document the default:
-   ```go
-   Description: "Database port. Defaults to \"5432\"."
-   MarkdownDescription: "Database port. Defaults to `5432`."
-   ```
-
-3. **Sensitive fields** - Add security note:
-   ```go
-   Description: "Database password. This value is sensitive and will not appear in logs or CLI output."
-   MarkdownDescription: "Database password.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs."
-   ```
-
-### Example Files
-Each resource needs two example files:
-- `examples/resources/streamkap_<name>/basic.tf` - Minimal required configuration
-- `examples/resources/streamkap_<name>/complete.tf` - All available options with comments
-
-### tfgen Code Generator
-The `cmd/tfgen` tool automatically generates schemas with these patterns from backend `configuration.latest.json` files:
-
-```bash
-# Regenerate all schemas
-STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap go generate ./...
-
-# Generate specific connector
-go run ./cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH --entity-type sources --connector postgresql
-```
-
-
-
-## Workflow Orchestration
-
-### 1. Plan Mode Default
-- Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)
-- If something goes sideways, STOP and re-plan immediately - don't keep pushing
-- Use plan mode for verification steps, not just building
-- Write detailed specs upfront to reduce ambiguity
-
-### 2. Subagent Strategy
-- Use subagents liberally to keep main context window clean
-- Offload research, exploration, and parallel analysis to subagents
-- For complex problems, throw more compute at it via subagents
-- One task per subagent for focused execution
-
-### 3. Self-Improvement Loop
-- After ANY correction from the user: update `tasks/lessons.md` with the pattern
-- Write rules for yourself that prevent the same mistake
-- Ruthlessly iterate on these lessons until mistake rate drops
-- Review lessons at session start for relevant project
-
-### 4. Verification Before Done
-- Never mark a task complete without proving it works
-- Diff behavior between main and your changes when relevant
-- Ask yourself: "Would a staff engineer approve this?"
-- Run tests, check logs, demonstrate correctness
-
-### 5. Demand Elegance (Balanced)
-- For non-trivial changes: pause and ask "is there a more elegant way?"
-- If a fix feels hacky: "Knowing everything I know now, implement the elegant solution"
-- Skip this for simple, obvious fixes - don't over-engineer
-- Challenge your own work before presenting it
-
-### 6. Autonomous Bug Fixing
-- When given a bug report: just fix it. Don't ask for hand-holding
-- Point at logs, errors, failing tests - then resolve them
-- Zero context switching required from the user
-- Go fix failing CI tests without being told how
-
-## Task Management
-
-1. **Plan First**: Write plan to `tasks/todo.md` with checkable items
-2. **Verify Plan**: Check in before starting implementation
-3. **Track Progress**: Mark items complete as you go
-4. **Explain Changes**: High-level summary at each step
-5. **Document Results**: Add review section to `tasks/todo.md`
-6. **Capture Lessons**: Update `tasks/lessons.md` after corrections
-
-## Core Principles
-
-- **Simplicity First**: Make every change as simple as possible. Impact minimal code.
-- **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.
-- **Minimal Impact**: Changes should only touch what's necessary. Avoid introducing bugs.
+For deeper detail follow the Documentation map at the top of this file.
