@@ -35,6 +35,11 @@ resource "streamkap_source_mysql" "test" {
   snapshot_gtid                             = true
   binary_handling_mode                      = "bytes"
   ssh_enabled                               = false
+
+  # Heartbeat keeps the connector polling on low-traffic sources.
+  #   - leave heartbeat_data_collection_schema_or_database unset -> Kafka-only mode (no source-DB write)
+  #   - set it to a database containing a streamkap_heartbeat table -> source-table mode
+  heartbeat_enabled = false
 }
 
 output "example-source-mysql" {
