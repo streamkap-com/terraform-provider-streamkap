@@ -37,3 +37,20 @@ terraform.rc
 .DS_Store
 
 .terraform.lock.hcl
+
+# Local agent / editor config
+.claude/
+.serena/
+.mcp.json
+.env
+
+# Built binaries
+/tfgen
+
+# v3-only residue that may appear when switching from the develop branch into this checkout —
+# none of these are part of the v2/main tree and committing them by accident would mix lines.
+/cmd/
+/docs/audits/
+/docs/plans/
+/env.md
+/scripts/ralph/
