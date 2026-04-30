@@ -194,16 +194,26 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 					"You can only specify either `column_include_list` or `column_exclude_list`, not both.",
 			},
 			"heartbeat_enabled": schema.BoolAttribute{
-				Computed:            true,
-				Optional:            true,
-				Default:             booldefault.StaticBool(false),
-				Description:         "Enable heartbeat to keep the pipeline healthy during low data volume",
-				MarkdownDescription: "Enable heartbeat to keep the pipeline healthy during low data volume",
+				Computed: true,
+				Optional: true,
+				Default:  booldefault.StaticBool(false),
+				Description: "Emit a periodic heartbeat to a Kafka topic so the connector keeps " +
+					"polling and committing offsets on low-traffic sources. " +
+					"Set heartbeat_data_collection_schema_or_database to also write to a streamkap_heartbeat " +
+					"table in the source database; leave it null for Kafka-only mode.",
+				MarkdownDescription: "Emit a periodic heartbeat to a Kafka topic so the connector keeps " +
+					"polling and committing offsets on low-traffic sources. " +
+					"Set `heartbeat_data_collection_schema_or_database` to also write to a `streamkap_heartbeat` " +
+					"table in the source database; leave it `null` for Kafka-only mode.",
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
-				Optional:            true,
-				Description:         "Schema for heartbeat data collection",
-				MarkdownDescription: "Schema for heartbeat data collection",
+				Optional: true,
+				Description: "Optional. Schema containing a streamkap_heartbeat table — providing this enables " +
+					"source-table heartbeat mode, which writes to the table on each beat to keep the " +
+					"source transaction log active. Leave null for Kafka-only heartbeat (no table or write grant required).",
+				MarkdownDescription: "Optional. Schema containing a `streamkap_heartbeat` table — providing this enables " +
+					"source-table heartbeat mode, which writes to the table on each beat to keep the " +
+					"source transaction log active. Leave `null` for Kafka-only heartbeat (no table or write grant required).",
 			},
 			"include_source_db_name_in_table_name": schema.BoolAttribute{
 				Computed:            true,
