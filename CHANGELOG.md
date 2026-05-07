@@ -7,7 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No changes yet._
+### Fixed
+- **`streamkap_pipeline` — "planned set element does not correlate with any element in actual" on `transforms[].topics`.**
+  When a transform attached to a pipeline had been deployed, the backend stamps its
+  `topic_ids` with a `transform_<id>_<version>` prefix
+  (`python-be-streamkap` `app/utils/api/v2/api_transforms_utils.py:427`). The pipeline
+  read path then swapped that internal id into the Terraform state in place of the
+  pretty topic name, so the next apply saw the user's pretty name in the plan and
+  the full topic_id in state and aborted. State now always carries the pretty
+  `topic` field returned by the backend, matching what users write in
+  `transforms[*].topics` (e.g. `<schema>.<table>`).
+- **`streamkap_transform_*` — `replay_window` left Unknown after Create.**
+  `replay_window` is `Optional+Computed` with no default and the backend never
+  echoes it back, so on initial Create with no prior state the framework's
+  `UseStateForUnknown` plan modifier could not resolve the planned Unknown,
+  leaving Terraform to error with "still indicated an unknown value." Create
+  now concretizes the field to Null when the user did not set it.
 
 ---
 

@@ -252,6 +252,24 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	// replay_window is Optional+Computed with no Default, and the backend
+	// never echoes it back. On Create there's no prior state, so
+	// UseStateForUnknown can't resolve the plan's Unknown — Terraform then
+	// errors with "still indicated an unknown value". Concretize it here:
+	// keep the user's value if they set one, otherwise fall through to Null.
+	var replayWindow types.String
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("replay_window"), &replayWindow)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if replayWindow.IsUnknown() {
+		replayWindow = types.StringNull()
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("replay_window"), replayWindow)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Handle implementation_json if provided in the plan
 	var implementationJSON jsontypes.Normalized
 	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("implementation_json"), &implementationJSON)...)
