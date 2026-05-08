@@ -3,7 +3,6 @@ package pipeline
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -540,13 +539,19 @@ func (r *PipelineResource) api2ModelTransforms(_ context.Context, apiTransforms 
 	currentTransformTopics := make([]string, 0, len(apiTransforms))
 
 	for _, apiTransform := range apiTransforms {
-		// For topic_router transforms, the API's "topic" field strips the transform prefix
-		// (e.g., "merged.Orders" instead of "transform_<id>_0.merged.Orders").
-		// Use TopicID which preserves the full name, matching the terraform config.
+		// Always use the pretty Topic field. The backend computes it via
+		// get_pretty_topic_name_from_id (python-be-streamkap
+		// app/utils/fetch_utils.py:859) by stripping the first dot-separated
+		// segment of topic_id, and that segment is the backend-internal
+		// connector identifier — never something a user writes in their TF
+		// config. Earlier code swapped in topic_id when it started with
+		// "transform_" to "preserve the full name" for topic_router
+		// transforms, but every deployed transform (router or not) gets a
+		// transform-prefixed topic_id from
+		// app/utils/api/v2/api_transforms_utils.py:427, so the swap clobbered
+		// state with the internal id and produced "planned set element does
+		// not correlate with any element in actual" on the next apply.
 		topicName := apiTransform.Topic
-		if strings.HasPrefix(apiTransform.TopicID, "transform_") {
-			topicName = apiTransform.TopicID
-		}
 		// Skip entries with empty topic names (stale data from failed applies)
 		if topicName == "" {
 			continue

@@ -101,6 +101,28 @@ func TestPipelineTransforms_RoundTrip_Issue78(t *testing.T) {
 			sourceID:        "66b0f1c9a1b2c3d4e5f60002",
 			userTopics:      []string{"public.users"},
 		},
+		// Reproduces the failure reported on v3 where deployed transforms have
+		// topic_ids prefixed with "transform_<id>_<version>." (set by the backend
+		// after Flink/topic-router deployment, see python-be-streamkap
+		// api_transforms_utils.py:427). Users still write the pretty topic name
+		// in their TF config; the round-trip must return the pretty name, not
+		// the full transform-prefixed topic_id.
+		{
+			name: "deployed_transform_with_transform_prefixed_topic_ids_returns_pretty_names",
+			transformTopics: []string{
+				"aleks_commons.CoreDataConflict-Global",
+				"aleks_commons.PollenData-Global",
+			},
+			transformIDs: []string{
+				"transform_66b0f1c9a1b2c3d4e5f6aaaa_0.aleks_commons.CoreDataConflict-Global",
+				"transform_66b0f1c9a1b2c3d4e5f6aaaa_0.aleks_commons.PollenData-Global",
+			},
+			sourceID: "66b0f1c9a1b2c3d4e5f60003",
+			userTopics: []string{
+				"aleks_commons.CoreDataConflict-Global",
+				"aleks_commons.PollenData-Global",
+			},
+		},
 	}
 
 	for _, tc := range tests {
