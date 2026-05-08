@@ -49,7 +49,7 @@ func IsRetryableError(err error) bool {
 	// Kafka Connect transient errors (error format: "Kafka Connect API call failed with status code NNN and response ...")
 	kafkaPatterns := []string{
 		"rebalance_in_progress",
-		"rebalance is expected",                          // KC 500: "Request cannot be completed because a rebalance is expected"
+		"rebalance is expected", // KC 500: "Request cannot be completed because a rebalance is expected"
 		"leader_not_available",
 		"not_leader_for_partition",
 		"kafka connect api call failed with status code 404", // Connector not yet deployed (PENDING destination/source)

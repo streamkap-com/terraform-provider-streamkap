@@ -491,10 +491,10 @@ func TestErrorMessagePropagation_DetailField(t *testing.T) {
 	client := newTestAPIClient(baseURL)
 
 	testCases := []struct {
-		name           string
-		statusCode     int
-		errorDetail    string
-		expectedInErr  string
+		name          string
+		statusCode    int
+		errorDetail   string
+		expectedInErr string
 	}{
 		{
 			name:          "401 with detailed message",
@@ -706,7 +706,7 @@ func TestAPIError422_UpdateValidation(t *testing.T) {
 
 	destination := api.Destination{
 		ID:        "dest-123",
-		Name:      "",             // Empty name - invalid
+		Name:      "", // Empty name - invalid
 		Connector: "clickhouse",
 		Config:    map[string]any{},
 	}

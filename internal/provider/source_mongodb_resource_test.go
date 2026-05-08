@@ -46,9 +46,9 @@ resource "streamkap_source_mongodb" "test" {
 			},
 			// Step 2: ImportState testing
 			{
-				ResourceName:      "streamkap_source_mongodb.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "streamkap_source_mongodb.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Step 3: Update and Read testing

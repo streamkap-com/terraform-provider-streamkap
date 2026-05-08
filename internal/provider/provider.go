@@ -233,6 +233,7 @@ func (p *streamkapProvider) DataSources(_ context.Context) []func() datasource.D
 	return []func() datasource.DataSource{
 		ds.NewTransformDataSource,
 		ds.NewTagDataSource,
+		ds.NewTagsDataSource,
 		ds.NewTopicsDataSource,
 		ds.NewTopicDataSource,
 		ds.NewTopicMetricsDataSource,
@@ -262,6 +263,9 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		source.NewSupabaseResource,
 		source.NewVitessResource,
 		source.NewWebhookResource,
+		source.NewInformixResource,
+		source.NewSalesforceWebhookResource,
+		source.NewZendeskWebhookResource,
 		destination.NewSnowflakeResource,
 		destination.NewClickHouseResource,
 		destination.NewDatabricksResource,
@@ -296,5 +300,7 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		transform.NewRollupResource,
 		transform.NewFanOutResource,
 		transform.NewTopicRouterResource,
+		transform.NewToastHandlingResource,
+		transform.NewUnNestingResource,
 	}
 }

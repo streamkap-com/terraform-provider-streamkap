@@ -16,9 +16,74 @@ This guide helps existing users migrate their Terraform configurations between m
 v3.0 adds new resource types and data sources on top of everything in v2.x:
 
 - **`streamkap_destination_weaviate`** — Weaviate vector database destination connector
+- **`streamkap_destination_pinecone`** — Pinecone vector database destination connector
+- **`streamkap_source_informix`** — Informix CDC source connector
+- **`streamkap_source_salesforce_webhook`** — Salesforce webhook source connector
+- **`streamkap_source_zendesk_webhook`** — Zendesk webhook source connector
+- **`streamkap_transform_topic_router`** — Topic router transform
+- **`streamkap_transform_toast_handling`** — TOAST-handling transform
+- **`streamkap_transform_un_nesting`** — Un-nesting transform
 - **`streamkap_kafka_user`** — Kafka user management with ACL-based topic access control
 - **`streamkap_client_credential`** — API token management for machine-to-machine authentication
 - **`streamkap_roles` data source** — List available roles for client credential assignment
+- **`streamkap_tags` data source** — Filter/list tags by name, type, or IDs (alternative to single-by-id `streamkap_tag`)
+
+#### Tags everywhere (additive)
+
+v3.0 surfaces `tags = [...]` (Set of tag IDs) on **every** entity that supports
+tagging upstream — sources, destinations, transforms, topics, and pipelines.
+Pipelines already had `tags`; the rest are new in v3.
+
+The attribute is **Optional + Computed**:
+
+- Unset in config → the provider preserves whatever tags the backend reports,
+  so out-of-band tag attachments (e.g. system-managed environment tags) do not
+  show as drift.
+- Explicitly set → Terraform owns the field; manual edits made via the
+  Streamkap UI show as drift on the next plan and revert on apply.
+- Set to `tags = []` → clears all tags on the entity. The provider
+  distinguishes `null` from empty-list on the wire so this works correctly.
+
+This is purely additive — existing v2 configs that do not reference `tags`
+produce an empty plan when re-planned against v3 (verified via
+`TestAcc.*Migration`).
+
+```hcl
+resource "streamkap_tag" "prod" {
+  name = "production"
+  type = ["sources", "destinations", "pipelines"]
+}
+
+resource "streamkap_source_postgresql" "orders" {
+  # ...
+  tags = [streamkap_tag.prod.id]
+}
+```
+
+The standalone `streamkap_tag` resource also gains plan-time validation of
+`type` against the backend `TagTypeEnum`.
+
+#### Breaking — `data.streamkap_tag.type` is now a Set, not a List
+
+In v2, the `streamkap_tag` **data source** returned `type` as a `List[String]`,
+which meant you could index into it (`data.streamkap_tag.X.type[0]`). v3
+returns `type` as a `Set[String]` to match the `streamkap_tag` **resource**.
+Sets are unordered and not indexable.
+
+If your HCL references `type` by index, replace it with one of:
+
+```hcl
+# v2 — broken in v3
+locals { tag_type = data.streamkap_tag.example.type[0] }
+
+# v3 — pick any one element from the set
+locals { tag_type = tolist(data.streamkap_tag.example.type)[0] }
+
+# Or just use `contains()` if you were checking membership
+locals { is_source_tag = contains(data.streamkap_tag.example.type, "sources") }
+```
+
+Element type is unchanged (`string`); only the collection type changed.
 
 ### Deprecated Attribute Removal (Planned)
 

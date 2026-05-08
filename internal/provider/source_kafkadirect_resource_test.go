@@ -32,9 +32,9 @@ resource "streamkap_source_kafkadirect" "test" {
 			},
 			// Step 2: ImportState testing
 			{
-				ResourceName:      "streamkap_source_kafkadirect.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "streamkap_source_kafkadirect.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Delete testing automatically occurs in TestCase

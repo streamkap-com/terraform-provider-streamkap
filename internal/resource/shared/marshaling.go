@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"slices"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
@@ -227,4 +228,74 @@ func SetStringField(model any, fieldName string, value string) {
 	}
 
 	field.Set(reflect.ValueOf(types.StringValue(value)))
+}
+
+// GetStringSliceField reads a Set[String] model field and returns it as a
+// []string. Returns nil for null/unknown values; nil marshals to JSON `null`
+// (the request struct fields deliberately do NOT use omitempty — see the
+// comment on api.Source.Tags), which the backend's
+// `app/utils/entity_changes.py::upsert_entities` interprets as "do not change
+// tags". An empty (but non-nil) set is returned as `[]string{}` so the caller
+// can distinguish "no tags" (clear) from "leave alone".
+func GetStringSliceField(ctx context.Context, model any, fieldName string) []string {
+	v := reflect.ValueOf(model)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	field := v.FieldByName(fieldName)
+	if !field.IsValid() {
+		return nil
+	}
+
+	setVal, ok := field.Interface().(types.Set)
+	if !ok {
+		return nil
+	}
+	if setVal.IsNull() || setVal.IsUnknown() {
+		return nil
+	}
+
+	out := make([]string, 0, len(setVal.Elements()))
+	for _, e := range setVal.Elements() {
+		if s, ok := e.(types.String); ok {
+			out = append(out, s.ValueString())
+		}
+	}
+	return out
+}
+
+// SetStringSliceField writes a []string to a Set[String] model field by name.
+// Nil input becomes a Null set (preserves "unset" semantics on the way back to
+// state); a non-nil empty slice becomes an empty (but non-null) Set.
+func SetStringSliceField(model any, fieldName string, values []string) {
+	v := reflect.ValueOf(model)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	field := v.FieldByName(fieldName)
+	if !field.IsValid() || !field.CanSet() {
+		return
+	}
+
+	if values == nil {
+		field.Set(reflect.ValueOf(types.SetNull(types.StringType)))
+		return
+	}
+
+	elems := make([]attr.Value, len(values))
+	for i, s := range values {
+		elems[i] = types.StringValue(s)
+	}
+	setVal, diags := types.SetValue(types.StringType, elems)
+	if diags.HasError() {
+		// Fall back to null on construction error (shouldn't happen for
+		// String elements but defensive — the alternative is to surface
+		// diags up through the call chain, which this helper signature
+		// doesn't support).
+		field.Set(reflect.ValueOf(types.SetNull(types.StringType)))
+		return
+	}
+	field.Set(reflect.ValueOf(setVal))
 }

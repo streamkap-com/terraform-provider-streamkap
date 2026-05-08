@@ -66,9 +66,9 @@ resource "streamkap_source_s3" "test" {
 			},
 			// ImportState testing
 			{
-				ResourceName:      "streamkap_source_s3.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "streamkap_source_s3.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Update and Read testing

@@ -50,9 +50,9 @@ resource "streamkap_source_mongodbhosted" "test" {
 			},
 			// ImportState testing
 			{
-				ResourceName:      "streamkap_source_mongodbhosted.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "streamkap_source_mongodbhosted.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Update and Read testing

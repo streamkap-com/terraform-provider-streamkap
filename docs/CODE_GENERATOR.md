@@ -172,6 +172,13 @@ The generator maps backend control types to Terraform attribute types:
 | `multi-select` | `schema.ListAttribute` | `types.List` | List of strings |
 | `slider` | `schema.Int64Attribute` | `types.Int64` | Range with `Between` validator |
 
+`schema.SetAttribute` / `types.Set` is not produced from any backend control;
+it is reserved for the shared `tags` common field, which the generator emits
+on every source/destination/transform via `tagsCommonField()` in
+`generator.go`. The `IsSetType` flag in `FieldData` triggers `ElementType`
+emission and wires `setplanmodifier` for `UseStateForUnknown` — same
+template path as `IsListType`, just with set semantics.
+
 ### Automatic Type Conversions
 
 The generator applies smart conversions:

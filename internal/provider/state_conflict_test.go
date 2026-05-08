@@ -138,10 +138,10 @@ func TestDriftDetection_DestinationModifiedExternally(t *testing.T) {
 							Name:      "original-dest",
 							Connector: "snowflake",
 							Config: map[string]any{
-								"snowflake.url.name":     "account.snowflakecomputing.com",
-								"snowflake.user.name":    "STREAMKAP_USER",
-								"tasks.max":              float64(1),
-								"schema.evolution":       "basic",
+								"snowflake.url.name":  "account.snowflakecomputing.com",
+								"snowflake.user.name": "STREAMKAP_USER",
+								"tasks.max":           float64(1),
+								"schema.evolution":    "basic",
 							},
 						},
 					},
@@ -157,10 +157,10 @@ func TestDriftDetection_DestinationModifiedExternally(t *testing.T) {
 							Name:      "externally-renamed-dest", // Modified externally
 							Connector: "snowflake",
 							Config: map[string]any{
-								"snowflake.url.name":     "account.snowflakecomputing.com",
-								"snowflake.user.name":    "NEW_ADMIN_USER", // Modified
-								"tasks.max":              float64(5),       // Modified
-								"schema.evolution":       "none",           // Modified
+								"snowflake.url.name":  "account.snowflakecomputing.com",
+								"snowflake.user.name": "NEW_ADMIN_USER", // Modified
+								"tasks.max":           float64(5),       // Modified
+								"schema.evolution":    "none",           // Modified
 							},
 						},
 					},
@@ -1090,20 +1090,20 @@ func TestStateConflict_ReadAfterDeleteReturnsNil(t *testing.T) {
 func TestStateConflict_ConfigMapDriftDetection(t *testing.T) {
 	// Test that config map changes are properly detected
 	original := map[string]any{
-		"string_field":  "original",
-		"int_field":     float64(123), // JSON numbers are float64
-		"bool_field":    true,
-		"nested.field":  "nested_value",
-		"list_field":    []any{"a", "b", "c"},
+		"string_field": "original",
+		"int_field":    float64(123), // JSON numbers are float64
+		"bool_field":   true,
+		"nested.field": "nested_value",
+		"list_field":   []any{"a", "b", "c"},
 	}
 
 	modified := map[string]any{
-		"string_field":  "modified",           // Changed
-		"int_field":     float64(456),         // Changed
-		"bool_field":    false,                // Changed
-		"nested.field":  "new_nested_value",   // Changed
-		"list_field":    []any{"x", "y", "z"}, // Changed
-		"new_field":     "added",              // Added
+		"string_field": "modified",           // Changed
+		"int_field":    float64(456),         // Changed
+		"bool_field":   false,                // Changed
+		"nested.field": "new_nested_value",   // Changed
+		"list_field":   []any{"x", "y", "z"}, // Changed
+		"new_field":    "added",              // Added
 	}
 
 	// Verify drift detection by comparing maps

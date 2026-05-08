@@ -81,4 +81,3 @@ func legacyProviderConfig() map[string]resource.ExternalProvider {
 		},
 	}
 }
-

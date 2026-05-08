@@ -7,7 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_No changes yet._
+### Added
+- **Tags on every entity.** `streamkap_source_*`, `streamkap_destination_*`,
+  `streamkap_transform_*`, and `streamkap_topic` now expose a `tags = [...]`
+  attribute (Set of tag IDs) — at parity with `streamkap_pipeline`, which
+  already had it. Optional+Computed: unset in config preserves backend tags so
+  out-of-band attachments don't churn plans; explicitly set means Terraform
+  owns the field and reverts manual UI edits; `tags = []` clears the entity's
+  tags. Backend distinguishes `null`/absent (keep) from `[]` (clear) on the
+  wire and the provider honors that.
+- **`streamkap_tags` data source.** Lists tags filtered by `filter_name`,
+  `filter_type`, or `filter_ids`. Routes through `GET /tags`, falls back to
+  `POST /tags/search` automatically when `filter_ids` is large enough that the
+  URL would risk a length limit. Use it instead of hardcoding tag IDs.
+- **`streamkap_tag.type` plan-time validation.** Element values are now
+  validated against the backend `TagTypeEnum` (`environment`, `general`,
+  `sources`, `destinations`, `pipelines`, `transforms`, `topics`, `services`,
+  `users`, `tenant`). Typos fail at plan, not after a round-trip.
+- **Five previously-unwired connectors** (backend exposed them, the provider
+  didn't): `streamkap_source_informix`, `streamkap_source_salesforce_webhook`,
+  `streamkap_source_zendesk_webhook`, `streamkap_transform_toast_handling`,
+  `streamkap_transform_un_nesting`.
+
+### Fixed
+- **`streamkap_topic` Read silently no-op'd against the API response.** The
+  internal API struct mapped `topic_id` and a top-level `partition_count`, but
+  the backend's `GET /topics/{id}` returns `id` and `kafka.partitions.count` —
+  so every Read decoded into an empty struct and the resource only looked
+  unchanged because prior state survived. `Topic.TopicID` now decodes from
+  `id`, and `partition_count` is lifted from `kafka.partitions.count` after
+  Unmarshal.
+- **`streamkap_tag` adopt-on-exists.** When `CreateTag` returns "A tag with
+  identical properties already exists" (e.g. a leaked test fixture or a
+  parallel-apply race), the provider now looks the tag up by name via the
+  list endpoint and adopts it instead of failing the apply — matching the
+  existing behavior for sources, destinations, and transforms.
+- **`streamkap_pipeline` — "planned set element does not correlate with any element in actual" on `transforms[].topics`.**
+  When a transform attached to a pipeline had been deployed, the backend stamps its
+  `topic_ids` with a `transform_<id>_<version>` prefix
+  (`python-be-streamkap` `app/utils/api/v2/api_transforms_utils.py:427`). The pipeline
+  read path then swapped that internal id into the Terraform state in place of the
+  pretty topic name, so the next apply saw the user's pretty name in the plan and
+  the full topic_id in state and aborted. State now always carries the pretty
+  `topic` field returned by the backend, matching what users write in
+  `transforms[*].topics` (e.g. `<schema>.<table>`).
+- **`streamkap_transform_*` — `replay_window` left Unknown after Create.**
+  `replay_window` is `Optional+Computed` with no default and the backend never
+  echoes it back, so on initial Create with no prior state the framework's
+  `UseStateForUnknown` plan modifier could not resolve the planned Unknown,
+  leaving Terraform to error with "still indicated an unknown value." Create
+  now concretizes the field to Null when the user did not set it.
 
 ---
 

@@ -343,12 +343,12 @@ func TestIsSensitive(t *testing.T) {
 
 func TestGetDefault(t *testing.T) {
 	tests := []struct {
-		name          string
-		defaultValue  any
-		expectedStr   string
-		expectedInt   int64
-		expectedBool  bool
-		hasDefault    bool
+		name         string
+		defaultValue any
+		expectedStr  string
+		expectedInt  int64
+		expectedBool bool
+		hasDefault   bool
 	}{
 		{
 			name:         "string default",

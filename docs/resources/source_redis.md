@@ -47,6 +47,7 @@ This resource creates and manages a Redis source for Streamkap data pipelines. U
 - `redis_stream_name` (String) Name of the Redis stream to read from
 - `redis_stream_offset` (String) Starting point for reading from the stream. Defaults to `Latest`. Valid values: `Latest`, `Earliest`.
 - `ssl_enabled` (Boolean) Enable TLS/SSL for secure connections. Defaults to `true`.
+- `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `tasks_max` (Number) Number of parallel tasks (Stream: 1-10, Keys: always 1). Defaults to `1`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `topic` (String) Kafka topic name to publish messages to

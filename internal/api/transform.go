@@ -34,21 +34,26 @@ type Transform struct {
 	CreatedAt      string         `json:"created_at"`
 	UpdatedAt      string         `json:"updated_at"`
 	StartTime      *string        `json:"start_time"`
+	Tags           []string       `json:"tags"`
 }
 
-// CreateTransformRequest represents the request payload for creating a transform
+// CreateTransformRequest represents the request payload for creating a transform.
+// See the comment on api.Source.Tags for why Tags is NOT omitempty.
 type CreateTransformRequest struct {
 	Transform   string         `json:"transform"`
 	Config      map[string]any `json:"config"`
 	CreatedFrom string         `json:"created_from,omitempty"`
+	Tags        []string       `json:"tags"`
 }
 
-// UpdateTransformRequest represents the request payload for updating a transform
+// UpdateTransformRequest represents the request payload for updating a transform.
+// See the comment on api.Source.Tags for why Tags is NOT omitempty.
 type UpdateTransformRequest struct {
 	ID             string         `json:"id"`
 	Transform      string         `json:"transform"`
 	Config         map[string]any `json:"config"`
 	Implementation map[string]any `json:"implementation,omitempty"`
+	Tags           []string       `json:"tags"`
 }
 
 func (s *streamkapAPI) GetTransform(ctx context.Context, TransformID string) (*Transform, error) {
@@ -248,7 +253,7 @@ type TransformImplementationDetails struct {
 
 // TransformImplementationDetailsResponse represents the response from GET implementation_details
 type TransformImplementationDetailsResponse struct {
-	TransformID  string                                `json:"transform_id"`
+	TransformID  string                                    `json:"transform_id"`
 	ImplVersions map[string]TransformImplementationDetails `json:"impl_versions"`
 }
 

@@ -3,7 +3,6 @@ package pipeline
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -143,8 +142,8 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 				MarkdownDescription: "Whether to automatically snapshot newly added tables (topics). When enabled, new tables added to the source will be automatically snapshotted. Defaults to `true`.",
 			},
 			"source": schema.SingleNestedAttribute{
-				Required:            true,
-				Description:         "Source connector configuration block. Defines the source connector that produces data for the pipeline. Contains id (source connector identifier), name (display name), connector (connector type code), and topics (set of topic names to consume from the source).",
+				Required:    true,
+				Description: "Source connector configuration block. Defines the source connector that produces data for the pipeline. Contains id (source connector identifier), name (display name), connector (connector type code), and topics (set of topic names to consume from the source).",
 				MarkdownDescription: "Source connector configuration block. Defines the source connector that produces data for the pipeline.\n\n" +
 					"**Nested attributes:**\n" +
 					"- `id` - Source connector identifier (from a `streamkap_source_*` resource)\n" +
@@ -152,34 +151,34 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 					"- `connector` - Connector type code (e.g., `postgresql`, `mysql`)\n" +
 					"- `topics` - Set of topic names to consume from the source",
 				Attributes: map[string]schema.Attribute{
-				"id": schema.StringAttribute{
-					Required:            true,
-					Description:         "Source connector identifier. References a source resource (e.g., streamkap_source_postgresql).",
-					MarkdownDescription: "Source connector identifier. References a source resource (e.g., `streamkap_source_postgresql`).",
-				},
-				"name": schema.StringAttribute{
-					Required:            true,
-					Description:         "Display name of the source connector.",
-					MarkdownDescription: "Display name of the source connector.",
-				},
-				"connector": schema.StringAttribute{
-					Required:            true,
-					Description:         "Connector type code (e.g., postgresql, mysql, mongodb).",
-					MarkdownDescription: "Connector type code (e.g., `postgresql`, `mysql`, `mongodb`).",
-				},
-				"topics": schema.SetAttribute{
-					Optional:            true,
-					Computed:            true,
-					ElementType:         types.StringType,
-					Default:             setdefault.StaticValue(defaultEmptyTopicsSet),
-					Description:         "Set of topic names to consume from the source. Optional when transforms are configured - defaults to an empty set.",
-					MarkdownDescription: "Set of topic names to consume from the source. Optional when transforms are configured - defaults to an empty set.",
+					"id": schema.StringAttribute{
+						Required:            true,
+						Description:         "Source connector identifier. References a source resource (e.g., streamkap_source_postgresql).",
+						MarkdownDescription: "Source connector identifier. References a source resource (e.g., `streamkap_source_postgresql`).",
+					},
+					"name": schema.StringAttribute{
+						Required:            true,
+						Description:         "Display name of the source connector.",
+						MarkdownDescription: "Display name of the source connector.",
+					},
+					"connector": schema.StringAttribute{
+						Required:            true,
+						Description:         "Connector type code (e.g., postgresql, mysql, mongodb).",
+						MarkdownDescription: "Connector type code (e.g., `postgresql`, `mysql`, `mongodb`).",
+					},
+					"topics": schema.SetAttribute{
+						Optional:            true,
+						Computed:            true,
+						ElementType:         types.StringType,
+						Default:             setdefault.StaticValue(defaultEmptyTopicsSet),
+						Description:         "Set of topic names to consume from the source. Optional when transforms are configured - defaults to an empty set.",
+						MarkdownDescription: "Set of topic names to consume from the source. Optional when transforms are configured - defaults to an empty set.",
+					},
 				},
 			},
-		},
-		"destination": schema.ObjectAttribute{
-				Required:            true,
-				Description:         "Destination connector configuration block. Defines the destination connector that receives data from the pipeline. Contains id (destination connector identifier), name (display name), and connector (connector type code).",
+			"destination": schema.ObjectAttribute{
+				Required:    true,
+				Description: "Destination connector configuration block. Defines the destination connector that receives data from the pipeline. Contains id (destination connector identifier), name (display name), and connector (connector type code).",
 				MarkdownDescription: "Destination connector configuration block. Defines the destination connector that receives data from the pipeline.\n\n" +
 					"**Nested attributes:**\n" +
 					"- `id` - Destination connector identifier (from a `streamkap_destination_*` resource)\n" +
@@ -192,9 +191,9 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 				},
 			},
 			"transforms": schema.ListNestedAttribute{
-				Computed:            true,
-				Optional:            true,
-				Description:         "Optional list of transforms to apply to the pipeline data. Each transform processes data between the source and destination. Defaults to an empty list.",
+				Computed:    true,
+				Optional:    true,
+				Description: "Optional list of transforms to apply to the pipeline data. Each transform processes data between the source and destination. Defaults to an empty list.",
 				MarkdownDescription: "Optional list of transforms to apply to the pipeline data. Each transform processes data between the source and destination. Defaults to an empty list.\n\n" +
 					"**Nested attributes:**\n" +
 					"- `id` - Transform identifier (from a `streamkap_transform_*` resource)\n" +
@@ -540,13 +539,19 @@ func (r *PipelineResource) api2ModelTransforms(_ context.Context, apiTransforms 
 	currentTransformTopics := make([]string, 0, len(apiTransforms))
 
 	for _, apiTransform := range apiTransforms {
-		// For topic_router transforms, the API's "topic" field strips the transform prefix
-		// (e.g., "merged.Orders" instead of "transform_<id>_0.merged.Orders").
-		// Use TopicID which preserves the full name, matching the terraform config.
+		// Always use the pretty Topic field. The backend computes it via
+		// get_pretty_topic_name_from_id (python-be-streamkap
+		// app/utils/fetch_utils.py:859) by stripping the first dot-separated
+		// segment of topic_id, and that segment is the backend-internal
+		// connector identifier — never something a user writes in their TF
+		// config. Earlier code swapped in topic_id when it started with
+		// "transform_" to "preserve the full name" for topic_router
+		// transforms, but every deployed transform (router or not) gets a
+		// transform-prefixed topic_id from
+		// app/utils/api/v2/api_transforms_utils.py:427, so the swap clobbered
+		// state with the internal id and produced "planned set element does
+		// not correlate with any element in actual" on the next apply.
 		topicName := apiTransform.Topic
-		if strings.HasPrefix(apiTransform.TopicID, "transform_") {
-			topicName = apiTransform.TopicID
-		}
 		// Skip entries with empty topic names (stale data from failed applies)
 		if topicName == "" {
 			continue

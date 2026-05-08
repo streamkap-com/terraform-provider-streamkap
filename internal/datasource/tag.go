@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	ds "github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -24,12 +25,12 @@ type TagDataSource struct {
 
 // TagDataSourceModel describes the data source data model.
 type TagDataSourceModel struct {
-	ID          types.String   `tfsdk:"id"`
-	Name        types.String   `tfsdk:"name"`
-	Type        []types.String `tfsdk:"type"`
-	Description types.String   `tfsdk:"description"`
-	System      types.Bool     `tfsdk:"system"`
-	Custom      types.Bool     `tfsdk:"custom"`
+	ID          types.String `tfsdk:"id"`
+	Name        types.String `tfsdk:"name"`
+	Type        types.Set    `tfsdk:"type"`
+	Description types.String `tfsdk:"description"`
+	System      types.Bool   `tfsdk:"system"`
+	Custom      types.Bool   `tfsdk:"custom"`
 }
 
 func (d *TagDataSource) Metadata(ctx context.Context, req ds.MetadataRequest, resp *ds.MetadataResponse) {
@@ -54,11 +55,15 @@ func (d *TagDataSource) Schema(ctx context.Context, req ds.SchemaRequest, resp *
 				MarkdownDescription: "Display name of the tag. Example: `Development` or `Production`.",
 				Computed:            true,
 			},
-			"type": schema.ListAttribute{
-				Description:         "List of entity types this tag can be applied to (e.g., 'source', 'destination', 'pipeline').",
-				MarkdownDescription: "List of entity types this tag can be applied to (e.g., `source`, `destination`, `pipeline`).",
-				Computed:            true,
-				ElementType:         types.StringType,
+			"type": schema.SetAttribute{
+				Description: "Set of entity types this tag can be applied to. Possible values: " +
+					"environment, general, sources, destinations, pipelines, transforms, topics, " +
+					"services, users, tenant.",
+				MarkdownDescription: "Set of entity types this tag can be applied to. Possible values: " +
+					"`environment`, `general`, `sources`, `destinations`, `pipelines`, `transforms`, " +
+					"`topics`, `services`, `users`, `tenant`.",
+				Computed:    true,
+				ElementType: types.StringType,
 			},
 			"description": schema.StringAttribute{
 				Description:         "Human-readable description of the tag's purpose.",
@@ -138,12 +143,12 @@ func (r *TagDataSource) modelFromAPIObject(apiObject api.Tag, model *TagDataSour
 	model.ID = types.StringValue(apiObject.ID)
 	model.Name = types.StringValue(apiObject.Name)
 
-	tagTypes := []types.String{}
-	for _, t := range apiObject.Type {
-		tagTypes = append(tagTypes, types.StringValue(t))
+	tagTypes := make([]attr.Value, len(apiObject.Type))
+	for i, t := range apiObject.Type {
+		tagTypes[i] = types.StringValue(t)
 	}
+	model.Type, _ = types.SetValue(types.StringType, tagTypes)
 
-	model.Type = tagTypes
 	model.Description = types.StringValue(apiObject.Description)
 	model.System = types.BoolValue(apiObject.System)
 	model.Custom = types.BoolPointerValue(apiObject.Custom)
