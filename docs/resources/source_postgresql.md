@@ -41,8 +41,8 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 - `column_include_list_toggled` (Boolean) Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to `true`.
 - `database_port` (Number) PostgreSQL Port. For example, 5432. Defaults to `5432`.
 - `database_sslmode` (String) Whether to use an encrypted connection to the PostgreSQL server. Defaults to `require`. Valid values: `require`, `disable`.
-- `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'.
-- `heartbeat_enabled` (Boolean) Heartbeats are used to monitor whether the connector is still receiving change events from the database, especially when there is low and intermittent traffic. Defaults to `true`.
+- `heartbeat_data_collection_schema_or_database` (String) The schema containing the 'streamkap_heartbeat' table. This table must be created before enabling heartbeat — see the Streamkap documentation for setup instructions.
+- `heartbeat_enabled` (Boolean) When enabled, the connector sends periodic heartbeat messages to a Kafka topic to track connector liveness. In read-write mode, the connector also periodically writes to the 'streamkap_heartbeat' table in the source database to keep the transaction log active — this table must be created before enabling. See the Streamkap documentation for table setup instructions. Defaults to `true`.
 - `include_source_db_name_in_table_name` (Boolean) Changes the format of topics to 'DatabaseName_TopicName'. Defaults to `false`.
 - `insert_static_key_field_1` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key1_static_field' instead.
 - `insert_static_key_field_2` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key2_static_field' instead.
@@ -62,7 +62,7 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 - `slot_name` (String) The name of the replication slot for the connector to use. Defaults to `streamkap_pgoutput_slot`.
 - `snapshot_read_only` (String) When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots. Defaults to `Yes`. Valid values: `Yes`, `No`.
 - `source_regex_support_enabled` (Boolean) Enable regex support. Useful for merging multiple tables into the same output topic. Defaults to `false`.
-- `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
+- `ssh_enabled` (Boolean) <span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server
@@ -70,6 +70,7 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 - `streamkap_snapshot_custom_table_config` (String) Explicitly set nb of parallel chunks for tables. Format: {"db.Some_Tbl": {"chunks": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.
 - `streamkap_snapshot_large_table_threshold` (Number) The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to `20000`.
 - `streamkap_snapshot_parallelism` (Number) How many parallel chunk requests to send to the source DB. Defaults to `1`.
+- `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_insert_static_key1_static_field` (String) The name of the static field to be added to the message key.
 - `transforms_insert_static_key1_static_value` (String) The value of the static field to be added to the message key.

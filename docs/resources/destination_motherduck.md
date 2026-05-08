@@ -39,6 +39,7 @@ This resource creates and manages a Motherduck destination for Streamkap data pi
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
 - `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `table_name_prefix` (String) Schema for the associated table name. Defaults to `streamkap`.
+- `tags` (Set of String) Optional set of tag IDs to apply to this destination. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `topic2table_map` (Boolean) Falls back to Streamkap's default for tables where no match is found. Defaults to `false`.

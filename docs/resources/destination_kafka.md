@@ -35,6 +35,7 @@ This resource creates and manages a Kafka destination for Streamkap data pipelin
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
 - `schema_registry_url` (String) Destination kafka schema registry url
+- `tags` (Set of String) Optional set of tag IDs to apply to this destination. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `tasks_max` (Number) Maximum number of tasks for the connector. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `topic_prefix` (String) Prefix for destination topics

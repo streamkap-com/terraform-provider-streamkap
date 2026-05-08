@@ -34,6 +34,7 @@ This resource creates and manages a Transform/Filter Records transform for Strea
 - `replay_window` (String) Replay window for deployment. Specifies how much historical data to reprocess on deploy.
 
 Valid values: `7d`, `3d`, `24h`, `10m`, `0` (continue from last position). Only used when `deploy` is `true`.
+- `tags` (Set of String) Optional set of tag IDs to apply to this transform. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_input_job_parallelism` (Number) The number of parallel tasks this transform should be using. Recommended: 1-5 for most workloads. Higher values increase throughput but consume more resources. Start low and increase based on lag metrics. Defaults to `5`.
 - `transforms_input_serialization_format` (String) Format of the input topics. Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.

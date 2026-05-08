@@ -34,6 +34,7 @@ This resource creates and manages an Enrich Async transform for Streamkap data p
 - `replay_window` (String) Replay window for deployment. Specifies how much historical data to reprocess on deploy.
 
 Valid values: `7d`, `3d`, `24h`, `10m`, `0` (continue from last position). Only used when `deploy` is `true`.
+- `tags` (Set of String) Optional set of tag IDs to apply to this transform. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_async_capacity` (Number) If one async call takes 10ms and the target throughput per task is 1000 records per second, then the capacity should be 1000 * 10ms = 10 parallel requests. Defaults to `10`.
 - `transforms_async_timeout_ms` (Number) Timeout to wait for async operation to complete. Defaults to `1000`.
