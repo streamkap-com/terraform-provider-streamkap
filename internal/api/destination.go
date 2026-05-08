@@ -27,6 +27,8 @@ type Destination struct {
 	ConnectorStatus string         `json:"connector_status,omitempty"`
 	Config          map[string]any `json:"config"`
 	KcClusterId     string         `json:"kc_cluster_id,omitempty"`
+	// See the matching comment on api.Source.Tags for why omitempty is absent here.
+	Tags []string `json:"tags"`
 }
 
 func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destination) (*Destination, error) {
@@ -37,11 +39,11 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destina
 
 	var payloadMap map[string]any
 	err = json.Unmarshal(payload, &payloadMap)
-    if err != nil {
-        return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
-    payloadMap["created_from"] = constants.TERRAFORM
+	payloadMap["created_from"] = constants.TERRAFORM
 
 	payload, err = json.Marshal(payloadMap)
 	if err != nil {

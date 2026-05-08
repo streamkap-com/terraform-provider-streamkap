@@ -41,6 +41,7 @@ This resource creates and manages an ElasticSearch source for Streamkap data pip
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
+- `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.

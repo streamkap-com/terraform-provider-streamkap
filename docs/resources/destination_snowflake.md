@@ -35,7 +35,7 @@ This resource creates and manages a Snowflake destination for Streamkap data pip
 ### Optional
 
 - `apply_dynamic_table_script` (Boolean) Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only). Defaults to `false`.
-- `auto_qa_dedupe_table_mapping` (Map of String) Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.
+- `auto_qa_dedupe_table_mapping` (String) Mapping between the tables that store append-only data and the deduplicated tables. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.
 - `auto_schema_creation` (Boolean, Deprecated) DEPRECATED: Use 'create_schema_auto' instead.
 - `consumer_override_max_poll_records` (Number) The maximum number of records returned in a single call to poll(). Defaults to `10000`.
 - `create_schema_auto` (Boolean) Automatically generates a Snowflake schema if it does not already exist. Defaults to `true`.
@@ -57,6 +57,7 @@ ALTER TASK {{table}}_CT RESUME`.
 - `snowflake_role_name` (String) The name of an existing role with necessary privileges (for Streamkap) assigned to the <Username>. Defaults to `STREAMKAP_ROLE`.
 - `snowflake_topic2table_map` (String) Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>^([-\w]+\.)([-\w]+\.)?([-\w]+\.)?([-\w]+\.)?([-\w]+):$5</code> uses only the last segment as table name. Defaults to `REGEX_MATCHER>^([-\w]+\.)([-\w]+\.)?([-\w]+\.)?([-\w]+\.)?([-\w]+):$5`.
 - `sql_table_name` (String) Can be used as <code>{{dynamicTableName}}</code> in dynamic table creation SQL. It can use input JSON data for more complex mappings and logic. Defaults to `{{table}}_DT`.
+- `tags` (Set of String) Optional set of tag IDs to apply to this destination. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_add_string_suffix_fields_include_list` (String) Warning: Should only be used in conjunction with numeric conversion or other conversions. If field remained string after previous conversion, rename to field to <previous-field-name>_str. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_change_topic_name_match_regex` (String) Regular expression for matching topic name parts to use as the destination table (database) or file (file storage) name

@@ -241,6 +241,16 @@ func processEntity(backendPath, output string, entity EntityConfig, specificConn
 			continue
 		}
 
+		// Skip connectors the backend marks as coming_soon: true. They show up
+		// in the Streamkap UI as "not yet available" placeholders, and the
+		// backend's create endpoint will reject any payload routed to them.
+		// Generating a Terraform resource that always fails at apply time is
+		// worse than not generating one at all.
+		if config.ComingSoon {
+			fmt.Printf("Skipping %s %s: marked coming_soon: true upstream.\n", entity.Type, connectorCode)
+			continue
+		}
+
 		// Generate the schema
 		fmt.Printf("Generating %s_%s.go...\n", entity.Type, connectorCode)
 		if err := generator.Generate(config, connectorCode, backendPath); err != nil {

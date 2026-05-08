@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -27,13 +30,14 @@ func NewTopicResource() res.Resource {
 
 // TopicResource defines the resource implementation.
 type TopicResource struct {
-	client         api.StreamkapAPI
+	client api.StreamkapAPI
 }
 
 // TopicResourceModel describes the resource data model.
 type TopicResourceModel struct {
-	TopicID            types.String  `tfsdk:"topic_id"`
-	PartitionCount     types.Int64   `tfsdk:"partition_count"`
+	TopicID        types.String `tfsdk:"topic_id"`
+	PartitionCount types.Int64  `tfsdk:"partition_count"`
+	Tags           types.Set    `tfsdk:"tags"`
 }
 
 func (r *TopicResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -58,6 +62,20 @@ func (r *TopicResource) Schema(ctx context.Context, req res.SchemaRequest, resp 
 				Required:            true,
 				Description:         "Number of partitions for the topic. Can only be increased, not decreased. Higher values allow more parallel consumers.",
 				MarkdownDescription: "Number of partitions for the topic. Can only be increased, not decreased. Higher values allow more parallel consumers.",
+			},
+			"tags": schema.SetAttribute{
+				Optional: true,
+				Computed: true,
+				Description: "Optional set of tag IDs to apply to this topic. Use streamkap_tag (resource " +
+					"or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, " +
+					"in which case the unset value is preserved on subsequent reads.",
+				MarkdownDescription: "Optional set of tag IDs to apply to this topic. Use `streamkap_tag` " +
+					"(resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags " +
+					"out-of-band, in which case the unset value is preserved on subsequent reads.",
+				ElementType: types.StringType,
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
@@ -93,9 +111,12 @@ func (r *TopicResource) Create(ctx context.Context, req res.CreateRequest, resp 
 
 	tflog.Debug(ctx, "Pre CREATE ===> plan: "+fmt.Sprintf("%+v", plan))
 
+	tags := tagsFromValue(plan.Tags)
+
 	topic, err := r.client.UpdateTopic(ctx, plan.TopicID.ValueString(), api.Topic{
-		TopicID: plan.TopicID.ValueString(),
+		TopicID:        plan.TopicID.ValueString(),
 		PartitionCount: int(plan.PartitionCount.ValueInt64()),
+		Tags:           tags,
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -173,9 +194,12 @@ func (r *TopicResource) Update(ctx context.Context, req res.UpdateRequest, resp 
 		return
 	}
 
+	tags := tagsFromValue(plan.Tags)
+
 	topic, err := r.client.UpdateTopic(ctx, plan.TopicID.ValueString(), api.Topic{
-		TopicID: plan.TopicID.ValueString(),
+		TopicID:        plan.TopicID.ValueString(),
 		PartitionCount: int(plan.PartitionCount.ValueInt64()),
+		Tags:           tags,
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -220,5 +244,58 @@ func (r *TopicResource) configMap2Model(cfg api.Topic, model *TopicResourceModel
 	model.TopicID = types.StringValue(cfg.TopicID)
 	model.PartitionCount = types.Int64Value(int64(cfg.PartitionCount))
 
+	// Mirror the connector base's normalization rule: when the user explicitly
+	// sent `tags = []` and the backend echoes back nil (omitempty on the
+	// response side), keep the empty Set so plan vs state don't oscillate.
+	priorTags := tagsFromValue(model.Tags)
+	tags := normalizeTagsResponse(priorTags, cfg.Tags)
+	model.Tags = tagsToSet(tags)
+
 	return
+}
+
+// tagsFromValue reads a Set[String], returning nil for null/unknown and a
+// (possibly empty) []string otherwise. Mirrors shared.GetStringSliceField but
+// operates on a typed value rather than via reflection — the topic resource
+// doesn't go through the connector base's reflection layer.
+func tagsFromValue(set types.Set) []string {
+	if set.IsNull() || set.IsUnknown() {
+		return nil
+	}
+	out := make([]string, 0, len(set.Elements()))
+	for _, e := range set.Elements() {
+		if s, ok := e.(types.String); ok {
+			out = append(out, s.ValueString())
+		}
+	}
+	return out
+}
+
+// tagsToSet converts a []string (or nil) back into a Set[String]. Nil yields
+// a Null Set; non-nil yields a (possibly empty) Set. Mirrors
+// shared.SetStringSliceField semantics.
+func tagsToSet(values []string) types.Set {
+	if values == nil {
+		return types.SetNull(types.StringType)
+	}
+	elems := make([]attr.Value, len(values))
+	for i, s := range values {
+		elems[i] = types.StringValue(s)
+	}
+	set, diags := types.SetValue(types.StringType, elems)
+	if diags.HasError() {
+		return types.SetNull(types.StringType)
+	}
+	return set
+}
+
+// normalizeTagsResponse: see the equivalent helper in connector/base.go and
+// transform/base.go. Backend uses omitempty on responses, so an explicitly
+// cleared list (`tags = []`) comes back as nil — preserve the empty shape so
+// state matches user intent.
+func normalizeTagsResponse(userTags, serverTags []string) []string {
+	if userTags != nil && serverTags == nil {
+		return []string{}
+	}
+	return serverTags
 }

@@ -41,8 +41,8 @@ This resource creates and manages an AlloyDB source for Streamkap data pipelines
 - `column_include_list_toggled` (Boolean) Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to `true`.
 - `database_port` (Number) PostgreSQL Port. For example, 5432. Defaults to `5432`.
 - `database_sslmode` (String) Whether to use an encrypted connection to the PostgreSQL server. Defaults to `require`. Valid values: `require`, `disable`.
-- `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'.
-- `heartbeat_enabled` (Boolean) Heartbeats are used to monitor whether the connector is still receiving change events from the database, especially when there is low and intermittent traffic. Defaults to `true`.
+- `heartbeat_data_collection_schema_or_database` (String) The schema containing the 'streamkap_heartbeat' table. This table must be created before enabling heartbeat — see the Streamkap documentation for setup instructions.
+- `heartbeat_enabled` (Boolean) When enabled, the connector sends periodic heartbeat messages to a Kafka topic to track connector liveness. In read-write mode, the connector also periodically writes to the 'streamkap_heartbeat' table in the source database to keep the transaction log active — this table must be created before enabling. See the Streamkap documentation for table setup instructions. Defaults to `true`.
 - `include_source_db_name_in_table_name` (Boolean) Changes the format of topics to 'DatabaseName_TopicName'. Defaults to `false`.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
@@ -57,6 +57,7 @@ This resource creates and manages an AlloyDB source for Streamkap data pipelines
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
+- `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_insert_static_key1_static_field` (String) The name of the static field to be added to the message key.
 - `transforms_insert_static_key1_static_value` (String) The value of the static field to be added to the message key.

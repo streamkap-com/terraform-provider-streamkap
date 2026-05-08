@@ -76,23 +76,46 @@ Full per-resource examples: `examples/resources/streamkap_<name>/{basic,complete
 ## Resources
 
 ### Sources
-`streamkap_source_postgresql`, `mysql`, `mongodb`, `mongodbhosted`, `dynamodb`, `sqlserver`, `oracle`, `oracleaws`, `db2`, `mariadb`, `alloydb`, `documentdb`, `elasticsearch`, `planetscale`, `redis`, `s3`, `supabase`, `vitess`, `webhook`, `kafkadirect`.
+`streamkap_source_postgresql`, `mysql`, `mongodb`, `mongodbhosted`, `dynamodb`, `sqlserver`, `oracle`, `oracleaws`, `db2`, `mariadb`, `alloydb`, `documentdb`, `elasticsearch`, `planetscale`, `redis`, `s3`, `supabase`, `vitess`, `webhook`, `salesforce_webhook` (v3), `zendesk_webhook` (v3), `kafkadirect`.
 
 ### Destinations
-`streamkap_destination_snowflake`, `clickhouse`, `databricks`, `postgresql`, `mysql`, `sqlserver`, `oracle`, `db2`, `cockroachdb`, `bigquery`, `redshift`, `motherduck`, `starburst`, `s3`, `gcs`, `r2`, `azblob`, `iceberg`, `kafka`, `kafkadirect`, `httpsink`, `redis`, `weaviate` (v3).
+`streamkap_destination_snowflake`, `clickhouse`, `databricks`, `postgresql`, `mysql`, `sqlserver`, `oracle`, `db2`, `cockroachdb`, `bigquery`, `redshift`, `motherduck`, `starburst`, `s3`, `gcs`, `r2`, `azblob`, `iceberg`, `kafka`, `kafkadirect`, `httpsink`, `redis`, `weaviate` (v3), `pinecone` (v3).
 
 ### Transforms
-`streamkap_transform_map_filter`, `enrich`, `enrich_async`, `sql_join`, `rollup`, `fan_out`.
+`streamkap_transform_map_filter`, `enrich`, `enrich_async`, `sql_join`, `rollup`, `fan_out`, `topic_router` (v3).
 
 ### Other resources
 `streamkap_pipeline`, `streamkap_topic`, `streamkap_tag`, `streamkap_kafka_user` (v3), `streamkap_client_credential` (v3).
 
 ### Data sources
-`streamkap_transform`, `streamkap_tag`, `streamkap_topics`, `streamkap_topic`, `streamkap_topic_metrics`, `streamkap_roles` (v3).
+`streamkap_transform`, `streamkap_tag`, `streamkap_tags` (v3), `streamkap_topics`, `streamkap_topic`, `streamkap_topic_metrics`, `streamkap_roles` (v3).
 
 For the canonical, always-up-to-date list, run `terraform providers schema -json` or browse the registry — these tables are a snapshot.
 
 ## Patterns
+
+**Tags** — every source, destination, transform, topic, and pipeline accepts an
+optional `tags = [streamkap_tag.<name>.id, ...]`. Tags are managed by Terraform
+when set in config (drift detected and reverted on apply); when unset, the
+provider preserves whatever tags the backend has attached out-of-band. To clear
+tags from an entity, set `tags = []` (the provider distinguishes `null` from
+empty-list on the wire and the backend respects the difference).
+
+```hcl
+resource "streamkap_tag" "prod" {
+  name = "production"
+  type = ["sources", "destinations", "pipelines"]
+}
+
+resource "streamkap_source_postgresql" "orders" {
+  # ...
+  tags = [streamkap_tag.prod.id]
+}
+```
+
+Look up existing tag IDs (instead of hardcoding) via the `streamkap_tags`
+data source: `data.streamkap_tags.by_name.tags[0].id` filtered by `filter_name`,
+`filter_type`, or `filter_ids`.
 
 **Sensitive values** — declare `variable { sensitive = true }`; never inline secrets.
 

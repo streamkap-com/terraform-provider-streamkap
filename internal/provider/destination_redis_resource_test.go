@@ -63,9 +63,9 @@ resource "streamkap_destination_redis" "test" {
 			},
 			// ImportState testing
 			{
-				ResourceName:      "streamkap_destination_redis.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "streamkap_destination_redis.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Update and Read testing

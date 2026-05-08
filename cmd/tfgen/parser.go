@@ -69,72 +69,77 @@ import (
 
 // ConnectorConfig represents the top-level structure of a configuration.latest.json file.
 type ConnectorConfig struct {
-	DisplayName          string        `json:"display_name"`
-	Description          string        `json:"description,omitempty"`
-	SchemaLevels         []string      `json:"schema_levels,omitempty"`
-	DebeziumConnectorName string       `json:"debezium_connector_name,omitempty"`
-	Serialisation        string        `json:"serialisation,omitempty"`
-	Metrics              []Metric      `json:"metrics,omitempty"`
-	Config               []ConfigEntry `json:"config"`
+	DisplayName           string        `json:"display_name"`
+	Description           string        `json:"description,omitempty"`
+	SchemaLevels          []string      `json:"schema_levels,omitempty"`
+	DebeziumConnectorName string        `json:"debezium_connector_name,omitempty"`
+	Serialisation         string        `json:"serialisation,omitempty"`
+	Metrics               []Metric      `json:"metrics,omitempty"`
+	Config                []ConfigEntry `json:"config"`
+	// ComingSoon, when true, marks this connector as not yet generally available
+	// on the backend. Such connectors are visible in the UI but not actually
+	// deployable; we skip generating Terraform resources for them so users
+	// don't get a schema that always errors at apply time.
+	ComingSoon bool `json:"coming_soon,omitempty"`
 }
 
 // Metric represents a metrics definition (primarily for sources).
 type Metric struct {
-	Attribute              string   `json:"attribute"`
-	Context                string   `json:"context,omitempty"`
-	Category               string   `json:"category,omitempty"`
-	TimeSeriesAggregation  string   `json:"time_series_aggregation,omitempty"`
-	AllTimeAggregation     string   `json:"all_time_aggregation,omitempty"`
-	PartAggregation        string   `json:"part_aggregation,omitempty"`
-	InitialValue           any      `json:"initial_value,omitempty"`
-	ValueColumn            string   `json:"value_column,omitempty"`
-	InitialLabels          []string `json:"initial_labels,omitempty"`
-	ClickhouseMetricName   string   `json:"clickhouse_metric_name,omitempty"`
+	Attribute             string   `json:"attribute"`
+	Context               string   `json:"context,omitempty"`
+	Category              string   `json:"category,omitempty"`
+	TimeSeriesAggregation string   `json:"time_series_aggregation,omitempty"`
+	AllTimeAggregation    string   `json:"all_time_aggregation,omitempty"`
+	PartAggregation       string   `json:"part_aggregation,omitempty"`
+	InitialValue          any      `json:"initial_value,omitempty"`
+	ValueColumn           string   `json:"value_column,omitempty"`
+	InitialLabels         []string `json:"initial_labels,omitempty"`
+	ClickhouseMetricName  string   `json:"clickhouse_metric_name,omitempty"`
 }
 
 // ConfigEntry represents a single configuration entry in the config array.
 type ConfigEntry struct {
-	Name                 string       `json:"name"`
-	Description          string       `json:"description,omitempty"`
-	UserDefined          bool         `json:"user_defined"`
-	Required             *bool        `json:"required,omitempty"`
-	OrderOfDisplay       *int         `json:"order_of_display,omitempty"`
-	DisplayName          string       `json:"display_name,omitempty"`
-	Value                ValueObject  `json:"value"`
-	Tab                  string       `json:"tab,omitempty"`
-	KafkaConfig          any          `json:"kafka_config,omitempty"` // Can be bool or object
-	Encrypt              bool         `json:"encrypt,omitempty"`
-	DisplayAdvanced      bool         `json:"display_advanced,omitempty"`
-	Conditions           []Condition  `json:"conditions,omitempty"`
-	SchemaLevel          string       `json:"schema_level,omitempty"`
-	SchemaNameFormat     string       `json:"schema_name_format,omitempty"`
-	SSHUpdateDeterminant bool         `json:"ssh_update_determinant,omitempty"`
-	ShowLast             *int         `json:"show_last,omitempty"`
-	NotClonable          bool         `json:"not_clonable,omitempty"`
-	Global               bool         `json:"global,omitempty"`
-	SetOnce              bool         `json:"set_once,omitempty"`
-	IsOverwrite          bool         `json:"is_overwrite,omitempty"`
-	IsDeleted            bool         `json:"is_deleted,omitempty"`
+	Name                 string      `json:"name"`
+	Description          string      `json:"description,omitempty"`
+	UserDefined          bool        `json:"user_defined"`
+	Required             *bool       `json:"required,omitempty"`
+	OrderOfDisplay       *int        `json:"order_of_display,omitempty"`
+	DisplayName          string      `json:"display_name,omitempty"`
+	Value                ValueObject `json:"value"`
+	Tab                  string      `json:"tab,omitempty"`
+	KafkaConfig          any         `json:"kafka_config,omitempty"` // Can be bool or object
+	Encrypt              bool        `json:"encrypt,omitempty"`
+	DisplayAdvanced      bool        `json:"display_advanced,omitempty"`
+	Conditions           []Condition `json:"conditions,omitempty"`
+	SchemaLevel          string      `json:"schema_level,omitempty"`
+	SchemaNameFormat     string      `json:"schema_name_format,omitempty"`
+	SSHUpdateDeterminant bool        `json:"ssh_update_determinant,omitempty"`
+	ShowLast             *int        `json:"show_last,omitempty"`
+	NotClonable          bool        `json:"not_clonable,omitempty"`
+	Global               bool        `json:"global,omitempty"`
+	SetOnce              bool        `json:"set_once,omitempty"`
+	IsOverwrite          bool        `json:"is_overwrite,omitempty"`
+	IsDeleted            bool        `json:"is_deleted,omitempty"`
 }
 
 // ValueObject represents the value field in a config entry.
 type ValueObject struct {
 	Control       string   `json:"control,omitempty"`
-	Type          string   `json:"type,omitempty"`          // "raw" or "dynamic"
-	Default       any      `json:"default,omitempty"`       // Can be string, int, bool, etc.
-	RawValue      any      `json:"raw_value,omitempty"`     // Static value when type=raw, user_defined=false
-	RawValues     []any    `json:"raw_values,omitempty"`    // Options for select controls (can be strings or bools)
-	FunctionName  string   `json:"function_name,omitempty"` // Dynamic resolution function
-	Dependencies  []string `json:"dependencies,omitempty"`  // Dependencies for dynamic resolution
-	Max           *float64 `json:"max,omitempty"`           // Slider: maximum value
-	Min           *float64 `json:"min,omitempty"`           // Slider: minimum value
-	Step          *float64 `json:"step,omitempty"`          // Slider: step increment
-	Rows          *int     `json:"rows,omitempty"`          // Textarea: display rows
-	Placeholder   string   `json:"placeholder,omitempty"`   // Input placeholder text
-	Readonly      bool     `json:"readonly,omitempty"`      // Read-only field
-	Multiline     bool     `json:"multiline,omitempty"`     // Textarea: allow multiline input
+	Type          string   `json:"type,omitempty"`           // "raw" or "dynamic"
+	Default       any      `json:"default,omitempty"`        // Can be string, int, bool, etc.
+	RawValue      any      `json:"raw_value,omitempty"`      // Static value when type=raw, user_defined=false
+	RawValues     []any    `json:"raw_values,omitempty"`     // Options for select controls (can be strings or bools)
+	FunctionName  string   `json:"function_name,omitempty"`  // Dynamic resolution function
+	Dependencies  []string `json:"dependencies,omitempty"`   // Dependencies for dynamic resolution
+	Max           *float64 `json:"max,omitempty"`            // Slider: maximum value
+	Min           *float64 `json:"min,omitempty"`            // Slider: minimum value
+	Step          *float64 `json:"step,omitempty"`           // Slider: step increment
+	Rows          *int     `json:"rows,omitempty"`           // Textarea: display rows
+	Placeholder   string   `json:"placeholder,omitempty"`    // Input placeholder text
+	Readonly      bool     `json:"readonly,omitempty"`       // Read-only field
+	Multiline     bool     `json:"multiline,omitempty"`      // Textarea: allow multiline input
 	EarlyResolved string   `json:"early_resolved,omitempty"` // Early resolution function
-	Validation    any      `json:"validation,omitempty"`    // Custom validation rules (flexible type)
+	Validation    any      `json:"validation,omitempty"`     // Custom validation rules (flexible type)
 }
 
 // Condition represents conditional visibility based on other field values.

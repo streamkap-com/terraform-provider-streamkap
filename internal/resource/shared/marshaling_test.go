@@ -249,7 +249,7 @@ func TestModelToConfigMap_AliasedFields_NonNilWins(t *testing.T) {
 
 	// Two tfsdk keys → same API field, simulating the old/new alias pattern.
 	mappings := map[string]string{
-		"name":    "api.field",
+		"name":     "api.field",
 		"old_name": "api.field",
 	}
 

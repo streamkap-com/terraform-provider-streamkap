@@ -49,6 +49,7 @@ This resource creates and manages a DynamoDB source for Streamkap data pipelines
 - `signal_kafka_poll_timeout_ms` (Number) Signal Kafka Poll Timeout (ms). Defaults to `0`.
 - `snapshot_parallel_time_offset` (Number) If > 0, snapshot will run in parallel with streaming and snapshot records _streamkap_ts_ms will be set back in time by this amount to prioritize CDC events downstream. Defaults to `0`.
 - `struct_encoding_json` (Boolean) Force nested maps as JSON string. Defaults to `true`.
+- `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `tasks_max` (Number) The maximum number of active tasks. Defaults to `10`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.

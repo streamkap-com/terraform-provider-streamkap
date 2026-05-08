@@ -24,7 +24,9 @@ Tags can be applied to sources, destinations, and pipelines to help organize and
 ### Required
 
 - `name` (String) Display name of the tag. This is shown in the Streamkap UI.
-- `type` (Set of String) Set of entity types this tag can be applied to. Valid values: `sources`, `destinations`, `pipelines`.
+- `type` (Set of String) Set of entity types this tag can be applied to. Valid values: `environment`, `general`, `sources`, `destinations`, `pipelines`, `transforms`, `topics`, `services`, `users`, `tenant`.
+
+**Note:** `environment` and `general` are reserved for system tags and cannot be applied to custom user-created tags during update.
 
 ### Optional
 

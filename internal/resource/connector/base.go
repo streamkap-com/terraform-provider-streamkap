@@ -234,6 +234,8 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	var responseConfig map[string]any
 
 	kcClusterId := r.getStringField(model, "KcClusterId")
+	tags := r.getStringSliceField(ctx, model, "Tags")
+	var responseTags []string
 
 	switch r.config.GetConnectorType() {
 	case ConnectorTypeSource:
@@ -242,6 +244,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 			Connector:   r.config.GetConnectorCode(),
 			Config:      configMap,
 			KcClusterId: kcClusterId,
+			Tags:        tags,
 		})
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -255,6 +258,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		connectorCode = source.Connector
 		connectorStatus = source.ConnectorStatus
 		responseConfig = source.Config
+		responseTags = source.Tags
 
 	case ConnectorTypeDestination:
 		destination, err := r.client.CreateDestination(ctx, api.Destination{
@@ -262,6 +266,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 			Connector:   r.config.GetConnectorCode(),
 			Config:      configMap,
 			KcClusterId: kcClusterId,
+			Tags:        tags,
 		})
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -275,6 +280,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		connectorCode = destination.Connector
 		connectorStatus = destination.ConnectorStatus
 		responseConfig = destination.Config
+		responseTags = destination.Tags
 	}
 
 	// Update model with response data
@@ -282,6 +288,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	r.setStringField(model, "Name", connectorName)
 	r.setStringField(model, "Connector", connectorCode)
 	r.setStringField(model, "ConnectorStatus", connectorStatus)
+	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, responseTags))
 	r.configMapToModel(ctx, responseConfig, model)
 
 	// Save data into Terraform state
@@ -325,6 +332,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 	var connectorStatus string
 	var kcClusterId string
 	var responseConfig map[string]any
+	var responseTags []string
 
 	switch r.config.GetConnectorType() {
 	case ConnectorTypeSource:
@@ -345,6 +353,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 		connectorStatus = source.ConnectorStatus
 		kcClusterId = source.KcClusterId
 		responseConfig = source.Config
+		responseTags = source.Tags
 
 	case ConnectorTypeDestination:
 		destination, err := r.client.GetDestination(ctx, id)
@@ -364,13 +373,16 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 		connectorStatus = destination.ConnectorStatus
 		kcClusterId = destination.KcClusterId
 		responseConfig = destination.Config
+		responseTags = destination.Tags
 	}
 
 	// Update model with response data
+	priorTags := r.getStringSliceField(ctx, model, "Tags")
 	r.setStringField(model, "Name", connectorName)
 	r.setStringField(model, "Connector", connectorCode)
 	r.setStringField(model, "ConnectorStatus", connectorStatus)
 	r.setStringField(model, "KcClusterId", kcClusterId)
+	r.setStringSliceField(model, "Tags", normalizeTagsResponse(priorTags, responseTags))
 	r.configMapToModel(ctx, responseConfig, model)
 
 	// Save updated data into Terraform state
@@ -443,6 +455,8 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 	var responseConfig map[string]any
 
 	kcClusterId := r.getStringField(model, "KcClusterId")
+	tags := r.getStringSliceField(ctx, model, "Tags")
+	var responseTags []string
 
 	switch r.config.GetConnectorType() {
 	case ConnectorTypeSource:
@@ -451,6 +465,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 			Connector:   r.config.GetConnectorCode(),
 			Config:      configMap,
 			KcClusterId: kcClusterId,
+			Tags:        tags,
 		})
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -463,6 +478,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		connectorCode = source.Connector
 		connectorStatus = source.ConnectorStatus
 		responseConfig = source.Config
+		responseTags = source.Tags
 
 	case ConnectorTypeDestination:
 		destination, err := r.client.UpdateDestination(ctx, id, api.Destination{
@@ -470,6 +486,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 			Connector:   r.config.GetConnectorCode(),
 			Config:      configMap,
 			KcClusterId: kcClusterId,
+			Tags:        tags,
 		})
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -482,12 +499,14 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		connectorCode = destination.Connector
 		connectorStatus = destination.ConnectorStatus
 		responseConfig = destination.Config
+		responseTags = destination.Tags
 	}
 
 	// Update model with response data
 	r.setStringField(model, "Name", connectorName)
 	r.setStringField(model, "Connector", connectorCode)
 	r.setStringField(model, "ConnectorStatus", connectorStatus)
+	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, responseTags))
 	r.configMapToModel(ctx, responseConfig, model)
 
 	// Save updated data into Terraform state
@@ -928,4 +947,25 @@ func (r *BaseConnectorResource) getStringField(model any, fieldName string) stri
 
 func (r *BaseConnectorResource) setStringField(model any, fieldName string, value string) {
 	shared.SetStringField(model, fieldName, value)
+}
+
+func (r *BaseConnectorResource) getStringSliceField(ctx context.Context, model any, fieldName string) []string {
+	return shared.GetStringSliceField(ctx, model, fieldName)
+}
+
+func (r *BaseConnectorResource) setStringSliceField(model any, fieldName string, values []string) {
+	shared.SetStringSliceField(model, fieldName, values)
+}
+
+// normalizeTagsResponse reconciles user intent with the server response for
+// the `tags` attribute. Backend uses `omitempty`, so "no tags" comes back as
+// nil, not empty array. When the user explicitly sent `tags = []`, treat a
+// nil server response as the equivalent empty slice so state ends up as an
+// empty (but non-null) Set — otherwise Terraform sees plan=`[]`, state=Null
+// and loops on diff every time.
+func normalizeTagsResponse(userTags, serverTags []string) []string {
+	if userTags != nil && serverTags == nil {
+		return []string{}
+	}
+	return serverTags
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -23,6 +24,7 @@ type SourceMongodbhostedModel struct {
 	Connector                                        types.String   `tfsdk:"connector"`
 	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
 	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
+	Tags                                             types.Set      `tfsdk:"tags"`
 	MongodbConnectionString                          types.String   `tfsdk:"mongodb_connection_string"`
 	MongodbConnectionHostname                        types.String   `tfsdk:"mongodb_connection_hostname"`
 	TransformsUnwrapArrayEncoding                    types.String   `tfsdk:"transforms_unwrap_array_encoding"`
@@ -104,6 +106,16 @@ func SourceMongodbhostedSchema() schema.Schema {
 				MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
 				Default:             stringdefault.StaticString(""),
 			},
+			"tags": schema.SetAttribute{
+				Optional:            true,
+				Computed:            true,
+				ElementType:         types.StringType,
+				Description:         "Optional set of tag IDs to apply to this source. Use streamkap_tag (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.",
+				MarkdownDescription: "Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.",
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"mongodb_connection_string": schema.StringAttribute{
 				Required:            true,
 				Sensitive:           true,
@@ -113,9 +125,11 @@ func SourceMongodbhostedSchema() schema.Schema {
 			"mongodb_connection_hostname": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The hostname(s) extracted from the MongoDB connection string. Defaults to \"\".",
-				MarkdownDescription: "The hostname(s) extracted from the MongoDB connection string. Defaults to ``.",
-				Default:             stringdefault.StaticString(""),
+				Description:         "The hostname(s) extracted from the MongoDB connection string.",
+				MarkdownDescription: "The hostname(s) extracted from the MongoDB connection string.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_unwrap_array_encoding": schema.StringAttribute{
 				Optional:            true,

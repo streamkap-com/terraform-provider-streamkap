@@ -22,6 +22,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 When you change something in this list, update the matching doc in the same PR:
 
 | Change | Update |
+
+
 |---|---|
 | Add/remove a resource or data source | `AGENTS.md` resource tables, `docs/ARCHITECTURE.md` counts, run `go generate` for `docs/resources/` and `docs/index.md`. |
 | Add a connector via tfgen | run `go generate ./...`; if the override system grew (new `map_string`/`map_nested` case) update `docs/CODE_GENERATOR.md`. |

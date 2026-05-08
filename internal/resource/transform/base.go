@@ -224,12 +224,15 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 	// Add the name to the config map as transforms expect it there
 	configMap["transforms.name"] = name
 
+	tags := r.getStringSliceField(ctx, model, "Tags")
+
 	tflog.Debug(ctx, fmt.Sprintf("Creating %s transform with config: %+v", r.config.GetTransformType(), configMap))
 
 	// Call the Transform API
 	transform, err := r.client.CreateTransform(ctx, api.CreateTransformRequest{
 		Transform: r.config.GetTransformType(),
 		Config:    configMap,
+		Tags:      tags,
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -244,6 +247,7 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 	r.setStringField(model, "Name", transform.Name)
 	r.setStringField(model, "TransformType", transform.TransformType)
 	r.setStringField(model, "ConnectorStatus", constants.JobStatusUnknown)
+	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, transform.Tags))
 	r.configMapToModel(ctx, transform.Config, model)
 
 	// Save data into Terraform state
@@ -367,8 +371,10 @@ func (r *BaseTransformResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	// Update model with response data
+	priorTags := r.getStringSliceField(ctx, model, "Tags")
 	r.setStringField(model, "Name", transform.Name)
 	r.setStringField(model, "TransformType", transform.TransformType)
+	r.setStringSliceField(model, "Tags", normalizeTagsResponse(priorTags, transform.Tags))
 	r.configMapToModel(ctx, transform.Config, model)
 
 	// Save updated data into Terraform state
@@ -565,6 +571,8 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 	// Add the name to the config map as transforms expect it there
 	configMap["transforms.name"] = name
 
+	tags := r.getStringSliceField(ctx, model, "Tags")
+
 	tflog.Debug(ctx, fmt.Sprintf("Updating %s transform with ID: %s, config: %+v", r.config.GetTransformType(), id, configMap))
 
 	// Call the Transform API with existing implementation to prevent it from being overwritten
@@ -572,6 +580,7 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 		Transform:      r.config.GetTransformType(),
 		Config:         configMap,
 		Implementation: existingTransform.Implementation,
+		Tags:           tags,
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -590,6 +599,7 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 	// this, state.connector_status ends Unknown, tripping Terraform's
 	// "All values must be known after apply" consistency check (issue #71).
 	r.setStringField(model, "ConnectorStatus", constants.JobStatusUnknown)
+	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, transform.Tags))
 	r.configMapToModel(ctx, transform.Config, model)
 
 	// Save updated data into Terraform state
@@ -821,7 +831,7 @@ func (r *BaseTransformResource) waitForDeployment(ctx context.Context, transform
 				return status, fmt.Errorf("transform deployment failed (Flink status: %s)", constants.JobStatusFailed)
 			case constants.JobStatusCanceled, constants.JobStatusStopped:
 				return status, fmt.Errorf("transform deployment stopped (status: %s)", status.Status)
-			// INITIALIZING, DEPLOYING, CREATED, RESTARTING — keep polling
+				// INITIALIZING, DEPLOYING, CREATED, RESTARTING — keep polling
 			}
 		}
 	}
@@ -954,4 +964,23 @@ func (r *BaseTransformResource) getStringField(model any, fieldName string) stri
 
 func (r *BaseTransformResource) setStringField(model any, fieldName string, value string) {
 	shared.SetStringField(model, fieldName, value)
+}
+
+func (r *BaseTransformResource) getStringSliceField(ctx context.Context, model any, fieldName string) []string {
+	return shared.GetStringSliceField(ctx, model, fieldName)
+}
+
+func (r *BaseTransformResource) setStringSliceField(model any, fieldName string, values []string) {
+	shared.SetStringSliceField(model, fieldName, values)
+}
+
+// normalizeTagsResponse — see the matching helper in the connector base. When
+// the user explicitly sent `tags = []`, treat a nil server response as the
+// equivalent empty slice so state ends up as an empty (but non-null) Set —
+// otherwise plan vs state oscillates forever.
+func normalizeTagsResponse(userTags, serverTags []string) []string {
+	if userTags != nil && serverTags == nil {
+		return []string{}
+	}
+	return serverTags
 }

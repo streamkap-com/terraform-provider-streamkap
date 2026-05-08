@@ -40,6 +40,7 @@ This resource creates and manages a Redis destination for Streamkap data pipelin
 - `redis_key_data_type` (String) Data Type of Redis Key. At the moment, only Stream and List are supported. Defaults to `Stream`. Valid values: `Stream`, `List`, `Hash`.
 - `redis_port` (Number) Redis Port. For example, 6379. Defaults to `6379`.
 - `ssl_enabled` (Boolean) Enable TLS for network connections. Defaults to `true`.
+- `tags` (Set of String) Optional set of tag IDs to apply to this destination. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_add_string_suffix_fields_include_list` (String) Warning: Should only be used in conjunction with numeric conversion or other conversions. If field remained string after previous conversion, rename to field to <previous-field-name>_str. Comma separated list of table columns in format 'table1.column1,table2.column2'

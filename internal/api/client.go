@@ -51,6 +51,7 @@ type StreamkapAPI interface {
 
 	// Tags APIs
 	GetTag(ctx context.Context, TagID string) (*Tag, error)
+	ListTags(ctx context.Context, filters TagListFilters) ([]Tag, error)
 	CreateTag(ctx context.Context, reqPayload Tag) (*Tag, error)
 	UpdateTag(ctx context.Context, tagID string, reqPayload Tag) (*Tag, error)
 	DeleteTag(ctx context.Context, tagID string) error

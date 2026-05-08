@@ -59,11 +59,11 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload Pipeline) 
 
 	var payloadMap map[string]any
 	err = json.Unmarshal(payload, &payloadMap)
-    if err != nil {
-        return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
-    payloadMap["created_from"] = constants.TERRAFORM
+	payloadMap["created_from"] = constants.TERRAFORM
 
 	payload, err = json.Marshal(payloadMap)
 	if err != nil {

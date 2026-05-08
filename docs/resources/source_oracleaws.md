@@ -39,8 +39,8 @@ This resource creates and manages an Oracle RDS source for Streamkap data pipeli
 - `binary_handling_mode` (String) Specifies how the data for binary columns e.g. blob, binary, varbinary should be represented. This setting depends on what the destination is. See the documentation for more details. Defaults to `bytes`. Valid values: `bytes`, `base64`, `base64-url-safe`, `hex`.
 - `column_exclude_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.
 - `database_port` (Number) Oracle Port. For example, 1521. Defaults to `1521`.
-- `heartbeat_data_collection_schema_or_database` (String) Streamkap will use a table in this schema to simulate activity from the source database to keep the database transaction log 'alive'.
-- `heartbeat_enabled` (Boolean) Heartbeats are used to monitor whether the connector is still receiving change events from the database, especially when there is low and intermittent traffic. Defaults to `true`.
+- `heartbeat_data_collection_schema_or_database` (String) The schema containing the 'streamkap_heartbeat' table. This table must be created before enabling heartbeat — see the Streamkap documentation for setup instructions.
+- `heartbeat_enabled` (Boolean) When enabled, the connector sends periodic heartbeat messages to a Kafka topic to track connector liveness. In read-write mode, the connector also periodically writes to the 'streamkap_heartbeat' table in the source database to keep the transaction log active — this table must be created before enabling. See the Streamkap documentation for table setup instructions. Defaults to `true`.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
@@ -51,6 +51,7 @@ This resource creates and manages an Oracle RDS source for Streamkap data pipeli
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
+- `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
 - `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.

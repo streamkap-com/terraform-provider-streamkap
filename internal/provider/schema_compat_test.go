@@ -591,4 +591,3 @@ func TestSchemaBackwardsCompatibility_Tag(t *testing.T) {
 		resourceFactory: tag.NewTagResource,
 	})
 }
-

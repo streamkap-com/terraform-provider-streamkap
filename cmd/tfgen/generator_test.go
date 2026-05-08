@@ -37,14 +37,40 @@ func TestCommonFields(t *testing.T) {
 			g := NewGenerator("/tmp", tt.entityType)
 			fields := g.commonFields()
 
-			// Sources/destinations have 5 common fields (id, name, connector, connector_status, kc_cluster_id)
-			// Transforms have 3 common fields (id, name, transform_type)
-			wantCount := 5
+			// Sources/destinations have 6 common fields (id, name, connector, connector_status, kc_cluster_id, tags)
+			// Transforms have 4 common fields (id, name, transform_type, tags)
+			wantCount := 6
 			if tt.entityType == "transform" {
-				wantCount = 3
+				wantCount = 4
 			}
 			if len(fields) != wantCount {
 				t.Fatalf("commonFields() returned %d fields, want %d", len(fields), wantCount)
+			}
+
+			// Verify the last field is the shared `tags` attribute regardless
+			// of entity type. Set[String], Optional+Computed, no API mapping
+			// (handled separately by base connector/transform).
+			tagsField := fields[len(fields)-1]
+			if tagsField.GoFieldName != "Tags" {
+				t.Errorf("tagsField.GoFieldName = %q, want %q", tagsField.GoFieldName, "Tags")
+			}
+			if tagsField.GoType != "types.Set" {
+				t.Errorf("tagsField.GoType = %q, want %q", tagsField.GoType, "types.Set")
+			}
+			if tagsField.SchemaAttrType != "schema.SetAttribute" {
+				t.Errorf("tagsField.SchemaAttrType = %q, want %q", tagsField.SchemaAttrType, "schema.SetAttribute")
+			}
+			if !tagsField.Optional || !tagsField.Computed {
+				t.Errorf("tagsField should be Optional+Computed; got Optional=%v Computed=%v", tagsField.Optional, tagsField.Computed)
+			}
+			if !tagsField.IsSetType {
+				t.Error("tagsField.IsSetType should be true so the template emits ElementType")
+			}
+			if !tagsField.NeedsPlanMod {
+				t.Error("tagsField.NeedsPlanMod should be true (UseStateForUnknown)")
+			}
+			if tagsField.APIFieldName != "" {
+				t.Errorf("tagsField.APIFieldName must be empty (handled separately); got %q", tagsField.APIFieldName)
 			}
 
 			// Verify ID field
@@ -608,10 +634,10 @@ func TestPrepareTemplateData(t *testing.T) {
 		t.Errorf("FieldMappingsName = %q, want %q", data.FieldMappingsName, "SourcePostgresqlFieldMappings")
 	}
 
-	// Should have 5 common fields + 1 user-defined field = 6 fields total
-	// (common: id, name, connector, connector_status, kc_cluster_id)
-	if len(data.Fields) != 6 {
-		t.Errorf("len(Fields) = %d, want 6", len(data.Fields))
+	// Should have 6 common fields + 1 user-defined field = 7 fields total
+	// (common: id, name, connector, connector_status, kc_cluster_id, tags)
+	if len(data.Fields) != 7 {
+		t.Errorf("len(Fields) = %d, want 7", len(data.Fields))
 	}
 
 	// Verify imports include required packages

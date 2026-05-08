@@ -4,16 +4,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
 )
 
 var (
@@ -31,12 +36,12 @@ type TagResource struct {
 }
 
 type TagResourceModel struct {
-	ID          types.String   `tfsdk:"id"`
-	Name        types.String   `tfsdk:"name"`
-	Description types.String   `tfsdk:"description"`
-	Type        types.Set      `tfsdk:"type"`
-	System      types.Bool     `tfsdk:"system"`
-	Custom      types.Bool     `tfsdk:"custom"`
+	ID          types.String `tfsdk:"id"`
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	Type        types.Set    `tfsdk:"type"`
+	System      types.Bool   `tfsdk:"system"`
+	Custom      types.Bool   `tfsdk:"custom"`
 }
 
 func (r *TagResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -70,20 +75,38 @@ func (r *TagResource) Schema(ctx context.Context, req res.SchemaRequest, resp *r
 				Optional:            true,
 			},
 			"type": schema.SetAttribute{
-				Description:         "Set of entity types this tag can be applied to. Valid values: sources, destinations, pipelines.",
-				MarkdownDescription: "Set of entity types this tag can be applied to. Valid values: `sources`, `destinations`, `pipelines`.",
-				Required:            true,
-				ElementType:         types.StringType,
+				Description: "Set of entity types this tag can be applied to. Valid values: " +
+					"environment, general, sources, destinations, pipelines, transforms, topics, " +
+					"services, users, tenant. Note: 'environment' and 'general' are reserved for " +
+					"system tags and cannot be applied to custom user-created tags during update.",
+				MarkdownDescription: "Set of entity types this tag can be applied to. Valid values: " +
+					"`environment`, `general`, `sources`, `destinations`, `pipelines`, `transforms`, " +
+					"`topics`, `services`, `users`, `tenant`.\n\n" +
+					"**Note:** `environment` and `general` are reserved for system tags and cannot be " +
+					"applied to custom user-created tags during update.",
+				Required:    true,
+				ElementType: types.StringType,
+				Validators: []validator.Set{
+					// Element-level enum check: each entry must be a known TagTypeEnum.
+					// Mirrors backend `app_tags.py::TagTypeEnum`.
+					setvalidator.ValueStringsAre(stringvalidator.OneOf(constants.TagTypeEnum...)),
+				},
 			},
 			"system": schema.BoolAttribute{
 				Description:         "Whether this is a system-managed tag. System tags cannot be modified. Read-only.",
 				MarkdownDescription: "Whether this is a system-managed tag. System tags cannot be modified. **Read-only**.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"custom": schema.BoolAttribute{
 				Description:         "Whether this is a custom (user-created) tag. Read-only.",
 				MarkdownDescription: "Whether this is a custom (user-created) tag. **Read-only**.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
@@ -211,7 +234,18 @@ func (r *TagResource) ImportState(ctx context.Context, req res.ImportStateReques
 func (r *TagResource) modelFromAPIObject(apiObject api.Tag, model *TagResourceModel) {
 	model.ID = types.StringValue(apiObject.ID)
 	model.Name = types.StringValue(apiObject.Name)
-	model.Description = types.StringValue(apiObject.Description)
+	// Backend `description` is `str | None`; the Go struct decodes a missing/
+	// null description into the zero string "". The resource schema declares
+	// description as Optional only — so when a user creates a tag without a
+	// description, the plan carries Null. Writing types.StringValue("") to
+	// state in that case produces "Provider produced inconsistent result
+	// after apply: was null, but now cty.StringVal("")". Map empty string
+	// back to Null so plan and state agree.
+	if apiObject.Description == "" {
+		model.Description = types.StringNull()
+	} else {
+		model.Description = types.StringValue(apiObject.Description)
+	}
 
 	tagTypes := make([]attr.Value, len(apiObject.Type))
 	for i, t := range apiObject.Type {
