@@ -125,8 +125,15 @@ func TestAccDestinationSnowflake_MigrationFromLegacy(t *testing.T) {
 	// Config matches main branch test patterns - hardcodes test-specific values
 	config := providerConfig + `
 variable "destination_snowflake_url_name" { type = string }
-variable "destination_snowflake_private_key" { type = string; sensitive = true }
-variable "destination_snowflake_key_passphrase" { type = string; sensitive = true; default = "" }
+variable "destination_snowflake_private_key" {
+  type      = string
+  sensitive = true
+}
+variable "destination_snowflake_key_passphrase" {
+  type      = string
+  sensitive = true
+  default   = ""
+}
 
 resource "streamkap_destination_snowflake" "migration_test" {
 	name                             = "tf-migration-test-snowflake"
@@ -185,11 +192,21 @@ func TestAccPipeline_MigrationFromLegacy(t *testing.T) {
 
 	config := providerConfig + `
 variable "source_postgresql_hostname" { type = string }
-variable "source_postgresql_password" { type = string; sensitive = true }
+variable "source_postgresql_password" {
+  type      = string
+  sensitive = true
+}
 variable "destination_snowflake_url_name" { type = string }
 variable "destination_snowflake_user_name" { type = string }
-variable "destination_snowflake_private_key" { type = string; sensitive = true }
-variable "destination_snowflake_private_key_passphrase" { type = string; sensitive = true; default = "" }
+variable "destination_snowflake_private_key" {
+  type      = string
+  sensitive = true
+}
+variable "destination_snowflake_private_key_passphrase" {
+  type      = string
+  sensitive = true
+  default   = ""
+}
 variable "destination_snowflake_database_name" { type = string }
 variable "destination_snowflake_schema_name" { type = string }
 
@@ -269,7 +286,10 @@ func TestAccSourceMySQL_MigrationFromLegacy(t *testing.T) {
 
 	config := providerConfig + `
 variable "source_mysql_hostname" { type = string }
-variable "source_mysql_password" { type = string; sensitive = true }
+variable "source_mysql_password" {
+  type      = string
+  sensitive = true
+}
 
 resource "streamkap_source_mysql" "migration_test" {
 	name                                         = "tf-migration-test-mysql"
@@ -318,7 +338,10 @@ func TestAccSourceMongoDB_MigrationFromLegacy(t *testing.T) {
 	}
 
 	config := providerConfig + `
-variable "source_mongodb_connection_string" { type = string; sensitive = true }
+variable "source_mongodb_connection_string" {
+  type      = string
+  sensitive = true
+}
 
 resource "streamkap_source_mongodb" "migration_test" {
 	name                                      = "tf-migration-test-mongodb"
@@ -368,7 +391,10 @@ func TestAccSourceDynamoDB_MigrationFromLegacy(t *testing.T) {
 	config := providerConfig + `
 variable "source_dynamodb_aws_region" { type = string }
 variable "source_dynamodb_aws_access_key_id" { type = string }
-variable "source_dynamodb_aws_secret_key" { type = string; sensitive = true }
+variable "source_dynamodb_aws_secret_key" {
+  type      = string
+  sensitive = true
+}
 
 resource "streamkap_source_dynamodb" "migration_test" {
 	name                             = "tf-migration-test-dynamodb"
@@ -424,7 +450,10 @@ func TestAccSourceSQLServer_MigrationFromLegacy(t *testing.T) {
 
 	config := providerConfig + `
 variable "source_sqlserver_hostname" { type = string }
-variable "source_sqlserver_password" { type = string; sensitive = true }
+variable "source_sqlserver_password" {
+  type      = string
+  sensitive = true
+}
 
 resource "streamkap_source_sqlserver" "migration_test" {
 	name                                      = "tf-migration-test-sqlserver"
@@ -518,7 +547,10 @@ func TestAccDestinationClickHouse_MigrationFromLegacy(t *testing.T) {
 	config := providerConfig + `
 variable "destination_clickhouse_hostname" { type = string }
 variable "destination_clickhouse_connection_username" { type = string }
-variable "destination_clickhouse_connection_password" { type = string; sensitive = true }
+variable "destination_clickhouse_connection_password" {
+  type      = string
+  sensitive = true
+}
 
 resource "streamkap_destination_clickhouse" "migration_test" {
 	name                = "tf-migration-test-clickhouse"
@@ -570,7 +602,10 @@ func TestAccDestinationDatabricks_MigrationFromLegacy(t *testing.T) {
 
 	config := providerConfig + `
 variable "destination_databricks_connection_url" { type = string }
-variable "destination_databricks_token" { type = string; sensitive = true }
+variable "destination_databricks_token" {
+  type      = string
+  sensitive = true
+}
 
 resource "streamkap_destination_databricks" "migration_test" {
 	name              = "tf-migration-test-databricks"
@@ -620,7 +655,10 @@ func TestAccDestinationPostgreSQL_MigrationFromLegacy(t *testing.T) {
 
 	config := providerConfig + `
 variable "destination_postgresql_hostname" { type = string }
-variable "destination_postgresql_password" { type = string; sensitive = true }
+variable "destination_postgresql_password" {
+  type      = string
+  sensitive = true
+}
 
 resource "streamkap_destination_postgresql" "migration_test" {
 	name                = "tf-migration-test-postgresql-dest"
@@ -672,7 +710,10 @@ func TestAccDestinationS3_MigrationFromLegacy(t *testing.T) {
 
 	config := providerConfig + `
 variable "s3_aws_access_key" { type = string }
-variable "s3_aws_secret_key" { type = string; sensitive = true }
+variable "s3_aws_secret_key" {
+  type      = string
+  sensitive = true
+}
 
 resource "streamkap_destination_s3" "migration_test" {
 	name                  = "tf-migration-test-s3"
@@ -719,7 +760,10 @@ func TestAccDestinationIceberg_MigrationFromLegacy(t *testing.T) {
 
 	config := providerConfig + `
 variable "iceberg_aws_access_key" { type = string }
-variable "iceberg_aws_secret_key" { type = string; sensitive = true }
+variable "iceberg_aws_secret_key" {
+  type      = string
+  sensitive = true
+}
 
 resource "streamkap_destination_iceberg" "migration_test" {
 	name                                = "tf-migration-test-iceberg"
