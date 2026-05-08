@@ -36,6 +36,14 @@ func init() {
 		Dependencies: []string{"streamkap_source", "streamkap_destination", "streamkap_transform"},
 	})
 
+	// Tags must run AFTER every entity that can attach a tag. The backend
+	// rejects DeleteTag with "Tag is used by N entities" if anything still
+	// references it, so we depend on every connector + pipeline sweeper.
+	resource.AddTestSweepers("streamkap_tag", &resource.Sweeper{
+		Name:         "streamkap_tag",
+		F:            sweepTags,
+		Dependencies: []string{"streamkap_source", "streamkap_destination", "streamkap_transform", "streamkap_pipeline"},
+	})
 }
 
 func sweepSources(_ string) error {
@@ -167,6 +175,43 @@ func sweepPipelines(_ string) error {
 		return fmt.Errorf("errors during pipeline sweep: %v", errs)
 	}
 
+	return nil
+}
+
+func sweepTags(_ string) error {
+	client, err := newSweepClient()
+	if err != nil {
+		return fmt.Errorf("error creating sweep client: %w", err)
+	}
+
+	ctx := context.Background()
+
+	tags, err := client.ListTags(ctx, api.TagListFilters{})
+	if err != nil {
+		return fmt.Errorf("error listing tags: %w", err)
+	}
+
+	var errs []error
+	for _, tag := range tags {
+		if !isTestResource(tag.Name) {
+			continue
+		}
+		// System tags can't be deleted; skip defensively.
+		if tag.System {
+			continue
+		}
+		log.Printf("[INFO] Sweeping tag: %s (ID: %s)", tag.Name, tag.ID)
+		if err := client.DeleteTag(ctx, tag.ID); err != nil {
+			log.Printf("[ERROR] Failed to delete tag %s: %v", tag.Name, err)
+			errs = append(errs, fmt.Errorf("failed to delete tag %s: %w", tag.Name, err))
+		} else {
+			log.Printf("[INFO] Successfully deleted tag: %s", tag.Name)
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("errors during tag sweep: %v", errs)
+	}
 	return nil
 }
 
