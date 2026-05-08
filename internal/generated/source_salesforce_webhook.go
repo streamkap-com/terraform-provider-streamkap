@@ -110,9 +110,11 @@ func SourceSalesforceWebhookSchema() schema.Schema {
 			"webhook_url": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Webhook URL for Apex triggers. Generated after source is created. Defaults to \"\".",
-				MarkdownDescription: "Webhook URL for Apex triggers. Generated after source is created. Defaults to ``.",
-				Default:             stringdefault.StaticString(""),
+				Description:         "Webhook URL for Apex triggers. Generated after source is created.",
+				MarkdownDescription: "Webhook URL for Apex triggers. Generated after source is created.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"api_key": schema.StringAttribute{
 				Optional:            true,

@@ -29,6 +29,10 @@ This resource allows you to modify the partition count of an existing Kafka topi
 - `partition_count` (Number) Number of partitions for the topic. Can only be increased, not decreased. Higher values allow more parallel consumers.
 - `topic_id` (String) The Kafka topic identifier. Format: `<source-id>.<schema>.<table>` for CDC topics.
 
+### Optional
+
+- `tags` (Set of String) Optional set of tag IDs to apply to this topic. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
+
 ## Import
 
 Import is supported using the following syntax:

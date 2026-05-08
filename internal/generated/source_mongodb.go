@@ -125,9 +125,11 @@ func SourceMongodbSchema() schema.Schema {
 			"mongodb_connection_hostname": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The hostname(s) extracted from the MongoDB connection string. Defaults to \"\".",
-				MarkdownDescription: "The hostname(s) extracted from the MongoDB connection string. Defaults to ``.",
-				Default:             stringdefault.StaticString(""),
+				Description:         "The hostname(s) extracted from the MongoDB connection string.",
+				MarkdownDescription: "The hostname(s) extracted from the MongoDB connection string.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"transforms_unwrap_array_encoding": schema.StringAttribute{
 				Optional:            true,

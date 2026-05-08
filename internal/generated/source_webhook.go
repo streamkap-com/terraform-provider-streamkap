@@ -101,9 +101,11 @@ func SourceWebhookSchema() schema.Schema {
 			"webhook_url": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Webhook URL. This URL will be generated after the source is created. Defaults to \"\".",
-				MarkdownDescription: "Webhook URL. This URL will be generated after the source is created. Defaults to ``.",
-				Default:             stringdefault.StaticString(""),
+				Description:         "Webhook URL. This URL will be generated after the source is created",
+				MarkdownDescription: "Webhook URL. This URL will be generated after the source is created",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"api_key": schema.StringAttribute{
 				Optional:            true,

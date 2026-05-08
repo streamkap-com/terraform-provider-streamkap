@@ -1075,7 +1075,24 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 	// must be Optional in the Terraform schema — making them always-Required would
 	// break plans that don't enable the gating flag. The backend enforces the
 	// conditional requirement at the API layer.
-	if entry.IsRequired() && !entry.HasDefault() && !entry.IsConditional() {
+	if entry.IsReadOnly() {
+		// Backend derives this value from another field at apply time (e.g.
+		// mongodb_connection_hostname is computed by `get_mongodb_connection_hostname`
+		// from the user's mongodb_connection_string). Emitting Default("") here
+		// would lock the plan to "" while the backend writes back the real value,
+		// triggering "Provider produced inconsistent result after apply: was
+		// cty.StringVal(""), but now cty.StringVal("...")".
+		//
+		// Optional+Computed+UseStateForUnknown:
+		//   - Default: none (backend fills it; no client-side seed)
+		//   - User CAN still set the field for documentation parity with the
+		//     backend schema, but the backend will overwrite from the derive
+		//     function — acceptable since `readonly: true` upstream signals the
+		//     same "not user-controllable" intent.
+		field.Optional = true
+		field.Computed = true
+		field.NeedsPlanMod = true
+	} else if entry.IsRequired() && !entry.HasDefault() && !entry.IsConditional() {
 		field.Required = true
 	} else if entry.HasPlaceholderDefault() {
 		// Placeholder-string defaults (e.g. "<SSH.PUBLIC.KEY>", "<API_KEY>")

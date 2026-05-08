@@ -163,9 +163,11 @@ func SourceS3Schema() schema.Schema {
 			"topic_include_list": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Topics produced by this S3 source. Populated automatically as topics are discovered. Defaults to \"\".",
-				MarkdownDescription: "Topics produced by this S3 source. Populated automatically as topics are discovered. Defaults to ``.",
-				Default:             stringdefault.StaticString(""),
+				Description:         "Topics produced by this S3 source. Populated automatically as topics are discovered.",
+				MarkdownDescription: "Topics produced by this S3 source. Populated automatically as topics are discovered.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"aws_access_key_id": schema.StringAttribute{
 				Optional:            true,
