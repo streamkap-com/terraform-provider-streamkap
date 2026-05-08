@@ -234,7 +234,18 @@ func (r *TagResource) ImportState(ctx context.Context, req res.ImportStateReques
 func (r *TagResource) modelFromAPIObject(apiObject api.Tag, model *TagResourceModel) {
 	model.ID = types.StringValue(apiObject.ID)
 	model.Name = types.StringValue(apiObject.Name)
-	model.Description = types.StringValue(apiObject.Description)
+	// Backend `description` is `str | None`; the Go struct decodes a missing/
+	// null description into the zero string "". The resource schema declares
+	// description as Optional only — so when a user creates a tag without a
+	// description, the plan carries Null. Writing types.StringValue("") to
+	// state in that case produces "Provider produced inconsistent result
+	// after apply: was null, but now cty.StringVal("")". Map empty string
+	// back to Null so plan and state agree.
+	if apiObject.Description == "" {
+		model.Description = types.StringNull()
+	} else {
+		model.Description = types.StringValue(apiObject.Description)
+	}
 
 	tagTypes := make([]attr.Value, len(apiObject.Type))
 	for i, t := range apiObject.Type {
