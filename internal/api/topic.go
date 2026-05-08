@@ -11,15 +11,36 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+// Topic mirrors the relevant slice of the backend's GET /topics/{id} response
+// (TopicDetailsWithKafka). UpdateTopic does NOT marshal this struct directly —
+// it builds the `{"payload": {...}}` envelope by hand to match the backend's
+// at-least-one-of partition_count/tags rule on UpdateTopicReqBody.
+//
+// Tags has no omitempty: backend distinguishes `null`/absent ("keep existing")
+// from `[]` ("clear"). See api.Source.Tags for the long version.
 type Topic struct {
-	TopicID        string   `json:"topic_id"`
-	PartitionCount int      `json:"partition_count"`
-	// Tags is filled from the response and consumed via custom serialization in
-	// UpdateTopic (which always builds the request body as an explicit map so it
-	// can match the backend's `{"payload": {...}}` shape and the
-	// at-least-one-of partition_count/tags rule). Kept without omitempty for
-	// consistency with the other entity types — see api.Source.Tags.
-	Tags []string `json:"tags"`
+	// TopicID is populated from the response field `id`. The backend's
+	// TopicDetailsRes carries no `topic_id` key — only `id` — so the previous
+	// `json:"topic_id"` tag silently failed to deserialize on Read. Field name
+	// kept as TopicID for callers; only the JSON tag changed.
+	TopicID string `json:"id"`
+	// PartitionCount is filled from `kafka.partitions.count` after Unmarshal —
+	// the backend does not return a top-level `partition_count` key, so we copy
+	// it out of the nested struct explicitly in GetTopic.
+	PartitionCount int             `json:"-"`
+	Tags           []string        `json:"tags"`
+	Kafka          *TopicKafkaInfo `json:"kafka,omitempty"`
+}
+
+// TopicKafkaInfo captures only the field of TopicKafkaMetadata we care about
+// (live partition count) — the full backend struct is much larger.
+type TopicKafkaInfo struct {
+	Partitions TopicPartitionsInfo `json:"partitions"`
+}
+
+// TopicPartitionsInfo carries the live partition count from the broker.
+type TopicPartitionsInfo struct {
+	Count int `json:"count"`
 }
 
 // TopicEntity represents the entity (source/transform/destination) that owns a topic
@@ -156,9 +177,12 @@ func (s *streamkapAPI) UpdateTopic(ctx context.Context, topicID string, reqPaylo
 }
 
 func (s *streamkapAPI) GetTopic(ctx context.Context, topicID string) (*Topic, error) {
-
+	// Backend returns full TopicDetailsWithKafka by default (detailed=true is the
+	// default). We rely on the `kafka.partitions.count` nested field — pin
+	// detailed=true explicitly so a future backend default flip can't silently
+	// strip the partition count from our Read path.
 	req, err := http.NewRequestWithContext(
-		ctx, http.MethodGet, s.cfg.BaseURL+"/topics/"+topicID, http.NoBody)
+		ctx, http.MethodGet, s.cfg.BaseURL+"/topics/"+topicID+"?detailed=true", http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -174,6 +198,12 @@ func (s *streamkapAPI) GetTopic(ctx context.Context, topicID string) (*Topic, er
 	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
 		return nil, err
+	}
+
+	// Lift the live partition count out of the nested kafka block so callers
+	// can keep treating Topic.PartitionCount as a simple top-level field.
+	if resp.Kafka != nil {
+		resp.PartitionCount = resp.Kafka.Partitions.Count
 	}
 
 	return &resp, nil
