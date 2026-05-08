@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0-beta.15] - 2026-05-08 (Pre-release)
+
 ### Added
 - **Tags on every entity.** `streamkap_source_*`, `streamkap_destination_*`,
   `streamkap_transform_*`, and `streamkap_topic` now expose a `tags = [...]`
