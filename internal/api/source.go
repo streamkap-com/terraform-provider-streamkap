@@ -27,6 +27,7 @@ type Source struct {
 	ConnectorStatus string         `json:"connector_status,omitempty"`
 	Config          map[string]any `json:"config"`
 	KcClusterId     string         `json:"kc_cluster_id,omitempty"`
+	Tags            []string       `json:"tags,omitempty"`
 }
 
 func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*Source, error) {

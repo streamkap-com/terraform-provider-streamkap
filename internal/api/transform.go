@@ -34,6 +34,7 @@ type Transform struct {
 	CreatedAt      string         `json:"created_at"`
 	UpdatedAt      string         `json:"updated_at"`
 	StartTime      *string        `json:"start_time"`
+	Tags           []string       `json:"tags,omitempty"`
 }
 
 // CreateTransformRequest represents the request payload for creating a transform
@@ -41,6 +42,7 @@ type CreateTransformRequest struct {
 	Transform   string         `json:"transform"`
 	Config      map[string]any `json:"config"`
 	CreatedFrom string         `json:"created_from,omitempty"`
+	Tags        []string       `json:"tags,omitempty"`
 }
 
 // UpdateTransformRequest represents the request payload for updating a transform
@@ -49,6 +51,7 @@ type UpdateTransformRequest struct {
 	Transform      string         `json:"transform"`
 	Config         map[string]any `json:"config"`
 	Implementation map[string]any `json:"implementation,omitempty"`
+	Tags           []string       `json:"tags,omitempty"`
 }
 
 func (s *streamkapAPI) GetTransform(ctx context.Context, TransformID string) (*Transform, error) {

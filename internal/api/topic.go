@@ -12,8 +12,9 @@ import (
 )
 
 type Topic struct {
-	TopicID        string `json:"topic_id"`
-	PartitionCount int    `json:"partition_count"`
+	TopicID        string   `json:"topic_id"`
+	PartitionCount int      `json:"partition_count"`
+	Tags           []string `json:"tags,omitempty"`
 }
 
 // TopicEntity represents the entity (source/transform/destination) that owns a topic
@@ -113,10 +114,15 @@ type TopicDetailed struct {
 
 
 func (s *streamkapAPI) UpdateTopic(ctx context.Context, topicID string, reqPayload Topic) (*Topic, error) {
-	expectedPayload := map[string]map[string]int{
-		"payload": {},
+	// Backend expects {"payload": {"partition_count": ..., "tags": [...]}}
+	// where at least one of partition_count/tags is required.
+	innerPayload := map[string]any{
+		"partition_count": reqPayload.PartitionCount,
 	}
-	expectedPayload["payload"]["partition_count"] = reqPayload.PartitionCount
+	if reqPayload.Tags != nil {
+		innerPayload["tags"] = reqPayload.Tags
+	}
+	expectedPayload := map[string]any{"payload": innerPayload}
 	payload, err := json.Marshal(expectedPayload)
 	if err != nil {
 		return nil, err

@@ -27,6 +27,7 @@ type Destination struct {
 	ConnectorStatus string         `json:"connector_status,omitempty"`
 	Config          map[string]any `json:"config"`
 	KcClusterId     string         `json:"kc_cluster_id,omitempty"`
+	Tags            []string       `json:"tags,omitempty"`
 }
 
 func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destination) (*Destination, error) {
