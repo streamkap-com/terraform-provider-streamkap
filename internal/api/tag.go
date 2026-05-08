@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
@@ -192,9 +193,44 @@ func (s *streamkapAPI) CreateTag(ctx context.Context, reqPayload Tag) (*Tag, err
 	var resp Tag
 	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
+		// Mirror the adopt-on-exists pattern from sources/destinations/
+		// transforms: when the backend reports the tag already exists, look
+		// it up by name and return it instead of failing the apply. Without
+		// this, a leaked `tf-acc-test-*` tag from a previous CI run blocks
+		// every subsequent run until manually swept.
+		//
+		// Backend `create_custom_tag` raises `ValueError("A tag with
+		// identical properties already exists.")` which the API layer wraps
+		// into a 400 detail. Match either substring to be robust to phrasing
+		// changes.
+		if strings.Contains(err.Error(), "already exists") {
+			tflog.Info(ctx, fmt.Sprintf(
+				"Tag %q already exists — attempting to adopt existing resource", reqPayload.Name))
+			adopted, adoptErr := s.adoptTagByName(ctx, reqPayload.Name)
+			if adoptErr == nil {
+				return adopted, nil
+			}
+			return nil, fmt.Errorf("%w (also tried to adopt the existing resource but could not locate it via the list endpoint: %v)", err, adoptErr)
+		}
 		return nil, err
 	}
 	return &resp, nil
+}
+
+// adoptTagByName looks up an existing tag by exact name. Used to recover
+// from a 422-ish "already exists" response on Create when the upstream
+// record was created out-of-band (or leaked by a previous test run).
+func (s *streamkapAPI) adoptTagByName(ctx context.Context, name string) (*Tag, error) {
+	tags, err := s.ListTags(ctx, TagListFilters{Name: name})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list tags while adopting %q: %w", name, err)
+	}
+	for i := range tags {
+		if tags[i].Name == name {
+			return &tags[i], nil
+		}
+	}
+	return nil, fmt.Errorf("tag %q reported as existing but not found in list", name)
 }
 
 func (s *streamkapAPI) UpdateTag(ctx context.Context, tagID string, reqPayload Tag) (*Tag, error) {
