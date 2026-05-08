@@ -412,6 +412,7 @@ type FieldData struct {
 	NeedsPlanMod        bool   // needs UseStateForUnknown plan modifier
 	RequiresReplace     bool   // needs RequiresReplace plan modifier (set_once)
 	IsListType          bool   // needs ElementType for ListAttribute
+	IsSetType           bool   // needs ElementType for SetAttribute
 	IsJSONType          bool   // needs CustomType for jsontypes.Normalized
 
 	// Field mapping
@@ -461,7 +462,12 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 		}
 		if cf.NeedsPlanMod {
 			imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"] = true
-			imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"] = true
+			switch cf.SchemaAttrType {
+			case "schema.StringAttribute":
+				imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"] = true
+			case "schema.SetAttribute":
+				imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"] = true
+			}
 		}
 	}
 
@@ -926,6 +932,7 @@ func (g *Generator) commonFields() []FieldData {
 			NeedsPlanMod:        true,
 			APIFieldName:        "", // TransformType is handled separately
 		})
+		fields = append(fields, tagsCommonField(g.entityType))
 	} else {
 		fields = append(fields, FieldData{
 			GoFieldName:         "Connector",
@@ -965,9 +972,41 @@ func (g *Generator) commonFields() []FieldData {
 			MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
 			APIFieldName:        "", // KcClusterId is handled separately by base connector
 		})
+		fields = append(fields, tagsCommonField(g.entityType))
 	}
 
 	return fields
+}
+
+// tagsCommonField returns the FieldData for the `tags` attribute that every
+// source/destination/transform shares. The actual API plumbing happens in the
+// base connector/transform layer (APIFieldName intentionally empty); this only
+// declares the model field + schema attribute so each generated resource gets
+// it consistently. Default is empty (Optional+Computed with UseStateForUnknown
+// to avoid spurious diffs when the backend echoes a server-managed list back).
+func tagsCommonField(entityType string) FieldData {
+	desc := "Optional set of tag IDs to apply to this " + entityType +
+		". Use streamkap_tag (resource or data source) to obtain IDs. " +
+		"Defaults to empty; the backend may attach tags out-of-band, in which case " +
+		"the unset value is preserved on subsequent reads."
+	mdDesc := "Optional set of tag IDs to apply to this " + entityType +
+		". Use `streamkap_tag` (resource or data source) to obtain IDs. " +
+		"Defaults to empty; the backend may attach tags out-of-band, in which case " +
+		"the unset value is preserved on subsequent reads."
+	return FieldData{
+		GoFieldName:         "Tags",
+		GoType:              "types.Set",
+		TfsdkTag:            "tags",
+		TfAttrName:          "tags",
+		SchemaAttrType:      "schema.SetAttribute",
+		Optional:            true,
+		Computed:            true,
+		IsSetType:           true,
+		NeedsPlanMod:        true,
+		Description:         desc,
+		MarkdownDescription: mdDesc,
+		APIFieldName:        "", // Handled separately by base connector/transform
+	}
 }
 
 // isPortField returns true if the field name indicates it's a port field.
@@ -1356,7 +1395,7 @@ func {{ .SchemaFuncName }}() schema.Schema {
 {{- if .Computed }}
 				Computed:            true,
 {{- end }}
-{{- if .IsListType }}
+{{- if or .IsListType .IsSetType }}
 				ElementType:         types.StringType,
 {{- end }}
 {{- if .IsJSONType }}
@@ -1378,12 +1417,12 @@ func {{ .SchemaFuncName }}() schema.Schema {
 				},
 {{- end }}
 {{- if or .NeedsPlanMod .RequiresReplace }}
-				PlanModifiers: []planmodifier.{{ if eq .SchemaAttrType "schema.StringAttribute" }}String{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}Int64{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}boolplanmodifier{{ end }}{
+				PlanModifiers: []planmodifier.{{ if eq .SchemaAttrType "schema.StringAttribute" }}String{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}Int64{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}Bool{{ else if eq .SchemaAttrType "schema.SetAttribute" }}Set{{ end }}{
 {{- if .NeedsPlanMod }}
-					{{ if eq .SchemaAttrType "schema.StringAttribute" }}stringplanmodifier{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}int64planmodifier{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}boolplanmodifier{{ end }}.UseStateForUnknown(),
+					{{ if eq .SchemaAttrType "schema.StringAttribute" }}stringplanmodifier{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}int64planmodifier{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}boolplanmodifier{{ else if eq .SchemaAttrType "schema.SetAttribute" }}setplanmodifier{{ end }}.UseStateForUnknown(),
 {{- end }}
 {{- if .RequiresReplace }}
-					{{ if eq .SchemaAttrType "schema.StringAttribute" }}stringplanmodifier{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}int64planmodifier{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}boolplanmodifier{{ end }}.RequiresReplace(),
+					{{ if eq .SchemaAttrType "schema.StringAttribute" }}stringplanmodifier{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}int64planmodifier{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}boolplanmodifier{{ else if eq .SchemaAttrType "schema.SetAttribute" }}setplanmodifier{{ end }}.RequiresReplace(),
 {{- end }}
 				},
 {{- end }}

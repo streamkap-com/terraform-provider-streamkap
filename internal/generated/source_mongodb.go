@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -23,6 +24,7 @@ type SourceMongodbModel struct {
 	Connector                                        types.String   `tfsdk:"connector"`
 	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
 	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
+	Tags                                             types.Set      `tfsdk:"tags"`
 	MongodbConnectionString                          types.String   `tfsdk:"mongodb_connection_string"`
 	MongodbConnectionHostname                        types.String   `tfsdk:"mongodb_connection_hostname"`
 	TransformsUnwrapArrayEncoding                    types.String   `tfsdk:"transforms_unwrap_array_encoding"`
@@ -103,6 +105,16 @@ func SourceMongodbSchema() schema.Schema {
 				Description:         "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
 				MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
 				Default:             stringdefault.StaticString(""),
+			},
+			"tags": schema.SetAttribute{
+				Optional:            true,
+				Computed:            true,
+				ElementType:         types.StringType,
+				Description:         "Optional set of tag IDs to apply to this source. Use streamkap_tag (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.",
+				MarkdownDescription: "Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.",
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"mongodb_connection_string": schema.StringAttribute{
 				Required:            true,
@@ -263,8 +275,8 @@ func SourceMongodbSchema() schema.Schema {
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to false.",
-				MarkdownDescription: "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.",
+				Description:         "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to false.",
+				MarkdownDescription: "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"ssh_host": schema.StringAttribute{

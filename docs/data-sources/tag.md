@@ -54,4 +54,4 @@ output "example-tag" {
 - `description` (String) Human-readable description of the tag's purpose.
 - `name` (String) Display name of the tag. Example: `Development` or `Production`.
 - `system` (Boolean) Whether this is a built-in system tag (`true`) or user-created (`false`).
-- `type` (List of String) List of entity types this tag can be applied to (e.g., `source`, `destination`, `pipeline`).
+- `type` (Set of String) Set of entity types this tag can be applied to. Possible values: `environment`, `general`, `sources`, `destinations`, `pipelines`, `transforms`, `topics`, `services`, `users`, `tenant`.

@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -23,6 +24,7 @@ type SourcePlanetscaleModel struct {
 	Connector                                          types.String   `tfsdk:"connector"`
 	ConnectorStatus                                    types.String   `tfsdk:"connector_status"`
 	KcClusterId                                        types.String   `tfsdk:"kc_cluster_id"`
+	Tags                                               types.Set      `tfsdk:"tags"`
 	DatabaseHostname                                   types.String   `tfsdk:"database_hostname"`
 	DatabasePort                                       types.Int64    `tfsdk:"database_port"`
 	DatabaseUser                                       types.String   `tfsdk:"database_user"`
@@ -96,6 +98,16 @@ func SourcePlanetscaleSchema() schema.Schema {
 				MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
 				Default:             stringdefault.StaticString(""),
 			},
+			"tags": schema.SetAttribute{
+				Optional:            true,
+				Computed:            true,
+				ElementType:         types.StringType,
+				Description:         "Optional set of tag IDs to apply to this source. Use streamkap_tag (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.",
+				MarkdownDescription: "Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.",
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"database_hostname": schema.StringAttribute{
 				Required:            true,
 				Description:         "IP address or hostname of the PlanetScale database server (VTGate).",
@@ -163,8 +175,8 @@ func SourcePlanetscaleSchema() schema.Schema {
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to false.",
-				MarkdownDescription: "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.",
+				Description:         "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to false.",
+				MarkdownDescription: "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"ssh_host": schema.StringAttribute{

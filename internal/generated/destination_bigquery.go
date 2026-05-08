@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -24,6 +25,7 @@ type DestinationBigqueryModel struct {
 	Connector                                        types.String         `tfsdk:"connector"`
 	ConnectorStatus                                  types.String         `tfsdk:"connector_status"`
 	KcClusterId                                      types.String         `tfsdk:"kc_cluster_id"`
+	Tags                                             types.Set            `tfsdk:"tags"`
 	BigqueryJson                                     jsontypes.Normalized `tfsdk:"bigquery_json"`
 	TableNamePrefix                                  types.String         `tfsdk:"table_name_prefix"`
 	BigqueryRegion                                   types.String         `tfsdk:"bigquery_region"`
@@ -108,6 +110,16 @@ func DestinationBigquerySchema() schema.Schema {
 				Description:         "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
 				MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
 				Default:             stringdefault.StaticString(""),
+			},
+			"tags": schema.SetAttribute{
+				Optional:            true,
+				Computed:            true,
+				ElementType:         types.StringType,
+				Description:         "Optional set of tag IDs to apply to this destination. Use streamkap_tag (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.",
+				MarkdownDescription: "Optional set of tag IDs to apply to this destination. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.",
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"bigquery_json": schema.StringAttribute{
 				Required:            true,
