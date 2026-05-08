@@ -47,7 +47,7 @@ This resource creates and manages a MongoDB Atlas source for Streamkap data pipe
 - `insert_static_value_field_2` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_value2_static_field' instead.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
-- `mongodb_connection_hostname` (String) The hostname(s) extracted from the MongoDB connection string. Defaults to ``.
+- `mongodb_connection_hostname` (String) The hostname(s) extracted from the MongoDB connection string.
 - `nested_document_encoding` (String, Deprecated) DEPRECATED: Use 'transforms_unwrap_document_encoding' instead.
 - `predicates_is_topic_to_enrich_pattern` (String) Regex pattern to match topics for enrichment. Defaults to `$^`.
 - `predicates_istopictoenrich_pattern` (String, Deprecated) DEPRECATED: Use 'predicates_is_topic_to_enrich_pattern' instead.

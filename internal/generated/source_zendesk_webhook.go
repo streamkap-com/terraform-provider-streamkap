@@ -113,8 +113,9 @@ func SourceZendeskWebhookSchema() schema.Schema {
 			"api_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "API Key. This key will be generated after the source is created",
-				MarkdownDescription: "API Key. This key will be generated after the source is created",
+				Sensitive:           true,
+				Description:         "API Key. This key will be generated after the source is created This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "API Key. This key will be generated after the source is created\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

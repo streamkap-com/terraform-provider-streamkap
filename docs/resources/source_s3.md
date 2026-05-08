@@ -44,7 +44,7 @@ This resource creates and manages an S3 source for Streamkap data pipelines. Use
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `topic_include_list` (String) Topics produced by this S3 source. Populated automatically as topics are discovered. Defaults to ``.
+- `topic_include_list` (String) Topics produced by this S3 source. Populated automatically as topics are discovered.
 - `topic_postfix` (String) The default topic name suffix. When Dynamic Topic Routing is disabled, all files are streamed to this single topic. When enabled, this is used as a fallback for files that do not match the routing rules. Defaults to `default`.
 - `topic_routing_advanced_expression` (String) ScEL expression for building the topic suffix. When set, overrides Folder Skip and Folder Levels. The connector ID is always prepended. See the S3 Source documentation for available functions and examples. Defaults to ``.
 - `topic_routing_enabled` (Boolean) When enabled, derive the Kafka topic name per file from the S3 key. When disabled, all files go to the single default topic. Defaults to `false`.

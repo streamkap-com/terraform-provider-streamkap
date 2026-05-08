@@ -38,7 +38,7 @@ This resource creates and manages a MongoDB source for Streamkap data pipelines.
 - `cursor_pipeline` (String) A JSON array of additional pipeline stages to apply when reading change events from MongoDB. This can be used to filter or transform change stream events before they are processed by the connector
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
-- `mongodb_connection_hostname` (String) The hostname(s) extracted from the MongoDB connection string. Defaults to ``.
+- `mongodb_connection_hostname` (String) The hostname(s) extracted from the MongoDB connection string.
 - `predicates_is_topic_to_enrich_pattern` (String) Regex pattern to match topics for enrichment. Defaults to `$^`.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `ssh_enabled` (Boolean) <span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.

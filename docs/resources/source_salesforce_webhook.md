@@ -60,7 +60,7 @@ This resource creates and manages a Salesforce CDC source for Streamkap data pip
 - `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
 - `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
-- `webhook_url` (String) Webhook URL for Apex triggers. Generated after source is created. Defaults to ``.
+- `webhook_url` (String) Webhook URL for Apex triggers. Generated after source is created.
 
 ### Read-Only
 
