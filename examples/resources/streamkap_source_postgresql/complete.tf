@@ -73,6 +73,17 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   # ssh_port     = 22
   # ssh_user     = "ssh_user"
   # ssh_password = var.ssh_password  # or use ssh_private_key
+
+  # Tags — optional set of tag IDs (manage via streamkap_tag or look up via
+  # the streamkap_tags data source). Set explicitly to manage; omit to let the
+  # backend keep whatever tags it has attached out-of-band; set to [] to clear.
+  tags = [streamkap_tag.production.id]
+}
+
+resource "streamkap_tag" "production" {
+  name        = "production"
+  description = "Production environment resources"
+  type        = ["sources", "destinations", "pipelines"]
 }
 
 output "example-source-postgresql" {
