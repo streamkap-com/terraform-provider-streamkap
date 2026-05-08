@@ -24,28 +24,6 @@ var knownEntities = []EntityConfig{
 	{Type: "transform", PluginDir: "app/transforms/plugins"},
 }
 
-// skippedConnectors lists backend plugin directories that exist upstream but
-// are NOT yet exposed as Terraform resources in this provider — typically
-// because the corresponding wrapper file under internal/resource/{source,
-// destination,transform}/ and the registration entry in internal/provider/
-// provider.go have not been added. Generating schemas for these would emit
-// dead code (a Model + Schema function with no resource binding), polluting
-// the diff on every regen.
-//
-// To onboard a skipped connector: (1) remove the entry below, (2) add the
-// thin wrapper that embeds the generated model and registers schema/CRUD
-// wiring, (3) register the resource in provider.go::Resources(). Then run
-// `go generate ./...`.
-var skippedConnectors = map[string]map[string]bool{
-	"source": {
-		// Backend exposes informix/configuration.latest.json but no
-		// streamkap_source_informix resource is registered yet.
-		"informix": true,
-	},
-	"destination": {},
-	"transform":   {},
-}
-
 func main() {
 	var backendPath, output, entityType, connector string
 
@@ -241,12 +219,6 @@ func processEntity(backendPath, output string, entity EntityConfig, specificConn
 
 		// Skip common/shared directories
 		if connectorCode == "__pycache__" || connectorCode == "common" || strings.HasPrefix(connectorCode, "_") {
-			continue
-		}
-
-		// Skip connectors not yet wired in provider.go.
-		if skippedConnectors[entity.Type][connectorCode] {
-			fmt.Printf("Skipping %s %s: not registered in provider.go (see skippedConnectors in cmd/tfgen/main.go).\n", entity.Type, connectorCode)
 			continue
 		}
 
