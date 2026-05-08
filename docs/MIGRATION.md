@@ -61,8 +61,29 @@ resource "streamkap_source_postgresql" "orders" {
 ```
 
 The standalone `streamkap_tag` resource also gains plan-time validation of
-`type` against the backend `TagTypeEnum`, and the `streamkap_tag` data source
-returns `type` as a Set rather than a List for consistency with the resource.
+`type` against the backend `TagTypeEnum`.
+
+#### Breaking — `data.streamkap_tag.type` is now a Set, not a List
+
+In v2, the `streamkap_tag` **data source** returned `type` as a `List[String]`,
+which meant you could index into it (`data.streamkap_tag.X.type[0]`). v3
+returns `type` as a `Set[String]` to match the `streamkap_tag` **resource**.
+Sets are unordered and not indexable.
+
+If your HCL references `type` by index, replace it with one of:
+
+```hcl
+# v2 — broken in v3
+locals { tag_type = data.streamkap_tag.example.type[0] }
+
+# v3 — pick any one element from the set
+locals { tag_type = tolist(data.streamkap_tag.example.type)[0] }
+
+# Or just use `contains()` if you were checking membership
+locals { is_source_tag = contains(data.streamkap_tag.example.type, "sources") }
+```
+
+Element type is unchanged (`string`); only the collection type changed.
 
 ### Deprecated Attribute Removal (Planned)
 

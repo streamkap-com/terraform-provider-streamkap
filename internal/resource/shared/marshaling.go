@@ -231,11 +231,12 @@ func SetStringField(model any, fieldName string, value string) {
 }
 
 // GetStringSliceField reads a Set[String] model field and returns it as a
-// []string. Returns nil for null/unknown values, which translates to JSON
-// `null` (omitempty) when sent in an API request — matching backend behavior
-// where unset means "do not change tags". An empty (but non-null) set is
-// returned as an empty []string{} so the caller can distinguish "no tags"
-// from "leave alone".
+// []string. Returns nil for null/unknown values; nil marshals to JSON `null`
+// (the request struct fields deliberately do NOT use omitempty — see the
+// comment on api.Source.Tags), which the backend's
+// `app/utils/entity_changes.py::upsert_entities` interprets as "do not change
+// tags". An empty (but non-nil) set is returned as `[]string{}` so the caller
+// can distinguish "no tags" (clear) from "leave alone".
 func GetStringSliceField(ctx context.Context, model any, fieldName string) []string {
 	v := reflect.ValueOf(model)
 	if v.Kind() == reflect.Ptr {
