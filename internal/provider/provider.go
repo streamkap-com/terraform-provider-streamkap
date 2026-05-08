@@ -263,7 +263,6 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		source.NewSupabaseResource,
 		source.NewVitessResource,
 		source.NewWebhookResource,
-		source.NewInformixResource,
 		source.NewSalesforceWebhookResource,
 		source.NewZendeskWebhookResource,
 		destination.NewSnowflakeResource,
@@ -300,7 +299,5 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		transform.NewRollupResource,
 		transform.NewFanOutResource,
 		transform.NewTopicRouterResource,
-		transform.NewToastHandlingResource,
-		transform.NewUnNestingResource,
 	}
 }

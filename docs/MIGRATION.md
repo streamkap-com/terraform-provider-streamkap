@@ -17,12 +17,9 @@ v3.0 adds new resource types and data sources on top of everything in v2.x:
 
 - **`streamkap_destination_weaviate`** — Weaviate vector database destination connector
 - **`streamkap_destination_pinecone`** — Pinecone vector database destination connector
-- **`streamkap_source_informix`** — Informix CDC source connector
 - **`streamkap_source_salesforce_webhook`** — Salesforce webhook source connector
 - **`streamkap_source_zendesk_webhook`** — Zendesk webhook source connector
 - **`streamkap_transform_topic_router`** — Topic router transform
-- **`streamkap_transform_toast_handling`** — TOAST-handling transform
-- **`streamkap_transform_un_nesting`** — Un-nesting transform
 - **`streamkap_kafka_user`** — Kafka user management with ACL-based topic access control
 - **`streamkap_client_credential`** — API token management for machine-to-machine authentication
 - **`streamkap_roles` data source** — List available roles for client credential assignment

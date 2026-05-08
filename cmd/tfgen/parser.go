@@ -76,6 +76,11 @@ type ConnectorConfig struct {
 	Serialisation         string        `json:"serialisation,omitempty"`
 	Metrics               []Metric      `json:"metrics,omitempty"`
 	Config                []ConfigEntry `json:"config"`
+	// ComingSoon, when true, marks this connector as not yet generally available
+	// on the backend. Such connectors are visible in the UI but not actually
+	// deployable; we skip generating Terraform resources for them so users
+	// don't get a schema that always errors at apply time.
+	ComingSoon bool `json:"coming_soon,omitempty"`
 }
 
 // Metric represents a metrics definition (primarily for sources).

@@ -24,10 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   validated against the backend `TagTypeEnum` (`environment`, `general`,
   `sources`, `destinations`, `pipelines`, `transforms`, `topics`, `services`,
   `users`, `tenant`). Typos fail at plan, not after a round-trip.
-- **Five previously-unwired connectors** (backend exposed them, the provider
-  didn't): `streamkap_source_informix`, `streamkap_source_salesforce_webhook`,
-  `streamkap_source_zendesk_webhook`, `streamkap_transform_toast_handling`,
-  `streamkap_transform_un_nesting`.
+- **Two previously-unwired source connectors** (backend exposed them, the
+  provider didn't): `streamkap_source_salesforce_webhook`,
+  `streamkap_source_zendesk_webhook`.
 
 ### Fixed
 - **`streamkap_topic` Read silently no-op'd against the API response.** The
