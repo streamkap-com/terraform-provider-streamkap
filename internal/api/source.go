@@ -27,7 +27,14 @@ type Source struct {
 	ConnectorStatus string         `json:"connector_status,omitempty"`
 	Config          map[string]any `json:"config"`
 	KcClusterId     string         `json:"kc_cluster_id,omitempty"`
-	Tags            []string       `json:"tags,omitempty"`
+	// Tags intentionally has NO omitempty: the backend differentiates
+	// `"tags": null` (or absent) — meaning "do not change" — from `"tags": []`
+	// — meaning "clear all tags" (see app/utils/entity_changes.py
+	// _validate_entity_tags + the `if tags is not None` guard in upsert_entities).
+	// With omitempty, Go's json package would drop a zero-length non-nil slice,
+	// making `tags = []` indistinguishable from "unset" on the wire and leaving
+	// the user unable to clear tags via Terraform.
+	Tags []string `json:"tags"`
 }
 
 func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*Source, error) {

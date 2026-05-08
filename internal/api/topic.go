@@ -14,7 +14,12 @@ import (
 type Topic struct {
 	TopicID        string   `json:"topic_id"`
 	PartitionCount int      `json:"partition_count"`
-	Tags           []string `json:"tags,omitempty"`
+	// Tags is filled from the response and consumed via custom serialization in
+	// UpdateTopic (which always builds the request body as an explicit map so it
+	// can match the backend's `{"payload": {...}}` shape and the
+	// at-least-one-of partition_count/tags rule). Kept without omitempty for
+	// consistency with the other entity types — see api.Source.Tags.
+	Tags []string `json:"tags"`
 }
 
 // TopicEntity represents the entity (source/transform/destination) that owns a topic
