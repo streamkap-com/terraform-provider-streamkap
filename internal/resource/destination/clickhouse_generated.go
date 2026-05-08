@@ -14,7 +14,7 @@ type ClickHouseConfig struct{}
 
 // Ensure ClickHouseConfig implements ConnectorConfig and ConnectorConfigWithJSONStringFields.
 var (
-	_ connector.ConnectorConfig                   = (*ClickHouseConfig)(nil)
+	_ connector.ConnectorConfig                     = (*ClickHouseConfig)(nil)
 	_ connector.ConnectorConfigWithJSONStringFields = (*ClickHouseConfig)(nil)
 )
 

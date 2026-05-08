@@ -45,7 +45,7 @@ type TopicPartitionsInfo struct {
 
 // TopicEntity represents the entity (source/transform/destination) that owns a topic
 type TopicEntity struct {
-	EntityType  string   `json:"entity_type"`  // "sources", "transforms", "destinations"
+	EntityType  string   `json:"entity_type"` // "sources", "transforms", "destinations"
 	EntityID    string   `json:"entity_id"`
 	Name        string   `json:"name"`
 	Connector   string   `json:"connector"`
@@ -137,7 +137,6 @@ type TopicDetailed struct {
 	Prefix        *string      `json:"prefix,omitempty"`
 	Serialization *string      `json:"serialization,omitempty"`
 }
-
 
 func (s *streamkapAPI) UpdateTopic(ctx context.Context, topicID string, reqPayload Topic) (*Topic, error) {
 	// Backend expects {"payload": {"partition_count": ..., "tags": [...]}}

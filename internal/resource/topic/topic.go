@@ -30,7 +30,7 @@ func NewTopicResource() res.Resource {
 
 // TopicResource defines the resource implementation.
 type TopicResource struct {
-	client         api.StreamkapAPI
+	client api.StreamkapAPI
 }
 
 // TopicResourceModel describes the resource data model.

@@ -73,9 +73,9 @@ resource "streamkap_destination_sqlserver" "test" {
 			},
 			// ImportState testing
 			{
-				ResourceName:      "streamkap_destination_sqlserver.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "streamkap_destination_sqlserver.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Update and Read testing

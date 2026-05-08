@@ -55,9 +55,9 @@ resource "streamkap_destination_databricks" "test" {
 			},
 			// Step 2: ImportState Testing
 			{
-				ResourceName:      "streamkap_destination_databricks.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "streamkap_destination_databricks.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"connector_status"},
 			},
 			// Step 3: Update and Read Testing

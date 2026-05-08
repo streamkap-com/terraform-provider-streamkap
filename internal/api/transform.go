@@ -253,7 +253,7 @@ type TransformImplementationDetails struct {
 
 // TransformImplementationDetailsResponse represents the response from GET implementation_details
 type TransformImplementationDetailsResponse struct {
-	TransformID  string                                `json:"transform_id"`
+	TransformID  string                                    `json:"transform_id"`
 	ImplVersions map[string]TransformImplementationDetails `json:"impl_versions"`
 }
 

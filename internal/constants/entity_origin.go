@@ -1,5 +1,5 @@
 package constants
 
 const (
-    TERRAFORM = "terraform"
+	TERRAFORM = "terraform"
 )

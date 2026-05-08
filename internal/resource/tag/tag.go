@@ -36,12 +36,12 @@ type TagResource struct {
 }
 
 type TagResourceModel struct {
-	ID          types.String   `tfsdk:"id"`
-	Name        types.String   `tfsdk:"name"`
-	Description types.String   `tfsdk:"description"`
-	Type        types.Set      `tfsdk:"type"`
-	System      types.Bool     `tfsdk:"system"`
-	Custom      types.Bool     `tfsdk:"custom"`
+	ID          types.String `tfsdk:"id"`
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	Type        types.Set    `tfsdk:"type"`
+	System      types.Bool   `tfsdk:"system"`
+	Custom      types.Bool   `tfsdk:"custom"`
 }
 
 func (r *TagResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {

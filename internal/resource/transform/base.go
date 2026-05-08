@@ -831,7 +831,7 @@ func (r *BaseTransformResource) waitForDeployment(ctx context.Context, transform
 				return status, fmt.Errorf("transform deployment failed (Flink status: %s)", constants.JobStatusFailed)
 			case constants.JobStatusCanceled, constants.JobStatusStopped:
 				return status, fmt.Errorf("transform deployment stopped (status: %s)", status.Status)
-			// INITIALIZING, DEPLOYING, CREATED, RESTARTING — keep polling
+				// INITIALIZING, DEPLOYING, CREATED, RESTARTING — keep polling
 			}
 		}
 	}
