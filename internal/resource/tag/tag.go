@@ -4,16 +4,21 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
 )
 
 var (
@@ -70,20 +75,38 @@ func (r *TagResource) Schema(ctx context.Context, req res.SchemaRequest, resp *r
 				Optional:            true,
 			},
 			"type": schema.SetAttribute{
-				Description:         "Set of entity types this tag can be applied to. Valid values: sources, destinations, pipelines.",
-				MarkdownDescription: "Set of entity types this tag can be applied to. Valid values: `sources`, `destinations`, `pipelines`.",
-				Required:            true,
-				ElementType:         types.StringType,
+				Description: "Set of entity types this tag can be applied to. Valid values: " +
+					"environment, general, sources, destinations, pipelines, transforms, topics, " +
+					"services, users, tenant. Note: 'environment' and 'general' are reserved for " +
+					"system tags and cannot be applied to custom user-created tags during update.",
+				MarkdownDescription: "Set of entity types this tag can be applied to. Valid values: " +
+					"`environment`, `general`, `sources`, `destinations`, `pipelines`, `transforms`, " +
+					"`topics`, `services`, `users`, `tenant`.\n\n" +
+					"**Note:** `environment` and `general` are reserved for system tags and cannot be " +
+					"applied to custom user-created tags during update.",
+				Required:    true,
+				ElementType: types.StringType,
+				Validators: []validator.Set{
+					// Element-level enum check: each entry must be a known TagTypeEnum.
+					// Mirrors backend `app_tags.py::TagTypeEnum`.
+					setvalidator.ValueStringsAre(stringvalidator.OneOf(constants.TagTypeEnum...)),
+				},
 			},
 			"system": schema.BoolAttribute{
 				Description:         "Whether this is a system-managed tag. System tags cannot be modified. Read-only.",
 				MarkdownDescription: "Whether this is a system-managed tag. System tags cannot be modified. **Read-only**.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"custom": schema.BoolAttribute{
 				Description:         "Whether this is a custom (user-created) tag. Read-only.",
 				MarkdownDescription: "Whether this is a custom (user-created) tag. **Read-only**.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
