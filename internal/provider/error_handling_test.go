@@ -217,6 +217,75 @@ func TestAPIError401_DeleteTransform(t *testing.T) {
 	assert.Contains(t, err.Error(), "Unauthorized")
 }
 
+// TestAPIError_NonJSONErrorBody_SurfacesStatusAndBody covers the gateway/
+// proxy failure mode: an upstream (nginx, load balancer, ingress) returns
+// HTML or a non-JSON body for a 5xx — historically the JSON decoder failed
+// silently and the provider surfaced a bare "invalid character '<' looking
+// for beginning of value" error with no status code and no body excerpt,
+// which dead-ended customer debugging. The error now includes the HTTP
+// status and a truncated body snippet so customers can see what the gateway
+// actually returned.
+func TestAPIError_NonJSONErrorBody_SurfacesStatusAndBody(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	baseURL := "https://api.test.streamkap.com"
+	client := newTestAPIClient(baseURL)
+
+	const htmlBody = `<html><head><title>502 Bad Gateway</title></head><body><h1>Bad Gateway</h1></body></html>`
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		baseURL+"/sources/some-id?secret_returned=true",
+		func(req *http.Request) (*http.Response, error) {
+			resp := httpmock.NewStringResponse(http.StatusBadGateway, htmlBody)
+			resp.Header.Set("Content-Type", "text/html")
+			return resp, nil
+		},
+	)
+
+	ctx := context.Background()
+	result, err := client.GetSource(ctx, "some-id")
+
+	require.Error(t, err, "Non-JSON error body must surface as an error, not a silent success")
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "502", "Error must include the HTTP status code")
+	assert.Contains(t, err.Error(), "502 Bad Gateway", "Error must include a snippet of the actual body")
+	assert.NotContains(t, err.Error(), "invalid character",
+		"Bare JSON decode error must not leak through to the user")
+}
+
+// TestAPIError_JSONErrorBody_PreservesDetail confirms the happy-path
+// behavior still works after the snippet refactor: a well-formed JSON
+// error response surfaces `detail` verbatim (with the request_id appended
+// when present).
+func TestAPIError_JSONErrorBody_PreservesDetail(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	baseURL := "https://api.test.streamkap.com"
+	client := newTestAPIClient(baseURL)
+
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		baseURL+"/sources/some-id?secret_returned=true",
+		func(req *http.Request) (*http.Response, error) {
+			resp, _ := httpmock.NewJsonResponse(http.StatusUnprocessableEntity, api.APIErrorResponse{
+				Detail: "Validation error: something is wrong with the request",
+			})
+			resp.Header.Set("X-Request-Id", "req-123-abc")
+			return resp, nil
+		},
+	)
+
+	ctx := context.Background()
+	result, err := client.GetSource(ctx, "some-id")
+
+	require.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "Validation error: something is wrong with the request")
+	assert.Contains(t, err.Error(), "req-123-abc", "request_id must be appended when present")
+}
+
 // =============================================================================
 // 404 Not Found Error Tests
 // =============================================================================
@@ -830,13 +899,19 @@ func TestListTransforms_Paginates(t *testing.T) {
 	assert.Equal(t, "t-page2-4", result[104].ID)
 }
 
-// TestAPIError422_TransformDuplicateName is a regression test for issue #75:
-// when a transform with the same name already exists, the create path must
-// adopt it. The transform name lives in Config["transforms.name"] (backend
-// alias), not Config["name"], so the adopt lookup previously searched for an
-// empty string and surfaced "transform \"\" reported as existing but not
-// found in list".
-func TestAPIError422_TransformDuplicateName(t *testing.T) {
+// TestAPIError422_TransformDuplicateName_FailsWithRecoveryGuidance is the
+// counterpart of TestAPIError409_PipelineDuplicateName_FailsWithRecoveryGuidance
+// for transforms. Same root cause: auto-adopting on a name conflict is unsafe
+// under `lifecycle { create_before_destroy = true }` because the deposed
+// state entry and the freshly-created live entry would share the same backend
+// id; the next destroy of the deposed would DELETE the live transform.
+//
+// The customer's debug log (0_Terraform Apply.txt) showed deposed transform
+// entries (e.g. `transform_sql_join.live[0] (destroy deposed cd669fa8)`)
+// alongside the deposed pipeline entries, so the same pattern would have
+// bitten them in transforms once the pipeline path was unblocked. Prevent
+// that by failing loudly with the same recovery guidance.
+func TestAPIError422_TransformDuplicateName_FailsWithRecoveryGuidance(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
@@ -851,89 +926,122 @@ func TestAPIError422_TransformDuplicateName(t *testing.T) {
 		},
 	}
 
+	postCalls := 0
 	httpmock.RegisterResponder(
 		http.MethodPost,
 		baseURL+"/transforms?secret_returned=true",
 		func(req *http.Request) (*http.Response, error) {
-			errResponse := api.APIErrorResponse{
+			postCalls++
+			return httpmock.NewJsonResponse(http.StatusUnprocessableEntity, api.APIErrorResponse{
 				Detail: "A transform with name 'existing-transform' already exists",
-			}
-			return httpmock.NewJsonResponse(http.StatusUnprocessableEntity, errResponse)
+			})
 		},
 	)
 
-	// Mock the paginated partial_name-filtered list-for-adopt follow-up.
+	// Same guard as the pipeline test: MUST NOT call the list endpoint to
+	// auto-adopt. A future refactor that re-introduces adoption will trip
+	// this assertion.
+	adoptCalls := 0
 	httpmock.RegisterResponder(
 		http.MethodGet,
 		baseURL+"/transforms?secret_returned=true&page=1&page_size=100&partial_name=existing-transform",
 		func(req *http.Request) (*http.Response, error) {
-			return httpmock.NewJsonResponse(http.StatusOK, api.GetTransformResponse{
-				Total: 1,
-				Result: []api.Transform{
-					{ID: "adopted-transform-id", Name: "existing-transform", TransformType: "sql_join"},
-				},
-			})
+			adoptCalls++
+			return httpmock.NewStringResponse(http.StatusOK, `{}`), nil
 		},
 	)
 
 	ctx := context.Background()
 	result, err := client.CreateTransform(ctx, transform)
 
-	require.NoError(t, err, "Duplicate name should trigger adoption, not an error")
-	require.NotNil(t, result, "Adopted transform should be returned")
-	assert.Equal(t, "adopted-transform-id", result.ID, "Should return the existing transform's ID")
-	assert.Equal(t, "existing-transform", result.Name)
+	require.Error(t, err, "Duplicate name must surface as an error, never auto-adopt")
+	assert.Nil(t, result)
+	assert.Equal(t, 1, postCalls, "POST should be attempted exactly once")
+	assert.Equal(t, 0, adoptCalls, "MUST NOT call the list endpoint to auto-adopt on duplicate-name conflict")
+
+	errMsg := err.Error()
+	assert.Contains(t, errMsg, "existing-transform")
+	assert.Contains(t, errMsg, "create_before_destroy",
+		"error must mention the lifecycle-incompatibility recovery path")
+	assert.Contains(t, errMsg, "terraform import",
+		"error must mention the import-based recovery path")
+	assert.Contains(t, errMsg, "already exists",
+		"original backend detail must be preserved for diagnostics")
 }
 
-// TestAPIError422_TransformDuplicateName_AdoptNotFound covers the path where
-// the backend reports "already exists" but the list endpoint can't locate the
-// transform (e.g. orphan in a different service of the same tenant). The
-// original error must be preserved so the user sees something actionable.
-func TestAPIError422_TransformDuplicateName_AdoptNotFound(t *testing.T) {
+// TestAPIError409_PipelineDuplicateName_FailsWithRecoveryGuidance is a
+// regression test for the customer scenario reported in 0_Terraform Apply.txt.
+//
+// Background: pipelines have a {tenant_id, service_id, name} uniqueness
+// constraint at the backend, so a `lifecycle { create_before_destroy = true }`
+// replace can't work — the deposed instance and the new instance would need
+// to coexist by name, and the backend refuses. An earlier attempt at a
+// "smart" recovery was to look the existing pipeline up by name and either
+// return it as-is (loses the user's planned config) or PUT the planned
+// payload onto it (worse — succeeds the Create step, then Terraform's destroy
+// of the deposed entry DELETEs the same backend id the live state was just
+// pointed to, silently destroying the customer's live pipeline).
+//
+// The safe behavior — and what this test asserts — is to refuse adoption
+// entirely on 409 and surface a clear error explaining the two recovery
+// paths (remove create_before_destroy, or `terraform import` the existing
+// pipeline). Loud failure beats silent data loss.
+func TestAPIError409_PipelineDuplicateName_FailsWithRecoveryGuidance(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
 	baseURL := "https://api.test.streamkap.com"
 	client := newTestAPIClient(baseURL)
 
-	transform := api.CreateTransformRequest{
-		Transform: "sql_join",
-		Config: map[string]any{
-			"transforms.name":     "orphan-transform",
-			"transforms.language": "SQL",
-		},
+	plannedPipeline := api.Pipeline{
+		Name:        "Pipeline_test_live",
+		Source:      api.PipelineSource{ID: "src-x", Name: "src-x", Connector: "dynamodb"},
+		Destination: api.PipelineDestination{ID: "dst-x", Name: "dst-x", Connector: "postgresql"},
 	}
 
+	postCalls := 0
 	httpmock.RegisterResponder(
 		http.MethodPost,
-		baseURL+"/transforms?secret_returned=true",
+		baseURL+"/pipelines?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
-			errResponse := api.APIErrorResponse{
-				Detail: "A transform with name 'orphan-transform' already exists",
-			}
-			return httpmock.NewJsonResponse(http.StatusUnprocessableEntity, errResponse)
-		},
-	)
-
-	// List endpoint returns zero results — the adopt lookup cannot locate it.
-	httpmock.RegisterResponder(
-		http.MethodGet,
-		baseURL+"/transforms?secret_returned=true&page=1&page_size=100&partial_name=orphan-transform",
-		func(req *http.Request) (*http.Response, error) {
-			return httpmock.NewJsonResponse(http.StatusOK, api.GetTransformResponse{
-				Total:  0,
-				Result: []api.Transform{},
+			postCalls++
+			return httpmock.NewJsonResponse(http.StatusConflict, api.APIErrorResponse{
+				Detail: "A pipeline with name 'Pipeline_test_live' already exists",
 			})
 		},
 	)
 
-	ctx := context.Background()
-	result, err := client.CreateTransform(ctx, transform)
+	// We must NOT issue a GET to /pipelines for adoption. Register a
+	// responder that fails the test if hit so a future refactor that
+	// accidentally re-introduces adoption will be caught here.
+	adoptCalls := 0
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		baseURL+"/pipelines?secret_returned=true&page=1&page_size=100&partial_name=Pipeline_test_live",
+		func(req *http.Request) (*http.Response, error) {
+			adoptCalls++
+			return httpmock.NewStringResponse(http.StatusOK, `{}`), nil
+		},
+	)
 
-	require.Error(t, err, "Expected error when adopt lookup fails")
-	assert.Nil(t, result, "Result should be nil when adopt fails")
-	assert.Contains(t, err.Error(), "already exists", "Original error must be preserved")
-	assert.Contains(t, err.Error(), "could not locate it via the list endpoint", "Should explain the adopt failure")
+	ctx := context.Background()
+	result, err := client.CreatePipeline(ctx, plannedPipeline)
+
+	require.Error(t, err, "409 on POST /pipelines must surface as an error, never auto-adopt")
+	assert.Nil(t, result)
+	assert.Equal(t, 1, postCalls, "POST should be attempted exactly once")
+	assert.Equal(t, 0, adoptCalls, "MUST NOT call the list endpoint to auto-adopt on 409")
+
+	// The error message must be actionable — point the user at both
+	// recovery paths.
+	errMsg := err.Error()
+	assert.Contains(t, errMsg, "Pipeline_test_live")
+	assert.Contains(t, errMsg, "create_before_destroy",
+		"error must mention the lifecycle-incompatibility recovery path")
+	assert.Contains(t, errMsg, "terraform import",
+		"error must mention the import-based recovery path")
+	assert.Contains(t, errMsg, "already exists",
+		"original backend detail must be preserved for diagnostics")
 }
 
 // TestAPIError422_TransformInvalidConfig tests 422 for transform-specific validation

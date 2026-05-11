@@ -402,6 +402,48 @@ resource "streamkap_transform_map_filter" "example" {
 - `streamkap_destination_kafka` - Kafka destination
 - `streamkap_destination_iceberg` - Iceberg destination
 
+## Known limitations
+
+### `streamkap_pipeline` and `streamkap_transform_*` do not support `lifecycle { create_before_destroy = true }`
+
+Streamkap enforces unique pipeline and transform names per
+`{tenant_id, service_id}`. The `create_before_destroy` lifecycle requires the
+old and new instances to coexist briefly during the apply, which the backend
+will reject with a 409 (pipelines) / 422 (transforms) conflict. Symptoms:
+
+- `Error: streamkap_pipeline "<name>" already exists ...` or
+  `Error: streamkap_transform "<name>" already exists ...`, with a backend
+  409 / 422 in the debug log.
+- After repeated retries with the old provider version, deposed instances
+  accumulate in state (visible as
+  `streamkap_pipeline.<name> (destroy deposed <key>)` or
+  `streamkap_transform_<type>.<name> (destroy deposed <key>)` in
+  `terraform plan`).
+
+The provider now refuses to auto-adopt on this collision and surfaces an
+actionable error. To recover:
+
+1. **Remove the lifecycle directive** — for `streamkap_pipeline` and the
+   `streamkap_transform_*` resources, use the default destroy-then-create. If
+   you specifically need create-before-destroy semantics, rename the resource
+   so old and new can coexist by name.
+2. **If you have accumulated deposed entries**, clean them up with
+   `terraform state rm '<resource_address>.deposed.<key>'` (one for each
+   deposed entry; quote the address because of the dot), then re-run apply.
+3. **If the resource already exists on the backend but not in state** (e.g.
+   from a previous apply whose response was lost), use `terraform import`
+   to bring it into state and then `terraform apply` to reconcile any drift.
+   - Pipelines:
+     `terraform import streamkap_pipeline.<name> <pipeline_id>`
+   - Transforms: the resource type matches the existing record's `transform`
+     field (e.g. `sql_join` → `streamkap_transform_sql_join`,
+     `map_filter` → `streamkap_transform_map_filter`):
+     `terraform import streamkap_transform_sql_join.<name> <transform_id>`
+
+The id (and `transform` type for transforms) is visible in the Streamkap UI
+or via `GET /pipelines?partial_name=<name>` /
+`GET /transforms?partial_name=<name>`.
+
 ## Deprecation Timeline
 
 | Version | Status |

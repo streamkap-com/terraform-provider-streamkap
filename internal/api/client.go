@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -135,32 +136,60 @@ func (s *streamkapAPI) doRequest(ctx context.Context, req *http.Request, result 
 		tflog.Debug(ctx, fmt.Sprintf("%s %s → %d (request_id=%s)", req.Method, req.URL, resp.StatusCode, requestID))
 	}
 
-	respBodyDecoder := json.NewDecoder(resp.Body)
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		// Read the body once so we can both attempt JSON decode and fall back
+		// to surfacing the raw response. The backend's normal error shape is
+		// `{"detail": "..."}` but a non-2xx can also come from intermediate
+		// layers (nginx 502/504, load-balancer, auth redirect) and arrive as
+		// HTML. Returning only the bare JSON parse error ("invalid character
+		// '<' looking for beginning of value") strips the status code and
+		// every actionable hint, which has been a recurring debugging
+		// dead-end for users.
+		bodyBytes, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return fmt.Errorf("%s %s → %d: failed to read error body: %w", req.Method, req.URL, resp.StatusCode, readErr)
+		}
 		var apiErr APIErrorResponse
-		if err := respBodyDecoder.Decode(&apiErr); err != nil {
-			tflog.Debug(ctx,
-				fmt.Sprintf("%s request to %s got status code: %d. Failed to parse API error response: %v",
-					req.Method,
-					req.URL,
-					resp.StatusCode,
-					err,
-				),
-			)
-			return err
-		} else {
+		if jsonErr := json.Unmarshal(bodyBytes, &apiErr); jsonErr == nil && apiErr.Detail != "" {
 			detail := apiErr.Detail
 			if requestID != "" {
 				detail = fmt.Sprintf("%s (request_id=%s)", detail, requestID)
 			}
 			return errors.New(detail)
 		}
+		tflog.Debug(ctx,
+			fmt.Sprintf("%s %s → %d: response body not JSON: %s",
+				req.Method, req.URL, resp.StatusCode, snippet(bodyBytes)),
+		)
+		detail := fmt.Sprintf("%s %s → HTTP %d (non-JSON response body: %s)",
+			req.Method, req.URL, resp.StatusCode, snippet(bodyBytes))
+		if requestID != "" {
+			detail = fmt.Sprintf("%s (request_id=%s)", detail, requestID)
+		}
+		return errors.New(detail)
 	}
 
-	if err := respBodyDecoder.Decode(result); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
 		return err
 	}
 	return nil
+}
+
+// snippet trims a response body to a single-line preview suitable for error
+// messages. Used for surfacing HTML/non-JSON error bodies that would
+// otherwise be lost behind a bare json-decoder error.
+func snippet(b []byte) string {
+	const maxLen = 200
+	s := strings.TrimSpace(string(b))
+	s = strings.ReplaceAll(s, "\n", " ")
+	s = strings.ReplaceAll(s, "\r", " ")
+	if len(s) > maxLen {
+		s = s[:maxLen] + "...[truncated]"
+	}
+	if s == "" {
+		s = "(empty body)"
+	}
+	return s
 }
 
 // doRequestWithRetry wraps doRequest with retry logic for transient errors.

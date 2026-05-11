@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **`streamkap_pipeline` and `streamkap_transform_*` no longer auto-adopt on
+  duplicate-name conflicts (409 / 422 "already exists").** The previous
+  adopt-on-conflict path was unsafe under
+  `lifecycle { create_before_destroy = true }`: Terraform creates the new
+  instance first while the deposed instance still occupies the
+  `{tenant_id, service_id, name}` slot, the provider would adopt the
+  deposed's backend record (returning the same backend id from Create), and
+  Terraform's subsequent destroy of the deposed entry would DELETE the same
+  backend record the live state had just been pointed at — silently
+  destroying the customer's live pipeline / transform. A customer hit this on
+  pipelines and had deposed transforms in the same state that would have
+  triggered the same issue once the pipeline path was unblocked
+  (trace in `0_Terraform Apply.txt`). The provider now refuses to auto-adopt
+  on these two resources and surfaces a clear error with two recovery paths:
+    1. Remove `create_before_destroy = true` from the resource's
+       `lifecycle` (Streamkap enforces unique pipeline / transform names per
+       tenant + service, so that lifecycle does not work).
+    2. `terraform import streamkap_pipeline.<name> <pipeline_id>` or
+       `terraform import streamkap_transform_<type>.<name> <transform_id>`
+       when recovering from a previous apply whose response was lost.
+  The original adopt-on-conflict still applies to `streamkap_source_*`,
+  `streamkap_destination_*`, and `streamkap_tag`. The **same data-loss path
+  exists in principle** for those resources — adopt-on-conflict under
+  `create_before_destroy` is unsafe for any backend that enforces
+  name-uniqueness, regardless of resource type. We are holding their adopt
+  path back from this PR because (a) the reported customer wasn't hitting
+  it on those resources, (b) existing acceptance tests rely on adopt-on-422
+  behavior there, and (c) tightening them would break legitimate
+  timed-out-create recovery workflows. This is **not** a statement that
+  they are safe; track removing their adopt path in a follow-up before any
+  customer relies on `lifecycle { create_before_destroy = true }` against
+  those resources.
+- **`streamkap_transform_*` — `deploy = true` with `replay_window = "0"`
+  failed with "Replay window must be a valid duration like 3d, 10m, 2h, 30s".**
+  The provider's schema documents `"0"` as "continue from last position"
+  (semantically identical to leaving the field unset → backend's
+  `start_time = None` → use the latest offset). But the backend's preview-
+  deploy parser uses a strict `(\d+)([smhd])` regex
+  (`python-be-streamkap/app/utils/api/v2/api_transforms_utils.py:352`) that
+  rejects a bare `"0"`. The deploy client now treats `"0"` and `""` as
+  equivalent and omits the query parameter in both cases, restoring the
+  documented behavior without requiring a backend change.
+- **Non-JSON error responses surface a useful message.** When an upstream
+  layer (nginx, load balancer, ingress) returned HTML or another non-JSON
+  body for a 5xx, the client previously bubbled up a bare
+  `invalid character '<' looking for beginning of value` JSON-decode error
+  — the HTTP status and body content were silently dropped, which dead-ended
+  customer debugging. Error responses that fail to decode as the standard
+  `{"detail": "..."}` shape now surface the actual status code and a
+  truncated body snippet so the real failure is visible.
+
 ## [3.0.0-beta.15] - 2026-05-08 (Pre-release)
 
 ### Added
