@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -86,50 +85,51 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload Pipeline) 
 	var resp Pipeline
 	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
-		// Create-or-adopt: if a pipeline with this name already exists (409 from a
-		// previous timed-out create), adopt the existing one instead of failing.
+		// Do NOT auto-adopt pipelines on 409. Streamkap enforces unique
+		// {tenant_id, service_id, name} for pipelines, so a 409 means one
+		// already exists with this name. Two scenarios produce it:
+		//
+		//   1. A previous apply created the pipeline but lost the response
+		//      (network, timeout) — Terraform's state thinks the resource
+		//      doesn't exist but the backend has it. Recovery: `terraform
+		//      import`.
+		//
+		//   2. A `lifecycle { create_before_destroy = true }` replace
+		//      operation is in flight: Terraform created a *deposed* state
+		//      entry from the old live instance (id=X), then asked the
+		//      provider to create the *new* live instance, which collides
+		//      on name with the still-existing backend pipeline X.
+		//
+		// An earlier version of this code adopted the existing pipeline by
+		// name and returned it as the create result. That is *unsafe* under
+		// scenario 2: the new live state entry would end up with the same
+		// backend id as the deposed entry, and the next step of the apply
+		// (destroy the deposed) would DELETE the very pipeline we just
+		// "adopted", leaving the live state pointing at a tombstone. We
+		// confirmed this trace against a real customer log
+		// (0_Terraform Apply.txt) — they had 4 deposed entries all pointing
+		// to the same backend pipeline because of repeated adoption.
+		//
+		// We can't disambiguate the two scenarios from inside the API
+		// client (no state visibility) and a content-comparison adopt is
+		// also unsafe (taint + create_before_destroy + no config change
+		// collapses to the same data-loss). So we surface a clear error
+		// and leave recovery to the user. Loud failure beats silent data
+		// loss.
 		if strings.Contains(err.Error(), "already exists") {
-			tflog.Info(ctx, fmt.Sprintf(
-				"Pipeline %q already exists — attempting to adopt existing resource", reqPayload.Name))
-			adopted, adoptErr := s.adoptPipelineByName(ctx, reqPayload.Name)
-			if adoptErr == nil {
-				return adopted, nil
-			}
-			// See matching comment in source.go CreateSource.
-			return nil, fmt.Errorf("%w (also tried to adopt the existing resource but could not locate it via the list endpoint: %v)", err, adoptErr)
+			return nil, fmt.Errorf(
+				"streamkap_pipeline %q already exists on the backend, and auto-adoption is unsafe for this resource (would risk destroying the live pipeline under create_before_destroy). Recovery options:\n"+
+					"  • If this is a `lifecycle { create_before_destroy = true }` replace: remove that directive — Streamkap enforces unique pipeline names per tenant/service so a new and an old pipeline cannot coexist by name. Use the default destroy-then-create, or change the pipeline name so old and new can briefly coexist.\n"+
+					"  • If you already have deposed entries from previous failed applies (visible in `terraform plan` as `<address> (destroy deposed <key>)`), they point at the same backend record and must be removed from state before any retry will work: `terraform state rm '<resource_address>'` (Terraform will refuse the deposed-key bit automatically; the address alone removes both live and deposed copies). See docs/MIGRATION.md → \"Known limitations\".\n"+
+					"  • If this is recovering from a previous apply that lost its response: run `terraform import streamkap_pipeline.<resource_name> <pipeline_id>` (find the id via the Streamkap UI or `GET /pipelines?partial_name=%s`) and re-run apply.\n"+
+					"Original backend error: %w",
+				reqPayload.Name, reqPayload.Name, err,
+			)
 		}
 		return nil, err
 	}
 
 	return &resp, nil
-}
-
-// adoptPipelineByName — see adoptSourceByName for rationale (paginates
-// through all partial_name matches to find the exact-name pipeline).
-func (s *streamkapAPI) adoptPipelineByName(ctx context.Context, name string) (*Pipeline, error) {
-	const pageSize = 100
-	const maxPages = 1000
-	for page := 1; page <= maxPages; page++ {
-		reqURL := fmt.Sprintf("%s/pipelines?secret_returned=true&page=%d&page_size=%d&partial_name=%s",
-			s.cfg.BaseURL, page, pageSize, url.QueryEscape(name))
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
-		if err != nil {
-			return nil, fmt.Errorf("failed to build adopt request for %q: %w", name, err)
-		}
-		var resp GetPipelineResponse
-		if err := s.doRequest(ctx, req, &resp); err != nil {
-			return nil, fmt.Errorf("failed to list pipelines while adopting %q: %w", name, err)
-		}
-		for i := range resp.Result {
-			if resp.Result[i].Name == name {
-				return &resp.Result[i], nil
-			}
-		}
-		if len(resp.Result) < pageSize {
-			break
-		}
-	}
-	return nil, fmt.Errorf("pipeline %q reported as existing but not found in list", name)
 }
 
 func (s *streamkapAPI) GetPipeline(ctx context.Context, pipelineID string) (*Pipeline, error) {
