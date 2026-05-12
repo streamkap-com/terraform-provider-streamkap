@@ -44,12 +44,17 @@ resource "streamkap_source_mysql" "test" {
   database_password                         = var.source_mysql_password
   database_include_list                     = "crm,ecommerce,tst"
   table_include_list                        = "crm.demo,ecommerce.customers,tst.test_id_timestamp"
-  signal_data_collection_schema_or_database = "crm"
+  signal_data_collection_schema_or_database = "crm.streamkap_signal"
   column_include_list                       = "crm[.]demo[.](id|name),ecommerce[.]customers[.](customer_id|email)"
   database_connection_timezone              = "SERVER"
   snapshot_gtid                             = true
   binary_handling_mode                      = "bytes"
   ssh_enabled                               = false
+
+  # Heartbeat keeps the connector polling on low-traffic sources.
+  #   - leave heartbeat_data_collection_schema_or_database unset -> Kafka-only mode (no source-DB write)
+  #   - set it to a database containing a streamkap_heartbeat table -> source-table mode
+  heartbeat_enabled = true
 }
 
 output "example-source-mysql" {
@@ -76,8 +81,8 @@ output "example-source-mysql" {
 - `column_include_list` (String) Comma separated list of columns whitelist regular expressions, format schema[.]table[.](column1|column2|etc)
 - `database_connection_timezone` (String) Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MySQL server session variables 'time_zone' or 'system_time_zone'
 - `database_port` (Number) MySQL Port. For example, 3306
-- `heartbeat_data_collection_schema_or_database` (String) Heartbeat Table Database
-- `heartbeat_enabled` (Boolean) Heartbeats are used to keep the pipeline healthy when there is a low volume of data at times.
+- `heartbeat_data_collection_schema_or_database` (String) Optional. Only takes effect when `heartbeat_enabled` is `true`. Database containing a `streamkap_heartbeat` table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave `null` for Kafka-only heartbeat (no table or write grant required).
+- `heartbeat_enabled` (Boolean) When `true`, emit a periodic heartbeat to a Kafka topic so the connector keeps polling and committing offsets on low-traffic sources. Set `heartbeat_data_collection_schema_or_database` to also write to a `streamkap_heartbeat` table in the source database; leave it `null` for Kafka-only mode. When `false`, neither heartbeat path runs and `heartbeat_data_collection_schema_or_database` is ignored.
 - `insert_static_key_field_1` (String) The name of the static field to be added to the message key.
 - `insert_static_key_field_2` (String) The name of the static field to be added to the message key.
 - `insert_static_key_value_1` (String) The value of the static field to be added to the message key.
@@ -87,7 +92,7 @@ output "example-source-mysql" {
 - `insert_static_value_field_1` (String) The name of the static field to be added to the message value.
 - `insert_static_value_field_2` (String) The name of the static field to be added to the message value.
 - `predicates_istopictoenrich_pattern` (String) Regex pattern to match topics for enrichment
-- `signal_data_collection_schema_or_database` (String) Schema for signal data collection. If connector is in read-only mode (snapshot_gtid="Yes"), set this to null.
+- `signal_data_collection_schema_or_database` (String) Full path to the signal table including database and table name (e.g., `mydb.streamkap_signal`). This table is used for incremental snapshotting. Follow the documentation for creating this table.
 - `snapshot_gtid` (Boolean) GTID snapshots are read only but require some prerequisite settings, including enabling GTID on the source database. See the documentation for more details.
 - `ssh_enabled` (Boolean) Connect via SSH tunnel
 - `ssh_host` (String) Hostname of the SSH server, only required if `ssh_enabled` is true
