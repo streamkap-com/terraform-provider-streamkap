@@ -197,22 +197,24 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 				Computed: true,
 				Optional: true,
 				Default:  booldefault.StaticBool(false),
-				Description: "Emit a periodic heartbeat to a Kafka topic so the connector keeps " +
+				Description: "When true, emit a periodic heartbeat to a Kafka topic so the connector keeps " +
 					"polling and committing offsets on low-traffic sources. " +
 					"Set heartbeat_data_collection_schema_or_database to also write to a streamkap_heartbeat " +
-					"table in the source database; leave it null for Kafka-only mode.",
-				MarkdownDescription: "Emit a periodic heartbeat to a Kafka topic so the connector keeps " +
+					"table in the source database; leave it null for Kafka-only mode. " +
+					"When false, neither heartbeat path runs and heartbeat_data_collection_schema_or_database is ignored.",
+				MarkdownDescription: "When `true`, emit a periodic heartbeat to a Kafka topic so the connector keeps " +
 					"polling and committing offsets on low-traffic sources. " +
 					"Set `heartbeat_data_collection_schema_or_database` to also write to a `streamkap_heartbeat` " +
-					"table in the source database; leave it `null` for Kafka-only mode.",
+					"table in the source database; leave it `null` for Kafka-only mode. " +
+					"When `false`, neither heartbeat path runs and `heartbeat_data_collection_schema_or_database` is ignored.",
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Optional: true,
-				Description: "Optional. Schema containing a streamkap_heartbeat table — providing this enables " +
-					"source-table heartbeat mode, which writes to the table on each beat to keep the " +
+				Description: "Optional. Only takes effect when heartbeat_enabled is true. Schema containing a streamkap_heartbeat " +
+					"table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the " +
 					"source transaction log active. Leave null for Kafka-only heartbeat (no table or write grant required).",
-				MarkdownDescription: "Optional. Schema containing a `streamkap_heartbeat` table — providing this enables " +
-					"source-table heartbeat mode, which writes to the table on each beat to keep the " +
+				MarkdownDescription: "Optional. Only takes effect when `heartbeat_enabled` is `true`. Schema containing a `streamkap_heartbeat` " +
+					"table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the " +
 					"source transaction log active. Leave `null` for Kafka-only heartbeat (no table or write grant required).",
 			},
 			"include_source_db_name_in_table_name": schema.BoolAttribute{
