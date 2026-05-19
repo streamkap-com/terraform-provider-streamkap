@@ -38,6 +38,7 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   #   - set it to a schema containing a streamkap_heartbeat table -> source-table mode
   heartbeat_enabled                            = true
   heartbeat_data_collection_schema_or_database = null
+  # heartbeat_use_logical_message              = true  # PG14+, SELECT-only role, read-only-compatible
   include_source_db_name_in_table_name         = false
   slot_name                                    = "terraform_pgoutput_slot"
   publication_name                             = "terraform_pub"
