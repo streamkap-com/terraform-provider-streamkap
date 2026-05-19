@@ -41,6 +41,7 @@ type SourcePostgresqlModel struct {
 	ColumnExcludeList                                types.String   `tfsdk:"column_exclude_list"`
 	HeartbeatEnabled                                 types.Bool     `tfsdk:"heartbeat_enabled"`
 	HeartbeatDataCollectionSchemaOrDatabase          types.String   `tfsdk:"heartbeat_data_collection_schema_or_database"`
+	HeartbeatUseLogicalMessage                       types.Bool     `tfsdk:"heartbeat_use_logical_message"`
 	SlotName                                         types.String   `tfsdk:"slot_name"`
 	PublicationName                                  types.String   `tfsdk:"publication_name"`
 	SchemaIncludeList                                types.String   `tfsdk:"schema_include_list"`
@@ -235,18 +236,25 @@ func SourcePostgresqlSchema() schema.Schema {
 			"heartbeat_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "When enabled, the connector sends periodic heartbeat messages to a Kafka topic to track connector liveness. In read-write mode, the connector also periodically writes to the 'streamkap_heartbeat' table in the source database to keep the transaction log active — this table must be created before enabling. See the Streamkap documentation for table setup instructions. Defaults to true.",
-				MarkdownDescription: "When enabled, the connector sends periodic heartbeat messages to a Kafka topic to track connector liveness. In read-write mode, the connector also periodically writes to the 'streamkap_heartbeat' table in the source database to keep the transaction log active — this table must be created before enabling. See the Streamkap documentation for table setup instructions. Defaults to `true`.",
+				Description:         "When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to true.",
+				MarkdownDescription: "When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The schema containing the 'streamkap_heartbeat' table. This table must be created before enabling heartbeat — see the Streamkap documentation for setup instructions.",
-				MarkdownDescription: "The schema containing the 'streamkap_heartbeat' table. This table must be created before enabling heartbeat — see the Streamkap documentation for setup instructions.",
+				Description:         "Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
+				MarkdownDescription: "Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"heartbeat_use_logical_message": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Use a logical-message heartbeat instead of a heartbeat table. Runs SELECT pg_logical_emit_message(true, ...) on each beat to keep the replication slot advancing — works on PG14+ primaries with a SELECT-only role and is compatible with read-only mode. No table or write grant required on the source. Defaults to false.",
+				MarkdownDescription: "Use a logical-message heartbeat instead of a heartbeat table. Runs SELECT pg_logical_emit_message(true, ...) on each beat to keep the replication slot advancing — works on PG14+ primaries with a SELECT-only role and is compatible with read-only mode. No table or write grant required on the source. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
 			},
 			"slot_name": schema.StringAttribute{
 				Optional:            true,
@@ -410,8 +418,8 @@ func SourcePostgresqlSchema() schema.Schema {
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to false.",
-				MarkdownDescription: "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.",
+				Description:         "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to false.",
+				MarkdownDescription: "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"ssh_host": schema.StringAttribute{
@@ -567,6 +575,7 @@ var SourcePostgresqlFieldMappings = map[string]string{
 	"column_exclude_list":                                    "column.exclude.list.user.defined",
 	"heartbeat_enabled":                                      "heartbeat.enabled",
 	"heartbeat_data_collection_schema_or_database":           "heartbeat.data.collection.schema.or.database",
+	"heartbeat_use_logical_message":                          "heartbeat.use.logical.message",
 	"slot_name":                                              "slot.name",
 	"publication_name":                                       "publication.name",
 	"schema_include_list":                                    "schema.include.list",

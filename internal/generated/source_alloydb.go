@@ -200,15 +200,15 @@ func SourceAlloydbSchema() schema.Schema {
 			"heartbeat_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "When enabled, the connector sends periodic heartbeat messages to a Kafka topic to track connector liveness. In read-write mode, the connector also periodically writes to the 'streamkap_heartbeat' table in the source database to keep the transaction log active — this table must be created before enabling. See the Streamkap documentation for table setup instructions. Defaults to true.",
-				MarkdownDescription: "When enabled, the connector sends periodic heartbeat messages to a Kafka topic to track connector liveness. In read-write mode, the connector also periodically writes to the 'streamkap_heartbeat' table in the source database to keep the transaction log active — this table must be created before enabling. See the Streamkap documentation for table setup instructions. Defaults to `true`.",
+				Description:         "When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to true.",
+				MarkdownDescription: "When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The schema containing the 'streamkap_heartbeat' table. This table must be created before enabling heartbeat — see the Streamkap documentation for setup instructions.",
-				MarkdownDescription: "The schema containing the 'streamkap_heartbeat' table. This table must be created before enabling heartbeat — see the Streamkap documentation for setup instructions.",
+				Description:         "Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
+				MarkdownDescription: "Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -346,8 +346,8 @@ func SourceAlloydbSchema() schema.Schema {
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to false.",
-				MarkdownDescription: "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.",
+				Description:         "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to false.",
+				MarkdownDescription: "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"ssh_host": schema.StringAttribute{

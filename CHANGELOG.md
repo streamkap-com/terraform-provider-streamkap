@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **PostgreSQL: `heartbeat_use_logical_message`** (bool, default `false`) — run
+  `SELECT pg_logical_emit_message(true, ...)` on each beat to advance the
+  replication slot. Works on PG14+ primaries with a SELECT-only role and is
+  compatible with read-only mode; no `streamkap_heartbeat` table or write
+  grant required on the source. Resolves
+  [ENG-2398](https://linear.app/streamkap/issue/ENG-2398).
+
+### Changed
+- **Kafka-only heartbeat mode is now reachable across all source connectors
+  that support heartbeats.** Setting `heartbeat_enabled = true` while leaving
+  `heartbeat_data_collection_schema_or_database` blank emits heartbeats to a
+  Kafka topic only — keeping the poll loop active and offsets advancing on
+  low-traffic sources without requiring a `streamkap_heartbeat` table or a
+  write grant in the source database. Setting the schema/database field still
+  enables source-table heartbeat mode. Affects: PostgreSQL, MySQL, MariaDB,
+  Oracle, AlloyDB, Supabase, OracleAWS, SqlServerAWS.
+- **SqlServerAWS: `heartbeat_data_collection_schema_or_database` no longer
+  defaults to `"streamkap"`.** Behavior parity with the other source
+  connectors — the field is now Optional with no default, so Kafka-only
+  heartbeat mode is reachable by leaving it blank. Existing configurations
+  that explicitly set this attribute are unaffected.
+- Heartbeat attribute descriptions on the affected sources were rewritten to
+  document Kafka-only vs source-table modes and the conditions under which
+  each path applies.
+
 ## [3.0.0-beta.16] - 2026-05-11 (Pre-release)
 
 ### Changed
