@@ -57,6 +57,7 @@ type SourcePostgreSQLResourceModel struct {
 	ColumnExcludeList                       types.String `tfsdk:"column_exclude_list"`
 	HeartbeatEnabled                        types.Bool   `tfsdk:"heartbeat_enabled"`
 	HeartbeatDataCollectionSchemaOrDatabase types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
+	HeartbeatUseLogicalMessage              types.Bool   `tfsdk:"heartbeat_use_logical_message"`
 	IncludeSourceDBNameInTableName          types.Bool   `tfsdk:"include_source_db_name_in_table_name"`
 	SlotName                                types.String `tfsdk:"slot_name"`
 	PublicationName                         types.String `tfsdk:"publication_name"`
@@ -204,6 +205,21 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 				Optional:            true,
 				Description:         "Schema for heartbeat data collection",
 				MarkdownDescription: "Schema for heartbeat data collection",
+			},
+			"heartbeat_use_logical_message": schema.BoolAttribute{
+				Computed: true,
+				Optional: true,
+				Default:  booldefault.StaticBool(false),
+				Description: "Use a logical-message heartbeat instead of a heartbeat table. Runs " +
+					"SELECT pg_logical_emit_message(true, ...) on each beat to keep the replication " +
+					"slot advancing — works on PG14+ primaries with a SELECT-only role and is " +
+					"compatible with read-only mode. No table or write grant required on the source. " +
+					"Only takes effect when heartbeat_enabled is true.",
+				MarkdownDescription: "Use a logical-message heartbeat instead of a heartbeat table. Runs " +
+					"`SELECT pg_logical_emit_message(true, ...)` on each beat to keep the replication " +
+					"slot advancing — works on PG14+ primaries with a SELECT-only role and is " +
+					"compatible with read-only mode. No table or write grant required on the source. " +
+					"Only takes effect when `heartbeat_enabled` is `true`.",
 			},
 			"include_source_db_name_in_table_name": schema.BoolAttribute{
 				Computed:            true,
@@ -507,6 +523,7 @@ func (r *SourcePostgreSQLResource) model2ConfigMap(model SourcePostgreSQLResourc
 		"column.include.list.toggled":                       true,
 		"heartbeat.enabled":                                 model.HeartbeatEnabled.ValueBool(),
 		"heartbeat.data.collection.schema.or.database":      model.HeartbeatDataCollectionSchemaOrDatabase.ValueStringPointer(),
+		"heartbeat.use.logical.message":                     model.HeartbeatUseLogicalMessage.ValueBool(),
 		"include.source.db.name.in.table.name.user.defined": model.IncludeSourceDBNameInTableName.ValueBool(),
 		"slot.name":                                         model.SlotName.ValueString(),
 		"publication.name":                                  model.PublicationName.ValueString(),
@@ -553,6 +570,7 @@ func (r *SourcePostgreSQLResource) configMap2Model(cfg map[string]any, model *So
 	model.ColumnExcludeList = helper.GetTfCfgString(cfg, "column.exclude.list.user.defined")
 	model.HeartbeatEnabled = helper.GetTfCfgBool(cfg, "heartbeat.enabled")
 	model.HeartbeatDataCollectionSchemaOrDatabase = helper.GetTfCfgString(cfg, "heartbeat.data.collection.schema.or.database")
+	model.HeartbeatUseLogicalMessage = helper.GetTfCfgBool(cfg, "heartbeat.use.logical.message")
 	model.IncludeSourceDBNameInTableName = helper.GetTfCfgBool(cfg, "include.source.db.name.in.table.name.user.defined")
 	model.SlotName = helper.GetTfCfgString(cfg, "slot.name")
 	model.PublicationName = helper.GetTfCfgString(cfg, "publication.name")
