@@ -201,3 +201,138 @@ func TestPipelineTransforms_RoundTrip_Issue78(t *testing.T) {
 		})
 	}
 }
+
+// TestNormalizeSourceTopic asserts the source-topic prettifier strips only the
+// exact "source_<id>." prefix and never corrupts already-pretty names — in
+// particular dotted names like "default.MyTable" must survive intact.
+func TestNormalizeSourceTopic(t *testing.T) {
+	cases := []struct {
+		name     string
+		topic    string
+		sourceID string
+		want     string
+	}{
+		{"strips source prefix from bare name", "source_66b0.CoreData-Global", "66b0", "CoreData-Global"},
+		{"strips prefix preserving dotted name", "source_66b0.default.MyTable", "66b0", "default.MyTable"},
+		{"already pretty dotted name unchanged", "default.MyTable", "66b0", "default.MyTable"},
+		{"already pretty bare name unchanged", "CoreData-Global", "66b0", "CoreData-Global"},
+		{"empty sourceID returns topic verbatim", "source_66b0.X", "", "source_66b0.X"},
+		{"non-matching source prefix unchanged", "source_OTHER.X", "66b0", "source_OTHER.X"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := normalizeSourceTopic(tc.topic, tc.sourceID); got != tc.want {
+				t.Fatalf("normalizeSourceTopic(%q, %q) = %q, want %q", tc.topic, tc.sourceID, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestPipelineSourceTopics_RoundTrip_StripsPrefix asserts api2Model returns the
+// pretty source topics even when the API echoes the raw "source_<id>.<name>"
+// topic_id form (older betas / create-response path) — the source-topics
+// analogue of the issue #78 transforms fix.
+func TestPipelineSourceTopics_RoundTrip_StripsPrefix(t *testing.T) {
+	r := &PipelineResource{}
+	apiObj := api.Pipeline{
+		ID:   "p1",
+		Name: "p",
+		Source: api.PipelineSource{
+			ID:     "66b0f1c9a1b2c3d4e5f60000",
+			Topics: []string{"source_66b0f1c9a1b2c3d4e5f60000.default.CoreData-Global", "default.PollenData"},
+		},
+	}
+
+	model := &PipelineResourceModel{}
+	if err := r.api2Model(context.Background(), apiObj, model); err != nil {
+		t.Fatalf("api2Model: %v", err)
+	}
+
+	got := []string{}
+	if diags := model.Source.Topics.ElementsAs(context.Background(), &got, false); diags.HasError() {
+		t.Fatalf("ElementsAs: %s", diags)
+	}
+
+	want := map[string]struct{}{"default.CoreData-Global": {}, "default.PollenData": {}}
+	if len(got) != len(want) {
+		t.Fatalf("source topics = %v, want %v", got, want)
+	}
+	for _, g := range got {
+		if _, ok := want[g]; !ok {
+			t.Fatalf("unexpected source topic %q (got %v, want %v)", g, got, want)
+		}
+	}
+}
+
+// TestPipelineAutoDiscovery_RoundTrip asserts topic_auto_discovery_transforms
+// is a clean pass-through: model → API request → API response → model
+// preserves every {transform_id, regex} entry in order.
+func TestPipelineAutoDiscovery_RoundTrip(t *testing.T) {
+	r := &PipelineResource{client: &fakeTransformClient{}}
+
+	in := []*PipelineTopicAutoDiscoveryModel{
+		{TransformID: types.StringValue("66b0f1c9a1b2c3d4e5f6aaaa"), Regex: types.StringValue("aleks_ap.*")},
+		{TransformID: types.StringValue("66b0f1c9a1b2c3d4e5f6bbbb"), Regex: types.StringValue("aleks_eu.*")},
+	}
+
+	model := PipelineResourceModel{
+		Name:                         types.StringValue("p"),
+		SnapshotNewTables:            types.BoolValue(true),
+		Source:                       &PipelineSourceModel{ID: types.StringValue("66b0f1c9a1b2c3d4e5f60000"), Name: types.StringValue("s"), Connector: types.StringValue("dynamodb"), Topics: setOfStrings(t)},
+		Destination:                  &PipelineDestinationModel{ID: types.StringValue("d1"), Name: types.StringValue("d"), Connector: types.StringValue("postgresql")},
+		Tags:                         setOfStrings(t),
+		TopicAutoDiscoveryTransforms: in,
+	}
+
+	apiObj, err := r.model2API(context.Background(), model)
+	if err != nil {
+		t.Fatalf("model2API: %v", err)
+	}
+	if len(apiObj.TopicAutoDiscoveryTransforms) != 2 {
+		t.Fatalf("expected 2 auto-discovery entries on the API payload, got %d", len(apiObj.TopicAutoDiscoveryTransforms))
+	}
+	if apiObj.TopicAutoDiscoveryTransforms[0].TransformID != "66b0f1c9a1b2c3d4e5f6aaaa" ||
+		apiObj.TopicAutoDiscoveryTransforms[0].Regex != "aleks_ap.*" {
+		t.Fatalf("first entry mismatch: %+v", apiObj.TopicAutoDiscoveryTransforms[0])
+	}
+
+	back := &PipelineResourceModel{}
+	if err := r.api2Model(context.Background(), *apiObj, back); err != nil {
+		t.Fatalf("api2Model: %v", err)
+	}
+	if len(back.TopicAutoDiscoveryTransforms) != len(in) {
+		t.Fatalf("round-trip count mismatch: got %d, want %d", len(back.TopicAutoDiscoveryTransforms), len(in))
+	}
+	for i, want := range in {
+		got := back.TopicAutoDiscoveryTransforms[i]
+		if got.TransformID.ValueString() != want.TransformID.ValueString() || got.Regex.ValueString() != want.Regex.ValueString() {
+			t.Fatalf("round-trip entry %d mismatch: got {%s,%s} want {%s,%s}", i,
+				got.TransformID.ValueString(), got.Regex.ValueString(),
+				want.TransformID.ValueString(), want.Regex.ValueString())
+		}
+	}
+}
+
+// TestPipelineAutoDiscovery_EmptyMarshalsToList asserts an unset auto-discovery
+// list produces a non-nil empty slice on the API payload (marshals to [], not
+// null), matching the backend's default and avoiding null-vs-[] churn.
+func TestPipelineAutoDiscovery_EmptyMarshalsToList(t *testing.T) {
+	r := &PipelineResource{client: &fakeTransformClient{}}
+	model := PipelineResourceModel{
+		Name:              types.StringValue("p"),
+		SnapshotNewTables: types.BoolValue(true),
+		Source:            &PipelineSourceModel{ID: types.StringValue("s1"), Name: types.StringValue("s"), Connector: types.StringValue("dynamodb"), Topics: setOfStrings(t)},
+		Destination:       &PipelineDestinationModel{ID: types.StringValue("d1"), Name: types.StringValue("d"), Connector: types.StringValue("postgresql")},
+		Tags:              setOfStrings(t),
+	}
+	apiObj, err := r.model2API(context.Background(), model)
+	if err != nil {
+		t.Fatalf("model2API: %v", err)
+	}
+	if apiObj.TopicAutoDiscoveryTransforms == nil {
+		t.Fatal("expected non-nil empty slice, got nil")
+	}
+	if len(apiObj.TopicAutoDiscoveryTransforms) != 0 {
+		t.Fatalf("expected empty slice, got %v", apiObj.TopicAutoDiscoveryTransforms)
+	}
+}

@@ -106,7 +106,16 @@ func TestGetTfCfgBool(t *testing.T) {
 		{"missing key", map[string]any{}, "key", false, true},
 		{"nil value", map[string]any{"key": nil}, "key", false, true},
 		{"different key exists", map[string]any{"other": true}, "key", false, true},
-		{"non-bool string returns null", map[string]any{"key": "true"}, "key", false, true},
+		// The Streamkap backend returns connector config as string-encoded
+		// values, so booleans arrive as "true"/"false". GetTfCfgBool must coerce
+		// them the same way GetTfCfgInt64/GetTfCfgFloat64 coerce their strings;
+		// otherwise these fields read back null and drift on every apply.
+		{"string true", map[string]any{"key": "true"}, "key", true, false},
+		{"string false", map[string]any{"key": "false"}, "key", false, false},
+		{"string True capitalized", map[string]any{"key": "True"}, "key", true, false},
+		{"string 1", map[string]any{"key": "1"}, "key", true, false},
+		{"string 0", map[string]any{"key": "0"}, "key", false, false},
+		{"unparseable string returns null", map[string]any{"key": "notabool"}, "key", false, true},
 		{"non-bool int returns null", map[string]any{"key": 1}, "key", false, true},
 	}
 

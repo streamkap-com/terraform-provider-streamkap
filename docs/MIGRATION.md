@@ -222,7 +222,19 @@ changed. If your v2.1.19 configuration uses them, rename them before upgrading t
 | v2.1.19 Name | v3.x Name | Why no alias |
 |--------------|-----------|---------------|
 | `database_dbname` (string) | `database_names` (comma-separated) | Backend API field changed from `database.dbname` to `database.names` to support multiple databases per connector. |
-| `snapshot_custom_table_config` (map of objects) | `streamkap_snapshot_custom_table_config` (JSON string) | Type changed from `map<string, {chunks: int}>` to a JSON-serialized string, so the attribute's type definition cannot be aliased. |
+
+> **Note:** `snapshot_custom_table_config` is **unchanged** between v2.1.x and
+> v3.x — it remains a `map<string, {chunks: int}>` under the same attribute
+> name. (Some early v3 betas, ≤ `beta.16`, incorrectly exposed it as a JSON
+> string named `streamkap_snapshot_custom_table_config` due to a code-generation
+> bug; that has been fixed. If your config uses that beta form, change it back
+> to the map form below.)
+>
+> ```hcl
+> snapshot_custom_table_config = {
+>   "db.Some_Tbl" = { chunks = 5 }
+> }
+> ```
 
 ##### DynamoDB Source
 
@@ -307,11 +319,12 @@ resource "streamkap_source_postgresql" "example" {
 }
 ```
 
-#### Snowflake Destination
+#### Snowflake Destination & ClickHouse Destination — map fields are unchanged
 
-##### Type Change: auto_qa_dedupe_table_mapping
+`auto_qa_dedupe_table_mapping` (Snowflake) and `topics_config_map` (ClickHouse)
+are **unchanged** between v2.1.x and v3.x — both remain map attributes with the
+same names and shapes. No migration is required.
 
-**Before (v1.x):**
 ```hcl
 resource "streamkap_destination_snowflake" "example" {
   auto_qa_dedupe_table_mapping = {
@@ -320,12 +333,10 @@ resource "streamkap_destination_snowflake" "example" {
 }
 ```
 
-**After (v2.0):**
-```hcl
-resource "streamkap_destination_snowflake" "example" {
-  auto_qa_dedupe_table_mapping = "rawTable1:dedupeTable1"
-}
-```
+> **If you adopted an early v3 beta (≤ `beta.16`):** a code-generation bug
+> exposed these map fields as plain strings (and dropped `topics_config_map` /
+> `auto_qa_dedupe_table_mapping` to a JSON-string form). That is fixed — revert
+> any string values back to the map form shown above.
 
 ### Default Value Changes
 
@@ -349,7 +360,6 @@ cp terraform.tfstate terraform.tfstate.backup
 Update these in your `.tf` files:
 1. Change `database_port = 5432` to `database_port = "5432"`
 2. Add `signal_data_collection_schema_or_database = "public"` if missing
-3. Change map-style `auto_qa_dedupe_table_mapping` to string format
 
 #### Step 3: (Optional) Fix Deprecated Attributes
 

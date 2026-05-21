@@ -46,6 +46,13 @@ A pipeline is the core orchestration resource that defines how data flows from a
 - `snapshot_new_tables` (Boolean) Whether to automatically snapshot newly added tables (topics). When enabled, new tables added to the source will be automatically snapshotted. Defaults to `true`.
 - `tags` (Set of String) Optional set of tag IDs to apply to the pipeline for organization and filtering in the Streamkap UI. Defaults to `["670e5ca40afe1d3983ce0c22"]`, which is the Streamkap system `Development` tag.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `topic_auto_discovery_transforms` (Attributes List) Optional list of transform topic auto-discovery rules. Each rule lets the pipeline automatically pick up a transform's output topics whose names match a regex, without enumerating them in advance.
+
+Use this when a transform produces topics whose names are generated dynamically (e.g. a topic-router transform) and are therefore not known when the pipeline is created. Topic resolution happens server-side; this list is stored and returned unchanged. Defaults to an empty list.
+
+**Nested attributes:**
+- `transform_id` - Transform identifier whose output topics should be auto-discovered
+- `regex` - Regular expression matched against the transform's output topic names (see [below for nested schema](#nestedatt--topic_auto_discovery_transforms))
 - `transforms` (Attributes List) Optional list of transforms to apply to the pipeline data. Each transform processes data between the source and destination. Defaults to an empty list.
 
 **Nested attributes:**
@@ -88,6 +95,15 @@ Optional:
 - `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 - `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
 - `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+
+
+<a id="nestedatt--topic_auto_discovery_transforms"></a>
+### Nested Schema for `topic_auto_discovery_transforms`
+
+Required:
+
+- `regex` (String) Regular expression matched against the transform's output topic names. Topics produced by the transform whose names match this pattern are added to the pipeline automatically.
+- `transform_id` (String) Transform identifier whose output topics should be auto-discovered. References a transform resource (e.g., `streamkap_transform_fan_out`).
 
 
 <a id="nestedatt--transforms"></a>

@@ -49,7 +49,10 @@ terraform.rc
 # Local tooling
 .mcp.json
 .serena/
-tfgen
+# The tfgen binary built at the repo root (`go build ./cmd/tfgen`). Anchored to
+# root so it does NOT ignore source files under cmd/tfgen/ (a bare `tfgen`
+# pattern silently swallowed new files there).
+/tfgen
 
 # Build artifacts
 internal/generated/internal/

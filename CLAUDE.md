@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `docs/index.md` | Auto-generated registry landing page (do not hand-edit; regen via `go generate`). |
 | `docs/resources/`, `docs/data-sources/` | Auto-generated per-resource pages (regen via `go generate`). |
 | `docs/ARCHITECTURE.md` | Layered diagram + CRUD flow + design rationale. |
-| `docs/CODE_GENERATOR.md` | tfgen internals: parser, generator, overrides.json, deprecations.json, "adding a new connector" walkthrough. |
+| `docs/CODE_GENERATOR.md` | tfgen internals: parser, generator, overrides.json, "adding a new connector" walkthrough. |
 | `docs/MIGRATION.md` | v2 → v3 deprecations, removed attributes, action items for users. |
 | `docs/audits/<date>/`, `docs/plans/<date>-*.md` | Point-in-time audit reports and execution plans. Append new files; do not rewrite history. |
 | `CHANGELOG.md` | User-visible changes per release. Update before tagging. |
@@ -143,8 +143,8 @@ When a bug surfaces in `internal/generated/`:
 1. Locate the source of the wrongness — usually one of:
    - **tfgen logic** (`cmd/tfgen/parser.go`, `generator.go`, `formatting.go`) — wrong type mapping, missing special case, bad Go-name acronym handling.
    - **`cmd/tfgen/overrides.json`** — fields the parser can't synthesize (`map_string`, `map_nested`).
-   - **`cmd/tfgen/deprecations.json`** — v2 alias scaffolding for renamed attributes.
    - **Backend `configuration.latest.json`** — schema is wrong upstream; fix in `python-be-streamkap` and re-export.
+   - Note: deprecated v2 aliases are **not** in tfgen. They live entirely in the hand-maintained wrapper files (`internal/resource/{source,destination}/<connector>_generated.go`) — see "Deprecated attribute pattern" below.
 2. Fix at that source, then run `STREAMKAP_BACKEND_PATH=... go generate ./...`.
 3. Commit the tfgen change and the regenerated files together so the diff is reviewable in one PR.
 

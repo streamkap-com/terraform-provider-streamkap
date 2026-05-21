@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`streamkap_pipeline` now supports `topic_auto_discovery_transforms`.** This
+  optional list of `{ transform_id, regex }` rules lets a pipeline automatically
+  pick up a transform's output topics whose names match a regex, without
+  enumerating them in `transforms[].topics`. Use it when a transform produces
+  topics whose names are generated dynamically (e.g. a topic-router / fan-out
+  transform) and are therefore not known when the pipeline is created. Topic
+  resolution happens server-side; the list is stored and returned unchanged.
+
+### Fixed
+- **Map config attributes are restored to their correct `map` type** (regression
+  introduced in earlier v3 betas). A code-generation bug (`tfgen` resolved
+  `overrides.json` relative to the working directory, so `go generate ./...`
+  loaded zero overrides) caused three map attributes to be emitted as plain
+  strings — and `snapshot_custom_table_config` to be renamed to
+  `streamkap_snapshot_custom_table_config`:
+    - `streamkap_destination_snowflake.auto_qa_dedupe_table_mapping`
+    - `streamkap_destination_clickhouse.topics_config_map`
+    - `streamkap_source_sqlserver.snapshot_custom_table_config`
+  These now match v2.1.x (and the intended v3 design): map attributes under their
+  original names. **If you set any of these as a string on a v3 beta ≤ beta.16,
+  revert to the map form** (see `docs/MIGRATION.md`). Migrating from v2.1.x
+  requires no change — these were always maps there. The override path is now
+  resolved cwd-independently so a full regen can't silently drop it again.
+- **`connector_status` no longer triggers "Provider produced inconsistent
+  result after apply" when updating a source or destination.** Updates are sent
+  with `wait=false`, so the API response reports the transient desired-state
+  `Pending Update` while the plan still carries the prior known status
+  (e.g. `Active`). The provider was overwriting state with that transient value,
+  which Terraform rejected as plan/apply divergence. The Update path now keeps
+  the planned status (it is volatile and refreshed by Read; the backend
+  reconciler settles the connector back to `Active` within seconds).
+- **Boolean connector config fields no longer drift on every apply.** The
+  backend returns connector config as string-encoded values, so booleans arrive
+  as `"true"` / `"false"`. `helper.GetTfCfgBool` only accepted a native Go
+  `bool` and returned null for the string form, so any bool field the backend
+  backfills with a default (e.g. PostgreSQL destination
+  `transforms_mark_columns_as_required_fields_include_all`,
+  `transforms_oversized_records_replace_null_with_default`,
+  `transforms_to_decimal_j_truncate_to_max_precision`,
+  `transforms_to_jsonb_j_convert_all_json`) read back null and showed a
+  perpetual diff. `GetTfCfgBool` now coerces string-encoded booleans, mirroring
+  `GetTfCfgInt64` / `GetTfCfgFloat64`. Fixes the drift for every bool attribute
+  on every connector.
+- **`streamkap_pipeline` `source.topics` is hardened against the issue #78 bug
+  class.** `api2Model` now strips a leading `source_<id>.` prefix from returned
+  source topics (only that exact prefix — never a naive split, so dotted names
+  like `default.MyTable` survive), so state stays stable across plan/apply even
+  if the API echoes the raw `topic_id` form or state was written by an older
+  beta. Note for DynamoDB sources: send source topics in the source's catalog
+  form (e.g. `default.<table>`) so they register as selected in the pipeline.
+
 ## [3.0.0-beta.16] - 2026-05-11 (Pre-release)
 
 ### Changed

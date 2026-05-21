@@ -13,13 +13,25 @@ import (
 )
 
 type Pipeline struct {
-	ID                string               `json:"id,omitempty"`
-	Name              string               `json:"name"`
-	SnapshotNewTables bool                 `json:"snapshot_new_tables"`
-	Source            PipelineSource       `json:"source"`
-	Destination       PipelineDestination  `json:"destination"`
-	Transforms        []*PipelineTransform `json:"transforms"`
-	Tags              []string             `json:"tags"`
+	ID                           string                                `json:"id,omitempty"`
+	Name                         string                                `json:"name"`
+	SnapshotNewTables            bool                                  `json:"snapshot_new_tables"`
+	Source                       PipelineSource                        `json:"source"`
+	Destination                  PipelineDestination                   `json:"destination"`
+	Transforms                   []*PipelineTransform                  `json:"transforms"`
+	TopicAutoDiscoveryTransforms []PipelineTopicAutoDiscoveryTransform `json:"topic_auto_discovery_transforms"`
+	Tags                         []string                              `json:"tags"`
+}
+
+// PipelineTopicAutoDiscoveryTransform lets a pipeline auto-discover a
+// transform's OUTPUT topics by regex. Transform output topic names are
+// generated dynamically (e.g. by a topic-router transform) and are not known
+// at infra time, so they cannot be enumerated in transforms[].topics up front.
+// The backend resolves the regex against live topics server-side and echoes
+// this list back unchanged on GET.
+type PipelineTopicAutoDiscoveryTransform struct {
+	TransformID string `json:"transform_id"`
+	Regex       string `json:"regex"`
 }
 
 type GetPipelineResponse struct {
