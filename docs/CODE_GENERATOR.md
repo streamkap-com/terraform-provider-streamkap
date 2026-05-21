@@ -8,7 +8,7 @@ This document provides comprehensive documentation for the `tfgen` code generato
 - [CLI Usage](#cli-usage)
 - [Type Mapping](#type-mapping)
 - [overrides.json](#overridesjson)
-- [deprecations.json](#deprecationsjson)
+- [Deprecated attribute aliases](#deprecated-attribute-aliases)
 - [Adding a New Connector](#adding-a-new-connector)
 - [Generated Code Structure](#generated-code-structure)
 - [Troubleshooting](#troubleshooting)
@@ -37,7 +37,6 @@ The `tfgen` tool automates Terraform provider schema generation by parsing backe
 ┌──────────────────────────────────────────────────────────────────────┐
 │  cmd/tfgen/generator.go                                              │
 │  - Load overrides from overrides.json                                │
-│  - Load deprecations from deprecations.json                          │
 │  - Apply automatic type conversions (port fields → Int64)            │
 │  - Convert ConfigEntry → FieldData                                   │
 │  - Apply Go template to generate code                                │
@@ -70,7 +69,6 @@ The `tfgen` tool automates Terraform provider schema generation by parsing backe
 | `cmd/tfgen/parser.go` | JSON config parsing, field extraction |
 | `cmd/tfgen/generator.go` | Code generation, templates |
 | `cmd/tfgen/overrides.json` | Custom type overrides for map fields |
-| `cmd/tfgen/deprecations.json` | Deprecated field aliases |
 
 ## CLI Usage
 
@@ -136,7 +134,6 @@ Output: internal/generated
 Entity type: all
 
 Loaded 3 field overrides from cmd/tfgen/overrides.json
-Loaded 10 deprecated field definitions from cmd/tfgen/deprecations.json
 
 Generating source_alloydb.go...
 Generating source_db2.go...
@@ -391,81 +388,23 @@ TopicsConfigMap map[string]clickHouseTopicsConfigMapItemModel `tfsdk:"topics_con
 Supported validator types:
 - `int64_at_least`: Minimum value validator
 
-## deprecations.json
+## Deprecated attribute aliases
 
-The `cmd/tfgen/deprecations.json` file defines deprecated field aliases for backward compatibility.
+tfgen does **not** emit deprecated v2 aliases. They are owned entirely by the
+hand-maintained wrapper files
+(`internal/resource/{source,destination}/<connector>_generated.go`), which embed
+the generated model and add — for each alias — the wrapper struct field, the
+schema attribute (with `DeprecationMessage` and a `ConflictsWith` validator), and
+the field mapping to the same backend field as the new name.
 
-### When to Use Deprecations
+There was previously a parallel `cmd/tfgen/deprecations.json` mechanism that
+emitted deprecated *model fields* into `internal/generated/`. It was removed
+because it duplicated the wrapper declarations (producing duplicate `tfsdk` tags)
+and only covered a stale subset of the connectors that actually have aliases.
 
-Use deprecations when:
-- A field is being renamed but old configs should still work
-- Maintaining backward compatibility during migrations
-- Gradual transition to new field names
-
-### Schema Structure
-
-```json
-{
-  "deprecated_fields": [
-    {
-      "connector": "postgresql",
-      "entity_type": "sources",
-      "deprecated_attr": "insert_static_key_field_1",
-      "new_attr": "transforms_insert_static_key1_static_field",
-      "type": "string"
-    }
-  ]
-}
-```
-
-### Deprecation Fields
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `connector` | Yes | Connector code (e.g., `postgresql`) |
-| `entity_type` | Yes | `sources`, `destinations`, or `transforms` |
-| `deprecated_attr` | Yes | Old/deprecated attribute name |
-| `new_attr` | Yes | New attribute name to map to |
-| `type` | Yes | `string`, `int64`, or `bool` |
-
-### Generated Code
-
-Deprecated fields are added to the Model struct only:
-
-```go
-type SourcePostgresqlModel struct {
-    // ... regular fields ...
-
-    // Deprecated fields - kept for backward compatibility
-    InsertStaticKeyField1 types.String `tfsdk:"insert_static_key_field_1"`
-    // ... more deprecated fields ...
-
-    Timeouts timeouts.Value `tfsdk:"timeouts"`
-}
-```
-
-The schema and field mappings for deprecated fields are added by the wrapper files in `internal/resource/source/` or `internal/resource/destination/`.
-
-### Example: PostgreSQL Deprecations
-
-```json
-[
-  {
-    "connector": "postgresql",
-    "entity_type": "sources",
-    "deprecated_attr": "insert_static_key_field_1",
-    "new_attr": "transforms_insert_static_key1_static_field",
-    "type": "string"
-  },
-  {
-    "connector": "postgresql",
-    "entity_type": "sources",
-    "deprecated_attr": "predicates_istopictoenrich_pattern",
-    "new_attr": "predicates_is_topic_to_enrich_pattern",
-    "type": "string"
-  }
-]
-```
+To add or change a deprecated alias, edit the wrapper file directly — see the
+"Deprecated attribute pattern (v2 → v3 aliases)" section of `CLAUDE.md` for the
+five-step recipe.
 
 ## Adding a New Connector
 
@@ -733,8 +672,11 @@ Generated files include the header:
 
 **Never manually edit generated files.** Instead:
 - Fix the backend `configuration.latest.json`
-- Add entries to `overrides.json` or `deprecations.json`
+- Add entries to `overrides.json`
 - Re-run the generator
+
+(Deprecated v2 aliases are the exception — they live in the hand-maintained
+wrapper files, not in generated code. See "Deprecated attribute aliases" above.)
 
 ## Troubleshooting
 

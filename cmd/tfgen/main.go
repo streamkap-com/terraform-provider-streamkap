@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -92,16 +93,6 @@ func runGenerate(backendPath, output, entityType, connector string) error {
 		fmt.Printf("Loaded %d field overrides from %s\n\n", len(overrides.FieldOverrides), overridesPath)
 	}
 
-	// Load deprecation configuration
-	deprecationsPath := findDeprecationsPath()
-	deprecations, err := LoadDeprecations(deprecationsPath)
-	if err != nil {
-		return fmt.Errorf("failed to load deprecations from %s: %w", deprecationsPath, err)
-	}
-	if len(deprecations.DeprecatedFields) > 0 {
-		fmt.Printf("Loaded %d deprecated field definitions from %s\n\n", len(deprecations.DeprecatedFields), deprecationsPath)
-	}
-
 	// Determine which entity types to process
 	entitiesToProcess := knownEntities
 	if entityType != "all" {
@@ -114,7 +105,7 @@ func runGenerate(backendPath, output, entityType, connector string) error {
 	// Process each entity type
 	var totalGenerated int
 	for _, entity := range entitiesToProcess {
-		count, err := processEntity(backendPath, output, entity, connector, overrides, deprecations)
+		count, err := processEntity(backendPath, output, entity, connector, overrides)
 		if err != nil {
 			return fmt.Errorf("failed to process %s: %w", entity.Type, err)
 		}
@@ -125,46 +116,43 @@ func runGenerate(backendPath, output, entityType, connector string) error {
 	return nil
 }
 
-// findOverridesPath locates the overrides.json file.
-// It searches in the following order:
-// 1. Current working directory
-// 2. Directory containing the executable
-// 3. cmd/tfgen directory (for development)
-func findOverridesPath() string {
-	candidates := []string{
-		"overrides.json",
-		"cmd/tfgen/overrides.json",
+// tfgenSourceDir returns the directory holding the tfgen source files
+// (cmd/tfgen), resolved at compile time via runtime.Caller. This is
+// cwd-independent, which is essential: `go generate ./...` runs the
+// internal/generated/doc.go directive with cwd=internal/generated, where the
+// cwd-relative "cmd/tfgen/overrides.json" candidate does not resolve. Without
+// this, a full regen silently loads ZERO overrides and emits the auto-parsed
+// fallback for every map_string/map_nested field (snowflake
+// auto_qa_dedupe_table_mapping, clickhouse topics_config_map, sqlserveraws
+// snapshot_custom_table_config), producing stale generated files. `go run`
+// keeps the source tree on disk, so the returned path is valid during codegen.
+func tfgenSourceDir() string {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		return ""
 	}
-
-	// Get executable directory
-	if exe, err := os.Executable(); err == nil {
-		candidates = append(candidates, filepath.Join(filepath.Dir(exe), "overrides.json"))
-	}
-
-	for _, path := range candidates {
-		if _, err := os.Stat(path); err == nil {
-			return path
-		}
-	}
-
-	// Default to current directory (LoadOverrides handles missing file gracefully)
-	return "overrides.json"
+	return filepath.Dir(file)
 }
 
-// findDeprecationsPath locates the deprecations.json file.
+// findOverridesPath resolves cmd/tfgen/overrides.json in a cwd-independent way.
 // It searches in the following order:
-// 1. Current working directory
-// 2. Directory containing the executable
-// 3. cmd/tfgen directory (for development)
-func findDeprecationsPath() string {
-	candidates := []string{
-		"deprecations.json",
-		"cmd/tfgen/deprecations.json",
+//  1. The tfgen source directory (cwd-independent — see tfgenSourceDir)
+//  2. Current working directory
+//  3. cmd/tfgen directory (for development)
+//  4. Directory containing the executable
+//
+// The source-dir candidate is tried first so codegen behaves identically
+// whether invoked from the repo root or via `go generate` from
+// internal/generated (where the cwd-relative candidates do not resolve).
+func findOverridesPath() string {
+	const name = "overrides.json"
+	var candidates []string
+	if dir := tfgenSourceDir(); dir != "" {
+		candidates = append(candidates, filepath.Join(dir, name))
 	}
-
-	// Get executable directory
+	candidates = append(candidates, name, filepath.Join("cmd", "tfgen", name))
 	if exe, err := os.Executable(); err == nil {
-		candidates = append(candidates, filepath.Join(filepath.Dir(exe), "deprecations.json"))
+		candidates = append(candidates, filepath.Join(filepath.Dir(exe), name))
 	}
 
 	for _, path := range candidates {
@@ -173,8 +161,8 @@ func findDeprecationsPath() string {
 		}
 	}
 
-	// Default to current directory (LoadDeprecations handles missing file gracefully)
-	return "deprecations.json"
+	// Default to the bare name (LoadOverrides handles a missing file gracefully).
+	return name
 }
 
 // filterEntities returns entities matching the given type filter.
@@ -192,7 +180,7 @@ func filterEntities(entityType string) []EntityConfig {
 }
 
 // processEntity processes all connectors for a given entity type.
-func processEntity(backendPath, output string, entity EntityConfig, specificConnector string, overrides *OverrideConfig, deprecations *DeprecationConfig) (int, error) {
+func processEntity(backendPath, output string, entity EntityConfig, specificConnector string, overrides *OverrideConfig) (int, error) {
 	pluginDir := filepath.Join(backendPath, entity.PluginDir)
 
 	// Check if plugin directory exists
@@ -207,7 +195,7 @@ func processEntity(backendPath, output string, entity EntityConfig, specificConn
 		return 0, fmt.Errorf("failed to read plugin directory %s: %w", pluginDir, err)
 	}
 
-	generator := NewGeneratorWithConfig(output, entity.Type, overrides, deprecations)
+	generator := NewGeneratorWithOverrides(output, entity.Type, overrides)
 	var count int
 
 	for _, entry := range entries {

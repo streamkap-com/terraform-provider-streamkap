@@ -43,10 +43,11 @@ This resource creates and manages a ClickHouse destination for Streamkap data pi
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `false`.
 - `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `ssl` (Boolean) Enable TLS for network connections. Defaults to `true`.
+- `table_name_prefix` (String) Optional prefix prepended to every destination table name (e.g. 'prod_' produces tables like 'prod_customers'). Only letters, digits, and underscores are allowed.
 - `tags` (Set of String) Optional set of tag IDs to apply to this destination. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `tasks_max` (Number) The maximum number of active task. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `topics_config_map` (String) Per topic configuration in JSON format
+- `topics_config_map` (Attributes Map) Per topic configuration in JSON format (see [below for nested schema](#nestedatt--topics_config_map))
 - `transforms_add_string_suffix_fields_include_list` (String) Warning: Should only be used in conjunction with numeric conversion or other conversions. If field remained string after previous conversion, rename to field to <previous-field-name>_str. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_change_topic_name_match_regex` (String) Regular expression for matching topic name parts to use as the destination table (database) or file (file storage) name
 - `transforms_copy_field_copy_field_mapping` (String) Comma-separated list of field mappings e.g. <code>field1:newField1,field2:newField2</code>.
@@ -99,6 +100,14 @@ Optional:
 - `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 - `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
 - `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+
+
+<a id="nestedatt--topics_config_map"></a>
+### Nested Schema for `topics_config_map`
+
+Optional:
+
+- `delete_sql_execute` (String)
 
 ## Import
 

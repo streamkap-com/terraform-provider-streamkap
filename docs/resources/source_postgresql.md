@@ -41,8 +41,9 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 - `column_include_list_toggled` (Boolean) Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to `true`.
 - `database_port` (Number) PostgreSQL Port. For example, 5432. Defaults to `5432`.
 - `database_sslmode` (String) Whether to use an encrypted connection to the PostgreSQL server. Defaults to `require`. Valid values: `require`, `disable`.
-- `heartbeat_data_collection_schema_or_database` (String) The schema containing the 'streamkap_heartbeat' table. This table must be created before enabling heartbeat — see the Streamkap documentation for setup instructions.
-- `heartbeat_enabled` (Boolean) When enabled, the connector sends periodic heartbeat messages to a Kafka topic to track connector liveness. In read-write mode, the connector also periodically writes to the 'streamkap_heartbeat' table in the source database to keep the transaction log active — this table must be created before enabling. See the Streamkap documentation for table setup instructions. Defaults to `true`.
+- `heartbeat_data_collection_schema_or_database` (String) Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.
+- `heartbeat_enabled` (Boolean) When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to `true`.
+- `heartbeat_use_logical_message` (Boolean) Use a logical-message heartbeat instead of a heartbeat table. Runs SELECT pg_logical_emit_message(true, ...) on each beat to keep the replication slot advancing — works on PG14+ primaries with a SELECT-only role and is compatible with read-only mode. No table or write grant required on the source. Defaults to `false`.
 - `include_source_db_name_in_table_name` (Boolean) Changes the format of topics to 'DatabaseName_TopicName'. Defaults to `false`.
 - `insert_static_key_field_1` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key1_static_field' instead.
 - `insert_static_key_field_2` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key2_static_field' instead.
@@ -54,6 +55,7 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 - `insert_static_value_field_2` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_value2_static_field' instead.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
+- `post_processors` (String) Post processors. Valid values: `reselector`.
 - `predicates_is_topic_to_enrich_pattern` (String) Regex pattern to match topics for enrichment. Defaults to `$^`.
 - `predicates_istopictoenrich_pattern` (String, Deprecated) DEPRECATED: Use 'predicates_is_topic_to_enrich_pattern' instead.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
@@ -62,7 +64,7 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 - `slot_name` (String) The name of the replication slot for the connector to use. Defaults to `streamkap_pgoutput_slot`.
 - `snapshot_read_only` (String) When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots. Defaults to `Yes`. Valid values: `Yes`, `No`.
 - `source_regex_support_enabled` (Boolean) Enable regex support. Useful for merging multiple tables into the same output topic. Defaults to `false`.
-- `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
+- `ssh_enabled` (Boolean) <span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server

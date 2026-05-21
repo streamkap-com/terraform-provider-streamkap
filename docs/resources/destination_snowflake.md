@@ -35,7 +35,7 @@ This resource creates and manages a Snowflake destination for Streamkap data pip
 ### Optional
 
 - `apply_dynamic_table_script` (Boolean) Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only). Defaults to `false`.
-- `auto_qa_dedupe_table_mapping` (String) Mapping between the tables that store append-only data and the deduplicated tables. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.
+- `auto_qa_dedupe_table_mapping` (Map of String) Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.
 - `auto_schema_creation` (Boolean, Deprecated) DEPRECATED: Use 'create_schema_auto' instead.
 - `consumer_override_max_poll_records` (Number) The maximum number of records returned in a single call to poll(). Defaults to `10000`.
 - `create_schema_auto` (Boolean) Automatically generates a Snowflake schema if it does not already exist. Defaults to `true`.
