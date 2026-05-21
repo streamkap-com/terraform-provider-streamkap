@@ -184,6 +184,24 @@ The generator applies smart conversions:
 2. **Sensitive fields**: Fields with `encrypt: true` or `control: "password"` are marked `Sensitive: true`
 3. **Set-once fields**: Fields with `set_once: true` get `RequiresReplace()` plan modifier
 
+### Go Field Naming (acronyms)
+
+When converting a Terraform attribute name to a Go field name, common acronyms
+are preserved in uppercase per Go conventions:
+
+| Acronym | Example attribute | Go field name |
+|---------|-------------------|---------------|
+| `ID` | `connector_id` | `ConnectorID` |
+| `SSH` | `ssh_port` | `SSHPort` |
+| `SSL` | `ssl_enabled` | `SSLEnabled` |
+| `SQL` | `delete_sql_execute` | `DeleteSQLExecute` |
+| `DB` | `db_name` | `DBName` |
+| `URL` | `api_url` | `APIURL` |
+| `API` | `api_key` | `APIKey` |
+| `AWS` | `aws_region` | `AWSRegion` |
+| `ARN` | `role_arn` | `RoleARN` |
+| `QA` | `auto_qa_dedupe` | `AutoQADedupe` |
+
 ### Default Value Handling
 
 Defaults are generated based on type:
@@ -276,6 +294,11 @@ Use overrides for:
 | `type` | Yes | `map_string` or `map_nested` |
 | `optional` | Yes | Whether the field is optional |
 | `description` | Yes | Field description |
+
+**Precedence:** when an override's `api_field_name` matches a field in the
+backend config, the override wins and the auto-parsed field is dropped, so the
+attribute is not emitted twice. Map overrides are emitted `Optional` only (never
+`Computed`) — a Go map type cannot hold an unknown value (issue #82).
 
 ### Map String Type
 
