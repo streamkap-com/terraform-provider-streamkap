@@ -48,13 +48,24 @@ func GetTfCfgInt64(ctx context.Context, cfg map[string]any, key string) types.In
 
 func GetTfCfgBool(ctx context.Context, cfg map[string]any, key string) types.Bool {
 	if val, ok := cfg[key]; ok && val != nil {
-		boolVal, ok := val.(bool)
-		if !ok {
-			tflog.Warn(ctx, fmt.Sprintf("GetTfCfgBool: expected bool for key %q, got %T", key, val))
-			return types.BoolNull()
+		if boolVal, ok := val.(bool); ok {
+			return types.BoolValue(boolVal)
 		}
 
-		return types.BoolValue(boolVal)
+		// The backend returns connector config as string-encoded values, so
+		// booleans arrive as "true"/"false". Mirror GetTfCfgInt64/Float64.
+		if strVal, ok := val.(string); ok {
+			boolVal, err := strconv.ParseBool(strVal)
+			if err != nil {
+				tflog.Warn(ctx, fmt.Sprintf("GetTfCfgBool: failed to parse string %q for key %q: %v", strVal, key, err))
+				return types.BoolNull()
+			}
+
+			return types.BoolValue(boolVal)
+		}
+
+		tflog.Warn(ctx, fmt.Sprintf("GetTfCfgBool: expected bool or string for key %q, got %T", key, val))
+		return types.BoolNull()
 	}
 
 	return types.BoolNull()
