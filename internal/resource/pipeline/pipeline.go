@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -39,14 +40,15 @@ type PipelineResource struct {
 
 // PipelineResourceModel describes the res data model.
 type PipelineResourceModel struct {
-	ID                types.String              `tfsdk:"id"`
-	Name              types.String              `tfsdk:"name"`
-	SnapshotNewTables types.Bool                `tfsdk:"snapshot_new_tables"`
-	Source            *PipelineSourceModel      `tfsdk:"source"`
-	Destination       *PipelineDestinationModel `tfsdk:"destination"`
-	Transforms        []*PipelineTransformModel `tfsdk:"transforms"`
-	Tags              types.Set                 `tfsdk:"tags"`
-	Timeouts          timeouts.Value            `tfsdk:"timeouts"`
+	ID                           types.String                       `tfsdk:"id"`
+	Name                         types.String                       `tfsdk:"name"`
+	SnapshotNewTables            types.Bool                         `tfsdk:"snapshot_new_tables"`
+	Source                       *PipelineSourceModel               `tfsdk:"source"`
+	Destination                  *PipelineDestinationModel          `tfsdk:"destination"`
+	Transforms                   []*PipelineTransformModel          `tfsdk:"transforms"`
+	TopicAutoDiscoveryTransforms []*PipelineTopicAutoDiscoveryModel `tfsdk:"topic_auto_discovery_transforms"`
+	Tags                         types.Set                          `tfsdk:"tags"`
+	Timeouts                     timeouts.Value                     `tfsdk:"timeouts"`
 }
 
 type PipelineSourceModel struct {
@@ -67,6 +69,11 @@ type PipelineTransformModel struct {
 	Topics types.Set    `tfsdk:"topics"`
 }
 
+type PipelineTopicAutoDiscoveryModel struct {
+	TransformID types.String `tfsdk:"transform_id"`
+	Regex       types.String `tfsdk:"regex"`
+}
+
 func (r *PipelineResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_pipeline"
 }
@@ -83,6 +90,23 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 
 	defaultEmptyList, diags := types.ListValue(
 		transformsNestedObjectType,
+		[]attr.Value{},
+	)
+
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	autoDiscoveryNestedObjectType := types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"transform_id": types.StringType,
+			"regex":        types.StringType,
+		},
+	}
+
+	defaultEmptyAutoDiscoveryList, diags := types.ListValue(
+		autoDiscoveryNestedObjectType,
 		[]attr.Value{},
 	)
 
@@ -214,6 +238,31 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 					},
 				},
 				Default: listdefault.StaticValue(defaultEmptyList),
+			},
+			"topic_auto_discovery_transforms": schema.ListNestedAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "Optional list of transform topic auto-discovery rules. Each rule lets the pipeline automatically pick up a transform's output topics whose names match a regex, without enumerating them in advance. Use this when a transform produces topics whose names are generated dynamically (e.g. a topic-router transform) and are therefore not known when the pipeline is created. Defaults to an empty list.",
+				MarkdownDescription: "Optional list of transform topic auto-discovery rules. Each rule lets the pipeline automatically pick up a transform's output topics whose names match a regex, without enumerating them in advance.\n\n" +
+					"Use this when a transform produces topics whose names are generated dynamically (e.g. a topic-router transform) and are therefore not known when the pipeline is created. Topic resolution happens server-side; this list is stored and returned unchanged. Defaults to an empty list.\n\n" +
+					"**Nested attributes:**\n" +
+					"- `transform_id` - Transform identifier whose output topics should be auto-discovered\n" +
+					"- `regex` - Regular expression matched against the transform's output topic names",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"transform_id": schema.StringAttribute{
+							Required:            true,
+							Description:         "Transform identifier whose output topics should be auto-discovered. References a transform resource (e.g., streamkap_transform_fan_out).",
+							MarkdownDescription: "Transform identifier whose output topics should be auto-discovered. References a transform resource (e.g., `streamkap_transform_fan_out`).",
+						},
+						"regex": schema.StringAttribute{
+							Required:            true,
+							Description:         "Regular expression matched against the transform's output topic names. Topics produced by the transform whose names match this pattern are added to the pipeline automatically.",
+							MarkdownDescription: "Regular expression matched against the transform's output topic names. Topics produced by the transform whose names match this pattern are added to the pipeline automatically.",
+						},
+					},
+				},
+				Default: listdefault.StaticValue(defaultEmptyAutoDiscoveryList),
 			},
 			"tags": schema.SetAttribute{
 				Optional:            true,
@@ -608,6 +657,16 @@ func (r *PipelineResource) model2API(ctx context.Context, model PipelineResource
 		return nil, fmt.Errorf("error converting model tags: %s", diags)
 	}
 
+	// Always send a non-nil slice so the field marshals to [] rather than null;
+	// the backend treats both as empty but [] keeps the wire format explicit.
+	autoDiscovery := make([]api.PipelineTopicAutoDiscoveryTransform, 0, len(model.TopicAutoDiscoveryTransforms))
+	for _, ad := range model.TopicAutoDiscoveryTransforms {
+		autoDiscovery = append(autoDiscovery, api.PipelineTopicAutoDiscoveryTransform{
+			TransformID: ad.TransformID.ValueString(),
+			Regex:       ad.Regex.ValueString(),
+		})
+	}
+
 	res = &api.Pipeline{
 		Name:              model.Name.ValueString(),
 		SnapshotNewTables: model.SnapshotNewTables.ValueBool(),
@@ -622,11 +681,27 @@ func (r *PipelineResource) model2API(ctx context.Context, model PipelineResource
 			Connector: model.Source.Connector.ValueString(),
 			Topics:    sourceTopics,
 		},
-		Transforms: apiTransforms,
-		Tags:       apiTags,
+		Transforms:                   apiTransforms,
+		TopicAutoDiscoveryTransforms: autoDiscovery,
+		Tags:                         apiTags,
 	}
 
 	return res, nil
+}
+
+// normalizeSourceTopic strips a leading "source_<sourceID>." prefix from a
+// source topic if present. The backend's GET path returns the pretty topic
+// name (via get_pretty_topic_name_from_id, which removes the topic_id's first
+// dot-segment), but create/update responses and state written by older
+// provider versions can carry the raw topic_id form "source_<id>.<name>".
+// Stripping only this exact prefix (never a naive first-segment split, which
+// would corrupt names like "default.MyTable") keeps source.topics stable
+// across plan/apply — the same #78 bug class that bit transforms.topics.
+func normalizeSourceTopic(topic, sourceID string) string {
+	if sourceID == "" {
+		return topic
+	}
+	return strings.TrimPrefix(topic, "source_"+sourceID+".")
 }
 
 func (r *PipelineResource) api2Model(ctx context.Context, apiObject api.Pipeline, model *PipelineResourceModel) error {
@@ -636,7 +711,11 @@ func (r *PipelineResource) api2Model(ctx context.Context, apiObject api.Pipeline
 
 	model.SnapshotNewTables = types.BoolValue(apiObject.SnapshotNewTables)
 
-	sourceTopics, diags := types.SetValue(types.StringType, r.strListToTfStrList(apiObject.Source.Topics))
+	normalizedSourceTopics := make([]string, len(apiObject.Source.Topics))
+	for i, topic := range apiObject.Source.Topics {
+		normalizedSourceTopics[i] = normalizeSourceTopic(topic, apiObject.Source.ID)
+	}
+	sourceTopics, diags := types.SetValue(types.StringType, r.strListToTfStrList(normalizedSourceTopics))
 	if diags.HasError() {
 		return fmt.Errorf("error parsing source topic set: %s", diags)
 	}
@@ -658,6 +737,15 @@ func (r *PipelineResource) api2Model(ctx context.Context, apiObject api.Pipeline
 		return err
 	}
 	model.Transforms = transforms
+
+	autoDiscovery := make([]*PipelineTopicAutoDiscoveryModel, 0, len(apiObject.TopicAutoDiscoveryTransforms))
+	for _, ad := range apiObject.TopicAutoDiscoveryTransforms {
+		autoDiscovery = append(autoDiscovery, &PipelineTopicAutoDiscoveryModel{
+			TransformID: types.StringValue(ad.TransformID),
+			Regex:       types.StringValue(ad.Regex),
+		})
+	}
+	model.TopicAutoDiscoveryTransforms = autoDiscovery
 
 	tags, diags := types.SetValue(types.StringType, r.strListToTfStrList(apiObject.Tags))
 	if diags.HasError() {
