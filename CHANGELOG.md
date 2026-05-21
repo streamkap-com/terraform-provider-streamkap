@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0-beta.17] - 2026-05-21 (Pre-release)
+
 ### Added
 - **`streamkap_pipeline` now supports `topic_auto_discovery_transforms`.** This
   optional list of `{ transform_id, regex }` rules lets a pipeline automatically
