@@ -107,22 +107,34 @@ tfgen generate --backend-path=/path/to/backend --output=internal/generated
 | `--entity-type` | No | `all` | Entity type: `sources`, `destinations`, `transforms`, or `all` |
 | `--connector` | No | - | Specific connector to generate (e.g., `postgresql`) |
 
-### Using go generate
+### Using make generate
 
-The recommended way to run tfgen is via `go generate`:
+The recommended way to run tfgen is via `make generate`:
 
 ```bash
 # Set the backend path
 export STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap
 
-# Run generation
-go generate ./...
+# Run generation (schemas first, then docs)
+make generate
 ```
 
-The `go generate` directive is typically configured in `internal/generated/doc.go`:
+> **Do not run `go generate ./...` directly.** It runs the root `main.go`
+> directive (`tfplugindocs`) *before* the `internal/generated/doc.go` directive
+> (`tfgen`), so the registry docs are rendered against the *previous* schema and
+> lag one regeneration behind. A newly added attribute then lands in
+> `internal/generated/*.go` but is silently missing from its
+> `docs/resources/*.md` page. `make generate` runs `tfgen` first and
+> `tfplugindocs` second, guaranteeing docs match the freshly generated schemas.
+
+The two directives that `make generate` sequences are:
 
 ```go
+// internal/generated/doc.go — schemas/models/mappings (runs first)
 //go:generate go run ../../cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH
+
+// main.go — registry docs, introspected from the built provider (runs second)
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 ```
 
 ### Example Output
@@ -447,8 +459,8 @@ tfgen generate \
   --entity-type=sources \
   --connector=mynewconnector
 
-# Or regenerate all
-go generate ./...
+# Or regenerate all (schemas + docs, in the correct order)
+make generate
 ```
 
 ### Step 2: Create the Wrapper File
@@ -607,7 +619,7 @@ TF_ACC=1 go test -v -run 'TestAccSourceMynewconnector' ./internal/provider/...
 ### Step 7: Update Documentation
 
 1. Add to README.md feature list
-2. Run `go generate ./...` to update docs
+2. Run `make generate` to update schemas and docs
 
 ## Generated Code Structure
 
@@ -751,7 +763,7 @@ When backend configs change significantly:
 ```bash
 # Clean and regenerate
 rm internal/generated/*.go
-go generate ./...
+make generate
 
 # Verify
 go build ./...

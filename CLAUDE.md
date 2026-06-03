@@ -8,8 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 |---|---|
 | `README.md` | User-facing intro, install, basic usage. |
 | `AGENTS.md` | AI-agent guide for *consumers* of the provider — resource catalog, common patterns. |
-| `docs/index.md` | Auto-generated registry landing page (do not hand-edit; regen via `go generate`). |
-| `docs/resources/`, `docs/data-sources/` | Auto-generated per-resource pages (regen via `go generate`). |
+| `docs/index.md` | Auto-generated registry landing page (do not hand-edit; regen via `make generate`). |
+| `docs/resources/`, `docs/data-sources/` | Auto-generated per-resource pages (regen via `make generate`). |
 | `docs/ARCHITECTURE.md` | Layered diagram + CRUD flow + design rationale. |
 | `docs/CODE_GENERATOR.md` | tfgen internals: parser, generator, overrides.json, "adding a new connector" walkthrough. |
 | `docs/MIGRATION.md` | v2 → v3 deprecations, removed attributes, action items for users. |
@@ -23,8 +23,8 @@ When you change something in this list, update the matching doc in the same PR:
 
 | Change | Update |
 |---|---|
-| Add/remove a resource or data source | `AGENTS.md` resource tables, `docs/ARCHITECTURE.md` counts, run `go generate` for `docs/resources/` and `docs/index.md`. |
-| Add a connector via tfgen | run `go generate ./...`; if the override system grew (new `map_string`/`map_nested` case) update `docs/CODE_GENERATOR.md`. |
+| Add/remove a resource or data source | `AGENTS.md` resource tables, `docs/ARCHITECTURE.md` counts, run `make generate` for `docs/resources/` and `docs/index.md`. |
+| Add a connector via tfgen | run `make generate` (not `go generate ./...` — see "Schema regeneration" below); if the override system grew (new `map_string`/`map_nested` case) update `docs/CODE_GENERATOR.md`. |
 | Add a deprecated alias | add a `TestAcc<Connector>_MigrationFromLegacy` case in `internal/provider/migration_test.go` and a row in `docs/MIGRATION.md`. |
 | Plan to remove a deprecated attribute | move it into the "Deprecated Attribute Removal" table in `docs/MIGRATION.md`. |
 | Change tfgen type mapping or special-case rules | update the table in `docs/CODE_GENERATOR.md` and the table in this file. |
@@ -82,7 +82,9 @@ Use `make help` for the full list. Common ones:
 | `make snapshots` | Update schema-compat snapshots after intentional schema changes |
 | `make sweep` | Clean orphaned test resources |
 
-Schema regeneration: `STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap go generate ./...` (or run `cmd/tfgen` directly per-connector with `--entity-type sources --connector postgresql`).
+Schema regeneration: `STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap make generate` (or run `cmd/tfgen` directly per-connector with `--entity-type sources --connector postgresql`).
+
+**Use `make generate`, not `go generate ./...`.** `go generate ./...` runs the root `main.go` directive (`tfplugindocs`) *before* `internal/generated/doc.go` (`tfgen`), so docs render against the previous schema and lag one regen behind — a new field lands in `internal/generated/*.go` but is silently missing from `docs/resources/*.md`. `make generate` runs `tfgen` first, then `tfplugindocs`, so docs always match the freshly generated schemas. After regenerating, sanity-check that a newly added attribute appears in **both** the `.go` schema and its `docs/resources/*.md` page before committing.
 
 `.env` is auto-loaded by tests via godotenv. For Snowflake PEM keys (multiline), `source scripts/load-pem-keys.sh`.
 
@@ -138,7 +140,7 @@ When a bug surfaces in `internal/generated/`:
    - **`cmd/tfgen/overrides.json`** — fields the parser can't synthesize (`map_string`, `map_nested`).
    - **Backend `configuration.latest.json`** — schema is wrong upstream; fix in `python-be-streamkap` and re-export.
    - Note: deprecated v2 aliases are **not** in tfgen. They live entirely in the hand-maintained wrapper files (`internal/resource/{source,destination}/<connector>_generated.go`) — see "Deprecated attribute pattern" below.
-2. Fix at that source, then run `STREAMKAP_BACKEND_PATH=... go generate ./...`.
+2. Fix at that source, then run `STREAMKAP_BACKEND_PATH=... make generate`.
 3. Commit the tfgen change and the regenerated files together so the diff is reviewable in one PR.
 
 Do not patch a generated file as a "quick fix" with the intent to fix tfgen later — the next regen for an unrelated connector will silently revert the patch.

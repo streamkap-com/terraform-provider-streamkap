@@ -4,9 +4,13 @@
 //
 // To regenerate, run:
 //
-//	go generate ./...
+//	make generate
 //
-// Or directly:
+// Use make generate, not `go generate ./...`: the latter runs tfplugindocs
+// (root main.go) before tfgen (this package), so docs render against the
+// previous schema and lag one regen behind. make generate runs tfgen first.
+//
+// Or run tfgen directly (schemas only, no docs):
 //
 //	go run cmd/tfgen/main.go generate --backend-path=/path/to/python-be-streamkap
 package generated
