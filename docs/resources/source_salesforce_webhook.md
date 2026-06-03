@@ -27,7 +27,9 @@ This resource creates and manages a Salesforce CDC source for Streamkap data pip
 
 ### Optional
 
-- `api_key` (String) API Key for webhook authentication. Generated after source is created.
+- `api_key` (String, Sensitive) API Key for webhook authentication. Generated after source is created.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `camel_source_cdc_enabled` (Boolean) Enable native Salesforce CDC subscription. When enabled, the connector subscribes directly to Salesforce change events without needing Apex triggers. Defaults to `true`.
 - `camel_source_dlq_enabled` (Boolean) Enable dead letter queue for failed records. Defaults to `true`.
 - `camel_source_payload_router_flatten_detail` (Boolean) Flatten nested record fields to top-level. Recommended for most destinations. Defaults to `true`.

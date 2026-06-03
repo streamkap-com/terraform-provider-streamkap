@@ -41,6 +41,10 @@ type DestinationPostgresqlModel struct {
 	PrimaryKeyMode                                   types.String   `tfsdk:"primary_key_mode"`
 	PrimaryKeyFields                                 types.String   `tfsdk:"primary_key_fields"`
 	TasksMax                                         types.Int64    `tfsdk:"tasks_max"`
+	TransformsTopicRegexRouter1Regex                 types.String   `tfsdk:"transforms_topic_regex_router1_regex"`
+	TransformsTopicRegexRouter1Replacement           types.String   `tfsdk:"transforms_topic_regex_router1_replacement"`
+	TransformsTopicRegexRouter2Regex                 types.String   `tfsdk:"transforms_topic_regex_router2_regex"`
+	TransformsTopicRegexRouter2Replacement           types.String   `tfsdk:"transforms_topic_regex_router2_replacement"`
 	Topic2tableMap                                   types.Bool     `tfsdk:"topic2table_map"`
 	TransformsChangeTopicNameMatchRegex              types.String   `tfsdk:"transforms_change_topic_name_match_regex"`
 	TransformsChangeTopicNameMapping                 types.String   `tfsdk:"transforms_change_topic_name_mapping"`
@@ -250,6 +254,38 @@ func DestinationPostgresqlSchema() schema.Schema {
 				Validators: []validator.Int64{
 					int64validator.Between(1, 10),
 				},
+			},
+			"transforms_topic_regex_router1_regex": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Rename destination tables using a regex pattern. The regex is matched against the full topic name — use capture groups to extract parts. Example: <code>.*\\.(.*)</code> extracts the table name from <code>source_123.public.orders</code>. Leave empty to skip.",
+				MarkdownDescription: "Rename destination tables using a regex pattern. The regex is matched against the full topic name — use capture groups to extract parts. Example: <code>.*\\.(.*)</code> extracts the table name from <code>source_123.public.orders</code>. Leave empty to skip.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_topic_regex_router1_replacement": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The replacement value for the matched regex. Use <code>$1</code>, <code>$2</code> etc. to reference capture groups from the pattern. Example: <code>$1</code> with the pattern above produces <code>orders</code>. Defaults to \"$0\".",
+				MarkdownDescription: "The replacement value for the matched regex. Use <code>$1</code>, <code>$2</code> etc. to reference capture groups from the pattern. Example: <code>$1</code> with the pattern above produces <code>orders</code>. Defaults to `$0`.",
+				Default:             stringdefault.StaticString("$0"),
+			},
+			"transforms_topic_regex_router2_regex": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Optional second rename rule, applied after the first. Use when a single regex is not enough. Leave empty to skip.",
+				MarkdownDescription: "Optional second rename rule, applied after the first. Use when a single regex is not enough. Leave empty to skip.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_topic_regex_router2_replacement": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The replacement value for the second rename rule. Use <code>$1</code>, <code>$2</code> etc. to reference capture groups. Defaults to \"$0\".",
+				MarkdownDescription: "The replacement value for the second rename rule. Use <code>$1</code>, <code>$2</code> etc. to reference capture groups. Defaults to `$0`.",
+				Default:             stringdefault.StaticString("$0"),
 			},
 			"topic2table_map": schema.BoolAttribute{
 				Optional:            true,
@@ -564,23 +600,27 @@ func DestinationPostgresqlSchema() schema.Schema {
 
 // DestinationPostgresqlFieldMappings maps Terraform attribute names to API field names.
 var DestinationPostgresqlFieldMappings = map[string]string{
-	"database_hostname":   "database.hostname.user.defined",
-	"database_port":       "database.port.user.defined",
-	"database_database":   "database.database.user.defined",
-	"connection_username": "connection.username",
-	"connection_password": "connection.password",
-	"ssh_enabled":         "ssh.enabled",
-	"ssh_host":            "ssh.host",
-	"ssh_port":            "ssh.port",
-	"ssh_user":            "ssh.user",
-	"table_name_prefix":   "table.name.prefix",
-	"schema_evolution":    "schema.evolution",
-	"insert_mode":         "insert.mode",
-	"delete_enabled":      "delete.enabled",
-	"primary_key_mode":    "primary.key.mode.user.defined",
-	"primary_key_fields":  "primary.key.fields",
-	"tasks_max":           "tasks.max",
-	"topic2table_map":     "topic2table.map.user.defined",
+	"database_hostname":                    "database.hostname.user.defined",
+	"database_port":                        "database.port.user.defined",
+	"database_database":                    "database.database.user.defined",
+	"connection_username":                  "connection.username",
+	"connection_password":                  "connection.password",
+	"ssh_enabled":                          "ssh.enabled",
+	"ssh_host":                             "ssh.host",
+	"ssh_port":                             "ssh.port",
+	"ssh_user":                             "ssh.user",
+	"table_name_prefix":                    "table.name.prefix",
+	"schema_evolution":                     "schema.evolution",
+	"insert_mode":                          "insert.mode",
+	"delete_enabled":                       "delete.enabled",
+	"primary_key_mode":                     "primary.key.mode.user.defined",
+	"primary_key_fields":                   "primary.key.fields",
+	"tasks_max":                            "tasks.max",
+	"transforms_topic_regex_router1_regex": "transforms.TopicRegexRouter1.regex",
+	"transforms_topic_regex_router1_replacement":              "transforms.TopicRegexRouter1.replacement",
+	"transforms_topic_regex_router2_regex":                    "transforms.TopicRegexRouter2.regex",
+	"transforms_topic_regex_router2_replacement":              "transforms.TopicRegexRouter2.replacement",
+	"topic2table_map":                                         "topic2table.map.user.defined",
 	"transforms_change_topic_name_match_regex":                "transforms.changeTopicName.match.regex.user.defined",
 	"transforms_change_topic_name_mapping":                    "transforms.changeTopicName.mapping",
 	"ssh_public_key":                                          "ssh.public.key.user.displayed",
