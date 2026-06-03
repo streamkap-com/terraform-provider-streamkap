@@ -41,19 +41,18 @@ This resource creates and manages a Supabase source for Streamkap data pipelines
 - `column_include_list_toggled` (Boolean) Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to `true`.
 - `database_port` (Number) PostgreSQL Port. For example, 5432. Defaults to `5432`.
 - `database_sslmode` (String) Whether to use an encrypted connection to the PostgreSQL server. Defaults to `require`. Valid values: `require`, `disable`.
-- `heartbeat_data_collection_schema_or_database` (String) Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.
-- `heartbeat_enabled` (Boolean) When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to `true`.
+- `heartbeat_data_collection_schema_or_database` (String) The schema containing the 'streamkap_heartbeat' table. This table must be created before enabling heartbeat — see the Streamkap documentation for setup instructions.
+- `heartbeat_enabled` (Boolean) When enabled, the connector sends periodic heartbeat messages to a Kafka topic to track connector liveness. In read-write mode, the connector also periodically writes to the 'streamkap_heartbeat' table in the source database to keep the transaction log active — this table must be created before enabling. See the Streamkap documentation for table setup instructions. Defaults to `true`.
 - `include_source_db_name_in_table_name` (Boolean) Changes the format of topics to 'DatabaseName_TopicName'. Defaults to `false`.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
-- `post_processors` (String) Post processors. Valid values: `reselector`.
 - `predicates_is_topic_to_enrich_pattern` (String) Regex pattern to match topics for enrichment. Defaults to `$^`.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `publication_name` (String) The name of the publication for the connector to use. Defaults to `streamkap_pub`.
 - `signal_data_collection_schema_or_database` (String) Full path to the signal table including schema and table name (e.g., 'public.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.
 - `slot_name` (String) The name of the replication slot for the connector to use. Defaults to `streamkap_pgoutput_slot`.
 - `snapshot_read_only` (String) When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots. Defaults to `Yes`. Valid values: `Yes`, `No`.
-- `ssh_enabled` (Boolean) <span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.
+- `ssh_enabled` (Boolean) Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server

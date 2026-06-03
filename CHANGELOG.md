@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`streamkap_destination_postgresql` now exposes the `TopicRegexRouter`
+  transforms.** Four optional attributes let you rename destination tables by
+  applying up to two regex-based rewrite rules to the incoming topic name:
+  `transforms_topic_regex_router1_regex` / `transforms_topic_regex_router1_replacement`
+  and `transforms_topic_regex_router2_regex` / `transforms_topic_regex_router2_replacement`.
+  Both replacement fields default to `$0` (the full match); leave a regex empty
+  to skip that rule.
+
+### Fixed
+- **Regenerated provider docs to match the committed schemas.** Several
+  `docs/resources/*.md` pages had drifted ahead of the generated Go schemas
+  (showing `post_processors`, `heartbeat_use_logical_message`,
+  ClickHouse `table_name_prefix`, and richer heartbeat/SSH descriptions that
+  only exist on backend feature branches, not production). The docs now reflect
+  the schemas the provider actually ships. No schema change.
+
 ## [3.0.0-beta.17] - 2026-05-21 (Pre-release)
 
 ### Added
