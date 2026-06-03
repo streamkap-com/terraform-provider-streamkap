@@ -91,6 +91,10 @@ Example:
 - `transforms_to_jsonb_j_convert_all_json` (Boolean) Converts all JSON String column(s) to Binary JSON - if possible. Defaults to `false`.
 - `transforms_to_jsonb_j_fields_include_list` (String) Convert column(s) to Binary JSON - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_to_string_j_fields_include_list` (String) Convert column(s) to String - if possible. Comma separated list of table columns in format 'table1.column1,table2.column2'
+- `transforms_topic_regex_router1_regex` (String) Rename destination tables using a regex pattern. The regex is matched against the full topic name — use capture groups to extract parts. Example: <code>.*\.(.*)</code> extracts the table name from <code>source_123.public.orders</code>. Leave empty to skip.
+- `transforms_topic_regex_router1_replacement` (String) The replacement value for the matched regex. Use <code>$1</code>, <code>$2</code> etc. to reference capture groups from the pattern. Example: <code>$1</code> with the pattern above produces <code>orders</code>. Defaults to `$0`.
+- `transforms_topic_regex_router2_regex` (String) Optional second rename rule, applied after the first. Use when a single regex is not enough. Leave empty to skip.
+- `transforms_topic_regex_router2_replacement` (String) The replacement value for the second rename rule. Use <code>$1</code>, <code>$2</code> etc. to reference capture groups. Defaults to `$0`.
 
 ### Read-Only
 

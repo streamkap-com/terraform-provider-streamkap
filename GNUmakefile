@@ -13,10 +13,14 @@ build:
 install:
 	go install .
 
-# Generate documentation
+# Generate schemas (tfgen) then docs (tfplugindocs).
+# Order matters: tfplugindocs introspects the built provider, so the schemas must
+# be regenerated first. `go generate ./...` alone runs the root main.go directives
+# (tfplugindocs) before internal/generated (tfgen), rendering docs one regen behind.
 .PHONY: generate
 generate:
-	go generate ./...
+	go generate ./internal/generated/...
+	go generate main.go
 
 # Run unit tests (fast, no API needed)
 .PHONY: test

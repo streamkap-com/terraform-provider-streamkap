@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0-beta.19] - 2026-06-03 (Pre-release)
+
+### Fixed
+- **`streamkap_destination_postgresql` docs now list the `TopicRegexRouter`
+  attributes.** The schema fields shipped in beta.18, but their registry
+  documentation was missing because `go generate ./...` ran `tfplugindocs`
+  (root `main.go`) before `tfgen` (`internal/generated`), rendering docs against
+  the pre-regen schema. The `make generate` target now runs `tfgen` first, then
+  `tfplugindocs`, so docs always match the freshly generated schemas.
+
 ## [3.0.0-beta.18] - 2026-06-03 (Pre-release)
 
 ### Added
