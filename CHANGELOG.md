@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0-beta.18] - 2026-06-03 (Pre-release)
+
 ### Added
 - **`streamkap_destination_postgresql` now exposes the `TopicRegexRouter`
   transforms.** Four optional attributes let you rename destination tables by
