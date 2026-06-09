@@ -31,7 +31,7 @@ This resource creates and manages a Databricks destination for Streamkap data pi
 
 ### Optional
 
-- `connection_timeout` (Number) Connection Timeout. Defaults to `0`.
+- `connection_timeout` (Number) Connection Timeout. Defaults to `180`.
 - `consumer_wait_time_for_larger_batch_ms` (String) Controls how long the connector waits to accumulate a larger batch before writing to Databricks. Higher values = larger batches = better throughput and fewer MERGE INTOs, but higher latency. Defaults to `10000`. Valid values: `500`, `5000`, `10000`, `20000`, `30000`, `60000`, `120000`, `180000`, `240000`, `300000`.
 - `databricks_catalog` (String) The name of the Databricks catalog to use. Defaults to `hive_metastore`.
 - `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. Defaults to `false`.

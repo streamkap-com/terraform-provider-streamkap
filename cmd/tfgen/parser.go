@@ -266,6 +266,9 @@ func (e *ConfigEntry) GetDefaultString() string {
 }
 
 // GetDefaultInt64 returns the default value as int64, or 0 if not set or not a number.
+// The backend stores number/slider-control defaults as strings (e.g. "180000"), so the
+// string case is parsed rather than treated as unset — otherwise such fields would emit
+// a bogus StaticInt64(0) default.
 func (e *ConfigEntry) GetDefaultInt64() int64 {
 	if e.Value.Default == nil {
 		return 0
@@ -277,27 +280,7 @@ func (e *ConfigEntry) GetDefaultInt64() int64 {
 		return v
 	case int:
 		return int64(v)
-	default:
-		return 0
-	}
-}
-
-// GetDefaultInt64FromString returns the default value as int64, parsing from string if necessary.
-// This is useful for fields like ports where the backend stores the value as a string but
-// we want to use Int64 in Terraform for better UX.
-func (e *ConfigEntry) GetDefaultInt64FromString() int64 {
-	if e.Value.Default == nil {
-		return 0
-	}
-	switch v := e.Value.Default.(type) {
-	case float64:
-		return int64(v)
-	case int64:
-		return v
-	case int:
-		return int64(v)
 	case string:
-		// Parse string as int64
 		if val, err := strconv.ParseInt(v, 10, 64); err == nil {
 			return val
 		}
@@ -305,6 +288,20 @@ func (e *ConfigEntry) GetDefaultInt64FromString() int64 {
 	default:
 		return 0
 	}
+}
+
+// Int64DefaultIsUnparseableString reports whether the default is a non-empty
+// string that does not parse as an int64. Such a default silently collapses to
+// 0 via GetDefaultInt64, so callers emitting an Int64 default should surface it
+// rather than ship a wrong 0 (the class of bug behind the poll.timeout.ms
+// regression).
+func (e *ConfigEntry) Int64DefaultIsUnparseableString() bool {
+	s, ok := e.Value.Default.(string)
+	if !ok || s == "" {
+		return false
+	}
+	_, err := strconv.ParseInt(s, 10, 64)
+	return err != nil
 }
 
 // GetDefaultBool returns the default value as bool, or false if not set or not a boolean.

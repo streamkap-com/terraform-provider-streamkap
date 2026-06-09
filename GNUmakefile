@@ -88,10 +88,16 @@ cassettes:
 snapshots:
 	UPDATE_SNAPSHOTS=1 go test -v -run 'TestSchemaBackwardsCompatibility' ./internal/provider/...
 
-# Run test sweepers to clean up orphaned resources
+# Run test sweepers to clean up orphaned resources.
+# Sweepers live behind the `sweep` build tag and use the Terraform sweep
+# framework, so they only run with `-tags sweep` and the `-sweep` flag — not via
+# `-run`. `-sweep` is a test-binary flag, so it must come AFTER the package path
+# or `go test` misparses it and runs nothing. SWEEP_REGION is passed through but
+# ignored by the sweep funcs, so any non-empty value works.
+SWEEP_REGION ?= all
 .PHONY: sweep
 sweep:
-	go test -v -run 'TestSweep' ./internal/provider/...
+	go test -v -tags sweep -timeout 30m ./internal/provider/... -sweep=$(SWEEP_REGION)
 
 # Validate example files
 .PHONY: validate-examples
