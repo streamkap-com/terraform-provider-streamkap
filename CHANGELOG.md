@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0-beta.20] - 2026-06-09 (Pre-release)
+
 ### Fixed
 - **Numeric defaults stored as strings in the backend schema are now emitted
   correctly instead of `0`.** tfgen read `number`/`slider`-control defaults via
