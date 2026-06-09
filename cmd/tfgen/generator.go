@@ -1019,7 +1019,7 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 			field.MarkdownDescription = ensureTrailingPeriod(field.MarkdownDescription)
 			if forceInt64 {
 				// Port fields: parse string default as int64
-				defaultVal := entry.GetDefaultInt64FromString()
+				defaultVal := entry.GetDefaultInt64()
 				field.Description = field.Description + fmt.Sprintf(" Defaults to %d.", defaultVal)
 				field.MarkdownDescription = field.MarkdownDescription + fmt.Sprintf(" Defaults to `%d`.", defaultVal)
 			} else {
@@ -1104,18 +1104,29 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 // If forceInt64 is true, treats the default as int64 even if backend stores it as string.
 func (g *Generator) defaultFunc(entry *ConfigEntry, forceInt64 bool) string {
 	if forceInt64 {
-		return fmt.Sprintf("int64default.StaticInt64(%d)", entry.GetDefaultInt64FromString())
+		return g.int64DefaultFunc(entry)
 	}
 	switch entry.TerraformType() {
 	case TerraformTypeString:
 		return fmt.Sprintf("stringdefault.StaticString(%q)", entry.GetDefaultString())
 	case TerraformTypeInt64:
-		return fmt.Sprintf("int64default.StaticInt64(%d)", entry.GetDefaultInt64())
+		return g.int64DefaultFunc(entry)
 	case TerraformTypeBool:
 		return fmt.Sprintf("booldefault.StaticBool(%t)", entry.GetDefaultBool())
 	default:
 		return ""
 	}
+}
+
+// int64DefaultFunc emits an Int64 default. The backend stores number/slider
+// defaults as strings, which GetDefaultInt64 parses; a non-numeric string would
+// silently collapse to 0 and ship a wrong default, so warn at generation time
+// instead of failing quietly.
+func (g *Generator) int64DefaultFunc(entry *ConfigEntry) string {
+	if entry.Int64DefaultIsUnparseableString() {
+		fmt.Printf("Warning: %s has non-numeric default %q for an Int64 field; emitting 0\n", entry.Name, entry.GetDefaultString())
+	}
+	return fmt.Sprintf("int64default.StaticInt64(%d)", entry.GetDefaultInt64())
 }
 
 // oneOfValidator generates a OneOf validator for select fields.

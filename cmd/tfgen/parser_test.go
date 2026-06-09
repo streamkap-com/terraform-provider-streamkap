@@ -354,6 +354,21 @@ func TestGetDefault(t *testing.T) {
 			name:         "string default",
 			defaultValue: "5432",
 			expectedStr:  "5432",
+			expectedInt:  5432, // number-control defaults are stored as strings in the backend
+			hasDefault:   true,
+		},
+		{
+			name:         "non-numeric string default falls back to 0",
+			defaultValue: "auto",
+			expectedStr:  "auto",
+			expectedInt:  0,
+			hasDefault:   true,
+		},
+		{
+			name:         "empty string default falls back to 0",
+			defaultValue: "",
+			expectedStr:  "",
+			expectedInt:  0,
 			hasDefault:   true,
 		},
 		{
@@ -403,6 +418,29 @@ func TestGetDefault(t *testing.T) {
 
 			if entry.GetDefaultBool() != tt.expectedBool {
 				t.Errorf("GetDefaultBool() = %v, want %v", entry.GetDefaultBool(), tt.expectedBool)
+			}
+		})
+	}
+}
+
+func TestInt64DefaultIsUnparseableString(t *testing.T) {
+	tests := []struct {
+		name         string
+		defaultValue any
+		want         bool
+	}{
+		{name: "numeric string", defaultValue: "180000", want: false},
+		{name: "non-numeric string", defaultValue: "auto", want: true},
+		{name: "empty string", defaultValue: "", want: false},
+		{name: "json number", defaultValue: float64(10), want: false},
+		{name: "nil", defaultValue: nil, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			entry := ConfigEntry{Value: ValueObject{Default: tt.defaultValue}}
+			if got := entry.Int64DefaultIsUnparseableString(); got != tt.want {
+				t.Errorf("Int64DefaultIsUnparseableString() = %v, want %v", got, tt.want)
 			}
 		})
 	}

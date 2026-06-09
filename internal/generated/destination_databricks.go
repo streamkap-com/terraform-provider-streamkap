@@ -149,9 +149,9 @@ func DestinationDatabricksSchema() schema.Schema {
 			"connection_timeout": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Connection Timeout. Defaults to 0.",
-				MarkdownDescription: "Connection Timeout. Defaults to `0`.",
-				Default:             int64default.StaticInt64(0),
+				Description:         "Connection Timeout. Defaults to 180.",
+				MarkdownDescription: "Connection Timeout. Defaults to `180`.",
+				Default:             int64default.StaticInt64(180),
 			},
 			"databricks_catalog": schema.StringAttribute{
 				Optional:            true,

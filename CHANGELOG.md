@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Numeric defaults stored as strings in the backend schema are now emitted
+  correctly instead of `0`.** tfgen read `number`/`slider`-control defaults via
+  a getter that only handled JSON numbers, so fields whose backend default is a
+  string (e.g. `"180000"`) fell through to `0`. With `Optional + Computed +
+  Default`, omitting such a field made Terraform send `0` to the API, overriding
+  the backend's intended default. Affected attributes and their corrected
+  defaults: `streamkap_source_dynamodb` `poll_timeout_ms` (`0` → `180000`),
+  `signal_kafka_poll_timeout_ms` (`0` → `1000`), `incremental_snapshot_chunk_size`
+  (`0` → `32768`), `incremental_snapshot_max_threads` (`0` → `8`),
+  `full_export_expiration_time_ms` (`0` → `86400000`); and
+  `streamkap_destination_databricks` `connection_timeout` (`0` → `180`).
+  Resources that left these unset will show a one-time plan diff aligning them
+  to the correct default.
+
 ## [3.0.0-beta.19] - 2026-06-03 (Pre-release)
 
 ### Fixed
