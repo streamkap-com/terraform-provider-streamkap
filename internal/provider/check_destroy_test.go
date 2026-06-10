@@ -5,10 +5,40 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 )
+
+// Deletes on /sources, /destinations, /pipelines use &wait=false, so the
+// backend removes resources asynchronously. A single GET immediately after
+// Terraform's delete can still see the record, which made CheckDestroy flaky
+// (e.g. "streamkap_source_dynamodb <id> still exists"). Poll for a bounded
+// window instead of checking once.
+const (
+	destroyPollTimeout  = 90 * time.Second
+	destroyPollInterval = 3 * time.Second
+)
+
+// waitForDestroyed polls fetch until it reports the resource is gone or the
+// timeout elapses. fetch returns gone=true when the resource no longer exists;
+// an error from fetch (e.g. a 404 once deletion completes) is treated as gone,
+// matching the previous "err means not-still-exists" semantics. Returns a
+// dangling-resource error only if the resource is still present at the deadline.
+func waitForDestroyed(label string, fetch func() (gone bool, err error)) error {
+	deadline := time.Now().Add(destroyPollTimeout)
+	for {
+		gone, err := fetch()
+		if err != nil || gone {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("%s still exists after %s", label, destroyPollTimeout)
+		}
+		time.Sleep(destroyPollInterval)
+	}
+}
 
 // testAccCheckDestroyClient creates an API client for CheckDestroy verification.
 // Returns an error if required environment variables are not set.
@@ -50,9 +80,12 @@ func testAccCheckSourceDestroy(s *terraform.State) error {
 			continue
 		}
 
-		source, err := client.GetSource(ctx, rs.Primary.ID)
-		if err == nil && source != nil {
-			return fmt.Errorf("%s %s still exists", rs.Type, rs.Primary.ID)
+		id := rs.Primary.ID
+		if err := waitForDestroyed(fmt.Sprintf("%s %s", rs.Type, id), func() (bool, error) {
+			source, err := client.GetSource(ctx, id)
+			return source == nil, err
+		}); err != nil {
+			return err
 		}
 	}
 
@@ -74,9 +107,12 @@ func testAccCheckDestinationDestroy(s *terraform.State) error {
 			continue
 		}
 
-		destination, err := client.GetDestination(ctx, rs.Primary.ID)
-		if err == nil && destination != nil {
-			return fmt.Errorf("%s %s still exists", rs.Type, rs.Primary.ID)
+		id := rs.Primary.ID
+		if err := waitForDestroyed(fmt.Sprintf("%s %s", rs.Type, id), func() (bool, error) {
+			destination, err := client.GetDestination(ctx, id)
+			return destination == nil, err
+		}); err != nil {
+			return err
 		}
 	}
 
@@ -98,9 +134,12 @@ func testAccCheckTransformDestroy(s *terraform.State) error {
 			continue
 		}
 
-		transform, err := client.GetTransform(ctx, rs.Primary.ID)
-		if err == nil && transform != nil {
-			return fmt.Errorf("%s %s still exists", rs.Type, rs.Primary.ID)
+		id := rs.Primary.ID
+		if err := waitForDestroyed(fmt.Sprintf("%s %s", rs.Type, id), func() (bool, error) {
+			transform, err := client.GetTransform(ctx, id)
+			return transform == nil, err
+		}); err != nil {
+			return err
 		}
 	}
 
@@ -122,9 +161,12 @@ func testAccCheckPipelineDestroy(s *terraform.State) error {
 			continue
 		}
 
-		pipeline, err := client.GetPipeline(ctx, rs.Primary.ID)
-		if err == nil && pipeline != nil {
-			return fmt.Errorf("pipeline %s still exists", rs.Primary.ID)
+		id := rs.Primary.ID
+		if err := waitForDestroyed(fmt.Sprintf("pipeline %s", id), func() (bool, error) {
+			pipeline, err := client.GetPipeline(ctx, id)
+			return pipeline == nil, err
+		}); err != nil {
+			return err
 		}
 	}
 
@@ -146,9 +188,12 @@ func testAccCheckTopicDestroy(s *terraform.State) error {
 			continue
 		}
 
-		topic, err := client.GetTopic(ctx, rs.Primary.ID)
-		if err == nil && topic != nil {
-			return fmt.Errorf("topic %s still exists", rs.Primary.ID)
+		id := rs.Primary.ID
+		if err := waitForDestroyed(fmt.Sprintf("topic %s", id), func() (bool, error) {
+			topic, err := client.GetTopic(ctx, id)
+			return topic == nil, err
+		}); err != nil {
+			return err
 		}
 	}
 
@@ -172,9 +217,12 @@ func testAccCheckTagDestroy(s *terraform.State) error {
 			continue
 		}
 
-		tag, err := client.GetTag(ctx, rs.Primary.ID)
-		if err == nil && tag != nil {
-			return fmt.Errorf("tag %s still exists", rs.Primary.ID)
+		id := rs.Primary.ID
+		if err := waitForDestroyed(fmt.Sprintf("tag %s", id), func() (bool, error) {
+			tag, err := client.GetTag(ctx, id)
+			return tag == nil, err
+		}); err != nil {
+			return err
 		}
 	}
 

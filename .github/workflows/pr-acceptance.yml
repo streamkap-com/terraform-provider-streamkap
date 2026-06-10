@@ -1,0 +1,155 @@
+# PR acceptance tests — runs a curated set of TestAcc cases on pull requests.
+#
+# Which tests run:
+#   The set is defined in scripts/acceptance-tests.txt and compiled into a
+#   `go test -run` regex by scripts/acceptance-run-pattern.sh (shared with
+#   scripts/ci-local-acceptance.sh so the two can't drift). To add/remove a
+#   connector from the run, edit scripts/acceptance-tests.txt.
+#
+# How "only the connectors we have credentials for" works:
+#   Every TestAcc<Connector> test self-skips (t.Skip) when its TF_VAR_* env vars
+#   are unset. We pull a single env.json blob from 1Password (a flat JSON map of all
+#   credentials we currently have) and fan it out into the job environment — so a
+#   curated test whose credentials are absent still skips itself rather than failing.
+#   To enable a new connector: add its TestAcc name to scripts/acceptance-tests.txt
+#   AND its keys to env.json in 1Password.
+#
+# Credentials come from 1Password via a Service Account token (the 1Password API),
+# read by the official load-secrets-action. Store the token as the GitHub
+# repo/environment secret OP_SERVICE_ACCOUNT_TOKEN, and store env.json as one
+# multiline text field on one vault item.
+name: PR Acceptance Tests
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: read
+
+# One acceptance run per PR; a new push cancels the in-flight run. Acceptance hits
+# the real API and creates resources, so we also serialize via the environment.
+concurrency:
+  group: pr-acceptance-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  acceptance:
+    name: Acceptance (credentialed connectors)
+    runs-on: ubuntu-latest
+    # Secrets are only available to PRs from the same repo — fork PRs cannot read
+    # OP_SERVICE_ACCOUNT_TOKEN, so skip rather than fail. The `staging` environment
+    # serializes runs (set it to require 1 concurrent deployment) and can gate on
+    # reviewer approval before secrets are exposed.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    environment: staging
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: '1.11.*'
+          terraform_wrapper: false # Required for the Go acceptance tests
+
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
+
+      # Fetch the single env.json blob from 1Password. It is stored as one multiline
+      # text field on one item, and holds a flat JSON object of ALL credentials we have:
+      #   {
+      #     "STREAMKAP_CLIENT_ID": "...",
+      #     "STREAMKAP_SECRET": "...",
+      #     "STREAMKAP_HOST": "https://api.streamkap.com",
+      #     "TF_VAR_source_postgresql_hostname": "...",
+      #     "TF_VAR_destination_snowflake_private_key": "-----BEGIN ...-----\n...",   // multiline OK
+      #     ...only the connectors we actually have credentials for...
+      #   }
+      # load-secrets-action pulls just this one field into $STREAMKAP_ENV_JSON; the next
+      # step fans it out into the environment. Connectors absent from the JSON have no
+      # TF_VAR_* set, so their TestAcc cases self-skip.
+      - name: Load env.json from 1Password
+        uses: 1password/load-secrets-action@581a835fb51b8e7ec56b71cf2ffddd7e68bb25e0 # v2.0.0
+        with:
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          # Adjust vault / item / field to match where you stored env.json.
+          STREAMKAP_ENV_JSON: op://Streamkap-CI/ci-acceptance-env/env_json
+
+      - name: Export credentials into the job environment
+        run: |
+          set -euo pipefail
+          # $STREAMKAP_ENV_JSON was exported by the previous step (export-env: true).
+          if [ -z "${STREAMKAP_ENV_JSON:-}" ]; then
+            echo "STREAMKAP_ENV_JSON is empty — check the op:// reference and the vault item." >&2
+            exit 1
+          fi
+          printf '%s' "$STREAMKAP_ENV_JSON" | jq -e 'type == "object"' >/dev/null \
+            || { echo "env.json must be a flat JSON object of {\"VAR\": \"value\"}." >&2; exit 1; }
+
+          # Fan out each key into $GITHUB_ENV. Values may be multiline (e.g. Snowflake PEM
+          # keys), so use the heredoc form of $GITHUB_ENV and mask every value line.
+          # printf (not echo) avoids shells that interpret backslash escapes in the JSON.
+          while IFS= read -r key; do
+            value="$(printf '%s' "$STREAMKAP_ENV_JSON" | jq -r --arg k "$key" '.[$k]')"
+            while IFS= read -r line; do
+              [ -n "$line" ] && echo "::add-mask::$line"
+            done <<< "$value"
+            delim="EOF_$(printf '%s' "$key" | tr -c 'A-Za-z0-9' '_')"
+            {
+              echo "${key}<<${delim}"
+              printf '%s\n' "$value"
+              echo "${delim}"
+            } >> "$GITHUB_ENV"
+          done < <(printf '%s' "$STREAMKAP_ENV_JSON" | jq -r 'keys[]')
+
+          count="$(printf '%s' "$STREAMKAP_ENV_JSON" | jq -r 'keys | length')"
+          echo "Exported $count credential variables from env.json."
+
+      - name: Run acceptance tests (curated set; uncredentialed connectors self-skip)
+        env:
+          TF_ACC: '1'
+        run: |
+          PATTERN="$(scripts/acceptance-run-pattern.sh)"
+          echo "Running acceptance tests matching: $PATTERN"
+          gotestsum --jsonfile acceptance-results.json \
+            --junitfile acceptance-results.xml \
+            -- -count=1 -v -timeout 90m -parallel 2 \
+            -run "$PATTERN" ./internal/provider/...
+
+      - name: Summarize ran vs skipped connectors
+        if: always()
+        run: |
+          if [ ! -f acceptance-results.json ]; then
+            echo "No results file produced." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          {
+            echo "### Acceptance run summary"
+            echo ""
+            echo "**Ran (pass):**"
+            jq -r 'select(.Action=="pass" and (.Test!=null) and (.Test|startswith("TestAcc"))) | "- " + .Test' acceptance-results.json | sort -u || true
+            echo ""
+            echo "**Failed:**"
+            jq -r 'select(.Action=="fail" and (.Test!=null) and (.Test|startswith("TestAcc"))) | "- " + .Test' acceptance-results.json | sort -u || true
+            echo ""
+            echo "**Skipped (no credentials in vault):**"
+            jq -r 'select(.Action=="skip" and (.Test!=null) and (.Test|startswith("TestAcc"))) | "- " + .Test' acceptance-results.json | sort -u || true
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: pr-acceptance-results
+          path: |
+            acceptance-results.json
+            acceptance-results.xml

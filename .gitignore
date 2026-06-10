@@ -1,3 +1,18 @@
+# Generated credentials blob for CI (cmd/envtojson output) — never commit
+env.json
+
+# Local credential-seeding scripts (real secrets) — never commit
+scripts/init_dev_client*.sh
+scripts/init_resources_infor*.sh
+*.local.sh
+
+# Local PEM keys for Snowflake etc. — never commit
+*.pem
+
+# Compiled binaries / local scratch (build artifacts, not source)
+/cli
+/envtojson
+
 # Local .terraform directories
 **/.terraform/*
 
