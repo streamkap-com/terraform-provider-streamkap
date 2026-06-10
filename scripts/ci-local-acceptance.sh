@@ -15,7 +15,7 @@
 # Usage:
 #   # From 1Password (default):
 #   export OP_SERVICE_ACCOUNT_TOKEN=ops_...            # same token CI will use
-#   export OP_ENV_REF="op://Streamkap-CI/ci-acceptance-env/env_json"  # optional override
+#   export OP_ENV_REF="op://<vault>/<item>/<field>"    # required: your env.json secret reference
 #   scripts/ci-local-acceptance.sh                     # run the curated set (scripts/acceptance-tests.txt)
 #   scripts/ci-local-acceptance.sh TestAccSourcePostgreSQLResource   # one test (override)
 #
@@ -29,7 +29,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUN_PATTERN="${1:-$("$SCRIPT_DIR/acceptance-run-pattern.sh")}"
-OP_ENV_REF="${OP_ENV_REF:-op://Streamkap-CI/ci-acceptance-env/env_json}"
+# No hardcoded default — the op:// reference names an internal vault/item and
+# must not live in this public repo. Set OP_ENV_REF in your shell (or use
+# ENV_JSON_FILE for a local file). Mirrors the OP_ENV_REF secret CI uses.
+OP_ENV_REF="${OP_ENV_REF:-}"
 ENV_JSON_FILE="${ENV_JSON_FILE:-}"
 
 if [ -n "$ENV_JSON_FILE" ]; then
@@ -42,6 +45,12 @@ if [ -n "$ENV_JSON_FILE" ]; then
 else
   if [ -z "${OP_SERVICE_ACCOUNT_TOKEN:-}" ]; then
     echo "OP_SERVICE_ACCOUNT_TOKEN is not set — export the Service Account token first," >&2
+    echo "or set ENV_JSON_FILE=<path> to read a local env.json instead." >&2
+    exit 1
+  fi
+
+  if [ -z "$OP_ENV_REF" ]; then
+    echo "OP_ENV_REF is not set — export your env.json reference (op://<vault>/<item>/<field>)," >&2
     echo "or set ENV_JSON_FILE=<path> to read a local env.json instead." >&2
     exit 1
   fi

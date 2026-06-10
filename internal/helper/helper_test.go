@@ -60,7 +60,11 @@ func TestGetTfCfgInt64(t *testing.T) {
 		{"float64 value", map[string]any{"key": float64(42)}, "key", 42, false},
 		{"float64 zero", map[string]any{"key": float64(0)}, "key", 0, false},
 		{"float64 negative", map[string]any{"key": float64(-100)}, "key", -100, false},
-		{"float64 large", map[string]any{"key": float64(9223372036854775807)}, "key", 9223372036854775807, false},
+		// float64 cannot represent integers above 2^53 exactly, and converting an
+		// out-of-range float64 to int64 is implementation-defined per the Go spec
+		// (amd64 overflows to MinInt64, arm64 saturates to MaxInt64). Use the
+		// largest exactly-representable integer so the case is portable.
+		{"float64 large", map[string]any{"key": float64(9007199254740992)}, "key", 9007199254740992, false},
 		{"string int", map[string]any{"key": "42"}, "key", 42, false},
 		{"string negative int", map[string]any{"key": "-42"}, "key", -42, false},
 		{"string zero", map[string]any{"key": "0"}, "key", 0, false},

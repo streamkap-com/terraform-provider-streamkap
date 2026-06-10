@@ -46,6 +46,15 @@ jobs:
           go-version-file: ${{ env.GO_VERSION_FILE }}
           cache: true
 
+      # Some non-acceptance tests (e.g. TestProviderConfig_MissingClientID) boot the
+      # plugin-testing framework, which otherwise auto-downloads Terraform and verifies
+      # HashiCorp's GPG signature — currently failing with "openpgp: key expired".
+      # Pre-installing Terraform makes the framework use the PATH binary instead.
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: '1.11.*'
+          terraform_wrapper: false
+
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
 
@@ -76,6 +85,13 @@ jobs:
         with:
           go-version-file: ${{ env.GO_VERSION_FILE }}
           cache: true
+
+      # VCR replay still drives resource.Test, which needs a Terraform CLI on PATH
+      # (the framework's auto-download fails with "openpgp: key expired").
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: '1.11.*'
+          terraform_wrapper: false
 
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
@@ -125,15 +141,28 @@ jobs:
           go-version-file: ${{ env.GO_VERSION_FILE }}
           cache: true
 
+      # tfplugindocs and `terraform fmt` (the root main.go go:generate directives)
+      # need a Terraform CLI on PATH.
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: '1.11.*'
+          terraform_wrapper: false
+
+      # Use `go generate .` (root package only), NOT `./...`. The root directives
+      # are `terraform fmt` + tfplugindocs, which regenerate docs from the committed
+      # Go schemas. The `internal/generated/doc.go` directive runs tfgen with
+      # --backend-path=$STREAMKAP_BACKEND_PATH, which needs the private backend repo
+      # that is not (and should not be) available in CI — so we cannot verify schema
+      # regeneration here; that stays a local/manual step (`make generate`).
       - name: Generate documentation
-        run: go generate ./...
+        run: go generate .
 
       - name: Verify no changes
         run: |
           if git diff --exit-code; then
-            echo "Generated files are up to date"
+            echo "Docs are up to date"
           else
-            echo "Generated files are out of date. Run 'go generate ./...' and commit."
+            echo "Docs are out of date. Run 'make generate' and commit."
             git diff
             exit 1
           fi

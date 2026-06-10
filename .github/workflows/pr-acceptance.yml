@@ -81,8 +81,9 @@ jobs:
           export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          # Adjust vault / item / field to match where you stored env.json.
-          STREAMKAP_ENV_JSON: op://Streamkap-CI/ci-acceptance-env/env_json
+          # Set the OP_ENV_REF secret to your op:// reference (op://<vault>/<item>/<field>)
+          # so the internal vault/item names stay out of this public repo.
+          STREAMKAP_ENV_JSON: ${{ secrets.OP_ENV_REF }}
 
       - name: Export credentials into the job environment
         run: |
