@@ -45,8 +45,8 @@ resource "streamkap_source_supabase" "test" {
 	signal_data_collection_schema_or_database    = "public"
 	heartbeat_enabled                            = true
 	heartbeat_data_collection_schema_or_database = "public"
-	slot_name                                    = "streamkap_pgoutput_slot_n"
-	publication_name                             = "streamkap_pub"
+	slot_name                                    = "terraform_pgoutput_slot_test"
+	publication_name                             = "terraform_pub_test"
 	binary_handling_mode                         = "bytes"
 	include_source_db_name_in_table_name         = false
 	ssh_enabled                                  = false
@@ -66,8 +66,8 @@ resource "streamkap_source_supabase" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "signal_data_collection_schema_or_database", "public"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "heartbeat_enabled", "true"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "heartbeat_data_collection_schema_or_database", "public"),
-					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "slot_name", "streamkap_pgoutput_slot"),
-					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "publication_name", "streamkap_pub"),
+					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "slot_name", "terraform_pgoutput_slot_test"),
+					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "publication_name", "terraform_pub_test"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "binary_handling_mode", "bytes"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "include_source_db_name_in_table_name", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "ssh_enabled", "false"),
@@ -106,8 +106,8 @@ resource "streamkap_source_supabase" "test" {
 	signal_data_collection_schema_or_database    = "public"
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = "public"
-	slot_name                                    = "streamkap_pgoutput_slot"
-	publication_name                             = "streamkap_pub"
+	slot_name                                    = "terraform_pgoutput_slot_test"
+	publication_name                             = "terraform_pub_test"
 	binary_handling_mode                         = "base64"
 	include_source_db_name_in_table_name         = true
 	ssh_enabled                                  = false

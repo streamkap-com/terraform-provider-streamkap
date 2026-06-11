@@ -1,0 +1,40 @@
+# Curated list of acceptance tests run by CI and scripts/ci-local-acceptance.sh.
+#
+# One Go test function name per line. Blank lines and lines starting with `#`
+# are ignored. scripts/acceptance-run-pattern.sh turns this into the
+# `go test -run` regex (anchored at the start, so e.g. TestAccSourcePostgreSQLResource
+# also matches TestAccSourcePostgreSQLResource_WithTimeout).
+#
+# To add a connector to the run: add its TestAcc function here AND ensure its
+# TF_VAR_* credentials are in the env.json blob (1Password / ENV_JSON_FILE).
+
+# --- Sources ---
+TestAccSourceSupabaseResource
+TestAccSourcePostgreSQLResource
+TestAccSourceMySQLResource
+TestAccSourceDynamoDBResource
+TestAccSourceMongoDBResource
+TestAccSourceMongoDBHostedResource
+TestAccSourceSQLServerResource
+TestAccSourcePlanetScaleResource
+TestAccSourceMariaDBResource
+TestAccSourceOracleResource
+TestAccSourceOracleAWSResource
+TestAccSourceS3Resource
+
+# --- Destinations ---
+TestAccDestinationAzblobResource
+TestAccDestinationClickHouseResource
+TestAccDestinationCockroachdbResource
+TestAccDestinationDatabricksResource
+TestAccDestinationDb2Resource
+TestAccDestinationHttpsinkResource
+TestAccDestinationKafkaResource_basic
+TestAccDestinationMotherduckResource
+TestAccDestinationMysqlResource
+TestAccDestinationPostgresqlResource
+TestAccDestinationR2Resource
+TestAccDestinationS3Resource
+TestAccDestinationSnowflakeResource
+TestAccDestinationSqlserverResource
+TestAccDestinationStarburstResource

@@ -44,9 +44,8 @@ resource "streamkap_source_s3" "test" {
 	aws_secret_access_key  = var.source_s3_secret_access_key
 	aws_s3_region          = "us-west-2"
 	aws_s3_bucket_name     = var.source_s3_bucket_name
-	aws_s3_object_prefix   = "file-pulse/"
 	fs_scan_interval_ms    = 10000
-	fs_cleanup_policy_class = "io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy"
+	fs_cleanup_policy_class = "Delete"
 	tasks_max              = 5
 }
 `,
@@ -58,9 +57,8 @@ resource "streamkap_source_s3" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "aws_secret_access_key", sourceS3SecretAccessKey),
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "aws_s3_region", "us-west-2"),
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "aws_s3_bucket_name", sourceS3BucketName),
-					resource.TestCheckResourceAttr("streamkap_source_s3.test", "aws_s3_object_prefix", "file-pulse/"),
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "fs_scan_interval_ms", "10000"),
-					resource.TestCheckResourceAttr("streamkap_source_s3.test", "fs_cleanup_policy_class", "io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy"),
+					resource.TestCheckResourceAttr("streamkap_source_s3.test", "fs_cleanup_policy_class", "Delete"),
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "tasks_max", "5"),
 				),
 			},
@@ -95,9 +93,8 @@ resource "streamkap_source_s3" "test" {
 	aws_secret_access_key  = var.source_s3_secret_access_key
 	aws_s3_region          = "us-east-1"
 	aws_s3_bucket_name     = var.source_s3_bucket_name
-	aws_s3_object_prefix   = "data/"
 	fs_scan_interval_ms    = 20000
-	fs_cleanup_policy_class = "io.streamthoughts.kafka.connect.filepulse.fs.clean.DeleteCleanupPolicy"
+	fs_cleanup_policy_class = "Log"
 	tasks_max              = 3
 }
 `,
@@ -106,9 +103,8 @@ resource "streamkap_source_s3" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "format", "csv"),
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "topic_postfix", "updated"),
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "aws_s3_region", "us-east-1"),
-					resource.TestCheckResourceAttr("streamkap_source_s3.test", "aws_s3_object_prefix", "data/"),
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "fs_scan_interval_ms", "20000"),
-					resource.TestCheckResourceAttr("streamkap_source_s3.test", "fs_cleanup_policy_class", "io.streamthoughts.kafka.connect.filepulse.fs.clean.DeleteCleanupPolicy"),
+					resource.TestCheckResourceAttr("streamkap_source_s3.test", "fs_cleanup_policy_class", "Log"),
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "tasks_max", "3"),
 				),
 			},
