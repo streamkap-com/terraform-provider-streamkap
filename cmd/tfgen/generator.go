@@ -230,8 +230,12 @@ func (g *Generator) Generate(config *ConnectorConfig, connectorCode string, back
 		return fmt.Errorf("failed to create output directory %s: %w", g.outputDir, err)
 	}
 
-	// Merge common config fields from configurations_for_all.json
-	if backendPath != "" {
+	// Merge common config fields from configurations_for_all.json.
+	// kafkadirect is exempt: the backend's _load_global_configuration()
+	// (app/utils/fetch_utils.py) returns {} for kafkadirect, so it resolves
+	// against its plugin config alone. Merging the common fields here would
+	// emit schema attributes the backend never accepts for kafkadirect.
+	if backendPath != "" && connectorCode != "kafkadirect" {
 		commonConfig, err := g.loadCommonConfig(backendPath)
 		if err != nil {
 			// Log warning but don't fail - common config is optional

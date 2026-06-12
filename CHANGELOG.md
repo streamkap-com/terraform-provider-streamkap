@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`streamkap_source_kafkadirect` and `streamkap_destination_kafkadirect` no
+  longer expose configuration attributes the backend rejects.** tfgen merged
+  `configurations_for_all.json` (the shared source/destination config) into every
+  connector, but the backend's `_load_global_configuration()` returns `{}` for
+  `kafkadirect` — it resolves against its plugin config alone. As a result both
+  resources advertised ~30 phantom attributes (`quote_identifiers`,
+  `preserve_null_values`, every `transforms_*`, `consumer_override_max_poll_records`,
+  the source's `insert_topic_name_enabled` / `transforms_value_to_key_*`, etc.)
+  that are not valid Kafka Direct config. tfgen now skips the common-config merge
+  for `kafkadirect`, matching the backend. The destination keeps `password` and
+  `whitelist_ips`; the source keeps `topic_prefix`, `topic_include_list`,
+  `format`, and `schemas_enable` (plus the `kafka_format` deprecated alias).
+  Configurations that set any of the removed attributes must drop them.
+
 ## [3.0.0-beta.20] - 2026-06-09 (Pre-release)
 
 ### Fixed

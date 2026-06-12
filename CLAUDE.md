@@ -122,6 +122,7 @@ Control→TF-type mapping table lives in `docs/CODE_GENERATOR.md` (kept in sync 
 - Required+default → `Optional: true, Computed: true` (a Required field cannot have a default in TF).
 - `user_defined: false` → field skipped entirely.
 - `control: "password"` OR `encrypt: true` → `Sensitive: true`.
+- Every connector merges the entity-wide `configurations_for_all.json` common fields **except `kafkadirect`**, which the backend (`_load_global_configuration`) resolves from its plugin config alone. tfgen mirrors this skip in `Generate()`; the Kafka Direct source/destination expose only their plugin fields.
 - Go field naming preserves: `ID SSH SSL SQL DB URL API AWS ARN QA` uppercase. So `ssh_port` → `SSHPort`, `role_arn` → `RoleARN`.
 
 `cmd/tfgen/overrides.json` handles fields the parser can't synthesize:

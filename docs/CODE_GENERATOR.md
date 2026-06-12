@@ -53,6 +53,22 @@ The `tfgen` tool automates Terraform provider schema generation by parsing backe
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
+### Common config merge (`configurations_for_all.json`)
+
+Before generating a connector, `generator.go` merges the entity-wide
+`app/{sources,destinations}/configurations_for_all.json` into the per-connector
+config (per-connector entries win on name collision). These are the shared
+fields — `consumer.override.*`, the `transforms.*` family, `quote.identifiers`,
+`preserve.null.values`, etc. — that the backend layers onto every connector.
+
+**Exception — `kafkadirect`:** the backend's `_load_global_configuration()`
+(`app/utils/fetch_utils.py`) returns `{}` for `kafkadirect`, so it resolves
+against its plugin config alone. tfgen mirrors this: the merge is skipped for
+`kafkadirect`, so the source and destination Kafka Direct resources expose only
+their plugin fields. This is the only connector exempted from the merge. If you
+add another proxy-style connector that the backend excludes from the global
+config, extend the same guard in `Generate()`.
+
 ### Key Benefits
 
 1. **Consistency**: All connectors follow the same pattern
