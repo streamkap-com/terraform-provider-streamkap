@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Documentation map
 
 | Doc | What it covers |
@@ -19,20 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Keep docs in sync
 
-When you change something in this list, update the matching doc in the same PR:
-
-| Change | Update |
-|---|---|
-| Add/remove a resource or data source | `AGENTS.md` resource tables, `docs/ARCHITECTURE.md` counts, run `make generate` for `docs/resources/` and `docs/index.md`. |
-| Add a connector via tfgen | run `make generate` (not `go generate ./...` — see "Schema regeneration" below); if the override system grew (new `map_string`/`map_nested` case) update `docs/CODE_GENERATOR.md`. |
-| Add a deprecated alias | add a `TestAcc<Connector>_MigrationFromLegacy` case in `internal/provider/migration_test.go` and a row in `docs/MIGRATION.md`. |
-| Plan to remove a deprecated attribute | move it into the "Deprecated Attribute Removal" table in `docs/MIGRATION.md`. |
-| Change tfgen type mapping or special-case rules | update the table in `docs/CODE_GENERATOR.md` and the table in this file. |
-| Change CRUD flow, retry, or pagination behavior | update `docs/ARCHITECTURE.md` and the API quirks list below. |
-| User-visible behavior change | add an entry to `CHANGELOG.md`. |
-| New env var or test command | update `env.md` and `GNUmakefile`. |
-
-If a doc is wrong, fix it — don't write a parallel one. New doc files belong only in `docs/audits/` (dated audit reports) and `docs/plans/` (dated execution plans).
+Changing something in the map above means updating its doc in the same PR. Specifically: a new/removed resource → `AGENTS.md` tables + `docs/ARCHITECTURE.md` counts + `make generate`; a deprecated alias → a `TestAcc<Connector>_MigrationFromLegacy` row in `internal/provider/migration_test.go` + `docs/MIGRATION.md`; a tfgen type-mapping change → `docs/CODE_GENERATOR.md`; a CRUD/retry/pagination change → `docs/ARCHITECTURE.md` + the API-quirks list below; any user-visible change → `CHANGELOG.md`. If a doc is wrong, fix it — don't write a parallel one. New doc files belong only in `docs/audits/` and `docs/plans/`.
 
 ## Branches
 
@@ -42,12 +27,6 @@ If a doc is wrong, fix it — don't write a parallel one. New doc files belong o
 **Do not merge `develop` into `main`** until v3 is promoted from beta to stable. Until then, treat the two lines as independent: a fix that needs to ship to v2 users goes to `main` directly (and may need a separate cherry-pick to `develop`); v3-only work stays on `develop`. Cut feature branches from the line you're targeting.
 
 Sessions here typically open right after a merge landed elsewhere — `git pull` and confirm which line you're on (`develop` = v3, `main` = v2) before starting. Don't assume the working tree is current.
-
-### Working a task
-
-- Tasks usually arrive as a pasted artifact (issue dump, Slack thread, review comments) covering several distinct problems. Track each and give an explicit per-item closeout — fixed / N/A / deferred — before claiming done.
-- When handed a GitHub issue, Slack thread, or customer error, first confirm it's real and not already fixed by pending work; report that verdict before changing code. Triage PR-review comments for false positives rather than acting on all of them.
-- Before raising a PR or declaring a customer fix done, run a code-review pass (and `superpowers:systematic-debugging` for bug reports) — the user expects this as the closing gate.
 
 ### Release flow
 
@@ -62,6 +41,10 @@ This repo is public. Do not commit internal ticket IDs/URLs, customer or tenant 
 The provider is built against the Streamkap Python FastAPI backend. Set `STREAMKAP_BACKEND_PATH` to your local clone — `cmd/tfgen` reads `configuration.latest.json` plugin specs from there. OpenAPI: `https://api.streamkap.com/openapi.json`.
 
 Path differs per developer — keep it in shell env or `.env`, never hardcode it here; confirm with `ls` before running codegen. Cross-check schema against the backend's `origin/main` (production runs older configs than feature branches), not whatever branch is checked out. If you switch the backend repo's branch to regenerate, restore the original branch before finishing — never leave it on a changed branch.
+
+**Before any codegen, assert the backend branch.** Run `git -C "$STREAMKAP_BACKEND_PATH" rev-parse --abbrev-ref HEAD` and confirm it is `main` (or a branch you were explicitly told to use) — never regenerate against whatever happens to be checked out; that has shipped schemas with fields silently stripped. Restore the original backend branch when done, then `git status` the *provider* tree to catch stray generated connector files before committing.
+
+When handed a reported issue (GitHub, Slack, a customer error), confirm it's real and not already fixed by pending work, and report that verdict, before changing code.
 
 Backend areas worth knowing:
 - `app/api/{sources,destinations,kafka_access,auth}_api.py` — endpoint definitions
@@ -84,7 +67,7 @@ Use `make help` for the full list. Common ones:
 
 Schema regeneration: `STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap make generate` (or run `cmd/tfgen` directly per-connector with `--entity-type sources --connector postgresql`).
 
-**Use `make generate`, not `go generate ./...`.** `go generate ./...` runs the root `main.go` directive (`tfplugindocs`) *before* `internal/generated/doc.go` (`tfgen`), so docs render against the previous schema and lag one regen behind — a new field lands in `internal/generated/*.go` but is silently missing from `docs/resources/*.md`. `make generate` runs `tfgen` first, then `tfplugindocs`, so docs always match the freshly generated schemas. After regenerating, sanity-check that a newly added attribute appears in **both** the `.go` schema and its `docs/resources/*.md` page before committing.
+**Regenerate ONLY with `STREAMKAP_BACKEND_PATH=<path> make generate` — never `go generate ./...`.** `go generate ./...` runs `tfplugindocs` (root `main.go`) *before* `tfgen` (`internal/generated/doc.go`), so docs render against the previous schema: a new field lands in `internal/generated/*.go` but ships missing from `docs/resources/*.md` (this shipped in beta.18). `make generate` runs `tfgen` first, then `tfplugindocs`. Abort codegen if `STREAMKAP_BACKEND_PATH` is unset or `ls "$STREAMKAP_BACKEND_PATH"` fails — `go generate` with it unset silently emits wrong output. After regenerating, verify each newly added attribute appears in **both** the `.go` schema and its `docs/resources/*.md` page, and report which backend branch+commit the run used.
 
 `.env` is auto-loaded by tests via godotenv. For Snowflake PEM keys (multiline), `source scripts/load-pem-keys.sh`.
 
@@ -132,19 +115,7 @@ When an override's `api_field_name` matches a backend field, the override wins a
 
 ### Fix the generator, not the generated output
 
-Files under `internal/generated/` carry `// Code generated by tfgen. DO NOT EDIT.` and are rewritten on every `go generate ./...`. **Hand-edits there will be lost on the next regen.** This is doubly important on the `develop` (v3 beta) line, where regeneration churn is higher than on `main`.
-
-When a bug surfaces in `internal/generated/`:
-
-1. Locate the source of the wrongness — usually one of:
-   - **tfgen logic** (`cmd/tfgen/parser.go`, `generator.go`) — wrong type mapping, missing special case, bad Go-name acronym handling (`toPascalCase` in `generator.go`).
-   - **`cmd/tfgen/overrides.json`** — fields the parser can't synthesize (`map_string`, `map_nested`).
-   - **Backend `configuration.latest.json`** — schema is wrong upstream; fix in `python-be-streamkap` and re-export.
-   - Note: deprecated v2 aliases are **not** in tfgen. They live entirely in the hand-maintained wrapper files (`internal/resource/{source,destination}/<connector>_generated.go`) — see "Deprecated attribute pattern" below.
-2. Fix at that source, then run `STREAMKAP_BACKEND_PATH=... make generate`.
-3. Commit the tfgen change and the regenerated files together so the diff is reviewable in one PR.
-
-Do not patch a generated file as a "quick fix" with the intent to fix tfgen later — the next regen for an unrelated connector will silently revert the patch.
+Files under `internal/generated/` carry `// Code generated by tfgen. DO NOT EDIT.` and are rewritten on every `make generate`. **Hand-edits there are lost on the next regen** (churn is higher on `develop`). When a bug surfaces there, fix it at the source — tfgen logic (`cmd/tfgen/parser.go`, `generator.go`), `cmd/tfgen/overrides.json`, or the backend `configuration.latest.json` — never patch the generated file, then `make generate` and commit source + regenerated files together. Grep every connector for the same defect class and fix all occurrences in that one PR. Full walkthrough (which source owns which kind of wrongness): `docs/CODE_GENERATOR.md`. Deprecated v2 aliases are *not* in tfgen — they live in the hand-maintained wrappers below.
 
 **Hand-maintained exception:** `internal/resource/{source,destination}/<connector>_generated.go` files are *not* generated despite the suffix in the name — they embed `generated.<Name>Model`, register schema/CRUD wiring, and host the deprecated-attribute wrapper struct described below. Edit those freely.
 
@@ -161,7 +132,7 @@ The API client exposes `CreateTransform / GetTransform / UpdateTransform / Delet
 - Use `stringplanmodifier.UseStateForUnknown()` for computed fields that don't change to avoid spurious diffs.
 - Kafka Users (`/kafka-access/kafka-users`): username is the resource ID; password is write-only; no individual GET — Read filters from list.
 - Client Credentials (`/auth/client-credentials`): no Update endpoint, all fields are ForceNew; secret is only returned at creation.
-- `insert_static_*` / static-transform fields are `Optional+Computed` and prone to `"produced an unexpected new value: was cty.StringVal(\"\"), but now null"` drift when the API echo differs from the empty-string default. When you touch one, audit **all** siblings across **every** connector — past fixes only patched a subset.
+- `"produced an unexpected new value: was cty.StringVal(\"\"), but now null"` is an `Optional+Computed` echo mismatch — the API echo differs from the default. It is not just `insert_static_*`/static-transform fields: it also hits deprecated aliases and placeholder `<...>` defaults (see `HasPlaceholderDefault`). When you touch one, audit **all** siblings of that class across **every** connector — past fixes only patched a subset.
 
 ## Deprecated attribute pattern (v2 → v3 aliases)
 
@@ -195,7 +166,7 @@ Required env vars for acceptance: `TF_ACC=1`, `STREAMKAP_CLIENT_ID`, `STREAMKAP_
 
 - AI-agent-friendly schema descriptions: every resource/data source needs both `Description` and `MarkdownDescription`. tfgen emits these automatically; if you add an attribute by hand, document enums (list valid values), defaults, and `**Security:**` notes for sensitive fields.
 - Each resource needs `examples/resources/streamkap_<name>/{basic,complete}.tf`.
-- Provider address: `github.com/streamkap-com/streamkap`. Go 1.25+, Terraform Plugin Framework.
+- Provider address: `github.com/streamkap-com/streamkap` (differs from the module path).
 - Connector status values (read-only): `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
 
 For deeper detail follow the Documentation map at the top of this file.

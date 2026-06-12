@@ -19,8 +19,11 @@ install:
 # (tfplugindocs) before internal/generated (tfgen), rendering docs one regen behind.
 .PHONY: generate
 generate:
+	@bash scripts/codegen-preflight.sh
 	go generate ./internal/generated/...
 	go generate main.go
+	@echo "Review generated output before committing (stray files can mean a wrong-branch run):"
+	@git status --porcelain internal/generated docs || true
 
 # Run unit tests (fast, no API needed)
 .PHONY: test
