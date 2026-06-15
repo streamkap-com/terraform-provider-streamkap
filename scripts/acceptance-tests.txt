@@ -38,3 +38,25 @@ TestAccDestinationS3Resource
 TestAccDestinationSnowflakeResource
 TestAccDestinationSqlserverResource
 TestAccDestinationStarburstResource
+
+# --- Data sources ---
+TestAccDataSourceTag
+TestAccDataSourceTopicMetrics
+
+# --- Pipelines ---
+TestAccPostgreSQLSnowflakePipelineResource
+
+# --- Provider / drift / tags / topics ---
+TestProviderConfig_MissingClientID
+TestDriftDetection_SourceModifiedExternally
+TestAccTagsLifecycle_TransformAttachAndClear
+TestAccTopicResource
+
+# --- Transforms ---
+TestAccTransformEnrichAsyncResource
+TestAccTransformEnrichResource
+TestAccTransformFanOutResource
+TestAccTransformMapFilterResource_basic
+TestAccTransformMapFilterResource_withImplementation
+TestAccTransformRollupResource
+TestAccTransformSqlJoinResource
