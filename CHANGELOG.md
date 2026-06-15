@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0-beta.21] - 2026-06-15 (Pre-release)
+
 ### Fixed
 - **`streamkap_source_kafkadirect` and `streamkap_destination_kafkadirect` no
   longer expose configuration attributes the backend rejects.** tfgen merged
