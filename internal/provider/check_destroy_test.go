@@ -16,8 +16,14 @@ import (
 // Terraform's delete can still see the record, which made CheckDestroy flaky
 // (e.g. "streamkap_source_dynamodb <id> still exists"). Poll for a bounded
 // window instead of checking once.
+//
+// The timeout is a ceiling, not a fixed wait: waitForDestroyed returns the
+// instant the resource is gone, so a larger value costs nothing on the happy
+// path and only widens the window for genuinely-slow async deletes. SQLServer
+// teardown (CDC capture-instance cleanup) routinely exceeds 90s and tripped the
+// old ceiling ("still exists after 1m30s"), so the window is 180s.
 const (
-	destroyPollTimeout  = 90 * time.Second
+	destroyPollTimeout  = 180 * time.Second
 	destroyPollInterval = 3 * time.Second
 )
 
