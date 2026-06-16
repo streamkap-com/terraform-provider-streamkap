@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -551,12 +552,30 @@ func (r *PipelineResource) model2APITransforms(ctx context.Context, modelTransfo
 	return res, nil
 }
 
+// alreadyRootedTopicRe matches topics that already carry a BE-canonical first
+// segment ("source_<24-hex>." or "transform_<hex>_<n>."). For these the backend
+// will strip-and-reconstruct correctly without us prepending another prefix.
+var alreadyRootedTopicRe = regexp.MustCompile(`^(source_[0-9a-f]+|transform_[0-9a-f]+_\d+)\.`)
+
 // resolveTransformTopicID picks a topic_id for a (transform, topic) pair that
 // will survive the backend's first-segment-strip reconstruction. See the
 // doc-comment on model2APITransforms for the rationale.
+//
+// Three input shapes are recognized:
+//
+//	transform_<txid>_<n>.merged.X   -> verbatim (topic-router output)
+//	source_<srcid>.shard1.X         -> verbatim (already BE-rooted)
+//	shard1.X                        -> "source_<sourceID>.shard1.X"
+//
+// Without the first guard, an already-rooted topic would be double-prefixed
+// (e.g. "source_<srcid>.transform_<txid>_<n>.merged.X"), pointing the
+// destination connector at a Kafka topic that does not exist.
 func (r *PipelineResource) resolveTransformTopicID(transform *api.Transform, topic string, sourceID string) string {
 	if idx := r.idxStringInSlice(topic, transform.Topics); idx >= 0 && idx < len(transform.TopicIDs) {
 		return transform.TopicIDs[idx]
+	}
+	if alreadyRootedTopicRe.MatchString(topic) {
+		return topic
 	}
 	if sourceID != "" {
 		return fmt.Sprintf("source_%s.%s", sourceID, topic)
