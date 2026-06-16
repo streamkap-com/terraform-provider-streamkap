@@ -607,19 +607,27 @@ func (r *PipelineResource) api2ModelTransforms(_ context.Context, apiTransforms 
 	currentTransformTopics := make([]string, 0, len(apiTransforms))
 
 	for _, apiTransform := range apiTransforms {
-		// Always use the pretty Topic field. The backend computes it via
-		// get_pretty_topic_name_from_id (python-be-streamkap
-		// app/utils/fetch_utils.py:859) by stripping the first dot-separated
-		// segment of topic_id, and that segment is the backend-internal
-		// connector identifier — never something a user writes in their TF
-		// config. Earlier code swapped in topic_id when it started with
-		// "transform_" to "preserve the full name" for topic_router
-		// transforms, but every deployed transform (router or not) gets a
-		// transform-prefixed topic_id from
-		// app/utils/api/v2/api_transforms_utils.py:427, so the swap clobbered
-		// state with the internal id and produced "planned set element does
-		// not correlate with any element in actual" on the next apply.
+		// Default: use the pretty Topic field (first-segment-stripped form
+		// computed by get_pretty_topic_name_from_id in python-be-streamkap
+		// app/utils/fetch_utils.py:859). For source-rooted topics
+		// ("source_<srcid>.shard1.X") this matches the TF input the user
+		// wrote ("shard1.X").
+		//
+		// Special case: when topic_id is transform-rooted
+		// ("transform_<hex>_<n>.X"), the pretty form drops the canonical
+		// transform prefix and returns just "X", which does not match the
+		// canonical form the user must write in TF (model2APITransforms
+		// returns transform-rooted topics verbatim — see the symmetric
+		// guard in resolveTransformTopicID). Return the topic_id verbatim
+		// in this case so READ round-trips against the WRITE plan.
+		//
+		// The earlier blanket swap (every transform-prefixed topic_id) was
+		// over-broad and is the bug the previous comment described.
 		topicName := apiTransform.Topic
+		if alreadyRootedTopicRe.MatchString(apiTransform.TopicID) &&
+			strings.HasPrefix(apiTransform.TopicID, "transform_") {
+			topicName = apiTransform.TopicID
+		}
 		// Skip entries with empty topic names (stale data from failed applies)
 		if topicName == "" {
 			continue
