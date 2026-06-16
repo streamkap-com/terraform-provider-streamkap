@@ -40,6 +40,7 @@ type DestinationClickhouseModel struct {
 	Database                                         types.String                                  `tfsdk:"database"`
 	SSL                                              types.Bool                                    `tfsdk:"ssl"`
 	ClickhouseJsonSupport                            types.Bool                                    `tfsdk:"clickhouse_json_support"`
+	TableNamePrefix                                  types.String                                  `tfsdk:"table_name_prefix"`
 	SchemaEvolution                                  types.String                                  `tfsdk:"schema_evolution"`
 	ConsumerOverrideMaxPollRecords                   types.Int64                                   `tfsdk:"consumer_override_max_poll_records"`
 	PreserveNullValues                               types.Bool                                    `tfsdk:"preserve_null_values"`
@@ -204,6 +205,15 @@ func DestinationClickhouseSchema() schema.Schema {
 				Description:         "Allow JSON data type in ClickHouse, make sure the ClickHouse server supports it. If not set, the connector will use String type for JSON data. Defaults to false.",
 				MarkdownDescription: "Allow JSON data type in ClickHouse, make sure the ClickHouse server supports it. If not set, the connector will use String type for JSON data. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
+			},
+			"table_name_prefix": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Optional prefix prepended to every destination table name (e.g. 'prod_' produces tables like 'prod_customers'). Only letters, digits, and underscores are allowed.",
+				MarkdownDescription: "Optional prefix prepended to every destination table name (e.g. 'prod_' produces tables like 'prod_customers'). Only letters, digits, and underscores are allowed.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"schema_evolution": schema.StringAttribute{
 				Optional:            true,
@@ -519,6 +529,7 @@ var DestinationClickhouseFieldMappings = map[string]string{
 	"database":                           "database",
 	"ssl":                                "ssl",
 	"clickhouse_json_support":            "clickhouse.json.support",
+	"table_name_prefix":                  "table.name.prefix",
 	"schema_evolution":                   "schema.evolution",
 	"consumer_override_max_poll_records": "consumer.override.max.poll.records",
 	"preserve_null_values":               "preserve.null.values",

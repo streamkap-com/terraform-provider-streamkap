@@ -43,6 +43,7 @@ This resource creates and manages a ClickHouse destination for Streamkap data pi
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `false`.
 - `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `ssl` (Boolean) Enable TLS for network connections. Defaults to `true`.
+- `table_name_prefix` (String) Optional prefix prepended to every destination table name (e.g. 'prod_' produces tables like 'prod_customers'). Only letters, digits, and underscores are allowed.
 - `tags` (Set of String) Optional set of tag IDs to apply to this destination. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `tasks_max` (Number) The maximum number of active task. Defaults to `5`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))

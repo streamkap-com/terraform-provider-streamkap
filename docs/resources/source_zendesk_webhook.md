@@ -27,9 +27,7 @@ This resource creates and manages a Zendesk Webhook source for Streamkap data pi
 
 ### Optional
 
-- `api_key` (String, Sensitive) API Key. This key will be generated after the source is created
-
-**Security:** This value is marked sensitive and will not appear in CLI output or logs.
+- `api_key` (String) API Key. This key will be generated after the source is created
 - `camel_source_dlq_enabled` (Boolean) Enable dead letter queue. Failed records are written to a DLQ topic instead of crashing the connector. Defaults to `false`.
 - `camel_source_payload_router_fanout_fields` (String) Comma-separated list of domain-scoped fields to fan out into separate topics (e.g. ticket.tags, ticket.custom_fields, organization.tags). When empty, arrays stay inline. Defaults to ``.
 - `camel_source_payload_router_flatten_detail` (Boolean) Flatten nested detail fields to top-level with a prefix. Recommended for destinations that do not support nested objects. Defaults to `false`.

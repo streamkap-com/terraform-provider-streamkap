@@ -17,8 +17,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// SourceDb2Model is the Terraform model for the db2 source.
-type SourceDb2Model struct {
+// SourceInformixModel is the Terraform model for the informix source.
+type SourceInformixModel struct {
 	ID                                                 types.String   `tfsdk:"id"`
 	Name                                               types.String   `tfsdk:"name"`
 	Connector                                          types.String   `tfsdk:"connector"`
@@ -33,13 +33,25 @@ type SourceDb2Model struct {
 	SchemaIncludeList                                  types.String   `tfsdk:"schema_include_list"`
 	TableIncludeList                                   types.String   `tfsdk:"table_include_list"`
 	SignalDataCollectionSchemaOrDatabase               types.String   `tfsdk:"signal_data_collection_schema_or_database"`
+	ColumnExcludeList                                  types.String   `tfsdk:"column_exclude_list"`
+	HeartbeatEnabled                                   types.Bool     `tfsdk:"heartbeat_enabled"`
+	HeartbeatDataCollectionSchemaOrDatabase            types.String   `tfsdk:"heartbeat_data_collection_schema_or_database"`
 	SchemaHistoryInternalStoreOnlyCapturedDatabasesDdl types.Bool     `tfsdk:"schema_history_internal_store_only_captured_databases_ddl"`
 	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool     `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
+	BinaryHandlingMode                                 types.String   `tfsdk:"binary_handling_mode"`
+	CdcBuffersize                                      types.Int64    `tfsdk:"cdc_buffersize"`
+	CdcTimeout                                         types.Int64    `tfsdk:"cdc_timeout"`
+	StreamkapSnapshotParallelism                       types.Int64    `tfsdk:"streamkap_snapshot_parallelism"`
+	StreamkapSnapshotChunkSizeBytes                    types.Int64    `tfsdk:"streamkap_snapshot_chunk_size_bytes"`
+	StreamkapSnapshotStateRefreshMs                    types.Int64    `tfsdk:"streamkap_snapshot_state_refresh_ms"`
 	SSHEnabled                                         types.Bool     `tfsdk:"ssh_enabled"`
 	SSHHost                                            types.String   `tfsdk:"ssh_host"`
 	SSHPort                                            types.Int64    `tfsdk:"ssh_port"`
 	SSHUser                                            types.String   `tfsdk:"ssh_user"`
-	ColumnExcludeList                                  types.String   `tfsdk:"column_exclude_list"`
+	TransformsInsertStaticKey1StaticField              types.String   `tfsdk:"transforms_insert_static_key1_static_field"`
+	TransformsInsertStaticKey1StaticValue              types.String   `tfsdk:"transforms_insert_static_key1_static_value"`
+	TransformsInsertStaticValue1StaticField            types.String   `tfsdk:"transforms_insert_static_value1_static_field"`
+	TransformsInsertStaticValue1StaticValue            types.String   `tfsdk:"transforms_insert_static_value1_static_value"`
 	SSHPublicKey                                       types.String   `tfsdk:"ssh_public_key"`
 	TransformsValueToKeyFieldsIncludeList              types.String   `tfsdk:"transforms_value_to_key_fields_include_list"`
 	TransformsValueToKeyReplaceNullWithDefault         types.Bool     `tfsdk:"transforms_value_to_key_replace_null_with_default"`
@@ -56,12 +68,12 @@ type SourceDb2Model struct {
 	Timeouts                                           timeouts.Value `tfsdk:"timeouts"`
 }
 
-// SourceDb2Schema returns the Terraform schema for the db2 source.
-func SourceDb2Schema() schema.Schema {
+// SourceInformixSchema returns the Terraform schema for the informix source.
+func SourceInformixSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Db2 source connector. Use with streamkap_pipeline to build data pipelines.",
-		MarkdownDescription: "Manages a **Db2 source connector**.\n\n" +
-			"This resource creates and manages a Db2 source for Streamkap data pipelines. " +
+		Description: "Manages a Informix source connector. Use with streamkap_pipeline to build data pipelines.",
+		MarkdownDescription: "Manages a **Informix source connector**.\n\n" +
+			"This resource creates and manages a Informix source for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
@@ -110,36 +122,36 @@ func SourceDb2Schema() schema.Schema {
 			},
 			"database_hostname": schema.StringAttribute{
 				Required:            true,
-				Description:         "IP address or hostname of the Db2 database server",
-				MarkdownDescription: "IP address or hostname of the Db2 database server",
+				Description:         "IP address or hostname of the Informix database server.",
+				MarkdownDescription: "IP address or hostname of the Informix database server.",
 			},
 			"database_port": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port number of the Db2 database server. Defaults to 50000.",
-				MarkdownDescription: "Port number of the Db2 database server. Defaults to `50000`.",
-				Default:             int64default.StaticInt64(50000),
+				Description:         "Informix SQLI listener port. For example, 9088. Defaults to 9088.",
+				MarkdownDescription: "Informix SQLI listener port. For example, 9088. Defaults to `9088`.",
+				Default:             int64default.StaticInt64(9088),
 			},
 			"database_user": schema.StringAttribute{
 				Required:            true,
-				Description:         "Name of the Db2 database user for connecting to the DB2 database server",
-				MarkdownDescription: "Name of the Db2 database user for connecting to the DB2 database server",
+				Description:         "Username to access the Informix database.",
+				MarkdownDescription: "Username to access the Informix database.",
 			},
 			"database_password": schema.StringAttribute{
 				Required:            true,
 				Sensitive:           true,
-				Description:         "Password to use when connecting to the Db2 database server This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Password to use when connecting to the Db2 database server\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "Password to access the Informix database. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Password to access the Informix database.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"database_dbname": schema.StringAttribute{
 				Required:            true,
-				Description:         "The name of the Db2 database from which to stream the changes",
-				MarkdownDescription: "The name of the Db2 database from which to stream the changes",
+				Description:         "The name of the Informix database from which to stream the changes.",
+				MarkdownDescription: "The name of the Informix database from which to stream the changes.",
 			},
 			"schema_include_list": schema.StringAttribute{
 				Required:            true,
-				Description:         "Source schemas to sync.",
-				MarkdownDescription: "Source schemas to sync.",
+				Description:         "Schemas to include.",
+				MarkdownDescription: "Schemas to include.",
 			},
 			"table_include_list": schema.StringAttribute{
 				Required:            true,
@@ -147,9 +159,36 @@ func SourceDb2Schema() schema.Schema {
 				MarkdownDescription: "Source tables to sync.",
 			},
 			"signal_data_collection_schema_or_database": schema.StringAttribute{
-				Required:            true,
-				Description:         "Path to the signal table as schema.table (e.g., 'MYSCHEMA.STREAMKAP_SIGNAL'). The database name will be added automatically. This table is used for incremental snapshotting.",
-				MarkdownDescription: "Path to the signal table as schema.table (e.g., 'MYSCHEMA.STREAMKAP_SIGNAL'). The database name will be added automatically. This table is used for incremental snapshotting.",
+				Optional:            true,
+				Computed:            true,
+				Description:         "Path to the signal table as schema.table (e.g., 'myschema.streamkap_signal'). The database name will be added automatically. This table is used for incremental snapshotting. Defaults to \"streamkap\".",
+				MarkdownDescription: "Path to the signal table as schema.table (e.g., 'myschema.streamkap_signal'). The database name will be added automatically. This table is used for incremental snapshotting. Defaults to `streamkap`.",
+				Default:             stringdefault.StaticString("streamkap"),
+			},
+			"column_exclude_list": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
+				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"heartbeat_enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to true.",
+				MarkdownDescription: "When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
+			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
+				MarkdownDescription: "Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"schema_history_internal_store_only_captured_databases_ddl": schema.BoolAttribute{
 				Optional:            true,
@@ -164,6 +203,66 @@ func SourceDb2Schema() schema.Schema {
 				Description:         "Specifies whether the connector records schema structures from all logical tables in the captured schemas or databases, or only captured tables. Enabling this when you have many tables can improve performance and avoid timeouts. Defaults to false.",
 				MarkdownDescription: "Specifies whether the connector records schema structures from all logical tables in the captured schemas or databases, or only captured tables. Enabling this when you have many tables can improve performance and avoid timeouts. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
+			},
+			"binary_handling_mode": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Specifies how the data for binary columns e.g. blob, byte, text should be represented. This setting depends on what the destination is. See the documentation for more details. Defaults to \"bytes\". Valid values: bytes, base64, base64-url-safe, hex.",
+				MarkdownDescription: "Specifies how the data for binary columns e.g. blob, byte, text should be represented. This setting depends on what the destination is. See the documentation for more details. Defaults to `bytes`. Valid values: `bytes`, `base64`, `base64-url-safe`, `hex`.",
+				Default:             stringdefault.StaticString("bytes"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("bytes", "base64", "base64-url-safe", "hex"),
+				},
+			},
+			"cdc_buffersize": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Size of the read buffer for receiving CDC events from the Informix server, in bytes. Defaults to 65536.",
+				MarkdownDescription: "Size of the read buffer for receiving CDC events from the Informix server, in bytes. Defaults to `65536`.",
+				Default:             int64default.StaticInt64(65536),
+				Validators: []validator.Int64{
+					int64validator.Between(4096, 1048576),
+				},
+			},
+			"cdc_timeout": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Timeout (seconds) the CDC engine will wait before breaking out of a blocking read to check for shutdown signals. Defaults to 5.",
+				MarkdownDescription: "Timeout (seconds) the CDC engine will wait before breaking out of a blocking read to check for shutdown signals. Defaults to `5`.",
+				Default:             int64default.StaticInt64(5),
+				Validators: []validator.Int64{
+					int64validator.Between(1, 60),
+				},
+			},
+			"streamkap_snapshot_parallelism": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How many parallel chunk requests to send to the source DB. Defaults to 1.",
+				MarkdownDescription: "How many parallel chunk requests to send to the source DB. Defaults to `1`.",
+				Default:             int64default.StaticInt64(1),
+				Validators: []validator.Int64{
+					int64validator.Between(1, 50),
+				},
+			},
+			"streamkap_snapshot_chunk_size_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to 524288.",
+				MarkdownDescription: "Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to `524288`.",
+				Default:             int64default.StaticInt64(524288),
+				Validators: []validator.Int64{
+					int64validator.Between(4096, 8388608),
+				},
+			},
+			"streamkap_snapshot_state_refresh_ms": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to 30000.",
+				MarkdownDescription: "Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to `30000`.",
+				Default:             int64default.StaticInt64(30000),
+				Validators: []validator.Int64{
+					int64validator.Between(1000, 60000),
+				},
 			},
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
@@ -195,11 +294,38 @@ func SourceDb2Schema() schema.Schema {
 				MarkdownDescription: "User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.",
 				Default:             stringdefault.StaticString("streamkap"),
 			},
-			"column_exclude_list": schema.StringAttribute{
+			"transforms_insert_static_key1_static_field": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
-				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
+				Description:         "The name of the static field to be added to the message key.",
+				MarkdownDescription: "The name of the static field to be added to the message key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_insert_static_key1_static_value": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The value of the static field to be added to the message key.",
+				MarkdownDescription: "The value of the static field to be added to the message key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_insert_static_value1_static_field": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The name of the static field to be added to the message value.",
+				MarkdownDescription: "The name of the static field to be added to the message value.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_insert_static_value1_static_value": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The value of the static field to be added to the message value.",
+				MarkdownDescription: "The value of the static field to be added to the message value.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -316,24 +442,36 @@ func SourceDb2Schema() schema.Schema {
 	}
 }
 
-// SourceDb2FieldMappings maps Terraform attribute names to API field names.
-var SourceDb2FieldMappings = map[string]string{
-	"database_hostname":                         "database.hostname.user.defined",
-	"database_port":                             "database.port.user.defined",
-	"database_user":                             "database.user",
-	"database_password":                         "database.password",
-	"database_dbname":                           "database.dbname",
-	"schema_include_list":                       "schema.include.list.user.defined",
-	"table_include_list":                        "table.include.list.user.defined",
-	"signal_data_collection_schema_or_database": "signal.data.collection.schema.or.database",
+// SourceInformixFieldMappings maps Terraform attribute names to API field names.
+var SourceInformixFieldMappings = map[string]string{
+	"database_hostname":                            "database.hostname.user.defined",
+	"database_port":                                "database.port.user.defined",
+	"database_user":                                "database.user",
+	"database_password":                            "database.password",
+	"database_dbname":                              "database.dbname",
+	"schema_include_list":                          "schema.include.list",
+	"table_include_list":                           "table.include.list.user.defined",
+	"signal_data_collection_schema_or_database":    "signal.data.collection.schema.or.database",
+	"column_exclude_list":                          "column.exclude.list.user.defined",
+	"heartbeat_enabled":                            "heartbeat.enabled",
+	"heartbeat_data_collection_schema_or_database": "heartbeat.data.collection.schema.or.database",
 	"schema_history_internal_store_only_captured_databases_ddl": "schema.history.internal.store.only.captured.databases.ddl",
 	"schema_history_internal_store_only_captured_tables_ddl":    "schema.history.internal.store.only.captured.tables.ddl",
-	"ssh_enabled":         "ssh.enabled",
-	"ssh_host":            "ssh.host",
-	"ssh_port":            "ssh.port",
-	"ssh_user":            "ssh.user",
-	"column_exclude_list": "column.exclude.list.user.defined",
-	"ssh_public_key":      "ssh.public.key.user.displayed",
+	"binary_handling_mode":                "binary.handling.mode",
+	"cdc_buffersize":                      "cdc.buffersize",
+	"cdc_timeout":                         "cdc.timeout",
+	"streamkap_snapshot_parallelism":      "streamkap.snapshot.parallelism",
+	"streamkap_snapshot_chunk_size_bytes": "streamkap.snapshot.chunk.size.bytes",
+	"streamkap_snapshot_state_refresh_ms": "streamkap.snapshot.state.refresh.ms",
+	"ssh_enabled":                         "ssh.enabled",
+	"ssh_host":                            "ssh.host",
+	"ssh_port":                            "ssh.port",
+	"ssh_user":                            "ssh.user",
+	"transforms_insert_static_key1_static_field":   "transforms.InsertStaticKey1.static.field",
+	"transforms_insert_static_key1_static_value":   "transforms.InsertStaticKey1.static.value",
+	"transforms_insert_static_value1_static_field": "transforms.InsertStaticValue1.static.field",
+	"transforms_insert_static_value1_static_value": "transforms.InsertStaticValue1.static.value",
+	"ssh_public_key": "ssh.public.key.user.displayed",
 	"transforms_value_to_key_fields_include_list":            "transforms.ValueToKey.fields.include.list",
 	"transforms_value_to_key_replace_null_with_default":      "transforms.ValueToKey.replace.null.with.default",
 	"preserve_null_values":                                   "preserve.null.values",
