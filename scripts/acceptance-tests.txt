@@ -21,6 +21,9 @@ TestAccSourceMariaDBResource
 TestAccSourceOracleResource
 TestAccSourceOracleAWSResource
 TestAccSourceS3Resource
+TestAccSourceWebhookResource
+TestAccSourceShopifyWebhookResource
+TestAccSourceStripeWebhookResource
 
 # --- Destinations ---
 TestAccDestinationAzblobResource
@@ -42,6 +45,7 @@ TestAccDestinationStarburstResource
 # --- Data sources ---
 TestAccDataSourceTag
 TestAccDataSourceTopicMetrics
+TestAccDataSourceTopics
 
 # --- Pipelines ---
 TestAccPostgreSQLSnowflakePipelineResource
