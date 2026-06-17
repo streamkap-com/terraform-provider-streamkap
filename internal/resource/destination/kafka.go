@@ -225,10 +225,7 @@ func (r *DestinationKafkaResource) Read(ctx context.Context, req res.ReadRequest
 		return
 	}
 	if destination == nil {
-		resp.Diagnostics.AddError(
-			"Error reading Kafka destination",
-			fmt.Sprintf("Kafka destination %s does not exist", destinationID),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

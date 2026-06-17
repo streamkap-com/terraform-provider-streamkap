@@ -402,10 +402,7 @@ func (r *SourcePostgreSQLResource) Read(ctx context.Context, req res.ReadRequest
 		return
 	}
 	if source == nil {
-		resp.Diagnostics.AddError(
-			"Error reading PostgreSQL source",
-			fmt.Sprintf("PostgreSQL source %s does not exist", sourceID),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

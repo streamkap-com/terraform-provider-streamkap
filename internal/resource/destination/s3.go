@@ -277,10 +277,7 @@ func (r *DestinationS3Resource) Read(ctx context.Context, req res.ReadRequest, r
 		return
 	}
 	if destination == nil {
-		resp.Diagnostics.AddError(
-			"Error reading S3 destination",
-			fmt.Sprintf("S3 destination %s does not exist", destinationID),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

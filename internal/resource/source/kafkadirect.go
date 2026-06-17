@@ -188,10 +188,7 @@ func (r *SourceKafkaDirectResource) Read(ctx context.Context, req res.ReadReques
 		return
 	}
 	if source == nil {
-		resp.Diagnostics.AddError(
-			"Error reading Kafka Direct source",
-			fmt.Sprintf("Kafka Direct source %s does not exist", sourceID),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
