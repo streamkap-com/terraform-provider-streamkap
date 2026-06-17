@@ -175,8 +175,8 @@ func SourcePlanetscaleSchema() schema.Schema {
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to false.",
-				MarkdownDescription: "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.",
+				Description:         "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to false.",
+				MarkdownDescription: "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"ssh_host": schema.StringAttribute{

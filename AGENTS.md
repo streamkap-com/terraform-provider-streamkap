@@ -76,7 +76,7 @@ Full per-resource examples: `examples/resources/streamkap_<name>/{basic,complete
 ## Resources
 
 ### Sources
-`streamkap_source_postgresql`, `mysql`, `mongodb`, `mongodbhosted`, `dynamodb`, `sqlserver`, `oracle`, `oracleaws`, `db2`, `mariadb`, `alloydb`, `documentdb`, `elasticsearch`, `planetscale`, `redis`, `s3`, `supabase`, `vitess`, `webhook`, `salesforce_webhook` (v3), `zendesk_webhook` (v3), `kafkadirect`.
+`streamkap_source_postgresql`, `mysql`, `mongodb`, `mongodbhosted`, `dynamodb`, `sqlserver`, `oracle`, `oracleaws`, `db2`, `informix` (v3), `mariadb`, `alloydb`, `documentdb`, `elasticsearch`, `planetscale`, `redis`, `s3`, `supabase`, `vitess`, `webhook`, `salesforce_webhook` (v3), `zendesk_webhook` (v3), `shopify_webhook` (v3), `stripe_webhook` (v3), `kafkadirect`.
 
 ### Destinations
 `streamkap_destination_snowflake`, `clickhouse`, `databricks`, `postgresql`, `mysql`, `sqlserver`, `oracle`, `db2`, `cockroachdb`, `bigquery`, `redshift`, `motherduck`, `starburst`, `s3`, `gcs`, `r2`, `azblob`, `iceberg`, `kafka`, `kafkadirect`, `httpsink`, `redis`, `weaviate` (v3), `pinecone` (v3).

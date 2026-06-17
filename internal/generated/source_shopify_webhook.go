@@ -17,31 +17,28 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// SourceVitessModel is the Terraform model for the vitess source.
-type SourceVitessModel struct {
+// SourceShopifyWebhookModel is the Terraform model for the shopify_webhook source.
+type SourceShopifyWebhookModel struct {
 	ID                                               types.String   `tfsdk:"id"`
 	Name                                             types.String   `tfsdk:"name"`
 	Connector                                        types.String   `tfsdk:"connector"`
 	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
 	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
 	Tags                                             types.Set      `tfsdk:"tags"`
-	DatabaseHostname                                 types.String   `tfsdk:"database_hostname"`
-	DatabasePort                                     types.Int64    `tfsdk:"database_port"`
-	DatabaseUser                                     types.String   `tfsdk:"database_user"`
-	DatabasePassword                                 types.String   `tfsdk:"database_password"`
-	VitessKeyspace                                   types.String   `tfsdk:"vitess_keyspace"`
-	VitessTabletType                                 types.String   `tfsdk:"vitess_tablet_type"`
-	VitessVtctldHost                                 types.String   `tfsdk:"vitess_vtctld_host"`
-	VitessVtctldPort                                 types.Int64    `tfsdk:"vitess_vtctld_port"`
-	VitessVtctldUser                                 types.String   `tfsdk:"vitess_vtctld_user"`
-	VitessVtctldPassword                             types.String   `tfsdk:"vitess_vtctld_password"`
-	TableIncludeList                                 types.String   `tfsdk:"table_include_list"`
-	SSHEnabled                                       types.Bool     `tfsdk:"ssh_enabled"`
-	SSHHost                                          types.String   `tfsdk:"ssh_host"`
-	SSHPort                                          types.Int64    `tfsdk:"ssh_port"`
-	SSHUser                                          types.String   `tfsdk:"ssh_user"`
-	ColumnExcludeList                                types.String   `tfsdk:"column_exclude_list"`
-	SSHPublicKey                                     types.String   `tfsdk:"ssh_public_key"`
+	WebhookURL                                       types.String   `tfsdk:"webhook_url"`
+	APIKey                                           types.String   `tfsdk:"api_key"`
+	CamelSourceSnapshotShopifyStoreURL               types.String   `tfsdk:"camel_source_snapshot_shopify_store_url"`
+	CamelSourceSnapshotShopifyClientID               types.String   `tfsdk:"camel_source_snapshot_shopify_client_id"`
+	CamelSourceSnapshotShopifyClientSecret           types.String   `tfsdk:"camel_source_snapshot_shopify_client_secret"`
+	CamelSourceSnapshotShopifyAccessToken            types.String   `tfsdk:"camel_source_snapshot_shopify_access_token"`
+	CamelSourceSnapshotShopifyAPIVersion             types.String   `tfsdk:"camel_source_snapshot_shopify_api_version"`
+	CamelSourcePayloadRouterShopifyHmacSecret        types.String   `tfsdk:"camel_source_payload_router_shopify_hmac_secret"`
+	TopicIncludeList                                 types.String   `tfsdk:"topic_include_list"`
+	CamelSourcePayloadRouterUnknownTypeBehavior      types.String   `tfsdk:"camel_source_payload_router_unknown_type_behavior"`
+	CamelSourcePayloadRouterUnknownTypeDefaultTopic  types.String   `tfsdk:"camel_source_payload_router_unknown_type_default_topic"`
+	CamelSourcePayloadRouterIncludeEvent             types.Bool     `tfsdk:"camel_source_payload_router_include_event"`
+	CamelSourcePayloadRouterFanoutFields             types.String   `tfsdk:"camel_source_payload_router_fanout_fields"`
+	CamelSourceDlqEnabled                            types.Bool     `tfsdk:"camel_source_dlq_enabled"`
 	TransformsValueToKeyFieldsIncludeList            types.String   `tfsdk:"transforms_value_to_key_fields_include_list"`
 	TransformsValueToKeyReplaceNullWithDefault       types.Bool     `tfsdk:"transforms_value_to_key_replace_null_with_default"`
 	PreserveNullValues                               types.Bool     `tfsdk:"preserve_null_values"`
@@ -57,12 +54,12 @@ type SourceVitessModel struct {
 	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
 }
 
-// SourceVitessSchema returns the Terraform schema for the vitess source.
-func SourceVitessSchema() schema.Schema {
+// SourceShopifyWebhookSchema returns the Terraform schema for the shopify_webhook source.
+func SourceShopifyWebhookSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Vitess source connector. Use with streamkap_pipeline to build data pipelines.",
-		MarkdownDescription: "Manages a **Vitess source connector**.\n\n" +
-			"This resource creates and manages a Vitess source for Streamkap data pipelines. " +
+		Description: "Manages a Shopify source connector. Use with streamkap_pipeline to build data pipelines.",
+		MarkdownDescription: "Manages a **Shopify source connector**.\n\n" +
+			"This resource creates and manages a Shopify source for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
@@ -109,119 +106,113 @@ func SourceVitessSchema() schema.Schema {
 					setplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"database_hostname": schema.StringAttribute{
-				Required:            true,
-				Description:         "IP address or hostname of the Vitess database server (VTGate).",
-				MarkdownDescription: "IP address or hostname of the Vitess database server (VTGate).",
-			},
-			"database_port": schema.Int64Attribute{
+			"webhook_url": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Integer port number of the Vitess database server (VTGate). Defaults to 15991.",
-				MarkdownDescription: "Integer port number of the Vitess database server (VTGate). Defaults to `15991`.",
-				Default:             int64default.StaticInt64(15991),
-			},
-			"database_user": schema.StringAttribute{
-				Required:            true,
-				Description:         "An optional username of the Vitess database server (VTGate). If not configured, unauthenticated VTGate gRPC is used.",
-				MarkdownDescription: "An optional username of the Vitess database server (VTGate). If not configured, unauthenticated VTGate gRPC is used.",
-			},
-			"database_password": schema.StringAttribute{
-				Required:            true,
-				Sensitive:           true,
-				Description:         "An optional password of the Vitess database server (VTGate). If not configured, unauthenticated VTGate gRPC is used. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "An optional password of the Vitess database server (VTGate). If not configured, unauthenticated VTGate gRPC is used.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
-			},
-			"vitess_keyspace": schema.StringAttribute{
-				Required:            true,
-				Description:         "The name of the keyspace from which to stream the changes.",
-				MarkdownDescription: "The name of the keyspace from which to stream the changes.",
-			},
-			"vitess_tablet_type": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "The type of Tablet (hence MySQL) from which to stream the changes. Defaults to \"MASTER\". Valid values: MASTER, REPLICA, RDONLY.",
-				MarkdownDescription: "The type of Tablet (hence MySQL) from which to stream the changes. Defaults to `MASTER`. Valid values: `MASTER`, `REPLICA`, `RDONLY`.",
-				Default:             stringdefault.StaticString("MASTER"),
-				Validators: []validator.String{
-					stringvalidator.OneOf("MASTER", "REPLICA", "RDONLY"),
+				Description:         "Webhook URL to register in Shopify. Generated after source is created. Pass the API key as a query parameter, e.g. ?api_key=<API_KEY>.",
+				MarkdownDescription: "Webhook URL to register in Shopify. Generated after source is created. Pass the API key as a query parameter, e.g. ?api_key=<API_KEY>.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"vitess_vtctld_host": schema.StringAttribute{
-				Required:            true,
-				Description:         "IP address or hostname of the VTCtld server.",
-				MarkdownDescription: "IP address or hostname of the VTCtld server.",
-			},
-			"vitess_vtctld_port": schema.Int64Attribute{
+			"api_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Integer port number of the VTCtld server. Defaults to 15999.",
-				MarkdownDescription: "Integer port number of the VTCtld server. Defaults to `15999`.",
-				Default:             int64default.StaticInt64(15999),
+				Description:         "API Key. Append to the Webhook URL as ?api_key=<API_KEY> when registering webhooks in Shopify. Generated after source is created.",
+				MarkdownDescription: "API Key. Append to the Webhook URL as ?api_key=<API_KEY> when registering webhooks in Shopify. Generated after source is created.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
-			"vitess_vtctld_user": schema.StringAttribute{
-				Required:            true,
-				Description:         "The username of the VTCtld server.",
-				MarkdownDescription: "The username of the VTCtld server.",
+			"camel_source_snapshot_shopify_store_url": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Shopify store URL (e.g., https://yourstore.myshopify.com). Required for snapshots. Defaults to \"\".",
+				MarkdownDescription: "Shopify store URL (e.g., https://yourstore.myshopify.com). Required for snapshots. Defaults to ``.",
+				Default:             stringdefault.StaticString(""),
 			},
-			"vitess_vtctld_password": schema.StringAttribute{
-				Required:            true,
+			"camel_source_snapshot_shopify_client_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Client ID from your Shopify Dev Dashboard app (recommended). Tokens auto-refresh every 24 hours. Defaults to \"\".",
+				MarkdownDescription: "Client ID from your Shopify Dev Dashboard app (recommended). Tokens auto-refresh every 24 hours. Defaults to ``.",
+				Default:             stringdefault.StaticString(""),
+			},
+			"camel_source_snapshot_shopify_client_secret": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
 				Sensitive:           true,
-				Description:         "The password of the VTCtld database server. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "The password of the VTCtld database server.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "Client Secret from your Shopify Dev Dashboard app (recommended). Encrypted at rest. Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Client Secret from your Shopify Dev Dashboard app (recommended). Encrypted at rest. Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Default:             stringdefault.StaticString(""),
 			},
-			"table_include_list": schema.StringAttribute{
-				Required:            true,
-				Description:         "Source tables to sync.",
-				MarkdownDescription: "Source tables to sync.",
-			},
-			"ssh_enabled": schema.BoolAttribute{
+			"camel_source_snapshot_shopify_access_token": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to false.",
-				MarkdownDescription: "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.",
+				Sensitive:           true,
+				Description:         "Static access token (legacy custom apps only). Provide either Client ID + Client Secret OR this Access Token. Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Static access token (legacy custom apps only). Provide either Client ID + Client Secret OR this Access Token. Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Default:             stringdefault.StaticString(""),
+			},
+			"camel_source_snapshot_shopify_api_version": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Shopify Admin API version used by snapshots. Defaults to \"2024-10\".",
+				MarkdownDescription: "Shopify Admin API version used by snapshots. Defaults to `2024-10`.",
+				Default:             stringdefault.StaticString("2024-10"),
+			},
+			"camel_source_payload_router_shopify_hmac_secret": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Sensitive:           true,
+				Description:         "Shopify app client secret used to verify the X-Shopify-Hmac-Sha256 header. Leave empty to skip verification. Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Shopify app client secret used to verify the X-Shopify-Hmac-Sha256 header. Leave empty to skip verification. Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Default:             stringdefault.StaticString(""),
+			},
+			"topic_include_list": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Shopify resources to capture. Each resource maps to a Kafka topic. Fan-out topics are added automatically when fan-out fields are configured. Defaults to \"orders,products,customers\".",
+				MarkdownDescription: "Shopify resources to capture. Each resource maps to a Kafka topic. Fan-out topics are added automatically when fan-out fields are configured. Defaults to `orders,products,customers`.",
+				Default:             stringdefault.StaticString("orders,products,customers"),
+			},
+			"camel_source_payload_router_unknown_type_behavior": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How to handle events for resources not in the Shopify Resources list. Defaults to \"DEFAULT_TOPIC\". Valid values: DEFAULT_TOPIC, SKIP, FAIL.",
+				MarkdownDescription: "How to handle events for resources not in the Shopify Resources list. Defaults to `DEFAULT_TOPIC`. Valid values: `DEFAULT_TOPIC`, `SKIP`, `FAIL`.",
+				Default:             stringdefault.StaticString("DEFAULT_TOPIC"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("DEFAULT_TOPIC", "SKIP", "FAIL"),
+				},
+			},
+			"camel_source_payload_router_unknown_type_default_topic": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Topic for events from unselected resources (used when Unselected Resource Behavior is DEFAULT_TOPIC). Defaults to \"unknown\".",
+				MarkdownDescription: "Topic for events from unselected resources (used when Unselected Resource Behavior is DEFAULT_TOPIC). Defaults to `unknown`.",
+				Default:             stringdefault.StaticString("unknown"),
+			},
+			"camel_source_payload_router_include_event": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Include Shopify webhook metadata (_shop_domain, _event_id, _triggered_at, _api_version, _webhook_id) in output records. Disable for upsert / state-table use cases. Defaults to false.",
+				MarkdownDescription: "Include Shopify webhook metadata (_shop_domain, _event_id, _triggered_at, _api_version, _webhook_id) in output records. Disable for upsert / state-table use cases. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
-			"ssh_host": schema.StringAttribute{
+			"camel_source_payload_router_fanout_fields": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Hostname of your SSH server",
-				MarkdownDescription: "Hostname of your SSH server",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Description:         "Comma-separated list of nested arrays to fan out into their own topics (e.g. orders.line_items, products.variants, customers.addresses). When empty, arrays stay inline. Defaults to \"\".",
+				MarkdownDescription: "Comma-separated list of nested arrays to fan out into their own topics (e.g. orders.line_items, products.variants, customers.addresses). When empty, arrays stay inline. Defaults to ``.",
+				Default:             stringdefault.StaticString(""),
 			},
-			"ssh_port": schema.Int64Attribute{
+			"camel_source_dlq_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server. Defaults to 22.",
-				MarkdownDescription: "Port of your SSH server. Defaults to `22`.",
-				Default:             int64default.StaticInt64(22),
-			},
-			"ssh_user": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "User that allows Streamkap to connect to SSH server. Defaults to \"streamkap\".",
-				MarkdownDescription: "User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.",
-				Default:             stringdefault.StaticString("streamkap"),
-			},
-			"column_exclude_list": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
-				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"ssh_public_key": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Public key to add to SSH server",
-				MarkdownDescription: "Public key to add to SSH server",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Description:         "Enable dead letter queue for failed records. Defaults to true.",
+				MarkdownDescription: "Enable dead letter queue for failed records. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
 			},
 			"transforms_value_to_key_fields_include_list": schema.StringAttribute{
 				Optional:            true,
@@ -326,25 +317,22 @@ func SourceVitessSchema() schema.Schema {
 	}
 }
 
-// SourceVitessFieldMappings maps Terraform attribute names to API field names.
-var SourceVitessFieldMappings = map[string]string{
-	"database_hostname":      "database.hostname.user.defined",
-	"database_port":          "database.port.user.defined",
-	"database_user":          "database.user",
-	"database_password":      "database.password",
-	"vitess_keyspace":        "vitess.keyspace.user.defined",
-	"vitess_tablet_type":     "vitess.tablet.type",
-	"vitess_vtctld_host":     "vitess.vtctld.host.user.defined",
-	"vitess_vtctld_port":     "vitess.vtctld.port.user.defined",
-	"vitess_vtctld_user":     "vitess.vtctld.user",
-	"vitess_vtctld_password": "vitess.vtctld.password",
-	"table_include_list":     "table.include.list.user.defined",
-	"ssh_enabled":            "ssh.enabled",
-	"ssh_host":               "ssh.host",
-	"ssh_port":               "ssh.port",
-	"ssh_user":               "ssh.user",
-	"column_exclude_list":    "column.exclude.list.user.defined",
-	"ssh_public_key":         "ssh.public.key.user.displayed",
+// SourceShopifyWebhookFieldMappings maps Terraform attribute names to API field names.
+var SourceShopifyWebhookFieldMappings = map[string]string{
+	"webhook_url": "webhook.url",
+	"api_key":     "api.key",
+	"camel_source_snapshot_shopify_store_url":                "camel.source.snapshot.shopify.store.url",
+	"camel_source_snapshot_shopify_client_id":                "camel.source.snapshot.shopify.client.id",
+	"camel_source_snapshot_shopify_client_secret":            "camel.source.snapshot.shopify.client.secret",
+	"camel_source_snapshot_shopify_access_token":             "camel.source.snapshot.shopify.access.token",
+	"camel_source_snapshot_shopify_api_version":              "camel.source.snapshot.shopify.api.version",
+	"camel_source_payload_router_shopify_hmac_secret":        "camel.source.payload.router.shopify.hmac.secret",
+	"topic_include_list":                                     "topic.include.list.user.defined",
+	"camel_source_payload_router_unknown_type_behavior":      "camel.source.payload.router.unknown.type.behavior",
+	"camel_source_payload_router_unknown_type_default_topic": "camel.source.payload.router.unknown.type.default.topic",
+	"camel_source_payload_router_include_event":              "camel.source.payload.router.include.event",
+	"camel_source_payload_router_fanout_fields":              "camel.source.payload.router.fanout.fields",
+	"camel_source_dlq_enabled":                               "camel.source.dlq.enabled",
 	"transforms_value_to_key_fields_include_list":            "transforms.ValueToKey.fields.include.list",
 	"transforms_value_to_key_replace_null_with_default":      "transforms.ValueToKey.replace.null.with.default",
 	"preserve_null_values":                                   "preserve.null.values",

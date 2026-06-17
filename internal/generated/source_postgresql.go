@@ -41,10 +41,12 @@ type SourcePostgresqlModel struct {
 	ColumnExcludeList                                types.String   `tfsdk:"column_exclude_list"`
 	HeartbeatEnabled                                 types.Bool     `tfsdk:"heartbeat_enabled"`
 	HeartbeatDataCollectionSchemaOrDatabase          types.String   `tfsdk:"heartbeat_data_collection_schema_or_database"`
+	HeartbeatUseLogicalMessage                       types.Bool     `tfsdk:"heartbeat_use_logical_message"`
 	SlotName                                         types.String   `tfsdk:"slot_name"`
 	PublicationName                                  types.String   `tfsdk:"publication_name"`
 	SchemaIncludeList                                types.String   `tfsdk:"schema_include_list"`
 	TableIncludeList                                 types.String   `tfsdk:"table_include_list"`
+	PostProcessors                                   types.String   `tfsdk:"post_processors"`
 	DatabaseSslmode                                  types.String   `tfsdk:"database_sslmode"`
 	IncludeSourceDBNameInTableName                   types.Bool     `tfsdk:"include_source_db_name_in_table_name"`
 	BinaryHandlingMode                               types.String   `tfsdk:"binary_handling_mode"`
@@ -57,9 +59,9 @@ type SourcePostgresqlModel struct {
 	TransformsInsertStaticValue2StaticField          types.String   `tfsdk:"transforms_insert_static_value2_static_field"`
 	TransformsInsertStaticValue2StaticValue          types.String   `tfsdk:"transforms_insert_static_value2_static_value"`
 	PredicatesIsTopicToEnrichPattern                 types.String   `tfsdk:"predicates_is_topic_to_enrich_pattern"`
-	StreamkapSnapshotLargeTableThreshold             types.Int64    `tfsdk:"streamkap_snapshot_large_table_threshold"`
-	StreamkapSnapshotCustomTableConfig               types.String   `tfsdk:"streamkap_snapshot_custom_table_config"`
 	StreamkapSnapshotParallelism                     types.Int64    `tfsdk:"streamkap_snapshot_parallelism"`
+	StreamkapSnapshotChunkSizeBytes                  types.Int64    `tfsdk:"streamkap_snapshot_chunk_size_bytes"`
+	StreamkapSnapshotStateRefreshMs                  types.Int64    `tfsdk:"streamkap_snapshot_state_refresh_ms"`
 	SSHEnabled                                       types.Bool     `tfsdk:"ssh_enabled"`
 	SSHHost                                          types.String   `tfsdk:"ssh_host"`
 	SSHPort                                          types.Int64    `tfsdk:"ssh_port"`
@@ -235,18 +237,25 @@ func SourcePostgresqlSchema() schema.Schema {
 			"heartbeat_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "When enabled, the connector sends periodic heartbeat messages to a Kafka topic to track connector liveness. In read-write mode, the connector also periodically writes to the 'streamkap_heartbeat' table in the source database to keep the transaction log active — this table must be created before enabling. See the Streamkap documentation for table setup instructions. Defaults to true.",
-				MarkdownDescription: "When enabled, the connector sends periodic heartbeat messages to a Kafka topic to track connector liveness. In read-write mode, the connector also periodically writes to the 'streamkap_heartbeat' table in the source database to keep the transaction log active — this table must be created before enabling. See the Streamkap documentation for table setup instructions. Defaults to `true`.",
+				Description:         "When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to true.",
+				MarkdownDescription: "When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The schema containing the 'streamkap_heartbeat' table. This table must be created before enabling heartbeat — see the Streamkap documentation for setup instructions.",
-				MarkdownDescription: "The schema containing the 'streamkap_heartbeat' table. This table must be created before enabling heartbeat — see the Streamkap documentation for setup instructions.",
+				Description:         "Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
+				MarkdownDescription: "Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"heartbeat_use_logical_message": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Use a logical-message heartbeat instead of a heartbeat table. Runs SELECT pg_logical_emit_message(true, ...) on each beat to keep the replication slot advancing — works on PG14+ primaries with a SELECT-only role and is compatible with read-only mode. No table or write grant required on the source. Defaults to false.",
+				MarkdownDescription: "Use a logical-message heartbeat instead of a heartbeat table. Runs SELECT pg_logical_emit_message(true, ...) on each beat to keep the replication slot advancing — works on PG14+ primaries with a SELECT-only role and is compatible with read-only mode. No table or write grant required on the source. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
 			},
 			"slot_name": schema.StringAttribute{
 				Optional:            true,
@@ -271,6 +280,18 @@ func SourcePostgresqlSchema() schema.Schema {
 				Required:            true,
 				Description:         "Source tables to sync.",
 				MarkdownDescription: "Source tables to sync.",
+			},
+			"post_processors": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Post processors. Valid values: reselector.",
+				MarkdownDescription: "Post processors. Valid values: `reselector`.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("reselector"),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"database_sslmode": schema.StringAttribute{
 				Optional:            true,
@@ -378,25 +399,6 @@ func SourcePostgresqlSchema() schema.Schema {
 				MarkdownDescription: "Regex pattern to match topics for enrichment. Defaults to `$^`.",
 				Default:             stringdefault.StaticString("$^"),
 			},
-			"streamkap_snapshot_large_table_threshold": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to 20000.",
-				MarkdownDescription: "The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to `20000`.",
-				Default:             int64default.StaticInt64(20000),
-				Validators: []validator.Int64{
-					int64validator.Between(1, 64000),
-				},
-			},
-			"streamkap_snapshot_custom_table_config": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.",
-				MarkdownDescription: "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
 			"streamkap_snapshot_parallelism": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
@@ -407,11 +409,31 @@ func SourcePostgresqlSchema() schema.Schema {
 					int64validator.Between(1, 10),
 				},
 			},
+			"streamkap_snapshot_chunk_size_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to 524288.",
+				MarkdownDescription: "Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to `524288`.",
+				Default:             int64default.StaticInt64(524288),
+				Validators: []validator.Int64{
+					int64validator.Between(4096, 8388608),
+				},
+			},
+			"streamkap_snapshot_state_refresh_ms": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to 30000.",
+				MarkdownDescription: "Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to `30000`.",
+				Default:             int64default.StaticInt64(30000),
+				Validators: []validator.Int64{
+					int64validator.Between(1000, 60000),
+				},
+			},
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to false.",
-				MarkdownDescription: "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.",
+				Description:         "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to false.",
+				MarkdownDescription: "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"ssh_host": schema.StringAttribute{
@@ -567,10 +589,12 @@ var SourcePostgresqlFieldMappings = map[string]string{
 	"column_exclude_list":                                    "column.exclude.list.user.defined",
 	"heartbeat_enabled":                                      "heartbeat.enabled",
 	"heartbeat_data_collection_schema_or_database":           "heartbeat.data.collection.schema.or.database",
+	"heartbeat_use_logical_message":                          "heartbeat.use.logical.message",
 	"slot_name":                                              "slot.name",
 	"publication_name":                                       "publication.name",
 	"schema_include_list":                                    "schema.include.list",
 	"table_include_list":                                     "table.include.list.user.defined",
+	"post_processors":                                        "post.processors",
 	"database_sslmode":                                       "database.sslmode",
 	"include_source_db_name_in_table_name":                   "include.source.db.name.in.table.name.user.defined",
 	"binary_handling_mode":                                   "binary.handling.mode",
@@ -583,9 +607,9 @@ var SourcePostgresqlFieldMappings = map[string]string{
 	"transforms_insert_static_value2_static_field":           "transforms.InsertStaticValue2.static.field",
 	"transforms_insert_static_value2_static_value":           "transforms.InsertStaticValue2.static.value",
 	"predicates_is_topic_to_enrich_pattern":                  "predicates.IsTopicToEnrich.pattern",
-	"streamkap_snapshot_large_table_threshold":               "streamkap.snapshot.large.table.threshold",
-	"streamkap_snapshot_custom_table_config":                 "streamkap.snapshot.custom.table.config.user.defined",
 	"streamkap_snapshot_parallelism":                         "streamkap.snapshot.parallelism",
+	"streamkap_snapshot_chunk_size_bytes":                    "streamkap.snapshot.chunk.size.bytes",
+	"streamkap_snapshot_state_refresh_ms":                    "streamkap.snapshot.state.refresh.ms",
 	"ssh_enabled":                                            "ssh.enabled",
 	"ssh_host":                                               "ssh.host",
 	"ssh_port":                                               "ssh.port",

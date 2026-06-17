@@ -17,31 +17,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// SourceVitessModel is the Terraform model for the vitess source.
-type SourceVitessModel struct {
+// SourceStripeWebhookModel is the Terraform model for the stripe_webhook source.
+type SourceStripeWebhookModel struct {
 	ID                                               types.String   `tfsdk:"id"`
 	Name                                             types.String   `tfsdk:"name"`
 	Connector                                        types.String   `tfsdk:"connector"`
 	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
 	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
 	Tags                                             types.Set      `tfsdk:"tags"`
-	DatabaseHostname                                 types.String   `tfsdk:"database_hostname"`
-	DatabasePort                                     types.Int64    `tfsdk:"database_port"`
-	DatabaseUser                                     types.String   `tfsdk:"database_user"`
-	DatabasePassword                                 types.String   `tfsdk:"database_password"`
-	VitessKeyspace                                   types.String   `tfsdk:"vitess_keyspace"`
-	VitessTabletType                                 types.String   `tfsdk:"vitess_tablet_type"`
-	VitessVtctldHost                                 types.String   `tfsdk:"vitess_vtctld_host"`
-	VitessVtctldPort                                 types.Int64    `tfsdk:"vitess_vtctld_port"`
-	VitessVtctldUser                                 types.String   `tfsdk:"vitess_vtctld_user"`
-	VitessVtctldPassword                             types.String   `tfsdk:"vitess_vtctld_password"`
-	TableIncludeList                                 types.String   `tfsdk:"table_include_list"`
-	SSHEnabled                                       types.Bool     `tfsdk:"ssh_enabled"`
-	SSHHost                                          types.String   `tfsdk:"ssh_host"`
-	SSHPort                                          types.Int64    `tfsdk:"ssh_port"`
-	SSHUser                                          types.String   `tfsdk:"ssh_user"`
-	ColumnExcludeList                                types.String   `tfsdk:"column_exclude_list"`
-	SSHPublicKey                                     types.String   `tfsdk:"ssh_public_key"`
+	WebhookURL                                       types.String   `tfsdk:"webhook_url"`
+	APIKey                                           types.String   `tfsdk:"api_key"`
+	CamelSourcePayloadRouterStripeSigningSecret      types.String   `tfsdk:"camel_source_payload_router_stripe_signing_secret"`
+	CamelSourceSnapshotStripeAPIKey                  types.String   `tfsdk:"camel_source_snapshot_stripe_api_key"`
+	TopicIncludeList                                 types.String   `tfsdk:"topic_include_list"`
+	CamelSourcePayloadRouterUnknownTypeBehavior      types.String   `tfsdk:"camel_source_payload_router_unknown_type_behavior"`
+	CamelSourcePayloadRouterUnknownTypeDefaultTopic  types.String   `tfsdk:"camel_source_payload_router_unknown_type_default_topic"`
+	CamelSourcePayloadRouterIncludeEvent             types.Bool     `tfsdk:"camel_source_payload_router_include_event"`
+	CamelSourcePayloadRouterFanoutFields             types.String   `tfsdk:"camel_source_payload_router_fanout_fields"`
+	CamelSourceDlqEnabled                            types.Bool     `tfsdk:"camel_source_dlq_enabled"`
 	TransformsValueToKeyFieldsIncludeList            types.String   `tfsdk:"transforms_value_to_key_fields_include_list"`
 	TransformsValueToKeyReplaceNullWithDefault       types.Bool     `tfsdk:"transforms_value_to_key_replace_null_with_default"`
 	PreserveNullValues                               types.Bool     `tfsdk:"preserve_null_values"`
@@ -57,12 +50,12 @@ type SourceVitessModel struct {
 	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
 }
 
-// SourceVitessSchema returns the Terraform schema for the vitess source.
-func SourceVitessSchema() schema.Schema {
+// SourceStripeWebhookSchema returns the Terraform schema for the stripe_webhook source.
+func SourceStripeWebhookSchema() schema.Schema {
 	return schema.Schema{
-		Description: "Manages a Vitess source connector. Use with streamkap_pipeline to build data pipelines.",
-		MarkdownDescription: "Manages a **Vitess source connector**.\n\n" +
-			"This resource creates and manages a Vitess source for Streamkap data pipelines. " +
+		Description: "Manages a Stripe source connector. Use with streamkap_pipeline to build data pipelines.",
+		MarkdownDescription: "Manages a **Stripe source connector**.\n\n" +
+			"This resource creates and manages a Stripe source for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
@@ -109,119 +102,84 @@ func SourceVitessSchema() schema.Schema {
 					setplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"database_hostname": schema.StringAttribute{
-				Required:            true,
-				Description:         "IP address or hostname of the Vitess database server (VTGate).",
-				MarkdownDescription: "IP address or hostname of the Vitess database server (VTGate).",
-			},
-			"database_port": schema.Int64Attribute{
+			"webhook_url": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Integer port number of the Vitess database server (VTGate). Defaults to 15991.",
-				MarkdownDescription: "Integer port number of the Vitess database server (VTGate). Defaults to `15991`.",
-				Default:             int64default.StaticInt64(15991),
+				Description:         "Webhook URL to register in Stripe. Generated after source is created. Pass the API key as a query parameter, e.g. ?api_key=<API_KEY>.",
+				MarkdownDescription: "Webhook URL to register in Stripe. Generated after source is created. Pass the API key as a query parameter, e.g. ?api_key=<API_KEY>.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
-			"database_user": schema.StringAttribute{
-				Required:            true,
-				Description:         "An optional username of the Vitess database server (VTGate). If not configured, unauthenticated VTGate gRPC is used.",
-				MarkdownDescription: "An optional username of the Vitess database server (VTGate). If not configured, unauthenticated VTGate gRPC is used.",
+			"api_key": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "API Key. Append to the Webhook URL as ?api_key=<API_KEY> when registering webhooks in Stripe. Generated after source is created.",
+				MarkdownDescription: "API Key. Append to the Webhook URL as ?api_key=<API_KEY> when registering webhooks in Stripe. Generated after source is created.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
-			"database_password": schema.StringAttribute{
-				Required:            true,
+			"camel_source_payload_router_stripe_signing_secret": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
 				Sensitive:           true,
-				Description:         "An optional password of the Vitess database server (VTGate). If not configured, unauthenticated VTGate gRPC is used. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "An optional password of the Vitess database server (VTGate). If not configured, unauthenticated VTGate gRPC is used.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "Stripe webhook signing secret (whsec_xxx). When set, every webhook is verified against the Stripe-Signature header. Leave empty to disable verification. Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Stripe webhook signing secret (whsec_xxx). When set, every webhook is verified against the Stripe-Signature header. Leave empty to disable verification. Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Default:             stringdefault.StaticString(""),
 			},
-			"vitess_keyspace": schema.StringAttribute{
-				Required:            true,
-				Description:         "The name of the keyspace from which to stream the changes.",
-				MarkdownDescription: "The name of the keyspace from which to stream the changes.",
-			},
-			"vitess_tablet_type": schema.StringAttribute{
+			"camel_source_snapshot_stripe_api_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The type of Tablet (hence MySQL) from which to stream the changes. Defaults to \"MASTER\". Valid values: MASTER, REPLICA, RDONLY.",
-				MarkdownDescription: "The type of Tablet (hence MySQL) from which to stream the changes. Defaults to `MASTER`. Valid values: `MASTER`, `REPLICA`, `RDONLY`.",
-				Default:             stringdefault.StaticString("MASTER"),
+				Sensitive:           true,
+				Description:         "Stripe secret API key (sk_live_xxx or sk_test_xxx). Required for snapshots. Encrypted at rest. Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Stripe secret API key (sk_live_xxx or sk_test_xxx). Required for snapshots. Encrypted at rest. Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Default:             stringdefault.StaticString(""),
+			},
+			"topic_include_list": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Stripe resources to capture. Each resource maps to a Kafka topic. Fan-out topics are added automatically when fan-out fields are configured. Defaults to \"customer,payment_intent,charge,invoice\".",
+				MarkdownDescription: "Stripe resources to capture. Each resource maps to a Kafka topic. Fan-out topics are added automatically when fan-out fields are configured. Defaults to `customer,payment_intent,charge,invoice`.",
+				Default:             stringdefault.StaticString("customer,payment_intent,charge,invoice"),
+			},
+			"camel_source_payload_router_unknown_type_behavior": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How to handle events for resources not in the Stripe Resources list. Defaults to \"DEFAULT_TOPIC\". Valid values: DEFAULT_TOPIC, SKIP, FAIL.",
+				MarkdownDescription: "How to handle events for resources not in the Stripe Resources list. Defaults to `DEFAULT_TOPIC`. Valid values: `DEFAULT_TOPIC`, `SKIP`, `FAIL`.",
+				Default:             stringdefault.StaticString("DEFAULT_TOPIC"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("MASTER", "REPLICA", "RDONLY"),
+					stringvalidator.OneOf("DEFAULT_TOPIC", "SKIP", "FAIL"),
 				},
 			},
-			"vitess_vtctld_host": schema.StringAttribute{
-				Required:            true,
-				Description:         "IP address or hostname of the VTCtld server.",
-				MarkdownDescription: "IP address or hostname of the VTCtld server.",
-			},
-			"vitess_vtctld_port": schema.Int64Attribute{
+			"camel_source_payload_router_unknown_type_default_topic": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Integer port number of the VTCtld server. Defaults to 15999.",
-				MarkdownDescription: "Integer port number of the VTCtld server. Defaults to `15999`.",
-				Default:             int64default.StaticInt64(15999),
+				Description:         "Topic for events from unselected resources (used when Unselected Resource Behavior is DEFAULT_TOPIC). Defaults to \"unknown\".",
+				MarkdownDescription: "Topic for events from unselected resources (used when Unselected Resource Behavior is DEFAULT_TOPIC). Defaults to `unknown`.",
+				Default:             stringdefault.StaticString("unknown"),
 			},
-			"vitess_vtctld_user": schema.StringAttribute{
-				Required:            true,
-				Description:         "The username of the VTCtld server.",
-				MarkdownDescription: "The username of the VTCtld server.",
-			},
-			"vitess_vtctld_password": schema.StringAttribute{
-				Required:            true,
-				Sensitive:           true,
-				Description:         "The password of the VTCtld database server. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "The password of the VTCtld database server.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
-			},
-			"table_include_list": schema.StringAttribute{
-				Required:            true,
-				Description:         "Source tables to sync.",
-				MarkdownDescription: "Source tables to sync.",
-			},
-			"ssh_enabled": schema.BoolAttribute{
+			"camel_source_payload_router_include_event": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to false.",
-				MarkdownDescription: "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.",
-				Default:             booldefault.StaticBool(false),
+				Description:         "Include Stripe event metadata (_event_id, _event_type, _event_created, _api_version, _livemode, _previous_attributes) on the output record. Disable for upsert / state-table use cases. Defaults to true.",
+				MarkdownDescription: "Include Stripe event metadata (_event_id, _event_type, _event_created, _api_version, _livemode, _previous_attributes) on the output record. Disable for upsert / state-table use cases. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
 			},
-			"ssh_host": schema.StringAttribute{
+			"camel_source_payload_router_fanout_fields": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Hostname of your SSH server",
-				MarkdownDescription: "Hostname of your SSH server",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Description:         "Comma-separated list of nested lists to fan out into their own topics. Allowed: invoice.lines, charge.refunds, subscription.items. Defaults to \"\".",
+				MarkdownDescription: "Comma-separated list of nested lists to fan out into their own topics. Allowed: invoice.lines, charge.refunds, subscription.items. Defaults to ``.",
+				Default:             stringdefault.StaticString(""),
 			},
-			"ssh_port": schema.Int64Attribute{
+			"camel_source_dlq_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Port of your SSH server. Defaults to 22.",
-				MarkdownDescription: "Port of your SSH server. Defaults to `22`.",
-				Default:             int64default.StaticInt64(22),
-			},
-			"ssh_user": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "User that allows Streamkap to connect to SSH server. Defaults to \"streamkap\".",
-				MarkdownDescription: "User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.",
-				Default:             stringdefault.StaticString("streamkap"),
-			},
-			"column_exclude_list": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
-				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"ssh_public_key": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Public key to add to SSH server",
-				MarkdownDescription: "Public key to add to SSH server",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Description:         "Enable dead letter queue for failed records. Defaults to true.",
+				MarkdownDescription: "Enable dead letter queue for failed records. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
 			},
 			"transforms_value_to_key_fields_include_list": schema.StringAttribute{
 				Optional:            true,
@@ -326,25 +284,18 @@ func SourceVitessSchema() schema.Schema {
 	}
 }
 
-// SourceVitessFieldMappings maps Terraform attribute names to API field names.
-var SourceVitessFieldMappings = map[string]string{
-	"database_hostname":      "database.hostname.user.defined",
-	"database_port":          "database.port.user.defined",
-	"database_user":          "database.user",
-	"database_password":      "database.password",
-	"vitess_keyspace":        "vitess.keyspace.user.defined",
-	"vitess_tablet_type":     "vitess.tablet.type",
-	"vitess_vtctld_host":     "vitess.vtctld.host.user.defined",
-	"vitess_vtctld_port":     "vitess.vtctld.port.user.defined",
-	"vitess_vtctld_user":     "vitess.vtctld.user",
-	"vitess_vtctld_password": "vitess.vtctld.password",
-	"table_include_list":     "table.include.list.user.defined",
-	"ssh_enabled":            "ssh.enabled",
-	"ssh_host":               "ssh.host",
-	"ssh_port":               "ssh.port",
-	"ssh_user":               "ssh.user",
-	"column_exclude_list":    "column.exclude.list.user.defined",
-	"ssh_public_key":         "ssh.public.key.user.displayed",
+// SourceStripeWebhookFieldMappings maps Terraform attribute names to API field names.
+var SourceStripeWebhookFieldMappings = map[string]string{
+	"webhook_url": "webhook.url",
+	"api_key":     "api.key",
+	"camel_source_payload_router_stripe_signing_secret":      "camel.source.payload.router.stripe.signing.secret",
+	"camel_source_snapshot_stripe_api_key":                   "camel.source.snapshot.stripe.api.key",
+	"topic_include_list":                                     "topic.include.list.user.defined",
+	"camel_source_payload_router_unknown_type_behavior":      "camel.source.payload.router.unknown.type.behavior",
+	"camel_source_payload_router_unknown_type_default_topic": "camel.source.payload.router.unknown.type.default.topic",
+	"camel_source_payload_router_include_event":              "camel.source.payload.router.include.event",
+	"camel_source_payload_router_fanout_fields":              "camel.source.payload.router.fanout.fields",
+	"camel_source_dlq_enabled":                               "camel.source.dlq.enabled",
 	"transforms_value_to_key_fields_include_list":            "transforms.ValueToKey.fields.include.list",
 	"transforms_value_to_key_replace_null_with_default":      "transforms.ValueToKey.replace.null.with.default",
 	"preserve_null_values":                                   "preserve.null.values",

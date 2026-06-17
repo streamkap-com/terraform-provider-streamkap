@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Three new source connectors:** `streamkap_source_informix` (IBM Informix
+  CDC), `streamkap_source_shopify_webhook`, and `streamkap_source_stripe_webhook`.
+  Each ships with `basic`/`complete` examples and an import recipe. Schemas were
+  generated from the backend `configuration.latest.json` plugin specs on `main`
+  and cross-checked field-by-field against those specs.
+
+### Changed
+- **Regenerated connector schemas against the current production backend.** Beyond
+  description/help-text refreshes across most database sources, the substantive
+  changes are: new optional attributes `post_processors` (postgresql, alloydb,
+  supabase), `heartbeat_use_logical_message` (postgresql),
+  `streamkap_snapshot_chunk_size_bytes` and `streamkap_snapshot_state_refresh_ms`
+  (postgresql, sqlserveraws), and `table_name_prefix` (destination clickhouse).
+  The backend dropped `streamkap_snapshot_large_table_threshold` (postgresql,
+  sqlserveraws) and `streamkap_snapshot_custom_table_config` (postgresql);
+  configurations setting these must remove them.
+
 ### Fixed
 - **`streamkap_topics` and `streamkap_topic` no longer fail to read.** The
   backend changed the `serialization` field on `/topics` responses from a string

@@ -45,7 +45,8 @@ type SourceSqlserverawsModel struct {
 	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool                                `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
 	BinaryHandlingMode                                 types.String                              `tfsdk:"binary_handling_mode"`
 	StreamkapSnapshotParallelism                       types.Int64                               `tfsdk:"streamkap_snapshot_parallelism"`
-	StreamkapSnapshotLargeTableThreshold               types.Int64                               `tfsdk:"streamkap_snapshot_large_table_threshold"`
+	StreamkapSnapshotChunkSizeBytes                    types.Int64                               `tfsdk:"streamkap_snapshot_chunk_size_bytes"`
+	StreamkapSnapshotStateRefreshMs                    types.Int64                               `tfsdk:"streamkap_snapshot_state_refresh_ms"`
 	SSHEnabled                                         types.Bool                                `tfsdk:"ssh_enabled"`
 	SSHHost                                            types.String                              `tfsdk:"ssh_host"`
 	SSHPort                                            types.Int64                               `tfsdk:"ssh_port"`
@@ -187,16 +188,18 @@ func SourceSqlserverawsSchema() schema.Schema {
 			"heartbeat_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "When enabled, the connector sends periodic heartbeat messages to a Kafka topic to track connector liveness. In read-write mode, the connector also periodically writes to the 'streamkap_heartbeat' table in the source database to keep the transaction log active — this table must be created before enabling. See the Streamkap documentation for table setup instructions. Defaults to true.",
-				MarkdownDescription: "When enabled, the connector sends periodic heartbeat messages to a Kafka topic to track connector liveness. In read-write mode, the connector also periodically writes to the 'streamkap_heartbeat' table in the source database to keep the transaction log active — this table must be created before enabling. See the Streamkap documentation for table setup instructions. Defaults to `true`.",
+				Description:         "When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to true.",
+				MarkdownDescription: "When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The schema containing the 'streamkap_heartbeat' table. This table must be created before enabling heartbeat — see the Streamkap documentation for setup instructions. Defaults to \"streamkap\".",
-				MarkdownDescription: "The schema containing the 'streamkap_heartbeat' table. This table must be created before enabling heartbeat — see the Streamkap documentation for setup instructions. Defaults to `streamkap`.",
-				Default:             stringdefault.StaticString("streamkap"),
+				Description:         "Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
+				MarkdownDescription: "Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"schema_history_internal_store_only_captured_databases_ddl": schema.BoolAttribute{
 				Optional:            true,
@@ -232,21 +235,31 @@ func SourceSqlserverawsSchema() schema.Schema {
 					int64validator.Between(1, 50),
 				},
 			},
-			"streamkap_snapshot_large_table_threshold": schema.Int64Attribute{
+			"streamkap_snapshot_chunk_size_bytes": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to 20000.",
-				MarkdownDescription: "The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to `20000`.",
-				Default:             int64default.StaticInt64(20000),
+				Description:         "Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to 524288.",
+				MarkdownDescription: "Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to `524288`.",
+				Default:             int64default.StaticInt64(524288),
 				Validators: []validator.Int64{
-					int64validator.Between(1, 64000),
+					int64validator.Between(4096, 8388608),
+				},
+			},
+			"streamkap_snapshot_state_refresh_ms": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to 30000.",
+				MarkdownDescription: "Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to `30000`.",
+				Default:             int64default.StaticInt64(30000),
+				Validators: []validator.Int64{
+					int64validator.Between(1000, 60000),
 				},
 			},
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to false.",
-				MarkdownDescription: "Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. Defaults to `false`.",
+				Description:         "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to false.",
+				MarkdownDescription: "<span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"ssh_host": schema.StringAttribute{
@@ -451,18 +464,19 @@ var SourceSqlserverawsFieldMappings = map[string]string{
 	"heartbeat_data_collection_schema_or_database": "heartbeat.data.collection.schema.or.database",
 	"schema_history_internal_store_only_captured_databases_ddl": "schema.history.internal.store.only.captured.databases.ddl",
 	"schema_history_internal_store_only_captured_tables_ddl":    "schema.history.internal.store.only.captured.tables.ddl",
-	"binary_handling_mode":                     "binary.handling.mode",
-	"streamkap_snapshot_parallelism":           "streamkap.snapshot.parallelism",
-	"streamkap_snapshot_large_table_threshold": "streamkap.snapshot.large.table.threshold",
-	"ssh_enabled":                              "ssh.enabled",
-	"ssh_host":                                 "ssh.host",
-	"ssh_port":                                 "ssh.port",
-	"ssh_user":                                 "ssh.user",
-	"transforms_insert_static_key1_static_field":   "transforms.InsertStaticKey1.static.field",
-	"transforms_insert_static_key1_static_value":   "transforms.InsertStaticKey1.static.value",
-	"transforms_insert_static_value1_static_field": "transforms.InsertStaticValue1.static.field",
-	"transforms_insert_static_value1_static_value": "transforms.InsertStaticValue1.static.value",
-	"ssh_public_key": "ssh.public.key.user.displayed",
+	"binary_handling_mode":                                   "binary.handling.mode",
+	"streamkap_snapshot_parallelism":                         "streamkap.snapshot.parallelism",
+	"streamkap_snapshot_chunk_size_bytes":                    "streamkap.snapshot.chunk.size.bytes",
+	"streamkap_snapshot_state_refresh_ms":                    "streamkap.snapshot.state.refresh.ms",
+	"ssh_enabled":                                            "ssh.enabled",
+	"ssh_host":                                               "ssh.host",
+	"ssh_port":                                               "ssh.port",
+	"ssh_user":                                               "ssh.user",
+	"transforms_insert_static_key1_static_field":             "transforms.InsertStaticKey1.static.field",
+	"transforms_insert_static_key1_static_value":             "transforms.InsertStaticKey1.static.value",
+	"transforms_insert_static_value1_static_field":           "transforms.InsertStaticValue1.static.field",
+	"transforms_insert_static_value1_static_value":           "transforms.InsertStaticValue1.static.value",
+	"ssh_public_key":                                         "ssh.public.key.user.displayed",
 	"transforms_value_to_key_fields_include_list":            "transforms.ValueToKey.fields.include.list",
 	"transforms_value_to_key_replace_null_with_default":      "transforms.ValueToKey.replace.null.with.default",
 	"preserve_null_values":                                   "preserve.null.values",
