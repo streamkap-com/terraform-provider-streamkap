@@ -34,15 +34,15 @@ type TopicsDataSourceModel struct {
 
 // TopicDetailsModel represents a single topic in the list
 type TopicDetailsModel struct {
-	ID            types.String `tfsdk:"id"`
-	Name          types.String `tfsdk:"name"`
-	EntityID      types.String `tfsdk:"entity_id"`
-	EntityName    types.String `tfsdk:"entity_name"`
-	EntityType    types.String `tfsdk:"entity_type"`
-	Prefix        types.String `tfsdk:"prefix"`
-	Serialization types.String `tfsdk:"serialization"`
-	Messages7D    types.Int64  `tfsdk:"messages_7d"`
-	Messages30D   types.Int64  `tfsdk:"messages_30d"`
+	ID            types.String             `tfsdk:"id"`
+	Name          types.String             `tfsdk:"name"`
+	EntityID      types.String             `tfsdk:"entity_id"`
+	EntityName    types.String             `tfsdk:"entity_name"`
+	EntityType    types.String             `tfsdk:"entity_type"`
+	Prefix        types.String             `tfsdk:"prefix"`
+	Serialization *TopicSerializationModel `tfsdk:"serialization"`
+	Messages7D    types.Int64              `tfsdk:"messages_7d"`
+	Messages30D   types.Int64              `tfsdk:"messages_30d"`
 }
 
 func (d *TopicsDataSource) Metadata(ctx context.Context, req ds.MetadataRequest, resp *ds.MetadataResponse) {
@@ -112,11 +112,7 @@ func (d *TopicsDataSource) Schema(ctx context.Context, req ds.SchemaRequest, res
 							MarkdownDescription: "Topic name prefix.",
 							Computed:            true,
 						},
-						"serialization": schema.StringAttribute{
-							Description:         "Message serialization format.",
-							MarkdownDescription: "Message serialization format.",
-							Computed:            true,
-						},
+						"serialization": topicSerializationAttribute(),
 						"messages_7d": schema.Int64Attribute{
 							Description:         "Number of messages in the last 7 days.",
 							MarkdownDescription: "Number of messages in the last 7 days.",
@@ -189,7 +185,7 @@ func (d *TopicsDataSource) Read(ctx context.Context, req ds.ReadRequest, resp *d
 			ID:            types.StringValue(topic.ID),
 			Name:          types.StringValue(topic.Name),
 			Prefix:        types.StringPointerValue(topic.Prefix),
-			Serialization: types.StringPointerValue(topic.Serialization),
+			Serialization: flattenTopicSerialization(topic.Serialization),
 		}
 		if topic.Entity != nil {
 			config.Topics[i].EntityID = types.StringValue(topic.Entity.EntityID)

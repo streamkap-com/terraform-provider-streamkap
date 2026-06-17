@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`streamkap_topics` and `streamkap_topic` no longer fail to read.** The
+  backend changed the `serialization` field on `/topics` responses from a string
+  to an object, so listing topics failed with `cannot unmarshal object into Go
+  struct field TopicDetails.result.serialization of type string`. The data
+  sources now model `serialization` as a nested block exposing `key_format`,
+  `value_format`, `key_converter`, `value_converter`, and
+  `schema_registry_enabled`. Configurations that referenced `serialization` as a
+  string must switch to `serialization.value_format`.
+
 ## [3.0.0-beta.21] - 2026-06-15 (Pre-release)
 
 ### Fixed
