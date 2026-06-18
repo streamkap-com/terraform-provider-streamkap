@@ -32,6 +32,149 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Heartbeat attribute descriptions on the affected sources were rewritten to
   document Kafka-only vs source-table modes and the conditions under which
   each path applies.
+- **Three new source connectors:** `streamkap_source_informix` (IBM Informix
+  CDC), `streamkap_source_shopify_webhook`, and `streamkap_source_stripe_webhook`.
+  Each ships with `basic`/`complete` examples and an import recipe. Schemas were
+  generated from the backend `configuration.latest.json` plugin specs on `main`
+  and cross-checked field-by-field against those specs.
+
+### Changed
+- **Regenerated connector schemas against the current production backend.** Beyond
+  description/help-text refreshes across most database sources, the substantive
+  changes are: new optional attributes `post_processors` (postgresql, alloydb,
+  supabase), `heartbeat_use_logical_message` (postgresql),
+  `streamkap_snapshot_chunk_size_bytes` and `streamkap_snapshot_state_refresh_ms`
+  (postgresql, sqlserveraws), and `table_name_prefix` (destination clickhouse).
+  The backend dropped `streamkap_snapshot_large_table_threshold` (postgresql,
+  sqlserveraws) and `streamkap_snapshot_custom_table_config` (postgresql);
+  configurations setting these must remove them.
+
+### Fixed
+- **`streamkap_topics` and `streamkap_topic` no longer fail to read.** The
+  backend changed the `serialization` field on `/topics` responses from a string
+  to an object, so listing topics failed with `cannot unmarshal object into Go
+  struct field TopicDetails.result.serialization of type string`. The data
+  sources now model `serialization` as a nested block exposing `key_format`,
+  `value_format`, `key_converter`, `value_converter`, and
+  `schema_registry_enabled`. Configurations that referenced `serialization` as a
+  string must switch to `serialization.value_format`.
+
+## [3.0.0-beta.21] - 2026-06-15 (Pre-release)
+
+### Fixed
+- **`streamkap_source_kafkadirect` and `streamkap_destination_kafkadirect` no
+  longer expose configuration attributes the backend rejects.** tfgen merged
+  `configurations_for_all.json` (the shared source/destination config) into every
+  connector, but the backend's `_load_global_configuration()` returns `{}` for
+  `kafkadirect` — it resolves against its plugin config alone. As a result both
+  resources advertised ~30 phantom attributes (`quote_identifiers`,
+  `preserve_null_values`, every `transforms_*`, `consumer_override_max_poll_records`,
+  the source's `insert_topic_name_enabled` / `transforms_value_to_key_*`, etc.)
+  that are not valid Kafka Direct config. tfgen now skips the common-config merge
+  for `kafkadirect`, matching the backend. The destination keeps `password` and
+  `whitelist_ips`; the source keeps `topic_prefix`, `topic_include_list`,
+  `format`, and `schemas_enable` (plus the `kafka_format` deprecated alias).
+  Configurations that set any of the removed attributes must drop them.
+
+## [3.0.0-beta.20] - 2026-06-09 (Pre-release)
+
+### Fixed
+- **Numeric defaults stored as strings in the backend schema are now emitted
+  correctly instead of `0`.** tfgen read `number`/`slider`-control defaults via
+  a getter that only handled JSON numbers, so fields whose backend default is a
+  string (e.g. `"180000"`) fell through to `0`. With `Optional + Computed +
+  Default`, omitting such a field made Terraform send `0` to the API, overriding
+  the backend's intended default. Affected attributes and their corrected
+  defaults: `streamkap_source_dynamodb` `poll_timeout_ms` (`0` → `180000`),
+  `signal_kafka_poll_timeout_ms` (`0` → `1000`), `incremental_snapshot_chunk_size`
+  (`0` → `32768`), `incremental_snapshot_max_threads` (`0` → `8`),
+  `full_export_expiration_time_ms` (`0` → `86400000`); and
+  `streamkap_destination_databricks` `connection_timeout` (`0` → `180`).
+  Resources that left these unset will show a one-time plan diff aligning them
+  to the correct default.
+
+## [3.0.0-beta.19] - 2026-06-03 (Pre-release)
+
+### Fixed
+- **`streamkap_destination_postgresql` docs now list the `TopicRegexRouter`
+  attributes.** The schema fields shipped in beta.18, but their registry
+  documentation was missing because `go generate ./...` ran `tfplugindocs`
+  (root `main.go`) before `tfgen` (`internal/generated`), rendering docs against
+  the pre-regen schema. The `make generate` target now runs `tfgen` first, then
+  `tfplugindocs`, so docs always match the freshly generated schemas.
+
+## [3.0.0-beta.18] - 2026-06-03 (Pre-release)
+
+### Added
+- **`streamkap_destination_postgresql` now exposes the `TopicRegexRouter`
+  transforms.** Four optional attributes let you rename destination tables by
+  applying up to two regex-based rewrite rules to the incoming topic name:
+  `transforms_topic_regex_router1_regex` / `transforms_topic_regex_router1_replacement`
+  and `transforms_topic_regex_router2_regex` / `transforms_topic_regex_router2_replacement`.
+  Both replacement fields default to `$0` (the full match); leave a regex empty
+  to skip that rule.
+
+### Fixed
+- **Regenerated provider docs to match the committed schemas.** Several
+  `docs/resources/*.md` pages had drifted ahead of the generated Go schemas
+  (showing `post_processors`, `heartbeat_use_logical_message`,
+  ClickHouse `table_name_prefix`, and richer heartbeat/SSH descriptions that
+  only exist on backend feature branches, not production). The docs now reflect
+  the schemas the provider actually ships. No schema change.
+
+## [3.0.0-beta.17] - 2026-05-21 (Pre-release)
+
+### Added
+- **`streamkap_pipeline` now supports `topic_auto_discovery_transforms`.** This
+  optional list of `{ transform_id, regex }` rules lets a pipeline automatically
+  pick up a transform's output topics whose names match a regex, without
+  enumerating them in `transforms[].topics`. Use it when a transform produces
+  topics whose names are generated dynamically (e.g. a topic-router / fan-out
+  transform) and are therefore not known when the pipeline is created. Topic
+  resolution happens server-side; the list is stored and returned unchanged.
+
+### Fixed
+- **Map config attributes are restored to their correct `map` type** (regression
+  introduced in earlier v3 betas). A code-generation bug (`tfgen` resolved
+  `overrides.json` relative to the working directory, so `go generate ./...`
+  loaded zero overrides) caused three map attributes to be emitted as plain
+  strings — and `snapshot_custom_table_config` to be renamed to
+  `streamkap_snapshot_custom_table_config`:
+    - `streamkap_destination_snowflake.auto_qa_dedupe_table_mapping`
+    - `streamkap_destination_clickhouse.topics_config_map`
+    - `streamkap_source_sqlserver.snapshot_custom_table_config`
+  These now match v2.1.x (and the intended v3 design): map attributes under their
+  original names. **If you set any of these as a string on a v3 beta ≤ beta.16,
+  revert to the map form** (see `docs/MIGRATION.md`). Migrating from v2.1.x
+  requires no change — these were always maps there. The override path is now
+  resolved cwd-independently so a full regen can't silently drop it again.
+- **`connector_status` no longer triggers "Provider produced inconsistent
+  result after apply" when updating a source or destination.** Updates are sent
+  with `wait=false`, so the API response reports the transient desired-state
+  `Pending Update` while the plan still carries the prior known status
+  (e.g. `Active`). The provider was overwriting state with that transient value,
+  which Terraform rejected as plan/apply divergence. The Update path now keeps
+  the planned status (it is volatile and refreshed by Read; the backend
+  reconciler settles the connector back to `Active` within seconds).
+- **Boolean connector config fields no longer drift on every apply.** The
+  backend returns connector config as string-encoded values, so booleans arrive
+  as `"true"` / `"false"`. `helper.GetTfCfgBool` only accepted a native Go
+  `bool` and returned null for the string form, so any bool field the backend
+  backfills with a default (e.g. PostgreSQL destination
+  `transforms_mark_columns_as_required_fields_include_all`,
+  `transforms_oversized_records_replace_null_with_default`,
+  `transforms_to_decimal_j_truncate_to_max_precision`,
+  `transforms_to_jsonb_j_convert_all_json`) read back null and showed a
+  perpetual diff. `GetTfCfgBool` now coerces string-encoded booleans, mirroring
+  `GetTfCfgInt64` / `GetTfCfgFloat64`. Fixes the drift for every bool attribute
+  on every connector.
+- **`streamkap_pipeline` `source.topics` is hardened against the issue #78 bug
+  class.** `api2Model` now strips a leading `source_<id>.` prefix from returned
+  source topics (only that exact prefix — never a naive split, so dotted names
+  like `default.MyTable` survive), so state stays stable across plan/apply even
+  if the API echoes the raw `topic_id` form or state was written by an older
+  beta. Note for DynamoDB sources: send source topics in the source's catalog
+  form (e.g. `default.<table>`) so they register as selected in the pipeline.
 
 ## [3.0.0-beta.16] - 2026-05-11 (Pre-release)
 

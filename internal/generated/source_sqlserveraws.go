@@ -17,54 +17,59 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type snapshotCustomTableConfigModel struct {
+	Chunks types.Int64 `tfsdk:"chunks"`
+}
+
 // SourceSqlserverawsModel is the Terraform model for the sqlserveraws source.
 type SourceSqlserverawsModel struct {
-	ID                                                 types.String   `tfsdk:"id"`
-	Name                                               types.String   `tfsdk:"name"`
-	Connector                                          types.String   `tfsdk:"connector"`
-	ConnectorStatus                                    types.String   `tfsdk:"connector_status"`
-	KcClusterId                                        types.String   `tfsdk:"kc_cluster_id"`
-	Tags                                               types.Set      `tfsdk:"tags"`
-	DatabaseHostname                                   types.String   `tfsdk:"database_hostname"`
-	DatabasePort                                       types.Int64    `tfsdk:"database_port"`
-	DatabaseEncrypt                                    types.Bool     `tfsdk:"database_encrypt"`
-	DatabaseUser                                       types.String   `tfsdk:"database_user"`
-	DatabasePassword                                   types.String   `tfsdk:"database_password"`
-	DatabaseNames                                      types.String   `tfsdk:"database_names"`
-	SchemaIncludeList                                  types.String   `tfsdk:"schema_include_list"`
-	TableIncludeList                                   types.String   `tfsdk:"table_include_list"`
-	SignalDataCollectionSchemaOrDatabase               types.String   `tfsdk:"signal_data_collection_schema_or_database"`
-	ColumnExcludeList                                  types.String   `tfsdk:"column_exclude_list"`
-	HeartbeatEnabled                                   types.Bool     `tfsdk:"heartbeat_enabled"`
-	HeartbeatDataCollectionSchemaOrDatabase            types.String   `tfsdk:"heartbeat_data_collection_schema_or_database"`
-	SchemaHistoryInternalStoreOnlyCapturedDatabasesDdl types.Bool     `tfsdk:"schema_history_internal_store_only_captured_databases_ddl"`
-	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool     `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
-	BinaryHandlingMode                                 types.String   `tfsdk:"binary_handling_mode"`
-	StreamkapSnapshotParallelism                       types.Int64    `tfsdk:"streamkap_snapshot_parallelism"`
-	StreamkapSnapshotLargeTableThreshold               types.Int64    `tfsdk:"streamkap_snapshot_large_table_threshold"`
-	StreamkapSnapshotCustomTableConfig                 types.String   `tfsdk:"streamkap_snapshot_custom_table_config"`
-	SSHEnabled                                         types.Bool     `tfsdk:"ssh_enabled"`
-	SSHHost                                            types.String   `tfsdk:"ssh_host"`
-	SSHPort                                            types.Int64    `tfsdk:"ssh_port"`
-	SSHUser                                            types.String   `tfsdk:"ssh_user"`
-	TransformsInsertStaticKey1StaticField              types.String   `tfsdk:"transforms_insert_static_key1_static_field"`
-	TransformsInsertStaticKey1StaticValue              types.String   `tfsdk:"transforms_insert_static_key1_static_value"`
-	TransformsInsertStaticValue1StaticField            types.String   `tfsdk:"transforms_insert_static_value1_static_field"`
-	TransformsInsertStaticValue1StaticValue            types.String   `tfsdk:"transforms_insert_static_value1_static_value"`
-	SSHPublicKey                                       types.String   `tfsdk:"ssh_public_key"`
-	TransformsValueToKeyFieldsIncludeList              types.String   `tfsdk:"transforms_value_to_key_fields_include_list"`
-	TransformsValueToKeyReplaceNullWithDefault         types.Bool     `tfsdk:"transforms_value_to_key_replace_null_with_default"`
-	PreserveNullValues                                 types.Bool     `tfsdk:"preserve_null_values"`
-	TransformsOversizedRecordsFieldsIncludeList        types.String   `tfsdk:"transforms_oversized_records_fields_include_list"`
-	TransformsOversizedRecordsFieldsExcludeList        types.String   `tfsdk:"transforms_oversized_records_fields_exclude_list"`
-	TransformsOversizedRecordsMaxFieldSizeBytes        types.Int64    `tfsdk:"transforms_oversized_records_max_field_size_bytes"`
-	TransformsOversizedRecordsOversizedFieldBehavior   types.String   `tfsdk:"transforms_oversized_records_oversized_field_behavior"`
-	TransformsOversizedRecordsTruncationSuffix         types.String   `tfsdk:"transforms_oversized_records_truncation_suffix"`
-	TransformsOversizedRecordsMaxRecordSizeBytes       types.Int64    `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
-	TransformsOversizedRecordsSemanticTypesExclude     types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
-	TransformsOversizedRecordsReplaceNullWithDefault   types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
-	InsertTopicNameEnabled                             types.Bool     `tfsdk:"insert_topic_name_enabled"`
-	Timeouts                                           timeouts.Value `tfsdk:"timeouts"`
+	ID                                                 types.String                              `tfsdk:"id"`
+	Name                                               types.String                              `tfsdk:"name"`
+	Connector                                          types.String                              `tfsdk:"connector"`
+	ConnectorStatus                                    types.String                              `tfsdk:"connector_status"`
+	KcClusterId                                        types.String                              `tfsdk:"kc_cluster_id"`
+	Tags                                               types.Set                                 `tfsdk:"tags"`
+	DatabaseHostname                                   types.String                              `tfsdk:"database_hostname"`
+	DatabasePort                                       types.Int64                               `tfsdk:"database_port"`
+	DatabaseEncrypt                                    types.Bool                                `tfsdk:"database_encrypt"`
+	DatabaseUser                                       types.String                              `tfsdk:"database_user"`
+	DatabasePassword                                   types.String                              `tfsdk:"database_password"`
+	DatabaseNames                                      types.String                              `tfsdk:"database_names"`
+	SchemaIncludeList                                  types.String                              `tfsdk:"schema_include_list"`
+	TableIncludeList                                   types.String                              `tfsdk:"table_include_list"`
+	SignalDataCollectionSchemaOrDatabase               types.String                              `tfsdk:"signal_data_collection_schema_or_database"`
+	ColumnExcludeList                                  types.String                              `tfsdk:"column_exclude_list"`
+	HeartbeatEnabled                                   types.Bool                                `tfsdk:"heartbeat_enabled"`
+	HeartbeatDataCollectionSchemaOrDatabase            types.String                              `tfsdk:"heartbeat_data_collection_schema_or_database"`
+	SchemaHistoryInternalStoreOnlyCapturedDatabasesDdl types.Bool                                `tfsdk:"schema_history_internal_store_only_captured_databases_ddl"`
+	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool                                `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
+	BinaryHandlingMode                                 types.String                              `tfsdk:"binary_handling_mode"`
+	StreamkapSnapshotParallelism                       types.Int64                               `tfsdk:"streamkap_snapshot_parallelism"`
+	StreamkapSnapshotChunkSizeBytes                    types.Int64                               `tfsdk:"streamkap_snapshot_chunk_size_bytes"`
+	StreamkapSnapshotStateRefreshMs                    types.Int64                               `tfsdk:"streamkap_snapshot_state_refresh_ms"`
+	SSHEnabled                                         types.Bool                                `tfsdk:"ssh_enabled"`
+	SSHHost                                            types.String                              `tfsdk:"ssh_host"`
+	SSHPort                                            types.Int64                               `tfsdk:"ssh_port"`
+	SSHUser                                            types.String                              `tfsdk:"ssh_user"`
+	TransformsInsertStaticKey1StaticField              types.String                              `tfsdk:"transforms_insert_static_key1_static_field"`
+	TransformsInsertStaticKey1StaticValue              types.String                              `tfsdk:"transforms_insert_static_key1_static_value"`
+	TransformsInsertStaticValue1StaticField            types.String                              `tfsdk:"transforms_insert_static_value1_static_field"`
+	TransformsInsertStaticValue1StaticValue            types.String                              `tfsdk:"transforms_insert_static_value1_static_value"`
+	SSHPublicKey                                       types.String                              `tfsdk:"ssh_public_key"`
+	TransformsValueToKeyFieldsIncludeList              types.String                              `tfsdk:"transforms_value_to_key_fields_include_list"`
+	TransformsValueToKeyReplaceNullWithDefault         types.Bool                                `tfsdk:"transforms_value_to_key_replace_null_with_default"`
+	PreserveNullValues                                 types.Bool                                `tfsdk:"preserve_null_values"`
+	TransformsOversizedRecordsFieldsIncludeList        types.String                              `tfsdk:"transforms_oversized_records_fields_include_list"`
+	TransformsOversizedRecordsFieldsExcludeList        types.String                              `tfsdk:"transforms_oversized_records_fields_exclude_list"`
+	TransformsOversizedRecordsMaxFieldSizeBytes        types.Int64                               `tfsdk:"transforms_oversized_records_max_field_size_bytes"`
+	TransformsOversizedRecordsOversizedFieldBehavior   types.String                              `tfsdk:"transforms_oversized_records_oversized_field_behavior"`
+	TransformsOversizedRecordsTruncationSuffix         types.String                              `tfsdk:"transforms_oversized_records_truncation_suffix"`
+	TransformsOversizedRecordsMaxRecordSizeBytes       types.Int64                               `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
+	TransformsOversizedRecordsSemanticTypesExclude     types.String                              `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
+	TransformsOversizedRecordsReplaceNullWithDefault   types.Bool                                `tfsdk:"transforms_oversized_records_replace_null_with_default"`
+	InsertTopicNameEnabled                             types.Bool                                `tfsdk:"insert_topic_name_enabled"`
+	SnapshotCustomTableConfig                          map[string]snapshotCustomTableConfigModel `tfsdk:"snapshot_custom_table_config"`
+	Timeouts                                           timeouts.Value                            `tfsdk:"timeouts"`
 }
 
 // SourceSqlserverawsSchema returns the Terraform schema for the sqlserveraws source.
@@ -230,23 +235,24 @@ func SourceSqlserverawsSchema() schema.Schema {
 					int64validator.Between(1, 50),
 				},
 			},
-			"streamkap_snapshot_large_table_threshold": schema.Int64Attribute{
+			"streamkap_snapshot_chunk_size_bytes": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to 20000.",
-				MarkdownDescription: "The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to `20000`.",
-				Default:             int64default.StaticInt64(20000),
+				Description:         "Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to 524288.",
+				MarkdownDescription: "Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to `524288`.",
+				Default:             int64default.StaticInt64(524288),
 				Validators: []validator.Int64{
-					int64validator.Between(1, 64000),
+					int64validator.Between(4096, 8388608),
 				},
 			},
-			"streamkap_snapshot_custom_table_config": schema.StringAttribute{
+			"streamkap_snapshot_state_refresh_ms": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.",
-				MarkdownDescription: "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+				Description:         "Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to 30000.",
+				MarkdownDescription: "Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to `30000`.",
+				Default:             int64default.StaticInt64(30000),
+				Validators: []validator.Int64{
+					int64validator.Between(1000, 60000),
 				},
 			},
 			"ssh_enabled": schema.BoolAttribute{
@@ -423,6 +429,21 @@ func SourceSqlserverawsSchema() schema.Schema {
 				MarkdownDescription: "Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
+			"snapshot_custom_table_config": schema.MapNestedAttribute{
+				Optional: true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"chunks": schema.Int64Attribute{
+							Required: true,
+							Validators: []validator.Int64{
+								int64validator.AtLeast(1),
+							},
+						},
+					},
+				},
+				Description:         "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",
+				MarkdownDescription: "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",
+			},
 		},
 	}
 }
@@ -445,8 +466,8 @@ var SourceSqlserverawsFieldMappings = map[string]string{
 	"schema_history_internal_store_only_captured_tables_ddl":    "schema.history.internal.store.only.captured.tables.ddl",
 	"binary_handling_mode":                                   "binary.handling.mode",
 	"streamkap_snapshot_parallelism":                         "streamkap.snapshot.parallelism",
-	"streamkap_snapshot_large_table_threshold":               "streamkap.snapshot.large.table.threshold",
-	"streamkap_snapshot_custom_table_config":                 "streamkap.snapshot.custom.table.config.user.defined",
+	"streamkap_snapshot_chunk_size_bytes":                    "streamkap.snapshot.chunk.size.bytes",
+	"streamkap_snapshot_state_refresh_ms":                    "streamkap.snapshot.state.refresh.ms",
 	"ssh_enabled":                                            "ssh.enabled",
 	"ssh_host":                                               "ssh.host",
 	"ssh_port":                                               "ssh.port",
@@ -468,4 +489,5 @@ var SourceSqlserverawsFieldMappings = map[string]string{
 	"transforms_oversized_records_semantic_types_exclude":    "transforms.OversizedRecords.semantic.types.exclude",
 	"transforms_oversized_records_replace_null_with_default": "transforms.OversizedRecords.replace.null.with.default",
 	"insert_topic_name_enabled":                              "InsertTopicName.enabled",
+	"snapshot_custom_table_config":                           "streamkap.snapshot.custom.table.config.user.defined",
 }

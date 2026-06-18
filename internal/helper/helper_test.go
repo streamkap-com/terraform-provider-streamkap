@@ -60,7 +60,11 @@ func TestGetTfCfgInt64(t *testing.T) {
 		{"float64 value", map[string]any{"key": float64(42)}, "key", 42, false},
 		{"float64 zero", map[string]any{"key": float64(0)}, "key", 0, false},
 		{"float64 negative", map[string]any{"key": float64(-100)}, "key", -100, false},
-		{"float64 large", map[string]any{"key": float64(9223372036854775807)}, "key", 9223372036854775807, false},
+		// float64 cannot represent integers above 2^53 exactly, and converting an
+		// out-of-range float64 to int64 is implementation-defined per the Go spec
+		// (amd64 overflows to MinInt64, arm64 saturates to MaxInt64). Use the
+		// largest exactly-representable integer so the case is portable.
+		{"float64 large", map[string]any{"key": float64(9007199254740992)}, "key", 9007199254740992, false},
 		{"string int", map[string]any{"key": "42"}, "key", 42, false},
 		{"string negative int", map[string]any{"key": "-42"}, "key", -42, false},
 		{"string zero", map[string]any{"key": "0"}, "key", 0, false},
@@ -106,7 +110,16 @@ func TestGetTfCfgBool(t *testing.T) {
 		{"missing key", map[string]any{}, "key", false, true},
 		{"nil value", map[string]any{"key": nil}, "key", false, true},
 		{"different key exists", map[string]any{"other": true}, "key", false, true},
-		{"non-bool string returns null", map[string]any{"key": "true"}, "key", false, true},
+		// The Streamkap backend returns connector config as string-encoded
+		// values, so booleans arrive as "true"/"false". GetTfCfgBool must coerce
+		// them the same way GetTfCfgInt64/GetTfCfgFloat64 coerce their strings;
+		// otherwise these fields read back null and drift on every apply.
+		{"string true", map[string]any{"key": "true"}, "key", true, false},
+		{"string false", map[string]any{"key": "false"}, "key", false, false},
+		{"string True capitalized", map[string]any{"key": "True"}, "key", true, false},
+		{"string 1", map[string]any{"key": "1"}, "key", true, false},
+		{"string 0", map[string]any{"key": "0"}, "key", false, false},
+		{"unparseable string returns null", map[string]any{"key": "notabool"}, "key", false, true},
 		{"non-bool int returns null", map[string]any{"key": 1}, "key", false, true},
 	}
 

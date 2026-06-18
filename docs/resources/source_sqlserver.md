@@ -51,6 +51,7 @@ This resource creates and manages a SQL Server source for Streamkap data pipelin
 - `schema_history_internal_store_only_captured_databases_ddl` (Boolean) Specifies whether the connector records schema structures from all logical databases in the database instance or only captured databases. Enabling this when you have many databases in your instance can improve performance and avoid timeouts. Defaults to `false`.
 - `schema_history_internal_store_only_captured_tables_ddl` (Boolean) Specifies whether the connector records schema structures from all logical tables in the captured schemas or databases, or only captured tables. Enabling this when you have many tables can improve performance and avoid timeouts. Defaults to `false`.
 - `signal_data_collection_schema_or_database` (String) Path to the signal table as schema.table (e.g., 'dbo.streamkap_signal'). The database name will be added automatically. This table is used for incremental snapshotting. Defaults to `streamkap`.
+- `snapshot_custom_table_config` (Attributes Map) Explicitly set nb of parallel chunks for tables. Format: {"db.Some_Tbl": {"chunks": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably (see [below for nested schema](#nestedatt--snapshot_custom_table_config))
 - `snapshot_large_table_threshold` (Number, Deprecated) DEPRECATED: Use 'streamkap_snapshot_large_table_threshold' instead.
 - `snapshot_parallelism` (Number, Deprecated) DEPRECATED: Use 'streamkap_snapshot_parallelism' instead.
 - `ssh_enabled` (Boolean) <span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.
@@ -58,9 +59,9 @@ This resource creates and manages a SQL Server source for Streamkap data pipelin
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
-- `streamkap_snapshot_custom_table_config` (String) Explicitly set nb of parallel chunks for tables. Format: {"db.Some_Tbl": {"chunks": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.
-- `streamkap_snapshot_large_table_threshold` (Number) The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to `20000`.
+- `streamkap_snapshot_chunk_size_bytes` (Number) Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to `524288`.
 - `streamkap_snapshot_parallelism` (Number) How many parallel chunk requests to send to the source DB. Defaults to `1`.
+- `streamkap_snapshot_state_refresh_ms` (Number) Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to `30000`.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_insert_static_key1_static_field` (String) The name of the static field to be added to the message key.
@@ -83,6 +84,14 @@ This resource creates and manages a SQL Server source for Streamkap data pipelin
 - `connector` (String) Connector type
 - `connector_status` (String) Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
 - `id` (String) Unique identifier for the source
+
+<a id="nestedatt--snapshot_custom_table_config"></a>
+### Nested Schema for `snapshot_custom_table_config`
+
+Required:
+
+- `chunks` (Number)
+
 
 <a id="nestedblock--timeouts"></a>
 ### Nested Schema for `timeouts`

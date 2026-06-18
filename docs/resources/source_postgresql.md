@@ -55,6 +55,7 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 - `insert_static_value_field_2` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_value2_static_field' instead.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
+- `post_processors` (String) Post processors. Valid values: `reselector`.
 - `predicates_is_topic_to_enrich_pattern` (String) Regex pattern to match topics for enrichment. Defaults to `$^`.
 - `predicates_istopictoenrich_pattern` (String, Deprecated) DEPRECATED: Use 'predicates_is_topic_to_enrich_pattern' instead.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
@@ -68,9 +69,9 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
-- `streamkap_snapshot_custom_table_config` (String) Explicitly set nb of parallel chunks for tables. Format: {"db.Some_Tbl": {"chunks": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.
-- `streamkap_snapshot_large_table_threshold` (Number) The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to `20000`.
+- `streamkap_snapshot_chunk_size_bytes` (Number) Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to `524288`.
 - `streamkap_snapshot_parallelism` (Number) How many parallel chunk requests to send to the source DB. Defaults to `1`.
+- `streamkap_snapshot_state_refresh_ms` (Number) Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to `30000`.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_insert_static_key1_static_field` (String) The name of the static field to be added to the message key.

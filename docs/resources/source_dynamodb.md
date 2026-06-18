@@ -39,14 +39,14 @@ This resource creates and manages a DynamoDB source for Streamkap data pipelines
 - `array_encoding_json` (Boolean) Force nested lists as JSON string. Defaults to `true`.
 - `batch_size` (Number) Batch Size
 - `dynamodb_service_endpoint` (String) Dynamodb Service Endpoint (optional)
-- `full_export_expiration_time_ms` (Number) Full Export Expiration Time (ms). Defaults to `0`.
-- `incremental_snapshot_chunk_size` (Number) Incremental snapshot chunk size. Defaults to `0`.
-- `incremental_snapshot_max_threads` (Number) Incremental snapshot max threads. Defaults to `0`.
+- `full_export_expiration_time_ms` (Number) Full Export Expiration Time (ms). Defaults to `86400000`.
+- `incremental_snapshot_chunk_size` (Number) Incremental snapshot chunk size. Defaults to `32768`.
+- `incremental_snapshot_max_threads` (Number) Incremental snapshot max threads. Defaults to `8`.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
-- `poll_timeout_ms` (Number) Poll Timeout (ms). Defaults to `0`.
+- `poll_timeout_ms` (Number) Poll Timeout (ms). Defaults to `180000`.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
-- `signal_kafka_poll_timeout_ms` (Number) Signal Kafka Poll Timeout (ms). Defaults to `0`.
+- `signal_kafka_poll_timeout_ms` (Number) Signal Kafka Poll Timeout (ms). Defaults to `1000`.
 - `snapshot_parallel_time_offset` (Number) If > 0, snapshot will run in parallel with streaming and snapshot records _streamkap_ts_ms will be set back in time by this amount to prioritize CDC events downstream. Defaults to `0`.
 - `struct_encoding_json` (Boolean) Force nested maps as JSON string. Defaults to `true`.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.

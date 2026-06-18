@@ -19,66 +19,66 @@ import (
 
 // DestinationSnowflakeModel is the Terraform model for the snowflake destination.
 type DestinationSnowflakeModel struct {
-	ID                                               types.String   `tfsdk:"id"`
-	Name                                             types.String   `tfsdk:"name"`
-	Connector                                        types.String   `tfsdk:"connector"`
-	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
-	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
-	Tags                                             types.Set      `tfsdk:"tags"`
-	SnowflakeURLName                                 types.String   `tfsdk:"snowflake_url_name"`
-	SnowflakeUserName                                types.String   `tfsdk:"snowflake_user_name"`
-	SnowflakePrivateKey                              types.String   `tfsdk:"snowflake_private_key"`
-	SnowflakePrivateKeyPassphraseSecured             types.Bool     `tfsdk:"snowflake_private_key_passphrase_secured"`
-	SnowflakePrivateKeyPassphrase                    types.String   `tfsdk:"snowflake_private_key_passphrase"`
-	Sfwarehouse                                      types.String   `tfsdk:"sfwarehouse"`
-	SnowflakeDatabaseName                            types.String   `tfsdk:"snowflake_database_name"`
-	SnowflakeSchemaName                              types.String   `tfsdk:"snowflake_schema_name"`
-	CreateSchemaAuto                                 types.Bool     `tfsdk:"create_schema_auto"`
-	SnowflakeRoleName                                types.String   `tfsdk:"snowflake_role_name"`
-	IngestionMode                                    types.String   `tfsdk:"ingestion_mode"`
-	HardDelete                                       types.Bool     `tfsdk:"hard_delete"`
-	SchemaEvolution                                  types.String   `tfsdk:"schema_evolution"`
-	UseHybridTables                                  types.Bool     `tfsdk:"use_hybrid_tables"`
-	ApplyDynamicTableScript                          types.Bool     `tfsdk:"apply_dynamic_table_script"`
-	CreateSQLExecute                                 types.String   `tfsdk:"create_sql_execute"`
-	SQLTableName                                     types.String   `tfsdk:"sql_table_name"`
-	CreateSQLData                                    types.String   `tfsdk:"create_sql_data"`
-	AutoQADedupeTableMapping                         types.String   `tfsdk:"auto_qa_dedupe_table_mapping"`
-	SnowflakeTopic2tableMap                          types.String   `tfsdk:"snowflake_topic2table_map"`
-	ConsumerOverrideMaxPollRecords                   types.Int64    `tfsdk:"consumer_override_max_poll_records"`
-	PreserveNullValues                               types.Bool     `tfsdk:"preserve_null_values"`
-	QuoteIdentifiers                                 types.Bool     `tfsdk:"quote_identifiers"`
-	TransformsToIntJFieldsIncludeList                types.String   `tfsdk:"transforms_to_int_j_fields_include_list"`
-	TransformsToFloatJFieldsIncludeList              types.String   `tfsdk:"transforms_to_float_j_fields_include_list"`
-	TransformsToDecimalJFieldsIncludeList            types.String   `tfsdk:"transforms_to_decimal_j_fields_include_list"`
-	TransformsToDecimalJTruncateToMaxPrecision       types.Bool     `tfsdk:"transforms_to_decimal_j_truncate_to_max_precision"`
-	TransformsToStringJFieldsIncludeList             types.String   `tfsdk:"transforms_to_string_j_fields_include_list"`
-	TransformsToJsonJFieldsIncludeList               types.String   `tfsdk:"transforms_to_json_j_fields_include_list"`
-	TransformsToJsonJConvertAllComplexTypes          types.Bool     `tfsdk:"transforms_to_json_j_convert_all_complex_types"`
-	TransformsToJsonbJFieldsIncludeList              types.String   `tfsdk:"transforms_to_jsonb_j_fields_include_list"`
-	TransformsToJsonbJConvertAllComplexTypes         types.Bool     `tfsdk:"transforms_to_jsonb_j_convert_all_complex_types"`
-	TransformsToJsonbJConvertAllJson                 types.Bool     `tfsdk:"transforms_to_jsonb_j_convert_all_json"`
-	TransformsStringReplaceFieldsIncludeList         types.String   `tfsdk:"transforms_string_replace_fields_include_list"`
-	TransformsStringReplaceRegexPatterns             types.String   `tfsdk:"transforms_string_replace_regex_patterns"`
-	TransformsStringReplaceReplacementValues         types.String   `tfsdk:"transforms_string_replace_replacement_values"`
-	TransformsOversizedRecordsFieldsIncludeList      types.String   `tfsdk:"transforms_oversized_records_fields_include_list"`
-	TransformsOversizedRecordsFieldsExcludeList      types.String   `tfsdk:"transforms_oversized_records_fields_exclude_list"`
-	TransformsOversizedRecordsMaxFieldSizeBytes      types.Int64    `tfsdk:"transforms_oversized_records_max_field_size_bytes"`
-	TransformsOversizedRecordsOversizedFieldBehavior types.String   `tfsdk:"transforms_oversized_records_oversized_field_behavior"`
-	TransformsOversizedRecordsTruncationSuffix       types.String   `tfsdk:"transforms_oversized_records_truncation_suffix"`
-	TransformsOversizedRecordsMaxRecordSizeBytes     types.Int64    `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
-	TransformsOversizedRecordsSemanticTypesExclude   types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
-	TransformsOversizedRecordsReplaceNullWithDefault types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
-	TransformsAddStringSuffixFieldsIncludeList       types.String   `tfsdk:"transforms_add_string_suffix_fields_include_list"`
-	TransformsChangeTopicNameMatchRegex              types.String   `tfsdk:"transforms_change_topic_name_match_regex"`
-	TransformsRenameFieldsRenames                    types.String   `tfsdk:"transforms_rename_fields_renames"`
-	TransformsDropFieldsFieldsIncludeList            types.String   `tfsdk:"transforms_drop_fields_fields_include_list"`
-	TransformsMarkColumnsAsRequiredFieldsIncludeAll  types.Bool     `tfsdk:"transforms_mark_columns_as_required_fields_include_all"`
-	TransformsMarkColumnsAsRequiredNullSentinelMode  types.String   `tfsdk:"transforms_mark_columns_as_required_null_sentinel_mode"`
-	TransformsMarkColumnsAsOptionalFieldsIncludeList types.String   `tfsdk:"transforms_mark_columns_as_optional_fields_include_list"`
-	TransformsCopyFieldCopyFieldMapping              types.String   `tfsdk:"transforms_copy_field_copy_field_mapping"`
-	TransformsHeaderToFieldCustomHeaderMappings      types.String   `tfsdk:"transforms_header_to_field_custom_header_mappings"`
-	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
+	ID                                               types.String            `tfsdk:"id"`
+	Name                                             types.String            `tfsdk:"name"`
+	Connector                                        types.String            `tfsdk:"connector"`
+	ConnectorStatus                                  types.String            `tfsdk:"connector_status"`
+	KcClusterId                                      types.String            `tfsdk:"kc_cluster_id"`
+	Tags                                             types.Set               `tfsdk:"tags"`
+	SnowflakeURLName                                 types.String            `tfsdk:"snowflake_url_name"`
+	SnowflakeUserName                                types.String            `tfsdk:"snowflake_user_name"`
+	SnowflakePrivateKey                              types.String            `tfsdk:"snowflake_private_key"`
+	SnowflakePrivateKeyPassphraseSecured             types.Bool              `tfsdk:"snowflake_private_key_passphrase_secured"`
+	SnowflakePrivateKeyPassphrase                    types.String            `tfsdk:"snowflake_private_key_passphrase"`
+	Sfwarehouse                                      types.String            `tfsdk:"sfwarehouse"`
+	SnowflakeDatabaseName                            types.String            `tfsdk:"snowflake_database_name"`
+	SnowflakeSchemaName                              types.String            `tfsdk:"snowflake_schema_name"`
+	CreateSchemaAuto                                 types.Bool              `tfsdk:"create_schema_auto"`
+	SnowflakeRoleName                                types.String            `tfsdk:"snowflake_role_name"`
+	IngestionMode                                    types.String            `tfsdk:"ingestion_mode"`
+	HardDelete                                       types.Bool              `tfsdk:"hard_delete"`
+	SchemaEvolution                                  types.String            `tfsdk:"schema_evolution"`
+	UseHybridTables                                  types.Bool              `tfsdk:"use_hybrid_tables"`
+	ApplyDynamicTableScript                          types.Bool              `tfsdk:"apply_dynamic_table_script"`
+	CreateSQLExecute                                 types.String            `tfsdk:"create_sql_execute"`
+	SQLTableName                                     types.String            `tfsdk:"sql_table_name"`
+	CreateSQLData                                    types.String            `tfsdk:"create_sql_data"`
+	SnowflakeTopic2tableMap                          types.String            `tfsdk:"snowflake_topic2table_map"`
+	ConsumerOverrideMaxPollRecords                   types.Int64             `tfsdk:"consumer_override_max_poll_records"`
+	PreserveNullValues                               types.Bool              `tfsdk:"preserve_null_values"`
+	QuoteIdentifiers                                 types.Bool              `tfsdk:"quote_identifiers"`
+	TransformsToIntJFieldsIncludeList                types.String            `tfsdk:"transforms_to_int_j_fields_include_list"`
+	TransformsToFloatJFieldsIncludeList              types.String            `tfsdk:"transforms_to_float_j_fields_include_list"`
+	TransformsToDecimalJFieldsIncludeList            types.String            `tfsdk:"transforms_to_decimal_j_fields_include_list"`
+	TransformsToDecimalJTruncateToMaxPrecision       types.Bool              `tfsdk:"transforms_to_decimal_j_truncate_to_max_precision"`
+	TransformsToStringJFieldsIncludeList             types.String            `tfsdk:"transforms_to_string_j_fields_include_list"`
+	TransformsToJsonJFieldsIncludeList               types.String            `tfsdk:"transforms_to_json_j_fields_include_list"`
+	TransformsToJsonJConvertAllComplexTypes          types.Bool              `tfsdk:"transforms_to_json_j_convert_all_complex_types"`
+	TransformsToJsonbJFieldsIncludeList              types.String            `tfsdk:"transforms_to_jsonb_j_fields_include_list"`
+	TransformsToJsonbJConvertAllComplexTypes         types.Bool              `tfsdk:"transforms_to_jsonb_j_convert_all_complex_types"`
+	TransformsToJsonbJConvertAllJson                 types.Bool              `tfsdk:"transforms_to_jsonb_j_convert_all_json"`
+	TransformsStringReplaceFieldsIncludeList         types.String            `tfsdk:"transforms_string_replace_fields_include_list"`
+	TransformsStringReplaceRegexPatterns             types.String            `tfsdk:"transforms_string_replace_regex_patterns"`
+	TransformsStringReplaceReplacementValues         types.String            `tfsdk:"transforms_string_replace_replacement_values"`
+	TransformsOversizedRecordsFieldsIncludeList      types.String            `tfsdk:"transforms_oversized_records_fields_include_list"`
+	TransformsOversizedRecordsFieldsExcludeList      types.String            `tfsdk:"transforms_oversized_records_fields_exclude_list"`
+	TransformsOversizedRecordsMaxFieldSizeBytes      types.Int64             `tfsdk:"transforms_oversized_records_max_field_size_bytes"`
+	TransformsOversizedRecordsOversizedFieldBehavior types.String            `tfsdk:"transforms_oversized_records_oversized_field_behavior"`
+	TransformsOversizedRecordsTruncationSuffix       types.String            `tfsdk:"transforms_oversized_records_truncation_suffix"`
+	TransformsOversizedRecordsMaxRecordSizeBytes     types.Int64             `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
+	TransformsOversizedRecordsSemanticTypesExclude   types.String            `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
+	TransformsOversizedRecordsReplaceNullWithDefault types.Bool              `tfsdk:"transforms_oversized_records_replace_null_with_default"`
+	TransformsAddStringSuffixFieldsIncludeList       types.String            `tfsdk:"transforms_add_string_suffix_fields_include_list"`
+	TransformsChangeTopicNameMatchRegex              types.String            `tfsdk:"transforms_change_topic_name_match_regex"`
+	TransformsRenameFieldsRenames                    types.String            `tfsdk:"transforms_rename_fields_renames"`
+	TransformsDropFieldsFieldsIncludeList            types.String            `tfsdk:"transforms_drop_fields_fields_include_list"`
+	TransformsMarkColumnsAsRequiredFieldsIncludeAll  types.Bool              `tfsdk:"transforms_mark_columns_as_required_fields_include_all"`
+	TransformsMarkColumnsAsRequiredNullSentinelMode  types.String            `tfsdk:"transforms_mark_columns_as_required_null_sentinel_mode"`
+	TransformsMarkColumnsAsOptionalFieldsIncludeList types.String            `tfsdk:"transforms_mark_columns_as_optional_fields_include_list"`
+	TransformsCopyFieldCopyFieldMapping              types.String            `tfsdk:"transforms_copy_field_copy_field_mapping"`
+	TransformsHeaderToFieldCustomHeaderMappings      types.String            `tfsdk:"transforms_header_to_field_custom_header_mappings"`
+	AutoQADedupeTableMapping                         map[string]types.String `tfsdk:"auto_qa_dedupe_table_mapping"`
+	Timeouts                                         timeouts.Value          `tfsdk:"timeouts"`
 }
 
 // DestinationSnowflakeSchema returns the Terraform schema for the snowflake destination.
@@ -244,9 +244,9 @@ func DestinationSnowflakeSchema() schema.Schema {
 			"create_sql_execute": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "These template queries run for each table the first time a record is streamed for them. Defaults to \"CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';\\nCREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);\\nALTER TASK {{table}}_CT RESUME\".",
-				MarkdownDescription: "These template queries run for each table the first time a record is streamed for them. Defaults to `CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';\nCREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);\nALTER TASK {{table}}_CT RESUME`.",
-				Default:             stringdefault.StaticString("CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';\nCREATE OR REPLACE TASK {{table}}_CT WAREHOUSE={{warehouse}} SCHEDULE='4380 minutes' TASK_AUTO_RETRY_ATTEMPTS=3 ALLOW_OVERLAPPING_EXECUTION=FALSE AS DELETE FROM {{table}} WHERE NOT EXISTS ( SELECT 1 FROM ( SELECT {{primaryKeyColumns}}, MAX(_streamkap_ts_ms) AS max_timestamp FROM {{table}} GROUP BY {{primaryKeyColumns}} ) AS subquery WHERE {{{keyColumnsAndCondition}}} AND {{table}}._streamkap_ts_ms = subquery.max_timestamp);\nALTER TASK {{table}}_CT RESUME"),
+				Description:         "These template queries run for each table the first time a record is streamed for them. Defaults to \"CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';\".",
+				MarkdownDescription: "These template queries run for each table the first time a record is streamed for them. Defaults to `CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';`.",
+				Default:             stringdefault.StaticString("CREATE OR REPLACE DYNAMIC TABLE {{table}}_DT TARGET_LAG='15 minutes' WAREHOUSE={{warehouse}} AS SELECT * EXCLUDE dedupe_id FROM( SELECT *, ROW_NUMBER() OVER (PARTITION BY {{primaryKeyColumns}} ORDER BY _streamkap_ts_ms DESC, _streamkap_offset DESC) AS dedupe_id FROM {{table}} ) WHERE dedupe_id = 1 AND __deleted = 'false';"),
 			},
 			"sql_table_name": schema.StringAttribute{
 				Optional:            true,
@@ -260,15 +260,6 @@ func DestinationSnowflakeSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Use <code>{\"TABLE_DATA\": {\"{table_name}\": {\"{key}\": \"{value}\"}, ...}, ...}</code> to set table specific data. This data will be available in the custom SQL templates e.g. <code>SELECT {{key}}</code>.",
 				MarkdownDescription: "Use <code>{\"TABLE_DATA\": {\"{table_name}\": {\"{key}\": \"{value}\"}, ...}, ...}</code> to set table specific data. This data will be available in the custom SQL templates e.g. <code>SELECT {{key}}</code>.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"auto_qa_dedupe_table_mapping": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Mapping between the tables that store append-only data and the deduplicated tables. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
-				MarkdownDescription: "Mapping between the tables that store append-only data and the deduplicated tables. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -562,6 +553,12 @@ func DestinationSnowflakeSchema() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"auto_qa_dedupe_table_mapping": schema.MapAttribute{
+				Optional:            true,
+				ElementType:         types.StringType,
+				Description:         "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
+				MarkdownDescription: "Mapping between the tables that store append-only data and the deduplicated tables, e.g. rawTable1:[dedupeSchema.]dedupeTable1,rawTable2:[dedupeSchema.]dedupeTable2,etc. The dedupeTable in mapping will be used for QA scripts. If dedupeSchema is not specified, the deduplicated table will be created in the same schema as the raw table.",
+			},
 		},
 	}
 }
@@ -586,7 +583,6 @@ var DestinationSnowflakeFieldMappings = map[string]string{
 	"create_sql_execute":                                      "create.sql.execute",
 	"sql_table_name":                                          "sql.table.name",
 	"create_sql_data":                                         "create.sql.data",
-	"auto_qa_dedupe_table_mapping":                            "auto.qa.dedupe.table.mapping",
 	"snowflake_topic2table_map":                               "snowflake.topic2table.map",
 	"consumer_override_max_poll_records":                      "consumer.override.max.poll.records",
 	"preserve_null_values":                                    "preserve.null.values",
@@ -621,4 +617,5 @@ var DestinationSnowflakeFieldMappings = map[string]string{
 	"transforms_mark_columns_as_optional_fields_include_list": "transforms.MarkColumnsAsOptional.fields.include.list",
 	"transforms_copy_field_copy_field_mapping":                "transforms.CopyField.copy.field.mapping",
 	"transforms_header_to_field_custom_header_mappings":       "transforms.HeaderToFieldCustom.header.mappings",
+	"auto_qa_dedupe_table_mapping":                            "auto.qa.dedupe.table.mapping",
 }

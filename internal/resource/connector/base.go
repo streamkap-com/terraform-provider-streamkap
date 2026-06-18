@@ -502,12 +502,36 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		responseTags = destination.Tags
 	}
 
-	// Update model with response data
+	// Update model with response data.
 	r.setStringField(model, "Name", connectorName)
 	r.setStringField(model, "Connector", connectorCode)
-	r.setStringField(model, "ConnectorStatus", connectorStatus)
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, responseTags))
 	r.configMapToModel(ctx, responseConfig, model)
+
+	// connector_status handling on Update.
+	//
+	// The PUT response (sent with wait=false) reports the transient
+	// desired_state "Pending Update", while for an in-place update the plan
+	// carries the prior KNOWN status ("Active"/"Unassigned") — Terraform copies
+	// the prior state value for a computed attribute that isn't being changed.
+	// Writing the transient response value would make the applied value differ
+	// from the planned value, which Terraform rejects with "Provider produced
+	// inconsistent result after apply: .connector_status was Active but now
+	// Pending Update". So when the plan value is known we keep it (the model
+	// already holds it from req.Plan.Get) and let Read refresh the real status
+	// once the reconciler settles the connector back to Active.
+	//
+	// If the plan value is unknown/null (a computed value with no prior state),
+	// we must write a concrete value or the framework rejects the unknown left
+	// in state — use the response value, which is always known.
+	var plannedStatus types.String
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("connector_status"), &plannedStatus)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if plannedStatus.IsUnknown() || plannedStatus.IsNull() {
+		r.setStringField(model, "ConnectorStatus", connectorStatus)
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)

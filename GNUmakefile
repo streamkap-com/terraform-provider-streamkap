@@ -13,10 +13,17 @@ build:
 install:
 	go install .
 
-# Generate documentation
+# Generate schemas (tfgen) then docs (tfplugindocs).
+# Order matters: tfplugindocs introspects the built provider, so the schemas must
+# be regenerated first. `go generate ./...` alone runs the root main.go directives
+# (tfplugindocs) before internal/generated (tfgen), rendering docs one regen behind.
 .PHONY: generate
 generate:
-	go generate ./...
+	@bash scripts/codegen-preflight.sh
+	go generate ./internal/generated/...
+	go generate main.go
+	@echo "Review generated output before committing (stray files can mean a wrong-branch run):"
+	@git status --porcelain internal/generated docs || true
 
 # Run unit tests (fast, no API needed)
 .PHONY: test
@@ -84,10 +91,16 @@ cassettes:
 snapshots:
 	UPDATE_SNAPSHOTS=1 go test -v -run 'TestSchemaBackwardsCompatibility' ./internal/provider/...
 
-# Run test sweepers to clean up orphaned resources
+# Run test sweepers to clean up orphaned resources.
+# Sweepers live behind the `sweep` build tag and use the Terraform sweep
+# framework, so they only run with `-tags sweep` and the `-sweep` flag — not via
+# `-run`. `-sweep` is a test-binary flag, so it must come AFTER the package path
+# or `go test` misparses it and runs nothing. SWEEP_REGION is passed through but
+# ignored by the sweep funcs, so any non-empty value works.
+SWEEP_REGION ?= all
 .PHONY: sweep
 sweep:
-	go test -v -run 'TestSweep' ./internal/provider/...
+	go test -v -tags sweep -timeout 30m ./internal/provider/... -sweep=$(SWEEP_REGION)
 
 # Validate example files
 .PHONY: validate-examples

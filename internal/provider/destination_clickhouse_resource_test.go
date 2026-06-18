@@ -40,8 +40,8 @@ resource "streamkap_destination_clickhouse" "test" {
 	ingestion_mode       = "upsert"
 	hard_delete          = true
 	tasks_max            = 3
-	port                 = 8443
-	database             = "demo"
+	port                 = 8123
+	database             = "default"
 	ssl                  = true
 	schema_evolution     = "basic"
 }
@@ -54,8 +54,8 @@ resource "streamkap_destination_clickhouse" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ingestion_mode", "upsert"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "hard_delete", "true"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "tasks_max", "3"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "port", "8443"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "database", "demo"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "port", "8123"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "database", "default"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ssl", "true"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "schema_evolution", "basic"),
 					resource.TestCheckResourceAttrSet("streamkap_destination_clickhouse.test", "id"),
@@ -93,9 +93,9 @@ resource "streamkap_destination_clickhouse" "test" {
 	ingestion_mode       = "append"
 	hard_delete          = false
 	tasks_max            = 5
-	port                 = 8443
-	database             = "demo"
-	ssl                  = true
+	port                 = 8123
+	database             = "default"
+	ssl                  = false
 	schema_evolution     = "none"
 }
 `,
@@ -107,9 +107,9 @@ resource "streamkap_destination_clickhouse" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ingestion_mode", "append"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "hard_delete", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "tasks_max", "5"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "port", "8443"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "database", "demo"),
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ssl", "true"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "port", "8123"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "database", "default"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "ssl", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "schema_evolution", "none"),
 					resource.TestCheckResourceAttrSet("streamkap_destination_clickhouse.test", "id"),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connector", "clickhouse"),

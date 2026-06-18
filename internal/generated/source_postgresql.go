@@ -46,6 +46,7 @@ type SourcePostgresqlModel struct {
 	PublicationName                                  types.String   `tfsdk:"publication_name"`
 	SchemaIncludeList                                types.String   `tfsdk:"schema_include_list"`
 	TableIncludeList                                 types.String   `tfsdk:"table_include_list"`
+	PostProcessors                                   types.String   `tfsdk:"post_processors"`
 	DatabaseSslmode                                  types.String   `tfsdk:"database_sslmode"`
 	IncludeSourceDBNameInTableName                   types.Bool     `tfsdk:"include_source_db_name_in_table_name"`
 	BinaryHandlingMode                               types.String   `tfsdk:"binary_handling_mode"`
@@ -58,9 +59,9 @@ type SourcePostgresqlModel struct {
 	TransformsInsertStaticValue2StaticField          types.String   `tfsdk:"transforms_insert_static_value2_static_field"`
 	TransformsInsertStaticValue2StaticValue          types.String   `tfsdk:"transforms_insert_static_value2_static_value"`
 	PredicatesIsTopicToEnrichPattern                 types.String   `tfsdk:"predicates_is_topic_to_enrich_pattern"`
-	StreamkapSnapshotLargeTableThreshold             types.Int64    `tfsdk:"streamkap_snapshot_large_table_threshold"`
-	StreamkapSnapshotCustomTableConfig               types.String   `tfsdk:"streamkap_snapshot_custom_table_config"`
 	StreamkapSnapshotParallelism                     types.Int64    `tfsdk:"streamkap_snapshot_parallelism"`
+	StreamkapSnapshotChunkSizeBytes                  types.Int64    `tfsdk:"streamkap_snapshot_chunk_size_bytes"`
+	StreamkapSnapshotStateRefreshMs                  types.Int64    `tfsdk:"streamkap_snapshot_state_refresh_ms"`
 	SSHEnabled                                       types.Bool     `tfsdk:"ssh_enabled"`
 	SSHHost                                          types.String   `tfsdk:"ssh_host"`
 	SSHPort                                          types.Int64    `tfsdk:"ssh_port"`
@@ -280,6 +281,18 @@ func SourcePostgresqlSchema() schema.Schema {
 				Description:         "Source tables to sync.",
 				MarkdownDescription: "Source tables to sync.",
 			},
+			"post_processors": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Post processors. Valid values: reselector.",
+				MarkdownDescription: "Post processors. Valid values: `reselector`.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("reselector"),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"database_sslmode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -386,25 +399,6 @@ func SourcePostgresqlSchema() schema.Schema {
 				MarkdownDescription: "Regex pattern to match topics for enrichment. Defaults to `$^`.",
 				Default:             stringdefault.StaticString("$^"),
 			},
-			"streamkap_snapshot_large_table_threshold": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to 20000.",
-				MarkdownDescription: "The threshold in MB for a Large Table to require multiple chunks to be read in parallel. Defaults to `20000`.",
-				Default:             int64default.StaticInt64(20000),
-				Validators: []validator.Int64{
-					int64validator.Between(1, 64000),
-				},
-			},
-			"streamkap_snapshot_custom_table_config": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.",
-				MarkdownDescription: "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
 			"streamkap_snapshot_parallelism": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
@@ -413,6 +407,26 @@ func SourcePostgresqlSchema() schema.Schema {
 				Default:             int64default.StaticInt64(1),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 10),
+				},
+			},
+			"streamkap_snapshot_chunk_size_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to 524288.",
+				MarkdownDescription: "Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to `524288`.",
+				Default:             int64default.StaticInt64(524288),
+				Validators: []validator.Int64{
+					int64validator.Between(4096, 8388608),
+				},
+			},
+			"streamkap_snapshot_state_refresh_ms": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to 30000.",
+				MarkdownDescription: "Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to `30000`.",
+				Default:             int64default.StaticInt64(30000),
+				Validators: []validator.Int64{
+					int64validator.Between(1000, 60000),
 				},
 			},
 			"ssh_enabled": schema.BoolAttribute{
@@ -580,6 +594,7 @@ var SourcePostgresqlFieldMappings = map[string]string{
 	"publication_name":                                       "publication.name",
 	"schema_include_list":                                    "schema.include.list",
 	"table_include_list":                                     "table.include.list.user.defined",
+	"post_processors":                                        "post.processors",
 	"database_sslmode":                                       "database.sslmode",
 	"include_source_db_name_in_table_name":                   "include.source.db.name.in.table.name.user.defined",
 	"binary_handling_mode":                                   "binary.handling.mode",
@@ -592,9 +607,9 @@ var SourcePostgresqlFieldMappings = map[string]string{
 	"transforms_insert_static_value2_static_field":           "transforms.InsertStaticValue2.static.field",
 	"transforms_insert_static_value2_static_value":           "transforms.InsertStaticValue2.static.value",
 	"predicates_is_topic_to_enrich_pattern":                  "predicates.IsTopicToEnrich.pattern",
-	"streamkap_snapshot_large_table_threshold":               "streamkap.snapshot.large.table.threshold",
-	"streamkap_snapshot_custom_table_config":                 "streamkap.snapshot.custom.table.config.user.defined",
 	"streamkap_snapshot_parallelism":                         "streamkap.snapshot.parallelism",
+	"streamkap_snapshot_chunk_size_bytes":                    "streamkap.snapshot.chunk.size.bytes",
+	"streamkap_snapshot_state_refresh_ms":                    "streamkap.snapshot.state.refresh.ms",
 	"ssh_enabled":                                            "ssh.enabled",
 	"ssh_host":                                               "ssh.host",
 	"ssh_port":                                               "ssh.port",

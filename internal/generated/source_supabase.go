@@ -41,6 +41,7 @@ type SourceSupabaseModel struct {
 	PublicationName                                  types.String   `tfsdk:"publication_name"`
 	SchemaIncludeList                                types.String   `tfsdk:"schema_include_list"`
 	TableIncludeList                                 types.String   `tfsdk:"table_include_list"`
+	PostProcessors                                   types.String   `tfsdk:"post_processors"`
 	DatabaseSslmode                                  types.String   `tfsdk:"database_sslmode"`
 	IncludeSourceDBNameInTableName                   types.Bool     `tfsdk:"include_source_db_name_in_table_name"`
 	BinaryHandlingMode                               types.String   `tfsdk:"binary_handling_mode"`
@@ -236,6 +237,18 @@ func SourceSupabaseSchema() schema.Schema {
 				Required:            true,
 				Description:         "Source tables to sync.",
 				MarkdownDescription: "Source tables to sync.",
+			},
+			"post_processors": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Post processors. Valid values: reselector.",
+				MarkdownDescription: "Post processors. Valid values: `reselector`.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("reselector"),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"database_sslmode": schema.StringAttribute{
 				Optional:            true,
@@ -503,6 +516,7 @@ var SourceSupabaseFieldMappings = map[string]string{
 	"publication_name":                                       "publication.name",
 	"schema_include_list":                                    "schema.include.list",
 	"table_include_list":                                     "table.include.list.user.defined",
+	"post_processors":                                        "post.processors",
 	"database_sslmode":                                       "database.sslmode",
 	"include_source_db_name_in_table_name":                   "include.source.db.name.in.table.name.user.defined",
 	"binary_handling_mode":                                   "binary.handling.mode",

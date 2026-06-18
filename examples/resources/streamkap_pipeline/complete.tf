@@ -129,6 +129,17 @@ resource "streamkap_pipeline" "example" {
       ]
     }
   ]
+  # Auto-discover a transform's output topics by regex. Use this when the
+  # transform produces topics whose names are generated dynamically (e.g. a
+  # topic-router / fan-out transform) and are therefore not known up front, so
+  # they cannot be listed in transforms[].topics. Topic resolution happens
+  # server-side; this list is stored and returned unchanged.
+  topic_auto_discovery_transforms = [
+    {
+      transform_id = data.streamkap_transform.another-example-transform.id
+      regex        = "example_ap.*"
+    }
+  ]
   tags = [
     data.streamkap_tag.production-tag.id,
   ]

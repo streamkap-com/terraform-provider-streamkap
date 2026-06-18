@@ -46,6 +46,7 @@ This resource creates and manages a Supabase source for Streamkap data pipelines
 - `include_source_db_name_in_table_name` (Boolean) Changes the format of topics to 'DatabaseName_TopicName'. Defaults to `false`.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
+- `post_processors` (String) Post processors. Valid values: `reselector`.
 - `predicates_is_topic_to_enrich_pattern` (String) Regex pattern to match topics for enrichment. Defaults to `$^`.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `publication_name` (String) The name of the publication for the connector to use. Defaults to `streamkap_pub`.

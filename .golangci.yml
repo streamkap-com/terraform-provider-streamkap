@@ -1,5 +1,10 @@
 run:
   timeout: 5m
+  # golangci-lint v1.64.8 is built with go1.24 and refuses to run when the
+  # module targets a newer Go (go.mod says 1.25.0). Pin the analysis target to
+  # 1.24 to unblock. Proper fix: upgrade to golangci-lint v2.x (built with
+  # go1.25) + golangci-lint-action v7 and migrate this config to the v2 schema.
+  go: "1.24"
 
 linters:
   enable:

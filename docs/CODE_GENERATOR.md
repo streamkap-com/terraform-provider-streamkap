@@ -8,7 +8,7 @@ This document provides comprehensive documentation for the `tfgen` code generato
 - [CLI Usage](#cli-usage)
 - [Type Mapping](#type-mapping)
 - [overrides.json](#overridesjson)
-- [deprecations.json](#deprecationsjson)
+- [Deprecated attribute aliases](#deprecated-attribute-aliases)
 - [Adding a New Connector](#adding-a-new-connector)
 - [Generated Code Structure](#generated-code-structure)
 - [Troubleshooting](#troubleshooting)
@@ -37,7 +37,6 @@ The `tfgen` tool automates Terraform provider schema generation by parsing backe
 ┌──────────────────────────────────────────────────────────────────────┐
 │  cmd/tfgen/generator.go                                              │
 │  - Load overrides from overrides.json                                │
-│  - Load deprecations from deprecations.json                          │
 │  - Apply automatic type conversions (port fields → Int64)            │
 │  - Convert ConfigEntry → FieldData                                   │
 │  - Apply Go template to generate code                                │
@@ -53,6 +52,22 @@ The `tfgen` tool automates Terraform provider schema generation by parsing backe
 │  - Field mappings map[string]string                                  │
 └──────────────────────────────────────────────────────────────────────┘
 ```
+
+### Common config merge (`configurations_for_all.json`)
+
+Before generating a connector, `generator.go` merges the entity-wide
+`app/{sources,destinations}/configurations_for_all.json` into the per-connector
+config (per-connector entries win on name collision). These are the shared
+fields — `consumer.override.*`, the `transforms.*` family, `quote.identifiers`,
+`preserve.null.values`, etc. — that the backend layers onto every connector.
+
+**Exception — `kafkadirect`:** the backend's `_load_global_configuration()`
+(`app/utils/fetch_utils.py`) returns `{}` for `kafkadirect`, so it resolves
+against its plugin config alone. tfgen mirrors this: the merge is skipped for
+`kafkadirect`, so the source and destination Kafka Direct resources expose only
+their plugin fields. This is the only connector exempted from the merge. If you
+add another proxy-style connector that the backend excludes from the global
+config, extend the same guard in `Generate()`.
 
 ### Key Benefits
 
@@ -70,7 +85,6 @@ The `tfgen` tool automates Terraform provider schema generation by parsing backe
 | `cmd/tfgen/parser.go` | JSON config parsing, field extraction |
 | `cmd/tfgen/generator.go` | Code generation, templates |
 | `cmd/tfgen/overrides.json` | Custom type overrides for map fields |
-| `cmd/tfgen/deprecations.json` | Deprecated field aliases |
 
 ## CLI Usage
 
@@ -109,22 +123,34 @@ tfgen generate --backend-path=/path/to/backend --output=internal/generated
 | `--entity-type` | No | `all` | Entity type: `sources`, `destinations`, `transforms`, or `all` |
 | `--connector` | No | - | Specific connector to generate (e.g., `postgresql`) |
 
-### Using go generate
+### Using make generate
 
-The recommended way to run tfgen is via `go generate`:
+The recommended way to run tfgen is via `make generate`:
 
 ```bash
 # Set the backend path
 export STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap
 
-# Run generation
-go generate ./...
+# Run generation (schemas first, then docs)
+make generate
 ```
 
-The `go generate` directive is typically configured in `internal/generated/doc.go`:
+> **Do not run `go generate ./...` directly.** It runs the root `main.go`
+> directive (`tfplugindocs`) *before* the `internal/generated/doc.go` directive
+> (`tfgen`), so the registry docs are rendered against the *previous* schema and
+> lag one regeneration behind. A newly added attribute then lands in
+> `internal/generated/*.go` but is silently missing from its
+> `docs/resources/*.md` page. `make generate` runs `tfgen` first and
+> `tfplugindocs` second, guaranteeing docs match the freshly generated schemas.
+
+The two directives that `make generate` sequences are:
 
 ```go
+// internal/generated/doc.go — schemas/models/mappings (runs first)
 //go:generate go run ../../cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH
+
+// main.go — registry docs, introspected from the built provider (runs second)
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
 ```
 
 ### Example Output
@@ -136,7 +162,6 @@ Output: internal/generated
 Entity type: all
 
 Loaded 3 field overrides from cmd/tfgen/overrides.json
-Loaded 10 deprecated field definitions from cmd/tfgen/deprecations.json
 
 Generating source_alloydb.go...
 Generating source_db2.go...
@@ -186,6 +211,24 @@ The generator applies smart conversions:
 1. **Port fields**: Fields named `port` or ending with `_port` are converted to `Int64` even if stored as strings in the backend
 2. **Sensitive fields**: Fields with `encrypt: true` or `control: "password"` are marked `Sensitive: true`
 3. **Set-once fields**: Fields with `set_once: true` get `RequiresReplace()` plan modifier
+
+### Go Field Naming (acronyms)
+
+When converting a Terraform attribute name to a Go field name, common acronyms
+are preserved in uppercase per Go conventions:
+
+| Acronym | Example attribute | Go field name |
+|---------|-------------------|---------------|
+| `ID` | `connector_id` | `ConnectorID` |
+| `SSH` | `ssh_port` | `SSHPort` |
+| `SSL` | `ssl_enabled` | `SSLEnabled` |
+| `SQL` | `delete_sql_execute` | `DeleteSQLExecute` |
+| `DB` | `db_name` | `DBName` |
+| `URL` | `api_url` | `APIURL` |
+| `API` | `api_key` | `APIKey` |
+| `AWS` | `aws_region` | `AWSRegion` |
+| `ARN` | `role_arn` | `RoleARN` |
+| `QA` | `auto_qa_dedupe` | `AutoQADedupe` |
 
 ### Default Value Handling
 
@@ -279,6 +322,11 @@ Use overrides for:
 | `type` | Yes | `map_string` or `map_nested` |
 | `optional` | Yes | Whether the field is optional |
 | `description` | Yes | Field description |
+
+**Precedence:** when an override's `api_field_name` matches a field in the
+backend config, the override wins and the auto-parsed field is dropped, so the
+attribute is not emitted twice. Map overrides are emitted `Optional` only (never
+`Computed`) — a Go map type cannot hold an unknown value (issue #82).
 
 ### Map String Type
 
@@ -391,81 +439,23 @@ TopicsConfigMap map[string]clickHouseTopicsConfigMapItemModel `tfsdk:"topics_con
 Supported validator types:
 - `int64_at_least`: Minimum value validator
 
-## deprecations.json
+## Deprecated attribute aliases
 
-The `cmd/tfgen/deprecations.json` file defines deprecated field aliases for backward compatibility.
+tfgen does **not** emit deprecated v2 aliases. They are owned entirely by the
+hand-maintained wrapper files
+(`internal/resource/{source,destination}/<connector>_generated.go`), which embed
+the generated model and add — for each alias — the wrapper struct field, the
+schema attribute (with `DeprecationMessage` and a `ConflictsWith` validator), and
+the field mapping to the same backend field as the new name.
 
-### When to Use Deprecations
+There was previously a parallel `cmd/tfgen/deprecations.json` mechanism that
+emitted deprecated *model fields* into `internal/generated/`. It was removed
+because it duplicated the wrapper declarations (producing duplicate `tfsdk` tags)
+and only covered a stale subset of the connectors that actually have aliases.
 
-Use deprecations when:
-- A field is being renamed but old configs should still work
-- Maintaining backward compatibility during migrations
-- Gradual transition to new field names
-
-### Schema Structure
-
-```json
-{
-  "deprecated_fields": [
-    {
-      "connector": "postgresql",
-      "entity_type": "sources",
-      "deprecated_attr": "insert_static_key_field_1",
-      "new_attr": "transforms_insert_static_key1_static_field",
-      "type": "string"
-    }
-  ]
-}
-```
-
-### Deprecation Fields
-
-| Field | Required | Description |
-|-------|----------|-------------|
-| `connector` | Yes | Connector code (e.g., `postgresql`) |
-| `entity_type` | Yes | `sources`, `destinations`, or `transforms` |
-| `deprecated_attr` | Yes | Old/deprecated attribute name |
-| `new_attr` | Yes | New attribute name to map to |
-| `type` | Yes | `string`, `int64`, or `bool` |
-
-### Generated Code
-
-Deprecated fields are added to the Model struct only:
-
-```go
-type SourcePostgresqlModel struct {
-    // ... regular fields ...
-
-    // Deprecated fields - kept for backward compatibility
-    InsertStaticKeyField1 types.String `tfsdk:"insert_static_key_field_1"`
-    // ... more deprecated fields ...
-
-    Timeouts timeouts.Value `tfsdk:"timeouts"`
-}
-```
-
-The schema and field mappings for deprecated fields are added by the wrapper files in `internal/resource/source/` or `internal/resource/destination/`.
-
-### Example: PostgreSQL Deprecations
-
-```json
-[
-  {
-    "connector": "postgresql",
-    "entity_type": "sources",
-    "deprecated_attr": "insert_static_key_field_1",
-    "new_attr": "transforms_insert_static_key1_static_field",
-    "type": "string"
-  },
-  {
-    "connector": "postgresql",
-    "entity_type": "sources",
-    "deprecated_attr": "predicates_istopictoenrich_pattern",
-    "new_attr": "predicates_is_topic_to_enrich_pattern",
-    "type": "string"
-  }
-]
-```
+To add or change a deprecated alias, edit the wrapper file directly — see the
+"Deprecated attribute pattern (v2 → v3 aliases)" section of `CLAUDE.md` for the
+five-step recipe.
 
 ## Adding a New Connector
 
@@ -485,8 +475,8 @@ tfgen generate \
   --entity-type=sources \
   --connector=mynewconnector
 
-# Or regenerate all
-go generate ./...
+# Or regenerate all (schemas + docs, in the correct order)
+make generate
 ```
 
 ### Step 2: Create the Wrapper File
@@ -645,7 +635,7 @@ TF_ACC=1 go test -v -run 'TestAccSourceMynewconnector' ./internal/provider/...
 ### Step 7: Update Documentation
 
 1. Add to README.md feature list
-2. Run `go generate ./...` to update docs
+2. Run `make generate` to update schemas and docs
 
 ## Generated Code Structure
 
@@ -733,8 +723,11 @@ Generated files include the header:
 
 **Never manually edit generated files.** Instead:
 - Fix the backend `configuration.latest.json`
-- Add entries to `overrides.json` or `deprecations.json`
+- Add entries to `overrides.json`
 - Re-run the generator
+
+(Deprecated v2 aliases are the exception — they live in the hand-maintained
+wrapper files, not in generated code. See "Deprecated attribute aliases" above.)
 
 ## Troubleshooting
 
@@ -786,7 +779,7 @@ When backend configs change significantly:
 ```bash
 # Clean and regenerate
 rm internal/generated/*.go
-go generate ./...
+make generate
 
 # Verify
 go build ./...
