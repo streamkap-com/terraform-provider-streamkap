@@ -21,20 +21,24 @@ variable "source_postgresql_password" {
 }
 
 resource "streamkap_source_postgresql" "example-source-postgresql" {
-  name                                         = "example-source-postgresql"
-  database_hostname                            = var.source_postgresql_hostname
-  database_port                                = 5432
-  database_user                                = "postgresql"
-  database_password                            = var.source_postgresql_password
-  database_dbname                              = "postgres"
-  snapshot_read_only                           = "No"
-  database_sslmode                             = "require"
-  schema_include_list                          = "streamkap"
-  table_include_list                           = "streamkap.customer,streamkap.customer2"
-  signal_data_collection_schema_or_database    = "streamkap.streamkap_signal"
-  column_include_list                          = "streamkap[.]customer[.](id|name)"
-  heartbeat_enabled                            = false
+  name                                      = "example-source-postgresql"
+  database_hostname                         = var.source_postgresql_hostname
+  database_port                             = 5432
+  database_user                             = "postgresql"
+  database_password                         = var.source_postgresql_password
+  database_dbname                           = "postgres"
+  snapshot_read_only                        = "No"
+  database_sslmode                          = "require"
+  schema_include_list                       = "streamkap"
+  table_include_list                        = "streamkap.customer,streamkap.customer2"
+  signal_data_collection_schema_or_database = "streamkap.streamkap_signal"
+  column_include_list                       = "streamkap[.]customer[.](id|name)"
+  # Heartbeat keeps the connector polling on low-traffic sources.
+  #   - leave heartbeat_data_collection_schema_or_database = null  -> Kafka-only mode (no source-DB write)
+  #   - set it to a schema containing a streamkap_heartbeat table -> source-table mode
+  heartbeat_enabled                            = true
   heartbeat_data_collection_schema_or_database = null
+  # heartbeat_use_logical_message              = true  # PG14+, SELECT-only role, read-only-compatible
   include_source_db_name_in_table_name         = false
   slot_name                                    = "terraform_pgoutput_slot"
   publication_name                             = "terraform_pub"

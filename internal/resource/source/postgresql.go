@@ -57,6 +57,7 @@ type SourcePostgreSQLResourceModel struct {
 	ColumnExcludeList                       types.String `tfsdk:"column_exclude_list"`
 	HeartbeatEnabled                        types.Bool   `tfsdk:"heartbeat_enabled"`
 	HeartbeatDataCollectionSchemaOrDatabase types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
+	HeartbeatUseLogicalMessage              types.Bool   `tfsdk:"heartbeat_use_logical_message"`
 	IncludeSourceDBNameInTableName          types.Bool   `tfsdk:"include_source_db_name_in_table_name"`
 	SlotName                                types.String `tfsdk:"slot_name"`
 	PublicationName                         types.String `tfsdk:"publication_name"`
@@ -194,16 +195,43 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 					"You can only specify either `column_include_list` or `column_exclude_list`, not both.",
 			},
 			"heartbeat_enabled": schema.BoolAttribute{
-				Computed:            true,
-				Optional:            true,
-				Default:             booldefault.StaticBool(false),
-				Description:         "Enable heartbeat to keep the pipeline healthy during low data volume",
-				MarkdownDescription: "Enable heartbeat to keep the pipeline healthy during low data volume",
+				Computed: true,
+				Optional: true,
+				Default:  booldefault.StaticBool(false),
+				Description: "When true, emit a periodic heartbeat to a Kafka topic so the connector keeps " +
+					"polling and committing offsets on low-traffic sources. " +
+					"Set heartbeat_data_collection_schema_or_database to also write to a streamkap_heartbeat " +
+					"table in the source database; leave it null for Kafka-only mode. " +
+					"When false, neither heartbeat path runs and heartbeat_data_collection_schema_or_database is ignored.",
+				MarkdownDescription: "When `true`, emit a periodic heartbeat to a Kafka topic so the connector keeps " +
+					"polling and committing offsets on low-traffic sources. " +
+					"Set `heartbeat_data_collection_schema_or_database` to also write to a `streamkap_heartbeat` " +
+					"table in the source database; leave it `null` for Kafka-only mode. " +
+					"When `false`, neither heartbeat path runs and `heartbeat_data_collection_schema_or_database` is ignored.",
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
-				Optional:            true,
-				Description:         "Schema for heartbeat data collection",
-				MarkdownDescription: "Schema for heartbeat data collection",
+				Optional: true,
+				Description: "Optional. Only takes effect when heartbeat_enabled is true. Schema containing a streamkap_heartbeat " +
+					"table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the " +
+					"source transaction log active. Leave null for Kafka-only heartbeat (no table or write grant required).",
+				MarkdownDescription: "Optional. Only takes effect when `heartbeat_enabled` is `true`. Schema containing a `streamkap_heartbeat` " +
+					"table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the " +
+					"source transaction log active. Leave `null` for Kafka-only heartbeat (no table or write grant required).",
+			},
+			"heartbeat_use_logical_message": schema.BoolAttribute{
+				Computed: true,
+				Optional: true,
+				Default:  booldefault.StaticBool(false),
+				Description: "Use a logical-message heartbeat instead of a heartbeat table. Runs " +
+					"SELECT pg_logical_emit_message(true, ...) on each beat to keep the replication " +
+					"slot advancing — works on PG14+ primaries with a SELECT-only role and is " +
+					"compatible with read-only mode. No table or write grant required on the source. " +
+					"Only takes effect when heartbeat_enabled is true.",
+				MarkdownDescription: "Use a logical-message heartbeat instead of a heartbeat table. Runs " +
+					"`SELECT pg_logical_emit_message(true, ...)` on each beat to keep the replication " +
+					"slot advancing — works on PG14+ primaries with a SELECT-only role and is " +
+					"compatible with read-only mode. No table or write grant required on the source. " +
+					"Only takes effect when `heartbeat_enabled` is `true`.",
 			},
 			"include_source_db_name_in_table_name": schema.BoolAttribute{
 				Computed:            true,
@@ -504,6 +532,7 @@ func (r *SourcePostgreSQLResource) model2ConfigMap(model SourcePostgreSQLResourc
 		"column.include.list.toggled":                       true,
 		"heartbeat.enabled":                                 model.HeartbeatEnabled.ValueBool(),
 		"heartbeat.data.collection.schema.or.database":      model.HeartbeatDataCollectionSchemaOrDatabase.ValueStringPointer(),
+		"heartbeat.use.logical.message":                     model.HeartbeatUseLogicalMessage.ValueBool(),
 		"include.source.db.name.in.table.name.user.defined": model.IncludeSourceDBNameInTableName.ValueBool(),
 		"slot.name":                                         model.SlotName.ValueString(),
 		"publication.name":                                  model.PublicationName.ValueString(),
@@ -550,6 +579,7 @@ func (r *SourcePostgreSQLResource) configMap2Model(cfg map[string]any, model *So
 	model.ColumnExcludeList = helper.GetTfCfgString(cfg, "column.exclude.list.user.defined")
 	model.HeartbeatEnabled = helper.GetTfCfgBool(cfg, "heartbeat.enabled")
 	model.HeartbeatDataCollectionSchemaOrDatabase = helper.GetTfCfgString(cfg, "heartbeat.data.collection.schema.or.database")
+	model.HeartbeatUseLogicalMessage = helper.GetTfCfgBool(cfg, "heartbeat.use.logical.message")
 	model.IncludeSourceDBNameInTableName = helper.GetTfCfgBool(cfg, "include.source.db.name.in.table.name.user.defined")
 	model.SlotName = helper.GetTfCfgString(cfg, "slot.name")
 	model.PublicationName = helper.GetTfCfgString(cfg, "publication.name")

@@ -36,19 +36,22 @@ variable "source_postgresql_password" {
 }
 
 resource "streamkap_source_postgresql" "example-source-postgresql" {
-  name                                         = "example-source-postgresql"
-  database_hostname                            = var.source_postgresql_hostname
-  database_port                                = 5432
-  database_user                                = "postgresql"
-  database_password                            = var.source_postgresql_password
-  database_dbname                              = "postgres"
-  snapshot_read_only                           = "No"
-  database_sslmode                             = "require"
-  schema_include_list                          = "streamkap"
-  table_include_list                           = "streamkap.customer,streamkap.customer2"
-  signal_data_collection_schema_or_database    = "streamkap"
-  column_include_list                          = "streamkap[.]customer[.](id|name)"
-  heartbeat_enabled                            = false
+  name                                      = "example-source-postgresql"
+  database_hostname                         = var.source_postgresql_hostname
+  database_port                             = 5432
+  database_user                             = "postgresql"
+  database_password                         = var.source_postgresql_password
+  database_dbname                           = "postgres"
+  snapshot_read_only                        = "No"
+  database_sslmode                          = "require"
+  schema_include_list                       = "streamkap"
+  table_include_list                        = "streamkap.customer,streamkap.customer2"
+  signal_data_collection_schema_or_database = "streamkap.streamkap_signal"
+  column_include_list                       = "streamkap[.]customer[.](id|name)"
+  # Heartbeat keeps the connector polling on low-traffic sources.
+  #   - leave heartbeat_data_collection_schema_or_database = null  -> Kafka-only mode (no source-DB write)
+  #   - set it to a schema containing a streamkap_heartbeat table -> source-table mode
+  heartbeat_enabled                            = true
   heartbeat_data_collection_schema_or_database = null
   include_source_db_name_in_table_name         = false
   slot_name                                    = "terraform_pgoutput_slot"
@@ -82,8 +85,8 @@ output "example-source-postgresql" {
 - `column_include_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form schemaName[.]tableName[.](columnName1|columnName2)You can only specify either `column_include_list` or `column_exclude_list`, not both.
 - `database_port` (Number) PostgreSQL Port. For example, 5432
 - `database_sslmode` (String) Whether to use an encrypted connection to the PostgreSQL server
-- `heartbeat_data_collection_schema_or_database` (String) Schema for heartbeat data collection
-- `heartbeat_enabled` (Boolean) Enable heartbeat to keep the pipeline healthy during low data volume
+- `heartbeat_data_collection_schema_or_database` (String) Optional. Only takes effect when `heartbeat_enabled` is `true`. Schema containing a `streamkap_heartbeat` table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave `null` for Kafka-only heartbeat (no table or write grant required).
+- `heartbeat_enabled` (Boolean) When `true`, emit a periodic heartbeat to a Kafka topic so the connector keeps polling and committing offsets on low-traffic sources. Set `heartbeat_data_collection_schema_or_database` to also write to a `streamkap_heartbeat` table in the source database; leave it `null` for Kafka-only mode. When `false`, neither heartbeat path runs and `heartbeat_data_collection_schema_or_database` is ignored.
 - `include_source_db_name_in_table_name` (Boolean) Prefix topics with the database name
 - `insert_static_key_field_1` (String) The name of the static field to be added to the message key.
 - `insert_static_key_field_2` (String) The name of the static field to be added to the message key.
@@ -95,7 +98,7 @@ output "example-source-postgresql" {
 - `insert_static_value_field_2` (String) The name of the static field to be added to the message value.
 - `predicates_istopictoenrich_pattern` (String) Regex pattern to match topics for enrichment
 - `publication_name` (String) Publication name for the connector
-- `signal_data_collection_schema_or_database` (String) Schema for signal data collection
+- `signal_data_collection_schema_or_database` (String) Full path to the signal table including schema and table name (e.g., `public.streamkap_signal`). This table is used for incremental snapshotting. Follow the documentation for creating this table.
 - `slot_name` (String) Replication slot name for the connector
 - `snapshot_read_only` (String) When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots
 - `ssh_enabled` (Boolean) Connect via SSH tunnel
