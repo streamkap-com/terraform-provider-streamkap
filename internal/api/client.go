@@ -5,10 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
+
+const errorBodySnippetLimit = 512
 
 type StreamkapAPI interface {
 	GetAccessToken(clientID, secret string) (*Token, error)
@@ -80,29 +84,63 @@ func (s *streamkapAPI) doRequest(ctx context.Context, req *http.Request, result 
 	if err != nil {
 		return err
 	}
-
 	defer resp.Body.Close()
 
-	respBodyDecoder := json.NewDecoder(resp.Body)
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		var apiErr APIErrorResponse
-		if err := respBodyDecoder.Decode(&apiErr); err != nil {
-			tflog.Debug(ctx,
-				fmt.Sprintf("%s request to %s got status code: %d. Failed to parse API error response: %v",
-					req.Method,
-					req.URL,
-					resp.StatusCode,
-					err,
-				),
-			)
-			return err
-		} else {
-			return errors.New(apiErr.Detail)
-		}
+	requestID := resp.Header.Get("X-Request-Id")
+	if requestID != "" {
+		tflog.Debug(ctx, fmt.Sprintf("%s %s returned %d (request_id=%s)",
+			req.Method, req.URL, resp.StatusCode, requestID))
 	}
 
-	if err := respBodyDecoder.Decode(result); err != nil {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("%s %s: failed to read response body (status %d): %w",
+			req.Method, req.URL, resp.StatusCode, err)
+	}
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		var apiErr APIErrorResponse
+		if jsonErr := json.Unmarshal(body, &apiErr); jsonErr == nil && apiErr.Detail != "" {
+			return errors.New(withRequestID(apiErr.Detail, requestID))
+		}
+		tflog.Debug(ctx,
+			fmt.Sprintf("%s %s returned %d with non-JSON or empty error body",
+				req.Method, req.URL, resp.StatusCode),
+		)
+		return errors.New(withRequestID(
+			fmt.Sprintf("unexpected %d %s from %s %s: %s",
+				resp.StatusCode,
+				http.StatusText(resp.StatusCode),
+				req.Method,
+				req.URL,
+				truncateBody(body, errorBodySnippetLimit),
+			),
+			requestID,
+		))
+	}
+
+	if err := json.Unmarshal(body, result); err != nil {
 		return err
 	}
 	return nil
+}
+
+func truncateBody(body []byte, limit int) string {
+	s := strings.TrimSpace(string(body))
+	s = strings.ReplaceAll(s, "\n", " ")
+	s = strings.ReplaceAll(s, "\r", " ")
+	if s == "" {
+		return "(empty body)"
+	}
+	if len(s) <= limit {
+		return s
+	}
+	return s[:limit] + "...(truncated)"
+}
+
+func withRequestID(msg, requestID string) string {
+	if requestID == "" {
+		return msg
+	}
+	return fmt.Sprintf("%s (request_id=%s)", msg, requestID)
 }

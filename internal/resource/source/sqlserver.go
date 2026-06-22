@@ -349,10 +349,7 @@ func (r *SourceSQLServerResource) Read(ctx context.Context, req res.ReadRequest,
 		return
 	}
 	if source == nil {
-		resp.Diagnostics.AddError(
-			"Error reading SQLServer source",
-			fmt.Sprintf("SQLServer source %s does not exist", sourceID),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

@@ -304,10 +304,7 @@ func (r *DestinationPostgresqlResource) Read(ctx context.Context, req res.ReadRe
 		return
 	}
 	if destination == nil {
-		resp.Diagnostics.AddError(
-			"Error reading Postgresql destination",
-			fmt.Sprintf("Postgresql destination %s does not exist", destinationID),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

@@ -338,10 +338,7 @@ func (r *DestinationSnowflakeResource) Read(ctx context.Context, req res.ReadReq
 		return
 	}
 	if destination == nil {
-		resp.Diagnostics.AddError(
-			"Error reading Snowflake destination",
-			fmt.Sprintf("Snowflake destination %s does not exist", destinationID),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

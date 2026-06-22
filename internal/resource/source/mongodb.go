@@ -292,10 +292,7 @@ func (r *SourceMongoDBResource) Read(ctx context.Context, req res.ReadRequest, r
 		return
 	}
 	if source == nil {
-		resp.Diagnostics.AddError(
-			"Error reading MongoDB source",
-			fmt.Sprintf("MongoDB source %s does not exist", sourceID),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

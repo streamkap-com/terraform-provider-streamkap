@@ -453,10 +453,7 @@ func (r *SourceMySQLResource) Read(ctx context.Context, req res.ReadRequest, res
 		return
 	}
 	if source == nil {
-		resp.Diagnostics.AddError(
-			"Error reading MySQL source",
-			fmt.Sprintf("MySQL source %s does not exist", sourceID),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
