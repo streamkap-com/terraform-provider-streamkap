@@ -280,10 +280,7 @@ func (r *DestinationClickHouseResource) Read(ctx context.Context, req res.ReadRe
 		return
 	}
 	if destination == nil {
-		resp.Diagnostics.AddError(
-			"Error reading ClickHouse destination",
-			fmt.Sprintf("ClickHouse destination %s does not exist", destinationID),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

@@ -270,10 +270,7 @@ func (r *DestinationIcebergResource) Read(ctx context.Context, req res.ReadReque
 		return
 	}
 	if destination == nil {
-		resp.Diagnostics.AddError(
-			"Error reading Iceberg destination",
-			fmt.Sprintf("Iceberg destination %s does not exist", destinationID),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

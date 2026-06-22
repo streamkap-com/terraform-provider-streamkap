@@ -267,10 +267,7 @@ func (r *DestinationDatabricksResource) Read(ctx context.Context, req res.ReadRe
 		return
 	}
 	if destination == nil {
-		resp.Diagnostics.AddError(
-			"Error reading Databricks destination",
-			fmt.Sprintf("Databricks destination %s does not exist", destinationID),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 

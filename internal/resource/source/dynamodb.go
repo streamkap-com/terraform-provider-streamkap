@@ -265,10 +265,7 @@ func (r *SourceDynamoDBResource) Read(ctx context.Context, req res.ReadRequest, 
 		return
 	}
 	if source == nil {
-		resp.Diagnostics.AddError(
-			"Error reading DynamoDB source",
-			fmt.Sprintf("DynamoDB source %s does not exist", sourceID),
-		)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
