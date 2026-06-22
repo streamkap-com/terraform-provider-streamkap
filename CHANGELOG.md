@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0-beta.22] - 2026-06-22 (Pre-release)
+
 ### Added
 - **PostgreSQL: `heartbeat_use_logical_message`** (bool, default `false`) — run
   `SELECT pg_logical_emit_message(true, ...)` on each beat to advance the
