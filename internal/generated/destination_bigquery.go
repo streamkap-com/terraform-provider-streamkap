@@ -26,12 +26,14 @@ type DestinationBigqueryModel struct {
 	ConnectorStatus                                  types.String         `tfsdk:"connector_status"`
 	KcClusterId                                      types.String         `tfsdk:"kc_cluster_id"`
 	Tags                                             types.Set            `tfsdk:"tags"`
-	BigqueryJson                                     jsontypes.Normalized `tfsdk:"bigquery_json"`
-	TableNamePrefix                                  types.String         `tfsdk:"table_name_prefix"`
-	BigqueryRegion                                   types.String         `tfsdk:"bigquery_region"`
-	CustomBigqueryClusterField                       types.String         `tfsdk:"custom_bigquery_cluster_field"`
-	CustomBigqueryPartitionField                     types.String         `tfsdk:"custom_bigquery_partition_field"`
-	BigqueryTimeBasedPartition                       types.Bool           `tfsdk:"bigquery_time_based_partition"`
+	Keyfile                                          jsontypes.Normalized `tfsdk:"keyfile"`
+	DefaultDataset                                   types.String         `tfsdk:"default_dataset"`
+	TimePartitioningType                             types.String         `tfsdk:"time_partitioning_type"`
+	CustomPartitionField                             types.String         `tfsdk:"custom_partition_field"`
+	CustomClusteringFields                           types.String         `tfsdk:"custom_clustering_fields"`
+	AutoCreateTables                                 types.Bool           `tfsdk:"auto_create_tables"`
+	AllowNewBigQueryFields                           types.Bool           `tfsdk:"allow_new_big_query_fields"`
+	AllowBigQueryRequiredFieldRelaxation             types.Bool           `tfsdk:"allow_big_query_required_field_relaxation"`
 	TasksMax                                         types.Int64          `tfsdk:"tasks_max"`
 	ConsumerOverrideMaxPollRecords                   types.Int64          `tfsdk:"consumer_override_max_poll_records"`
 	PreserveNullValues                               types.Bool           `tfsdk:"preserve_null_values"`
@@ -121,52 +123,66 @@ func DestinationBigquerySchema() schema.Schema {
 					setplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"bigquery_json": schema.StringAttribute{
+			"keyfile": schema.StringAttribute{
 				Required:            true,
 				CustomType:          jsontypes.NormalizedType{},
 				Sensitive:           true,
-				Description:         "Upload the Bigquery JSON file. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Upload the Bigquery JSON file.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "Upload the BigQuery service-account JSON key file. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Upload the BigQuery service-account JSON key file.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
-			"table_name_prefix": schema.StringAttribute{
+			"default_dataset": schema.StringAttribute{
 				Required:            true,
-				Description:         "Name of the destination Dataset for the of the associated table name",
-				MarkdownDescription: "Name of the destination Dataset for the of the associated table name",
+				Description:         "Name of the destination BigQuery dataset. The dataset must already exist.",
+				MarkdownDescription: "Name of the destination BigQuery dataset. The dataset must already exist.",
 			},
-			"bigquery_region": schema.StringAttribute{
+			"time_partitioning_type": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Region of the bigquery Dataset. Defaults to \"us-central1\". Valid values: us-east5, us-central1, us-west4, us-west2, northamerica-northeast1, us-east4, us-west1, us-west3, southamerica-east1, southamerica-west1, us-east1, northamerica-northeast2, asia-south2, asia-east2, asia-southeast2, australia-southeast2, asia-south1, asia-northeast2, asia-northeast3, asia-southeast1, australia-southeast1, asia-east1, asia-northeast1, europe-west1, europe-north1, europe-west3, europe-west2, europe-southwest1, europe-west8, europe-west4, europe-west9, europe-central2, europe-west6, EU, US.",
-				MarkdownDescription: "Region of the bigquery Dataset. Defaults to `us-central1`. Valid values: `us-east5`, `us-central1`, `us-west4`, `us-west2`, `northamerica-northeast1`, `us-east4`, `us-west1`, `us-west3`, `southamerica-east1`, `southamerica-west1`, `us-east1`, `northamerica-northeast2`, `asia-south2`, `asia-east2`, `asia-southeast2`, `australia-southeast2`, `asia-south1`, `asia-northeast2`, `asia-northeast3`, `asia-southeast1`, `australia-southeast1`, `asia-east1`, `asia-northeast1`, `europe-west1`, `europe-north1`, `europe-west3`, `europe-west2`, `europe-southwest1`, `europe-west8`, `europe-west4`, `europe-west9`, `europe-central2`, `europe-west6`, `EU`, `US`.",
-				Default:             stringdefault.StaticString("us-central1"),
+				Description:         "Time partitioning granularity used when auto-creating tables. Defaults to \"DAY\". Valid values: DAY, HOUR, MONTH, YEAR.",
+				MarkdownDescription: "Time partitioning granularity used when auto-creating tables. Defaults to `DAY`. Valid values: `DAY`, `HOUR`, `MONTH`, `YEAR`.",
+				Default:             stringdefault.StaticString("DAY"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("us-east5", "us-central1", "us-west4", "us-west2", "northamerica-northeast1", "us-east4", "us-west1", "us-west3", "southamerica-east1", "southamerica-west1", "us-east1", "northamerica-northeast2", "asia-south2", "asia-east2", "asia-southeast2", "australia-southeast2", "asia-south1", "asia-northeast2", "asia-northeast3", "asia-southeast1", "australia-southeast1", "asia-east1", "asia-northeast1", "europe-west1", "europe-north1", "europe-west3", "europe-west2", "europe-southwest1", "europe-west8", "europe-west4", "europe-west9", "europe-central2", "europe-west6", "EU", "US"),
+					stringvalidator.OneOf("DAY", "HOUR", "MONTH", "YEAR"),
 				},
 			},
-			"custom_bigquery_cluster_field": schema.StringAttribute{
+			"custom_partition_field": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "User can set a Bigquery cluster field.",
-				MarkdownDescription: "User can set a Bigquery cluster field.",
+				Description:         "Optional record field to partition by. Leave blank for ingestion-time partitioning.",
+				MarkdownDescription: "Optional record field to partition by. Leave blank for ingestion-time partitioning.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"custom_bigquery_partition_field": schema.StringAttribute{
+			"custom_clustering_fields": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "User can set custom name of the partition field",
-				MarkdownDescription: "User can set custom name of the partition field",
+				Description:         "Optional comma-separated list of fields to cluster the table by (max 4).",
+				MarkdownDescription: "Optional comma-separated list of fields to cluster the table by (max 4).",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"bigquery_time_based_partition": schema.BoolAttribute{
+			"auto_create_tables": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Is the partition time based?. Defaults to false.",
-				MarkdownDescription: "Is the partition time based?. Defaults to `false`.",
-				Default:             booldefault.StaticBool(false),
+				Description:         "Automatically create BigQuery tables for new topics. Defaults to true.",
+				MarkdownDescription: "Automatically create BigQuery tables for new topics. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
+			"allow_new_big_query_fields": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Allow adding new columns to BigQuery tables when the schema evolves. Defaults to true.",
+				MarkdownDescription: "Allow adding new columns to BigQuery tables when the schema evolves. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
+			"allow_big_query_required_field_relaxation": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Allow changing BigQuery columns from REQUIRED to NULLABLE when the schema evolves. Defaults to true.",
+				MarkdownDescription: "Allow changing BigQuery columns from REQUIRED to NULLABLE when the schema evolves. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
 			},
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
@@ -466,12 +482,14 @@ func DestinationBigquerySchema() schema.Schema {
 
 // DestinationBigqueryFieldMappings maps Terraform attribute names to API field names.
 var DestinationBigqueryFieldMappings = map[string]string{
-	"bigquery_json":                                           "bigquery.json",
-	"table_name_prefix":                                       "table.name.prefix",
-	"bigquery_region":                                         "bigquery.region",
-	"custom_bigquery_cluster_field":                           "custom.bigquery.cluster.field",
-	"custom_bigquery_partition_field":                         "custom.bigquery.partition.field",
-	"bigquery_time_based_partition":                           "bigquery.time.based.partition",
+	"keyfile":                                                 "keyfile",
+	"default_dataset":                                         "defaultDataset",
+	"time_partitioning_type":                                  "timePartitioningType",
+	"custom_partition_field":                                  "custom.partition.field",
+	"custom_clustering_fields":                                "custom.clustering.fields",
+	"auto_create_tables":                                      "autoCreateTables",
+	"allow_new_big_query_fields":                              "allowNewBigQueryFields",
+	"allow_big_query_required_field_relaxation":               "allowBigQueryRequiredFieldRelaxation",
 	"tasks_max":                                               "tasks.max",
 	"consumer_override_max_poll_records":                      "consumer.override.max.poll.records",
 	"preserve_null_values":                                    "preserve.null.values",

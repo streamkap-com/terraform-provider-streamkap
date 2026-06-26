@@ -1,25 +1,18 @@
 # Minimal BigQuery destination configuration
 
 resource "streamkap_destination_bigquery" "example" {
-  name              = "my-bigquery-dest"
-  bigquery_json     = var.bigquery_json
-  table_name_prefix = var.dataset_name
-  bigquery_region   = var.bigquery_region
+  name            = "my-bigquery-dest"
+  keyfile         = var.bigquery_keyfile
+  default_dataset = var.bigquery_dataset
 }
 
-variable "bigquery_json" {
-  description = "GCP service account credentials JSON"
+variable "bigquery_keyfile" {
+  description = "BigQuery service-account JSON key file contents"
   type        = string
   sensitive   = true
 }
 
-variable "dataset_name" {
-  description = "BigQuery dataset name (used as table prefix)"
+variable "bigquery_dataset" {
+  description = "Destination BigQuery dataset name (must already exist)"
   type        = string
-}
-
-variable "bigquery_region" {
-  description = "BigQuery region"
-  type        = string
-  default     = "us-central1"
 }

@@ -60,8 +60,8 @@ func TestSchemaValidation_MissingRequiredField_BigQuery(t *testing.T) {
 	// Required fields
 	requiredFields := []string{
 		"name",
-		"bigquery_json",
-		"table_name_prefix",
+		"keyfile",
+		"default_dataset",
 	}
 
 	for _, field := range requiredFields {
@@ -72,11 +72,11 @@ func TestSchemaValidation_MissingRequiredField_BigQuery(t *testing.T) {
 		})
 	}
 
-	// Verify bigquery_region is optional (has default value)
-	t.Run("optional_bigquery_region", func(t *testing.T) {
-		attr, ok := schema.Attributes["bigquery_region"]
-		require.True(t, ok, "bigquery_region attribute should exist")
-		require.True(t, attr.IsOptional(), "bigquery_region should be optional (has default)")
+	// Verify time_partitioning_type is optional (has default value)
+	t.Run("optional_time_partitioning_type", func(t *testing.T) {
+		attr, ok := schema.Attributes["time_partitioning_type"]
+		require.True(t, ok, "time_partitioning_type attribute should exist")
+		require.True(t, attr.IsOptional(), "time_partitioning_type should be optional (has default)")
 	})
 }
 

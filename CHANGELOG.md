@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **`streamkap_destination_bigquery`** now provisions the Aiven BigQuery sink
+  (Storage Write API, append-only) — the only supported BigQuery destination.
+  The schema is replaced to match:
+  - **Removed:** `bigquery_json`, `table_name_prefix`, `bigquery_region`,
+    `custom_bigquery_partition_field`, `custom_bigquery_cluster_field`,
+    `bigquery_time_based_partition`.
+  - **Added:** `keyfile` (required, sensitive — service-account JSON),
+    `default_dataset` (required), `time_partitioning_type` (default `DAY`),
+    `custom_partition_field`, `custom_clustering_fields`, `auto_create_tables`
+    (default `true`), `allow_new_big_query_fields` (default `true`),
+    `allow_big_query_required_field_relaxation` (default `true`).
+
+  This is a breaking change for the beta line; update existing
+  `streamkap_destination_bigquery` configurations to the new attributes.
+
 ## [3.0.0-beta.22] - 2026-06-22 (Pre-release)
 
 ### Added
