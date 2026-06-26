@@ -364,3 +364,72 @@ func TestGetSetStringField_NonPointer(t *testing.T) {
 		t.Errorf("SetStringField(pointer) = %q, want 'modified'", model.Name.ValueString())
 	}
 }
+
+// secretModel mirrors a connector with one user-supplied secret string field.
+type secretModel struct {
+	Name   types.String `tfsdk:"name"`
+	Secret types.String `tfsdk:"secret"`
+}
+
+// TestPreserveKnownStringFields reproduces the write-only-secret round-trip:
+// the user supplies a sensitive value in the plan, the backend echo nulls it
+// (the Streamkap API returns null for a secret whose stored value is absent or
+// decrypts to "null"), and the captured plan value must be restored so the
+// applied state matches the plan. Without restoration Terraform aborts with
+// "Provider produced inconsistent result after apply: <field>: inconsistent
+// values for sensitive attribute".
+func TestPreserveKnownStringFields(t *testing.T) {
+	ctx := context.Background()
+	mappings := map[string]string{
+		"name":   "name",
+		"secret": "secret.api.field",
+	}
+
+	t.Run("restores known plan secret when echo is null", func(t *testing.T) {
+		model := &secretModel{Name: types.StringValue("dest"), Secret: types.StringValue("p@ss")}
+		captured := CaptureStringFields(model, []string{"secret"})
+
+		// Echo omits the secret -> ConfigMapToModel nulls it.
+		ConfigMapToModel(ctx, map[string]any{"name": "dest"}, model, mappings, nil)
+		if !model.Secret.IsNull() {
+			t.Fatalf("precondition: expected echo to null the secret, got %#v", model.Secret)
+		}
+
+		PreserveKnownStringFields(model, captured)
+		if model.Secret.ValueString() != "p@ss" {
+			t.Errorf("secret not restored: got %q, want %q", model.Secret.ValueString(), "p@ss")
+		}
+	})
+
+	t.Run("keeps echo value when plan secret was unknown", func(t *testing.T) {
+		model := &secretModel{Name: types.StringValue("dest"), Secret: types.StringUnknown()}
+		captured := CaptureStringFields(model, []string{"secret"})
+
+		ConfigMapToModel(ctx, map[string]any{"name": "dest", "secret.api.field": "backend-value"}, model, mappings, nil)
+		PreserveKnownStringFields(model, captured)
+		if model.Secret.ValueString() != "backend-value" {
+			t.Errorf("unknown plan should defer to echo: got %q, want %q", model.Secret.ValueString(), "backend-value")
+		}
+	})
+
+	t.Run("keeps echo value when plan secret was null", func(t *testing.T) {
+		model := &secretModel{Name: types.StringValue("dest"), Secret: types.StringNull()}
+		captured := CaptureStringFields(model, []string{"secret"})
+
+		ConfigMapToModel(ctx, map[string]any{"name": "dest", "secret.api.field": "backend-value"}, model, mappings, nil)
+		PreserveKnownStringFields(model, captured)
+		if model.Secret.ValueString() != "backend-value" {
+			t.Errorf("null plan should defer to echo: got %q, want %q", model.Secret.ValueString(), "backend-value")
+		}
+	})
+
+	t.Run("capture tolerates missing fields", func(t *testing.T) {
+		model := &secretModel{Name: types.StringValue("dest"), Secret: types.StringValue("p@ss")}
+		captured := CaptureStringFields(model, []string{"secret", "does_not_exist"})
+		if len(captured) != 1 {
+			t.Fatalf("expected 1 captured field, got %d", len(captured))
+		}
+		// Restoring into a model with no matching field must not panic.
+		PreserveKnownStringFields(&testModel{}, captured)
+	})
+}

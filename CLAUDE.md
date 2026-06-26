@@ -133,6 +133,7 @@ The API client exposes `CreateTransform / GetTransform / UpdateTransform / Delet
 - Kafka Users (`/kafka-access/kafka-users`): username is the resource ID; password is write-only; no individual GET — Read filters from list.
 - Client Credentials (`/auth/client-credentials`): no Update endpoint, all fields are ForceNew; secret is only returned at creation.
 - `"produced an unexpected new value: was cty.StringVal(\"\"), but now null"` is an `Optional+Computed` echo mismatch — the API echo differs from the default. It is not just `insert_static_*`/static-transform fields: it also hits deprecated aliases and placeholder `<...>` defaults (see `HasPlaceholderDefault`). When you touch one, audit **all** siblings of that class across **every** connector — past fixes only patched a subset.
+- Secrets aren't faithfully echoed even with `secret_returned=true`: the backend returns `null` for an `encrypt: true` field whose stored value is absent or decrypts to `"null"` (`app/utils/entity_searches.py`), e.g. Snowflake `snowflake_private_key_passphrase` on a non-passphrase-secured key. The sensitive variant of the echo mismatch is `inconsistent values for sensitive attribute`. `BaseConnectorResource` Create/Update restore the planned value for every `Sensitive` string attribute after `configMapToModel` (`shared.CaptureStringFields`/`PreserveKnownStringFields`) — the configured credential is authoritative. Read keeps the API value.
 
 ## Deprecated attribute pattern (v2 → v3 aliases)
 
