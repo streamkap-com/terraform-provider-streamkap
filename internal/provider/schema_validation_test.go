@@ -80,6 +80,28 @@ func TestSchemaValidation_MissingRequiredField_BigQuery(t *testing.T) {
 	})
 }
 
+// TestSchemaValidation_BigQueryPartitionAndClustering verifies the custom partition
+// and clustering key attributes exist as optional fields and map to the correct
+// Kafka Connect config keys (the backend then resolves these to
+// timestampPartitionFieldName / clusteringPartitionFieldNames).
+func TestSchemaValidation_BigQueryPartitionAndClustering(t *testing.T) {
+	schema := generated.DestinationBigquerySchema()
+
+	for _, field := range []string{"custom_partition_field", "custom_clustering_fields"} {
+		t.Run("optional_"+field, func(t *testing.T) {
+			attr, ok := schema.Attributes[field]
+			require.True(t, ok, "%s attribute should exist", field)
+			require.True(t, attr.IsOptional(), "%s should be optional", field)
+		})
+	}
+
+	mappings := generated.DestinationBigqueryFieldMappings
+	require.Equal(t, "custom.partition.field", mappings["custom_partition_field"],
+		"custom_partition_field must map to the custom.partition.field API key")
+	require.Equal(t, "custom.clustering.fields", mappings["custom_clustering_fields"],
+		"custom_clustering_fields must map to the custom.clustering.fields API key")
+}
+
 // TestSchemaValidation_MissingRequiredField_ClickHouse tests ClickHouse destination
 // required field validation.
 func TestSchemaValidation_MissingRequiredField_ClickHouse(t *testing.T) {
