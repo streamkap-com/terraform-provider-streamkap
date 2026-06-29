@@ -31,6 +31,7 @@ type DestinationBigqueryModel struct {
 	TimePartitioningType                             types.String         `tfsdk:"time_partitioning_type"`
 	CustomPartitionField                             types.String         `tfsdk:"custom_partition_field"`
 	CustomClusteringFields                           types.String         `tfsdk:"custom_clustering_fields"`
+	CustomPartitionExpirationDays                    types.String         `tfsdk:"custom_partition_expiration_days"`
 	AutoCreateTables                                 types.Bool           `tfsdk:"auto_create_tables"`
 	AllowNewBigQueryFields                           types.Bool           `tfsdk:"allow_new_big_query_fields"`
 	AllowBigQueryRequiredFieldRelaxation             types.Bool           `tfsdk:"allow_big_query_required_field_relaxation"`
@@ -138,11 +139,11 @@ func DestinationBigquerySchema() schema.Schema {
 			"time_partitioning_type": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Time partitioning granularity used when auto-creating tables. Defaults to \"DAY\". Valid values: DAY, HOUR, MONTH, YEAR.",
-				MarkdownDescription: "Time partitioning granularity used when auto-creating tables. Defaults to `DAY`. Valid values: `DAY`, `HOUR`, `MONTH`, `YEAR`.",
+				Description:         "Time partitioning granularity used when auto-creating tables. Select NONE to create non-partitioned tables. Defaults to \"DAY\". Valid values: DAY, HOUR, MONTH, YEAR, NONE.",
+				MarkdownDescription: "Time partitioning granularity used when auto-creating tables. Select NONE to create non-partitioned tables. Defaults to `DAY`. Valid values: `DAY`, `HOUR`, `MONTH`, `YEAR`, `NONE`.",
 				Default:             stringdefault.StaticString("DAY"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("DAY", "HOUR", "MONTH", "YEAR"),
+					stringvalidator.OneOf("DAY", "HOUR", "MONTH", "YEAR", "NONE"),
 				},
 			},
 			"custom_partition_field": schema.StringAttribute{
@@ -159,6 +160,15 @@ func DestinationBigquerySchema() schema.Schema {
 				Computed:            true,
 				Description:         "Optional comma-separated list of fields to cluster the table by (max 4).",
 				MarkdownDescription: "Optional comma-separated list of fields to cluster the table by (max 4).",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"custom_partition_expiration_days": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Optional. Automatically delete partitions older than this many days from tables this destination creates. Leave blank to keep all partitions. Ignored when Time Partitioning is NONE.",
+				MarkdownDescription: "Optional. Automatically delete partitions older than this many days from tables this destination creates. Leave blank to keep all partitions. Ignored when Time Partitioning is NONE.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -487,6 +497,7 @@ var DestinationBigqueryFieldMappings = map[string]string{
 	"time_partitioning_type":                                  "timePartitioningType",
 	"custom_partition_field":                                  "custom.partition.field",
 	"custom_clustering_fields":                                "custom.clustering.fields",
+	"custom_partition_expiration_days":                        "custom.partition.expiration.days",
 	"auto_create_tables":                                      "autoCreateTables",
 	"allow_new_big_query_fields":                              "allowNewBigQueryFields",
 	"allow_big_query_required_field_relaxation":               "allowBigQueryRequiredFieldRelaxation",

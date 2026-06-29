@@ -15,8 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `custom_bigquery_partition_field`, `custom_bigquery_cluster_field`,
     `bigquery_time_based_partition`.
   - **Added:** `keyfile` (required, sensitive — service-account JSON),
-    `default_dataset` (required), `time_partitioning_type` (default `DAY`),
-    `custom_partition_field`, `custom_clustering_fields`, `auto_create_tables`
+    `default_dataset` (required), `time_partitioning_type` (default `DAY`,
+    accepts `NONE` for non-partitioned tables), `custom_partition_field`,
+    `custom_clustering_fields`, `custom_partition_expiration_days` (optional —
+    auto-drop partitions older than N days), `auto_create_tables`
     (default `true`), `allow_new_big_query_fields` (default `true`),
     `allow_big_query_required_field_relaxation` (default `true`).
 

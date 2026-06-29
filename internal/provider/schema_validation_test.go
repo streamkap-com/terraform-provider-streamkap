@@ -87,7 +87,7 @@ func TestSchemaValidation_MissingRequiredField_BigQuery(t *testing.T) {
 func TestSchemaValidation_BigQueryPartitionAndClustering(t *testing.T) {
 	schema := generated.DestinationBigquerySchema()
 
-	for _, field := range []string{"custom_partition_field", "custom_clustering_fields"} {
+	for _, field := range []string{"custom_partition_field", "custom_clustering_fields", "custom_partition_expiration_days"} {
 		t.Run("optional_"+field, func(t *testing.T) {
 			attr, ok := schema.Attributes[field]
 			require.True(t, ok, "%s attribute should exist", field)
@@ -100,6 +100,20 @@ func TestSchemaValidation_BigQueryPartitionAndClustering(t *testing.T) {
 		"custom_partition_field must map to the custom.partition.field API key")
 	require.Equal(t, "custom.clustering.fields", mappings["custom_clustering_fields"],
 		"custom_clustering_fields must map to the custom.clustering.fields API key")
+	require.Equal(t, "custom.partition.expiration.days", mappings["custom_partition_expiration_days"],
+		"custom_partition_expiration_days must map to the custom.partition.expiration.days API key")
+}
+
+// TestSchemaValidation_BigQueryTimePartitioningNone verifies NONE is an accepted
+// time partitioning option (non-partitioned tables) alongside the time-unit values.
+func TestSchemaValidation_BigQueryTimePartitioningNone(t *testing.T) {
+	v := stringvalidator.OneOf("DAY", "HOUR", "MONTH", "YEAR", "NONE")
+	for _, val := range []string{"DAY", "HOUR", "MONTH", "YEAR", "NONE"} {
+		req := validator.StringRequest{ConfigValue: types.StringValue(val)}
+		resp := &validator.StringResponse{}
+		v.ValidateString(context.Background(), req, resp)
+		require.False(t, resp.Diagnostics.HasError(), "%s should be a valid time_partitioning_type", val)
+	}
 }
 
 // TestSchemaValidation_MissingRequiredField_ClickHouse tests ClickHouse destination

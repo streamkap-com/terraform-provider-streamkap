@@ -25,9 +25,10 @@ resource "streamkap_destination_bigquery" "example" {
   default_dataset = "streamkap_dataset"              # Destination dataset (must already exist)
 
   # Partitioning and clustering
-  time_partitioning_type   = "DAY"             # Partition granularity. Default: DAY. Valid: DAY, HOUR, MONTH, YEAR
-  custom_partition_field   = "partition_field" # Optional record field to partition by. Blank = ingestion-time
-  custom_clustering_fields = "field1,field2"   # Optional comma-separated fields to cluster by (max 4)
+  time_partitioning_type           = "DAY"             # Partition granularity. Default: DAY. Valid: DAY, HOUR, MONTH, YEAR, NONE
+  custom_partition_field           = "partition_field" # Optional record field to partition by. Blank = ingestion-time
+  custom_clustering_fields         = "field1,field2"   # Optional comma-separated fields to cluster by (max 4)
+  custom_partition_expiration_days = "30"              # Optional. Drop partitions older than N days. Blank = keep all. Ignored when NONE
 
   # Schema evolution
   auto_create_tables                        = true # Auto-create tables for new topics. Default: true

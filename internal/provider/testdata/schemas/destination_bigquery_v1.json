@@ -43,6 +43,12 @@
       "computed": true,
       "sensitive": false
     },
+    "custom_partition_expiration_days": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "custom_partition_field": {
       "required": false,
       "optional": true,
