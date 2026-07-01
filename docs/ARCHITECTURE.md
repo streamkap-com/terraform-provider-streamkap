@@ -394,10 +394,12 @@ type ConnectorConfig interface {
 ```
 Create:
 1. Read TF config into model struct
-2. Extract name from model
-3. Convert model to API config (ModelToAPIConfig)
-4. Call API CreateSource/CreateDestination
-5. Store ID in state
+2. Capture planned Sensitive string values
+3. Extract name from model
+4. Convert model to API config (ModelToAPIConfig)
+5. Call API CreateSource/CreateDestination
+6. Convert API response to model, then restore captured secrets
+7. Store ID in state
 
 Read:
 1. Call API GetSource/GetDestination
@@ -406,9 +408,11 @@ Read:
 
 Update:
 1. Read TF config into model
-2. Convert to API config
-3. Call API UpdateSource/UpdateDestination
-4. Update state
+2. Capture planned Sensitive string values
+3. Convert to API config
+4. Call API UpdateSource/UpdateDestination
+5. Convert API response to model, then restore captured secrets
+6. Update state
 
 Delete:
 1. Call API DeleteSource/DeleteDestination

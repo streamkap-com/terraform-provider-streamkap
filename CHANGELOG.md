@@ -25,6 +25,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   This is a breaking change for the beta line; update existing
   `streamkap_destination_bigquery` configurations to the new attributes.
 
+### Fixed
+- **"Provider produced inconsistent result after apply: inconsistent values for
+  sensitive attribute"** on connector Create/Update. The Streamkap backend does
+  not faithfully echo every secret back even with `secret_returned=true` — it
+  returns `null` for a secret whose stored value is absent or decrypts to
+  `"null"` (e.g. Snowflake `snowflake_private_key_passphrase` when the key is not
+  passphrase-secured). The provider used the API echo as the new state, so when
+  the planned value was known but the echo differed, Terraform aborted the apply.
+  Create/Update now restore the user-supplied value for every `Sensitive` string
+  attribute after applying the API response. Applies to all source and
+  destination connectors.
+
 ## [3.0.0-beta.22] - 2026-06-22 (Pre-release)
 
 ### Added
