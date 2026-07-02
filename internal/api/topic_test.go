@@ -97,7 +97,13 @@ func TestListTopics_WithEntityDetails(t *testing.T) {
 				"id": "topic-123",
 				"name": "my-topic",
 				"prefix": "streamkap",
-				"serialization": "avro",
+				"serialization": {
+					"key_format": "string",
+					"value_format": "avro",
+					"key_converter": "org.apache.kafka.connect.storage.StringConverter",
+					"value_converter": "io.confluent.connect.avro.AvroConverter",
+					"schema_registry_enabled": true
+				},
 				"messages_7d": 1000,
 				"messages_30d": 5000,
 				"entity": {
@@ -144,6 +150,18 @@ func TestListTopics_WithEntityDetails(t *testing.T) {
 	if len(topic.Entity.TopicIDs) != 2 {
 		t.Errorf("Expected 2 topic_ids, got %d", len(topic.Entity.TopicIDs))
 	}
+	if topic.Serialization == nil {
+		t.Fatal("Expected serialization object to be present")
+	}
+	if topic.Serialization.ValueFormat != "avro" {
+		t.Errorf("Expected value_format 'avro', got '%s'", topic.Serialization.ValueFormat)
+	}
+	if topic.Serialization.KeyFormat != "string" {
+		t.Errorf("Expected key_format 'string', got '%s'", topic.Serialization.KeyFormat)
+	}
+	if !topic.Serialization.SchemaRegistryEnabled {
+		t.Error("Expected schema_registry_enabled to be true")
+	}
 }
 
 func TestGetTopicTableMetrics(t *testing.T) {
@@ -189,7 +207,11 @@ func TestGetTopicDetailed(t *testing.T) {
 			"id": "topic-123",
 			"name": "my-topic",
 			"prefix": "streamkap",
-			"serialization": "avro",
+			"serialization": {
+				"key_format": "string",
+				"value_format": "avro",
+				"schema_registry_enabled": true
+			},
 			"entity": {
 				"entity_type": "sources",
 				"entity_id": "source-456",
@@ -231,6 +253,9 @@ func TestGetTopicDetailed(t *testing.T) {
 	if topic.Entity == nil || topic.Entity.EntityID != "source-456" {
 		t.Error("Expected entity_id source-456")
 	}
+	if topic.Serialization == nil || topic.Serialization.ValueFormat != "avro" {
+		t.Error("Expected serialization value_format avro")
+	}
 }
 
 func TestGetTopicDetailed_MinimalResponse(t *testing.T) {
@@ -262,5 +287,8 @@ func TestGetTopicDetailed_MinimalResponse(t *testing.T) {
 	}
 	if topic.Prefix != nil {
 		t.Error("Expected prefix to be nil")
+	}
+	if topic.Serialization != nil {
+		t.Error("Expected serialization to be nil for minimal response")
 	}
 }

@@ -204,6 +204,9 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	// Capture user-supplied secrets before the API echo can overwrite them.
+	plannedSecrets := shared.CaptureStringFields(model, r.sensitiveStringAttrNames())
+
 	// Get name from model
 	name := r.getStringField(model, "Name")
 	if name == "" {
@@ -290,6 +293,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	r.setStringField(model, "ConnectorStatus", connectorStatus)
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, responseTags))
 	r.configMapToModel(ctx, responseConfig, model)
+	shared.PreserveKnownStringFields(model, plannedSecrets)
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
@@ -425,6 +429,9 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	// Capture user-supplied secrets before the API echo can overwrite them.
+	plannedSecrets := shared.CaptureStringFields(model, r.sensitiveStringAttrNames())
+
 	// Get ID and name from model
 	id := r.getStringField(model, "ID")
 	if id == "" {
@@ -507,6 +514,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 	r.setStringField(model, "Connector", connectorCode)
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, responseTags))
 	r.configMapToModel(ctx, responseConfig, model)
+	shared.PreserveKnownStringFields(model, plannedSecrets)
 
 	// connector_status handling on Update.
 	//
@@ -674,6 +682,22 @@ func (r *BaseConnectorResource) isJSONStringField(fieldName string, jsonStringFi
 // configMapToModel updates a model struct from a config map using the field mappings.
 func (r *BaseConnectorResource) configMapToModel(ctx context.Context, cfg map[string]any, model any) {
 	shared.ConfigMapToModel(ctx, cfg, model, r.config.GetFieldMappings(), r.setValueHook())
+}
+
+// sensitiveStringAttrNames returns the tfsdk names of every Sensitive string
+// attribute in this connector's schema. Create/Update restore the user-supplied
+// value for these after applying the API response, because the Streamkap
+// backend does not reliably echo secrets back (see
+// shared.PreserveKnownStringFields). All sensitive connector attributes are
+// strings; non-string types are intentionally ignored.
+func (r *BaseConnectorResource) sensitiveStringAttrNames() []string {
+	var names []string
+	for name, attr := range r.config.GetSchema().Attributes {
+		if sa, ok := attr.(schema.StringAttribute); ok && sa.Sensitive {
+			names = append(names, name)
+		}
+	}
+	return names
 }
 
 // extractValueHook returns a hook for shared.ExtractTerraformValue that handles

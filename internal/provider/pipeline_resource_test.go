@@ -21,20 +21,20 @@ resource "streamkap_source_postgresql" "test" {
 	name                                         = "test-source-postgresql"
 	database_hostname                            = var.source_postgresql_hostname
 	database_port                                = 5432
-	database_user                                = "postgresql"
+	database_user                                = "streamkap"
 	database_password                            = var.source_postgresql_password
-	database_dbname                              = "postgres"
+	database_dbname                              = "sandbox"
 	snapshot_read_only                           = "No"
 	database_sslmode                             = "require"
 	schema_include_list                          = "streamkap"
 	table_include_list                           = "streamkap.customer,streamkap.customer2"
-	signal_data_collection_schema_or_database    = "streamkap"
+	signal_data_collection_schema_or_database    = "streamkap.test_signal"
 	column_include_list                          = "streamkap[.]customer[.](id|name)"
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = null
 	include_source_db_name_in_table_name         = false
-	slot_name                                    = "terraform_pgoutput_slot"
-	publication_name                             = "terraform_pub"
+	slot_name                                    = "terraform_timeout_test_slot"
+	publication_name                             = "terraform_timeout_test_pub"
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
@@ -69,8 +69,6 @@ resource "streamkap_destination_snowflake" "test" {
 	hard_delete                      = true
 	use_hybrid_tables                = false
 	apply_dynamic_table_script       = false
-	dynamic_table_target_lag         = 60
-	cleanup_task_schedule            = 120
 	auto_qa_dedupe_table_mapping = {
 		users                   = "JUNIT.USERS",
 		itst_scen20240528103635 = "ITST_SCEN20240528103635"
@@ -80,11 +78,11 @@ resource "streamkap_destination_snowflake" "test" {
 
 var pipelineTransformsDef = `
 data "streamkap_transform" "test-transform" {
-	id = "67d43b4ed21e8f093edae34b"
+	id = "6891895fb3a70cb60b64ce28"
 }
 
 data "streamkap_transform" "another-test-transform" {
-	id = "67dbe945308e0871a4e1fc49"
+	id = "68936a30d4b5a205c1f14536"
 }
 `
 

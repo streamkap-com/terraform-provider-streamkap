@@ -21,16 +21,16 @@ type TopicDataSource struct {
 }
 
 type TopicDataSourceModel struct {
-	ID            types.String `tfsdk:"id"`
-	Name          types.String `tfsdk:"name"`
-	EntityID      types.String `tfsdk:"entity_id"`
-	EntityName    types.String `tfsdk:"entity_name"`
-	EntityType    types.String `tfsdk:"entity_type"`
-	Partitions    types.Int64  `tfsdk:"partitions"`
-	RetentionMs   types.Int64  `tfsdk:"retention_ms"`
-	CleanupPolicy types.String `tfsdk:"cleanup_policy"`
-	Prefix        types.String `tfsdk:"prefix"`
-	Serialization types.String `tfsdk:"serialization"`
+	ID            types.String             `tfsdk:"id"`
+	Name          types.String             `tfsdk:"name"`
+	EntityID      types.String             `tfsdk:"entity_id"`
+	EntityName    types.String             `tfsdk:"entity_name"`
+	EntityType    types.String             `tfsdk:"entity_type"`
+	Partitions    types.Int64              `tfsdk:"partitions"`
+	RetentionMs   types.Int64              `tfsdk:"retention_ms"`
+	CleanupPolicy types.String             `tfsdk:"cleanup_policy"`
+	Prefix        types.String             `tfsdk:"prefix"`
+	Serialization *TopicSerializationModel `tfsdk:"serialization"`
 }
 
 func (d *TopicDataSource) Metadata(ctx context.Context, req ds.MetadataRequest, resp *ds.MetadataResponse) {
@@ -90,11 +90,7 @@ func (d *TopicDataSource) Schema(ctx context.Context, req ds.SchemaRequest, resp
 				MarkdownDescription: "Topic name prefix.",
 				Computed:            true,
 			},
-			"serialization": schema.StringAttribute{
-				Description:         "Message serialization format.",
-				MarkdownDescription: "Message serialization format.",
-				Computed:            true,
-			},
+			"serialization": topicSerializationAttribute(),
 		},
 	}
 }
@@ -143,7 +139,7 @@ func (d *TopicDataSource) Read(ctx context.Context, req ds.ReadRequest, resp *ds
 	config.ID = types.StringValue(topic.ID)
 	config.Name = types.StringValue(topic.Name)
 	config.Prefix = types.StringPointerValue(topic.Prefix)
-	config.Serialization = types.StringPointerValue(topic.Serialization)
+	config.Serialization = flattenTopicSerialization(topic.Serialization)
 
 	if topic.Entity != nil {
 		config.EntityID = types.StringValue(topic.Entity.EntityID)

@@ -1,0 +1,52 @@
+# Docs drift check — fails a PR when docs/ no longer match the committed schemas.
+#
+# Why: `go generate ./...` runs tfplugindocs BEFORE tfgen, so a regen done that way
+# ships a new schema field in internal/generated/*.go while docs/resources/*.md lag a
+# regen behind (this shipped in beta.18 and was caught by a customer). This job
+# re-renders docs from the *committed* schemas (no backend needed) and fails if anything
+# changes — i.e. the committed docs are stale relative to the committed schemas.
+name: Docs Drift
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - internal/generated/**
+      - docs/**
+      - templates/**
+      - examples/provider/**
+      - main.go
+      - go.mod
+
+permissions:
+  contents: read
+
+jobs:
+  docs-drift:
+    name: Docs match committed schemas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_wrapper: false
+
+      - name: Render docs from committed schemas
+        run: go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate
+
+      - name: Fail if docs drifted
+        run: |
+          if ! git diff --exit-code docs/; then
+            echo "::error::docs/ is stale relative to the committed schemas in internal/generated/."
+            echo "Run 'make generate' (never 'go generate ./...') and commit the regenerated docs."
+            exit 1
+          fi
+          echo "docs/ matches the committed schemas."

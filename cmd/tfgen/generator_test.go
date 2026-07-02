@@ -1379,3 +1379,65 @@ func TestOutputDirectoryCreation(t *testing.T) {
 		t.Errorf("Output file was not created: %s", outputPath)
 	}
 }
+
+// TestGenerate_KafkaDirectSkipsCommonConfig verifies that kafkadirect connectors
+// do not receive configurations_for_all.json common fields, mirroring the backend's
+// _load_global_configuration() which returns {} for kafkadirect. Every other
+// connector merges the common config. The skip is entity-type-agnostic, so both
+// the source and destination Kafka Direct resources are covered.
+func TestGenerate_KafkaDirectSkipsCommonConfig(t *testing.T) {
+	required := true
+	// Fresh plugin config per Generate call (Generate mutates config.Config in place).
+	newPluginConfig := func() *ConnectorConfig {
+		return &ConnectorConfig{
+			DisplayName: "Test",
+			Config: []ConfigEntry{
+				{
+					Name:        "password",
+					UserDefined: true,
+					Required:    &required,
+					DisplayName: "Password",
+					Value:       ValueObject{Control: "password"},
+				},
+			},
+		}
+	}
+
+	// entityType -> backend subdir holding configurations_for_all.json.
+	entitySubdir := map[string]string{"source": "sources", "destination": "destinations"}
+
+	for entityType, subdir := range entitySubdir {
+		t.Run(entityType, func(t *testing.T) {
+			// Temp backend exposing a common-config sentinel field for this entity type.
+			backendDir := t.TempDir()
+			commonDir := filepath.Join(backendDir, "app", subdir)
+			if err := os.MkdirAll(commonDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			commonJSON := `{"config":[{"name":"sentinel.common.field","user_defined":true,"display_name":"Sentinel","value":{"control":"string"}}]}`
+			if err := os.WriteFile(filepath.Join(commonDir, "configurations_for_all.json"), []byte(commonJSON), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			generate := func(connectorCode string) string {
+				outDir := t.TempDir()
+				g := NewGenerator(outDir, entityType)
+				if err := g.Generate(newPluginConfig(), connectorCode, backendDir); err != nil {
+					t.Fatalf("Generate(%s) failed: %v", connectorCode, err)
+				}
+				content, err := os.ReadFile(filepath.Join(outDir, entityType+"_"+connectorCode+".go"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				return string(content)
+			}
+
+			if got := generate("postgresql"); !strings.Contains(got, "sentinel_common_field") {
+				t.Error("expected a non-kafkadirect connector to include the common field 'sentinel_common_field'")
+			}
+			if got := generate("kafkadirect"); strings.Contains(got, "sentinel_common_field") {
+				t.Error("kafkadirect must skip configurations_for_all.json common fields, but 'sentinel_common_field' was generated")
+			}
+		})
+	}
+}

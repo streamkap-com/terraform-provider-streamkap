@@ -196,6 +196,67 @@ func ConfigMapToModel(ctx context.Context, cfg map[string]any, model any, mappin
 	}
 }
 
+// CaptureStringFields snapshots the current types.String values of the named
+// tfsdk attributes from model, keyed by tfsdk name. tfsdk names that don't
+// resolve to a types.String field are skipped. Used with
+// PreserveKnownStringFields to carry user-supplied values across an API
+// round-trip that would otherwise overwrite them.
+func CaptureStringFields(model any, tfsdkNames []string) map[string]types.String {
+	if len(tfsdkNames) == 0 {
+		return nil
+	}
+
+	v, tfsdkToField := BuildTfsdkFieldIndex(model)
+
+	out := make(map[string]types.String, len(tfsdkNames))
+	for _, name := range tfsdkNames {
+		fieldPath, ok := tfsdkToField[name]
+		if !ok {
+			continue
+		}
+		if s, ok := v.FieldByIndex(fieldPath).Interface().(types.String); ok {
+			out[name] = s
+		}
+	}
+	return out
+}
+
+// PreserveKnownStringFields writes captured values back into model for every
+// field whose captured value is known (not null, not unknown), overwriting
+// whatever a prior step set.
+//
+// This implements write-only semantics for sensitive credential fields. The
+// Streamkap backend does not faithfully echo every secret back on
+// Create/Update: even with secret_returned=true it returns null for a secret
+// whose stored value is absent or decrypts to "null" (e.g. a
+// conditionally-disabled passphrase — app/utils/entity_searches.py). The
+// user-configured value is authoritative, so we restore it. Without this,
+// Terraform aborts the apply with "Provider produced inconsistent result after
+// apply: <field>: inconsistent values for sensitive attribute" whenever the
+// planned value is known but the echo differs. Captured null/unknown values are
+// left untouched so an unset Optional+Computed secret still defers to the echo.
+func PreserveKnownStringFields(model any, captured map[string]types.String) {
+	if len(captured) == 0 {
+		return
+	}
+
+	v, tfsdkToField := BuildTfsdkFieldIndex(model)
+
+	for name, val := range captured {
+		if val.IsNull() || val.IsUnknown() {
+			continue
+		}
+		fieldPath, ok := tfsdkToField[name]
+		if !ok {
+			continue
+		}
+		field := v.FieldByIndex(fieldPath)
+		if field.CanSet() && field.Type() == reflect.TypeOf(types.String{}) {
+			field.Set(reflect.ValueOf(val))
+		}
+	}
+}
+
 // GetStringField gets a string value from a model field by name using reflection.
 func GetStringField(model any, fieldName string) string {
 	v := reflect.ValueOf(model)

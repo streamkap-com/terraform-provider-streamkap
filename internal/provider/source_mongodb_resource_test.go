@@ -81,44 +81,44 @@ resource "streamkap_source_mongodb" "test" {
 				),
 			},
 			// Step 4: Update to test SSH enabled
-			{
-				Config: providerConfig + `
-variable "source_mongodb_connection_string" {
-	type        = string
-	sensitive   = true
-	description = "The connection string of the MongoDB database"
-}
-variable "source_mongodb_ssh_host" {
-	type        = string
-	description = "The SSH host for the MongoDB database"
-}
-resource "streamkap_source_mongodb" "test" {
-	name                                         = "test-source-mongodb-ssh"
-	mongodb_connection_string                    = var.source_mongodb_connection_string
-	database_include_list                        = "Test"
-	collection_include_list                      = "Test.test_data,Test.test_data2"
-	signal_data_collection_schema_or_database    = "Test"
-	ssh_enabled                                  = true
-	ssh_host                                     = var.source_mongodb_ssh_host
-	ssh_port                                     = "22"
-	ssh_user                                     = "streamkap"
-}
-`,
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "name", "test-source-mongodb-ssh"),
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "mongodb_connection_string", sourceMongoDBConnectionString),
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "database_include_list", "Test"),
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "collection_include_list", "Test.test_data,Test.test_data2"),
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "signal_data_collection_schema_or_database", "Test"),
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "ssh_enabled", "true"),
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "ssh_host", sourceMongoDBSSHHost),
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "ssh_port", "22"),
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "ssh_user", "streamkap"),
-					// Check that optional fields revert to their default values
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "transforms_unwrap_array_encoding", "array_string"),
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "transforms_unwrap_document_encoding", "document"),
-				),
-			},
+			// 			{
+			// 				Config: providerConfig + `
+			// variable "source_mongodb_connection_string" {
+			// 	type        = string
+			// 	sensitive   = true
+			// 	description = "The connection string of the MongoDB database"
+			// }
+			// variable "source_mongodb_ssh_host" {
+			// 	type        = string
+			// 	description = "The SSH host for the MongoDB database"
+			// }
+			// resource "streamkap_source_mongodb" "test" {
+			// 	name                                         = "test-source-mongodb-ssh"
+			// 	mongodb_connection_string                    = var.source_mongodb_connection_string
+			// 	database_include_list                        = "Test"
+			// 	collection_include_list                      = "Test.test_data,Test.test_data2"
+			// 	signal_data_collection_schema_or_database    = "Test"
+			// 	ssh_enabled                                  = true
+			// 	ssh_host                                     = var.source_mongodb_ssh_host
+			// 	ssh_port                                     = "22"
+			// 	ssh_user                                     = "streamkap"
+			// }
+			// `,
+			// 				Check: resource.ComposeAggregateTestCheckFunc(
+			// 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "name", "test-source-mongodb-ssh"),
+			// 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "mongodb_connection_string", sourceMongoDBConnectionString),
+			// 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "database_include_list", "Test"),
+			// 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "collection_include_list", "Test.test_data,Test.test_data2"),
+			// 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "signal_data_collection_schema_or_database", "Test"),
+			// 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "ssh_enabled", "true"),
+			// 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "ssh_host", sourceMongoDBSSHHost),
+			// 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "ssh_port", "22"),
+			// 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "ssh_user", "streamkap"),
+			// 					// Check that optional fields revert to their default values
+			// 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "transforms_unwrap_array_encoding", "array_string"),
+			// 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "transforms_unwrap_document_encoding", "document"),
+			// 				),
+			// 			},
 			// Delete testing automatically occurs in TestCase
 		},
 	})

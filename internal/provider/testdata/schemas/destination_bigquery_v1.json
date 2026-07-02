@@ -1,19 +1,19 @@
 {
   "version": "v3.0.0",
   "attributes": {
-    "bigquery_json": {
-      "required": true,
-      "optional": false,
-      "computed": false,
-      "sensitive": true
-    },
-    "bigquery_region": {
+    "allow_big_query_required_field_relaxation": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false
     },
-    "bigquery_time_based_partition": {
+    "allow_new_big_query_fields": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "auto_create_tables": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -37,16 +37,28 @@
       "computed": true,
       "sensitive": false
     },
-    "custom_bigquery_cluster_field": {
+    "custom_clustering_fields": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false
     },
-    "custom_bigquery_partition_field": {
+    "custom_partition_expiration_days": {
       "required": false,
       "optional": true,
       "computed": true,
+      "sensitive": false
+    },
+    "custom_partition_field": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "default_dataset": {
+      "required": true,
+      "optional": false,
+      "computed": false,
       "sensitive": false
     },
     "id": {
@@ -60,6 +72,12 @@
       "optional": true,
       "computed": true,
       "sensitive": false
+    },
+    "keyfile": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": true
     },
     "name": {
       "required": true,
@@ -79,13 +97,19 @@
       "computed": true,
       "sensitive": false
     },
-    "table_name_prefix": {
-      "required": true,
-      "optional": false,
-      "computed": false,
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
       "sensitive": false
     },
     "tasks_max": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "time_partitioning_type": {
       "required": false,
       "optional": true,
       "computed": true,

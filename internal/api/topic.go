@@ -54,15 +54,28 @@ type TopicEntity struct {
 	TopicDBIDs  []string `json:"topic_db_ids"`
 }
 
+// TopicSerialization mirrors the backend's TopicSerialization object. The
+// backend changed the `serialization` field on /topics responses from a plain
+// string to this object; KeyFormat/ValueFormat carry the human-readable format
+// (avro, json, json_schema, protobuf, string, bytearray, unknown) and the
+// converter fields carry the underlying Kafka Connect converter class names.
+type TopicSerialization struct {
+	KeyFormat             string  `json:"key_format"`
+	ValueFormat           string  `json:"value_format"`
+	KeyConverter          *string `json:"key_converter,omitempty"`
+	ValueConverter        *string `json:"value_converter,omitempty"`
+	SchemaRegistryEnabled bool    `json:"schema_registry_enabled"`
+}
+
 // TopicDetails represents detailed topic information from /topics/details
 type TopicDetails struct {
-	ID            string       `json:"id"`
-	Name          string       `json:"name"`
-	Entity        *TopicEntity `json:"entity,omitempty"`
-	Prefix        *string      `json:"prefix,omitempty"`
-	Serialization *string      `json:"serialization,omitempty"`
-	Messages7D    *int64       `json:"messages_7d,omitempty"`
-	Messages30D   *int64       `json:"messages_30d,omitempty"`
+	ID            string              `json:"id"`
+	Name          string              `json:"name"`
+	Entity        *TopicEntity        `json:"entity,omitempty"`
+	Prefix        *string             `json:"prefix,omitempty"`
+	Serialization *TopicSerialization `json:"serialization,omitempty"`
+	Messages7D    *int64              `json:"messages_7d,omitempty"`
+	Messages30D   *int64              `json:"messages_30d,omitempty"`
 }
 
 // TopicDetailsResponse represents the paginated response from /topics/details
@@ -130,12 +143,12 @@ type TopicKafka struct {
 
 // TopicDetailed represents the full topic response from /topics/{id}?detailed=true
 type TopicDetailed struct {
-	ID            string       `json:"id"`
-	Name          string       `json:"name"`
-	Entity        *TopicEntity `json:"entity,omitempty"`
-	Kafka         *TopicKafka  `json:"kafka,omitempty"`
-	Prefix        *string      `json:"prefix,omitempty"`
-	Serialization *string      `json:"serialization,omitempty"`
+	ID            string              `json:"id"`
+	Name          string              `json:"name"`
+	Entity        *TopicEntity        `json:"entity,omitempty"`
+	Kafka         *TopicKafka         `json:"kafka,omitempty"`
+	Prefix        *string             `json:"prefix,omitempty"`
+	Serialization *TopicSerialization `json:"serialization,omitempty"`
 }
 
 func (s *streamkapAPI) UpdateTopic(ctx context.Context, topicID string, reqPayload Topic) (*Topic, error) {

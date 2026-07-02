@@ -7,6 +7,111 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0-beta.24] - 2026-07-02 (Pre-release)
+
+### Changed
+- **`streamkap_destination_bigquery`** now provisions the Aiven BigQuery sink
+  (Storage Write API, append-only) — the only supported BigQuery destination.
+  The schema is replaced to match:
+  - **Removed:** `bigquery_json`, `table_name_prefix`, `bigquery_region`,
+    `custom_bigquery_partition_field`, `custom_bigquery_cluster_field`,
+    `bigquery_time_based_partition`.
+  - **Added:** `keyfile` (required, sensitive — service-account JSON),
+    `default_dataset` (required), `time_partitioning_type` (default `DAY`,
+    accepts `NONE` for non-partitioned tables), `custom_partition_field`,
+    `custom_clustering_fields`, `custom_partition_expiration_days` (optional —
+    auto-drop partitions older than N days), `auto_create_tables`
+    (default `true`), `allow_new_big_query_fields` (default `true`),
+    `allow_big_query_required_field_relaxation` (default `true`).
+
+  This is a breaking change for the beta line; update existing
+  `streamkap_destination_bigquery` configurations to the new attributes.
+
+## [3.0.0-beta.23] - 2026-06-26 (Pre-release)
+
+### Fixed
+- **"Provider produced inconsistent result after apply: inconsistent values for
+  sensitive attribute"** on connector Create/Update. The Streamkap backend does
+  not faithfully echo every secret back even with `secret_returned=true` — it
+  returns `null` for a secret whose stored value is absent or decrypts to
+  `"null"` (e.g. Snowflake `snowflake_private_key_passphrase` when the key is not
+  passphrase-secured). The provider used the API echo as the new state, so when
+  the planned value was known but the echo differed, Terraform aborted the apply.
+  Create/Update now restore the user-supplied value for every `Sensitive` string
+  attribute after applying the API response. Applies to all source and
+  destination connectors.
+
+## [3.0.0-beta.22] - 2026-06-22 (Pre-release)
+
+### Added
+- **PostgreSQL: `heartbeat_use_logical_message`** (bool, default `false`) — run
+  `SELECT pg_logical_emit_message(true, ...)` on each beat to advance the
+  replication slot. Works on PG14+ primaries with a SELECT-only role and is
+  compatible with read-only mode; no `streamkap_heartbeat` table or write
+  grant required on the source. Resolves
+  [ENG-2398](https://linear.app/streamkap/issue/ENG-2398).
+
+### Changed
+- **Kafka-only heartbeat mode is now reachable across all source connectors
+  that support heartbeats.** Setting `heartbeat_enabled = true` while leaving
+  `heartbeat_data_collection_schema_or_database` blank emits heartbeats to a
+  Kafka topic only — keeping the poll loop active and offsets advancing on
+  low-traffic sources without requiring a `streamkap_heartbeat` table or a
+  write grant in the source database. Setting the schema/database field still
+  enables source-table heartbeat mode. Affects: PostgreSQL, MySQL, MariaDB,
+  Oracle, AlloyDB, Supabase, OracleAWS, SqlServerAWS.
+- **SqlServerAWS: `heartbeat_data_collection_schema_or_database` no longer
+  defaults to `"streamkap"`.** Behavior parity with the other source
+  connectors — the field is now Optional with no default, so Kafka-only
+  heartbeat mode is reachable by leaving it blank. Existing configurations
+  that explicitly set this attribute are unaffected.
+- Heartbeat attribute descriptions on the affected sources were rewritten to
+  document Kafka-only vs source-table modes and the conditions under which
+  each path applies.
+- **Three new source connectors:** `streamkap_source_informix` (IBM Informix
+  CDC), `streamkap_source_shopify_webhook`, and `streamkap_source_stripe_webhook`.
+  Each ships with `basic`/`complete` examples and an import recipe. Schemas were
+  generated from the backend `configuration.latest.json` plugin specs on `main`
+  and cross-checked field-by-field against those specs.
+
+### Changed
+- **Regenerated connector schemas against the current production backend.** Beyond
+  description/help-text refreshes across most database sources, the substantive
+  changes are: new optional attributes `post_processors` (postgresql, alloydb,
+  supabase), `heartbeat_use_logical_message` (postgresql),
+  `streamkap_snapshot_chunk_size_bytes` and `streamkap_snapshot_state_refresh_ms`
+  (postgresql, sqlserveraws), and `table_name_prefix` (destination clickhouse).
+  The backend dropped `streamkap_snapshot_large_table_threshold` (postgresql,
+  sqlserveraws) and `streamkap_snapshot_custom_table_config` (postgresql);
+  configurations setting these must remove them.
+
+### Fixed
+- **`streamkap_topics` and `streamkap_topic` no longer fail to read.** The
+  backend changed the `serialization` field on `/topics` responses from a string
+  to an object, so listing topics failed with `cannot unmarshal object into Go
+  struct field TopicDetails.result.serialization of type string`. The data
+  sources now model `serialization` as a nested block exposing `key_format`,
+  `value_format`, `key_converter`, `value_converter`, and
+  `schema_registry_enabled`. Configurations that referenced `serialization` as a
+  string must switch to `serialization.value_format`.
+
+## [3.0.0-beta.21] - 2026-06-15 (Pre-release)
+
+### Fixed
+- **`streamkap_source_kafkadirect` and `streamkap_destination_kafkadirect` no
+  longer expose configuration attributes the backend rejects.** tfgen merged
+  `configurations_for_all.json` (the shared source/destination config) into every
+  connector, but the backend's `_load_global_configuration()` returns `{}` for
+  `kafkadirect` — it resolves against its plugin config alone. As a result both
+  resources advertised ~30 phantom attributes (`quote_identifiers`,
+  `preserve_null_values`, every `transforms_*`, `consumer_override_max_poll_records`,
+  the source's `insert_topic_name_enabled` / `transforms_value_to_key_*`, etc.)
+  that are not valid Kafka Direct config. tfgen now skips the common-config merge
+  for `kafkadirect`, matching the backend. The destination keeps `password` and
+  `whitelist_ips`; the source keeps `topic_prefix`, `topic_include_list`,
+  `format`, and `schemas_enable` (plus the `kafka_format` deprecated alias).
+  Configurations that set any of the removed attributes must drop them.
+
 ## [3.0.0-beta.20] - 2026-06-09 (Pre-release)
 
 ### Fixed

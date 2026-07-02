@@ -62,4 +62,15 @@ output "topic_kafka_config" {
 - `partitions` (Number) Number of Kafka partitions.
 - `prefix` (String) Topic name prefix.
 - `retention_ms` (Number) Message retention time in milliseconds.
-- `serialization` (String) Message serialization format.
+- `serialization` (Attributes) Serialization format information for the topic, inherited from its producer (source/transform). (see [below for nested schema](#nestedatt--serialization))
+
+<a id="nestedatt--serialization"></a>
+### Nested Schema for `serialization`
+
+Read-Only:
+
+- `key_converter` (String) Kafka Connect converter class used for message keys.
+- `key_format` (String) Serialization format for message keys. Valid values: `avro`, `json`, `json_schema`, `protobuf`, `string`, `bytearray`, `unknown`.
+- `schema_registry_enabled` (Boolean) Whether Schema Registry is used for this topic's serialization.
+- `value_converter` (String) Kafka Connect converter class used for message values.
+- `value_format` (String) Serialization format for message values. Valid values: `avro`, `json`, `json_schema`, `protobuf`, `string`, `bytearray`, `unknown`.
