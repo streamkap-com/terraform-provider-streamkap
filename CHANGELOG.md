@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0-beta.24] - 2026-07-02 (Pre-release)
+
 ### Changed
 - **`streamkap_destination_bigquery`** now provisions the Aiven BigQuery sink
   (Storage Write API, append-only) — the only supported BigQuery destination.
@@ -24,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   This is a breaking change for the beta line; update existing
   `streamkap_destination_bigquery` configurations to the new attributes.
+
+## [3.0.0-beta.23] - 2026-06-26 (Pre-release)
 
 ### Fixed
 - **"Provider produced inconsistent result after apply: inconsistent values for
