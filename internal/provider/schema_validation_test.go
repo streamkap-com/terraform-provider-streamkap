@@ -60,8 +60,8 @@ func TestSchemaValidation_MissingRequiredField_BigQuery(t *testing.T) {
 	// Required fields
 	requiredFields := []string{
 		"name",
-		"bigquery_json",
-		"table_name_prefix",
+		"keyfile",
+		"default_dataset",
 	}
 
 	for _, field := range requiredFields {
@@ -72,12 +72,48 @@ func TestSchemaValidation_MissingRequiredField_BigQuery(t *testing.T) {
 		})
 	}
 
-	// Verify bigquery_region is optional (has default value)
-	t.Run("optional_bigquery_region", func(t *testing.T) {
-		attr, ok := schema.Attributes["bigquery_region"]
-		require.True(t, ok, "bigquery_region attribute should exist")
-		require.True(t, attr.IsOptional(), "bigquery_region should be optional (has default)")
+	// Verify time_partitioning_type is optional (has default value)
+	t.Run("optional_time_partitioning_type", func(t *testing.T) {
+		attr, ok := schema.Attributes["time_partitioning_type"]
+		require.True(t, ok, "time_partitioning_type attribute should exist")
+		require.True(t, attr.IsOptional(), "time_partitioning_type should be optional (has default)")
 	})
+}
+
+// TestSchemaValidation_BigQueryPartitionAndClustering verifies the custom partition
+// and clustering key attributes exist as optional fields and map to the correct
+// Kafka Connect config keys (the backend then resolves these to
+// timestampPartitionFieldName / clusteringPartitionFieldNames).
+func TestSchemaValidation_BigQueryPartitionAndClustering(t *testing.T) {
+	schema := generated.DestinationBigquerySchema()
+
+	for _, field := range []string{"custom_partition_field", "custom_clustering_fields", "custom_partition_expiration_days"} {
+		t.Run("optional_"+field, func(t *testing.T) {
+			attr, ok := schema.Attributes[field]
+			require.True(t, ok, "%s attribute should exist", field)
+			require.True(t, attr.IsOptional(), "%s should be optional", field)
+		})
+	}
+
+	mappings := generated.DestinationBigqueryFieldMappings
+	require.Equal(t, "custom.partition.field", mappings["custom_partition_field"],
+		"custom_partition_field must map to the custom.partition.field API key")
+	require.Equal(t, "custom.clustering.fields", mappings["custom_clustering_fields"],
+		"custom_clustering_fields must map to the custom.clustering.fields API key")
+	require.Equal(t, "custom.partition.expiration.days", mappings["custom_partition_expiration_days"],
+		"custom_partition_expiration_days must map to the custom.partition.expiration.days API key")
+}
+
+// TestSchemaValidation_BigQueryTimePartitioningNone verifies NONE is an accepted
+// time partitioning option (non-partitioned tables) alongside the time-unit values.
+func TestSchemaValidation_BigQueryTimePartitioningNone(t *testing.T) {
+	v := stringvalidator.OneOf("DAY", "HOUR", "MONTH", "YEAR", "NONE")
+	for _, val := range []string{"DAY", "HOUR", "MONTH", "YEAR", "NONE"} {
+		req := validator.StringRequest{ConfigValue: types.StringValue(val)}
+		resp := &validator.StringResponse{}
+		v.ValidateString(context.Background(), req, resp)
+		require.False(t, resp.Diagnostics.HasError(), "%s should be a valid time_partitioning_type", val)
+	}
 }
 
 // TestSchemaValidation_MissingRequiredField_ClickHouse tests ClickHouse destination

@@ -23,24 +23,27 @@ This resource creates and manages a BigQuery destination for Streamkap data pipe
 
 ### Required
 
-- `bigquery_json` (String, Sensitive) Upload the Bigquery JSON file.
+- `default_dataset` (String) Name of the destination BigQuery dataset. The dataset must already exist.
+- `keyfile` (String, Sensitive) Upload the BigQuery service-account JSON key file.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `name` (String) Name of the destination
-- `table_name_prefix` (String) Name of the destination Dataset for the of the associated table name
 
 ### Optional
 
-- `bigquery_region` (String) Region of the bigquery Dataset. Defaults to `us-central1`. Valid values: `us-east5`, `us-central1`, `us-west4`, `us-west2`, `northamerica-northeast1`, `us-east4`, `us-west1`, `us-west3`, `southamerica-east1`, `southamerica-west1`, `us-east1`, `northamerica-northeast2`, `asia-south2`, `asia-east2`, `asia-southeast2`, `australia-southeast2`, `asia-south1`, `asia-northeast2`, `asia-northeast3`, `asia-southeast1`, `australia-southeast1`, `asia-east1`, `asia-northeast1`, `europe-west1`, `europe-north1`, `europe-west3`, `europe-west2`, `europe-southwest1`, `europe-west8`, `europe-west4`, `europe-west9`, `europe-central2`, `europe-west6`, `EU`, `US`.
-- `bigquery_time_based_partition` (Boolean) Is the partition time based?. Defaults to `false`.
+- `allow_big_query_required_field_relaxation` (Boolean) Allow changing BigQuery columns from REQUIRED to NULLABLE when the schema evolves. Defaults to `true`.
+- `allow_new_big_query_fields` (Boolean) Allow adding new columns to BigQuery tables when the schema evolves. Defaults to `true`.
+- `auto_create_tables` (Boolean) Automatically create BigQuery tables for new topics. Defaults to `true`.
 - `consumer_override_max_poll_records` (Number) The maximum number of records returned in a single call to poll(). Defaults to `10000`.
-- `custom_bigquery_cluster_field` (String) User can set a Bigquery cluster field.
-- `custom_bigquery_partition_field` (String) User can set custom name of the partition field
+- `custom_clustering_fields` (String) Optional comma-separated list of fields to cluster the table by (max 4).
+- `custom_partition_expiration_days` (String) Optional. Automatically delete partitions older than this many days from tables this destination creates. Leave blank to keep all partitions. Ignored when Time Partitioning is NONE.
+- `custom_partition_field` (String) Optional record field to partition by. Leave blank for ingestion-time partitioning.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
 - `tags` (Set of String) Optional set of tag IDs to apply to this destination. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
+- `time_partitioning_type` (String) Time partitioning granularity used when auto-creating tables. Select NONE to create non-partitioned tables. Defaults to `DAY`. Valid values: `DAY`, `HOUR`, `MONTH`, `YEAR`, `NONE`.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_add_string_suffix_fields_include_list` (String) Warning: Should only be used in conjunction with numeric conversion or other conversions. If field remained string after previous conversion, rename to field to <previous-field-name>_str. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_change_topic_name_match_regex` (String) Regular expression for matching topic name parts to use as the destination table (database) or file (file storage) name
