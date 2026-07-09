@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`streamkap_destination_s3`: cross-account IAM role authentication** —
+  `aws_auth_mode` (`Access Keys` default, or `Cross-Account Role`),
+  `aws_sts_role_arn`, and `aws_sts_role_external_id` let Streamkap assume an
+  IAM role in your account instead of using long-lived access keys. This
+  schema catch-up reflects backend support already live
+  ([STR-4635](https://linear.app/streamkap/issue/STR-4635)/[STR-4636](https://linear.app/streamkap/issue/STR-4636))
+  that had not yet been regenerated into the provider. `aws_access_key_id`
+  and `aws_secret_access_key` change from `Required` to `Optional`/`Computed`
+  to accommodate the new mode; existing configurations using access keys are
+  unaffected.
+
 ## [3.0.0-beta.24] - 2026-07-02 (Pre-release)
 
 ### Changed
