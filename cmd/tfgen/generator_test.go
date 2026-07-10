@@ -1441,3 +1441,29 @@ func TestGenerate_KafkaDirectSkipsCommonConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestIsSecretField(t *testing.T) {
+	tests := []struct {
+		tfAttrName string
+		want       bool
+	}{
+		{"api_key", true},
+		{"pinecone_api_key", true},
+		{"weaviate_api_key", true},
+		{"camel_source_snapshot_stripe_api_key", true},
+		// Names that merely mention a credential are not themselves secrets.
+		{"oauth2_access_token_url", false},
+		{"iceberg_catalog_s3_credentials_enabled", false},
+		{"snowflake_private_key_passphrase_secured", false},
+		{"api_key_enabled", false},
+		{"database_hostname", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.tfAttrName, func(t *testing.T) {
+			if got := isSecretField(tt.tfAttrName); got != tt.want {
+				t.Errorf("isSecretField(%q) = %v, want %v", tt.tfAttrName, got, tt.want)
+			}
+		})
+	}
+}

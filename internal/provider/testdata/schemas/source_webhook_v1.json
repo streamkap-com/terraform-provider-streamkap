@@ -5,7 +5,7 @@
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": true
     },
     "camel_source_camel_message_header_key": {
       "required": false,

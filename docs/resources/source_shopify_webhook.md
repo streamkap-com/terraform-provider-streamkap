@@ -27,7 +27,9 @@ This resource creates and manages a Shopify source for Streamkap data pipelines.
 
 ### Optional
 
-- `api_key` (String) API Key. Append to the Webhook URL as ?api_key=<API_KEY> when registering webhooks in Shopify. Generated after source is created.
+- `api_key` (String, Sensitive) API Key. Append to the Webhook URL as ?api_key=<API_KEY> when registering webhooks in Shopify. Generated after source is created.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `camel_source_dlq_enabled` (Boolean) Enable dead letter queue for failed records. Defaults to `true`.
 - `camel_source_payload_router_fanout_fields` (String) Comma-separated list of nested arrays to fan out into their own topics (e.g. orders.line_items, products.variants, customers.addresses). When empty, arrays stay inline. Defaults to ``.
 - `camel_source_payload_router_include_event` (Boolean) Include Shopify webhook metadata (_shop_domain, _event_id, _triggered_at, _api_version, _webhook_id) in output records. Disable for upsert / state-table use cases. Defaults to `false`.

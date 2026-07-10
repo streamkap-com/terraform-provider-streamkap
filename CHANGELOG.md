@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **`api_key` is now marked sensitive on every webhook source.**
+  `streamkap_source_webhook`, `streamkap_source_shopify_webhook` and
+  `streamkap_source_stripe_webhook` exposed the key in plan output and logs;
+  `streamkap_source_salesforce_webhook` and `streamkap_source_zendesk_webhook`
+  had been hand-patched but lost the fix on every regeneration. The backend
+  declares `api.key` with neither `encrypt: true` nor `control: "password"`, so
+  tfgen now forces `Sensitive` for `api_key`/`*_api_key` and the fix survives
+  codegen.
+
 ### Removed
 - **`streamkap_source_sqlserver`**: the deprecated `snapshot_large_table_threshold`
   alias. Its replacement, `streamkap_snapshot_large_table_threshold`, was dropped
