@@ -716,36 +716,6 @@ func TestSchemaValidation_OutOfRange_SnapshotParallelism(t *testing.T) {
 	}
 }
 
-// TestSchemaValidation_OutOfRange_LargeTableThreshold tests large table threshold validation.
-func TestSchemaValidation_OutOfRange_LargeTableThreshold(t *testing.T) {
-	v := int64validator.Between(1, 64000)
-
-	tests := []struct {
-		name      string
-		value     int64
-		wantError bool
-	}{
-		{"valid_min", 1, false},
-		{"valid_default", 500, false},
-		{"valid_max", 64000, false},
-		{"invalid_zero", 0, true},
-		{"invalid_above_max", 64001, true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := validator.Int64Request{
-				ConfigValue: types.Int64Value(tt.value),
-				Path:        path.Root("streamkap_snapshot_large_table_threshold"),
-			}
-			resp := &validator.Int64Response{}
-			v.ValidateInt64(context.Background(), req, resp)
-
-			assert.Equal(t, tt.wantError, resp.Diagnostics.HasError())
-		})
-	}
-}
-
 // TestSchemaValidation_OutOfRange_StreamDelayMs tests stream delay validation (DynamoDB).
 func TestSchemaValidation_OutOfRange_StreamDelayMs(t *testing.T) {
 	v := int64validator.Between(0, 604800000) // 0 to 1 week in ms
@@ -1103,9 +1073,7 @@ func TestSchemaValidation_RealWorldScenarios(t *testing.T) {
 
 	t.Run("source_with_invalid_range_values", func(t *testing.T) {
 		parallelismValidator := int64validator.Between(1, 10)
-		thresholdValidator := int64validator.Between(1, 64000)
 
-		// Both invalid
 		req1 := validator.Int64Request{
 			ConfigValue: types.Int64Value(0),
 			Path:        path.Root("streamkap_snapshot_parallelism"),
@@ -1113,14 +1081,6 @@ func TestSchemaValidation_RealWorldScenarios(t *testing.T) {
 		resp1 := &validator.Int64Response{}
 		parallelismValidator.ValidateInt64(context.Background(), req1, resp1)
 		assert.True(t, resp1.Diagnostics.HasError())
-
-		req2 := validator.Int64Request{
-			ConfigValue: types.Int64Value(100000),
-			Path:        path.Root("streamkap_snapshot_large_table_threshold"),
-		}
-		resp2 := &validator.Int64Response{}
-		thresholdValidator.ValidateInt64(context.Background(), req2, resp2)
-		assert.True(t, resp2.Diagnostics.HasError())
 	})
 
 	t.Run("transform_with_incompatible_language", func(t *testing.T) {

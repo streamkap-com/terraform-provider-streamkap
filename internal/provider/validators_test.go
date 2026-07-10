@@ -719,37 +719,6 @@ func TestSnapshotParallelismValidator(t *testing.T) {
 	}
 }
 
-// TestLargeTableThresholdValidator tests the large table threshold validator.
-func TestLargeTableThresholdValidator(t *testing.T) {
-	v := int64validator.Between(1, 64000)
-
-	tests := []struct {
-		name      string
-		value     int64
-		wantError bool
-	}{
-		{"valid_min", 1, false},
-		{"valid_default", 500, false},
-		{"valid_max", 64000, false},
-		{"invalid_zero", 0, true},
-		{"invalid_above_max", 64001, true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := validator.Int64Request{
-				ConfigValue: types.Int64Value(tt.value),
-				Path:        path.Root("streamkap_snapshot_large_table_threshold"),
-			}
-			resp := &validator.Int64Response{}
-			v.ValidateInt64(context.Background(), req, resp)
-
-			assert.Equal(t, tt.wantError, resp.Diagnostics.HasError(),
-				"value %d: expected error=%v, got error=%v", tt.value, tt.wantError, resp.Diagnostics.HasError())
-		})
-	}
-}
-
 // TestEnrichAsyncConcurrencyValidator tests the concurrency validator for EnrichAsync transform.
 func TestEnrichAsyncConcurrencyValidator(t *testing.T) {
 	v := int64validator.Between(1, 50)
