@@ -226,7 +226,9 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 
 	tags := r.getStringSliceField(ctx, model, "Tags")
 
-	tflog.Debug(ctx, fmt.Sprintf("Creating %s transform with config: %+v", r.config.GetTransformType(), configMap))
+	// Never log configMap: it holds decrypted credentials keyed by API field name
+	// and bypasses the redaction applied to the request body in internal/api.
+	tflog.Debug(ctx, fmt.Sprintf("Creating %s transform", r.config.GetTransformType()))
 
 	// Call the Transform API
 	transform, err := r.client.CreateTransform(ctx, api.CreateTransformRequest{
@@ -573,7 +575,7 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 
 	tags := r.getStringSliceField(ctx, model, "Tags")
 
-	tflog.Debug(ctx, fmt.Sprintf("Updating %s transform with ID: %s, config: %+v", r.config.GetTransformType(), id, configMap))
+	tflog.Debug(ctx, fmt.Sprintf("Updating %s transform with ID: %s", r.config.GetTransformType(), id))
 
 	// Call the Transform API with existing implementation to prevent it from being overwritten
 	transform, err := r.client.UpdateTransform(ctx, id, api.UpdateTransformRequest{

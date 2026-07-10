@@ -227,7 +227,9 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Creating %s %s with config: %+v", r.config.GetConnectorType(), r.config.GetConnectorCode(), configMap))
+	// Never log configMap: it holds decrypted credentials keyed by API field name
+	// and bypasses the redaction applied to the request body in internal/api.
+	tflog.Debug(ctx, fmt.Sprintf("Creating %s %s", r.config.GetConnectorType(), r.config.GetConnectorCode()))
 
 	// Call the appropriate API based on connector type
 	var id string
@@ -453,7 +455,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Updating %s %s with ID: %s, config: %+v", r.config.GetConnectorType(), r.config.GetConnectorCode(), id, configMap))
+	tflog.Debug(ctx, fmt.Sprintf("Updating %s %s with ID: %s", r.config.GetConnectorType(), r.config.GetConnectorCode(), id))
 
 	// Call the appropriate API based on connector type
 	var connectorName string
