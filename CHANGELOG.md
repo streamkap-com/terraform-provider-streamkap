@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0-beta.25] - 2026-07-10 (Pre-release)
+
 ### Security
 - **`api_key` is now marked sensitive on every webhook source.**
   `streamkap_source_webhook`, `streamkap_source_shopify_webhook` and
@@ -29,6 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `snowflake.private.key`), but the redaction pattern only allowed `_` and `-`
   as separators, so those two keys were logged in the clear by the one code
   path built to prevent exactly that.
+- **Dependency CVEs.** `golang.org/x/net` `v0.49.0` → `v0.56.0` and
+  `golang.org/x/crypto` `v0.48.0` → `v0.54.0`. `x/net/http2` and `x/net/idna`
+  are linked into the released provider through gRPC, exposing CVE-2026-33814
+  (HTTP/2 denial of service) and CVE-2026-39821 (privilege escalation via
+  Punycode label processing).
 
 ### Added
 - **`streamkap_destination_s3`**: `aws_auth_mode` (`Access Keys` or
