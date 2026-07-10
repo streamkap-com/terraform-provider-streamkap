@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -164,6 +165,32 @@ func runSchemaCompatTest(t *testing.T, tc schemaCompatTestCase) {
 	if breakingChanges == 0 {
 		t.Logf("Schema compatibility check passed. %d attrs, snapshot in sync.",
 			len(currentSnapshot.Attributes))
+	}
+}
+
+// TestEveryResourceHasSchemaSnapshot fails when a registered resource has no
+// snapshot baseline.
+//
+// runSchemaCompatTest skips silently when the snapshot file is absent, so a new
+// resource — or one whose test case was never written — gets zero drift
+// protection while the suite stays green. Four webhook sources went unprotected
+// that way, which is how an unmarked `api_key` shipped.
+func TestEveryResourceHasSchemaSnapshot(t *testing.T) {
+	ctx := context.Background()
+	p := &streamkapProvider{}
+
+	for _, factory := range p.Resources(ctx) {
+		metaResp := &resource.MetadataResponse{}
+		factory().Metadata(ctx, resource.MetadataRequest{ProviderTypeName: "streamkap"}, metaResp)
+
+		name := strings.TrimPrefix(metaResp.TypeName, "streamkap_")
+		snapshotPath := filepath.Join("testdata", "schemas", name+"_v1.json")
+
+		if _, err := os.Stat(snapshotPath); os.IsNotExist(err) {
+			t.Errorf("resource %q has no schema snapshot at %s; add a "+
+				"TestSchemaBackwardsCompatibility_* case and run `make snapshots`",
+				metaResp.TypeName, snapshotPath)
+		}
 	}
 }
 
@@ -425,6 +452,50 @@ func TestSchemaBackwardsCompatibility_SourceWebhook(t *testing.T) {
 	})
 }
 
+// The remaining webhook sources carry an `api_key` that the backend spec does not
+// flag as a secret; tfgen forces it Sensitive. Without a baseline here, a
+// regression would go unnoticed — runSchemaCompatTest skips when no snapshot exists.
+
+func TestSchemaBackwardsCompatibility_SourceSalesforceWebhook(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_salesforce_webhook",
+		snapshotFile:    "source_salesforce_webhook_v1.json",
+		resourceFactory: source.NewSalesforceWebhookResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceZendeskWebhook(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_zendesk_webhook",
+		snapshotFile:    "source_zendesk_webhook_v1.json",
+		resourceFactory: source.NewZendeskWebhookResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceShopifyWebhook(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_shopify_webhook",
+		snapshotFile:    "source_shopify_webhook_v1.json",
+		resourceFactory: source.NewShopifyWebhookResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceStripeWebhook(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_stripe_webhook",
+		snapshotFile:    "source_stripe_webhook_v1.json",
+		resourceFactory: source.NewStripeWebhookResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_SourceInformix(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "source_informix",
+		snapshotFile:    "source_informix_v1.json",
+		resourceFactory: source.NewInformixResource,
+	})
+}
+
 // --- Destinations (missing) ---
 
 func TestSchemaBackwardsCompatibility_DestinationAzBlob(t *testing.T) {
@@ -586,6 +657,14 @@ func TestSchemaBackwardsCompatibility_TransformFanOut(t *testing.T) {
 		name:            "transform_fan_out",
 		snapshotFile:    "transform_fan_out_v1.json",
 		resourceFactory: transform.NewFanOutResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_TransformTopicRouter(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "transform_topic_router",
+		snapshotFile:    "transform_topic_router_v1.json",
+		resourceFactory: transform.NewTopicRouterResource,
 	})
 }
 
