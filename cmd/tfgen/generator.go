@@ -921,6 +921,28 @@ func isPortField(tfAttrName string) bool {
 		strings.HasSuffix(tfAttrName, "_port")
 }
 
+// isSecretField returns true if the field name indicates a credential that must
+// be Sensitive regardless of what the backend spec says.
+//
+// The webhook plugins declare `api.key` with neither `encrypt: true` nor
+// `control: "password"`, so IsSensitive() reports false and the key would be
+// printed in plan output and logs. The same is true of the http-sink's
+// `http.headers.authorization`, which carries the literal header value
+// ("Bearer <token>"). This has regressed in the backend more than once, and
+// hand-patching the generated files loses the fix on the next regen.
+//
+// Matching is deliberately narrow: an exact name or an underscore-suffixed
+// name. `api_key_enabled` is a flag, `http_authorization_type` is an enum, and
+// `oauth2_access_token_url` is an endpoint — none are secrets.
+func isSecretField(tfAttrName string) bool {
+	for _, secret := range []string{"api_key", "authorization"} {
+		if tfAttrName == secret || strings.HasSuffix(tfAttrName, "_"+secret) {
+			return true
+		}
+	}
+	return false
+}
+
 // entryToFieldData converts a ConfigEntry to FieldData.
 func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 	tfAttrName := entry.TerraformAttributeName()
@@ -935,7 +957,7 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 		TfsdkTag:        tfAttrName,
 		TfAttrName:      tfAttrName,
 		Description:     entry.Description,
-		Sensitive:       entry.IsSensitive(),
+		Sensitive:       entry.IsSensitive() || isSecretField(tfAttrName),
 		APIFieldName:    entry.Name,
 		RequiresReplace: entry.IsSetOnce(),
 	}

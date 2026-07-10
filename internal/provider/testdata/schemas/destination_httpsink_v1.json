@@ -89,7 +89,7 @@
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": true
     },
     "http_headers_content_type": {
       "required": false,
@@ -182,6 +182,12 @@
       "sensitive": false
     },
     "retry_backoff_ms": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "tags": {
       "required": false,
       "optional": true,
       "computed": true,

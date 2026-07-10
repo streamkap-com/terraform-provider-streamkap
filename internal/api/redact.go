@@ -9,11 +9,16 @@ import (
 // err on the side of over-redaction: it is always better to mask a harmless
 // identifier in a debug log than to leak a credential. Matches on full or
 // partial key substrings, case-insensitively.
+//
+// The separator class must include `.`: connector configs travel with dotted
+// Kafka-Connect field names (`api.key`, `snowflake.private.key`), not the
+// underscored Terraform attribute names, and those dotted keys are what this
+// sees. Matching only `[_-]` silently passed both of those through in the clear.
 var sensitiveKeyRegex = regexp.MustCompile(`(?i)` +
 	`(password|passwd|secret|token|credential|passphrase|` +
-	`api[_-]?key|private[_-]?key|public[_-]?key|` +
-	`access[_-]?key|auth|bearer|session|cookie|` +
-	`client[_-]?secret|client[_-]?id|sasl|pem)`)
+	`api[_.-]?key|private[_.-]?key|public[_.-]?key|` +
+	`access[_.-]?key|auth|bearer|session|cookie|` +
+	`client[_.-]?secret|client[_.-]?id|sasl|pem)`)
 
 const redactedPlaceholder = "***REDACTED***"
 

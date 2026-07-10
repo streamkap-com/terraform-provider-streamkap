@@ -20,12 +20,11 @@ import (
 // pair; the new schema uses the _1 suffix.
 type sourceSqlserverModelWithDeprecated struct {
 	generated.SourceSqlserverawsModel
-	InsertStaticKeyField           types.String `tfsdk:"insert_static_key_field"`
-	InsertStaticKeyValue           types.String `tfsdk:"insert_static_key_value"`
-	InsertStaticValueField         types.String `tfsdk:"insert_static_value_field"`
-	InsertStaticValue              types.String `tfsdk:"insert_static_value"`
-	SnapshotParallelismOld         types.Int64  `tfsdk:"snapshot_parallelism"`
-	SnapshotLargeTableThresholdOld types.Int64  `tfsdk:"snapshot_large_table_threshold"`
+	InsertStaticKeyField   types.String `tfsdk:"insert_static_key_field"`
+	InsertStaticKeyValue   types.String `tfsdk:"insert_static_key_value"`
+	InsertStaticValueField types.String `tfsdk:"insert_static_value_field"`
+	InsertStaticValue      types.String `tfsdk:"insert_static_value"`
+	SnapshotParallelismOld types.Int64  `tfsdk:"snapshot_parallelism"`
 }
 
 // sqlserverFieldMappings extends the generated field mappings with deprecated aliases.
@@ -40,7 +39,6 @@ var sqlserverFieldMappings = func() map[string]string {
 	mappings["insert_static_value_field"] = "transforms.InsertStaticValue1.static.field"
 	mappings["insert_static_value"] = "transforms.InsertStaticValue1.static.value"
 	mappings["snapshot_parallelism"] = "streamkap.snapshot.parallelism"
-	mappings["snapshot_large_table_threshold"] = "streamkap.snapshot.large.table.threshold"
 	return mappings
 }()
 
@@ -76,11 +74,12 @@ func (c *SQLServerConfig) GetSchema() schema.Schema {
 		}
 	}
 	// Int64 deprecated aliases (snapshot fields were renamed with streamkap_ prefix).
+	// snapshot_large_table_threshold has no alias: the backend dropped
+	// streamkap.snapshot.large.table.threshold, so there is nothing to point at.
 	int64Aliases := []struct {
 		oldName, newName string
 	}{
 		{"snapshot_parallelism", "streamkap_snapshot_parallelism"},
-		{"snapshot_large_table_threshold", "streamkap_snapshot_large_table_threshold"},
 	}
 	for _, alias := range int64Aliases {
 		s.Attributes[alias.oldName] = schema.Int64Attribute{

@@ -26,9 +26,13 @@ generate:
 	@git status --porcelain internal/generated docs || true
 
 # Run unit tests (fast, no API needed)
+# TF_ACC is cleared because this is the one target with no -run filter: `-short`
+# does not gate resource.Test, and godotenv loads TF_ACC=1 from a developer's
+# .env, which otherwise turns this into a 10-minute run against the live API.
+# godotenv does not overwrite a variable that is already set, so this wins.
 .PHONY: test
 test:
-	go test -v -short ./...
+	TF_ACC= go test -v -short ./...
 
 # Run schema compatibility tests
 .PHONY: test-schema

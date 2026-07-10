@@ -193,6 +193,12 @@
       "computed": true,
       "sensitive": false
     },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "transforms_insert_static_key1_static_field": {
       "required": false,
       "optional": true,

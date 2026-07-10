@@ -1,23 +1,83 @@
 {
   "version": "v3.0.0",
   "attributes": {
-    "aws_access_key_id": {
-      "required": true,
-      "optional": false,
-      "computed": false,
-      "sensitive": false
-    },
-    "aws_s3_bucket_name": {
-      "required": true,
-      "optional": false,
-      "computed": false,
-      "sensitive": false
-    },
-    "aws_secret_access_key": {
-      "required": true,
-      "optional": false,
-      "computed": false,
+    "api_key": {
+      "required": false,
+      "optional": true,
+      "computed": true,
       "sensitive": true
+    },
+    "camel_source_cdc_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "camel_source_dlq_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "camel_source_payload_router_flatten_detail": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "camel_source_payload_router_flatten_detail_prefix": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "camel_source_payload_router_include_event": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "camel_source_payload_router_unknown_type_behavior": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "camel_source_payload_router_unknown_type_default_topic": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "camel_source_snapshot_salesforce_auth_client_id": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "camel_source_snapshot_salesforce_auth_client_secret": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": true
+    },
+    "camel_source_snapshot_salesforce_auth_password": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": true
+    },
+    "camel_source_snapshot_salesforce_auth_username": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "camel_source_snapshot_salesforce_instance_url": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
     },
     "connector": {
       "required": false,
@@ -31,45 +91,15 @@
       "computed": true,
       "sensitive": false
     },
-    "consumer_override_max_poll_records": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "file_compression_type": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "file_name_prefix": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "file_name_template": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "format": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "format_output_fields": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
     "id": {
       "required": false,
       "optional": false,
+      "computed": true,
+      "sensitive": false
+    },
+    "insert_topic_name_enabled": {
+      "required": false,
+      "optional": true,
       "computed": true,
       "sensitive": false
     },
@@ -91,67 +121,13 @@
       "computed": true,
       "sensitive": false
     },
-    "quote_identifiers": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "r2_account": {
-      "required": true,
-      "optional": false,
-      "computed": false,
-      "sensitive": false
-    },
     "tags": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false
     },
-    "transforms_add_string_suffix_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_change_topic_name_match_regex": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_copy_field_copy_field_mapping": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_drop_fields_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_header_to_field_custom_header_mappings": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_mark_columns_as_optional_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_mark_columns_as_required_fields_include_all": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_mark_columns_as_required_null_sentinel_mode": {
+    "topic_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -205,85 +181,19 @@
       "computed": true,
       "sensitive": false
     },
-    "transforms_rename_fields_renames": {
+    "transforms_value_to_key_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false
     },
-    "transforms_string_replace_fields_include_list": {
+    "transforms_value_to_key_replace_null_with_default": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false
     },
-    "transforms_string_replace_regex_patterns": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_string_replace_replacement_values": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_decimal_j_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_decimal_j_truncate_to_max_precision": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_float_j_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_int_j_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_json_j_convert_all_complex_types": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_json_j_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_jsonb_j_convert_all_complex_types": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_jsonb_j_convert_all_json": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_jsonb_j_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_string_j_fields_include_list": {
+    "webhook_url": {
       "required": false,
       "optional": true,
       "computed": true,

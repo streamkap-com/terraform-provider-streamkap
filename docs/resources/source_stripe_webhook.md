@@ -27,7 +27,9 @@ This resource creates and manages a Stripe source for Streamkap data pipelines. 
 
 ### Optional
 
-- `api_key` (String) API Key. Append to the Webhook URL as ?api_key=<API_KEY> when registering webhooks in Stripe. Generated after source is created.
+- `api_key` (String, Sensitive) API Key. Append to the Webhook URL as ?api_key=<API_KEY> when registering webhooks in Stripe. Generated after source is created.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `camel_source_dlq_enabled` (Boolean) Enable dead letter queue for failed records. Defaults to `true`.
 - `camel_source_payload_router_fanout_fields` (String) Comma-separated list of nested lists to fan out into their own topics. Allowed: invoice.lines, charge.refunds, subscription.items. Defaults to ``.
 - `camel_source_payload_router_include_event` (Boolean) Include Stripe event metadata (_event_id, _event_type, _event_created, _api_version, _livemode, _previous_attributes) on the output record. Disable for upsert / state-table use cases. Defaults to `true`.

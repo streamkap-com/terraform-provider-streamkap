@@ -27,7 +27,9 @@ This resource creates and manages a Webhook source for Streamkap data pipelines.
 
 ### Optional
 
-- `api_key` (String) API. This key will be generated after the source is created
+- `api_key` (String, Sensitive) API. This key will be generated after the source is created
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `camel_source_camel_message_header_key` (String) Camel Message Header contains key field details for Kafka Message, default is 'key'. Defaults to `key`.
 - `format` (String) The incoming format of the data receive by webhook. Defaults to `json`. Valid values: `json`, `string`.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.

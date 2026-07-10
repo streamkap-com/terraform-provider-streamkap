@@ -82,6 +82,38 @@ locals { is_source_tag = contains(data.streamkap_tag.example.type, "sources") }
 
 Element type is unchanged (`string`); only the collection type changed.
 
+#### Breaking — credential attributes are now sensitive
+
+These attributes are now marked `Sensitive`. Previously their values were
+printed in plan output and written to logs in the clear:
+
+| Resource | Attribute |
+|----------|-----------|
+| `streamkap_source_webhook`, `streamkap_source_shopify_webhook`, `streamkap_source_stripe_webhook`, `streamkap_source_salesforce_webhook`, `streamkap_source_zendesk_webhook` | `api_key` |
+| `streamkap_destination_httpsink` | `http_headers_authorization` |
+
+Terraform refuses to expose a sensitive value through a root module output
+unless the output itself is marked sensitive, so this config now fails at plan
+time with *"Output refers to sensitive values"*:
+
+```hcl
+# v3.0.0-beta.24 and earlier — errors after upgrading
+output "webhook_key" {
+  value = streamkap_source_webhook.example.api_key
+}
+
+# fixed
+output "webhook_key" {
+  value     = streamkap_source_webhook.example.api_key
+  sensitive = true
+}
+```
+
+The value is still readable — `terraform output -raw webhook_key`, or
+`terraform show -json` — so you can still copy it into Shopify or Stripe when
+registering the webhook URL. `Sensitive` only stops it appearing in plan diffs
+and logs. Passing `api_key` into another module needs no change.
+
 ### Deprecated Attribute Removal (Planned)
 
 v3.0 is planned to **remove** the deprecated attributes introduced in v2.0. These attributes currently still work with deprecation warnings in the beta, but will be removed before the stable release:
@@ -194,7 +226,6 @@ deprecation warnings.
 | `insert_static_value_field` | `transforms_insert_static_value1_static_field` | Rename in config |
 | `insert_static_value` | `transforms_insert_static_value1_static_value` | Rename in config |
 | `snapshot_parallelism` | `streamkap_snapshot_parallelism` | Rename in config |
-| `snapshot_large_table_threshold` | `streamkap_snapshot_large_table_threshold` | Rename in config |
 
 ##### KafkaDirect Source
 
@@ -241,6 +272,20 @@ changed. If your v2.1.19 configuration uses them, rename them before upgrading t
 | v2.1.19 Name | v3.x Name | Why no alias |
 |--------------|-----------|---------------|
 | `table_include_list_user_defined` | `table_include_list` | v2.1.19 field was `Required`, so a deprecated alias would still force a plan-time choice between names. A straight rename is the cleanest migration. |
+
+#### Attributes Removed by the Backend (Config Edit Required)
+
+A production backend release dropped these connector config fields. There is no
+replacement attribute and no alias — remove them from your configuration.
+
+| Resource | Removed attribute | Notes |
+|----------|-------------------|-------|
+| `streamkap_source_postgresql` | `streamkap_snapshot_large_table_threshold` | Backend dropped `streamkap.snapshot.large.table.threshold`. |
+| `streamkap_source_postgresql` | `streamkap_snapshot_custom_table_config` | Not to be confused with `snapshot_custom_table_config`, which is unchanged. |
+| `streamkap_source_sqlserver` | `streamkap_snapshot_large_table_threshold` | The `snapshot_large_table_threshold` v2 alias is removed with it. |
+
+`streamkap_snapshot_parallelism` is unaffected and keeps its
+`snapshot_parallelism` alias.
 
 ### Breaking Changes (Require Immediate Action)
 

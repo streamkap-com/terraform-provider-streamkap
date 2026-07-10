@@ -1,7 +1,49 @@
 {
   "version": "v3.0.0",
   "attributes": {
-    "column_exclude_list": {
+    "api_key": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": true
+    },
+    "camel_source_dlq_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "camel_source_payload_router_fanout_fields": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "camel_source_payload_router_flatten_detail": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "camel_source_payload_router_flatten_detail_prefix": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "camel_source_payload_router_include_event": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "camel_source_payload_router_unknown_type_behavior": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "camel_source_payload_router_unknown_type_default_topic": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -17,36 +59,6 @@
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
-    },
-    "database_dbname": {
-      "required": true,
-      "optional": false,
-      "computed": false,
-      "sensitive": false
-    },
-    "database_hostname": {
-      "required": true,
-      "optional": false,
-      "computed": false,
-      "sensitive": false
-    },
-    "database_password": {
-      "required": true,
-      "optional": false,
-      "computed": false,
-      "sensitive": true
-    },
-    "database_port": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "database_user": {
-      "required": true,
-      "optional": false,
-      "computed": false,
       "sensitive": false
     },
     "id": {
@@ -77,66 +89,6 @@
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
-    },
-    "schema_history_internal_store_only_captured_databases_ddl": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "schema_history_internal_store_only_captured_tables_ddl": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "schema_include_list": {
-      "required": true,
-      "optional": false,
-      "computed": false,
-      "sensitive": false
-    },
-    "signal_data_collection_schema_or_database": {
-      "required": true,
-      "optional": false,
-      "computed": false,
-      "sensitive": false
-    },
-    "ssh_enabled": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "ssh_host": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "ssh_port": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "ssh_public_key": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "ssh_user": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "table_include_list": {
-      "required": true,
-      "optional": false,
-      "computed": false,
       "sensitive": false
     },
     "tags": {
@@ -200,6 +152,12 @@
       "sensitive": false
     },
     "transforms_value_to_key_replace_null_with_default": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "webhook_url": {
       "required": false,
       "optional": true,
       "computed": true,

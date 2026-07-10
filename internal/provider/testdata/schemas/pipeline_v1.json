@@ -37,6 +37,12 @@
       "computed": true,
       "sensitive": false
     },
+    "topic_auto_discovery_transforms": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "transforms": {
       "required": false,
       "optional": true,

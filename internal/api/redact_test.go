@@ -66,6 +66,27 @@ func TestRedactSensitiveJSON_MasksKnownSecretKeys(t *testing.T) {
 			want: []string{`"password":"***REDACTED***"`},
 			bad:  []string{"p1", "p2"},
 		},
+		{
+			// Connector configs go over the wire with dotted Kafka-Connect field
+			// names, not the underscored Terraform attribute names. Those are the
+			// keys redaction actually sees.
+			name: "dotted wire field names",
+			in: `{"config":{"api.key":"wh-secret","snowflake.private.key":"MIIEv","` +
+				`database.password":"pw","http.headers.authorization":"Bearer t"}}`,
+			want: []string{
+				`"api.key":"***REDACTED***"`,
+				`"snowflake.private.key":"***REDACTED***"`,
+				`"database.password":"***REDACTED***"`,
+				`"http.headers.authorization":"***REDACTED***"`,
+			},
+			bad: []string{"wh-secret", "MIIEv", `"pw"`, "Bearer t"},
+		},
+		{
+			name: "dotted names do not over-redact plain identifiers",
+			in:   `{"config":{"database.hostname":"db.example.com","topic.prefix":"tp"}}`,
+			want: []string{`"database.hostname":"db.example.com"`, `"topic.prefix":"tp"`},
+			bad:  []string{"***REDACTED***"},
+		},
 	}
 
 	for _, tc := range cases {

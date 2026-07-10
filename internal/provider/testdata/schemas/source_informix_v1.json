@@ -1,16 +1,28 @@
 {
   "version": "v3.0.0",
   "attributes": {
-    "connection_password": {
-      "required": true,
-      "optional": false,
-      "computed": false,
-      "sensitive": true
+    "binary_handling_mode": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
     },
-    "connection_username": {
-      "required": true,
-      "optional": false,
-      "computed": false,
+    "cdc_buffersize": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "cdc_timeout": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "column_exclude_list": {
+      "required": false,
+      "optional": true,
+      "computed": true,
       "sensitive": false
     },
     "connector": {
@@ -25,13 +37,7 @@
       "computed": true,
       "sensitive": false
     },
-    "consumer_override_max_poll_records": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "database_database": {
+    "database_dbname": {
       "required": true,
       "optional": false,
       "computed": false,
@@ -43,13 +49,31 @@
       "computed": false,
       "sensitive": false
     },
+    "database_password": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": true
+    },
     "database_port": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false
     },
-    "delete_enabled": {
+    "database_user": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false
+    },
+    "heartbeat_data_collection_schema_or_database": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "heartbeat_enabled": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -61,7 +85,7 @@
       "computed": true,
       "sensitive": false
     },
-    "insert_mode": {
+    "insert_topic_name_enabled": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -85,25 +109,25 @@
       "computed": true,
       "sensitive": false
     },
-    "primary_key_fields": {
+    "schema_history_internal_store_only_captured_databases_ddl": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false
     },
-    "primary_key_mode": {
+    "schema_history_internal_store_only_captured_tables_ddl": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false
     },
-    "quote_identifiers": {
-      "required": false,
-      "optional": true,
-      "computed": true,
+    "schema_include_list": {
+      "required": true,
+      "optional": false,
+      "computed": false,
       "sensitive": false
     },
-    "schema_evolution": {
+    "signal_data_collection_schema_or_database": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -139,7 +163,25 @@
       "computed": true,
       "sensitive": false
     },
-    "table_name_prefix": {
+    "streamkap_snapshot_chunk_size_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "streamkap_snapshot_parallelism": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "streamkap_snapshot_state_refresh_ms": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "table_include_list": {
       "required": true,
       "optional": false,
       "computed": false,
@@ -151,67 +193,25 @@
       "computed": true,
       "sensitive": false
     },
-    "tasks_max": {
+    "transforms_insert_static_key1_static_field": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false
     },
-    "topic2table_map": {
+    "transforms_insert_static_key1_static_value": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false
     },
-    "transforms_add_string_suffix_fields_include_list": {
+    "transforms_insert_static_value1_static_field": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false
     },
-    "transforms_change_topic_name_mapping": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_change_topic_name_match_regex": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_copy_field_copy_field_mapping": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_drop_fields_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_header_to_field_custom_header_mappings": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_mark_columns_as_optional_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_mark_columns_as_required_fields_include_all": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_mark_columns_as_required_null_sentinel_mode": {
+    "transforms_insert_static_value1_static_value": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -265,109 +265,13 @@
       "computed": true,
       "sensitive": false
     },
-    "transforms_rename_fields_renames": {
+    "transforms_value_to_key_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false
     },
-    "transforms_string_replace_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_string_replace_regex_patterns": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_string_replace_replacement_values": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_decimal_j_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_decimal_j_truncate_to_max_precision": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_float_j_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_int_j_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_json_j_convert_all_complex_types": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_json_j_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_jsonb_j_convert_all_complex_types": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_jsonb_j_convert_all_json": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_jsonb_j_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_to_string_j_fields_include_list": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_topic_regex_router1_regex": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_topic_regex_router1_replacement": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_topic_regex_router2_regex": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
-    "transforms_topic_regex_router2_replacement": {
+    "transforms_value_to_key_replace_null_with_default": {
       "required": false,
       "optional": true,
       "computed": true,

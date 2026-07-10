@@ -115,6 +115,12 @@
       "computed": false,
       "sensitive": false
     },
+    "post_processors": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "predicates_is_topic_to_enrich_pattern": {
       "required": false,
       "optional": true,
@@ -191,6 +197,12 @@
       "required": true,
       "optional": false,
       "computed": false,
+      "sensitive": false
+    },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_key1_static_field": {

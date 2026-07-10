@@ -1096,7 +1096,10 @@ func TestGenerateFile_Integration(t *testing.T) {
 // TestGeneratePostgreSQL_Integration tests generation from actual PostgreSQL config.
 // This test requires the backend repository to be available.
 func TestGeneratePostgreSQL_Integration(t *testing.T) {
-	backendPath := "/Users/alexandrubodea/Documents/Repositories/python-be-streamkap"
+	backendPath := os.Getenv("STREAMKAP_BACKEND_PATH")
+	if backendPath == "" {
+		t.Skip("STREAMKAP_BACKEND_PATH not set, skipping test")
+	}
 	configPath := filepath.Join(backendPath, "app/sources/plugins/postgresql/configuration.latest.json")
 
 	// Skip if backend is not available
@@ -1173,7 +1176,10 @@ func TestGeneratePostgreSQL_Integration(t *testing.T) {
 // TestGenerateSnowflake_Integration tests generation from actual Snowflake config.
 // This test requires the backend repository to be available.
 func TestGenerateSnowflake_Integration(t *testing.T) {
-	backendPath := "/Users/alexandrubodea/Documents/Repositories/python-be-streamkap"
+	backendPath := os.Getenv("STREAMKAP_BACKEND_PATH")
+	if backendPath == "" {
+		t.Skip("STREAMKAP_BACKEND_PATH not set, skipping test")
+	}
 	configPath := filepath.Join(backendPath, "app/destinations/plugins/snowflake/configuration.latest.json")
 
 	// Skip if backend is not available
@@ -1437,6 +1443,36 @@ func TestGenerate_KafkaDirectSkipsCommonConfig(t *testing.T) {
 			}
 			if got := generate("kafkadirect"); strings.Contains(got, "sentinel_common_field") {
 				t.Error("kafkadirect must skip configurations_for_all.json common fields, but 'sentinel_common_field' was generated")
+			}
+		})
+	}
+}
+
+func TestIsSecretField(t *testing.T) {
+	tests := []struct {
+		tfAttrName string
+		want       bool
+	}{
+		{"api_key", true},
+		{"pinecone_api_key", true},
+		{"weaviate_api_key", true},
+		{"camel_source_snapshot_stripe_api_key", true},
+		// The literal contents of an Authorization header, e.g. "Bearer <token>".
+		{"authorization", true},
+		{"http_headers_authorization", true},
+		// Names that merely mention a credential are not themselves secrets.
+		{"oauth2_access_token_url", false},
+		{"iceberg_catalog_s3_credentials_enabled", false},
+		{"snowflake_private_key_passphrase_secured", false},
+		{"api_key_enabled", false},
+		{"http_authorization_type", false},
+		{"database_hostname", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.tfAttrName, func(t *testing.T) {
+			if got := isSecretField(tt.tfAttrName); got != tt.want {
+				t.Errorf("isSecretField(%q) = %v, want %v", tt.tfAttrName, got, tt.want)
 			}
 		})
 	}

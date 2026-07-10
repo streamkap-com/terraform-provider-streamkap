@@ -59,8 +59,7 @@ resource "streamkap_source_sqlserver" "example-source-sqlserver" {
   binary_handling_mode = "bytes" # Options: bytes, base64, base64-url-safe, hex
 
   # Snapshot parallelization settings
-  streamkap_snapshot_parallelism           = 2     # Parallel chunk requests (1-10)
-  streamkap_snapshot_large_table_threshold = 12000 # MB threshold for parallel chunking
+  streamkap_snapshot_parallelism = 2 # Parallel chunk requests (1-10)
 
   # Custom table configuration for parallelization
   # Format: JSON object mapping table names to chunk counts

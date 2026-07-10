@@ -23,16 +23,19 @@ This resource creates and manages an S3 destination for Streamkap data pipelines
 
 ### Required
 
-- `aws_access_key_id` (String) The AWS Access Key ID used to connect to S3.
 - `aws_s3_bucket_name` (String) The S3 Bucket to use.
-- `aws_secret_access_key` (String, Sensitive) The AWS Secret Access Key used to connect to S3.
-
-**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `name` (String) Name of the destination
 
 ### Optional
 
+- `aws_access_key_id` (String) The AWS Access Key ID used to connect to S3.
+- `aws_auth_mode` (String) How Streamkap authenticates with S3. Choose `Access Keys` to use an AWS Access Key ID and Secret. Choose `Cross-Account Role` to have Streamkap assume an IAM role in your account using a Role ARN and External ID (recommended for production — see https://docs.streamkap.com/aws-cross-account-iam). Defaults to `Access Keys`. Valid values: `Access Keys`, `Cross-Account Role`.
 - `aws_s3_region` (String) The AWS region to be used. Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.
+- `aws_secret_access_key` (String, Sensitive) The AWS Secret Access Key used to connect to S3.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
+- `aws_sts_role_arn` (String) ARN of the IAM role Streamkap should assume to write to your S3 bucket (e.g. arn:aws:iam::<your-account-id>:role/<role-name>). The role's trust policy must allow the Streamkap account to assume it.
+- `aws_sts_role_external_id` (String) The External ID configured in your role's trust-policy condition. Streamkap passes this value verbatim when assuming the role.
 - `consumer_override_max_poll_records` (Number) The maximum number of records returned in a single call to poll(). Defaults to `10000`.
 - `file_compression_type` (String) Compression type for files written to S3. Defaults to `gzip`. Valid values: `none`, `gzip`, `snappy`, `zstd`.
 - `file_name_prefix` (String) Prefix for the filename. Prefixes can be used to specify a directory for the file (e.g. dir1/dir2/).
