@@ -145,6 +145,12 @@
       "computed": false,
       "sensitive": false
     },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "tasks_max": {
       "required": false,
       "optional": true,
@@ -338,6 +344,30 @@
       "sensitive": false
     },
     "transforms_to_string_j_fields_include_list": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_topic_regex_router1_regex": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_topic_regex_router1_replacement": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_topic_regex_router2_regex": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "transforms_topic_regex_router2_replacement": {
       "required": false,
       "optional": true,
       "computed": true,

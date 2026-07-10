@@ -7,6 +7,12 @@
       "computed": false,
       "sensitive": false
     },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "topic_id": {
       "required": true,
       "optional": false,

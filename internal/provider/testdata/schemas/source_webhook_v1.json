@@ -61,6 +61,12 @@
       "computed": true,
       "sensitive": false
     },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "topic_include_list": {
       "required": false,
       "optional": true,

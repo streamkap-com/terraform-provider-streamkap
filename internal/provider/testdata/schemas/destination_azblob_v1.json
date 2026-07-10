@@ -103,6 +103,12 @@
       "computed": true,
       "sensitive": false
     },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "topics_dir": {
       "required": false,
       "optional": true,

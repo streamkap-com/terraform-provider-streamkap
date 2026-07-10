@@ -103,6 +103,12 @@
       "computed": true,
       "sensitive": false
     },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "transforms_add_string_suffix_fields_include_list": {
       "required": false,
       "optional": true,

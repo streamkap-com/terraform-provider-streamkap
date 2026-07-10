@@ -199,7 +199,7 @@
       "computed": true,
       "sensitive": false
     },
-    "streamkap_snapshot_large_table_threshold": {
+    "streamkap_snapshot_chunk_size_bytes": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -211,10 +211,22 @@
       "computed": true,
       "sensitive": false
     },
+    "streamkap_snapshot_state_refresh_ms": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "table_include_list": {
       "required": true,
       "optional": false,
       "computed": false,
+      "sensitive": false
+    },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
       "sensitive": false
     },
     "transforms_insert_static_key1_static_field": {

@@ -37,6 +37,12 @@
       "computed": true,
       "sensitive": false
     },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "transform_type": {
       "required": false,
       "optional": false,
