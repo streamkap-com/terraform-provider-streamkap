@@ -926,13 +926,21 @@ func isPortField(tfAttrName string) bool {
 //
 // The webhook plugins declare `api.key` with neither `encrypt: true` nor
 // `control: "password"`, so IsSensitive() reports false and the key would be
-// printed in plan output and logs. That has regressed in the backend more than
-// once, and hand-patching the generated files loses the fix on the next regen.
-// Only an exact `api_key` or an `_api_key` suffix qualifies — `api_key_enabled`
-// and `oauth2_access_token_url` are flags and endpoints, not secrets.
+// printed in plan output and logs. The same is true of the http-sink's
+// `http.headers.authorization`, which carries the literal header value
+// ("Bearer <token>"). This has regressed in the backend more than once, and
+// hand-patching the generated files loses the fix on the next regen.
+//
+// Matching is deliberately narrow: an exact name or an underscore-suffixed
+// name. `api_key_enabled` is a flag, `http_authorization_type` is an enum, and
+// `oauth2_access_token_url` is an endpoint — none are secrets.
 func isSecretField(tfAttrName string) bool {
-	return tfAttrName == "api_key" ||
-		strings.HasSuffix(tfAttrName, "_api_key")
+	for _, secret := range []string{"api_key", "authorization"} {
+		if tfAttrName == secret || strings.HasSuffix(tfAttrName, "_"+secret) {
+			return true
+		}
+	}
+	return false
 }
 
 // entryToFieldData converts a ConfigEntry to FieldData.

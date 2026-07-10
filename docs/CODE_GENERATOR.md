@@ -210,7 +210,7 @@ The generator applies smart conversions:
 
 1. **Port fields**: Fields named `port` or ending with `_port` are converted to `Int64` even if stored as strings in the backend
 2. **Sensitive fields**: Fields with `encrypt: true` or `control: "password"` are marked `Sensitive: true`
-3. **API keys**: Fields named `api_key` or ending with `_api_key` are forced `Sensitive: true` regardless of the spec. The webhook plugins declare `api.key` with neither `encrypt` nor `control: "password"`, which has regressed in the backend more than once; hand-patching the generated file loses the fix on the next regen, so the rule lives in `isSecretField` (`cmd/tfgen/generator.go`). Only an exact `api_key` or `_api_key` suffix matches — `api_key_enabled` and `oauth2_access_token_url` are a flag and an endpoint, not secrets.
+3. **Credentials by name**: Fields named (or `_`-suffixed) `api_key` or `authorization` are forced `Sensitive: true` regardless of the spec. The webhook plugins declare `api.key`, and the http-sink declares `http.headers.authorization` (the literal `Bearer <token>` header value), with neither `encrypt` nor `control: "password"`. This has regressed in the backend more than once; hand-patching the generated file loses the fix on the next regen, so the rule lives in `isSecretField` (`cmd/tfgen/generator.go`). Matching is deliberately narrow — `api_key_enabled` is a flag, `http_authorization_type` is an enum, and `oauth2_access_token_url` is an endpoint.
 4. **Set-once fields**: Fields with `set_once: true` get `RequiresReplace()` plan modifier
 
 ### Go Field Naming (acronyms)

@@ -155,8 +155,9 @@ func DestinationHttpsinkSchema() schema.Schema {
 			"http_headers_authorization": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Static content of Authorization header (required for STATIC authorization).",
-				MarkdownDescription: "Static content of Authorization header (required for STATIC authorization).",
+				Sensitive:           true,
+				Description:         "Static content of Authorization header (required for STATIC authorization). This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Static content of Authorization header (required for STATIC authorization).\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

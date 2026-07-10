@@ -89,7 +89,7 @@
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": true
     },
     "http_headers_content_type": {
       "required": false,

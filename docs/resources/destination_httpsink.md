@@ -40,7 +40,9 @@ This resource creates and manages an HTTP Sink destination for Streamkap data pi
 - `errors_tolerance` (String) Error tolerance setting. Note: Cannot be used when Batching is enabled. Defaults to `none`. Valid values: `none`, `all`.
 - `http_authorization_type` (String) The HTTP authorization type. Defaults to `none`. Valid values: `none`, `static`, `oauth2`.
 - `http_headers_additional` (String) Additional headers in header:value format, comma-separated.
-- `http_headers_authorization` (String) Static content of Authorization header (required for STATIC authorization).
+- `http_headers_authorization` (String, Sensitive) Static content of Authorization header (required for STATIC authorization).
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `http_headers_content_type` (String) Value of Content-Type header for each request. Defaults to `application/json`.
 - `http_proxy_host` (String) Proxy hostname.
 - `http_proxy_port` (Number) Proxy port.
