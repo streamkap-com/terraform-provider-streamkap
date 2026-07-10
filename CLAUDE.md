@@ -69,6 +69,18 @@ Schema regeneration: `STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap make g
 
 **Regenerate ONLY with `STREAMKAP_BACKEND_PATH=<path> make generate` — never `go generate ./...`.** `go generate ./...` runs `tfplugindocs` (root `main.go`) *before* `tfgen` (`internal/generated/doc.go`), so docs render against the previous schema: a new field lands in `internal/generated/*.go` but ships missing from `docs/resources/*.md` (this shipped in beta.18). `make generate` runs `tfgen` first, then `tfplugindocs`. Abort codegen if `STREAMKAP_BACKEND_PATH` is unset or `ls "$STREAMKAP_BACKEND_PATH"` fails — `go generate` with it unset silently emits wrong output. After regenerating, verify each newly added attribute appears in **both** the `.go` schema and its `docs/resources/*.md` page, and report which backend branch+commit the run used.
 
+#### Post-regen checklist
+
+`make generate` rewrites every connector, so a backend change you didn't ask for rides along. Work this list before committing:
+
+1. `make snapshots`, then **read the diff**. It is the regen's changelog. `added=` are new backend fields; `removed=` means the backend dropped a field — check whether a hand-maintained alias in `internal/resource/{source,destination}/*_generated.go` still points at it (`TestDeprecatedAliasTargetsExist` catches this).
+2. **`changed=` on a `Sensitive` flag is a security regression until proven otherwise.** The backend repeatedly ships `api.key` and `http.headers.authorization` with no `encrypt`/`control`. `isSecretField` forces those; if a *different* credential shows up unmarked, add it there — never to `internal/generated/`.
+3. `git status` the provider tree for stray connector files (a wrong-branch run adds/removes plugins).
+4. Confirm the backend repo is back on its original branch. Regenerating leaves it on `main` otherwise.
+5. Every registered resource needs a snapshot or it silently skips drift checks — `TestEveryResourceHasSchemaSnapshot` enforces this.
+
+Never hand-edit `internal/generated/` to restore a `Sensitive` flag. That fix is invisible in review and dies on the next regen; it already happened twice with the webhook `api_key`.
+
 `.env` is auto-loaded by tests via godotenv. For Snowflake PEM keys (multiline), `source scripts/load-pem-keys.sh`.
 
 Local dev override: add a `dev_overrides` block in `~/.terraformrc` mapping `github.com/streamkap-com/streamkap` → your `$GOPATH/bin` (where `make install` lands the binary), plus an empty `direct {}`.
@@ -170,5 +182,6 @@ Required env vars for acceptance: `TF_ACC=1`, `STREAMKAP_CLIENT_ID`, `STREAMKAP_
 - Each resource needs `examples/resources/streamkap_<name>/{basic,complete}.tf`.
 - Provider address: `github.com/streamkap-com/streamkap` (differs from the module path).
 - Connector status values (read-only): `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
+- **Never log a connector `Config`/`configMap`.** It is keyed by API field name and holds decrypted credentials. Request bodies are logged through `redactSensitiveJSON` (`internal/api/redact.go`); anything logged outside `internal/api` bypasses it. Secrets travel under dotted Kafka-Connect names (`api.key`, `snowflake.private.key`), so any new redaction pattern must treat `.` as a separator.
 
 For deeper detail follow the Documentation map at the top of this file.

@@ -82,6 +82,38 @@ locals { is_source_tag = contains(data.streamkap_tag.example.type, "sources") }
 
 Element type is unchanged (`string`); only the collection type changed.
 
+#### Breaking — credential attributes are now sensitive
+
+These attributes are now marked `Sensitive`. Previously their values were
+printed in plan output and written to logs in the clear:
+
+| Resource | Attribute |
+|----------|-----------|
+| `streamkap_source_webhook`, `streamkap_source_shopify_webhook`, `streamkap_source_stripe_webhook`, `streamkap_source_salesforce_webhook`, `streamkap_source_zendesk_webhook` | `api_key` |
+| `streamkap_destination_httpsink` | `http_headers_authorization` |
+
+Terraform refuses to expose a sensitive value through a root module output
+unless the output itself is marked sensitive, so this config now fails at plan
+time with *"Output refers to sensitive values"*:
+
+```hcl
+# v3.0.0-beta.24 and earlier — errors after upgrading
+output "webhook_key" {
+  value = streamkap_source_webhook.example.api_key
+}
+
+# fixed
+output "webhook_key" {
+  value     = streamkap_source_webhook.example.api_key
+  sensitive = true
+}
+```
+
+The value is still readable — `terraform output -raw webhook_key`, or
+`terraform show -json` — so you can still copy it into Shopify or Stripe when
+registering the webhook URL. `Sensitive` only stops it appearing in plan diffs
+and logs. Passing `api_key` into another module needs no change.
+
 ### Deprecated Attribute Removal (Planned)
 
 v3.0 is planned to **remove** the deprecated attributes introduced in v2.0. These attributes currently still work with deprecation warnings in the beta, but will be removed before the stable release:

@@ -10,12 +10,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - **`api_key` is now marked sensitive on every webhook source.**
   `streamkap_source_webhook`, `streamkap_source_shopify_webhook` and
-  `streamkap_source_stripe_webhook` exposed the key in plan output and logs;
+  `streamkap_source_stripe_webhook` exposed the key in plan output;
   `streamkap_source_salesforce_webhook` and `streamkap_source_zendesk_webhook`
   had been hand-patched but lost the fix on every regeneration. The backend
   declares `api.key` with neither `encrypt: true` nor `control: "password"`, so
   tfgen now forces `Sensitive` for `api_key`/`*_api_key` and the fix survives
-  codegen.
+  codegen. See `docs/MIGRATION.md` if you reference `api_key` in an output.
+- **`http_headers_authorization` is now marked sensitive on
+  `streamkap_destination_httpsink`.** It carries the literal `Authorization`
+  header value (e.g. `Bearer <token>`) and was exposed the same way.
+- **Connector and transform Create/Update no longer log the resolved config map.**
+  `TF_LOG=DEBUG terraform apply` printed every credential — database passwords,
+  Snowflake private keys, webhook API keys — in plaintext for every connector,
+  because the map was formatted with `%+v` and never passed through redaction.
+  The redacted request body logged by the API client already covers this.
+- **Debug-log redaction now matches the dotted wire field names.** Connector
+  configs are sent with Kafka-Connect names (`api.key`,
+  `snowflake.private.key`), but the redaction pattern only allowed `_` and `-`
+  as separators, so those two keys were logged in the clear by the one code
+  path built to prevent exactly that.
 
 ### Added
 - **`streamkap_destination_s3`**: `aws_auth_mode` (`Access Keys` or
