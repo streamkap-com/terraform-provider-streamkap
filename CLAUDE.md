@@ -155,7 +155,7 @@ Not aliasable (document in MIGRATION.md + exceptions map):
 | Acceptance | `TestAcc` | Yes | ~15m |
 | Migration | `TestAcc.*Migration` | Yes | ~30m |
 
-Schema-compat detects: required attribute removed (breaking), optional→required (breaking), computed removed (warning). After an intentional schema change run `make snapshots`.
+Schema-compat detects: required attribute removed (breaking), optional→required (breaking), computed removed (warning). It also fails on *any* drift between a snapshot and the current schema — an added attribute, a removed one, or a flipped `Required`/`Optional`/`Computed`/`Sensitive` flag. Snapshots are the schema of record read by humans and tooling, so they must never lag. After an intentional schema change run `make snapshots` and review the diff.
 
 If `TestAcc.*Migration` produces a non-empty plan, the new provider diverges from v2.1.18 — inspect the plan to see which attribute differs; that signals a potential breaking change.
 

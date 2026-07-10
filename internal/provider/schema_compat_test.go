@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -129,18 +130,40 @@ func runSchemaCompatTest(t *testing.T, tc schemaCompatTestCase) {
 		}
 	}
 
-	// Info: New attributes (not breaking, just informational)
-	newAttrs := 0
-	for attrName := range currentSnapshot.Attributes {
-		if _, exists := baseline.Attributes[attrName]; !exists {
-			t.Logf("INFO: New attribute %q added", attrName)
-			newAttrs++
+	// Drift: the snapshot is the schema of record that humans and tooling read
+	// from the repo. Additive changes are not breaking, but treating them as
+	// merely informational lets a baseline rot silently — `tags` went missing
+	// from 48 snapshots for two months that way. Any divergence fails here;
+	// `make snapshots` accepts it.
+	var added, removed, changed []string
+	for attrName, currentAttr := range currentSnapshot.Attributes {
+		baseAttr, exists := baseline.Attributes[attrName]
+		switch {
+		case !exists:
+			added = append(added, attrName)
+		case baseAttr != currentAttr:
+			changed = append(changed, attrName)
+		}
+	}
+	for attrName := range baseline.Attributes {
+		if _, exists := currentSnapshot.Attributes[attrName]; !exists {
+			removed = append(removed, attrName)
 		}
 	}
 
+	if len(added)+len(removed)+len(changed) > 0 {
+		sort.Strings(added)
+		sort.Strings(removed)
+		sort.Strings(changed)
+		t.Errorf("schema snapshot %s is stale: added=%v removed=%v changed=%v\n"+
+			"Run `make snapshots` and review the diff before committing.",
+			tc.snapshotFile, added, removed, changed)
+		return
+	}
+
 	if breakingChanges == 0 {
-		t.Logf("Schema compatibility check passed. Baseline: %d attrs, Current: %d attrs, New: %d",
-			len(baseline.Attributes), len(currentSnapshot.Attributes), newAttrs)
+		t.Logf("Schema compatibility check passed. %d attrs, snapshot in sync.",
+			len(currentSnapshot.Attributes))
 	}
 }
 
