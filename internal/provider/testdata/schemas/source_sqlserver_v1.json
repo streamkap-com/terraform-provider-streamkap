@@ -157,12 +157,6 @@
       "computed": false,
       "sensitive": false
     },
-    "snapshot_large_table_threshold": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
     "snapshot_parallelism": {
       "required": false,
       "optional": true,

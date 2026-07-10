@@ -194,7 +194,6 @@ deprecation warnings.
 | `insert_static_value_field` | `transforms_insert_static_value1_static_field` | Rename in config |
 | `insert_static_value` | `transforms_insert_static_value1_static_value` | Rename in config |
 | `snapshot_parallelism` | `streamkap_snapshot_parallelism` | Rename in config |
-| `snapshot_large_table_threshold` | `streamkap_snapshot_large_table_threshold` | Rename in config |
 
 ##### KafkaDirect Source
 
@@ -241,6 +240,20 @@ changed. If your v2.1.19 configuration uses them, rename them before upgrading t
 | v2.1.19 Name | v3.x Name | Why no alias |
 |--------------|-----------|---------------|
 | `table_include_list_user_defined` | `table_include_list` | v2.1.19 field was `Required`, so a deprecated alias would still force a plan-time choice between names. A straight rename is the cleanest migration. |
+
+#### Attributes Removed by the Backend (Config Edit Required)
+
+A production backend release dropped these connector config fields. There is no
+replacement attribute and no alias — remove them from your configuration.
+
+| Resource | Removed attribute | Notes |
+|----------|-------------------|-------|
+| `streamkap_source_postgresql` | `streamkap_snapshot_large_table_threshold` | Backend dropped `streamkap.snapshot.large.table.threshold`. |
+| `streamkap_source_postgresql` | `streamkap_snapshot_custom_table_config` | Not to be confused with `snapshot_custom_table_config`, which is unchanged. |
+| `streamkap_source_sqlserver` | `streamkap_snapshot_large_table_threshold` | The `snapshot_large_table_threshold` v2 alias is removed with it. |
+
+`streamkap_snapshot_parallelism` is unaffected and keeps its
+`snapshot_parallelism` alias.
 
 ### Breaking Changes (Require Immediate Action)
 

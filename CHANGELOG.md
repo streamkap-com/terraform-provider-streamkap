@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **`streamkap_source_sqlserver`**: the deprecated `snapshot_large_table_threshold`
+  alias. Its replacement, `streamkap_snapshot_large_table_threshold`, was dropped
+  from the schema when the backend removed the underlying config field, so the
+  alias pointed at an attribute that no longer existed and errored at plan time
+  for anyone who set it. See `docs/MIGRATION.md` for the full list of attributes
+  the backend removed.
+
+### Fixed
+- `make test` (and therefore `make test-all`) no longer runs the acceptance suite
+  against the live API. It is the only no-API target without a `-run` filter, and
+  `-short` does not gate `resource.Test`, so a developer `.env` containing
+  `TF_ACC=1` turned it into a ~10-minute production run.
+- Schema compatibility snapshots were stale: `tags` was missing from 48 of them
+  because the commit that added the attribute never ran `make snapshots`. The
+  compat test now fails on any snapshot drift instead of logging additions as
+  informational, so a baseline cannot silently rot again.
+
 ## [3.0.0-beta.24] - 2026-07-02 (Pre-release)
 
 ### Changed
