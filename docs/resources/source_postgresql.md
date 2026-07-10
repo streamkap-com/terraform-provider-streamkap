@@ -70,6 +70,7 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 - `ssh_public_key` (String) Public key to add to SSH server
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
 - `streamkap_snapshot_chunk_size_bytes` (Number) Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to `524288`.
+- `streamkap_snapshot_max_split_size_bytes` (Number) A table whose on-disk size exceeds this splits into ceil(size / threshold) disjoint ctid page-range sub-ranges so it doesn't monopolize one snapshot worker. Applies only to unfiltered ctid snapshots. Default 50 GiB. Defaults to `53687091200`.
 - `streamkap_snapshot_parallelism` (Number) How many parallel chunk requests to send to the source DB. Defaults to `1`.
 - `streamkap_snapshot_state_refresh_ms` (Number) Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to `30000`.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.

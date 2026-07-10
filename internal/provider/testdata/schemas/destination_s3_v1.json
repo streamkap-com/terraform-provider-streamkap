@@ -2,9 +2,15 @@
   "version": "v3.0.0",
   "attributes": {
     "aws_access_key_id": {
-      "required": true,
-      "optional": false,
-      "computed": false,
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "aws_auth_mode": {
+      "required": false,
+      "optional": true,
+      "computed": true,
       "sensitive": false
     },
     "aws_s3_bucket_name": {
@@ -20,10 +26,22 @@
       "sensitive": false
     },
     "aws_secret_access_key": {
-      "required": true,
-      "optional": false,
-      "computed": false,
+      "required": false,
+      "optional": true,
+      "computed": true,
       "sensitive": true
+    },
+    "aws_sts_role_arn": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "aws_sts_role_external_id": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
     },
     "connector": {
       "required": false,

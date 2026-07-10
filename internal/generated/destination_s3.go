@@ -25,8 +25,11 @@ type DestinationS3Model struct {
 	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
 	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
 	Tags                                             types.Set      `tfsdk:"tags"`
+	AWSAuthMode                                      types.String   `tfsdk:"aws_auth_mode"`
 	AWSAccessKeyID                                   types.String   `tfsdk:"aws_access_key_id"`
 	AWSSecretAccessKey                               types.String   `tfsdk:"aws_secret_access_key"`
+	AWSStsRoleARN                                    types.String   `tfsdk:"aws_sts_role_arn"`
+	AWSStsRoleExternalID                             types.String   `tfsdk:"aws_sts_role_external_id"`
 	AWSS3Region                                      types.String   `tfsdk:"aws_s3_region"`
 	AWSS3BucketName                                  types.String   `tfsdk:"aws_s3_bucket_name"`
 	Format                                           types.String   `tfsdk:"format"`
@@ -122,16 +125,52 @@ func DestinationS3Schema() schema.Schema {
 					setplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"aws_auth_mode": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How Streamkap authenticates with S3. Choose `Access Keys` to use an AWS Access Key ID and Secret. Choose `Cross-Account Role` to have Streamkap assume an IAM role in your account using a Role ARN and External ID (recommended for production — see https://docs.streamkap.com/aws-cross-account-iam). Defaults to \"Access Keys\". Valid values: Access Keys, Cross-Account Role.",
+				MarkdownDescription: "How Streamkap authenticates with S3. Choose `Access Keys` to use an AWS Access Key ID and Secret. Choose `Cross-Account Role` to have Streamkap assume an IAM role in your account using a Role ARN and External ID (recommended for production — see https://docs.streamkap.com/aws-cross-account-iam). Defaults to `Access Keys`. Valid values: `Access Keys`, `Cross-Account Role`.",
+				Default:             stringdefault.StaticString("Access Keys"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("Access Keys", "Cross-Account Role"),
+				},
+			},
 			"aws_access_key_id": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
+				Computed:            true,
 				Description:         "The AWS Access Key ID used to connect to S3.",
 				MarkdownDescription: "The AWS Access Key ID used to connect to S3.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"aws_secret_access_key": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
+				Computed:            true,
 				Sensitive:           true,
 				Description:         "The AWS Secret Access Key used to connect to S3. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "The AWS Secret Access Key used to connect to S3.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"aws_sts_role_arn": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "ARN of the IAM role Streamkap should assume to write to your S3 bucket (e.g. arn:aws:iam::<your-account-id>:role/<role-name>). The role's trust policy must allow the Streamkap account to assume it.",
+				MarkdownDescription: "ARN of the IAM role Streamkap should assume to write to your S3 bucket (e.g. arn:aws:iam::<your-account-id>:role/<role-name>). The role's trust policy must allow the Streamkap account to assume it.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"aws_sts_role_external_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "The External ID configured in your role's trust-policy condition. Streamkap passes this value verbatim when assuming the role.",
+				MarkdownDescription: "The External ID configured in your role's trust-policy condition. Streamkap passes this value verbatim when assuming the role.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"aws_s3_region": schema.StringAttribute{
 				Optional:            true,
@@ -479,8 +518,11 @@ func DestinationS3Schema() schema.Schema {
 
 // DestinationS3FieldMappings maps Terraform attribute names to API field names.
 var DestinationS3FieldMappings = map[string]string{
+	"aws_auth_mode":                                           "aws.auth.mode",
 	"aws_access_key_id":                                       "aws.access.key.id",
 	"aws_secret_access_key":                                   "aws.secret.access.key",
+	"aws_sts_role_arn":                                        "aws.sts.role.arn",
+	"aws_sts_role_external_id":                                "aws.sts.role.external.id",
 	"aws_s3_region":                                           "aws.s3.region",
 	"aws_s3_bucket_name":                                      "aws.s3.bucket.name",
 	"format":                                                  "format.user.defined",

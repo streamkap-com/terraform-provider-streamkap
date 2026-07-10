@@ -61,6 +61,7 @@ type SourcePostgresqlModel struct {
 	PredicatesIsTopicToEnrichPattern                 types.String   `tfsdk:"predicates_is_topic_to_enrich_pattern"`
 	StreamkapSnapshotParallelism                     types.Int64    `tfsdk:"streamkap_snapshot_parallelism"`
 	StreamkapSnapshotChunkSizeBytes                  types.Int64    `tfsdk:"streamkap_snapshot_chunk_size_bytes"`
+	StreamkapSnapshotMaxSplitSizeBytes               types.Int64    `tfsdk:"streamkap_snapshot_max_split_size_bytes"`
 	StreamkapSnapshotStateRefreshMs                  types.Int64    `tfsdk:"streamkap_snapshot_state_refresh_ms"`
 	SSHEnabled                                       types.Bool     `tfsdk:"ssh_enabled"`
 	SSHHost                                          types.String   `tfsdk:"ssh_host"`
@@ -419,6 +420,16 @@ func SourcePostgresqlSchema() schema.Schema {
 					int64validator.Between(4096, 8388608),
 				},
 			},
+			"streamkap_snapshot_max_split_size_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "A table whose on-disk size exceeds this splits into ceil(size / threshold) disjoint ctid page-range sub-ranges so it doesn't monopolize one snapshot worker. Applies only to unfiltered ctid snapshots. Default 50 GiB. Defaults to 53687091200.",
+				MarkdownDescription: "A table whose on-disk size exceeds this splits into ceil(size / threshold) disjoint ctid page-range sub-ranges so it doesn't monopolize one snapshot worker. Applies only to unfiltered ctid snapshots. Default 50 GiB. Defaults to `53687091200`.",
+				Default:             int64default.StaticInt64(53687091200),
+				Validators: []validator.Int64{
+					int64validator.Between(10485760, 214748364800),
+				},
+			},
 			"streamkap_snapshot_state_refresh_ms": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
@@ -609,6 +620,7 @@ var SourcePostgresqlFieldMappings = map[string]string{
 	"predicates_is_topic_to_enrich_pattern":                  "predicates.IsTopicToEnrich.pattern",
 	"streamkap_snapshot_parallelism":                         "streamkap.snapshot.parallelism",
 	"streamkap_snapshot_chunk_size_bytes":                    "streamkap.snapshot.chunk.size.bytes",
+	"streamkap_snapshot_max_split_size_bytes":                "streamkap.snapshot.max.split.size.bytes",
 	"streamkap_snapshot_state_refresh_ms":                    "streamkap.snapshot.state.refresh.ms",
 	"ssh_enabled":                                            "ssh.enabled",
 	"ssh_host":                                               "ssh.host",

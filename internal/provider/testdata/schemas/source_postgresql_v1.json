@@ -265,6 +265,12 @@
       "computed": true,
       "sensitive": false
     },
+    "streamkap_snapshot_max_split_size_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "streamkap_snapshot_parallelism": {
       "required": false,
       "optional": true,

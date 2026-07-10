@@ -17,6 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tfgen now forces `Sensitive` for `api_key`/`*_api_key` and the fix survives
   codegen.
 
+### Added
+- **`streamkap_destination_s3`**: `aws_auth_mode` (`Access Keys` or
+  `Cross-Account Role`), `aws_sts_role_arn` and `aws_sts_role_external_id` for
+  cross-account IAM role assumption. `aws_access_key_id` and
+  `aws_secret_access_key` are no longer required — they are only needed for the
+  `Access Keys` mode.
+- **`streamkap_source_postgresql`**: `streamkap_snapshot_max_split_size_bytes`,
+  splitting oversized tables into disjoint ctid page ranges during snapshot.
+
 ### Removed
 - **`streamkap_source_sqlserver`**: the deprecated `snapshot_large_table_threshold`
   alias. Its replacement, `streamkap_snapshot_large_table_threshold`, was dropped
