@@ -26,30 +26,6 @@
           "optional": true
         }
       ]
-    },
-    {
-      "connector": "sqlserveraws",
-      "entity_type": "sources",
-      "api_field_name": "streamkap.snapshot.custom.table.config.user.defined",
-      "terraform_attr_name": "snapshot_custom_table_config",
-      "type": "map_nested",
-      "optional": true,
-      "description": "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",
-      "nested_model_name": "SnapshotCustomTableConfigModel",
-      "nested_fields": [
-        {
-          "name": "chunks",
-          "terraform_attr_name": "chunks",
-          "type": "int64",
-          "required": true,
-          "validators": [
-            {
-              "type": "int64_at_least",
-              "value": 1
-            }
-          ]
-        }
-      ]
     }
   ],
   "additional_fields": []

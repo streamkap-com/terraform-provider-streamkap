@@ -50,21 +50,23 @@
 //
 // # Sensitive Field Handling
 //
-// Fields marked with encrypt=true in backend config or using password/file
-// control types generate Sensitive=true in the schema, preventing values
-// from appearing in logs or CLI output.
+// Fields marked with encrypt=true in backend config or using the password
+// control generate Sensitive=true in the schema, preventing values from
+// appearing in logs or CLI output. isSecretField force-marks credential-shaped
+// names the backend ships unflagged.
 //
 // # Validator Generation
 //
 // The generator creates validators for:
-//   - Enum fields (oneOfValidator from raw_values)
-//   - Slider fields (rangeValidator from min/max)
-//   - Port fields (Between validator for 1-65535)
+//   - one-select enums (stringvalidator.OneOf from raw_values)
+//   - multi-select enums (listvalidator.ValueStringsAre wrapping OneOf)
+//   - Slider fields (int64validator Between/AtLeast/AtMost from min/max)
 package main
 
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go/format"
 	"os"
@@ -235,12 +237,16 @@ func (g *Generator) Generate(config *ConnectorConfig, connectorCode string, back
 	// (app/utils/fetch_utils.py) returns {} for kafkadirect, so it resolves
 	// against its plugin config alone. Merging the common fields here would
 	// emit schema attributes the backend never accepts for kafkadirect.
+	//
+	// For every other connector the merge is mandatory: an unloadable common
+	// config would silently strip the shared fields (consumer.override.*,
+	// transforms.*, quote.identifiers, ...) from every schema in the run at once.
 	if backendPath != "" && connectorCode != "kafkadirect" {
 		commonConfig, err := g.loadCommonConfig(backendPath)
 		if err != nil {
-			// Log warning but don't fail - common config is optional
-			fmt.Printf("Warning: Could not load common %s config: %v\n", g.entityType, err)
-		} else if commonConfig != nil {
+			return fmt.Errorf("failed to load common %s config (configurations_for_all.json) required by %s: %w", g.entityType, connectorCode, err)
+		}
+		if commonConfig != nil {
 			// Merge common config entries into the connector config
 			// Only add entries that don't already exist (per-connector takes precedence)
 			existingNames := make(map[string]bool)
@@ -256,7 +262,10 @@ func (g *Generator) Generate(config *ConnectorConfig, connectorCode string, back
 	}
 
 	// Prepare template data
-	data := g.prepareTemplateData(config, connectorCode)
+	data, err := g.prepareTemplateData(config, connectorCode)
+	if err != nil {
+		return fmt.Errorf("failed to prepare %s %s schema: %w", g.entityType, connectorCode, err)
+	}
 
 	// Generate the file
 	outputPath := filepath.Join(g.outputDir, fmt.Sprintf("%s_%s.go", g.entityType, connectorCode))
@@ -354,8 +363,42 @@ type FieldData struct {
 	APIFieldName string // e.g., "database.hostname.user.defined"
 }
 
+// commonAttrOwner labels the Terraform attributes tfgen synthesizes itself
+// (id, name, connector, ...) in collision messages.
+const commonAttrOwner = "a tfgen-generated common attribute"
+
+// claimAttr records which source owns a Terraform attribute name and reports
+// whether the caller should emit the field.
+//
+// Two *different* API fields that normalize to the same attribute name are
+// unrepresentable: whichever loses is permanently unreachable from Terraform,
+// and which one wins depends on config array order. Dropping it silently is how
+// a backend field can vanish from the provider with no signal, so this is fatal.
+//
+// The *same* API field listed twice (the backend repeats entries across config
+// sections) is a benign duplicate — both entries would produce an identical
+// attribute, so dedupe quietly.
+func claimAttr(owners map[string]string, tfAttrName, owner string) (bool, error) {
+	prev, taken := owners[tfAttrName]
+	if !taken {
+		owners[tfAttrName] = owner
+		return true, nil
+	}
+	if prev == owner {
+		return false, nil
+	}
+	return false, fmt.Errorf(
+		"terraform attribute %q is claimed by both %s and %s; one of them would be silently dropped and which one wins depends on config order — disambiguate the names upstream, or teach cmd/tfgen to rename one of them",
+		tfAttrName, prev, owner)
+}
+
+// apiFieldOwner formats an API field name for collision messages.
+func apiFieldOwner(apiFieldName string) string {
+	return fmt.Sprintf("API field %q", apiFieldName)
+}
+
 // prepareTemplateData creates template data from the config.
-func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode string) *TemplateData {
+func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode string) (*TemplateData, error) {
 	entityTypeCap := capitalizeFirst(g.entityType)
 	connectorCodeCap := toPascalCase(connectorCode)
 
@@ -406,18 +449,33 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 		}
 	}
 
-	// Track seen Terraform attribute names to prevent duplicates
-	// (backend configs can define the same field in multiple sections)
-	seenTfAttr := make(map[string]bool)
+	// Track which source owns each Terraform attribute name, so a collision can
+	// be reported instead of silently dropping a field (see claimAttr).
+	attrOwners := make(map[string]string)
 	for _, f := range data.Fields {
-		seenTfAttr[f.TfAttrName] = true
+		attrOwners[f.TfAttrName] = commonAttrOwner
 	}
+
+	// Collect every schema conflict in one pass so a single run reports all of
+	// them rather than failing on the first.
+	var problems []error
 
 	// Get overrides for this connector to skip fields that have custom handling
 	overrides := g.getOverridesForConnector(connectorCode)
 	overrideAPIFields := make(map[string]bool)
 	for _, override := range overrides {
 		overrideAPIFields[override.APIFieldName] = true
+
+		// An override is emitted purely from overrides.json, so if the backend
+		// drops the field it targets, tfgen keeps shipping the Terraform
+		// attribute and a fieldMappings row pointing at a dead API key: users
+		// set it and it does nothing server-side. Schema snapshots can't catch
+		// that — the TF-facing shape is unchanged.
+		if config.GetEntryByName(override.APIFieldName) == nil {
+			problems = append(problems, fmt.Errorf(
+				"overrides.json: override %q (%s/%s) targets API field %q, which does not exist in this connector's backend config — remove the override, or restore the field upstream",
+				override.TerraformAttrName, override.EntityType, override.Connector, override.APIFieldName))
+		}
 	}
 
 	// Add user-defined fields from config
@@ -434,11 +492,14 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 
 		field := g.entryToFieldData(&entry)
 
-		// Skip duplicate Terraform attribute names
-		if seenTfAttr[field.TfAttrName] {
+		emit, err := claimAttr(attrOwners, field.TfAttrName, apiFieldOwner(entry.Name))
+		if err != nil {
+			problems = append(problems, err)
 			continue
 		}
-		seenTfAttr[field.TfAttrName] = true
+		if !emit {
+			continue
+		}
 
 		data.Fields = append(data.Fields, field)
 
@@ -473,6 +534,8 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 				imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"] = true
 			case TerraformTypeBool:
 				imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"] = true
+			case TerraformTypeList:
+				imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"] = true
 			case TerraformTypeJSON:
 				// JSON type uses jsontypes.Normalized which doesn't need special plan modifiers
 				// The value is normalized automatically
@@ -486,6 +549,8 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 				imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"] = true
 			case TerraformTypeBool:
 				imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"] = true
+			case TerraformTypeList:
+				imports["github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"] = true
 			case TerraformTypeJSON:
 				// JSON type doesn't typically require replace modifiers
 			}
@@ -498,6 +563,11 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 			case TerraformTypeInt64:
 				imports["github.com/hashicorp/terraform-plugin-framework-validators/int64validator"] = true
 				imports["github.com/hashicorp/terraform-plugin-framework/schema/validator"] = true
+			case TerraformTypeList:
+				// multi-select enums validate each element with OneOf.
+				imports["github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"] = true
+				imports["github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"] = true
+				imports["github.com/hashicorp/terraform-plugin-framework/schema/validator"] = true
 			}
 		}
 	}
@@ -506,11 +576,14 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 	for _, override := range overrides {
 		mapField := g.overrideToMapFieldData(&override)
 
-		// Skip duplicate Terraform attribute names
-		if seenTfAttr[mapField.TfAttrName] {
+		emit, err := claimAttr(attrOwners, mapField.TfAttrName, apiFieldOwner(override.APIFieldName))
+		if err != nil {
+			problems = append(problems, err)
 			continue
 		}
-		seenTfAttr[mapField.TfAttrName] = true
+		if !emit {
+			continue
+		}
 
 		data.MapFields = append(data.MapFields, mapField)
 
@@ -526,9 +599,9 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 		//
 		// The blanket Computed rule from issue #80 only made sense for scalar
 		// `types.{String,Int64,Bool}` fields, which DO accept unknown.
-		// The three map overrides covered here (snowflake auto_qa_dedupe_table_mapping,
-		// clickhouse topics_config_map, sqlserveraws snapshot_custom_table_config)
-		// are all `user_defined: true` with no backend dynamic backfill, so the
+		// The map overrides covered here (snowflake auto_qa_dedupe_table_mapping,
+		// clickhouse topics_config_map) are all `user_defined: true` with no
+		// backend dynamic backfill, so the
 		// "planned null, got X" failure mode that motivated #80 doesn't apply.
 		// If we ever migrate these to `types.Map`, Computed can come back.
 
@@ -558,11 +631,14 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 	for _, af := range additionalFields {
 		field := g.additionalFieldToFieldData(&af)
 
-		// Skip duplicate Terraform attribute names
-		if seenTfAttr[field.TfAttrName] {
+		emit, err := claimAttr(attrOwners, field.TfAttrName, apiFieldOwner(af.APIFieldName))
+		if err != nil {
+			problems = append(problems, err)
 			continue
 		}
-		seenTfAttr[field.TfAttrName] = true
+		if !emit {
+			continue
+		}
 
 		data.Fields = append(data.Fields, field)
 
@@ -605,7 +681,11 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 	}
 	sort.Strings(data.Imports)
 
-	return data
+	if len(problems) > 0 {
+		return nil, errors.Join(problems...)
+	}
+
+	return data, nil
 }
 
 // overrideToMapFieldData converts a FieldOverride to MapFieldData.
@@ -931,11 +1011,27 @@ func isPortField(tfAttrName string) bool {
 // ("Bearer <token>"). This has regressed in the backend more than once, and
 // hand-patching the generated files loses the fix on the next regen.
 //
+// The AWS credential names are here for the same reason. `aws_access_key_id`
+// arrives with `encrypt: true` on the DynamoDB source but without it on the S3,
+// Starburst and R2 destinations, so the same credential was masked on one
+// connector and printed in plan output on three others. The secret halves
+// (`aws_secret_access_key`, `aws_secret_key`) do carry `encrypt: true` today;
+// they are listed anyway so that dropping the flag upstream cannot silently
+// downgrade them.
+//
 // Matching is deliberately narrow: an exact name or an underscore-suffixed
 // name. `api_key_enabled` is a flag, `http_authorization_type` is an enum, and
 // `oauth2_access_token_url` is an endpoint — none are secrets.
+var forcedSecretNames = []string{
+	"api_key",
+	"authorization",
+	"access_key_id",
+	"secret_access_key",
+	"secret_key",
+}
+
 func isSecretField(tfAttrName string) bool {
-	for _, secret := range []string{"api_key", "authorization"} {
+	for _, secret := range forcedSecretNames {
 		if tfAttrName == secret || strings.HasSuffix(tfAttrName, "_"+secret) {
 			return true
 		}
@@ -1091,10 +1187,17 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 		field.NeedsPlanMod = true
 	}
 
-	// Handle validators for one-select fields
-	if entry.Value.Control == "one-select" && len(entry.GetRawValues()) > 0 {
+	// Handle validators for enum fields. multi-select is as enum-shaped as
+	// one-select — it just constrains every element of a list instead of a
+	// single string — so both get a validator and the same "Valid values" docs.
+	isEnum := entry.Value.Control == "one-select" || entry.Value.Control == "multi-select"
+	if isEnum && len(entry.GetRawValues()) > 0 {
 		field.HasValidators = true
-		field.Validators = g.oneOfValidator(entry)
+		if entry.Value.Control == "multi-select" {
+			field.Validators = fmt.Sprintf("listvalidator.ValueStringsAre(%s)", g.oneOfValidator(entry))
+		} else {
+			field.Validators = g.oneOfValidator(entry)
+		}
 
 		// Enhance descriptions with valid values
 		field.Description = ensureTrailingPeriod(field.Description)
@@ -1111,10 +1214,13 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 		field.MarkdownDescription = field.MarkdownDescription + " Valid values: " + strings.Join(mdValues, ", ") + "."
 	}
 
-	// Handle slider validators (int64 range)
-	if entry.Value.Control == "slider" && entry.Value.Min != nil && entry.Value.Max != nil {
-		field.HasValidators = true
-		field.Validators = g.rangeValidator(entry)
+	// Handle slider validators (int64 bounds). Min and Max are independently
+	// optional upstream, so a one-sided slider still gets the bound it declares.
+	if entry.Value.Control == "slider" {
+		if v := g.rangeValidator(entry); v != "" {
+			field.HasValidators = true
+			field.Validators = v
+		}
 	}
 
 	// Add security note for sensitive fields
@@ -1138,10 +1244,21 @@ func (g *Generator) defaultFunc(entry *ConfigEntry, forceInt64 bool) string {
 	case TerraformTypeInt64:
 		return g.int64DefaultFunc(entry)
 	case TerraformTypeBool:
-		return fmt.Sprintf("booldefault.StaticBool(%t)", entry.GetDefaultBool())
+		return g.boolDefaultFunc(entry)
 	default:
 		return ""
 	}
+}
+
+// boolDefaultFunc emits a Bool default. As with Int64, the backend can store the
+// default as a string, which GetDefaultBool parses; a non-boolean string would
+// silently collapse to false and ship a wrong default, so warn at generation
+// time instead of failing quietly.
+func (g *Generator) boolDefaultFunc(entry *ConfigEntry) string {
+	if entry.BoolDefaultIsUnparseableString() {
+		fmt.Printf("Warning: %s has non-boolean default %q for a Bool field; emitting false\n", entry.Name, entry.GetDefaultString())
+	}
+	return fmt.Sprintf("booldefault.StaticBool(%t)", entry.GetDefaultBool())
 }
 
 // int64DefaultFunc emits an Int64 default. The backend stores number/slider
@@ -1165,11 +1282,23 @@ func (g *Generator) oneOfValidator(entry *ConfigEntry) string {
 	return fmt.Sprintf("stringvalidator.OneOf(%s)", strings.Join(quoted, ", "))
 }
 
-// rangeValidator generates a Between validator for slider fields.
+// rangeValidator generates the bounds validator for a slider field. Min and Max
+// are independently optional in the backend spec: a slider with only a floor
+// gets AtLeast, only a ceiling gets AtMost, both get Between. Returns "" when
+// the slider declares no bounds at all.
 func (g *Generator) rangeValidator(entry *ConfigEntry) string {
-	min := entry.GetSliderMin()
-	max := entry.GetSliderMax()
-	return fmt.Sprintf("int64validator.Between(%d, %d)", min, max)
+	hasMin := entry.Value.Min != nil
+	hasMax := entry.Value.Max != nil
+	switch {
+	case hasMin && hasMax:
+		return fmt.Sprintf("int64validator.Between(%d, %d)", entry.GetSliderMin(), entry.GetSliderMax())
+	case hasMin:
+		return fmt.Sprintf("int64validator.AtLeast(%d)", entry.GetSliderMin())
+	case hasMax:
+		return fmt.Sprintf("int64validator.AtMost(%d)", entry.GetSliderMax())
+	default:
+		return ""
+	}
 }
 
 // generateFile renders the template and writes to the output file.
@@ -1191,13 +1320,16 @@ func (g *Generator) generateFile(outputPath string, data *TemplateData) error {
 	// Format the generated code
 	formatted, err := format.Source(buf.Bytes())
 	if err != nil {
-		// Write unformatted for debugging
+		// Write unformatted for debugging.
+		// #nosec G306 -- generated Go source committed to the repo; 0600 would
+		// make it readable only by whoever ran codegen.
 		if writeErr := os.WriteFile(outputPath+".unformatted", buf.Bytes(), 0644); writeErr != nil {
 			return fmt.Errorf("failed to format generated code: %w (and failed to write unformatted: %v)", err, writeErr)
 		}
 		return fmt.Errorf("failed to format generated code (see %s.unformatted): %w", outputPath, err)
 	}
 
+	// #nosec G306 -- see above; these are committed source files.
 	if err := os.WriteFile(outputPath, formatted, 0644); err != nil {
 		return fmt.Errorf("failed to write %s: %w", outputPath, err)
 	}
@@ -1361,17 +1493,17 @@ func {{ .SchemaFuncName }}() schema.Schema {
 				Default:             {{ .DefaultFunc }},
 {{- end }}
 {{- if .HasValidators }}
-				Validators: []validator.{{ if eq .SchemaAttrType "schema.StringAttribute" }}String{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}Int64{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}Bool{{ end }}{
+				Validators: []validator.{{ if eq .SchemaAttrType "schema.StringAttribute" }}String{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}Int64{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}Bool{{ else if eq .SchemaAttrType "schema.ListAttribute" }}List{{ end }}{
 					{{ .Validators }},
 				},
 {{- end }}
 {{- if or .NeedsPlanMod .RequiresReplace }}
-				PlanModifiers: []planmodifier.{{ if eq .SchemaAttrType "schema.StringAttribute" }}String{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}Int64{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}Bool{{ else if eq .SchemaAttrType "schema.SetAttribute" }}Set{{ end }}{
+				PlanModifiers: []planmodifier.{{ if eq .SchemaAttrType "schema.StringAttribute" }}String{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}Int64{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}Bool{{ else if eq .SchemaAttrType "schema.SetAttribute" }}Set{{ else if eq .SchemaAttrType "schema.ListAttribute" }}List{{ end }}{
 {{- if .NeedsPlanMod }}
-					{{ if eq .SchemaAttrType "schema.StringAttribute" }}stringplanmodifier{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}int64planmodifier{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}boolplanmodifier{{ else if eq .SchemaAttrType "schema.SetAttribute" }}setplanmodifier{{ end }}.UseStateForUnknown(),
+					{{ if eq .SchemaAttrType "schema.StringAttribute" }}stringplanmodifier{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}int64planmodifier{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}boolplanmodifier{{ else if eq .SchemaAttrType "schema.SetAttribute" }}setplanmodifier{{ else if eq .SchemaAttrType "schema.ListAttribute" }}listplanmodifier{{ end }}.UseStateForUnknown(),
 {{- end }}
 {{- if .RequiresReplace }}
-					{{ if eq .SchemaAttrType "schema.StringAttribute" }}stringplanmodifier{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}int64planmodifier{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}boolplanmodifier{{ else if eq .SchemaAttrType "schema.SetAttribute" }}setplanmodifier{{ end }}.RequiresReplace(),
+					{{ if eq .SchemaAttrType "schema.StringAttribute" }}stringplanmodifier{{ else if eq .SchemaAttrType "schema.Int64Attribute" }}int64planmodifier{{ else if eq .SchemaAttrType "schema.BoolAttribute" }}boolplanmodifier{{ else if eq .SchemaAttrType "schema.SetAttribute" }}setplanmodifier{{ else if eq .SchemaAttrType "schema.ListAttribute" }}listplanmodifier{{ end }}.RequiresReplace(),
 {{- end }}
 				},
 {{- end }}
