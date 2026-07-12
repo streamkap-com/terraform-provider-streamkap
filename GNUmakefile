@@ -59,9 +59,16 @@ testacc:
 test-migration:
 	TF_ACC=1 go test -v -timeout 180m -run 'TestAcc.*Migration' ./internal/provider/...
 
-# Run all tests except acceptance
+# Run all tests except acceptance.
+#
+# This is just `test`: `go test -short ./...` already executes the schema-compat,
+# validator and integration tests — none of them is gated on -short, and they all live
+# under ./internal/provider. Listing the dedicated targets here as well ran each of those
+# tiers a second time. They stay as separate targets for running one tier in isolation.
+# Depending on `test` also inherits its TF_ACC guard, which the -run-filtered targets
+# do not set.
 .PHONY: test-all
-test-all: test test-schema test-validators test-integration
+test-all: test
 
 # Run linter
 .PHONY: lint
@@ -122,7 +129,7 @@ help:
 	@echo "Available targets:"
 	@echo "  build            - Build the provider binary"
 	@echo "  install          - Install provider to GOBIN"
-	@echo "  generate         - Generate documentation"
+	@echo "  generate         - Regenerate schemas from the backend (tfgen), then docs (tfplugindocs)"
 	@echo "  test             - Run unit tests (fast)"
 	@echo "  test-schema      - Run schema compatibility tests"
 	@echo "  test-validators  - Run validator tests"
