@@ -7,6 +7,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Remediation of the 2026-07-11 provider audit. Grouped by what a user actually notices.
+
+### Security
+- **`aws_access_key_id` is now marked sensitive** on `streamkap_destination_s3`,
+  `streamkap_destination_starburst` and `streamkap_destination_r2`. The backend
+  ships `encrypt: true` for it on the DynamoDB source but not on these three, so
+  the same credential was masked on one connector and printed in plan output on
+  the others. tfgen now forces `Sensitive` for `*access_key_id`,
+  `*secret_access_key` and `*secret_key`, so the fix survives regeneration. If
+  you expose one of these through a Terraform `output`, that output now needs
+  `sensitive = true`.
+- **CI now scans for secrets** (gitleaks), runs on every PR, and blocks a commit
+  that would introduce one.
+
+### Breaking
+- **`streamkap_source_sqlserver`: `snapshot_custom_table_config` is removed.**
+  It mapped to a backend field (`streamkap.snapshot.custom.table.config.user.defined`)
+  that **does not exist**, so every value ever set was accepted by Terraform and
+  silently discarded — the per-table chunk counts never reached the connector.
+  Remove it from your configuration; use `snapshot_parallelism` (and
+  `streamkap_snapshot_chunk_size_bytes`) to tune snapshot throughput. See
+  `docs/MIGRATION.md`.
+- **Sources and destinations no longer adopt an existing record on "already
+  exists".** Create now fails with recovery guidance instead. Adopting is
+  indistinguishable, from inside the client, from a `create_before_destroy`
+  replace whose deposed instance still holds the name — and in that case the new
+  state entry inherits the deposed entry's backend id, so Terraform's next step
+  deletes the resource it just created. Pipelines and transforms already refused
+  to adopt for this reason (it destroyed a customer's pipelines). Tags still
+  adopt deliberately. Recovery for a genuinely lost create response is
+  `terraform import`, which the error message spells out.
+
+### Fixed
+- **Long applies no longer die on an expired token.** The OAuth token was
+  fetched once at provider startup and never refreshed, so any apply outliving
+  the token TTL failed every remaining resource with an opaque 401. The client
+  now renews ahead of expiry and retries once on a 401.
+- **`terraform destroy` no longer fails on a resource deleted out of band.**
+  Delete is now idempotent on 404 for sources, destinations, pipelines,
+  transforms, tags, kafka users and client credentials; previously it errored and
+  left the operator to run `terraform state rm`.
+- **No more perpetual diff on credentials the backend echoes as null.** Refresh
+  nulled such a secret in state while the config still held it, producing a diff
+  on every plan and a spurious update on every apply. Read now restores the
+  prior state value, but only where the API returned null — a credential rotated
+  outside Terraform still shows up as drift.
+- **`streamkap_topics` returned at most 10 topics.** It sent `limit`/`offset`,
+  which the backend does not accept; it now paginates properly. Its `entity_ids`
+  filter also collapsed to a single arbitrary ID, because the backend expects one
+  comma-separated value rather than a repeated parameter.
+- **Retries now key off the HTTP status**, not substring-matching the message. A
+  429 whose text omitted the digits was never retried, while a 400 mentioning
+  e.g. "port 4290" was retried for minutes.
+- `streamkap_pipeline`'s `destination` now validates its required fields at plan
+  time instead of failing at apply, matching `source`.
+- Connector `Read` is now covered by the `timeouts` block, so a hung backend
+  can't block refresh indefinitely.
+- Corrected `examples/`: the S3 source used a nonexistent `aws_s3_object_prefix`,
+  and the pipeline example set two Snowflake attributes that no longer exist.
+
+### Added
+- **Every resource page on the Terraform Registry now shows an Example Usage
+  section** (previously none of the 59 did — the examples existed but were named
+  in a way `tfplugindocs` did not pick up).
+- Missing examples for `streamkap_transform_topic_router`, the Salesforce and
+  Zendesk webhook sources, `streamkap_destination_pinecone`, `streamkap_tag`, and
+  the `streamkap_tags` data source.
+- Multi-select attributes (e.g. `format_output_fields`) now validate their
+  allowed values instead of accepting any string.
+
+### Changed (contributors)
+- **CI actually gates PRs now**: build, vet, lint, unit, schema-compat and
+  validator tests. None of this ran before, so the schema-snapshot drift guard —
+  which the project relies on to catch a lost `Sensitive` flag — was never
+  executed by CI. Releases are gated on the same checks plus a changelog entry.
+- **tfgen fails loudly instead of emitting wrong code.** A malformed connector
+  config, an unreadable `configurations_for_all.json`, two attributes colliding
+  on one Terraform name, or an override pointing at a backend field that no
+  longer exists each used to warn-and-continue, producing a silently incomplete
+  schema. The `snapshot_custom_table_config` removal above is the first bug this
+  caught.
+- Schema snapshots now record each attribute's **type**, so a String→Int64 change
+  is caught; data sources are snapshotted too.
+- Migration tests now actually set the deprecated v2 aliases they exist to
+  protect; acceptance fixtures no longer collide between concurrent runs.
+- The pre-commit hook no longer runs `go generate ./...`, which regenerated docs
+  against a stale schema and, with `STREAMKAP_BACKEND_PATH` unset, emitted wrong
+  output.
+- `golangci-lint` upgraded to v2; the Go 1.24 analysis pin is gone.
+
 ## [3.0.0-beta.25] - 2026-07-10 (Pre-release)
 
 ### Security
@@ -105,8 +195,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `SELECT pg_logical_emit_message(true, ...)` on each beat to advance the
   replication slot. Works on PG14+ primaries with a SELECT-only role and is
   compatible with read-only mode; no `streamkap_heartbeat` table or write
-  grant required on the source. Resolves
-  [ENG-2398](https://linear.app/streamkap/issue/ENG-2398).
+  grant required on the source.
 
 ### Changed
 - **Kafka-only heartbeat mode is now reachable across all source connectors

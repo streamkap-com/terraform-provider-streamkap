@@ -11,13 +11,16 @@
 | `docs/ARCHITECTURE.md` | Layered diagram + CRUD flow + design rationale. |
 | `docs/CODE_GENERATOR.md` | tfgen internals: parser, generator, overrides.json, "adding a new connector" walkthrough. |
 | `docs/MIGRATION.md` | v2 → v3 deprecations, removed attributes, action items for users. |
-| `docs/audits/<date>/`, `docs/plans/<date>-*.md` | Point-in-time audit reports and execution plans. Append new files; do not rewrite history. |
+| `docs/audits/<date>/`, `docs/plans/<date>-*.md` | Point-in-time audit reports and execution plans. Append new files; do not rewrite history. **Both directories are gitignored** (`.gitignore`), so everything you write there is local-only and invisible to anyone who clones the repo. Treat them as a working scratchpad, not shared history, and never assume a reader can see them. Whether that gitignore is intentional is an open question — don't "fix" it by committing audits or by editing `.gitignore` on your own. |
 | `CHANGELOG.md` | User-visible changes per release. Update before tagging. |
-| `env.md` | Local env-var setup notes. |
+
+`env.md` is **not** a repo doc: it is untracked, gitignored, and holds live credentials. Never commit it, never quote it into a tracked file, and never link to it.
 
 ### Keep docs in sync
 
 Changing something in the map above means updating its doc in the same PR. Specifically: a new/removed resource → `AGENTS.md` tables + `docs/ARCHITECTURE.md` counts + `make generate`; a deprecated alias → a `TestAcc<Connector>_MigrationFromLegacy` row in `internal/provider/migration_test.go` + `docs/MIGRATION.md`; a tfgen type-mapping change → `docs/CODE_GENERATOR.md`; a CRUD/retry/pagination change → `docs/ARCHITECTURE.md` + the API-quirks list below; any user-visible change → `CHANGELOG.md`. If a doc is wrong, fix it — don't write a parallel one. New doc files belong only in `docs/audits/` and `docs/plans/`.
+
+A new resource also needs `examples/resources/streamkap_<name>/{basic,complete}.tf` — `templates/resources.md.tmpl` embeds both into the registry page, so `tfplugindocs` (and therefore `make generate`) fails if either is missing.
 
 ## Branches
 
@@ -58,10 +61,10 @@ Use `make help` for the full list. Common ones:
 
 | Make target | What it does |
 |---|---|
-| `make test-all` | Unit + schema-compat + validators + integration (VCR) — no API; excludes `testacc`/`test-migration` |
+| `make test-all` | Unit + schema-compat + validators — no API; excludes `testacc`/`test-migration` |
 | `make testacc` | Acceptance tests, `TF_ACC=1`, ~15m, hits real API |
 | `make test-migration` | v2→v3 migration acceptance tests |
-| `make cassettes` | Re-record VCR cassettes (`UPDATE_CASSETTES=1`) |
+| `make cassettes` | VCR scaffolding only — records nothing today (see the VCR note under Testing) |
 | `make snapshots` | Update schema-compat snapshots after intentional schema changes |
 | `make sweep` | Clean orphaned test resources |
 
@@ -123,7 +126,9 @@ Control→TF-type mapping table lives in `docs/CODE_GENERATOR.md` (kept in sync 
 
 `cmd/tfgen/overrides.json` handles fields the parser can't synthesize:
 - `map_string` — `map[string]types.String` (e.g. snowflake `auto_qa_dedupe_table_mapping`).
-- `map_nested` — map of nested objects (e.g. clickhouse `topics_config_map`, sqlserveraws `snapshot_custom_table_config`).
+- `map_nested` — map of nested objects (e.g. clickhouse `topics_config_map`).
+
+An override's `api_field_name` must resolve to a field the backend actually declares — tfgen fails the build otherwise. Nothing else validates overrides, so one can outlive its backend field and keep generating an attribute Terraform accepts and the backend silently drops; `sqlserveraws.snapshot_custom_table_config` did exactly that for several releases.
 When an override's `api_field_name` matches a backend field, the override wins and the auto-parsed version is dropped.
 
 ### Fix the generator, not the generated output
@@ -141,12 +146,12 @@ The API client exposes `CreateTransform / GetTransform / UpdateTransform / Delet
 - POST/PUT/DELETE on `/sources`, `/destinations`, `/pipelines` must include `&wait=false` — VCR/mock URLs need it too.
 - List endpoints default `page_size=10` (max 100). `ListSources/ListDestinations/ListPipelines` paginate until `resp.Total`; anything else silently truncates tenants with >10 resources (affects sweepers and adopt-on-exists).
 - `/sources`, `/destinations`, `/pipelines` accept `partial_name` only — there is no exact-name filter. Adopt-by-name uses `partial_name=<name>&page_size=100` and matches client-side.
-- Create returns 422 "already exists" when a non-deleted record with the same `{tenant_id, name}` exists. List additionally filters by `service_id`, so a source orphaned in a different service of the same tenant triggers 422 but is invisible to list — adopt fails with "reported as existing but not found in list". Known backend asymmetry.
+- Create returns 422 "already exists" when a non-deleted record with the same `{tenant_id, name}` exists. **No connector resource auto-adopts on this.** Sources and destinations used to; they no longer do (pipelines, transforms and tags never did). From inside the client, "a previous apply created the record but lost the response" and "a `create_before_destroy` replace whose deposed instance still holds the name" are the same 422 — and adopting is right for the first but destroys live data in the second (the new state entry inherits the deposed entry's backend id, so Terraform's next step deletes it). Create now fails with recovery guidance instead: `terraform import` for the lost-response case, `terraform state rm` of the deposed entries otherwise. Tags still adopt deliberately (leaked CI tags, different trade-off).
 - Use `stringplanmodifier.UseStateForUnknown()` for computed fields that don't change to avoid spurious diffs.
 - Kafka Users (`/kafka-access/kafka-users`): username is the resource ID; password is write-only; no individual GET — Read filters from list.
 - Client Credentials (`/auth/client-credentials`): no Update endpoint, all fields are ForceNew; secret is only returned at creation.
 - `"produced an unexpected new value: was cty.StringVal(\"\"), but now null"` is an `Optional+Computed` echo mismatch — the API echo differs from the default. It is not just `insert_static_*`/static-transform fields: it also hits deprecated aliases and placeholder `<...>` defaults (see `HasPlaceholderDefault`). When you touch one, audit **all** siblings of that class across **every** connector — past fixes only patched a subset.
-- Secrets aren't faithfully echoed even with `secret_returned=true`: the backend returns `null` for an `encrypt: true` field whose stored value is absent or decrypts to `"null"` (`app/utils/entity_searches.py`), e.g. Snowflake `snowflake_private_key_passphrase` on a non-passphrase-secured key. The sensitive variant of the echo mismatch is `inconsistent values for sensitive attribute`. `BaseConnectorResource` Create/Update restore the planned value for every `Sensitive` string attribute after `configMapToModel` (`shared.CaptureStringFields`/`PreserveKnownStringFields`) — the configured credential is authoritative. Read keeps the API value.
+- Secrets aren't faithfully echoed even with `secret_returned=true`: the backend returns `null` for an `encrypt: true` field whose stored value is absent or decrypts to `"null"` (`app/utils/entity_searches.py`), e.g. Snowflake `snowflake_private_key_passphrase` on a non-passphrase-secured key. The sensitive variant of the echo mismatch is `inconsistent values for sensitive attribute`. Create/Update restore the planned value for every `Sensitive` string attribute after `configMapToModel` (`shared.CaptureStringFields`/`PreserveKnownStringFields`) — the configured credential is authoritative. Read is different: it restores from prior *state*, and only where the API echoed null (`shared.FillNullStringFields`). Restoring unconditionally on Read would blind refresh to a credential genuinely rotated outside Terraform; restoring nothing leaves the null echo in state and produces a diff on every plan. Both connector and transform base resources do this.
 
 ## Deprecated attribute pattern (v2 → v3 aliases)
 
@@ -164,7 +169,7 @@ Not aliasable (document in MIGRATION.md + exceptions map):
 | Unit | `Test[^Acc]` (`-short`) | No | ~5s |
 | Schema compat | `TestSchemaBackwardsCompatibility` | No | ~2s |
 | Validators | `Test.*Validator` | No | ~2s |
-| Integration (VCR) | `TestIntegration_` | No | ~30s |
+| Integration (VCR) | `TestIntegration_` | No | **scaffolding only — zero tests** |
 | Acceptance | `TestAcc` | Yes | ~15m |
 | Migration | `TestAcc.*Migration` | Yes | ~30m |
 
@@ -172,9 +177,9 @@ Schema-compat detects: required attribute removed (breaking), optional→require
 
 If `TestAcc.*Migration` produces a non-empty plan, the new provider diverges from v2.1.18 — inspect the plan to see which attribute differs; that signals a potential breaking change.
 
-VCR cassettes live next to their test files. Re-record with `make cassettes` (needs API credentials).
+**The VCR tier does not exist yet — do not rely on it.** `internal/provider/vcr_test.go` holds the recorder plumbing and one test, `TestIntegration_SourceCRUD`, which begins with an unconditional `t.Skip` *before* the `UPDATE_CASSETTES` check — so `make cassettes` cannot record either. `internal/provider/testdata/cassettes/` is empty (`.gitignore` + `.gitkeep`). `make test-all` and `make test-integration` therefore contribute no coverage from this tier. The real offline coverage is httpmock-based (`internal/api/client_test.go`, `internal/provider/state_conflict_test.go`) — add there. Whether to finish the VCR tier or delete it is an open decision; until it's made, don't cite it as coverage. If it is finished, extend the redaction hook first: it redacts by key name only, so hostnames and tenant IDs in bodies would land in committed cassettes.
 
-Required env vars for acceptance: `TF_ACC=1`, `STREAMKAP_CLIENT_ID`, `STREAMKAP_SECRET`. Optional: `STREAMKAP_HOST`, `UPDATE_CASSETTES`, `UPDATE_SNAPSHOTS`, `TF_LOG`.
+Required env vars for acceptance: `TF_ACC=1`, `STREAMKAP_CLIENT_ID`, `STREAMKAP_SECRET`. Optional: `STREAMKAP_HOST` (defaults to `https://api.streamkap.com`), `UPDATE_SNAPSHOTS`, `TF_LOG`.
 
 ## Conventions
 

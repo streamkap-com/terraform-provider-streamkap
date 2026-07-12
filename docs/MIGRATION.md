@@ -6,10 +6,10 @@ This guide helps existing users migrate their Terraform configurations between m
 
 ## v2.x to v3.0
 
-> **v3.0.0-beta.1 is available for testing.** This is a pre-release — do not use it in
-> production. If you are on v2.x and your setup is working, **there is no need to migrate
-> yet**. Wait for the stable v3.0.0 release. The beta may introduce further breaking changes
-> before the final release.
+> **The v3.0.0 beta line is available for testing** (latest: `3.0.0-beta.25`). This is a
+> pre-release — do not use it in production. If you are on v2.x and your setup is working,
+> **there is no need to migrate yet**. Wait for the stable v3.0.0 release. The beta may
+> introduce further breaking changes before the final release.
 
 ### What's New in v3.0
 
@@ -17,7 +17,10 @@ v3.0 adds new resource types and data sources on top of everything in v2.x:
 
 - **`streamkap_destination_weaviate`** — Weaviate vector database destination connector
 - **`streamkap_destination_pinecone`** — Pinecone vector database destination connector
+- **`streamkap_source_informix`** — Informix CDC source connector
 - **`streamkap_source_salesforce_webhook`** — Salesforce webhook source connector
+- **`streamkap_source_shopify_webhook`** — Shopify webhook source connector
+- **`streamkap_source_stripe_webhook`** — Stripe webhook source connector
 - **`streamkap_source_zendesk_webhook`** — Zendesk webhook source connector
 - **`streamkap_transform_topic_router`** — Topic router transform
 - **`streamkap_kafka_user`** — Kafka user management with ACL-based topic access control
@@ -142,13 +145,18 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = "3.0.0-beta.1"
+      version = "3.0.0-beta.25"
     }
   }
 }
 ```
 
-> **Important:** Pin to the exact beta version (`"3.0.0-beta.1"`), not a range like `">= 3.0.0"`. This prevents accidentally pulling a future beta or the stable release before you're ready.
+> **Important:** Pin the **exact** beta version you tested, not a range like
+> `">= 3.0.0"` or `"~> 3.0.0-beta"`. Each beta may introduce further breaking
+> changes; an exact pin stops Terraform pulling a newer beta — or the stable
+> release — before you're ready. Check the
+> [Terraform Registry](https://registry.terraform.io/providers/streamkap-com/streamkap/latest)
+> for the latest `3.0.0-beta.x`.
 
 ### Reporting Issues
 
@@ -254,19 +262,6 @@ changed. If your v2.1.19 configuration uses them, rename them before upgrading t
 |--------------|-----------|---------------|
 | `database_dbname` (string) | `database_names` (comma-separated) | Backend API field changed from `database.dbname` to `database.names` to support multiple databases per connector. |
 
-> **Note:** `snapshot_custom_table_config` is **unchanged** between v2.1.x and
-> v3.x — it remains a `map<string, {chunks: int}>` under the same attribute
-> name. (Some early v3 betas, ≤ `beta.16`, incorrectly exposed it as a JSON
-> string named `streamkap_snapshot_custom_table_config` due to a code-generation
-> bug; that has been fixed. If your config uses that beta form, change it back
-> to the map form below.)
->
-> ```hcl
-> snapshot_custom_table_config = {
->   "db.Some_Tbl" = { chunks = 5 }
-> }
-> ```
-
 ##### DynamoDB Source
 
 | v2.1.19 Name | v3.x Name | Why no alias |
@@ -281,11 +276,20 @@ replacement attribute and no alias — remove them from your configuration.
 | Resource | Removed attribute | Notes |
 |----------|-------------------|-------|
 | `streamkap_source_postgresql` | `streamkap_snapshot_large_table_threshold` | Backend dropped `streamkap.snapshot.large.table.threshold`. |
-| `streamkap_source_postgresql` | `streamkap_snapshot_custom_table_config` | Not to be confused with `snapshot_custom_table_config`, which is unchanged. |
+| `streamkap_source_postgresql` | `streamkap_snapshot_custom_table_config` | Backend dropped the field. |
 | `streamkap_source_sqlserver` | `streamkap_snapshot_large_table_threshold` | The `snapshot_large_table_threshold` v2 alias is removed with it. |
+| `streamkap_source_sqlserver` | `snapshot_custom_table_config` | The backend has no `streamkap.snapshot.custom.table.config.user.defined` field, so **every value ever set here was silently discarded** — it never reached the connector. Per-table chunk counts are no longer configurable; the backend sizes chunks itself. Use `snapshot_parallelism` (and, if needed, `streamkap_snapshot_chunk_size_bytes`) to tune snapshot throughput. |
 
 `streamkap_snapshot_parallelism` is unaffected and keeps its
 `snapshot_parallelism` alias.
+
+> **Why `snapshot_custom_table_config` was a no-op.** The provider generated the
+> attribute from a `cmd/tfgen/overrides.json` entry rather than from the backend
+> plugin spec, so nothing ever checked that the API field it mapped to still
+> existed. It did not. Terraform accepted the value, sent it, and the backend
+> ignored the unknown key. tfgen now fails the build when an override targets a
+> field the backend does not declare, so this class of dead attribute cannot
+> ship again.
 
 ### Breaking Changes (Require Immediate Action)
 

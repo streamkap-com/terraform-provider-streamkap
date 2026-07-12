@@ -42,7 +42,7 @@ resource "streamkap_source_s3" "example-source-s3" {
   # S3 bucket settings
   aws_s3_region        = "us-west-2" # Options: us-east-1, us-west-2, eu-west-1, etc.
   aws_s3_bucket_name   = "my-data-bucket"
-  aws_s3_object_prefix = "data/incoming/"
+  aws_s3_bucket_prefix = "data/incoming/"
 
   # Scan settings
   fs_scan_interval_ms = 10000 # Interval in ms (100-100000)
