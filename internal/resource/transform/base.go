@@ -148,6 +148,23 @@ func (r *BaseTransformResource) Schema(ctx context.Context, req resource.SchemaR
 	resp.Schema = baseSchema
 }
 
+// Config exposes the transform's TransformConfig. Provider-level tests use it to
+// cross-check field mappings against the model and schema, which would otherwise
+// require reaching into unexported state.
+func (r *BaseTransformResource) Config() TransformConfig {
+	return r.config
+}
+
+// sensitiveStringAttrNames returns the tfsdk names of every Sensitive string
+// attribute in this transform's schema. No transform field is Sensitive today,
+// but tfgen's isSecretField force-marks any api_key/authorization-named field —
+// and the enrich transforms call external HTTP endpoints, so the first such
+// backend field would otherwise reintroduce the secret round-trip bug the
+// connector base already guards against.
+func (r *BaseTransformResource) sensitiveStringAttrNames() []string {
+	return shared.SensitiveStringAttrNames(r.config.GetSchema())
+}
+
 // Configure sets the API client for this resource.
 func (r *BaseTransformResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
@@ -201,6 +218,9 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	// Capture user-supplied secrets before the API echo can overwrite them.
+	plannedSecrets := shared.CaptureStringFields(model, r.sensitiveStringAttrNames())
+
 	// Get name from model
 	name := r.getStringField(model, "Name")
 	if name == "" {
@@ -251,6 +271,7 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 	r.setStringField(model, "ConnectorStatus", constants.JobStatusUnknown)
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, transform.Tags))
 	r.configMapToModel(ctx, transform.Config, model)
+	shared.PreserveKnownStringFields(model, plannedSecrets)
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
@@ -346,6 +367,11 @@ func (r *BaseTransformResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
+	// Snapshot the secrets already in state. The API response can null them out
+	// (see shared.FillNullStringFields); prior state is the only source we have
+	// on refresh, since Read gets no plan.
+	priorSecrets := shared.CaptureStringFields(model, r.sensitiveStringAttrNames())
+
 	// Get ID from model
 	id := r.getStringField(model, "ID")
 	if id == "" {
@@ -378,6 +404,7 @@ func (r *BaseTransformResource) Read(ctx context.Context, req resource.ReadReque
 	r.setStringField(model, "TransformType", transform.TransformType)
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(priorTags, transform.Tags))
 	r.configMapToModel(ctx, transform.Config, model)
+	shared.FillNullStringFields(model, priorSecrets)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
@@ -531,6 +558,9 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	// Capture user-supplied secrets before the API echo can overwrite them.
+	plannedSecrets := shared.CaptureStringFields(model, r.sensitiveStringAttrNames())
+
 	// Get ID and name from model
 	id := r.getStringField(model, "ID")
 	if id == "" {
@@ -603,6 +633,7 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 	r.setStringField(model, "ConnectorStatus", constants.JobStatusUnknown)
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, transform.Tags))
 	r.configMapToModel(ctx, transform.Config, model)
+	shared.PreserveKnownStringFields(model, plannedSecrets)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)

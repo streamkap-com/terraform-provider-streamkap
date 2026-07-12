@@ -9,10 +9,30 @@ import (
 	"slices"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
 )
+
+// SensitiveStringAttrNames returns the tfsdk names of every Sensitive string
+// attribute in s. These are the fields CaptureStringFields snapshots, because
+// the backend does not reliably echo secrets back — see
+// PreserveKnownStringFields (Create/Update) and FillNullStringFields (Read).
+//
+// Only top-level string attributes are considered. Every sensitive attribute in
+// the generated schemas is a string; a Sensitive attribute of any other type, or
+// one nested inside a SingleNestedAttribute, is intentionally ignored and would
+// need handling here.
+func SensitiveStringAttrNames(s schema.Schema) []string {
+	var names []string
+	for name, attr := range s.Attributes {
+		if sa, ok := attr.(schema.StringAttribute); ok && sa.Sensitive {
+			names = append(names, name)
+		}
+	}
+	return names
+}
 
 // BuildTfsdkFieldIndex builds a map from tfsdk struct tag to field index path
 // for quick lookup during reflection-based marshaling. It recurses into
@@ -184,6 +204,7 @@ func ConfigMapToModel(ctx context.Context, cfg map[string]any, model any, mappin
 	for tfAttr, apiField := range mappings {
 		fieldPath, ok := tfsdkToField[tfAttr]
 		if !ok {
+			tflog.Warn(ctx, fmt.Sprintf("Field mapping for '%s' not found in model", tfAttr))
 			continue
 		}
 
@@ -236,6 +257,34 @@ func CaptureStringFields(model any, tfsdkNames []string) map[string]types.String
 // planned value is known but the echo differs. Captured null/unknown values are
 // left untouched so an unset Optional+Computed secret still defers to the echo.
 func PreserveKnownStringFields(model any, captured map[string]types.String) {
+	restoreStringFields(model, captured, false)
+}
+
+// FillNullStringFields writes captured values back into model only for fields
+// the API response left Null (or Unknown), and only when the captured value is
+// known. It is the refresh-time counterpart of PreserveKnownStringFields.
+//
+// Read has no plan to fall back on, so prior state is the source of truth — but
+// unlike Create/Update it must not clobber what the API actually returned. The
+// backend does echo secrets on Read (secret_returned=true); it returns null only
+// for a stored value that is absent or decrypts to "null" (e.g. a
+// conditionally-disabled passphrase — app/utils/entity_searches.py). Nulling
+// state for those fields while the config still holds them produces a diff on
+// every plan, and a spurious Update on every apply.
+//
+// Filling only the nulls keeps genuine out-of-band drift visible: a secret
+// rotated in the UI comes back with a new value and overwrites state, as it
+// should. On import there is no prior state, so nothing is captured and the API
+// value stands.
+func FillNullStringFields(model any, captured map[string]types.String) {
+	restoreStringFields(model, captured, true)
+}
+
+// restoreStringFields writes each known captured value back into model. When
+// onlyIfNull is set, a field the API populated is left alone and only the nulls
+// are filled — the difference between the Create/Update and the Read semantics
+// described on the two exported wrappers above.
+func restoreStringFields(model any, captured map[string]types.String, onlyIfNull bool) {
 	if len(captured) == 0 {
 		return
 	}
@@ -251,9 +300,16 @@ func PreserveKnownStringFields(model any, captured map[string]types.String) {
 			continue
 		}
 		field := v.FieldByIndex(fieldPath)
-		if field.CanSet() && field.Type() == reflect.TypeOf(types.String{}) {
-			field.Set(reflect.ValueOf(val))
+		if !field.CanSet() || field.Type() != reflect.TypeOf(types.String{}) {
+			continue
 		}
+		if onlyIfNull {
+			current, ok := field.Interface().(types.String)
+			if !ok || (!current.IsNull() && !current.IsUnknown()) {
+				continue
+			}
+		}
+		field.Set(reflect.ValueOf(val))
 	}
 }
 
