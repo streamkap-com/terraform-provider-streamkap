@@ -5,6 +5,7 @@ package generated
 import (
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -175,8 +176,11 @@ func DestinationGcsSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				ElementType:         types.StringType,
-				Description:         "A comma separated list of fields to include in output? Options to include key, offset, timestamp, value, headers.",
-				MarkdownDescription: "A comma separated list of fields to include in output? Options to include key, offset, timestamp, value, headers.",
+				Description:         "A comma separated list of fields to include in output? Options to include key, offset, timestamp, value, headers. Valid values: key, offset, timestamp, value, headers.",
+				MarkdownDescription: "A comma separated list of fields to include in output? Options to include key, offset, timestamp, value, headers. Valid values: `key`, `offset`, `timestamp`, `value`, `headers`.",
+				Validators: []validator.List{
+					listvalidator.ValueStringsAre(stringvalidator.OneOf("key", "offset", "timestamp", "value", "headers")),
+				},
 			},
 			"consumer_override_max_poll_records": schema.Int64Attribute{
 				Optional:            true,
