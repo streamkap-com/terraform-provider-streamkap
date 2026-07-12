@@ -77,7 +77,21 @@ Remediation of the 2026-07-11 provider audit. Grouped by what a user actually no
 - Multi-select attributes (e.g. `format_output_fields`) now validate their
   allowed values instead of accepting any string.
 
+### Changed
+- **Deprecated v2 attributes now have a stated end date: they are removed in
+  v4.0, not at v3.0.0 stable.** `docs/MIGRATION.md` said all three things in
+  three different places. The aliases exist so a v2 configuration can reach v3
+  without a rewrite, so removing them the moment v3 goes stable would defeat
+  their purpose. They keep working, with a deprecation warning, for all of v3.x.
+
 ### Changed (contributors)
+- **The VCR/cassette test tier is removed.** It was scaffolding: the single
+  `TestIntegration_` function began with an unconditional `t.Skip` placed
+  *before* the `UPDATE_CASSETTES` check, so it never ran and `make cassettes`
+  could never record. No cassette ever existed. It was counted as coverage by
+  two separate audits. Offline API coverage is httpmock
+  (`internal/api/client_test.go`, `internal/provider/state_conflict_test.go`);
+  add there.
 - **CI actually gates PRs now**: build, vet, lint, unit, schema-compat and
   validator tests. None of this ran before, so the schema-snapshot drift guard —
   which the project relies on to catch a lost `Sensitive` flag — was never

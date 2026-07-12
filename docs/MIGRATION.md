@@ -119,7 +119,12 @@ and logs. Passing `api_key` into another module needs no change.
 
 ### Deprecated Attribute Removal (Planned)
 
-v3.0 is planned to **remove** the deprecated attributes introduced in v2.0. These attributes currently still work with deprecation warnings in the beta, but will be removed before the stable release:
+The deprecated attributes below keep working, with a deprecation warning, for the
+whole of v3.x — including v3.0.0 stable. They are removed in **v4.0**.
+
+Removing them at v3.0.0 stable would defeat their purpose: they exist so a v2
+configuration can move to v3 without a rewrite. Migrate to the replacement names
+at your own pace during v3.x.
 
 | Resource | Deprecated Attribute | Replacement |
 |----------|---------------------|-------------|
@@ -509,8 +514,10 @@ or via `GET /pipelines?partial_name=<name>` /
 |---------|--------|
 | v2.0 | Deprecated attributes work with warnings |
 | v2.x | Deprecated attributes continue to work |
-| v3.0.0-beta.1 | Deprecated attributes still work (pre-release, not for production) |
-| v3.0.0 (stable) | Deprecated attributes **REMOVED** |
+| v3.0.0-beta.x | Deprecated attributes still work (pre-release, not for production) |
+| v3.0.0 (stable) | Deprecated attributes work, with a deprecation warning |
+| v3.x | Deprecated attributes continue to work, with a deprecation warning |
+| v4.0 | Deprecated attributes **REMOVED** |
 
 ## Getting Help
 

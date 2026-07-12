@@ -44,11 +44,6 @@ test-schema:
 test-validators:
 	go test -v -run 'Test.*Validator' ./internal/provider/...
 
-# Run integration tests with VCR cassettes
-.PHONY: test-integration
-test-integration:
-	go test -v -run 'TestIntegration_' ./internal/provider/...
-
 # Run acceptance tests (requires API credentials)
 .PHONY: testacc
 testacc:
@@ -61,10 +56,10 @@ test-migration:
 
 # Run all tests except acceptance.
 #
-# This is just `test`: `go test -short ./...` already executes the schema-compat,
-# validator and integration tests — none of them is gated on -short, and they all live
-# under ./internal/provider. Listing the dedicated targets here as well ran each of those
-# tiers a second time. They stay as separate targets for running one tier in isolation.
+# This is just `test`: `go test -short ./...` already executes the schema-compat and
+# validator tests — neither is gated on -short, and both live under ./internal/provider.
+# Listing the dedicated targets here as well ran each of those tiers a second time.
+# They stay as separate targets for running one tier in isolation.
 # Depending on `test` also inherits its TF_ACC guard, which the -run-filtered targets
 # do not set.
 .PHONY: test-all
@@ -91,11 +86,6 @@ tidy:
 clean:
 	rm -f $(BINARY)
 	go clean
-
-# Record new VCR cassettes (requires API credentials)
-.PHONY: cassettes
-cassettes:
-	UPDATE_CASSETTES=1 go test -v -run 'TestIntegration_' ./internal/provider/...
 
 # Update schema snapshots after intentional changes
 .PHONY: snapshots
@@ -133,7 +123,6 @@ help:
 	@echo "  test             - Run unit tests (fast)"
 	@echo "  test-schema      - Run schema compatibility tests"
 	@echo "  test-validators  - Run validator tests"
-	@echo "  test-integration - Run integration tests with VCR"
 	@echo "  testacc          - Run acceptance tests (requires API)"
 	@echo "  test-migration   - Run migration tests (requires API)"
 	@echo "  test-all         - Run all tests except acceptance"
@@ -141,7 +130,6 @@ help:
 	@echo "  fmt              - Format Go code"
 	@echo "  tidy             - Tidy Go modules"
 	@echo "  clean            - Remove build artifacts"
-	@echo "  cassettes        - Record new VCR cassettes"
 	@echo "  snapshots        - Update schema snapshots"
 	@echo "  sweep            - Clean up orphaned test resources"
 	@echo "  validate-examples - Validate example Terraform files"

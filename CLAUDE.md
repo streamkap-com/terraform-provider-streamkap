@@ -64,7 +64,6 @@ Use `make help` for the full list. Common ones:
 | `make test-all` | Unit + schema-compat + validators — no API; excludes `testacc`/`test-migration` |
 | `make testacc` | Acceptance tests, `TF_ACC=1`, ~15m, hits real API |
 | `make test-migration` | v2→v3 migration acceptance tests |
-| `make cassettes` | VCR scaffolding only — records nothing today (see the VCR note under Testing) |
 | `make snapshots` | Update schema-compat snapshots after intentional schema changes |
 | `make sweep` | Clean orphaned test resources |
 
@@ -169,7 +168,6 @@ Not aliasable (document in MIGRATION.md + exceptions map):
 | Unit | `Test[^Acc]` (`-short`) | No | ~5s |
 | Schema compat | `TestSchemaBackwardsCompatibility` | No | ~2s |
 | Validators | `Test.*Validator` | No | ~2s |
-| Integration (VCR) | `TestIntegration_` | No | **scaffolding only — zero tests** |
 | Acceptance | `TestAcc` | Yes | ~15m |
 | Migration | `TestAcc.*Migration` | Yes | ~30m |
 
@@ -177,7 +175,7 @@ Schema-compat detects: required attribute removed (breaking), optional→require
 
 If `TestAcc.*Migration` produces a non-empty plan, the new provider diverges from v2.1.18 — inspect the plan to see which attribute differs; that signals a potential breaking change.
 
-**The VCR tier does not exist yet — do not rely on it.** `internal/provider/vcr_test.go` holds the recorder plumbing and one test, `TestIntegration_SourceCRUD`, which begins with an unconditional `t.Skip` *before* the `UPDATE_CASSETTES` check — so `make cassettes` cannot record either. `internal/provider/testdata/cassettes/` is empty (`.gitignore` + `.gitkeep`). `make test-all` and `make test-integration` therefore contribute no coverage from this tier. The real offline coverage is httpmock-based (`internal/api/client_test.go`, `internal/provider/state_conflict_test.go`) — add there. Whether to finish the VCR tier or delete it is an open decision; until it's made, don't cite it as coverage. If it is finished, extend the redaction hook first: it redacts by key name only, so hostnames and tenant IDs in bodies would land in committed cassettes.
+**Offline API coverage is httpmock, not VCR.** A VCR/cassette tier was scaffolded and never implemented; it was removed rather than left to imply coverage it did not have. Offline tests that need a fake backend belong in `internal/api/client_test.go` or `internal/provider/state_conflict_test.go`, which use `httpmock`. If a cassette tier is ever revived, redact bodies as well as header keys — the old hook matched key names only, so hostnames and tenant IDs would have landed in committed cassettes.
 
 Required env vars for acceptance: `TF_ACC=1`, `STREAMKAP_CLIENT_ID`, `STREAMKAP_SECRET`. Optional: `STREAMKAP_HOST` (defaults to `https://api.streamkap.com`), `UPDATE_SNAPSHOTS`, `TF_LOG`.
 
