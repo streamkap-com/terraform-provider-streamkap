@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,16 @@ func TestAccSourceDB2Resource(t *testing.T) {
 		t.Skip("Skipping TestAccSourceDB2Resource: TF_VAR_source_db2_hostname or TF_VAR_source_db2_password not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_db2_hostname" {
 	type        = string
 	description = "The hostname of the DB2 database"
@@ -32,7 +36,7 @@ variable "source_db2_password" {
 	description = "The password of the DB2 database"
 }
 resource "streamkap_source_db2" "test" {
-	name                                     = "tf-acc-test-source-db2"
+	name                                     = %q
 	database_hostname                        = var.source_db2_hostname
 	database_port                            = 50000
 	database_user                            = "db2admin"
@@ -43,9 +47,9 @@ resource "streamkap_source_db2" "test" {
 	signal_data_collection_schema_or_database = "STREAMKAP"
 	ssh_enabled                              = false
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_db2.test", "name", "tf-acc-test-source-db2"),
+					resource.TestCheckResourceAttr("streamkap_source_db2.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_db2.test", "database_hostname", sourceDB2Hostname),
 					resource.TestCheckResourceAttr("streamkap_source_db2.test", "database_port", "50000"),
 					resource.TestCheckResourceAttr("streamkap_source_db2.test", "database_user", "db2admin"),
@@ -66,7 +70,7 @@ resource "streamkap_source_db2" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_db2_hostname" {
 	type        = string
 	description = "The hostname of the DB2 database"
@@ -77,7 +81,7 @@ variable "source_db2_password" {
 	description = "The password of the DB2 database"
 }
 resource "streamkap_source_db2" "test" {
-	name                                     = "tf-acc-test-source-db2-updated"
+	name                                     = %q
 	database_hostname                        = var.source_db2_hostname
 	database_port                            = 50000
 	database_user                            = "db2admin"
@@ -90,9 +94,9 @@ resource "streamkap_source_db2" "test" {
 	schema_history_internal_store_only_captured_databases_ddl = true
 	schema_history_internal_store_only_captured_tables_ddl    = true
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_db2.test", "name", "tf-acc-test-source-db2-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_db2.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_db2.test", "table_include_list", "STREAMKAP.CUSTOMER,STREAMKAP.ORDERS"),
 					resource.TestCheckResourceAttr("streamkap_source_db2.test", "schema_history_internal_store_only_captured_databases_ddl", "true"),
 					resource.TestCheckResourceAttr("streamkap_source_db2.test", "schema_history_internal_store_only_captured_tables_ddl", "true"),

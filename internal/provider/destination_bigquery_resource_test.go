@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -14,13 +15,16 @@ func TestAccDestinationBigqueryResource(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationBigqueryResource: TF_VAR_destination_bigquery_json or TF_VAR_destination_bigquery_dataset not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_bigquery_json" {
 	type        = string
 	sensitive   = true
@@ -31,16 +35,16 @@ variable "destination_bigquery_dataset" {
 	description = "BigQuery destination dataset name"
 }
 resource "streamkap_destination_bigquery" "test" {
-	name                   = "tf-acc-test-destination-bigquery"
+	name                   = %q
 	keyfile                = var.destination_bigquery_json
 	default_dataset        = var.destination_bigquery_dataset
 	time_partitioning_type = "DAY"
 	auto_create_tables     = true
 	tasks_max              = 5
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "name", "tf-acc-test-destination-bigquery"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "default_dataset", destinationBigqueryDataset),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "time_partitioning_type", "DAY"),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "auto_create_tables", "true"),
@@ -58,7 +62,7 @@ resource "streamkap_destination_bigquery" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_bigquery_json" {
 	type        = string
 	sensitive   = true
@@ -69,7 +73,7 @@ variable "destination_bigquery_dataset" {
 	description = "BigQuery destination dataset name"
 }
 resource "streamkap_destination_bigquery" "test" {
-	name                     = "tf-acc-test-destination-bigquery-updated"
+	name                     = %q
 	keyfile                  = var.destination_bigquery_json
 	default_dataset          = var.destination_bigquery_dataset
 	time_partitioning_type   = "HOUR"
@@ -77,9 +81,9 @@ resource "streamkap_destination_bigquery" "test" {
 	custom_partition_field   = "_streamkap_ts"
 	custom_clustering_fields = "id"
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "name", "tf-acc-test-destination-bigquery-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "time_partitioning_type", "HOUR"),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "tasks_max", "3"),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "custom_partition_field", "_streamkap_ts"),
@@ -103,13 +107,15 @@ func TestAccDestinationBigqueryResource_PartitionAndClustering(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationBigqueryResource_PartitionAndClustering: TF_VAR_destination_bigquery_json or TF_VAR_destination_bigquery_dataset not set")
 	}
 
+	name := acctestName(t, "partclust")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Single partition field + single clustering field (sales.products shape)
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_bigquery_json" {
 	type        = string
 	sensitive   = true
@@ -120,14 +126,14 @@ variable "destination_bigquery_dataset" {
 	description = "BigQuery destination dataset name"
 }
 resource "streamkap_destination_bigquery" "test" {
-	name                     = "tf-acc-test-bigquery-partclust"
+	name                     = %q
 	keyfile                  = var.destination_bigquery_json
 	default_dataset          = var.destination_bigquery_dataset
 	time_partitioning_type   = "DAY"
 	custom_partition_field   = "created_at"
 	custom_clustering_fields = "category_id"
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "time_partitioning_type", "DAY"),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "custom_partition_field", "created_at"),
@@ -137,7 +143,7 @@ resource "streamkap_destination_bigquery" "test" {
 			},
 			// Update: different partition field + multi-field clustering, max 4 (sales.orders shape)
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_bigquery_json" {
 	type        = string
 	sensitive   = true
@@ -148,14 +154,14 @@ variable "destination_bigquery_dataset" {
 	description = "BigQuery destination dataset name"
 }
 resource "streamkap_destination_bigquery" "test" {
-	name                     = "tf-acc-test-bigquery-partclust"
+	name                     = %q
 	keyfile                  = var.destination_bigquery_json
 	default_dataset          = var.destination_bigquery_dataset
 	time_partitioning_type   = "HOUR"
 	custom_partition_field   = "order_date"
 	custom_clustering_fields = "customer_id,status,order_number"
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "time_partitioning_type", "HOUR"),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "custom_partition_field", "order_date"),

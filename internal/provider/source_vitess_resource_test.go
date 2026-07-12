@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -16,13 +17,16 @@ func TestAccSourceVitessResource(t *testing.T) {
 		t.Skip("Skipping TestAccSourceVitessResource: TF_VAR_source_vitess_hostname, TF_VAR_source_vitess_vtctld_host, or TF_VAR_source_vitess_vtctld_password not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_vitess_hostname" {
 	type        = string
 	description = "The hostname of the Vitess database server (VTGate)"
@@ -37,7 +41,7 @@ variable "source_vitess_vtctld_password" {
 	description = "The password of the VTCtld server"
 }
 resource "streamkap_source_vitess" "test" {
-	name                   = "tf-acc-test-source-vitess"
+	name                   = %q
 	database_hostname      = var.source_vitess_hostname
 	database_port          = 15991
 	vitess_keyspace        = "streamkap"
@@ -49,9 +53,9 @@ resource "streamkap_source_vitess" "test" {
 	table_include_list     = "streamkap.customer"
 	ssh_enabled            = false
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_vitess.test", "name", "tf-acc-test-source-vitess"),
+					resource.TestCheckResourceAttr("streamkap_source_vitess.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_vitess.test", "database_hostname", sourceVitessHostname),
 					resource.TestCheckResourceAttr("streamkap_source_vitess.test", "database_port", "15991"),
 					resource.TestCheckResourceAttr("streamkap_source_vitess.test", "vitess_keyspace", "streamkap"),
@@ -73,7 +77,7 @@ resource "streamkap_source_vitess" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_vitess_hostname" {
 	type        = string
 	description = "The hostname of the Vitess database server (VTGate)"
@@ -88,7 +92,7 @@ variable "source_vitess_vtctld_password" {
 	description = "The password of the VTCtld server"
 }
 resource "streamkap_source_vitess" "test" {
-	name                   = "tf-acc-test-source-vitess-updated"
+	name                   = %q
 	database_hostname      = var.source_vitess_hostname
 	database_port          = 15991
 	vitess_keyspace        = "streamkap"
@@ -100,9 +104,9 @@ resource "streamkap_source_vitess" "test" {
 	table_include_list     = "streamkap.customer,streamkap.orders"
 	ssh_enabled            = false
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_vitess.test", "name", "tf-acc-test-source-vitess-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_vitess.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_vitess.test", "vitess_tablet_type", "REPLICA"),
 					resource.TestCheckResourceAttr("streamkap_source_vitess.test", "table_include_list", "streamkap.customer,streamkap.orders"),
 				),

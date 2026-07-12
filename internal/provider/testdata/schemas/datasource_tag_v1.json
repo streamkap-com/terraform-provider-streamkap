@@ -10,22 +10,22 @@
     },
     "description": {
       "required": false,
-      "optional": true,
-      "computed": false,
-      "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "id": {
-      "required": false,
       "optional": false,
       "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "name": {
+    "id": {
       "required": true,
       "optional": false,
       "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "name": {
+      "required": false,
+      "optional": false,
+      "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
@@ -37,9 +37,9 @@
       "type": "basetypes.BoolType"
     },
     "type": {
-      "required": true,
+      "required": false,
       "optional": false,
-      "computed": false,
+      "computed": true,
       "sensitive": false,
       "type": "types.SetType[basetypes.StringType]"
     }

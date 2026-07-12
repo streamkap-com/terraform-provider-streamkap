@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -17,13 +18,16 @@ func TestAccDestinationMysqlResource(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationMysqlResource: TF_VAR_destination_mysql_hostname, TF_VAR_destination_mysql_username, or TF_VAR_destination_mysql_password not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_mysql_hostname" {
 	type        = string
 	description = "MySQL hostname"
@@ -43,7 +47,7 @@ variable "destination_mysql_database" {
 	default     = ""
 }
 resource "streamkap_destination_mysql" "test" {
-	name                = "tf-acc-test-destination-mysql"
+	name                = %q
 	database_hostname   = var.destination_mysql_hostname
 	database_port       = 3306
 	database_database   = var.destination_mysql_database
@@ -55,9 +59,9 @@ resource "streamkap_destination_mysql" "test" {
 	primary_key_mode    = "record_key"
 	tasks_max           = 5
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "name", "tf-acc-test-destination-mysql"),
+					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "database_hostname", destinationMysqlHostname),
 					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "database_port", "3306"),
 					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "connection_username", destinationMysqlUsername),
@@ -79,7 +83,7 @@ resource "streamkap_destination_mysql" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_mysql_hostname" {
 	type        = string
 	description = "MySQL hostname"
@@ -99,7 +103,7 @@ variable "destination_mysql_database" {
 	default     = ""
 }
 resource "streamkap_destination_mysql" "test" {
-	name                = "tf-acc-test-destination-mysql-updated"
+	name                = %q
 	database_hostname   = var.destination_mysql_hostname
 	database_port       = 3306
 	database_database   = var.destination_mysql_database
@@ -111,9 +115,9 @@ resource "streamkap_destination_mysql" "test" {
 	primary_key_mode    = "record_value"
 	tasks_max           = 10
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "name", "tf-acc-test-destination-mysql-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "schema_evolution", "basic"),
 					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "insert_mode", "upsert"),
 					resource.TestCheckResourceAttr("streamkap_destination_mysql.test", "delete_enabled", "false"),

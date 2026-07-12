@@ -5,49 +5,57 @@
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "types.ObjectType[\"connector\":basetypes.StringType, \"id\":basetypes.StringType, \"name\":basetypes.StringType]"
     },
     "id": {
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "name": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "snapshot_new_tables": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "source": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "types.ObjectType[\"connector\":basetypes.StringType, \"id\":basetypes.StringType, \"name\":basetypes.StringType, \"topics\":types.SetType[basetypes.StringType]]"
     },
     "tags": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "types.SetType[basetypes.StringType]"
     },
     "topic_auto_discovery_transforms": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "types.ListType[types.ObjectType[\"regex\":basetypes.StringType, \"transform_id\":basetypes.StringType]]"
     },
     "transforms": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "types.ListType[types.ObjectType[\"id\":basetypes.StringType, \"topics\":types.SetType[basetypes.StringType]]]"
     }
   }
 }

@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,15 @@ func TestAccSourceOracleAWSResource(t *testing.T) {
 		t.Skip("Skipping TestAccSourceOracleAWSResource: TF_VAR_source_oracleaws_hostname or TF_VAR_source_oracleaws_password not set")
 	}
 
+	name := acctestName(t, "main")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_oracleaws_hostname" {
 	type        = string
 	description = "The hostname of the Oracle RDS database"
@@ -32,7 +35,7 @@ variable "source_oracleaws_password" {
 	description = "The password of the Oracle RDS database"
 }
 resource "streamkap_source_oracleaws" "test" {
-	name                                         = "tf-acc-test-source-oracleaws"
+	name                                         = %q
 	database_hostname                            = var.source_oracleaws_hostname
 	database_port                                = 1521
 	database_user                                = "streamkap"
@@ -46,9 +49,9 @@ resource "streamkap_source_oracleaws" "test" {
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_oracleaws.test", "name", "tf-acc-test-source-oracleaws"),
+					resource.TestCheckResourceAttr("streamkap_source_oracleaws.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_oracleaws.test", "database_hostname", sourceOracleAWSHostname),
 					resource.TestCheckResourceAttr("streamkap_source_oracleaws.test", "database_port", "1521"),
 					resource.TestCheckResourceAttr("streamkap_source_oracleaws.test", "database_user", "streamkap"),

@@ -18,6 +18,14 @@ import (
 //
 // If the plan is not empty, the new provider has a behavioral difference!
 //
+// Every config below sets at least one *deprecated alias* attribute (the v2
+// attribute name that v3 keeps as an Optional+Computed alias onto the same API
+// field — see internal/resource/{source,destination}/*_generated.go). Those are
+// the attributes migration is supposed to protect, and they are the ones that
+// hit the `was cty.StringVal("") but now null` echo-mismatch class: without them
+// in the config, ExpectEmptyPlan only proves that attributes whose names never
+// changed still round-trip.
+//
 // TEMPORARY: Delete this entire file after v3.0.0 release is validated.
 // Tracked: create a GitHub issue for post-v3.0 cleanup (this file, provider_test.go legacy config, migration.yml workflow).
 
@@ -52,6 +60,11 @@ resource "streamkap_source_postgresql" "migration_test" {
 	slot_name                                    = "tf_migration_slot"
 	publication_name                             = "tf_migration_pub"
 	ssh_enabled                                  = false
+
+	# Deprecated v2 aliases (v3: transforms_insert_static_key1_static_field /
+	# ..._static_value). Set here so the empty-plan check covers the alias echo.
+	insert_static_key_field_1                    = "tf_migration_key_field"
+	insert_static_key_value_1                    = "tf_migration_key_value"
 }
 `
 
@@ -63,6 +76,7 @@ resource "streamkap_source_postgresql" "migration_test" {
 				Config:            config,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.migration_test", "name", "tf-migration-test-postgresql"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.migration_test", "insert_static_key_field_1", "tf_migration_key_field"),
 					resource.TestCheckResourceAttrSet("streamkap_source_postgresql.migration_test", "id"),
 				),
 			},
@@ -102,10 +116,14 @@ resource "streamkap_source_postgresql" "migration_test" {
 	slot_name                                    = "tf_migration_slot"
 	publication_name                             = "tf_migration_pub"
 	ssh_enabled                                  = false
+	insert_static_key_field_1                    = "tf_migration_key_field"
+	insert_static_key_value_1                    = "tf_migration_key_value"
 }
 `,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.migration_test", "name", "tf-migration-test-postgresql-updated"),
+					// The alias must survive an update applied by the NEW provider.
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.migration_test", "insert_static_key_field_1", "tf_migration_key_field"),
 				),
 			},
 		},
@@ -145,6 +163,9 @@ resource "streamkap_destination_snowflake" "migration_test" {
 	snowflake_database_name          = "JUNIT"
 	snowflake_schema_name            = "JUNIT"
 	snowflake_role_name              = "STREAMKAP_ROLE_JUNIT"
+
+	# Deprecated v2 alias (v3: create_schema_auto).
+	auto_schema_creation             = true
 }
 `
 
@@ -156,6 +177,7 @@ resource "streamkap_destination_snowflake" "migration_test" {
 				Config:            config,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.migration_test", "name", "tf-migration-test-snowflake"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.migration_test", "auto_schema_creation", "true"),
 				),
 			},
 			// Step 2: Switch to NEW provider - MUST produce empty plan
@@ -222,6 +244,12 @@ resource "streamkap_source_mysql" "migration_test" {
 	signal_data_collection_schema_or_database    = "streamkap"
 	heartbeat_data_collection_schema_or_database = "streamkap"
 	ssh_enabled                                  = false
+
+	# Deprecated v2 aliases (v3: transforms_insert_static_key1_static_field /
+	# ..._static_value, database_connection_time_zone).
+	insert_static_key_field_1                    = "tf_migration_key_field"
+	insert_static_key_value_1                    = "tf_migration_key_value"
+	database_connection_timezone                 = "SERVER"
 }
 `
 
@@ -233,6 +261,7 @@ resource "streamkap_source_mysql" "migration_test" {
 				Config:            config,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_mysql.migration_test", "name", "tf-migration-test-mysql"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.migration_test", "database_connection_timezone", "SERVER"),
 					resource.TestCheckResourceAttrSet("streamkap_source_mysql.migration_test", "id"),
 				),
 			},
@@ -270,6 +299,12 @@ resource "streamkap_source_mongodb" "migration_test" {
 	collection_include_list                   = "streamkap.customer"
 	signal_data_collection_schema_or_database = "streamkap"
 	ssh_enabled                               = false
+
+	# Deprecated v2 aliases (v3: transforms_insert_static_key1_static_field /
+	# ..._static_value, transforms_unwrap_array_encoding).
+	insert_static_key_field_1                 = "tf_migration_key_field"
+	insert_static_key_value_1                 = "tf_migration_key_value"
+	array_encoding                            = "array_string"
 }
 `
 
@@ -281,6 +316,7 @@ resource "streamkap_source_mongodb" "migration_test" {
 				Config:            config,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.migration_test", "name", "tf-migration-test-mongodb"),
+					resource.TestCheckResourceAttr("streamkap_source_mongodb.migration_test", "array_encoding", "array_string"),
 					resource.TestCheckResourceAttrSet("streamkap_source_mongodb.migration_test", "id"),
 				),
 			},
@@ -360,6 +396,12 @@ resource "streamkap_source_dynamodb" "migration_test" {
 	})
 }
 
+// Known limitation, independent of the aliases below: this shared config uses
+// `database_names`, the v3 name of v2's required `database_dbname`. A required
+// attribute cannot be aliased (docs/MIGRATION.md), so the v2 provider in Step 1
+// rejects it. Making this test pass needs the state upgrader tracked as OPP-4,
+// not a change here — do not "fix" it by dropping the config back to v2 names,
+// which would only move the failure to Step 2.
 func TestAccSourceSQLServer_MigrationFromLegacy(t *testing.T) {
 	sqlserverHostname := os.Getenv("TF_VAR_source_sqlserver_hostname")
 	sqlserverPassword := os.Getenv("TF_VAR_source_sqlserver_password")
@@ -386,6 +428,14 @@ resource "streamkap_source_sqlserver" "migration_test" {
 	table_include_list                        = "dbo.customer"
 	signal_data_collection_schema_or_database = "dbo"
 	ssh_enabled                               = false
+
+	# Deprecated v2 aliases (v3: transforms_insert_static_key1_static_field /
+	# ..._static_value, streamkap_snapshot_parallelism). The unsuffixed
+	# insert_static_* names are the v2 spelling; v3 keeps them as aliases onto
+	# the _1 API fields.
+	insert_static_key_field                   = "tf_migration_key_field"
+	insert_static_key_value                   = "tf_migration_key_value"
+	snapshot_parallelism                      = 2
 }
 `
 
@@ -397,6 +447,7 @@ resource "streamkap_source_sqlserver" "migration_test" {
 				Config:            config,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.migration_test", "name", "tf-migration-test-sqlserver"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.migration_test", "snapshot_parallelism", "2"),
 					resource.TestCheckResourceAttrSet("streamkap_source_sqlserver.migration_test", "id"),
 				),
 			},
@@ -415,12 +466,17 @@ resource "streamkap_source_sqlserver" "migration_test" {
 }
 
 func TestAccSourceKafkaDirect_MigrationFromLegacy(t *testing.T) {
-	// KafkaDirect doesn't require external credentials - uses Streamkap's internal Kafka
+	// KafkaDirect doesn't require external credentials - uses Streamkap's internal Kafka.
+	//
+	// `kafka_format` is the v2 attribute name and v3's deprecated alias for
+	// `format` (they ConflictsWith each other, so only one may be set). The v2
+	// provider has no `format` attribute at all, so the alias is the only
+	// spelling a shared config can use.
 	config := providerConfig + `
 resource "streamkap_source_kafkadirect" "migration_test" {
 	name               = "tf-migration-test-kafkadirect"
 	topic_prefix       = "migration-test_"
-	format             = "json"
+	kafka_format       = "json"
 	schemas_enable     = true
 	topic_include_list = "migration-test_topic1, migration-test_topic2"
 }
@@ -434,6 +490,7 @@ resource "streamkap_source_kafkadirect" "migration_test" {
 				Config:            config,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_kafkadirect.migration_test", "name", "tf-migration-test-kafkadirect"),
+					resource.TestCheckResourceAttr("streamkap_source_kafkadirect.migration_test", "kafka_format", "json"),
 					resource.TestCheckResourceAttrSet("streamkap_source_kafkadirect.migration_test", "id"),
 				),
 			},

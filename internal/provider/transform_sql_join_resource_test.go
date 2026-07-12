@@ -1,21 +1,23 @@
 package provider
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccTransformSqlJoinResource_basic(t *testing.T) {
+	name := acctestName(t, "main")
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckTransformDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccTransformSqlJoinResourceConfig(),
+				Config: testAccTransformSqlJoinResourceConfig(name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_transform_sql_join.test", "name", "tf-acc-test-transform-sql-join"),
+					resource.TestCheckResourceAttr("streamkap_transform_sql_join.test", "name", name),
 					resource.TestCheckResourceAttrSet("streamkap_transform_sql_join.test", "id"),
 					resource.TestCheckResourceAttrSet("streamkap_transform_sql_join.test", "transform_type"),
 				),
@@ -31,15 +33,16 @@ func TestAccTransformSqlJoinResource_basic(t *testing.T) {
 }
 
 func TestAccTransformSqlJoinResource_withImplementation(t *testing.T) {
+	name := acctestName(t, "impl")
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckTransformDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccTransformSqlJoinWithImplementationConfig(),
+				Config: testAccTransformSqlJoinWithImplementationConfig(name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_transform_sql_join.test_impl", "name", "tf-acc-test-transform-sql-join-impl"),
+					resource.TestCheckResourceAttr("streamkap_transform_sql_join.test_impl", "name", name),
 					resource.TestCheckResourceAttrSet("streamkap_transform_sql_join.test_impl", "id"),
 					resource.TestCheckResourceAttrSet("streamkap_transform_sql_join.test_impl", "implementation_json"),
 				),
@@ -54,22 +57,22 @@ func TestAccTransformSqlJoinResource_withImplementation(t *testing.T) {
 	})
 }
 
-func testAccTransformSqlJoinResourceConfig() string {
-	return `
+func testAccTransformSqlJoinResourceConfig(name string) string {
+	return fmt.Sprintf(`
 resource "streamkap_transform_sql_join" "test" {
-  name                                   = "tf-acc-test-transform-sql-join"
+  name                                   = %q
   transforms_input_topic_pattern         = "test-input-topic"
   transforms_output_topic_pattern        = "test-output-topic"
   transforms_input_serialization_format  = "Avro"
   transforms_output_serialization_format = "Avro"
 }
-`
+`, name)
 }
 
-func testAccTransformSqlJoinWithImplementationConfig() string {
-	return `
+func testAccTransformSqlJoinWithImplementationConfig(name string) string {
+	return fmt.Sprintf(`
 resource "streamkap_transform_sql_join" "test_impl" {
-  name                                   = "tf-acc-test-transform-sql-join-impl"
+  name                                   = %q
   transforms_input_topic_pattern         = "test-input-.*"
   transforms_output_topic_pattern        = "test-output-topic"
   transforms_input_serialization_format  = "Avro"
@@ -93,5 +96,5 @@ resource "streamkap_transform_sql_join" "test_impl" {
     stateTtlMs = "86400000"
   })
 }
-`
+`, name)
 }

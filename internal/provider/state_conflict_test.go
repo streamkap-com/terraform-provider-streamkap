@@ -705,7 +705,9 @@ func TestExternalDeletion_UpdateAfterDelete(t *testing.T) {
 	assert.Contains(t, err.Error(), "not found")
 }
 
-// TestExternalDeletion_DeleteAfterDelete tests that delete is idempotent or fails gracefully
+// TestExternalDeletion_DeleteAfterDelete tests that delete is idempotent: a
+// resource removed out-of-band (UI, another apply) must not make the next
+// `terraform destroy` fail and strand the operator in `terraform state rm`.
 func TestExternalDeletion_DeleteAfterDelete(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -729,8 +731,7 @@ func TestExternalDeletion_DeleteAfterDelete(t *testing.T) {
 	ctx := context.Background()
 
 	err := client.DeleteSource(ctx, sourceID)
-	require.Error(t, err, "Delete of already-deleted resource should fail")
-	assert.Contains(t, err.Error(), "not found")
+	require.NoError(t, err, "Delete of an already-deleted resource must succeed (idempotent delete)")
 }
 
 // =============================================================================

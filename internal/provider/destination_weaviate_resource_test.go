@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,16 @@ func TestAccDestinationWeaviateResource(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationWeaviateResource: TF_VAR_destination_weaviate_connection_url or TF_VAR_destination_weaviate_grpc_url not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_weaviate_connection_url" {
 	type        = string
 	description = "Weaviate connection URL"
@@ -37,7 +41,7 @@ variable "destination_weaviate_api_key" {
 	default     = ""
 }
 resource "streamkap_destination_weaviate" "test" {
-	name                     = "tf-acc-test-destination-weaviate"
+	name                     = %q
 	weaviate_connection_url  = var.destination_weaviate_connection_url
 	weaviate_grpc_url        = var.destination_weaviate_grpc_url
 	weaviate_auth_scheme     = "API_KEY"
@@ -47,9 +51,9 @@ resource "streamkap_destination_weaviate" "test" {
 	delete_enabled           = true
 	batch_size               = 100
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_weaviate.test", "name", "tf-acc-test-destination-weaviate"),
+					resource.TestCheckResourceAttr("streamkap_destination_weaviate.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_weaviate.test", "weaviate_connection_url", destinationWeaviateConnectionURL),
 					resource.TestCheckResourceAttr("streamkap_destination_weaviate.test", "weaviate_auth_scheme", "API_KEY"),
 					resource.TestCheckResourceAttr("streamkap_destination_weaviate.test", "document_id_strategy", "None"),
@@ -68,7 +72,7 @@ resource "streamkap_destination_weaviate" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_weaviate_connection_url" {
 	type        = string
 	description = "Weaviate connection URL"
@@ -84,7 +88,7 @@ variable "destination_weaviate_api_key" {
 	default     = ""
 }
 resource "streamkap_destination_weaviate" "test" {
-	name                     = "tf-acc-test-destination-weaviate-updated"
+	name                     = %q
 	weaviate_connection_url  = var.destination_weaviate_connection_url
 	weaviate_grpc_url        = var.destination_weaviate_grpc_url
 	weaviate_auth_scheme     = "API_KEY"
@@ -94,9 +98,9 @@ resource "streamkap_destination_weaviate" "test" {
 	delete_enabled           = false
 	batch_size               = 200
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_weaviate.test", "name", "tf-acc-test-destination-weaviate-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_weaviate.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_weaviate.test", "delete_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_weaviate.test", "batch_size", "200"),
 				),

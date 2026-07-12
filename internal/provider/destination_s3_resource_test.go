@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -12,13 +13,16 @@ var s3AwsAccessId = os.Getenv("TF_VAR_s3_aws_access_key_id")
 var s3AwsSecretKey = os.Getenv("TF_VAR_s3_aws_secret_access_key")
 
 func TestAccDestinationS3Resource(t *testing.T) {
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read Testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "s3_aws_access_key_id" {
   type        = string
   description = "The AWS Access Key ID used to connect to S3"
@@ -30,16 +34,16 @@ variable "s3_aws_secret_access_key" {
 }
 
 resource "streamkap_destination_s3" "test" {
-  name           = "test-destination-s3"
+  name           = %q
   aws_access_key_id = var.s3_aws_access_key_id
   aws_secret_access_key = var.s3_aws_secret_access_key
   aws_s3_region     = "us-west-2"
   aws_s3_bucket_name    = "bucketname"
   format         = "JSON Array"
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "name", "test-destination-s3"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_access_key_id", s3AwsAccessId),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_secret_access_key", s3AwsSecretKey),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_s3_region", "us-west-2"),
@@ -58,7 +62,7 @@ resource "streamkap_destination_s3" "test" {
 			},
 			// Step 3: Update and Read Testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "s3_aws_access_key_id" {
   type        = string
   description = "The AWS Access Key ID used to connect to S3"
@@ -70,16 +74,16 @@ variable "s3_aws_secret_access_key" {
 }
 
 resource "streamkap_destination_s3" "test" {
-  name           = "example-destination-s3-updated"
+  name           = %q
   aws_access_key_id = var.s3_aws_access_key_id
   aws_secret_access_key = var.s3_aws_secret_access_key
   aws_s3_region     = "us-west-2"
   aws_s3_bucket_name    = "bucketname-updated"
   file_compression_type         = "none"
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "name", "example-destination-s3-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_access_key_id", s3AwsAccessId),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_secret_access_key", s3AwsSecretKey),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_s3_region", "us-west-2"),

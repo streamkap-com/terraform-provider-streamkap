@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -9,16 +10,19 @@ import (
 
 var sourceSQLServerHostname = os.Getenv("TF_VAR_source_sqlserver_hostname")
 var sourceSQLServerPassword = os.Getenv("TF_VAR_source_sqlserver_password")
-var sourceSQLServerSSHHost = os.Getenv("TF_VAR_source_sqlserver_ssh_host")
 
 func TestAccSourceSQLServerResource(t *testing.T) {
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+	nameExclude := acctestName(t, "exclude")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_sqlserver_hostname" {
 	type        = string
 	description = "The hostname of the SQLServer database"
@@ -29,7 +33,7 @@ variable "source_sqlserver_password" {
 	description = "The password of the SQLServer database"
 }
 resource "streamkap_source_sqlserver" "test" {
-	name                                         = "test-source-sqlserver"
+	name                                         = %q
 	database_hostname                            = var.source_sqlserver_hostname
 	database_port                                = 1433
 	database_user                                = "sa"
@@ -42,9 +46,9 @@ resource "streamkap_source_sqlserver" "test" {
 	heartbeat_data_collection_schema_or_database = null
 	binary_handling_mode                         = "bytes"
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "name", "test-source-sqlserver"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_hostname", sourceSQLServerHostname),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_port", "1433"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_user", "sa"),
@@ -67,7 +71,7 @@ resource "streamkap_source_sqlserver" "test" {
 			},
 			// Step 3: Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_sqlserver_hostname" {
 	type        = string
 	description = "The hostname of the SQLServer database"
@@ -78,7 +82,7 @@ variable "source_sqlserver_password" {
 	description = "The password of the SQLServer database"
 }
 resource "streamkap_source_sqlserver" "test" {
-	name                                         = "test-source-sqlserver-updated"
+	name                                         = %q
 	database_hostname                            = var.source_sqlserver_hostname
 	database_port                                = 1433
 	database_user                                = "sa"
@@ -92,9 +96,9 @@ resource "streamkap_source_sqlserver" "test" {
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "name", "test-source-sqlserver-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_hostname", sourceSQLServerHostname),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_port", "1433"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_user", "sa"),
@@ -110,7 +114,7 @@ resource "streamkap_source_sqlserver" "test" {
 			},
 			// Step 4: Update to test column_exclude_list
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_sqlserver_hostname" {
 	type        = string
 	description = "The hostname of the SQLServer database"
@@ -121,7 +125,7 @@ variable "source_sqlserver_password" {
 	description = "The password of the SQLServer database"
 }
 resource "streamkap_source_sqlserver" "test" {
-	name                                         = "test-source-sqlserver-exclude"
+	name                                         = %q
 	database_hostname                            = var.source_sqlserver_hostname
 	database_port                                = 1433
 	database_user                                = "sa"
@@ -136,9 +140,9 @@ resource "streamkap_source_sqlserver" "test" {
 	ssh_enabled                                  = false
 	column_exclude_list                          = "streamkap.customer.name"  # Switch to exclude list
 }
-`,
+`, nameExclude),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "name", "test-source-sqlserver-exclude"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "name", nameExclude),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_hostname", sourceSQLServerHostname),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_port", "1433"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "database_user", "sa"),

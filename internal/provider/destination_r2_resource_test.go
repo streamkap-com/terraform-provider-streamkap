@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -17,13 +18,16 @@ func TestAccDestinationR2Resource(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationR2Resource: TF_VAR_destination_r2_account, TF_VAR_destination_r2_access_key_id, TF_VAR_destination_r2_secret_access_key, or TF_VAR_destination_r2_bucket_name not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_r2_account" {
 	type        = string
 	description = "Cloudflare R2 account ID"
@@ -42,7 +46,7 @@ variable "destination_r2_bucket_name" {
 	description = "R2 bucket name"
 }
 resource "streamkap_destination_r2" "test" {
-	name                  = "tf-acc-test-destination-r2"
+	name                  = %q
 	r2_account            = var.destination_r2_account
 	aws_access_key_id     = var.destination_r2_access_key_id
 	aws_secret_access_key = var.destination_r2_secret_access_key
@@ -50,9 +54,9 @@ resource "streamkap_destination_r2" "test" {
 	format                = "JSON Array"
 	file_compression_type = "gzip"
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "name", "tf-acc-test-destination-r2"),
+					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "r2_account", destinationR2Account),
 					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "aws_access_key_id", destinationR2AccessKeyID),
 					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "aws_s3_bucket_name", destinationR2BucketName),
@@ -71,7 +75,7 @@ resource "streamkap_destination_r2" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_r2_account" {
 	type        = string
 	description = "Cloudflare R2 account ID"
@@ -90,7 +94,7 @@ variable "destination_r2_bucket_name" {
 	description = "R2 bucket name"
 }
 resource "streamkap_destination_r2" "test" {
-	name                  = "tf-acc-test-destination-r2-updated"
+	name                  = %q
 	r2_account            = var.destination_r2_account
 	aws_access_key_id     = var.destination_r2_access_key_id
 	aws_secret_access_key = var.destination_r2_secret_access_key
@@ -99,9 +103,9 @@ resource "streamkap_destination_r2" "test" {
 	file_compression_type = "none"
 	file_name_prefix      = "updated/"
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "name", "tf-acc-test-destination-r2-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "format", "Parquet"),
 					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "file_compression_type", "none"),
 					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "file_name_prefix", "updated/"),

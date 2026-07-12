@@ -243,13 +243,20 @@ func TestMain(m *testing.M) {
 	resource.TestMain(m)
 }
 
-// isTestResource checks if a resource name indicates it was created by tests
+// isTestResource checks if a resource name indicates it was created by tests.
+//
+// `tf-acc-test` / `tf-migration-test` are the prefixes acctestName and the
+// migration configs produce today. The `test-` prefixes below cover fixtures
+// leaked by older provider versions (and by v2 acceptance runs on `main`),
+// which still block sweeps of the sources and destinations they reference —
+// the backend refuses to delete a source that is still wired into a pipeline.
 func isTestResource(name string) bool {
 	prefixes := []string{
 		"tf-acc-test",
 		"tf-migration-test",
 		"test-source-",
 		"test-destination-",
+		"test-pipeline",
 	}
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(name, prefix) {
@@ -258,3 +265,11 @@ func isTestResource(name string) bool {
 	}
 	return false
 }
+
+// No topic sweeper: `streamkap_topic` never creates a topic. Create/Update call
+// UpdateTopic (partition count + tags) against a Kafka topic owned by its
+// producing source or transform, and Delete only drops the resource from state
+// (internal/resource/topic/topic.go). Nothing is leaked, so there is nothing to
+// sweep — and topic names are derived from the producer's ID, not from a test
+// name, so no prefix match is even possible. Sweeping sources removes their
+// topics with them.

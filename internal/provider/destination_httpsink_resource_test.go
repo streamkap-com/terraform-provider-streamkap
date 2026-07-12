@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -14,19 +15,22 @@ func TestAccDestinationHttpsinkResource(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationHttpsinkResource: TF_VAR_destination_httpsink_url not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_httpsink_url" {
 	type        = string
 	description = "HTTP Sink destination URL"
 }
 resource "streamkap_destination_httpsink" "test" {
-	name                     = "tf-acc-test-destination-httpsink"
+	name                     = %q
 	http_url                 = var.destination_httpsink_url
 	http_authorization_type  = "none"
 	http_headers_content_type = "application/json"
@@ -37,9 +41,9 @@ resource "streamkap_destination_httpsink" "test" {
 	decimal_format           = "NUMERIC"
 	errors_tolerance         = "none"
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_httpsink.test", "name", "tf-acc-test-destination-httpsink"),
+					resource.TestCheckResourceAttr("streamkap_destination_httpsink.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_httpsink.test", "http_url", destinationHttpsinkUrl),
 					resource.TestCheckResourceAttr("streamkap_destination_httpsink.test", "http_authorization_type", "none"),
 					resource.TestCheckResourceAttr("streamkap_destination_httpsink.test", "http_headers_content_type", "application/json"),
@@ -62,13 +66,13 @@ resource "streamkap_destination_httpsink" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_httpsink_url" {
 	type        = string
 	description = "HTTP Sink destination URL"
 }
 resource "streamkap_destination_httpsink" "test" {
-	name                     = "tf-acc-test-destination-httpsink-updated"
+	name                     = %q
 	http_url                 = var.destination_httpsink_url
 	http_authorization_type  = "none"
 	http_headers_content_type = "application/json"
@@ -85,9 +89,9 @@ resource "streamkap_destination_httpsink" "test" {
 	decimal_format           = "BASE64"
 	errors_tolerance         = "all"
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_httpsink.test", "name", "tf-acc-test-destination-httpsink-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_httpsink.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_httpsink.test", "batching_enabled", "true"),
 					resource.TestCheckResourceAttr("streamkap_destination_httpsink.test", "batch_max_size", "1000"),
 					resource.TestCheckResourceAttr("streamkap_destination_httpsink.test", "batch_buffering_enabled", "true"),

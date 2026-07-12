@@ -37,6 +37,7 @@ func waitForDestroyed(label string, fetch func() (gone bool, err error)) error {
 	for {
 		gone, err := fetch()
 		if err != nil || gone {
+			//nolint:nilerr // a fetch error (typically the 404 that lands once deletion completes) means the resource is gone, which is the success condition here
 			return nil
 		}
 		if time.Now().After(deadline) {

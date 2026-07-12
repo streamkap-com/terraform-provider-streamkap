@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -16,13 +17,16 @@ func TestAccDestinationStarburstResource(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationStarburstResource: TF_VAR_destination_starburst_access_key_id, TF_VAR_destination_starburst_secret_access_key, or TF_VAR_destination_starburst_bucket_name not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_starburst_access_key_id" {
 	type        = string
 	description = "AWS Access Key ID for Starburst"
@@ -37,7 +41,7 @@ variable "destination_starburst_bucket_name" {
 	description = "S3 bucket name for Starburst"
 }
 resource "streamkap_destination_starburst" "test" {
-	name                  = "tf-acc-test-destination-starburst"
+	name                  = %q
 	aws_access_key_id     = var.destination_starburst_access_key_id
 	aws_secret_access_key = var.destination_starburst_secret_access_key
 	aws_s3_region         = "us-west-2"
@@ -47,9 +51,9 @@ resource "streamkap_destination_starburst" "test" {
 	file_name_prefix      = "streamkap/"
 	file_compression_type = "gzip"
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "name", "tf-acc-test-destination-starburst"),
+					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "aws_access_key_id", destinationStarburstAccessKeyID),
 					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "aws_s3_region", "us-west-2"),
 					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "aws_s3_bucket_name", destinationStarburstBucketName),
@@ -70,7 +74,7 @@ resource "streamkap_destination_starburst" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_starburst_access_key_id" {
 	type        = string
 	description = "AWS Access Key ID for Starburst"
@@ -85,7 +89,7 @@ variable "destination_starburst_bucket_name" {
 	description = "S3 bucket name for Starburst"
 }
 resource "streamkap_destination_starburst" "test" {
-	name                  = "tf-acc-test-destination-starburst-updated"
+	name                  = %q
 	aws_access_key_id     = var.destination_starburst_access_key_id
 	aws_secret_access_key = var.destination_starburst_secret_access_key
 	aws_s3_region         = "us-east-1"
@@ -95,9 +99,9 @@ resource "streamkap_destination_starburst" "test" {
 	file_name_prefix      = "streamkap-updated/"
 	file_compression_type = "snappy"
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "name", "tf-acc-test-destination-starburst-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "aws_s3_region", "us-east-1"),
 					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "format", "Parquet"),
 					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "file_name_template", "{{topic}}/{{partition}}/{{start_offset}}"),

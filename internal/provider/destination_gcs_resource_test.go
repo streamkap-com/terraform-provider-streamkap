@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -14,13 +15,16 @@ func TestAccDestinationGcsResource(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationGcsResource: TF_VAR_destination_gcs_credentials_json or TF_VAR_destination_gcs_bucket_name not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_gcs_credentials_json" {
 	type        = string
 	sensitive   = true
@@ -31,15 +35,15 @@ variable "destination_gcs_bucket_name" {
 	description = "GCS bucket name"
 }
 resource "streamkap_destination_gcs" "test" {
-	name                  = "tf-acc-test-destination-gcs"
+	name                  = %q
 	gcs_credentials_json  = var.destination_gcs_credentials_json
 	gcs_bucket_name       = var.destination_gcs_bucket_name
 	format                = "CSV"
 	file_compression_type = "gzip"
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_gcs.test", "name", "tf-acc-test-destination-gcs"),
+					resource.TestCheckResourceAttr("streamkap_destination_gcs.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_gcs.test", "gcs_credentials_json", destinationGcsCredentialsJson),
 					resource.TestCheckResourceAttr("streamkap_destination_gcs.test", "gcs_bucket_name", destinationGcsBucketName),
 					resource.TestCheckResourceAttr("streamkap_destination_gcs.test", "format", "CSV"),
@@ -57,7 +61,7 @@ resource "streamkap_destination_gcs" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_gcs_credentials_json" {
 	type        = string
 	sensitive   = true
@@ -68,7 +72,7 @@ variable "destination_gcs_bucket_name" {
 	description = "GCS bucket name"
 }
 resource "streamkap_destination_gcs" "test" {
-	name                  = "tf-acc-test-destination-gcs-updated"
+	name                  = %q
 	gcs_credentials_json  = var.destination_gcs_credentials_json
 	gcs_bucket_name       = var.destination_gcs_bucket_name
 	format                = "Parquet"
@@ -76,9 +80,9 @@ resource "streamkap_destination_gcs" "test" {
 	file_name_prefix      = "streamkap/data/"
 	file_name_template    = "{{topic}}-{{partition}}-{{start_offset}}"
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_gcs.test", "name", "tf-acc-test-destination-gcs-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_gcs.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_gcs.test", "format", "Parquet"),
 					resource.TestCheckResourceAttr("streamkap_destination_gcs.test", "file_compression_type", "snappy"),
 					resource.TestCheckResourceAttr("streamkap_destination_gcs.test", "file_name_prefix", "streamkap/data/"),

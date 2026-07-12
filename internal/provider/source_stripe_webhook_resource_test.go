@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,16 @@ func TestAccSourceStripeWebhookResource(t *testing.T) {
 		t.Skip("Skipping TestAccSourceStripeWebhookResource: TF_VAR_source_stripe_api_key or TF_VAR_source_stripe_signing_secret not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_stripe_api_key" {
 	type        = string
 	sensitive   = true
@@ -33,14 +37,14 @@ variable "source_stripe_signing_secret" {
 	description = "Stripe webhook signing secret"
 }
 resource "streamkap_source_stripe_webhook" "test" {
-	name                                              = "tf-acc-test-source-stripe-webhook"
+	name                                              = %q
 	camel_source_snapshot_stripe_api_key              = var.source_stripe_api_key
 	camel_source_payload_router_stripe_signing_secret = var.source_stripe_signing_secret
 	topic_include_list                                = "customer,payment_intent,charge,invoice"
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_stripe_webhook.test", "name", "tf-acc-test-source-stripe-webhook"),
+					resource.TestCheckResourceAttr("streamkap_source_stripe_webhook.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_stripe_webhook.test", "topic_include_list", "customer,payment_intent,charge,invoice"),
 				),
 			},
@@ -53,7 +57,7 @@ resource "streamkap_source_stripe_webhook" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_stripe_api_key" {
 	type        = string
 	sensitive   = true
@@ -65,14 +69,14 @@ variable "source_stripe_signing_secret" {
 	description = "Stripe webhook signing secret"
 }
 resource "streamkap_source_stripe_webhook" "test" {
-	name                                              = "tf-acc-test-source-stripe-webhook-updated"
+	name                                              = %q
 	camel_source_snapshot_stripe_api_key              = var.source_stripe_api_key
 	camel_source_payload_router_stripe_signing_secret = var.source_stripe_signing_secret
 	topic_include_list                                = "customer,payment_intent,charge"
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_stripe_webhook.test", "name", "tf-acc-test-source-stripe-webhook-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_stripe_webhook.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_stripe_webhook.test", "topic_include_list", "customer,payment_intent,charge"),
 				),
 			},

@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -14,20 +15,23 @@ func TestAccSourceMongoDBHostedResource(t *testing.T) {
 		t.Skip("Skipping TestAccSourceMongoDBHostedResource: TF_VAR_source_mongodbhosted_connection_string not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_mongodbhosted_connection_string" {
 	type        = string
 	sensitive   = true
 	description = "The MongoDB connection string"
 }
 resource "streamkap_source_mongodbhosted" "test" {
-	name                                     = "tf-acc-test-source-mongodbhosted"
+	name                                     = %q
 	mongodb_connection_string                = var.source_mongodbhosted_connection_string
 	transforms_unwrap_array_encoding         = "array_string"
 	transforms_unwrap_document_encoding      = "document"
@@ -36,9 +40,9 @@ resource "streamkap_source_mongodbhosted" "test" {
 	signal_data_collection_schema_or_database = "streamkap"
 	ssh_enabled                              = false
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_mongodbhosted.test", "name", "tf-acc-test-source-mongodbhosted"),
+					resource.TestCheckResourceAttr("streamkap_source_mongodbhosted.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_mongodbhosted.test", "mongodb_connection_string", sourceMongoDBHostedConnectionString),
 					resource.TestCheckResourceAttr("streamkap_source_mongodbhosted.test", "transforms_unwrap_array_encoding", "array_string"),
 					resource.TestCheckResourceAttr("streamkap_source_mongodbhosted.test", "transforms_unwrap_document_encoding", "document"),
@@ -57,14 +61,14 @@ resource "streamkap_source_mongodbhosted" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_mongodbhosted_connection_string" {
 	type        = string
 	sensitive   = true
 	description = "The MongoDB connection string"
 }
 resource "streamkap_source_mongodbhosted" "test" {
-	name                                     = "tf-acc-test-source-mongodbhosted-updated"
+	name                                     = %q
 	mongodb_connection_string                = var.source_mongodbhosted_connection_string
 	transforms_unwrap_array_encoding         = "array"
 	transforms_unwrap_document_encoding      = "string"
@@ -73,9 +77,9 @@ resource "streamkap_source_mongodbhosted" "test" {
 	signal_data_collection_schema_or_database = "streamkap"
 	ssh_enabled                              = false
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_mongodbhosted.test", "name", "tf-acc-test-source-mongodbhosted-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_mongodbhosted.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_mongodbhosted.test", "transforms_unwrap_array_encoding", "array"),
 					resource.TestCheckResourceAttr("streamkap_source_mongodbhosted.test", "transforms_unwrap_document_encoding", "string"),
 					resource.TestCheckResourceAttr("streamkap_source_mongodbhosted.test", "collection_include_list", "streamkap.customer,streamkap.orders"),

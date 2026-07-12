@@ -19,6 +19,23 @@ func uniqSuffix(t *testing.T) string {
 	return fmt.Sprintf("%s-%d", cleaned, time.Now().UnixNano())
 }
 
+// acctestName builds a connector/pipeline fixture name for this test invocation.
+//
+// Two properties matter:
+//   - the `tf-acc-test` prefix is what sweep_test.go's isTestResource matches, so
+//     a leaked fixture is sweepable;
+//   - the uniqSuffix keeps two runs (a PR run and the nightly, or a rerun racing
+//     a leaked fixture) from colliding on {tenant, name}. The backend 422s on a
+//     duplicate name, and sources/destinations no longer adopt the existing
+//     record, so a collision now fails the apply outright.
+//
+// role distinguishes the fixtures of one test from each other ("source",
+// "destination", "updated", ...).
+func acctestName(t *testing.T, role string) string {
+	t.Helper()
+	return fmt.Sprintf("tf-acc-test-%s-%s", uniqSuffix(t), role)
+}
+
 // TestAccDataSourceTags_filterName creates two custom tags and asserts the
 // streamkap_tags data source returns the expected one when filter_name is
 // applied. Filter-by-name is the most common end-user flow ("look up the prod

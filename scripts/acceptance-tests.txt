@@ -7,6 +7,8 @@
 #
 # To add a connector to the run: add its TestAcc function here AND ensure its
 # TF_VAR_* credentials are in the env.json blob (1Password / ENV_JSON_FILE).
+# A test whose TF_VAR_* credentials are absent self-skips, so listing a
+# connector before its credentials land costs a SKIP line, not a failure.
 
 # --- Sources ---
 TestAccSourceSupabaseResource
@@ -24,37 +26,63 @@ TestAccSourceS3Resource
 TestAccSourceWebhookResource
 TestAccSourceShopifyWebhookResource
 TestAccSourceStripeWebhookResource
+TestAccSourceKafkaDirectResource
+TestAccSourceAlloyDBResource
+TestAccSourceDB2Resource
+TestAccSourceDocumentDBResource
+TestAccSourceElasticsearchResource
+TestAccSourceRedisResource
+TestAccSourceVitessResource
+TestAccSourceInformixResource
 
 # --- Destinations ---
 TestAccDestinationAzblobResource
+TestAccDestinationBigqueryResource
 TestAccDestinationClickHouseResource
 TestAccDestinationCockroachdbResource
 TestAccDestinationDatabricksResource
 TestAccDestinationDb2Resource
+TestAccDestinationGcsResource
 TestAccDestinationHttpsinkResource
+TestAccDestinationIcebergResource
 TestAccDestinationKafkaResource_basic
+TestAccDestinationKafkadirectResource
 TestAccDestinationMotherduckResource
 TestAccDestinationMysqlResource
+TestAccDestinationOracleResource
 TestAccDestinationPostgresqlResource
 TestAccDestinationR2Resource
+TestAccDestinationRedisResource
+TestAccDestinationRedshiftResource
 TestAccDestinationS3Resource
 TestAccDestinationSnowflakeResource
 TestAccDestinationSqlserverResource
 TestAccDestinationStarburstResource
+TestAccDestinationWeaviateResource
 
 # --- Data sources ---
+# Names are start-anchored prefixes: TestAccDataSourceTag also selects the
+# _filterName/_filterIds variants, and TestAccDataSourceTopic also selects
+# Topics/TopicMetrics. The longer names are kept for readability — dropping the
+# short one must not silently drop the others.
 TestAccDataSourceTag
+TestAccDataSourceTopic
 TestAccDataSourceTopicMetrics
 TestAccDataSourceTopics
+TestAccDataSourceTransform
 
 # --- Pipelines ---
 TestAccPostgreSQLSnowflakePipelineResource
+TestAccDynamoDBClickHousePipelineResource
 
 # --- Provider / drift / tags / topics ---
+# TestAccTopicResource is deliberately absent: it is permanently skipped
+# (Kafka partition counts only increase, so each run poisons the next — see the
+# header comment in internal/provider/topic_resource_test.go). Re-add it here
+# when the test can reset the fixture topic's partition count.
 TestProviderConfig_MissingClientID
 TestDriftDetection_SourceModifiedExternally
 TestAccTagsLifecycle_TransformAttachAndClear
-TestAccTopicResource
 
 # --- Transforms ---
 TestAccTransformEnrichAsyncResource

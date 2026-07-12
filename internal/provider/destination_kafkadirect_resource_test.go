@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,16 @@ func TestAccDestinationKafkadirectResource(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationKafkadirectResource: TF_VAR_destination_kafkadirect_password or TF_VAR_destination_kafkadirect_whitelist_ips not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_kafkadirect_password" {
 	type        = string
 	sensitive   = true
@@ -32,13 +36,13 @@ variable "destination_kafkadirect_whitelist_ips" {
 	description = "Kafka Direct whitelist IPs"
 }
 resource "streamkap_destination_kafkadirect" "test" {
-	name          = "tf-acc-test-destination-kafkadirect"
+	name          = %q
 	password      = var.destination_kafkadirect_password
 	whitelist_ips = var.destination_kafkadirect_whitelist_ips
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_kafkadirect.test", "name", "tf-acc-test-destination-kafkadirect"),
+					resource.TestCheckResourceAttr("streamkap_destination_kafkadirect.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_kafkadirect.test", "whitelist_ips", destinationKafkaDirectWhitelistIps),
 					resource.TestCheckResourceAttrSet("streamkap_destination_kafkadirect.test", "id"),
 					resource.TestCheckResourceAttr("streamkap_destination_kafkadirect.test", "connector", "kafkadirect"),
@@ -53,7 +57,7 @@ resource "streamkap_destination_kafkadirect" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_kafkadirect_password" {
 	type        = string
 	sensitive   = true
@@ -64,13 +68,13 @@ variable "destination_kafkadirect_whitelist_ips" {
 	description = "Kafka Direct whitelist IPs"
 }
 resource "streamkap_destination_kafkadirect" "test" {
-	name          = "tf-acc-test-destination-kafkadirect-updated"
+	name          = %q
 	password      = var.destination_kafkadirect_password
 	whitelist_ips = "10.0.0.0/8,192.168.0.0/16"
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_kafkadirect.test", "name", "tf-acc-test-destination-kafkadirect-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_kafkadirect.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_kafkadirect.test", "whitelist_ips", "10.0.0.0/8,192.168.0.0/16"),
 				),
 			},

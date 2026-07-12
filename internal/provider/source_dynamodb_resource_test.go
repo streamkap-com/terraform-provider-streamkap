@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -12,13 +13,16 @@ var sourceDynamoDBAWSAcessKeyID = os.Getenv("TF_VAR_source_dynamodb_aws_access_k
 var sourceDynamoDBAWSSecretKey = os.Getenv("TF_VAR_source_dynamodb_aws_secret_key")
 
 func TestAccSourceDynamoDBResource(t *testing.T) {
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_dynamodb_aws_region" {
 	type        = string
 	description = "AWS Region"
@@ -36,7 +40,7 @@ variable "source_dynamodb_aws_secret_key" {
 }
 
 resource "streamkap_source_dynamodb" "test" {
-	name                             = "test-source-dynamodb"
+	name                             = %q
 	aws_region                       = var.source_dynamodb_aws_region
 	aws_access_key_id                = var.source_dynamodb_aws_access_key_id
 	aws_secret_key                   = var.source_dynamodb_aws_secret_key
@@ -52,11 +56,11 @@ resource "streamkap_source_dynamodb" "test" {
 	struct_encoding_json             = true
 	tasks_max                        = 3
 }
-`,
+`, name),
 
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify if attributes are propagated correctly
-					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "name", "test-source-dynamodb"),
+					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "aws_region", sourceDynamoDBAWSRegion),
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "aws_access_key_id", sourceDynamoDBAWSAcessKeyID),
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "aws_secret_key", sourceDynamoDBAWSSecretKey),
@@ -82,7 +86,7 @@ resource "streamkap_source_dynamodb" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_dynamodb_aws_region" {
 	type        = string
 	description = "AWS Region"
@@ -100,7 +104,7 @@ variable "source_dynamodb_aws_secret_key" {
 }
 
 resource "streamkap_source_dynamodb" "test" {
-	name                             = "test-source-dynamodb-updated"
+	name                             = %q
 	aws_region                       = var.source_dynamodb_aws_region
 	aws_access_key_id                = var.source_dynamodb_aws_access_key_id
 	aws_secret_key                   = var.source_dynamodb_aws_secret_key
@@ -116,11 +120,11 @@ resource "streamkap_source_dynamodb" "test" {
 	struct_encoding_json             = true
 	tasks_max                        = 5
 }
-`,
+`, nameUpdated),
 
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify if attributes are propagated correctly
-					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "name", "test-source-dynamodb-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "aws_region", sourceDynamoDBAWSRegion),
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "aws_access_key_id", sourceDynamoDBAWSAcessKeyID),
 					resource.TestCheckResourceAttr("streamkap_source_dynamodb.test", "aws_secret_key", sourceDynamoDBAWSSecretKey),

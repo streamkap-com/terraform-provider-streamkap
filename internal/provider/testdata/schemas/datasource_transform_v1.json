@@ -1,47 +1,40 @@
 {
   "version": "v3.0.0",
   "attributes": {
-    "custom": {
-      "required": false,
-      "optional": false,
-      "computed": true,
-      "sensitive": false,
-      "type": "basetypes.BoolType"
-    },
-    "description": {
-      "required": false,
-      "optional": true,
-      "computed": false,
-      "sensitive": false,
-      "type": "basetypes.StringType"
-    },
     "id": {
-      "required": false,
+      "required": true,
       "optional": false,
-      "computed": true,
+      "computed": false,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
     "name": {
-      "required": true,
-      "optional": false,
-      "computed": false,
-      "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "system": {
       "required": false,
       "optional": false,
       "computed": true,
       "sensitive": false,
-      "type": "basetypes.BoolType"
+      "type": "basetypes.StringType"
     },
-    "type": {
-      "required": true,
+    "start_time": {
+      "required": false,
       "optional": false,
-      "computed": false,
+      "computed": true,
       "sensitive": false,
-      "type": "types.SetType[basetypes.StringType]"
+      "type": "basetypes.StringType"
+    },
+    "topic_ids": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.ListType[basetypes.StringType]"
+    },
+    "topic_map": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.ListType[types.ObjectType[\"id\":basetypes.StringType, \"name\":basetypes.StringType]]"
     }
   }
 }

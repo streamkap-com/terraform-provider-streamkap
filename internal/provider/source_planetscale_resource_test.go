@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,15 @@ func TestAccSourcePlanetScaleResource(t *testing.T) {
 		t.Skip("Skipping TestAccSourcePlanetScaleResource: TF_VAR_source_planetscale_hostname or TF_VAR_source_planetscale_password not set")
 	}
 
+	name := acctestName(t, "main")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_planetscale_hostname" {
 	type        = string
 	description = "The hostname of the PlanetScale database (VTGate)"
@@ -32,7 +35,7 @@ variable "source_planetscale_password" {
 	description = "The password of the PlanetScale database"
 }
 resource "streamkap_source_planetscale" "test" {
-	name                = "tf-acc-test-source-planetscale"
+	name                = %q
 	database_hostname   = var.source_planetscale_hostname
 	database_port       = 443
 	database_user       = "eu0akgouilvei5flomiy"
@@ -42,9 +45,9 @@ resource "streamkap_source_planetscale" "test" {
 	table_include_list  = "sandbox.customer"
 	ssh_enabled         = false
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "name", "tf-acc-test-source-planetscale"),
+					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "database_hostname", sourcePlanetScaleHostname),
 					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "database_port", "443"),
 					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "database_user", "eu0akgouilvei5flomiy"),

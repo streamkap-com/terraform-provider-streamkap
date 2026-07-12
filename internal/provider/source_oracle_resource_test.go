@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,15 @@ func TestAccSourceOracleResource(t *testing.T) {
 		t.Skip("Skipping TestAccSourceOracleResource: TF_VAR_source_oracle_hostname or TF_VAR_source_oracle_password not set")
 	}
 
+	name := acctestName(t, "main")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_oracle_hostname" {
 	type        = string
 	description = "The hostname of the Oracle database"
@@ -32,7 +35,7 @@ variable "source_oracle_password" {
 	description = "The password of the Oracle database"
 }
 resource "streamkap_source_oracle" "test" {
-	name                                         = "tf-acc-test-source-oracle"
+	name                                         = %q
 	database_hostname                            = var.source_oracle_hostname
 	database_port                                = 1521
 	database_user                                = "system"
@@ -46,9 +49,9 @@ resource "streamkap_source_oracle" "test" {
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "name", "tf-acc-test-source-oracle"),
+					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "database_hostname", sourceOracleHostname),
 					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "database_port", "1521"),
 					resource.TestCheckResourceAttr("streamkap_source_oracle.test", "database_user", "system"),

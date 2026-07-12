@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -16,13 +17,16 @@ func TestAccDestinationSqlserverResource(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationSqlserverResource: TF_VAR_destination_sqlserver_hostname, TF_VAR_destination_sqlserver_username, or TF_VAR_destination_sqlserver_password not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_sqlserver_hostname" {
 	type        = string
 	description = "SQL Server hostname"
@@ -42,7 +46,7 @@ variable "destination_sqlserver_database" {
 	default     = ""
 }
 resource "streamkap_destination_sqlserver" "test" {
-	name                = "tf-acc-test-destination-sqlserver"
+	name                = %q
 	database_hostname   = var.destination_sqlserver_hostname
 	database_port       = 1433
 	database_database   = var.destination_sqlserver_database
@@ -55,9 +59,9 @@ resource "streamkap_destination_sqlserver" "test" {
 	primary_key_mode    = "record_key"
 	tasks_max           = 5
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "name", "tf-acc-test-destination-sqlserver"),
+					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "database_hostname", destinationSqlserverHostname),
 					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "database_port", "1433"),
 					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "connection_username", destinationSqlserverUsername),
@@ -80,7 +84,7 @@ resource "streamkap_destination_sqlserver" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_sqlserver_hostname" {
 	type        = string
 	description = "SQL Server hostname"
@@ -100,7 +104,7 @@ variable "destination_sqlserver_database" {
 	default     = ""
 }
 resource "streamkap_destination_sqlserver" "test" {
-	name                = "tf-acc-test-destination-sqlserver-updated"
+	name                = %q
 	database_hostname   = var.destination_sqlserver_hostname
 	database_port       = 1433
 	database_database   = var.destination_sqlserver_database
@@ -113,9 +117,9 @@ resource "streamkap_destination_sqlserver" "test" {
 	primary_key_mode    = "record_value"
 	tasks_max           = 10
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "name", "tf-acc-test-destination-sqlserver-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "table_name_prefix", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "schema_evolution", "none"),
 					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "insert_mode", "upsert"),

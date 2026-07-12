@@ -1,82 +1,75 @@
 {
   "version": "v3.0.0",
   "attributes": {
-    "connector": {
+    "cleanup_policy": {
       "required": false,
       "optional": false,
       "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "connector_status": {
+    "entity_id": {
       "required": false,
       "optional": false,
       "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "format": {
+    "entity_name": {
       "required": false,
-      "optional": true,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "entity_type": {
+      "required": false,
+      "optional": false,
       "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
     "id": {
-      "required": false,
+      "required": true,
       "optional": false,
-      "computed": true,
-      "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "kafka_format": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "kc_cluster_id": {
-      "required": false,
-      "optional": true,
-      "computed": true,
+      "computed": false,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
     "name": {
-      "required": true,
-      "optional": false,
-      "computed": false,
-      "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "schemas_enable": {
       "required": false,
-      "optional": true,
+      "optional": false,
       "computed": true,
       "sensitive": false,
-      "type": "basetypes.BoolType"
+      "type": "basetypes.StringType"
     },
-    "tags": {
+    "partitions": {
       "required": false,
-      "optional": true,
+      "optional": false,
       "computed": true,
       "sensitive": false,
-      "type": "types.SetType[basetypes.StringType]"
+      "type": "basetypes.Int64Type"
     },
-    "topic_include_list": {
-      "required": true,
+    "prefix": {
+      "required": false,
       "optional": false,
-      "computed": false,
+      "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "topic_prefix": {
-      "required": true,
+    "retention_ms": {
+      "required": false,
       "optional": false,
-      "computed": false,
+      "computed": true,
       "sensitive": false,
-      "type": "basetypes.StringType"
+      "type": "basetypes.Int64Type"
+    },
+    "serialization": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.ObjectType[\"key_converter\":basetypes.StringType, \"key_format\":basetypes.StringType, \"schema_registry_enabled\":basetypes.BoolType, \"value_converter\":basetypes.StringType, \"value_format\":basetypes.StringType]"
     }
   }
 }
