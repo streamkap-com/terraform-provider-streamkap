@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
@@ -132,39 +131,16 @@ func (s *streamkapAPI) CreateTransform(ctx context.Context, reqPayload CreateTra
 	var resp Transform
 	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
-		// Do NOT auto-adopt transforms on "already exists". The backend
-		// enforces unique transform names per tenant/service, so this
-		// collision arises from one of two scenarios: (a) a previous apply
-		// created the transform but lost the response, or (b) a
-		// `lifecycle { create_before_destroy = true }` replace is in flight
-		// and the deposed instance still occupies the name slot.
-		//
-		// Adopting (looking up by name and returning the existing record)
-		// is *unsafe* under (b): the new live state entry ends up with the
-		// same backend id as the deposed entry, and Terraform's subsequent
-		// destroy of the deposed entry DELETEs the same backend transform
-		// the live state was just pointed at — silently destroying the
-		// customer's transform. The pipeline resource hit this exact
-		// pattern; see internal/api/pipeline.go for the longer write-up
-		// and the customer trace (0_Terraform Apply.txt referenced
-		// deposed transform entries: `transform_sql_join.live[0]
-		// (destroy deposed cd669fa8)` and similar).
-		//
-		// We can't disambiguate the two scenarios from inside the API
-		// client (no state visibility), and a content-comparison adopt is
-		// also unsafe (taint + create_before_destroy + no config change
-		// collapses to the same data-loss). So we surface a clear error
-		// and leave recovery to the user.
-		if strings.Contains(err.Error(), "already exists") {
+		if isAlreadyExists(err) {
 			name, _ := reqPayload.Config["transforms.name"].(string)
-			return nil, fmt.Errorf(
-				"streamkap_transform %q already exists on the backend, and auto-adoption is unsafe for this resource (would risk destroying the live transform under create_before_destroy). Recovery options:\n"+
-					"  • If this is a `lifecycle { create_before_destroy = true }` replace: remove that directive — Streamkap enforces unique transform names per tenant/service so a new and an old transform cannot coexist by name. Use the default destroy-then-create, or change the transform name so old and new can briefly coexist.\n"+
-					"  • If you already have deposed entries from previous failed applies (visible in `terraform plan` as `<address> (destroy deposed <key>)`), they point at the same backend record and must be removed from state before any retry will work: `terraform state rm '<resource_address>'`. See docs/MIGRATION.md → \"Known limitations\".\n"+
-					"  • If this is recovering from a previous apply that lost its response: run `terraform import streamkap_transform_<type>.<resource_name> <transform_id>`, where `<type>` matches the existing record's `transform` field (e.g. `streamkap_transform_sql_join`, `streamkap_transform_map_filter`). Find the id and type via the Streamkap UI or `GET /transforms?partial_name=%s`, then re-run apply.\n"+
-					"Original backend error: %w",
-				name, name, err,
-			)
+			return nil, adoptRefusedError(adoptConflict{
+				Kind:        "transform",
+				Name:        name,
+				UniqueScope: "tenant/service",
+				ImportAddr:  "streamkap_transform_<type>.<resource_name> <transform_id>",
+				ImportNote:  "`<type>` must match the existing record's `transform` field (e.g. `streamkap_transform_sql_join`, `streamkap_transform_map_filter`).",
+				ListPath:    "/transforms",
+			}, err)
 		}
 		return nil, err
 	}
@@ -206,24 +182,7 @@ func (s *streamkapAPI) UpdateTransform(ctx context.Context, transformID string, 
 
 func (s *streamkapAPI) DeleteTransform(ctx context.Context, transformID string) error {
 	// Note: Transforms use DELETE /transforms?id={id} (query param, not path param)
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/transforms?id="+transformID, http.NoBody)
-	if err != nil {
-		return err
-	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"DeleteTransform request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n",
-		req.Method,
-		req.URL.String(),
-	))
-	var resp Transform
-	err = s.doRequestWithRetry(ctx, req, &resp)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.deleteResource(ctx, "DeleteTransform", s.cfg.BaseURL+"/transforms?id="+url.QueryEscape(transformID))
 }
 
 // TransformJobStatus represents the deployment status of a transform's Flink job

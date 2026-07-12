@@ -145,22 +145,5 @@ func (s *streamkapAPI) UpdateKafkaUser(ctx context.Context, username string, req
 }
 
 func (s *streamkapAPI) DeleteKafkaUser(ctx context.Context, username string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/kafka-access/kafka-users/"+username, http.NoBody)
-	if err != nil {
-		return err
-	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"DeleteKafkaUser request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n",
-		req.Method,
-		req.URL.String(),
-	))
-	// Delete returns empty 200 response
-	var resp json.RawMessage
-	err = s.doRequestWithRetry(ctx, req, &resp)
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.deleteResource(ctx, "DeleteKafkaUser", s.cfg.BaseURL+"/kafka-access/kafka-users/"+username)
 }

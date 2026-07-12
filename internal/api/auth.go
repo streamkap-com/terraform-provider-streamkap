@@ -20,15 +20,35 @@ type GetAccessTokenRequest struct {
 }
 
 func (s *streamkapAPI) GetAccessToken(clientID, secret string) (*Token, error) {
-	body := &GetAccessTokenRequest{
-		ClientID: clientID,
-		Secret:   secret,
-	}
-	payload, err := json.Marshal(body)
+	ctx := context.Background()
+
+	token, err := s.authenticate(ctx, clientID, secret)
 	if err != nil {
 		return nil, err
 	}
-	ctx := context.Background()
+
+	// Keep the credentials so the client can renew on its own. An apply that
+	// runs longer than the token TTL (large estates, retry backoffs) otherwise
+	// fails every remaining resource with an opaque 401.
+	s.mu.Lock()
+	s.clientID = clientID
+	s.secret = secret
+	s.mu.Unlock()
+
+	return token, nil
+}
+
+// authenticate exchanges client credentials for an access token. It bypasses
+// the 401-renewal path in do(): a 401 here means the credentials themselves are
+// rejected, and renewing with the same credentials would recurse.
+func (s *streamkapAPI) authenticate(ctx context.Context, clientID, secret string) (*Token, error) {
+	payload, err := json.Marshal(&GetAccessTokenRequest{
+		ClientID: clientID,
+		Secret:   secret,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.cfg.BaseURL+"/auth/access-token", bytes.NewBuffer(payload))
 	if err != nil {
@@ -36,8 +56,7 @@ func (s *streamkapAPI) GetAccessToken(clientID, secret string) (*Token, error) {
 	}
 
 	var result Token
-	err = s.doRequest(ctx, req, &result)
-	if err != nil {
+	if err := s.do(ctx, req, &result, false); err != nil {
 		return nil, err
 	}
 
