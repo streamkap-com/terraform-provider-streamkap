@@ -108,22 +108,5 @@ func (s *streamkapAPI) ListClientCredentials(ctx context.Context) ([]ClientCrede
 }
 
 func (s *streamkapAPI) DeleteClientCredential(ctx context.Context, clientID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/auth/client-credentials/"+clientID, http.NoBody)
-	if err != nil {
-		return err
-	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"DeleteClientCredential request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n",
-		req.Method,
-		req.URL.String(),
-	))
-	// Delete returns empty 200 response
-	var resp json.RawMessage
-	err = s.doRequestWithRetry(ctx, req, &resp)
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.deleteResource(ctx, "DeleteClientCredential", s.cfg.BaseURL+"/auth/client-credentials/"+clientID)
 }

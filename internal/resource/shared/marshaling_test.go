@@ -433,3 +433,55 @@ func TestPreserveKnownStringFields(t *testing.T) {
 		PreserveKnownStringFields(&testModel{}, captured)
 	})
 }
+
+// TestFillNullStringFields covers the refresh (Read) half of the null-echo
+// quirk: prior state is authoritative only where the API returned nothing.
+func TestFillNullStringFields(t *testing.T) {
+	ctx := context.Background()
+	mappings := map[string]string{
+		"name":   "name",
+		"secret": "secret.api.field",
+	}
+
+	t.Run("restores prior state secret when the API nulls it", func(t *testing.T) {
+		model := &secretModel{Name: types.StringValue("dest"), Secret: types.StringValue("p@ss")}
+		captured := CaptureStringFields(model, []string{"secret"})
+
+		ConfigMapToModel(ctx, map[string]any{"name": "dest"}, model, mappings, nil)
+		if !model.Secret.IsNull() {
+			t.Fatalf("precondition: expected the API response to null the secret, got %#v", model.Secret)
+		}
+
+		FillNullStringFields(model, captured)
+		if model.Secret.ValueString() != "p@ss" {
+			t.Errorf("secret not restored: got %q, want %q", model.Secret.ValueString(), "p@ss")
+		}
+	})
+
+	t.Run("keeps the API value when it differs from prior state", func(t *testing.T) {
+		model := &secretModel{Name: types.StringValue("dest"), Secret: types.StringValue("p@ss")}
+		captured := CaptureStringFields(model, []string{"secret"})
+
+		ConfigMapToModel(ctx, map[string]any{"name": "dest", "secret.api.field": "rotated"}, model, mappings, nil)
+		FillNullStringFields(model, captured)
+		if model.Secret.ValueString() != "rotated" {
+			t.Errorf("out-of-band drift must survive refresh: got %q, want %q", model.Secret.ValueString(), "rotated")
+		}
+	})
+
+	t.Run("keeps the API value on import when prior state is empty", func(t *testing.T) {
+		model := &secretModel{}
+		captured := CaptureStringFields(model, []string{"secret"})
+
+		ConfigMapToModel(ctx, map[string]any{"name": "dest", "secret.api.field": "from-api"}, model, mappings, nil)
+		FillNullStringFields(model, captured)
+		if model.Secret.ValueString() != "from-api" {
+			t.Errorf("import must take the API value: got %q, want %q", model.Secret.ValueString(), "from-api")
+		}
+	})
+
+	t.Run("tolerates missing fields", func(t *testing.T) {
+		captured := map[string]types.String{"does_not_exist": types.StringValue("x")}
+		FillNullStringFields(&secretModel{}, captured)
+	})
+}

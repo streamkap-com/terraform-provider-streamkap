@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -8,31 +9,33 @@ import (
 )
 
 var sourceMongoDBConnectionString = os.Getenv("TF_VAR_source_mongodb_connection_string")
-var sourceMongoDBSSHHost = os.Getenv("TF_VAR_source_mongodb_ssh_host")
 
 func TestAccSourceMongoDBResource(t *testing.T) {
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_mongodb_connection_string" {
 	type        = string
 	sensitive   = true
 	description = "The connection string of the MongoDB database"
 }
 resource "streamkap_source_mongodb" "test" {
-	name                                         = "test-source-mongodb"
+	name                                         = %q
 	mongodb_connection_string                    = var.source_mongodb_connection_string
 	database_include_list                        = "Test"
 	collection_include_list                      = "Test.test_data,Test.test_data2"
 	signal_data_collection_schema_or_database    = "Test"
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "name", "test-source-mongodb"),
+					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "mongodb_connection_string", sourceMongoDBConnectionString),
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "database_include_list", "Test"),
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "collection_include_list", "Test.test_data,Test.test_data2"),
@@ -53,14 +56,14 @@ resource "streamkap_source_mongodb" "test" {
 			},
 			// Step 3: Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_mongodb_connection_string" {
 	type        = string
 	sensitive   = true
 	description = "The connection string of the MongoDB database"
 }
 resource "streamkap_source_mongodb" "test" {
-	name                                         = "test-source-mongodb-updated"
+	name                                         = %q
 	mongodb_connection_string                    = var.source_mongodb_connection_string
 	database_include_list                        = "Test"
 	collection_include_list                      = "Test.test_data,Test.test_data2,Test.test_data3"
@@ -68,9 +71,9 @@ resource "streamkap_source_mongodb" "test" {
 	transforms_unwrap_array_encoding                               = "array"
 	transforms_unwrap_document_encoding                     = "string"
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "name", "test-source-mongodb-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "mongodb_connection_string", sourceMongoDBConnectionString),
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "database_include_list", "Test"),
 					resource.TestCheckResourceAttr("streamkap_source_mongodb.test", "collection_include_list", "Test.test_data,Test.test_data2,Test.test_data3"),

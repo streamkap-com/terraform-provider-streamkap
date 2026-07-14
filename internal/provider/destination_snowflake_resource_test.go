@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -13,13 +14,17 @@ var destinationSnowflakeKeyPassphrase = os.Getenv("TF_VAR_destination_snowflake_
 var _ = os.Getenv("TF_VAR_destination_snowflake_private_key_nocrypt") // used via TF_VAR in HCL config (commented test)
 
 func TestAccDestinationSnowflakeResource(t *testing.T) {
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+	namePassphrase := acctestName(t, "passphrase")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read testing with passphrase
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_snowflake_url_name" {
 	type        = string
 	description = "The URL name of the Snowflake database"
@@ -35,7 +40,7 @@ variable "destination_snowflake_key_passphrase" {
 	description = "The passphrase of the private key of the Snowflake database"
 }
 resource "streamkap_destination_snowflake" "test" {
-	name                             = "test-destination-snowflake"
+	name                             = %q
 	snowflake_url_name               = var.destination_snowflake_url_name
 	snowflake_user_name              = "STREAMKAP_USER_JUNIT"
 	snowflake_private_key            = var.destination_snowflake_private_key
@@ -53,9 +58,9 @@ resource "streamkap_destination_snowflake" "test" {
 		itst_scen20240528103635 = "ITST_SCEN20240528103635"
 	}
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "name", "test-destination-snowflake"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "snowflake_url_name", destinationSnowflakeURLName),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "snowflake_user_name", "STREAMKAP_USER_JUNIT"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "snowflake_private_key", destinationSnowflakePrivateKey),
@@ -82,7 +87,7 @@ resource "streamkap_destination_snowflake" "test" {
 			},
 			// Step 3: Update and Read testing with passphrase (change name and ingestion mode)
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_snowflake_url_name" {
 	type        = string
 	description = "The URL name of the Snowflake database"
@@ -98,7 +103,7 @@ variable "destination_snowflake_key_passphrase" {
 	description = "The passphrase of the private key of the Snowflake database"
 }
 resource "streamkap_destination_snowflake" "test" {
-	name                             = "test-destination-snowflake-updated"
+	name                             = %q
 	snowflake_url_name               = var.destination_snowflake_url_name
 	snowflake_user_name              = "STREAMKAP_USER_JUNIT"
 	snowflake_private_key            = var.destination_snowflake_private_key
@@ -109,9 +114,9 @@ resource "streamkap_destination_snowflake" "test" {
 	snowflake_role_name              = "STREAMKAP_ROLE_JUNIT"
 	ingestion_mode                   = "append"
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "name", "test-destination-snowflake-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "snowflake_url_name", destinationSnowflakeURLName),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "snowflake_user_name", "STREAMKAP_USER_JUNIT"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "snowflake_private_key", destinationSnowflakePrivateKey),
@@ -180,7 +185,7 @@ resource "streamkap_destination_snowflake" "test" {
 			// 			},
 			// Step 5: Update to add passphrase back (passphrase is not None)
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_snowflake_url_name" {
 	type        = string
 	description = "The URL name of the Snowflake database"
@@ -196,7 +201,7 @@ variable "destination_snowflake_key_passphrase" {
 	description = "The passphrase of the private key of the Snowflake database"
 }
 resource "streamkap_destination_snowflake" "test" {
-	name                             = "test-destination-snowflake-with-passphrase"
+	name                             = %q
 	snowflake_url_name               = var.destination_snowflake_url_name
 	snowflake_user_name              = "STREAMKAP_USER_JUNIT"
 	snowflake_private_key            = var.destination_snowflake_private_key
@@ -211,9 +216,9 @@ resource "streamkap_destination_snowflake" "test" {
 		itst_scen20240528103635 = "ITST_SCEN20240528103635"
 	}
 }
-`,
+`, namePassphrase),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "name", "test-destination-snowflake-with-passphrase"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "name", namePassphrase),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "snowflake_url_name", destinationSnowflakeURLName),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "snowflake_user_name", "STREAMKAP_USER_JUNIT"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "snowflake_private_key", destinationSnowflakePrivateKey),

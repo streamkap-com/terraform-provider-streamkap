@@ -61,14 +61,6 @@ resource "streamkap_source_sqlserver" "example-source-sqlserver" {
   # Snapshot parallelization settings
   streamkap_snapshot_parallelism = 2 # Parallel chunk requests (1-10)
 
-  # Custom table configuration for parallelization
-  # Format: JSON object mapping table names to chunk counts
-  snapshot_custom_table_config = {
-    "dbo.Orders" = {
-      chunks = 2
-    }
-  }
-
   # SSH tunnel settings (optional, for secure connections)
   ssh_enabled = false
   # When ssh_enabled = true, also configure:

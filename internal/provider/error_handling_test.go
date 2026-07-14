@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -15,9 +16,18 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 )
 
+// fastRetry keeps the retry path exercised without sleeping through the
+// production backoff. Reads are now retried, so a test that mocks a persistent
+// 5xx on a GET would otherwise burn 5 attempts x 10-60s and time the package out.
+var fastRetry = api.RetryConfig{
+	MaxRetries: 3,
+	MinDelay:   time.Millisecond,
+	MaxDelay:   5 * time.Millisecond,
+}
+
 // newTestAPIClient creates a test API client for error handling tests
 func newTestAPIClient(baseURL string) api.StreamkapAPI {
-	client := api.NewClient(&api.Config{BaseURL: baseURL})
+	client := api.NewClient(&api.Config{BaseURL: baseURL, Retry: &fastRetry})
 	client.SetToken(&api.Token{AccessToken: "test-token"})
 	return client
 }
@@ -402,7 +412,10 @@ func TestAPIError404_GetTransform(t *testing.T) {
 	assert.Contains(t, err.Error(), "not found")
 }
 
-// TestAPIError404_DeleteSource tests 404 when deleting a non-existent source
+// TestAPIError404_DeleteSource asserts delete is idempotent: a source already
+// gone from the backend (deleted in the UI, or by a previous partial apply) is
+// the state Terraform is trying to reach, so DeleteSource reports success
+// rather than forcing the operator into a manual `terraform state rm`.
 func TestAPIError404_DeleteSource(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -425,8 +438,7 @@ func TestAPIError404_DeleteSource(t *testing.T) {
 	ctx := context.Background()
 	err := client.DeleteSource(ctx, "already-deleted")
 
-	require.Error(t, err, "Expected error for 404 on delete")
-	assert.Contains(t, err.Error(), "not found")
+	require.NoError(t, err, "Deleting an already-deleted source must succeed (idempotent delete)")
 }
 
 // TestAPIError404_UpdateSource tests 404 when updating a non-existent source
@@ -464,7 +476,9 @@ func TestAPIError404_UpdateSource(t *testing.T) {
 	assert.Contains(t, err.Error(), "not found")
 }
 
-// TestAPIError404_DeleteDestination tests 404 when deleting a non-existent destination
+// TestAPIError404_DeleteDestination is the destination counterpart of
+// TestAPIError404_DeleteSource: an already-absent destination is a successful
+// delete, not an error.
 func TestAPIError404_DeleteDestination(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -487,8 +501,7 @@ func TestAPIError404_DeleteDestination(t *testing.T) {
 	ctx := context.Background()
 	err := client.DeleteDestination(ctx, "ghost-dest")
 
-	require.Error(t, err, "Expected error for 404 on delete")
-	assert.Contains(t, err.Error(), "does not exist")
+	require.NoError(t, err, "Deleting an already-deleted destination must succeed (idempotent delete)")
 }
 
 // TestAPIError404_GetTag tests 404 when reading a non-existent tag
@@ -800,8 +813,17 @@ func TestAPIError422_UpdateValidation(t *testing.T) {
 	assert.Contains(t, err.Error(), "cannot be empty", "Error message should indicate empty field")
 }
 
-// TestAPIError422_DuplicateName tests 422 when resource name already exists
-func TestAPIError422_DuplicateName(t *testing.T) {
+// TestAPIError422_SourceDuplicateName_FailsWithRecoveryGuidance is the source
+// counterpart of TestAPIError422_TransformDuplicateName_FailsWithRecoveryGuidance.
+//
+// Sources used to auto-adopt the existing record on a duplicate-name 422. That
+// is indistinguishable, from inside the client, from a
+// `lifecycle { create_before_destroy = true }` replace whose deposed instance
+// still holds the name — and in that case adoption is destructive: the live
+// state entry inherits the deposed entry's backend id, so Terraform's next step
+// (destroying the deposed entry) deletes the source it just created. Fail
+// loudly with recovery guidance instead, matching pipelines and transforms.
+func TestAPIError422_SourceDuplicateName_FailsWithRecoveryGuidance(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 
@@ -814,40 +836,41 @@ func TestAPIError422_DuplicateName(t *testing.T) {
 		Config:    map[string]any{},
 	}
 
-	// Mock 422 response for duplicate name — provider treats "already exists"
-	// as a signal to adopt the existing source instead of erroring.
+	postCalls := 0
 	httpmock.RegisterResponder(
 		http.MethodPost,
 		baseURL+"/sources?secret_returned=true&wait=false",
 		func(req *http.Request) (*http.Response, error) {
-			errResponse := api.APIErrorResponse{
+			postCalls++
+			return httpmock.NewJsonResponse(http.StatusUnprocessableEntity, api.APIErrorResponse{
 				Detail: "Validation error: A source with name 'existing-source' already exists",
-			}
-			return httpmock.NewJsonResponse(http.StatusUnprocessableEntity, errResponse)
+			})
 		},
 	)
 
-	// Mock the paginated partial_name-filtered list-for-adopt follow-up.
+	// A future refactor that re-introduces auto-adoption will trip this.
+	adoptCalls := 0
 	httpmock.RegisterResponder(
 		http.MethodGet,
 		baseURL+"/sources?secret_returned=true&page=1&page_size=100&partial_name=existing-source",
 		func(req *http.Request) (*http.Response, error) {
-			return httpmock.NewJsonResponse(http.StatusOK, api.GetSourceResponse{
-				Total: 1,
-				Result: []api.Source{
-					{ID: "adopted-source-id", Name: "existing-source", Connector: "mongodb"},
-				},
-			})
+			adoptCalls++
+			return httpmock.NewStringResponse(http.StatusOK, `{}`), nil
 		},
 	)
 
 	ctx := context.Background()
 	result, err := client.CreateSource(ctx, source)
 
-	require.NoError(t, err, "Duplicate name should trigger adoption, not an error")
-	require.NotNil(t, result, "Adopted source should be returned")
-	assert.Equal(t, "adopted-source-id", result.ID, "Should return the existing source's ID")
-	assert.Equal(t, "existing-source", result.Name)
+	require.Error(t, err, "Duplicate name must surface as an error, never auto-adopt")
+	assert.Nil(t, result)
+	assert.Equal(t, 1, postCalls, "POST should be attempted exactly once")
+	assert.Equal(t, 0, adoptCalls, "MUST NOT call the list endpoint to auto-adopt on duplicate-name conflict")
+
+	errMsg := err.Error()
+	assert.Contains(t, errMsg, "existing-source")
+	assert.Contains(t, errMsg, "create_before_destroy")
+	assert.Contains(t, errMsg, "terraform import")
 }
 
 // TestListTransforms_Paginates exercises the paginated iteration in

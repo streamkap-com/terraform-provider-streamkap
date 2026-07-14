@@ -55,21 +55,35 @@ resource "streamkap_source_postgresql" "main" {
 }
 
 resource "streamkap_destination_snowflake" "main" {
-  name               = "my-snowflake"
-  snowflake_url_name = "org-account"
-  database           = "STREAMKAP"
-  schema_name        = "PUBLIC"
-  user               = "STREAMKAP_USER"
-  private_key        = var.snowflake_key
+  name                    = "my-snowflake"
+  snowflake_url_name      = "org-account.snowflakecomputing.com"
+  snowflake_user_name     = "STREAMKAP_USER"
+  snowflake_private_key   = var.snowflake_key
+  snowflake_database_name = "STREAMKAP"
+  snowflake_schema_name   = "PUBLIC"
 }
 
 resource "streamkap_pipeline" "main" {
-  name           = "postgres-to-snowflake"
-  source_id      = streamkap_source_postgresql.main.id
-  destination_id = streamkap_destination_snowflake.main.id
-  transforms     = []
+  name = "postgres-to-snowflake"
+
+  source = {
+    id        = streamkap_source_postgresql.main.id
+    name      = streamkap_source_postgresql.main.name
+    connector = streamkap_source_postgresql.main.connector
+    topics    = ["public.customers"]
+  }
+
+  destination = {
+    id        = streamkap_destination_snowflake.main.id
+    name      = streamkap_destination_snowflake.main.name
+    connector = streamkap_destination_snowflake.main.connector
+  }
 }
 ```
+
+`source` and `destination` are **nested objects**, not bare IDs — each carries
+`id`, `name`, and `connector` (the source additionally takes `topics`). Wire them
+from the resources' own attributes as above rather than hardcoding.
 
 Full per-resource examples: `examples/resources/streamkap_<name>/{basic,complete}.tf`.
 
@@ -128,7 +142,15 @@ table_exclude_list = "public.temp_*,public.logs"
 
 **Insert modes** — destinations typically support `insert` and `upsert` via `insert_mode`.
 
-**Transform chaining** — `transforms` on a pipeline is an *ordered* list of transform IDs.
+**Transform chaining** — `transforms` on a pipeline is an *ordered* list of
+objects, each carrying the transform's `id` and the `topics` it should process
+(both required):
+
+```hcl
+transforms = [
+  { id = streamkap_transform_map_filter.redact.id, topics = ["public.customers"] },
+]
+```
 
 **Auto-discovering transform output topics** — when a transform produces topics
 whose names are generated dynamically (e.g. a topic-router / fan-out transform)

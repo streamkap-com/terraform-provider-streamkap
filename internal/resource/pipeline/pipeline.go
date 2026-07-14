@@ -200,7 +200,7 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 					},
 				},
 			},
-			"destination": schema.ObjectAttribute{
+			"destination": schema.SingleNestedAttribute{
 				Required:    true,
 				Description: "Destination connector configuration block. Defines the destination connector that receives data from the pipeline. Contains id (destination connector identifier), name (display name), and connector (connector type code).",
 				MarkdownDescription: "Destination connector configuration block. Defines the destination connector that receives data from the pipeline.\n\n" +
@@ -208,10 +208,22 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 					"- `id` - Destination connector identifier (from a `streamkap_destination_*` resource)\n" +
 					"- `name` - Display name of the destination connector\n" +
 					"- `connector` - Connector type code (e.g., `snowflake`, `clickhouse`)",
-				AttributeTypes: map[string]attr.Type{
-					"id":        types.StringType,
-					"name":      types.StringType,
-					"connector": types.StringType,
+				Attributes: map[string]schema.Attribute{
+					"id": schema.StringAttribute{
+						Required:            true,
+						Description:         "Destination connector identifier. References a destination resource (e.g., streamkap_destination_snowflake).",
+						MarkdownDescription: "Destination connector identifier. References a destination resource (e.g., `streamkap_destination_snowflake`).",
+					},
+					"name": schema.StringAttribute{
+						Required:            true,
+						Description:         "Display name of the destination connector.",
+						MarkdownDescription: "Display name of the destination connector.",
+					},
+					"connector": schema.StringAttribute{
+						Required:            true,
+						Description:         "Connector type code (e.g., snowflake, clickhouse, databricks).",
+						MarkdownDescription: "Connector type code (e.g., `snowflake`, `clickhouse`, `databricks`).",
+					},
 				},
 			},
 			"transforms": schema.ListNestedAttribute{

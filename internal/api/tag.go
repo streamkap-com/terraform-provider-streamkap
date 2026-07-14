@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
@@ -46,15 +45,16 @@ type tagsSearchBody struct {
 	TagIDs []string `json:"tag_ids,omitempty"`
 }
 
-// listTagsURLLengthThreshold — empirical safe URL length before we route
-// through POST /tags/search. The backend documents the search endpoint as
-// the alternative when "URL length limits are exceeded (e.g., 100+ tag IDs)";
-// 1500 leaves headroom under common 8KB-ish proxies/CDNs.
-const listTagsURLLengthThreshold = 1500
+// listURLLengthThreshold — empirical safe URL length before an id-filtered list
+// routes through its POST /…/search counterpart. The backend documents the
+// search endpoints as the alternative when "URL length limits are exceeded
+// (e.g., 100+ tag IDs)"; 1500 leaves headroom under common 8KB-ish
+// proxies/CDNs. Shared by ListTags and ListTopics.
+const listURLLengthThreshold = 1500
 
 // ListTags returns tags for the current tenant filtered by name/types/ids.
 // Routes through GET /tags by default; switches to POST /tags/search when the
-// resulting GET URL would exceed listTagsURLLengthThreshold (large IDs lists).
+// resulting GET URL would exceed listURLLengthThreshold (large IDs lists).
 func (s *streamkapAPI) ListTags(ctx context.Context, filters TagListFilters) ([]Tag, error) {
 	parsedURL, err := url.Parse(s.cfg.BaseURL)
 	if err != nil {
@@ -74,7 +74,7 @@ func (s *streamkapAPI) ListTags(ctx context.Context, filters TagListFilters) ([]
 	}
 	parsedURL.RawQuery = q.Encode()
 
-	useSearchBody := len(parsedURL.String()) > listTagsURLLengthThreshold
+	useSearchBody := len(parsedURL.String()) > listURLLengthThreshold
 
 	var req *http.Request
 	if useSearchBody {
@@ -193,17 +193,20 @@ func (s *streamkapAPI) CreateTag(ctx context.Context, reqPayload Tag) (*Tag, err
 	var resp Tag
 	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
-		// Mirror the adopt-on-exists pattern from sources/destinations/
-		// transforms: when the backend reports the tag already exists, look
-		// it up by name and return it instead of failing the apply. Without
-		// this, a leaked `tf-acc-test-*` tag from a previous CI run blocks
-		// every subsequent run until manually swept.
+		// Tags are the one resource that still adopts on "already exists": look
+		// the tag up by name and return it rather than failing the apply.
+		// Without this, a leaked `tf-acc-test-*` tag from a previous CI run
+		// blocks every subsequent run until manually swept.
 		//
-		// Backend `create_custom_tag` raises `ValueError("A tag with
-		// identical properties already exists.")` which the API layer wraps
-		// into a 400 detail. Match either substring to be robust to phrasing
-		// changes.
-		if strings.Contains(err.Error(), "already exists") {
+		// Sources, destinations, pipelines and transforms deliberately refuse to
+		// adopt (see adoptRefusedError) because adopting under
+		// create_before_destroy can destroy the live record. That reasoning does
+		// not carry over here: a tag is a label with no id-bearing dependents, so
+		// re-pointing at an existing one loses nothing.
+		//
+		// Backend `create_custom_tag` raises `ValueError("A tag with identical
+		// properties already exists.")`, which the API layer wraps into a 400.
+		if isAlreadyExists(err) {
 			tflog.Info(ctx, fmt.Sprintf(
 				"Tag %q already exists — attempting to adopt existing resource", reqPayload.Name))
 			adopted, adoptErr := s.adoptTagByName(ctx, reqPayload.Name)
@@ -260,21 +263,5 @@ func (s *streamkapAPI) UpdateTag(ctx context.Context, tagID string, reqPayload T
 }
 
 func (s *streamkapAPI) DeleteTag(ctx context.Context, tagID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/tags/"+tagID, http.NoBody)
-	if err != nil {
-		return err
-	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"DeleteTag request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n",
-		req.Method,
-		req.URL.String(),
-	))
-	var resp Tag
-	err = s.doRequestWithRetry(ctx, req, &resp)
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.deleteResource(ctx, "DeleteTag", s.cfg.BaseURL+"/tags/"+tagID)
 }

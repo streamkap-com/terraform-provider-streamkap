@@ -1,21 +1,23 @@
 package provider
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccTransformEnrichResource_basic(t *testing.T) {
+	name := acctestName(t, "main")
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckTransformDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccTransformEnrichResourceConfig(),
+				Config: testAccTransformEnrichResourceConfig(name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_transform_enrich.test", "name", "tf-acc-test-transform-enrich"),
+					resource.TestCheckResourceAttr("streamkap_transform_enrich.test", "name", name),
 					resource.TestCheckResourceAttrSet("streamkap_transform_enrich.test", "id"),
 					resource.TestCheckResourceAttrSet("streamkap_transform_enrich.test", "transform_type"),
 				),
@@ -31,15 +33,16 @@ func TestAccTransformEnrichResource_basic(t *testing.T) {
 }
 
 func TestAccTransformEnrichResource_withImplementation(t *testing.T) {
+	name := acctestName(t, "impl")
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckTransformDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccTransformEnrichWithImplementationConfig(),
+				Config: testAccTransformEnrichWithImplementationConfig(name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_transform_enrich.test_impl", "name", "tf-acc-test-transform-enrich-impl"),
+					resource.TestCheckResourceAttr("streamkap_transform_enrich.test_impl", "name", name),
 					resource.TestCheckResourceAttrSet("streamkap_transform_enrich.test_impl", "id"),
 					resource.TestCheckResourceAttrSet("streamkap_transform_enrich.test_impl", "implementation_json"),
 				),
@@ -54,22 +57,22 @@ func TestAccTransformEnrichResource_withImplementation(t *testing.T) {
 	})
 }
 
-func testAccTransformEnrichResourceConfig() string {
-	return `
+func testAccTransformEnrichResourceConfig(name string) string {
+	return fmt.Sprintf(`
 resource "streamkap_transform_enrich" "test" {
-  name                                   = "tf-acc-test-transform-enrich"
+  name                                   = %q
   transforms_input_topic_pattern         = "test-input-topic"
   transforms_output_topic_pattern        = "test-output-topic"
   transforms_input_serialization_format  = "Avro"
   transforms_output_serialization_format = "Avro"
 }
-`
+`, name)
 }
 
-func testAccTransformEnrichWithImplementationConfig() string {
-	return `
+func testAccTransformEnrichWithImplementationConfig(name string) string {
+	return fmt.Sprintf(`
 resource "streamkap_transform_enrich" "test_impl" {
-  name                                   = "tf-acc-test-transform-enrich-impl"
+  name                                   = %q
   transforms_input_topic_pattern         = "test-input-.*"
   transforms_output_topic_pattern        = "test-output-topic"
   transforms_input_serialization_format  = "Avro"
@@ -89,5 +92,5 @@ resource "streamkap_transform_enrich" "test_impl" {
     enrichSQL = "SELECT o.order_id, l.city FROM orders o JOIN locations l ON o.location_id = l.location_id"
   })
 }
-`
+`, name)
 }

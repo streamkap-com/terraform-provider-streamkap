@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -17,13 +18,16 @@ func TestAccDestinationOracleResource(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationOracleResource: TF_VAR_destination_oracle_hostname, TF_VAR_destination_oracle_username, or TF_VAR_destination_oracle_password not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_oracle_hostname" {
 	type        = string
 	description = "Oracle hostname"
@@ -43,7 +47,7 @@ variable "destination_oracle_database" {
 	default     = ""
 }
 resource "streamkap_destination_oracle" "test" {
-	name                = "tf-acc-test-destination-oracle"
+	name                = %q
 	database_hostname   = var.destination_oracle_hostname
 	database_port       = 1521
 	database_database   = var.destination_oracle_database
@@ -55,9 +59,9 @@ resource "streamkap_destination_oracle" "test" {
 	primary_key_mode    = "record_key"
 	tasks_max           = 5
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_oracle.test", "name", "tf-acc-test-destination-oracle"),
+					resource.TestCheckResourceAttr("streamkap_destination_oracle.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_oracle.test", "database_hostname", destinationOracleHostname),
 					resource.TestCheckResourceAttr("streamkap_destination_oracle.test", "database_port", "1521"),
 					resource.TestCheckResourceAttr("streamkap_destination_oracle.test", "connection_username", destinationOracleUsername),
@@ -79,7 +83,7 @@ resource "streamkap_destination_oracle" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_oracle_hostname" {
 	type        = string
 	description = "Oracle hostname"
@@ -99,7 +103,7 @@ variable "destination_oracle_database" {
 	default     = ""
 }
 resource "streamkap_destination_oracle" "test" {
-	name                = "tf-acc-test-destination-oracle-updated"
+	name                = %q
 	database_hostname   = var.destination_oracle_hostname
 	database_port       = 1521
 	database_database   = var.destination_oracle_database
@@ -111,9 +115,9 @@ resource "streamkap_destination_oracle" "test" {
 	primary_key_mode    = "record_value"
 	tasks_max           = 10
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_oracle.test", "name", "tf-acc-test-destination-oracle-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_oracle.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_oracle.test", "schema_evolution", "none"),
 					resource.TestCheckResourceAttr("streamkap_destination_oracle.test", "insert_mode", "upsert"),
 					resource.TestCheckResourceAttr("streamkap_destination_oracle.test", "delete_enabled", "true"),

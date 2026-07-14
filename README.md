@@ -6,9 +6,9 @@ Terraform provider for [Streamkap](https://streamkap.com) - a real-time data str
 
 ### Source Connectors
 - PostgreSQL, MySQL, MongoDB, SQL Server, DynamoDB, Kafka Direct
-- AlloyDB, DB2, DocumentDB, Elasticsearch, MariaDB, MongoDB Hosted
-- Oracle, Oracle AWS, PlanetScale, Redis, S3, Salesforce Webhook, Supabase
-- Vitess, Webhook, Zendesk Webhook
+- AlloyDB, DB2, DocumentDB, Elasticsearch, Informix, MariaDB, MongoDB Hosted
+- Oracle, Oracle AWS, PlanetScale, Redis, S3, Supabase, Vitess
+- Webhook, Salesforce Webhook, Shopify Webhook, Stripe Webhook, Zendesk Webhook
 
 ### Destination Connectors
 - Snowflake, ClickHouse, Databricks, PostgreSQL, S3, Iceberg, Kafka
@@ -123,7 +123,7 @@ See [examples/](./examples/) for complete configurations covering every supporte
 ## Requirements
 
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.21 (for development)
+- [Go](https://golang.org/doc/install) >= 1.25 (for development — see the `go` directive in `go.mod`)
 
 ## Installation
 
@@ -176,12 +176,12 @@ resource "streamkap_source_postgresql" "example" {
 
 # Create a Snowflake destination
 resource "streamkap_destination_snowflake" "example" {
-  name              = "my-snowflake-dest"
-  snowflake_url_name = "account.snowflakecomputing.com"
-  snowflake_user_name = "streamkap"
-  snowflake_private_key = file("~/.ssh/snowflake_key.pem")
+  name                    = "my-snowflake-dest"
+  snowflake_url_name      = "account.snowflakecomputing.com"
+  snowflake_user_name     = "streamkap"
+  snowflake_private_key   = file("~/.ssh/snowflake_key.pem")
   snowflake_database_name = "STREAMKAP_DB"
-  snowflake_schema_name = "PUBLIC"
+  snowflake_schema_name   = "PUBLIC"
 }
 
 # Tag for organizing related resources in the Streamkap UI
@@ -225,15 +225,19 @@ go install .
 ### Running Tests
 
 ```bash
-# Unit tests
-go test -v -short ./...
+# Unit + schema-compat + validator tests (fast, no API calls)
+make test-all
 
-# Acceptance tests (creates real resources)
-export TF_ACC=1
+# Acceptance tests (creates real resources — takes ~15 minutes)
 export STREAMKAP_CLIENT_ID="your-client-id"
 export STREAMKAP_SECRET="your-secret"
-go test -v ./internal/provider -timeout 30m
+make testacc
 ```
+
+Prefer the `make` targets over a bare `go test ./...`: tests auto-load `.env`, and
+a `TF_ACC=1` line there turns any unfiltered run into a live-API acceptance run.
+`make test` clears `TF_ACC` for exactly this reason. Run `make help` for the full
+target list.
 
 ### Local Development
 
@@ -256,18 +260,21 @@ terraform plan
 
 ### Code Generation
 
-The provider uses code generation for connector schemas. To regenerate:
+Connector schemas in `internal/generated/` are produced by `cmd/tfgen` from the
+backend's `configuration.latest.json` plugin specs. Regenerate **only** via:
 
 ```bash
-# Generate schema for a specific connector
-go run cmd/tfgen/main.go generate \
-  --config /path/to/backend/app/sources/plugins/postgresql/configuration.latest.json \
-  --type source \
-  --output internal/generated/
-
-# Run tests to verify
-go test -v ./cmd/tfgen/...
+STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap make generate
 ```
+
+`make generate` runs `tfgen` and then `tfplugindocs`, in that order. Do not use
+`go generate ./...` — it renders the docs *before* regenerating the schemas, so
+new fields land in `internal/generated/` but never reach `docs/resources/`.
+
+Never hand-edit `internal/generated/` — it is overwritten on every regen. Fix the
+generator instead. See [docs/CODE_GENERATOR.md](docs/CODE_GENERATOR.md) for the
+generator internals, the override system, and the walkthrough for adding a new
+connector.
 
 ### Project Structure
 
@@ -322,7 +329,8 @@ Create a Streamkap PostgreSQL source connected to a Snowflake destination
 with CDC enabled and SSL required.
 ```
 
-See [AI_AGENT_COMPATIBILITY.md](docs/AI_AGENT_COMPATIBILITY.md) for detailed AI integration guidelines.
+See [AGENTS.md](AGENTS.md) for the agent-facing guide: resource catalog, common
+patterns, authentication, and the errors agents hit most often.
 
 ## Upgrading
 
@@ -333,16 +341,19 @@ See [MIGRATION.md](docs/MIGRATION.md) for guidance on upgrading between major ve
 The v3.0 line adds:
 - **Tags on every entity** — every source, destination, transform, topic, and pipeline accepts an optional `tags = [...]` attribute (Set of tag IDs).
 - **`streamkap_tags` data source** — list/filter tags by name, type, or IDs (alternative to single-tag lookup).
-- **New connectors** — `streamkap_source_salesforce_webhook`, `streamkap_source_zendesk_webhook`, `streamkap_destination_pinecone`, `streamkap_destination_weaviate`, `streamkap_transform_topic_router`.
+- **New connectors** — `streamkap_source_informix`, `streamkap_source_salesforce_webhook`, `streamkap_source_shopify_webhook`, `streamkap_source_stripe_webhook`, `streamkap_source_zendesk_webhook`, `streamkap_destination_pinecone`, `streamkap_destination_weaviate`, `streamkap_transform_topic_router`.
 - **New non-connector resources** — `streamkap_kafka_user` (ACL-based Kafka access), `streamkap_client_credential` (API tokens).
 - **New data sources** — `streamkap_roles`, `streamkap_tags`.
 
 See [docs/MIGRATION.md](docs/MIGRATION.md) for the full v2 → v3 changelog and any breaking changes.
 
-To try a beta release, pin the latest `3.0.0-beta.x` available on the [Terraform Registry](https://registry.terraform.io/providers/streamkap-com/streamkap/latest):
+To try a beta release, pin the **exact** `3.0.0-beta.x` you tested — check the
+[Terraform Registry](https://registry.terraform.io/providers/streamkap-com/streamkap/latest)
+for the latest one. Each beta may introduce further breaking changes, so a range
+constraint can pull one you haven't validated:
 
 ```hcl
-version = "~> 3.0.0-beta"  # any 3.0.0-beta.x; resolves to the most recent on the registry
+version = "3.0.0-beta.25" # exact pin; do not use a range for pre-releases
 ```
 
 ## License

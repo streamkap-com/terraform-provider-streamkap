@@ -407,6 +407,154 @@ func TestValidatorGeneration(t *testing.T) {
 			t.Error("HasValidators should be false for one-select without values")
 		}
 	})
+
+	// GEN-6: multi-select is just as enum-shaped as one-select (live example:
+	// format_output_fields on the s3/starburst destinations) but used to get
+	// neither a validator nor the "Valid values" documentation.
+	t.Run("multi-select validator", func(t *testing.T) {
+		entry := &ConfigEntry{
+			Name:        "format.output.fields",
+			UserDefined: true,
+			Description: "Fields to include",
+			Value: ValueObject{
+				Control:   "multi-select",
+				RawValues: []any{"key", "value", "offset"},
+			},
+		}
+
+		field := g.entryToFieldData(entry)
+
+		if !field.HasValidators {
+			t.Fatal("HasValidators should be true for multi-select with raw_values")
+		}
+		wantValidator := `listvalidator.ValueStringsAre(stringvalidator.OneOf("key", "value", "offset"))`
+		if field.Validators != wantValidator {
+			t.Errorf("Validators = %q, want %q", field.Validators, wantValidator)
+		}
+		if !strings.Contains(field.Description, "Valid values: key, value, offset.") {
+			t.Errorf("Description should list valid values; got %q", field.Description)
+		}
+		if !strings.Contains(field.MarkdownDescription, "Valid values: `key`, `value`, `offset`.") {
+			t.Errorf("MarkdownDescription should list valid values; got %q", field.MarkdownDescription)
+		}
+	})
+
+	t.Run("multi-select without values - no validator", func(t *testing.T) {
+		entry := &ConfigEntry{
+			Name:        "test.multi",
+			UserDefined: true,
+			Value:       ValueObject{Control: "multi-select"},
+		}
+
+		field := g.entryToFieldData(entry)
+
+		if field.HasValidators {
+			t.Error("HasValidators should be false for multi-select without values")
+		}
+	})
+
+	// GEN-7: Min and Max are independently optional in the backend spec, so a
+	// slider with only a floor (or only a ceiling) used to get no validator.
+	t.Run("slider with only min", func(t *testing.T) {
+		min := float64(1)
+		entry := &ConfigEntry{
+			Name:        "test.slider",
+			UserDefined: true,
+			Value:       ValueObject{Control: "slider", Min: &min},
+		}
+
+		field := g.entryToFieldData(entry)
+
+		if !field.HasValidators {
+			t.Fatal("HasValidators should be true for a slider with only a min")
+		}
+		if field.Validators != "int64validator.AtLeast(1)" {
+			t.Errorf("Validators = %q, want %q", field.Validators, "int64validator.AtLeast(1)")
+		}
+	})
+
+	t.Run("slider with only max", func(t *testing.T) {
+		max := float64(10)
+		entry := &ConfigEntry{
+			Name:        "test.slider",
+			UserDefined: true,
+			Value:       ValueObject{Control: "slider", Max: &max},
+		}
+
+		field := g.entryToFieldData(entry)
+
+		if !field.HasValidators {
+			t.Fatal("HasValidators should be true for a slider with only a max")
+		}
+		if field.Validators != "int64validator.AtMost(10)" {
+			t.Errorf("Validators = %q, want %q", field.Validators, "int64validator.AtMost(10)")
+		}
+	})
+
+	t.Run("slider with neither min nor max", func(t *testing.T) {
+		entry := &ConfigEntry{
+			Name:        "test.slider",
+			UserDefined: true,
+			Value:       ValueObject{Control: "slider"},
+		}
+
+		field := g.entryToFieldData(entry)
+
+		if field.HasValidators {
+			t.Error("HasValidators should be false for a slider with no bounds")
+		}
+	})
+}
+
+// TestMultiSelectValidatorCompiles renders a multi-select field end to end:
+// the emitted validator slice must be []validator.List and the listvalidator
+// import must be present, otherwise the generated file does not compile.
+func TestMultiSelectValidatorCompiles(t *testing.T) {
+	out := t.TempDir()
+	g := NewGenerator(out, "destination")
+
+	config := &ConnectorConfig{
+		DisplayName: "Test",
+		Config: []ConfigEntry{
+			{
+				Name:        "format.output.fields",
+				UserDefined: true,
+				DisplayName: "Format Output Fields",
+				Value: ValueObject{
+					Control:   "multi-select",
+					RawValues: []any{"key", "value"},
+				},
+			},
+		},
+	}
+
+	if err := g.Generate(config, "testconn", ""); err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	content, err := os.ReadFile(filepath.Join(out, "destination_testconn.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	expected := []string{
+		"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator",
+		"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator",
+		"[]validator.List{",
+		`listvalidator.ValueStringsAre(stringvalidator.OneOf("key", "value"))`,
+	}
+	for _, want := range expected {
+		if !strings.Contains(contentStr, want) {
+			t.Errorf("generated file missing %q", want)
+		}
+	}
+
+	// format.Source in generateFile already rejects unparseable output; run
+	// gofmt as the same syntax gate the other generation tests use.
+	if out, err := exec.Command("gofmt", "-e", filepath.Join(out, "destination_testconn.go")).CombinedOutput(); err != nil {
+		t.Errorf("generated code failed gofmt: %v\n%s", err, out)
+	}
 }
 
 // TestRequiredOptionalComputed verifies Required/Optional/Computed field properties.
@@ -603,7 +751,10 @@ func TestPrepareTemplateData(t *testing.T) {
 		},
 	}
 
-	data := g.prepareTemplateData(config, "postgresql")
+	data, err := g.prepareTemplateData(config, "postgresql")
+	if err != nil {
+		t.Fatalf("prepareTemplateData failed: %v", err)
+	}
 
 	// Verify basic properties
 	if data.PackageName != "generated" {
@@ -756,6 +907,15 @@ func TestDefaultFunc(t *testing.T) {
 			expected: "booldefault.StaticBool(false)",
 		},
 		{
+			// GEN-5: the backend ships string-encoded booleans; treating them as
+			// "not a bool" emitted StaticBool(false) for a "true" default.
+			name: "bool default from string",
+			entry: &ConfigEntry{
+				Value: ValueObject{Control: "toggle", Default: "true"},
+			},
+			expected: "booldefault.StaticBool(true)",
+		},
+		{
 			name: "slider default",
 			entry: &ConfigEntry{
 				Value: ValueObject{Control: "slider", Default: float64(5)},
@@ -824,38 +984,53 @@ func TestOneOfValidator(t *testing.T) {
 func TestRangeValidator(t *testing.T) {
 	g := NewGenerator("/tmp", "source")
 
+	f := func(v float64) *float64 { return &v }
+
 	tests := []struct {
 		name     string
-		min      float64
-		max      float64
+		min      *float64
+		max      *float64
 		expected string
 	}{
 		{
 			name:     "standard range",
-			min:      1,
-			max:      10,
+			min:      f(1),
+			max:      f(10),
 			expected: "int64validator.Between(1, 10)",
 		},
 		{
 			name:     "large range",
-			min:      0,
-			max:      1000000,
+			min:      f(0),
+			max:      f(1000000),
 			expected: "int64validator.Between(0, 1000000)",
 		},
 		{
 			name:     "same min max",
-			min:      5,
-			max:      5,
+			min:      f(5),
+			max:      f(5),
 			expected: "int64validator.Between(5, 5)",
+		},
+		// Min and Max are independently optional in the backend spec (GEN-7).
+		{
+			name:     "min only",
+			min:      f(1),
+			expected: "int64validator.AtLeast(1)",
+		},
+		{
+			name:     "max only",
+			max:      f(64),
+			expected: "int64validator.AtMost(64)",
+		},
+		{
+			name:     "no bounds",
+			expected: "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			min := tt.min
-			max := tt.max
 			entry := &ConfigEntry{
-				Value: ValueObject{Min: &min, Max: &max},
+				Value: ValueObject{Min: tt.min, Max: tt.max},
 			}
 			result := g.rangeValidator(entry)
 			if result != tt.expected {
@@ -1261,7 +1436,10 @@ func TestImportsTracking(t *testing.T) {
 			},
 		}
 
-		data := g.prepareTemplateData(config, "test")
+		data, err := g.prepareTemplateData(config, "test")
+		if err != nil {
+			t.Fatalf("prepareTemplateData failed: %v", err)
+		}
 
 		hasImport := func(path string) bool {
 			for _, imp := range data.Imports {
@@ -1292,7 +1470,10 @@ func TestImportsTracking(t *testing.T) {
 			},
 		}
 
-		data := g.prepareTemplateData(config, "test")
+		data, err := g.prepareTemplateData(config, "test")
+		if err != nil {
+			t.Fatalf("prepareTemplateData failed: %v", err)
+		}
 
 		hasImport := func(path string) bool {
 			for _, imp := range data.Imports {
@@ -1330,7 +1511,10 @@ func TestImportsTracking(t *testing.T) {
 			},
 		}
 
-		data := g.prepareTemplateData(config, "test")
+		data, err := g.prepareTemplateData(config, "test")
+		if err != nil {
+			t.Fatalf("prepareTemplateData failed: %v", err)
+		}
 
 		hasImport := func(path string) bool {
 			for _, imp := range data.Imports {
@@ -1448,6 +1632,147 @@ func TestGenerate_KafkaDirectSkipsCommonConfig(t *testing.T) {
 	}
 }
 
+// TestGenerate_CollidingAttrNamesAreFatal covers GEN-4. Two backend fields that
+// normalize to the same Terraform attribute name used to be deduped with a bare
+// `continue`: the second field silently never became a Terraform attribute, and
+// which one won depended on config array order.
+func TestGenerate_CollidingAttrNamesAreFatal(t *testing.T) {
+	required := true
+
+	t.Run("distinct API fields colliding on one attr name", func(t *testing.T) {
+		config := &ConnectorConfig{
+			DisplayName: "Test",
+			Config: []ConfigEntry{
+				{Name: "ssh.host", UserDefined: true, Required: &required, Value: ValueObject{Control: "string"}},
+				{Name: "sshHost", UserDefined: true, Value: ValueObject{Control: "string"}},
+			},
+		}
+
+		err := NewGenerator(t.TempDir(), "source").Generate(config, "testconn", "")
+		if err == nil {
+			t.Fatal("Generate returned nil for two API fields colliding on the attribute name 'ssh_host'; one of them is silently unreachable from Terraform")
+		}
+		for _, want := range []string{"ssh_host", "ssh.host", "sshHost"} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("error must name the colliding attribute and both API fields; %q missing from: %v", want, err)
+			}
+		}
+	})
+
+	t.Run("collision with a generated common attribute", func(t *testing.T) {
+		config := &ConnectorConfig{
+			DisplayName: "Test",
+			Config: []ConfigEntry{
+				{Name: "connector", UserDefined: true, Value: ValueObject{Control: "string"}},
+			},
+		}
+
+		err := NewGenerator(t.TempDir(), "source").Generate(config, "testconn", "")
+		if err == nil {
+			t.Fatal("Generate returned nil for a backend field colliding with the generated 'connector' attribute")
+		}
+	})
+
+	t.Run("same API field repeated is a benign duplicate", func(t *testing.T) {
+		// The backend can list an identical entry in more than one section. Both
+		// produce the same attribute, so deduping is correct and must stay quiet.
+		config := &ConnectorConfig{
+			DisplayName: "Test",
+			Config: []ConfigEntry{
+				{Name: "ssh.host", UserDefined: true, Required: &required, Value: ValueObject{Control: "string"}},
+				{Name: "ssh.host", UserDefined: true, Required: &required, Value: ValueObject{Control: "string"}},
+			},
+		}
+
+		out := t.TempDir()
+		if err := NewGenerator(out, "source").Generate(config, "testconn", ""); err != nil {
+			t.Fatalf("an identical repeated entry must be deduped, not rejected; got: %v", err)
+		}
+		content, err := os.ReadFile(filepath.Join(out, "source_testconn.go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := strings.Count(string(content), `"ssh_host": schema.StringAttribute`); got != 1 {
+			t.Errorf("expected exactly one ssh_host schema attribute, got %d", got)
+		}
+	})
+}
+
+// TestGenerate_OrphanedOverrideIsFatal covers GEN-8. The map-override loop runs
+// purely off overrides.json: if the backend drops the field an override targets,
+// tfgen keeps emitting the Terraform attribute plus a fieldMappings row pointing
+// at a dead API key. Users set it and it silently does nothing server-side, and
+// schema snapshots cannot catch it because the TF-facing shape never changes.
+func TestGenerate_OrphanedOverrideIsFatal(t *testing.T) {
+	overrides := &OverrideConfig{
+		FieldOverrides: []FieldOverride{
+			{
+				Connector:         "testconn",
+				EntityType:        "sources",
+				APIFieldName:      "gone.from.backend",
+				TerraformAttrName: "gone_from_backend",
+				Type:              "map_string",
+				Optional:          true,
+				Description:       "Orphan",
+			},
+		},
+	}
+	config := &ConnectorConfig{
+		DisplayName: "Test",
+		Config: []ConfigEntry{
+			{Name: "database.hostname", UserDefined: true, Value: ValueObject{Control: "string"}},
+		},
+	}
+
+	g := NewGeneratorWithOverrides(t.TempDir(), "source", overrides)
+	err := g.Generate(config, "testconn", "")
+	if err == nil {
+		t.Fatal("Generate returned nil for an override whose api_field_name no longer exists in the backend config; the generated attribute would map to a dead API key")
+	}
+	for _, want := range []string{"gone.from.backend", "overrides.json"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("error must name the dead API field and point at overrides.json; %q missing from: %v", want, err)
+		}
+	}
+}
+
+// TestGenerate_OverrideMatchingBackendField is the GEN-8 counter-case: an
+// override whose api_field_name is present in the config still generates.
+func TestGenerate_OverrideMatchingBackendField(t *testing.T) {
+	overrides := &OverrideConfig{
+		FieldOverrides: []FieldOverride{
+			{
+				Connector:         "testconn",
+				EntityType:        "sources",
+				APIFieldName:      "topics.config.map",
+				TerraformAttrName: "topics_config_map",
+				Type:              "map_string",
+				Optional:          true,
+				Description:       "Per topic configuration",
+			},
+		},
+	}
+	config := &ConnectorConfig{
+		DisplayName: "Test",
+		Config: []ConfigEntry{
+			{Name: "topics.config.map", UserDefined: true, Value: ValueObject{Control: "string"}},
+		},
+	}
+
+	out := t.TempDir()
+	g := NewGeneratorWithOverrides(out, "source", overrides)
+	if err := g.Generate(config, "testconn", ""); err != nil {
+		t.Fatalf("Generate failed for an override backed by a real config entry: %v", err)
+	}
+	content, err := os.ReadFile(filepath.Join(out, "source_testconn.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), `"topics_config_map": "topics.config.map"`) {
+		t.Error("expected the override's fieldMappings row in the generated file")
+	}
+}
+
 func TestIsSecretField(t *testing.T) {
 	tests := []struct {
 		tfAttrName string
@@ -1460,6 +1785,12 @@ func TestIsSecretField(t *testing.T) {
 		// The literal contents of an Authorization header, e.g. "Bearer <token>".
 		{"authorization", true},
 		{"http_headers_authorization", true},
+		// AWS credentials. The backend ships aws_access_key_id with encrypt:true on
+		// the DynamoDB source but without it on the S3/Starburst/R2 destinations.
+		{"aws_access_key_id", true},
+		{"access_key_id", true},
+		{"aws_secret_access_key", true},
+		{"aws_secret_key", true},
 		// Names that merely mention a credential are not themselves secrets.
 		{"oauth2_access_token_url", false},
 		{"iceberg_catalog_s3_credentials_enabled", false},
@@ -1467,6 +1798,7 @@ func TestIsSecretField(t *testing.T) {
 		{"api_key_enabled", false},
 		{"http_authorization_type", false},
 		{"database_hostname", false},
+		{"aws_access_key_id_enabled", false},
 	}
 
 	for _, tt := range tests {
@@ -1475,5 +1807,44 @@ func TestIsSecretField(t *testing.T) {
 				t.Errorf("isSecretField(%q) = %v, want %v", tt.tfAttrName, got, tt.want)
 			}
 		})
+	}
+}
+
+// TestRewrittenDefault_DropsClientSideDefault locks the fix for the object-storage
+// sinks: the backend declares a default for file.name.template that it does not
+// store (it appends the extension it derives from format + compression), so a
+// client-side default makes Terraform plan a value the apply can never produce.
+func TestRewrittenDefault_DropsClientSideDefault(t *testing.T) {
+	entry := &ConfigEntry{
+		Name:        "file.name.template",
+		UserDefined: true,
+		Value: ValueObject{
+			Control: "string",
+			Default: "{{topic}}-{{partition}}-{{start_offset}}",
+		},
+	}
+
+	g := NewGenerator("", "destinations")
+	field := g.entryToFieldData(entry)
+
+	if field.HasDefault {
+		t.Errorf("file_name_template must not carry a client-side default; got %q", field.DefaultFunc)
+	}
+	if !field.Optional || !field.Computed {
+		t.Errorf("file_name_template must stay Optional+Computed, got Optional=%v Computed=%v", field.Optional, field.Computed)
+	}
+	if field.NeedsPlanMod {
+		t.Error("file_name_template must NOT use UseStateForUnknown: it is derived from format+compression, " +
+			"so pinning the prior state plans a stale value and the update is rejected")
+	}
+
+	// A field with an ordinary default is untouched.
+	other := &ConfigEntry{
+		Name:        "file.name.prefix",
+		UserDefined: true,
+		Value:       ValueObject{Control: "string", Default: "prefix-"},
+	}
+	if of := g.entryToFieldData(other); !of.HasDefault {
+		t.Error("an ordinary default must still be emitted")
 	}
 }

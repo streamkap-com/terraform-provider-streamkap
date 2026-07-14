@@ -172,8 +172,9 @@ func SourceS3Schema() schema.Schema {
 			"aws_access_key_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The AWS Access Key ID used to connect to S3. Defaults to \"\".",
-				MarkdownDescription: "The AWS Access Key ID used to connect to S3. Defaults to ``.",
+				Sensitive:           true,
+				Description:         "The AWS Access Key ID used to connect to S3. Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The AWS Access Key ID used to connect to S3. Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"aws_secret_access_key": schema.StringAttribute{

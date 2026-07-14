@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -16,13 +17,16 @@ func TestAccDestinationDb2Resource(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationDb2Resource: TF_VAR_destination_db2_hostname, TF_VAR_destination_db2_username, or TF_VAR_destination_db2_password not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_db2_hostname" {
 	type        = string
 	description = "DB2 hostname"
@@ -42,7 +46,7 @@ variable "destination_db2_database" {
 	default     = ""
 }
 resource "streamkap_destination_db2" "test" {
-	name                = "tf-acc-test-destination-db2"
+	name                = %q
 	database_hostname   = var.destination_db2_hostname
 	database_port       = 50000
 	database_database   = var.destination_db2_database
@@ -54,9 +58,9 @@ resource "streamkap_destination_db2" "test" {
 	primary_key_mode    = "record_key"
 	tasks_max           = 1
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_db2.test", "name", "tf-acc-test-destination-db2"),
+					resource.TestCheckResourceAttr("streamkap_destination_db2.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_db2.test", "database_hostname", destinationDb2Hostname),
 					resource.TestCheckResourceAttr("streamkap_destination_db2.test", "database_port", "50000"),
 					resource.TestCheckResourceAttr("streamkap_destination_db2.test", "connection_username", destinationDb2Username),
@@ -78,7 +82,7 @@ resource "streamkap_destination_db2" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_db2_hostname" {
 	type        = string
 	description = "DB2 hostname"
@@ -98,7 +102,7 @@ variable "destination_db2_database" {
 	default     = ""
 }
 resource "streamkap_destination_db2" "test" {
-	name                = "tf-acc-test-destination-db2-updated"
+	name                = %q
 	database_hostname   = var.destination_db2_hostname
 	database_port       = 50000
 	database_database   = var.destination_db2_database
@@ -110,9 +114,9 @@ resource "streamkap_destination_db2" "test" {
 	primary_key_mode    = "record_value"
 	tasks_max           = 2
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_db2.test", "name", "tf-acc-test-destination-db2-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_db2.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_db2.test", "schema_evolution", "none"),
 					resource.TestCheckResourceAttr("streamkap_destination_db2.test", "insert_mode", "upsert"),
 					resource.TestCheckResourceAttr("streamkap_destination_db2.test", "delete_enabled", "true"),

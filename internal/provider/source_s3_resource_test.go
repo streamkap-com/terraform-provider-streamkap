@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -16,13 +17,16 @@ func TestAccSourceS3Resource(t *testing.T) {
 		t.Skip("Skipping TestAccSourceS3Resource: TF_VAR_source_s3_access_key_id, TF_VAR_source_s3_secret_access_key, or TF_VAR_source_s3_bucket_name not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_s3_access_key_id" {
 	type        = string
 	description = "The AWS Access Key ID for S3"
@@ -37,7 +41,7 @@ variable "source_s3_bucket_name" {
 	description = "The S3 bucket name"
 }
 resource "streamkap_source_s3" "test" {
-	name                   = "tf-acc-test-source-s3"
+	name                   = %q
 	format                 = "json"
 	topic_postfix          = "default"
 	aws_access_key_id      = var.source_s3_access_key_id
@@ -48,9 +52,9 @@ resource "streamkap_source_s3" "test" {
 	fs_cleanup_policy_class = "Delete"
 	tasks_max              = 5
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_s3.test", "name", "tf-acc-test-source-s3"),
+					resource.TestCheckResourceAttr("streamkap_source_s3.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "format", "json"),
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "topic_postfix", "default"),
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "aws_access_key_id", sourceS3AccessKeyID),
@@ -71,7 +75,7 @@ resource "streamkap_source_s3" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_s3_access_key_id" {
 	type        = string
 	description = "The AWS Access Key ID for S3"
@@ -86,7 +90,7 @@ variable "source_s3_bucket_name" {
 	description = "The S3 bucket name"
 }
 resource "streamkap_source_s3" "test" {
-	name                   = "tf-acc-test-source-s3-updated"
+	name                   = %q
 	format                 = "csv"
 	topic_postfix          = "updated"
 	aws_access_key_id      = var.source_s3_access_key_id
@@ -97,9 +101,9 @@ resource "streamkap_source_s3" "test" {
 	fs_cleanup_policy_class = "Log"
 	tasks_max              = 3
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_s3.test", "name", "tf-acc-test-source-s3-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_s3.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "format", "csv"),
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "topic_postfix", "updated"),
 					resource.TestCheckResourceAttr("streamkap_source_s3.test", "aws_s3_region", "us-east-1"),

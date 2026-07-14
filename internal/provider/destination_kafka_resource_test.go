@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -13,15 +14,17 @@ func TestAccDestinationKafkaResource_basic(t *testing.T) {
 		t.Skip("TF_VAR_destination_kafka_bootstrap_servers not set, skipping test")
 	}
 
+	name := acctestName(t, "main")
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccDestinationKafkaResourceConfig(),
+				Config: testAccDestinationKafkaResourceConfig(name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_kafka.test", "name", "tf-acc-test-destination-kafka"),
+					resource.TestCheckResourceAttr("streamkap_destination_kafka.test", "name", name),
 					resource.TestCheckResourceAttrSet("streamkap_destination_kafka.test", "id"),
 					resource.TestCheckResourceAttrSet("streamkap_destination_kafka.test", "connector"),
 				),
@@ -36,8 +39,8 @@ func TestAccDestinationKafkaResource_basic(t *testing.T) {
 	})
 }
 
-func testAccDestinationKafkaResourceConfig() string {
-	return `
+func testAccDestinationKafkaResourceConfig(name string) string {
+	return fmt.Sprintf(`
 variable "destination_kafka_bootstrap_servers" {
   type = string
 }
@@ -54,10 +57,10 @@ variable "destination_kafka_sasl_password" {
 }
 
 resource "streamkap_destination_kafka" "test" {
-  name              = "tf-acc-test-destination-kafka"
+  name              = %q
   kafka_sink_bootstrap = var.destination_kafka_bootstrap_servers
   destination_format   = "avro"
   schema_registry_url  = "https://schema-registry.example.com"
 }
-`
+`, name)
 }

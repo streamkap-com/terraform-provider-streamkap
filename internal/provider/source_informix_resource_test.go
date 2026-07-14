@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,16 @@ func TestAccSourceInformixResource(t *testing.T) {
 		t.Skip("Skipping TestAccSourceInformixResource: TF_VAR_source_informix_hostname or TF_VAR_source_informix_password not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_informix_hostname" {
 	type        = string
 	description = "The hostname of the Informix database"
@@ -32,7 +36,7 @@ variable "source_informix_password" {
 	description = "The password of the Informix database"
 }
 resource "streamkap_source_informix" "test" {
-	name                                      = "tf-acc-test-source-informix"
+	name                                      = %q
 	database_hostname                         = var.source_informix_hostname
 	database_port                             = 9088
 	database_user                             = "streamkap_user"
@@ -43,9 +47,9 @@ resource "streamkap_source_informix" "test" {
 	signal_data_collection_schema_or_database = "streamkap"
 	ssh_enabled                               = false
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_informix.test", "name", "tf-acc-test-source-informix"),
+					resource.TestCheckResourceAttr("streamkap_source_informix.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_informix.test", "database_hostname", sourceInformixHostname),
 					resource.TestCheckResourceAttr("streamkap_source_informix.test", "database_port", "9088"),
 					resource.TestCheckResourceAttr("streamkap_source_informix.test", "database_user", "streamkap_user"),
@@ -64,7 +68,7 @@ resource "streamkap_source_informix" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_informix_hostname" {
 	type        = string
 	description = "The hostname of the Informix database"
@@ -75,7 +79,7 @@ variable "source_informix_password" {
 	description = "The password of the Informix database"
 }
 resource "streamkap_source_informix" "test" {
-	name                                      = "tf-acc-test-source-informix-updated"
+	name                                      = %q
 	database_hostname                         = var.source_informix_hostname
 	database_port                             = 9088
 	database_user                             = "streamkap_user"
@@ -86,9 +90,9 @@ resource "streamkap_source_informix" "test" {
 	signal_data_collection_schema_or_database = "streamkap"
 	ssh_enabled                               = false
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_informix.test", "name", "tf-acc-test-source-informix-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_informix.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_informix.test", "table_include_list", "informix.orders,informix.customer"),
 				),
 			},

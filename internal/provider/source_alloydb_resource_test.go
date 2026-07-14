@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,16 @@ func TestAccSourceAlloyDBResource(t *testing.T) {
 		t.Skip("Skipping TestAccSourceAlloyDBResource: TF_VAR_source_alloydb_hostname or TF_VAR_source_alloydb_password not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_alloydb_hostname" {
 	type        = string
 	description = "The hostname of the AlloyDB database"
@@ -32,7 +36,7 @@ variable "source_alloydb_password" {
 	description = "The password of the AlloyDB database"
 }
 resource "streamkap_source_alloydb" "test" {
-	name                                         = "tf-acc-test-source-alloydb"
+	name                                         = %q
 	database_hostname                            = var.source_alloydb_hostname
 	database_port                                = 5432
 	database_user                                = "alloydb"
@@ -50,9 +54,9 @@ resource "streamkap_source_alloydb" "test" {
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "name", "tf-acc-test-source-alloydb"),
+					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "database_hostname", sourceAlloyDBHostname),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "database_port", "5432"),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "database_user", "alloydb"),
@@ -80,7 +84,7 @@ resource "streamkap_source_alloydb" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_alloydb_hostname" {
 	type        = string
 	description = "The hostname of the AlloyDB database"
@@ -91,7 +95,7 @@ variable "source_alloydb_password" {
 	description = "The password of the AlloyDB database"
 }
 resource "streamkap_source_alloydb" "test" {
-	name                                         = "tf-acc-test-source-alloydb-updated"
+	name                                         = %q
 	database_hostname                            = var.source_alloydb_hostname
 	database_port                                = 5432
 	database_user                                = "alloydb"
@@ -109,9 +113,9 @@ resource "streamkap_source_alloydb" "test" {
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "name", "tf-acc-test-source-alloydb-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "snapshot_read_only", "No"),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "table_include_list", "streamkap.customer,streamkap.orders"),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "heartbeat_enabled", "false"),

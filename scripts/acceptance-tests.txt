@@ -7,6 +7,8 @@
 #
 # To add a connector to the run: add its TestAcc function here AND ensure its
 # TF_VAR_* credentials are in the env.json blob (1Password / ENV_JSON_FILE).
+# A test whose TF_VAR_* credentials are absent self-skips, so listing a
+# connector before its credentials land costs a SKIP line, not a failure.
 
 # --- Sources ---
 TestAccSourceSupabaseResource
@@ -15,46 +17,70 @@ TestAccSourceMySQLResource
 TestAccSourceDynamoDBResource
 TestAccSourceMongoDBResource
 TestAccSourceMongoDBHostedResource
-TestAccSourceSQLServerResource
-TestAccSourcePlanetScaleResource
 TestAccSourceMariaDBResource
-TestAccSourceOracleResource
-TestAccSourceOracleAWSResource
 TestAccSourceS3Resource
 TestAccSourceWebhookResource
 TestAccSourceShopifyWebhookResource
 TestAccSourceStripeWebhookResource
+TestAccSourceKafkaDirectResource
+TestAccSourceAlloyDBResource
+TestAccSourceDB2Resource
+TestAccSourceDocumentDBResource
+TestAccSourceElasticsearchResource
+TestAccSourceRedisResource
+TestAccSourceVitessResource
+TestAccSourceInformixResource
 
 # --- Destinations ---
 TestAccDestinationAzblobResource
-TestAccDestinationClickHouseResource
+TestAccDestinationBigqueryResource
 TestAccDestinationCockroachdbResource
 TestAccDestinationDatabricksResource
 TestAccDestinationDb2Resource
+TestAccDestinationGcsResource
 TestAccDestinationHttpsinkResource
+# TestAccDestinationIcebergResource — re-add once the staging ClickHouse instance
+# is reachable again. Its config stands up a ClickHouse destination, which today
+# fails Kafka Connect validation with "Cannot connect to: Clickhouse".
 TestAccDestinationKafkaResource_basic
+TestAccDestinationKafkadirectResource
 TestAccDestinationMotherduckResource
 TestAccDestinationMysqlResource
+TestAccDestinationOracleResource
 TestAccDestinationPostgresqlResource
 TestAccDestinationR2Resource
+TestAccDestinationRedisResource
+TestAccDestinationRedshiftResource
 TestAccDestinationS3Resource
 TestAccDestinationSnowflakeResource
 TestAccDestinationSqlserverResource
 TestAccDestinationStarburstResource
+TestAccDestinationWeaviateResource
 
 # --- Data sources ---
+# Names are start-anchored prefixes: TestAccDataSourceTag also selects the
+# _filterName/_filterIds variants, and TestAccDataSourceTopic also selects
+# Topics/TopicMetrics. The longer names are kept for readability — dropping the
+# short one must not silently drop the others.
 TestAccDataSourceTag
+TestAccDataSourceTopic
 TestAccDataSourceTopicMetrics
 TestAccDataSourceTopics
+TestAccDataSourceTransform
 
 # --- Pipelines ---
 TestAccPostgreSQLSnowflakePipelineResource
+# TestAccDynamoDBClickHousePipelineResource — re-add once the staging ClickHouse
+# instance is reachable again; its destination half cannot pass until then.
 
 # --- Provider / drift / tags / topics ---
+# TestAccTopicResource is deliberately absent: it is permanently skipped
+# (Kafka partition counts only increase, so each run poisons the next — see the
+# header comment in internal/provider/topic_resource_test.go). Re-add it here
+# when the test can reset the fixture topic's partition count.
 TestProviderConfig_MissingClientID
 TestDriftDetection_SourceModifiedExternally
 TestAccTagsLifecycle_TransformAttachAndClear
-TestAccTopicResource
 
 # --- Transforms ---
 TestAccTransformEnrichAsyncResource
@@ -64,3 +90,29 @@ TestAccTransformMapFilterResource_basic
 TestAccTransformMapFilterResource_withImplementation
 TestAccTransformRollupResource
 TestAccTransformSqlJoinResource
+
+# --- Quarantined: blocked on staging infrastructure, not on the provider ---
+#
+# These pass or fail on whether an external system is reachable, so leaving them
+# in the merge gate keeps it permanently red — which is how it has been on
+# develop, and why it stopped being read. They still run under `make testacc`.
+# Re-add each one the moment its cause below is fixed.
+#
+#   TestAccDestinationClickHouseResource
+#       Kafka Connect: "Cannot connect to: Clickhouse". The staging ClickHouse
+#       instance is unreachable. (Also blocks Iceberg and the DynamoDB→ClickHouse
+#       pipeline, which stand up a ClickHouse destination.)
+#
+#   TestAccSourceOracleResource
+#   TestAccSourceOracleAWSResource
+#       Kafka Connect: "Unable to connect: Failed to resolve Oracle database
+#       version". The Oracle test database is unreachable.
+#
+#   TestAccSourcePlanetScaleResource
+#       Kafka Connect: "Unexpected error while running query: SHOW DATABASES".
+#
+#   TestAccSourceSQLServerResource
+#       Backend: "Signal table '<db>.<t>_signal' is already in use by another
+#       connector (Limited-Privilege-Stream-Only-Test)". That connector was
+#       created outside Terraform, so the sweeper does not match it. Delete it,
+#       or give the test its own signal table, and re-add.

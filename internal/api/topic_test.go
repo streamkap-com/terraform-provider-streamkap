@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -34,32 +36,39 @@ func TestListTopics(t *testing.T) {
 	}
 }
 
+// TestListTopics_WithParams pins the two wire-format facts the backend cares
+// about: page/page_size (there is no limit/offset — TopicDetailsReq never
+// declared them) and entity_id as ONE comma-separated value. Sending entity_id
+// as a repeated key collapsed a multi-ID filter to a single arbitrary ID,
+// because the backend field is a scalar it splits on commas.
 func TestListTopics_WithParams(t *testing.T) {
-	// Setup mock server that verifies query parameters
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/topics/details" {
 			t.Errorf("Expected path /topics/details, got %s", r.URL.Path)
 		}
 
-		query := r.URL.RawQuery
-		if !strings.Contains(query, "entity_type=sources") {
-			t.Errorf("Expected entity_type=sources in query, got %s", query)
+		query := r.URL.Query()
+		if got := query.Get("entity_type"); got != "sources" {
+			t.Errorf("Expected entity_type=sources, got %q", got)
 		}
-		if !strings.Contains(query, "entity_id=source-1") {
-			t.Errorf("Expected entity_id=source-1 in query, got %s", query)
+		if got := query["entity_id"]; len(got) != 1 {
+			t.Errorf("Expected exactly one entity_id param, got %v", got)
 		}
-		if !strings.Contains(query, "entity_id=source-2") {
-			t.Errorf("Expected entity_id=source-2 in query, got %s", query)
+		if got := query.Get("entity_id"); got != "source-1,source-2" {
+			t.Errorf("Expected comma-joined entity_id, got %q", got)
 		}
-		if !strings.Contains(query, "limit=50") {
-			t.Errorf("Expected limit=50 in query, got %s", query)
+		if got := query.Get("page"); got != "1" {
+			t.Errorf("Expected page=1, got %q", got)
 		}
-		if !strings.Contains(query, "offset=10") {
-			t.Errorf("Expected offset=10 in query, got %s", query)
+		if got := query.Get("page_size"); got != "100" {
+			t.Errorf("Expected page_size=100, got %q", got)
+		}
+		if query.Has("limit") || query.Has("offset") {
+			t.Errorf("limit/offset are not backend params and must not be sent, got %s", r.URL.RawQuery)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"page": 2, "page_size": 50, "total": 100, "has_next": true, "result": []}`))
+		w.Write([]byte(`{"page": 1, "page_size": 100, "total": 1, "has_next": false, "result": [{"id": "topic-1", "name": "test-topic"}]}`))
 	}))
 	defer server.Close()
 
@@ -69,18 +78,105 @@ func TestListTopics_WithParams(t *testing.T) {
 	params := &TopicListParams{
 		EntityType: "sources",
 		EntityIDs:  []string{"source-1", "source-2"},
-		Limit:      50,
-		Offset:     10,
 	}
 	topics, err := client.ListTopics(context.Background(), params)
 	if err != nil {
 		t.Fatalf("ListTopics with params failed: %v", err)
 	}
-	if topics.PageSize != 50 {
-		t.Errorf("Expected page_size 50, got %d", topics.PageSize)
+	if len(topics.Result) != 1 {
+		t.Errorf("Expected 1 topic, got %d", len(topics.Result))
 	}
-	if !topics.HasNext {
-		t.Errorf("Expected has_next to be true")
+}
+
+// TestListTopics_Paginates proves the data source no longer truncates at the
+// backend's default page of 10: ListTopics must keep paging until a short page.
+func TestListTopics_Paginates(t *testing.T) {
+	const fullPage = 100
+	const lastPage = 5
+
+	pagesServed := []string{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		page := r.URL.Query().Get("page")
+		pagesServed = append(pagesServed, page)
+
+		count := fullPage
+		if page == "2" {
+			count = lastPage
+		}
+		topics := make([]string, 0, count)
+		for i := 0; i < count; i++ {
+			topics = append(topics, fmt.Sprintf(`{"id": "topic-%s-%d", "name": "t-%s-%d"}`, page, i, page, i))
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"page": %s, "page_size": 100, "total": %d, "has_next": %t, "result": [%s]}`,
+			page, fullPage+lastPage, page == "1", strings.Join(topics, ","))
+	}))
+	defer server.Close()
+
+	client := NewClient(&Config{BaseURL: server.URL})
+	client.SetToken(&Token{AccessToken: "test-token"})
+
+	topics, err := client.ListTopics(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("ListTopics failed: %v", err)
+	}
+	if len(topics.Result) != fullPage+lastPage {
+		t.Errorf("Expected %d topics across both pages, got %d", fullPage+lastPage, len(topics.Result))
+	}
+	if topics.Total != fullPage+lastPage {
+		t.Errorf("Expected total %d, got %d", fullPage+lastPage, topics.Total)
+	}
+	if len(pagesServed) != 2 || pagesServed[0] != "1" || pagesServed[1] != "2" {
+		t.Errorf("Expected pages 1 and 2 to be requested, got %v", pagesServed)
+	}
+}
+
+// TestListTopics_LongEntityIDListUsesSearch — past the URL-length threshold the
+// entity IDs move into the body of POST /topics/details/search, the backend's
+// documented alternative for lists that would blow up the query string.
+func TestListTopics_LongEntityIDListUsesSearch(t *testing.T) {
+	entityIDs := make([]string, 200)
+	for i := range entityIDs {
+		entityIDs[i] = fmt.Sprintf("source_%024d", i)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/topics/details/search" {
+			t.Errorf("Expected path /topics/details/search, got %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Errorf("Expected POST, got %s", r.Method)
+		}
+		if r.URL.Query().Has("entity_id") {
+			t.Errorf("entity_id must move to the body, but was still on the query string: %s", r.URL.RawQuery)
+		}
+		if got := r.URL.Query().Get("page_size"); got != "100" {
+			t.Errorf("Expected page_size=100 on the search request, got %q", got)
+		}
+
+		var body topicsSearchBody
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("Failed to decode search body: %v", err)
+		}
+		if len(body.EntityID) != len(entityIDs) {
+			t.Errorf("Expected %d entity IDs in the body, got %d", len(entityIDs), len(body.EntityID))
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"page": 1, "page_size": 100, "total": 1, "has_next": false, "result": [{"id": "topic-1", "name": "test-topic"}]}`))
+	}))
+	defer server.Close()
+
+	client := NewClient(&Config{BaseURL: server.URL})
+	client.SetToken(&Token{AccessToken: "test-token"})
+
+	topics, err := client.ListTopics(context.Background(), &TopicListParams{EntityIDs: entityIDs})
+	if err != nil {
+		t.Fatalf("ListTopics failed: %v", err)
+	}
+	if len(topics.Result) != 1 {
+		t.Errorf("Expected 1 topic, got %d", len(topics.Result))
 	}
 }
 

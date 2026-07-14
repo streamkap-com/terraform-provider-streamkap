@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -11,13 +12,15 @@ func TestAccDestinationDatabricksResource(t *testing.T) {
 	// Define environment variables for Databricks configuration
 	var destinationDatabricksConnectionUrl = os.Getenv("TF_VAR_destination_databricks_connection_url")
 	var destinationDatabricksToken = os.Getenv("TF_VAR_destination_databricks_token")
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read Testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_databricks_connection_url" {
 	type        = string
 	description = "The connection url of the Databricks database"
@@ -28,7 +31,7 @@ variable "destination_databricks_token" {
 	description = "The token for the Databricks database"
 }
 resource "streamkap_destination_databricks" "test" {
-	name                 = "test-destination-databricks"
+	name                 = %q
 	connection_url       = var.destination_databricks_connection_url
 	databricks_token     = var.destination_databricks_token
     table_name_prefix    = "streamkap"
@@ -38,9 +41,9 @@ resource "streamkap_destination_databricks" "test" {
 	tasks_max            = 3
 	schema_evolution     = "basic"
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "name", "test-destination-databricks"),
+					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "connection_url", destinationDatabricksConnectionUrl),
 					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "databricks_token", destinationDatabricksToken),
 					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "ingestion_mode", "upsert"),
@@ -62,7 +65,7 @@ resource "streamkap_destination_databricks" "test" {
 			},
 			// Step 3: Update and Read Testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_databricks_connection_url" {
 	type        = string
 	description = "The connection url of the Databricks database"
@@ -73,7 +76,7 @@ variable "destination_databricks_token" {
 	description = "The token for the Databricks database"
 }
 resource "streamkap_destination_databricks" "test" {
-	name                 = "test-destination-databricks-updated"
+	name                 = %q
 	connection_url       = var.destination_databricks_connection_url
 	databricks_token     = var.destination_databricks_token
 	table_name_prefix    = "streamkap"
@@ -83,9 +86,9 @@ resource "streamkap_destination_databricks" "test" {
 	tasks_max            = 5
 	schema_evolution     = "none"
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "name", "test-destination-databricks-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "connection_url", destinationDatabricksConnectionUrl),
 					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "databricks_token", destinationDatabricksToken),
 					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "ingestion_mode", "append"),

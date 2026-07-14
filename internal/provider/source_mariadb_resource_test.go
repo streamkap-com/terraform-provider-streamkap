@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,16 @@ func TestAccSourceMariaDBResource(t *testing.T) {
 		t.Skip("Skipping TestAccSourceMariaDBResource: TF_VAR_source_mariadb_hostname or TF_VAR_source_mariadb_password not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_mariadb_hostname" {
 	type        = string
 	description = "The hostname of the MariaDB database"
@@ -32,7 +36,7 @@ variable "source_mariadb_password" {
 	description = "The password of the MariaDB database"
 }
 resource "streamkap_source_mariadb" "test" {
-	name                                         = "tf-acc-test-source-mariadb"
+	name                                         = %q
 	database_hostname                            = var.source_mariadb_hostname
 	database_port                                = 3306
 	database_user                                = "root"
@@ -47,9 +51,9 @@ resource "streamkap_source_mariadb" "test" {
 	database_ssl_mode                            = "disable"
 	ssh_enabled                                  = false
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "name", "tf-acc-test-source-mariadb"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_hostname", sourceMariaDBHostname),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_port", "3306"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_user", "root"),
@@ -74,7 +78,7 @@ resource "streamkap_source_mariadb" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_mariadb_hostname" {
 	type        = string
 	description = "The hostname of the MariaDB database"
@@ -85,7 +89,7 @@ variable "source_mariadb_password" {
 	description = "The password of the MariaDB database"
 }
 resource "streamkap_source_mariadb" "test" {
-	name                                         = "tf-acc-test-source-mariadb-updated"
+	name                                         = %q
 	database_hostname                            = var.source_mariadb_hostname
 	database_port                                = 3306
 	database_user                                = "root"
@@ -100,9 +104,9 @@ resource "streamkap_source_mariadb" "test" {
 	database_ssl_mode                            = "disable"
 	ssh_enabled                                  = false
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "name", "tf-acc-test-source-mariadb-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "table_include_list", "sandbox.customer,sandbox.orders"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "heartbeat_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_connection_time_zone", "UTC"),

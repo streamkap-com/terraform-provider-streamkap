@@ -14,10 +14,26 @@ repos:
       - id: go-vet
       - id: go-build
 
-  - repo: local
+  # Secret scanning on staged changes only. This repo is public and contributors keep
+  # live connector credentials in a gitignored env.md next to the tree; this is what
+  # stops a `git add -f env.md` (or a .gitignore refactor) from becoming a public
+  # disclosure. Mirrors the gitleaks job in .github/workflows/security.yml.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
     hooks:
-      - id: tfplugindocs
-        name: terraform plugin docs
-        entry: go generate ./...
-        language: system
-        pass_filenames: false
+      - id: gitleaks
+
+# Deliberately absent: a codegen hook.
+#
+# This file used to run `go generate ./...` on every commit — the one command CLAUDE.md,
+# AGENTS.md and docs/CODE_GENERATOR.md all forbid. It fails two ways at once: it runs
+# tfplugindocs (root main.go) *before* tfgen (internal/generated), so docs render against
+# the previous schema and ship a regen behind (this is what broke beta.18); and with
+# STREAMKAP_BACKEND_PATH unset — the normal state for anyone not doing codegen — tfgen
+# silently emits wrong output, which the hook then leaves in the working tree.
+#
+# It is not replaced by a docs-verification hook either: that needs tfplugindocs and
+# terraform on every contributor's machine and adds tens of seconds to each commit, which
+# is how hooks end up bypassed with --no-verify. The guarantee lives in CI instead, where
+# it cannot be skipped: docs-drift.yml re-renders docs from the *committed* schemas and
+# fails the PR if they disagree. Regeneration stays a deliberate act: `make generate`.

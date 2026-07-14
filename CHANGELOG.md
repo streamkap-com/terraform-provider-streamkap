@@ -7,6 +7,142 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0-beta.26] - 2026-07-14 (Pre-release)
+
+Remediation of the 2026-07-11 provider audit. Grouped by what a user actually notices.
+
+### Security
+- **`aws_access_key_id` is now marked sensitive** on `streamkap_destination_s3`,
+  `streamkap_destination_starburst` and `streamkap_destination_r2`. The backend
+  ships `encrypt: true` for it on the DynamoDB source but not on these three, so
+  the same credential was masked on one connector and printed in plan output on
+  the others. tfgen now forces `Sensitive` for `*access_key_id`,
+  `*secret_access_key` and `*secret_key`, so the fix survives regeneration. If
+  you expose one of these through a Terraform `output`, that output now needs
+  `sensitive = true`.
+- **CI now scans for secrets** (gitleaks), runs on every PR, and blocks a commit
+  that would introduce one.
+
+### Breaking
+- **`streamkap_source_sqlserver`: `snapshot_custom_table_config` is removed.**
+  It mapped to a backend field (`streamkap.snapshot.custom.table.config.user.defined`)
+  that **does not exist**, so every value ever set was accepted by Terraform and
+  silently discarded — the per-table chunk counts never reached the connector.
+  Remove it from your configuration; use `snapshot_parallelism` (and
+  `streamkap_snapshot_chunk_size_bytes`) to tune snapshot throughput. See
+  `docs/MIGRATION.md`.
+- **Sources and destinations no longer adopt an existing record on "already
+  exists".** Create now fails with recovery guidance instead. Adopting is
+  indistinguishable, from inside the client, from a `create_before_destroy`
+  replace whose deposed instance still holds the name — and in that case the new
+  state entry inherits the deposed entry's backend id, so Terraform's next step
+  deletes the resource it just created. Pipelines and transforms already refused
+  to adopt for this reason (it destroyed a customer's pipelines). Tags still
+  adopt deliberately. Recovery for a genuinely lost create response is
+  `terraform import`, which the error message spells out.
+- **`file_name_template` no longer carries a client-side default** on
+  `streamkap_destination_s3`, `_gcs`, `_r2`, `_azblob` and `_starburst`. The
+  sinks declare a default of `{{topic}}-{{partition}}-{{start_offset}}` that they
+  do not store: the connector appends the extension it derives from the output
+  format and compression. The value is now whatever the backend computes, and
+  shows as `(known after apply)` when an input it derives from changes.
+
+### Fixed
+- **`streamkap_destination_s3` could never be created from scratch.** Every
+  `terraform apply` failed with `Provider produced inconsistent result after
+  apply: .file_name_template: was cty.StringVal("…{{start_offset}}"), but now
+  cty.StringVal("…{{start_offset}}.json.gz")`, because the provider planned a
+  default the sink rewrites. It went unnoticed because Create used to adopt an
+  existing record on a name collision and the tests reused one long-lived
+  destination whose stored value already matched. See the Breaking note above.
+- **A transient gateway error during a read no longer kills the apply.** Reads
+  went out with no retry at all, so a single `502 Bad Gateway` on a GET failed
+  `terraform apply`/`import` outright. GETs are idempotent and are now replayed.
+- **Long applies no longer die on an expired token.** The OAuth token was
+  fetched once at provider startup and never refreshed, so any apply outliving
+  the token TTL failed every remaining resource with an opaque 401. The client
+  now renews ahead of expiry and retries once on a 401.
+- **`terraform destroy` no longer fails on a resource deleted out of band.**
+  Delete is now idempotent on 404 for sources, destinations, pipelines,
+  transforms, tags, kafka users and client credentials; previously it errored and
+  left the operator to run `terraform state rm`.
+- **No more perpetual diff on credentials the backend echoes as null.** Refresh
+  nulled such a secret in state while the config still held it, producing a diff
+  on every plan and a spurious update on every apply. Read now restores the
+  prior state value, but only where the API returned null — a credential rotated
+  outside Terraform still shows up as drift.
+- **`streamkap_topics` returned at most 10 topics.** It sent `limit`/`offset`,
+  which the backend does not accept; it now paginates properly. Its `entity_ids`
+  filter also collapsed to a single arbitrary ID, because the backend expects one
+  comma-separated value rather than a repeated parameter.
+- **Retries now key off the HTTP status**, not substring-matching the message. A
+  429 whose text omitted the digits was never retried, while a 400 mentioning
+  e.g. "port 4290" was retried for minutes.
+- `streamkap_pipeline`'s `destination` now validates its required fields at plan
+  time instead of failing at apply, matching `source`.
+- Connector `Read` is now covered by the `timeouts` block, so a hung backend
+  can't block refresh indefinitely.
+- Corrected `examples/`: the S3 source used a nonexistent `aws_s3_object_prefix`,
+  and the pipeline example set two Snowflake attributes that no longer exist.
+
+### Added
+- **Every resource page on the Terraform Registry now shows an Example Usage
+  section** (previously none of the 59 did — the examples existed but were named
+  in a way `tfplugindocs` did not pick up).
+- Missing examples for `streamkap_transform_topic_router`, the Salesforce and
+  Zendesk webhook sources, `streamkap_destination_pinecone`, `streamkap_tag`, and
+  the `streamkap_tags` data source.
+- Multi-select attributes (e.g. `format_output_fields`) now validate their
+  allowed values instead of accepting any string.
+- **Retry behaviour is configurable** via `api.Config.Retry` (defaults to 5
+  attempts, 10–60s backoff). Useful for a tenant hitting sustained 429s, or an
+  environment that would rather fail fast.
+
+### Changed
+- **Deprecated v2 attributes now have a stated end date: they are removed in
+  v4.0, not at v3.0.0 stable.** `docs/MIGRATION.md` said all three things in
+  three different places. The aliases exist so a v2 configuration can reach v3
+  without a rewrite, so removing them the moment v3 goes stable would defeat
+  their purpose. They keep working, with a deprecation warning, for all of v3.x.
+
+### Changed (contributors)
+- **Acceptance runs sweep the tenant before and after.** A leaked fixture holds
+  database-level resources — a signal table, a replication slot — keyed to the
+  database rather than the connector's name, so one leftover failed every later
+  run with "Signal table … is already in use by another connector". Fixed fixture
+  names plus adopt-on-exists used to absorb this; with adoption gone and names
+  unique per run, the leaks have to be swept instead.
+- Five connectors are quarantined from the PR gate — ClickHouse, Oracle,
+  OracleAWS and PlanetScale point at unreachable or stale test databases, and
+  SQL Server's signal table is held by a connector created outside Terraform.
+  Each is listed with its cause in `scripts/acceptance-tests.txt` and still runs
+  under `make testacc`.
+- **The VCR/cassette test tier is removed.** It was scaffolding: the single
+  `TestIntegration_` function began with an unconditional `t.Skip` placed
+  *before* the `UPDATE_CASSETTES` check, so it never ran and `make cassettes`
+  could never record. No cassette ever existed. It was counted as coverage by
+  two separate audits. Offline API coverage is httpmock
+  (`internal/api/client_test.go`, `internal/provider/state_conflict_test.go`);
+  add there.
+- **CI actually gates PRs now**: build, vet, lint, unit, schema-compat and
+  validator tests. None of this ran before, so the schema-snapshot drift guard —
+  which the project relies on to catch a lost `Sensitive` flag — was never
+  executed by CI. Releases are gated on the same checks plus a changelog entry.
+- **tfgen fails loudly instead of emitting wrong code.** A malformed connector
+  config, an unreadable `configurations_for_all.json`, two attributes colliding
+  on one Terraform name, or an override pointing at a backend field that no
+  longer exists each used to warn-and-continue, producing a silently incomplete
+  schema. The `snapshot_custom_table_config` removal above is the first bug this
+  caught.
+- Schema snapshots now record each attribute's **type**, so a String→Int64 change
+  is caught; data sources are snapshotted too.
+- Migration tests now actually set the deprecated v2 aliases they exist to
+  protect; acceptance fixtures no longer collide between concurrent runs.
+- The pre-commit hook no longer runs `go generate ./...`, which regenerated docs
+  against a stale schema and, with `STREAMKAP_BACKEND_PATH` unset, emitted wrong
+  output.
+- `golangci-lint` upgraded to v2; the Go 1.24 analysis pin is gone.
+
 ## [3.0.0-beta.25] - 2026-07-10 (Pre-release)
 
 ### Security
@@ -105,8 +241,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `SELECT pg_logical_emit_message(true, ...)` on each beat to advance the
   replication slot. Works on PG14+ primaries with a SELECT-only role and is
   compatible with read-only mode; no `streamkap_heartbeat` table or write
-  grant required on the source. Resolves
-  [ENG-2398](https://linear.app/streamkap/issue/ENG-2398).
+  grant required on the source.
 
 ### Changed
 - **Kafka-only heartbeat mode is now reachable across all source connectors

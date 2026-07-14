@@ -1,0 +1,33 @@
+{
+  "version": "v3.0.0",
+  "attributes": {
+    "entity_ids": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ListType[basetypes.StringType]"
+    },
+    "entity_type": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "topics": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.ListType[types.ObjectType[\"entity_id\":basetypes.StringType, \"entity_name\":basetypes.StringType, \"entity_type\":basetypes.StringType, \"id\":basetypes.StringType, \"messages_30d\":basetypes.Int64Type, \"messages_7d\":basetypes.Int64Type, \"name\":basetypes.StringType, \"prefix\":basetypes.StringType, \"serialization\":types.ObjectType[\"key_converter\":basetypes.StringType, \"key_format\":basetypes.StringType, \"schema_registry_enabled\":basetypes.BoolType, \"value_converter\":basetypes.StringType, \"value_format\":basetypes.StringType]]]"
+    },
+    "total": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    }
+  }
+}

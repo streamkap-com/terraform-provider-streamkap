@@ -1,13 +1,22 @@
 package provider
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
+// Fixture names are per-run (acctestName) rather than literals: these configs
+// used to hardcode the same "test-source-postgresql" / "test-destination-*"
+// names as the standalone connector tests, so two tests — or two concurrent
+// runs — fought over one {tenant, name}. The backend 422s on the duplicate and
+// the provider's adopt-by-name path resolves that by adopting the other run's
+// resource.
+
 // Test PostgreSQL -> Snowflake ----------------------------------------------------------
-var pipelineSrcPostgreSQLResourceDef = `
+func pipelineSrcPostgreSQLResourceDef(name string) string {
+	return fmt.Sprintf(`
 variable "source_postgresql_hostname" {
 	type        = string
 	description = "The hostname of the PostgreSQL database"
@@ -18,7 +27,7 @@ variable "source_postgresql_password" {
 	description = "The password of the PostgreSQL database"
 }
 resource "streamkap_source_postgresql" "test" {
-	name                                         = "test-source-postgresql"
+	name                                         = %q
 	database_hostname                            = var.source_postgresql_hostname
 	database_port                                = 5432
 	database_user                                = "streamkap"
@@ -38,9 +47,11 @@ resource "streamkap_source_postgresql" "test" {
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
-`
+`, name)
+}
 
-var pipelineDestSnowflakeResourceDef = `
+func pipelineDestSnowflakeResourceDef(name string) string {
+	return fmt.Sprintf(`
 variable "destination_snowflake_url_name" {
 	type        = string
 	description = "The URL name of the Snowflake database"
@@ -56,7 +67,7 @@ variable "destination_snowflake_key_passphrase" {
 	description = "The passphrase of the private key of the Snowflake database"
 }
 resource "streamkap_destination_snowflake" "test" {
-	name                             = "test-destination-snowflake"
+	name                             = %q
 	snowflake_url_name               = var.destination_snowflake_url_name
 	snowflake_user_name              = "STREAMKAP_USER_JUNIT"
 	snowflake_private_key            = var.destination_snowflake_private_key
@@ -74,7 +85,8 @@ resource "streamkap_destination_snowflake" "test" {
 		itst_scen20240528103635 = "ITST_SCEN20240528103635"
 	}
 }
-`
+`, name)
+}
 
 var pipelineTransformsDef = `
 data "streamkap_transform" "test-transform" {
@@ -97,15 +109,24 @@ data "streamkap_tag" "production-tag" {
 `
 
 func TestAccPostgreSQLSnowflakePipelineResource(t *testing.T) {
+	sourceName := acctestName(t, "source-postgresql")
+	destinationName := acctestName(t, "destination-snowflake")
+	pipelineName := acctestName(t, "pipeline")
+	pipelineNameUpdated := pipelineName + "-updated"
+
+	connectorsDef := pipelineSrcPostgreSQLResourceDef(sourceName) +
+		pipelineDestSnowflakeResourceDef(destinationName) +
+		pipelineTransformsDef + pipelineTagsDef
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckPipelineDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + pipelineSrcPostgreSQLResourceDef + pipelineDestSnowflakeResourceDef + pipelineTransformsDef + pipelineTagsDef + `
+				Config: providerConfig + connectorsDef + fmt.Sprintf(`
 resource "streamkap_pipeline" "test" {
-	name                = "test-pipeline"
+	name                = %q
 	snapshot_new_tables = true
 	source = {
 		id        = streamkap_source_postgresql.test.id
@@ -139,10 +160,10 @@ resource "streamkap_pipeline" "test" {
 		data.streamkap_tag.production-tag.id,
 	]
 }
-`,
+`, pipelineName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify if attributes are propagated correctly
-					resource.TestCheckResourceAttr("streamkap_pipeline.test", "name", "test-pipeline"),
+					resource.TestCheckResourceAttr("streamkap_pipeline.test", "name", pipelineName),
 				),
 			},
 			// ImportState testing
@@ -153,9 +174,9 @@ resource "streamkap_pipeline" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + pipelineSrcPostgreSQLResourceDef + pipelineDestSnowflakeResourceDef + pipelineTransformsDef + pipelineTagsDef + `
+				Config: providerConfig + connectorsDef + fmt.Sprintf(`
 resource "streamkap_pipeline" "test" {
-	name                = "test-pipeline-updated"
+	name                = %q
 	snapshot_new_tables = true
 	source = {
 		id        = streamkap_source_postgresql.test.id
@@ -183,10 +204,10 @@ resource "streamkap_pipeline" "test" {
 		data.streamkap_tag.production-tag.id,
 	]
 }
-`,
+`, pipelineNameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify if attributes are propagated correctly
-					resource.TestCheckResourceAttr("streamkap_pipeline.test", "name", "test-pipeline-updated"),
+					resource.TestCheckResourceAttr("streamkap_pipeline.test", "name", pipelineNameUpdated),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -195,7 +216,8 @@ resource "streamkap_pipeline" "test" {
 }
 
 // Test DynamoDB -> ClickHouse ----------------------------------------------------------
-var pipelineSrcDynamoDBResourceDef = `
+func pipelineSrcDynamoDBResourceDef(name string) string {
+	return fmt.Sprintf(`
 variable "source_dynamodb_aws_region" {
 	type        = string
 	description = "AWS Region"
@@ -213,7 +235,7 @@ variable "source_dynamodb_aws_secret_key" {
 }
 
 resource "streamkap_source_dynamodb" "test" {
-	name                             = "test-source-dynamodb"
+	name                             = %q
 	aws_region                       = var.source_dynamodb_aws_region
 	aws_access_key_id                = var.source_dynamodb_aws_access_key_id
 	aws_secret_key                   = var.source_dynamodb_aws_secret_key
@@ -226,9 +248,11 @@ resource "streamkap_source_dynamodb" "test" {
 	full_export_expiration_time_ms   = 86400000
 	signal_kafka_poll_timeout_ms     = 1000
 }
-`
+`, name)
+}
 
-var pipelineDestClickHouseResourceDef = `
+func pipelineDestClickHouseResourceDef(name string) string {
+	return fmt.Sprintf(`
 variable "destination_clickhouse_hostname" {
 	type        = string
 	description = "The hostname of the Clickhouse server"
@@ -245,7 +269,7 @@ variable "destination_clickhouse_connection_password" {
 }
 
 resource "streamkap_destination_clickhouse" "test" {
-	name                = "test-destination-clickhouse"
+	name                = %q
 	ingestion_mode      = "append"
 	tasks_max           = 5
 	hostname            = var.destination_clickhouse_hostname
@@ -255,18 +279,28 @@ resource "streamkap_destination_clickhouse" "test" {
 	database            = "demo"
 	ssl                 = true
 }
-`
+`, name)
+}
 
 func TestAccDynamoDBClickHousePipelineResource(t *testing.T) {
+	sourceName := acctestName(t, "source-dynamodb")
+	destinationName := acctestName(t, "destination-clickhouse")
+	pipelineName := acctestName(t, "pipeline")
+	pipelineNameUpdated := pipelineName + "-updated"
+
+	connectorsDef := pipelineSrcDynamoDBResourceDef(sourceName) +
+		pipelineDestClickHouseResourceDef(destinationName) +
+		pipelineTransformsDef + pipelineTagsDef
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckPipelineDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + pipelineSrcDynamoDBResourceDef + pipelineDestClickHouseResourceDef + pipelineTransformsDef + pipelineTagsDef + `
+				Config: providerConfig + connectorsDef + fmt.Sprintf(`
 resource "streamkap_pipeline" "test" {
-	name                = "test-pipeline"
+	name                = %q
 	snapshot_new_tables = true
 	source = {
 		id        = streamkap_source_dynamodb.test.id
@@ -285,10 +319,10 @@ resource "streamkap_pipeline" "test" {
 		data.streamkap_tag.development-tag.id,
 	]
 }
-`,
+`, pipelineName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify if attributes are propagated correctly
-					resource.TestCheckResourceAttr("streamkap_pipeline.test", "name", "test-pipeline"),
+					resource.TestCheckResourceAttr("streamkap_pipeline.test", "name", pipelineName),
 				),
 			},
 			// ImportState testing
@@ -299,9 +333,9 @@ resource "streamkap_pipeline" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + pipelineSrcDynamoDBResourceDef + pipelineDestClickHouseResourceDef + pipelineTransformsDef + pipelineTagsDef + `
+				Config: providerConfig + connectorsDef + fmt.Sprintf(`
 resource "streamkap_pipeline" "test" {
-	name                = "test-pipeline-updated"
+	name                = %q
 	snapshot_new_tables = true
 	source = {
 		id        = streamkap_source_dynamodb.test.id
@@ -320,10 +354,10 @@ resource "streamkap_pipeline" "test" {
 		data.streamkap_tag.development-tag.id,
 	]
 }
-`,
+`, pipelineNameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify if attributes are propagated correctly
-					resource.TestCheckResourceAttr("streamkap_pipeline.test", "name", "test-pipeline-updated"),
+					resource.TestCheckResourceAttr("streamkap_pipeline.test", "name", pipelineNameUpdated),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

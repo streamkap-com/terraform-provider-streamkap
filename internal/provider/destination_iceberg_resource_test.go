@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -12,13 +13,20 @@ var icebergAwsAccessKey = os.Getenv("TF_VAR_iceberg_aws_access_key")
 var icebergAwsSecretKey = os.Getenv("TF_VAR_iceberg_aws_secret_key")
 
 func TestAccDestinationIcebergResource(t *testing.T) {
+	if icebergAwsAccessKey == "" || icebergAwsSecretKey == "" {
+		t.Skip("TF_VAR_iceberg_aws_access_key and TF_VAR_iceberg_aws_secret_key must be set")
+	}
+
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read Testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "iceberg_aws_access_key" {
   type        = string
   description = "The AWS Access Key ID used to connect to Iceberg. Required for rest and hive."
@@ -30,7 +38,7 @@ variable "iceberg_aws_secret_key" {
 }
 
 resource "streamkap_destination_iceberg" "test" {
-  name                                 = "test-destination-iceberg"
+  name                                 = %q
   iceberg_catalog_type                 = "rest"
   iceberg_catalog_name                 = "iceberg_catalog_name"
   iceberg_catalog_uri                  = "iceberg_catalog_uri"
@@ -42,9 +50,9 @@ resource "streamkap_destination_iceberg" "test" {
   insert_mode                          = "insert"
   iceberg_tables_default_id_columns    = "id,created_at"
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "name", "test-destination-iceberg"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_type", "rest"),
 					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_name", "iceberg_catalog_name"),
 					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_uri", "iceberg_catalog_uri"),
@@ -66,7 +74,7 @@ resource "streamkap_destination_iceberg" "test" {
 			},
 			// Step 3: Update and Read Testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "iceberg_aws_access_key" {
   type        = string
   description = "The AWS Access Key ID used to connect to Iceberg. Required for rest and hive."
@@ -78,7 +86,7 @@ variable "iceberg_aws_secret_key" {
 }
 
 resource "streamkap_destination_iceberg" "test" {
-  name                                 = "test-destination-iceberg-updated"
+  name                                 = %q
   iceberg_catalog_type                 = "hive"
   iceberg_catalog_name                 = "iceberg_catalog_name_updated"
   iceberg_catalog_uri                  = "iceberg_catalog_uri_updated"
@@ -90,9 +98,9 @@ resource "streamkap_destination_iceberg" "test" {
   insert_mode                          = "upsert"
   iceberg_tables_default_id_columns    = "id"
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "name", "test-destination-iceberg-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_type", "hive"),
 					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_name", "iceberg_catalog_name_updated"),
 					resource.TestCheckResourceAttr("streamkap_destination_iceberg.test", "iceberg_catalog_uri", "iceberg_catalog_uri_updated"),

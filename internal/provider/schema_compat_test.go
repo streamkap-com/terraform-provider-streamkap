@@ -9,10 +9,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/stretchr/testify/require"
 
+	ds "github.com/streamkap-com/terraform-provider-streamkap/internal/datasource"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/destination"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/pipeline"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
@@ -28,11 +32,37 @@ type SchemaSnapshot struct {
 }
 
 // AttributeInfo captures the key properties of a schema attribute.
+//
+// Type is the framework type name (e.g. "basetypes.StringType"). Without it a
+// String→Int64 flip — a hard breaking change, and one CLAUDE.md lists as *not*
+// aliasable — passes every snapshot check silently.
 type AttributeInfo struct {
-	Required  bool `json:"required"`
-	Optional  bool `json:"optional"`
-	Computed  bool `json:"computed"`
-	Sensitive bool `json:"sensitive"`
+	Required  bool   `json:"required"`
+	Optional  bool   `json:"optional"`
+	Computed  bool   `json:"computed"`
+	Sensitive bool   `json:"sensitive"`
+	Type      string `json:"type"`
+}
+
+// snapshotAttribute is the subset of the framework's attribute interface the
+// snapshot needs. Resource and data-source attributes both satisfy it, which is
+// what lets one extractor serve both schema flavours.
+type snapshotAttribute interface {
+	IsRequired() bool
+	IsOptional() bool
+	IsComputed() bool
+	IsSensitive() bool
+	GetType() attr.Type
+}
+
+func attributeInfo(a snapshotAttribute) AttributeInfo {
+	return AttributeInfo{
+		Required:  a.IsRequired(),
+		Optional:  a.IsOptional(),
+		Computed:  a.IsComputed(),
+		Sensitive: a.IsSensitive(),
+		Type:      a.GetType().String(),
+	}
 }
 
 // schemaCompatTestCase defines a test case for schema backwards compatibility.
@@ -42,19 +72,35 @@ type schemaCompatTestCase struct {
 	resourceFactory func() resource.Resource
 }
 
+// dataSourceCompatTestCase defines a test case for data-source schema
+// backwards compatibility.
+type dataSourceCompatTestCase struct {
+	name              string
+	snapshotFile      string
+	dataSourceFactory func() datasource.DataSource
+}
+
 // extractSchemaSnapshot extracts schema information into a snapshot structure.
 func extractSchemaSnapshot(s schema.Schema) SchemaSnapshot {
 	snapshot := SchemaSnapshot{
 		Attributes: make(map[string]AttributeInfo),
 	}
 
-	for name, attr := range s.Attributes {
-		snapshot.Attributes[name] = AttributeInfo{
-			Required:  attr.IsRequired(),
-			Optional:  attr.IsOptional(),
-			Computed:  attr.IsComputed(),
-			Sensitive: attr.IsSensitive(),
-		}
+	for name, attribute := range s.Attributes {
+		snapshot.Attributes[name] = attributeInfo(attribute)
+	}
+
+	return snapshot
+}
+
+// extractDataSourceSchemaSnapshot is extractSchemaSnapshot for data sources.
+func extractDataSourceSchemaSnapshot(s dsschema.Schema) SchemaSnapshot {
+	snapshot := SchemaSnapshot{
+		Attributes: make(map[string]AttributeInfo),
+	}
+
+	for name, attribute := range s.Attributes {
+		snapshot.Attributes[name] = attributeInfo(attribute)
 	}
 
 	return snapshot
@@ -64,22 +110,40 @@ func extractSchemaSnapshot(s schema.Schema) SchemaSnapshot {
 // Breaking changes detected:
 // - Removing a required attribute
 // - Changing optional to required
+// - Changing an attribute's type
 // - Removing a computed attribute that users might reference
 //
 // Run UPDATE_SNAPSHOTS=1 to create new baseline after intentional changes.
 func runSchemaCompatTest(t *testing.T, tc schemaCompatTestCase) {
 	t.Helper()
 
-	snapshotPath := filepath.Join("testdata", "schemas", tc.snapshotFile)
-
-	// Get current schema
 	ctx := context.Background()
 	schemaResp := &resource.SchemaResponse{}
 	res := tc.resourceFactory()
 	res.Schema(ctx, resource.SchemaRequest{}, schemaResp)
 	require.False(t, schemaResp.Diagnostics.HasError(), "schema should not have errors")
 
-	currentSnapshot := extractSchemaSnapshot(schemaResp.Schema)
+	compareAgainstSnapshot(t, tc.snapshotFile, extractSchemaSnapshot(schemaResp.Schema))
+}
+
+// runDataSourceSchemaCompatTest is runSchemaCompatTest for data sources.
+func runDataSourceSchemaCompatTest(t *testing.T, tc dataSourceCompatTestCase) {
+	t.Helper()
+
+	ctx := context.Background()
+	schemaResp := &datasource.SchemaResponse{}
+	ds := tc.dataSourceFactory()
+	ds.Schema(ctx, datasource.SchemaRequest{}, schemaResp)
+	require.False(t, schemaResp.Diagnostics.HasError(), "schema should not have errors")
+
+	compareAgainstSnapshot(t, tc.snapshotFile, extractDataSourceSchemaSnapshot(schemaResp.Schema))
+}
+
+// compareAgainstSnapshot writes or checks a snapshot for either schema flavour.
+func compareAgainstSnapshot(t *testing.T, snapshotFile string, currentSnapshot SchemaSnapshot) {
+	t.Helper()
+
+	snapshotPath := filepath.Join("testdata", "schemas", snapshotFile)
 
 	// Update mode: save current schema as baseline
 	if os.Getenv("UPDATE_SNAPSHOTS") != "" {
@@ -125,6 +189,15 @@ func runSchemaCompatTest(t *testing.T, tc schemaCompatTestCase) {
 			breakingChanges++
 		}
 
+		// Breaking: type changed. A String→Int64 flip invalidates every existing
+		// config and state for the attribute, and it has no alias escape hatch —
+		// CLAUDE.md lists type changes as not aliasable.
+		if exists && baseAttr.Type != "" && baseAttr.Type != currentAttr.Type {
+			t.Errorf("BREAKING CHANGE: Attribute %q changed type from %s to %s",
+				attrName, baseAttr.Type, currentAttr.Type)
+			breakingChanges++
+		}
+
 		// Warning: Computed attribute removed (might break references)
 		if !exists && baseAttr.Computed {
 			t.Logf("WARNING: Computed attribute %q was removed - may break user references", attrName)
@@ -158,7 +231,7 @@ func runSchemaCompatTest(t *testing.T, tc schemaCompatTestCase) {
 		sort.Strings(changed)
 		t.Errorf("schema snapshot %s is stale: added=%v removed=%v changed=%v\n"+
 			"Run `make snapshots` and review the diff before committing.",
-			tc.snapshotFile, added, removed, changed)
+			snapshotFile, added, removed, changed)
 		return
 	}
 
@@ -168,13 +241,17 @@ func runSchemaCompatTest(t *testing.T, tc schemaCompatTestCase) {
 	}
 }
 
-// TestEveryResourceHasSchemaSnapshot fails when a registered resource has no
-// snapshot baseline.
+// TestEveryResourceHasSchemaSnapshot fails when a registered resource or data
+// source has no snapshot baseline.
 //
 // runSchemaCompatTest skips silently when the snapshot file is absent, so a new
 // resource — or one whose test case was never written — gets zero drift
 // protection while the suite stays green. Four webhook sources went unprotected
 // that way, which is how an unmarked `api_key` shipped.
+//
+// Data-source snapshots carry a `datasource_` prefix: `streamkap_topic` and
+// `streamkap_tag` exist as both a resource and a data source, so the bare
+// TypeName is not a unique file name.
 func TestEveryResourceHasSchemaSnapshot(t *testing.T) {
 	ctx := context.Background()
 	p := &streamkapProvider{}
@@ -192,6 +269,70 @@ func TestEveryResourceHasSchemaSnapshot(t *testing.T) {
 				metaResp.TypeName, snapshotPath)
 		}
 	}
+
+	for _, factory := range p.DataSources(ctx) {
+		metaResp := &datasource.MetadataResponse{}
+		factory().Metadata(ctx, datasource.MetadataRequest{ProviderTypeName: "streamkap"}, metaResp)
+
+		name := strings.TrimPrefix(metaResp.TypeName, "streamkap_")
+		snapshotPath := filepath.Join("testdata", "schemas", "datasource_"+name+"_v1.json")
+
+		if _, err := os.Stat(snapshotPath); os.IsNotExist(err) {
+			t.Errorf("data source %q has no schema snapshot at %s; add a "+
+				"TestSchemaBackwardsCompatibility_DataSource* case and run `make snapshots`",
+				metaResp.TypeName, snapshotPath)
+		}
+	}
+}
+
+// --- Data sources ---
+
+func TestSchemaBackwardsCompatibility_DataSourceTransform(t *testing.T) {
+	runDataSourceSchemaCompatTest(t, dataSourceCompatTestCase{
+		name:              "datasource_transform",
+		snapshotFile:      "datasource_transform_v1.json",
+		dataSourceFactory: ds.NewTransformDataSource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DataSourceTag(t *testing.T) {
+	runDataSourceSchemaCompatTest(t, dataSourceCompatTestCase{
+		name:              "datasource_tag",
+		snapshotFile:      "datasource_tag_v1.json",
+		dataSourceFactory: ds.NewTagDataSource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DataSourceTags(t *testing.T) {
+	runDataSourceSchemaCompatTest(t, dataSourceCompatTestCase{
+		name:              "datasource_tags",
+		snapshotFile:      "datasource_tags_v1.json",
+		dataSourceFactory: ds.NewTagsDataSource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DataSourceTopics(t *testing.T) {
+	runDataSourceSchemaCompatTest(t, dataSourceCompatTestCase{
+		name:              "datasource_topics",
+		snapshotFile:      "datasource_topics_v1.json",
+		dataSourceFactory: ds.NewTopicsDataSource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DataSourceTopic(t *testing.T) {
+	runDataSourceSchemaCompatTest(t, dataSourceCompatTestCase{
+		name:              "datasource_topic",
+		snapshotFile:      "datasource_topic_v1.json",
+		dataSourceFactory: ds.NewTopicDataSource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DataSourceTopicMetrics(t *testing.T) {
+	runDataSourceSchemaCompatTest(t, dataSourceCompatTestCase{
+		name:              "datasource_topic_metrics",
+		snapshotFile:      "datasource_topic_metrics_v1.json",
+		dataSourceFactory: ds.NewTopicMetricsDataSource,
+	})
 }
 
 // TestSchemaBackwardsCompatibility_SourcePostgreSQL verifies no breaking changes to PostgreSQL source schema.

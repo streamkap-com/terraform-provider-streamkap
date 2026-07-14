@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,16 @@ func TestAccSourceShopifyWebhookResource(t *testing.T) {
 		t.Skip("Skipping TestAccSourceShopifyWebhookResource: TF_VAR_source_shopify_access_token or TF_VAR_source_shopify_hmac_secret not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_shopify_access_token" {
 	type        = string
 	sensitive   = true
@@ -33,15 +37,15 @@ variable "source_shopify_hmac_secret" {
 	description = "Shopify webhook HMAC signing secret"
 }
 resource "streamkap_source_shopify_webhook" "test" {
-	name                                            = "tf-acc-test-source-shopify-webhook"
+	name                                            = %q
 	camel_source_snapshot_shopify_store_url         = "https://tf-acc-test.myshopify.com"
 	camel_source_snapshot_shopify_access_token      = var.source_shopify_access_token
 	camel_source_payload_router_shopify_hmac_secret = var.source_shopify_hmac_secret
 	topic_include_list                              = "orders,products,customers"
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_shopify_webhook.test", "name", "tf-acc-test-source-shopify-webhook"),
+					resource.TestCheckResourceAttr("streamkap_source_shopify_webhook.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_shopify_webhook.test", "camel_source_snapshot_shopify_store_url", "https://tf-acc-test.myshopify.com"),
 					resource.TestCheckResourceAttr("streamkap_source_shopify_webhook.test", "topic_include_list", "orders,products,customers"),
 				),
@@ -55,7 +59,7 @@ resource "streamkap_source_shopify_webhook" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_shopify_access_token" {
 	type        = string
 	sensitive   = true
@@ -67,15 +71,15 @@ variable "source_shopify_hmac_secret" {
 	description = "Shopify webhook HMAC signing secret"
 }
 resource "streamkap_source_shopify_webhook" "test" {
-	name                                            = "tf-acc-test-source-shopify-webhook-updated"
+	name                                            = %q
 	camel_source_snapshot_shopify_store_url         = "https://tf-acc-test.myshopify.com"
 	camel_source_snapshot_shopify_access_token      = var.source_shopify_access_token
 	camel_source_payload_router_shopify_hmac_secret = var.source_shopify_hmac_secret
 	topic_include_list                              = "orders,products"
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_shopify_webhook.test", "name", "tf-acc-test-source-shopify-webhook-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_shopify_webhook.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_shopify_webhook.test", "topic_include_list", "orders,products"),
 				),
 			},

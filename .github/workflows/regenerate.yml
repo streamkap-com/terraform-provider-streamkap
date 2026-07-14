@@ -1,37 +1,55 @@
-# Schema regeneration workflow for Terraform provider.
-# This workflow regenerates Terraform schemas from backend configuration files.
+# Regenerate the provider's schemas from the backend plugin specs.
+#
+# The backend's configuration.latest.json files are the schema of record; backend drift
+# (a new field, a dropped field, a flipped `encrypt` flag) is this repo's most recurrent
+# failure class. This workflow is what notices it without a human regenerating locally.
+#
+# Two modes:
+#   * schedule (weekly)  — DETECT ONLY. Regenerate, diff, and open/refresh an issue if
+#                          internal/generated moved. Nothing is committed.
+#   * workflow_dispatch  — `pr` (default) opens a PR with the regenerated output;
+#                          `detect` behaves like the cron run.
+#
+# Regeneration goes through `make generate`, never `go generate ./...`: the make target
+# runs scripts/codegen-preflight.sh (asserts STREAMKAP_BACKEND_PATH, and that the backend
+# is on main), then tfgen, and only then tfplugindocs. `go generate ./...` runs
+# tfplugindocs first, rendering docs against the *previous* schema — that shipped a real
+# bug in beta.18. The ordering is load-bearing.
 #
 # PREREQUISITES:
-# 1. Configure BACKEND_REPO_URL secret with the backend repository URL
-# 2. Configure BACKEND_TOKEN secret with access token for the backend repo (if private)
-#
-# See docs/plans/2026-01-08-provider-refactor-design.md for full refactor plan.
-
+#   BACKEND_REPO_URL — https URL of the backend repository
+#   BACKEND_TOKEN    — token with read access to it (if private)
 name: Regenerate Schemas
 
 on:
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:
     inputs:
-      connector_type:
-        description: 'Connector type to generate (source/destination/all)'
+      mode:
+        description: 'pr = open a PR with the regenerated output; detect = report drift only'
         required: true
-        default: 'all'
+        default: pr
         type: choice
         options:
-          - all
-          - source
-          - destination
-  # Uncomment to enable automatic regeneration:
-  # schedule:
-  #   - cron: '0 6 * * 1'  # Weekly on Monday at 6 AM UTC
+          - pr
+          - detect
+  schedule:
+    - cron: '0 6 * * 1' # Weekly on Monday at 06:00 UTC (detect-only)
 
 permissions:
   contents: write
   pull-requests: write
+  issues: write
+
+env:
+  TF_ACC: ""
+  # Cron runs are always detect-only; dispatch honours the chosen mode.
+  MODE: ${{ github.event_name == 'schedule' && 'detect' || github.event.inputs.mode || 'pr' }}
 
 jobs:
   regenerate:
+    name: Regenerate from backend main
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
@@ -40,104 +58,134 @@ jobs:
           go-version-file: "go.mod"
           cache: true
 
-      - name: Clone backend repository
+      # `make generate` shells out to tfplugindocs and `terraform fmt -recursive`.
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: '1.11.*'
+          terraform_wrapper: false
+
+      - name: Clone backend repository (main)
         env:
           BACKEND_REPO_URL: ${{ secrets.BACKEND_REPO_URL }}
           BACKEND_TOKEN: ${{ secrets.BACKEND_TOKEN }}
         run: |
-          if [ -z "$BACKEND_REPO_URL" ]; then
-            echo "❌ BACKEND_REPO_URL secret is not configured"
+          set -euo pipefail
+          if [ -z "${BACKEND_REPO_URL:-}" ]; then
+            echo "::error::BACKEND_REPO_URL secret is not configured."
             exit 1
           fi
 
-          # Clone with token if provided
-          if [ -n "$BACKEND_TOKEN" ]; then
-            git clone --depth 1 "https://${BACKEND_TOKEN}@${BACKEND_REPO_URL#https://}" backend
-          else
-            git clone --depth 1 "$BACKEND_REPO_URL" backend
+          # Do NOT embed the token in the clone URL. git writes the remote URL verbatim
+          # into .git/config and echoes it back on several error paths, so a token in the
+          # URL survives in the checkout and can surface in logs. GIT_ASKPASS hands the
+          # token to git over a pipe and leaves nothing on disk. The username in the URL
+          # is a fixed non-secret placeholder; the askpass helper supplies the password.
+          askpass="$(mktemp)"
+          # $BACKEND_TOKEN stays literal here on purpose: git expands it when it invokes
+          # the helper, so the token is never written into the script file.
+          # shellcheck disable=SC2016
+          printf '#!/bin/sh\necho "$BACKEND_TOKEN"\n' > "$askpass"
+          chmod 700 "$askpass"
+
+          url="$BACKEND_REPO_URL"
+          if [ -n "${BACKEND_TOKEN:-}" ]; then
+            url="https://x-access-token@${BACKEND_REPO_URL#https://}"
           fi
 
-      - name: Build generator
-        run: go build -o tfgen ./cmd/tfgen
+          # Clone outside the workspace: an in-tree clone would be swept up as untracked
+          # content by the PR step. --branch main because production runs older plugin
+          # configs than feature branches, and regenerating against the wrong branch has
+          # shipped schemas with fields silently stripped.
+          GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 \
+            git clone --depth 1 --branch main "$url" "$RUNNER_TEMP/backend"
+          rm -f "$askpass"
 
-      - name: Generate schemas
+          echo "STREAMKAP_BACKEND_PATH=$RUNNER_TEMP/backend" >> "$GITHUB_ENV"
+          echo "BACKEND_SHA=$(git -C "$RUNNER_TEMP/backend" rev-parse --short HEAD)" >> "$GITHUB_ENV"
+
+      # Covers sources, destinations AND transforms: tfgen's --entity-type defaults to
+      # "all" and internal/generated/doc.go's go:generate directive passes no filter.
+      - name: Regenerate schemas and docs
+        run: make generate
+
+      # Snapshots are the schema of record read by humans and tooling; a PR carrying
+      # regenerated schemas but stale snapshots would fail its own schema-compat gate.
+      - name: Refresh schema snapshots
+        run: make snapshots
+
+      - name: Unit, schema-compat and validator tests
+        run: make test-all
+
+      - name: Detect drift
+        id: drift
         run: |
-          set -e  # Exit on first error
-          CONNECTOR_TYPE="${{ github.event.inputs.connector_type || 'all' }}"
-          ERRORS=0
-
-          if [ "$CONNECTOR_TYPE" = "all" ] || [ "$CONNECTOR_TYPE" = "source" ]; then
-            echo "Generating source schemas..."
-            shopt -s nullglob  # Handle empty globs gracefully
-            configs=(backend/app/sources/plugins/*/configuration.latest.json)
-            if [ ${#configs[@]} -eq 0 ]; then
-              echo "⚠️ No source configuration files found"
-            else
-              for config in "${configs[@]}"; do
-                connector=$(basename "$(dirname "$config")")
-                echo "  - $connector"
-                if ! ./tfgen generate --config "$config" --type source --output internal/generated/; then
-                  echo "❌ Failed to generate schema for source: $connector"
-                  ERRORS=$((ERRORS + 1))
-                fi
-              done
-            fi
-          fi
-
-          if [ "$CONNECTOR_TYPE" = "all" ] || [ "$CONNECTOR_TYPE" = "destination" ]; then
-            echo "Generating destination schemas..."
-            shopt -s nullglob  # Handle empty globs gracefully
-            configs=(backend/app/destinations/plugins/*/configuration.latest.json)
-            if [ ${#configs[@]} -eq 0 ]; then
-              echo "⚠️ No destination configuration files found"
-            else
-              for config in "${configs[@]}"; do
-                connector=$(basename "$(dirname "$config")")
-                echo "  - $connector"
-                if ! ./tfgen generate --config "$config" --type destination --output internal/generated/; then
-                  echo "❌ Failed to generate schema for destination: $connector"
-                  ERRORS=$((ERRORS + 1))
-                fi
-              done
-            fi
-          fi
-
-          if [ $ERRORS -gt 0 ]; then
-            echo "❌ Schema generation completed with $ERRORS error(s)"
-            exit 1
-          fi
-          echo "✅ Schema generation completed successfully"
-
-      - name: Run tests
-        run: go test -v -short ./...
-
-      - name: Check for changes
-        id: check_changes
-        run: |
-          if git diff --exit-code "internal/generated/"; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "✅ No schema changes detected"
+          set -euo pipefail
+          if git diff --exit-code --stat -- internal/generated; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+            echo "No schema drift against backend main @ ${BACKEND_SHA}."
           else
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "📝 Schema changes detected"
+            echo "drift=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create Pull Request
-        if: steps.check_changes.outputs.has_changes == 'true'
+          # The post-regen checklist, mechanised. The snapshot diff is the regen's
+          # changelog; added/removed connector files mean the run saw a different plugin
+          # set; a flipped Sensitive flag is a security regression until proven otherwise.
+          {
+            printf 'Backend: main @ %s\n\n' "${BACKEND_SHA}"
+            echo '### Changed files'
+            echo '```'
+            git status --porcelain
+            echo '```'
+            echo
+            echo '### Schema snapshot diff — the changelog for this regen'
+            echo '```diff'
+            git diff -- internal/provider/testdata/schemas | head -400
+            echo '```'
+          } > regen-report.md
+
+          if git diff -U0 -- internal/provider/testdata/schemas | grep -iq '^[+-].*sensitive'; then
+            {
+              echo
+              echo '> [!WARNING]'
+              echo '> A Sensitive flag changed. Treat it as a security regression until proven'
+              echo '> otherwise — if a credential lost its flag, force it in isSecretField'
+              echo '> (cmd/tfgen/generator.go), never in internal/generated/.'
+            } >> regen-report.md
+          fi
+
+      - name: Summary
+        if: always()
+        run: cat regen-report.md >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Open pull request
+        if: steps.drift.outputs.drift == 'true' && env.MODE == 'pr'
         uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6.1.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: regenerate Terraform schemas from backend"
-          title: "chore: regenerate Terraform schemas"
-          body: |
-            This PR was automatically generated by the schema regeneration workflow.
-
-            ## Changes
-            Updated Terraform schemas based on the latest backend configuration files.
-
-            ## Verification
-            - [ ] Review the generated schema changes
-            - [ ] Run acceptance tests if needed
-            - [ ] Verify documentation is updated
+          commit-message: "chore: regenerate schemas from backend main"
+          title: "chore: regenerate schemas from backend main"
+          body-path: regen-report.md
           branch: chore/regenerate-schemas
           delete-branch: true
+          # Explicit, so no stray path can ride along in an automated commit.
+          add-paths: |
+            internal/generated
+            internal/provider/testdata/schemas
+            docs
+            examples
+
+      # Detect-only (the weekly run): never commit, just make the drift visible.
+      - name: Report drift as an issue
+        if: steps.drift.outputs.drift == 'true' && env.MODE == 'detect'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TITLE: "Schema drift: internal/generated is behind backend main"
+        run: |
+          set -euo pipefail
+          existing="$(gh issue list --state open --search "in:title \"$TITLE\"" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file regen-report.md
+            echo "Commented on existing issue #${existing}."
+          else
+            gh issue create --title "$TITLE" --body-file regen-report.md
+          fi

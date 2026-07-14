@@ -167,9 +167,8 @@ func DestinationAzblobSchema() schema.Schema {
 			"file_name_template": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The format of the filename. See documentation for more information about formatting options. Defaults to \"{{topic}}-{{partition}}-{{start_offset}}\".",
-				MarkdownDescription: "The format of the filename. See documentation for more information about formatting options. Defaults to `{{topic}}-{{partition}}-{{start_offset}}`.",
-				Default:             stringdefault.StaticString("{{topic}}-{{partition}}-{{start_offset}}"),
+				Description:         "The format of the filename. See documentation for more information about formatting options.",
+				MarkdownDescription: "The format of the filename. See documentation for more information about formatting options.",
 			},
 			"flush_size": schema.Int64Attribute{
 				Optional:            true,

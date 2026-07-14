@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -9,16 +10,20 @@ import (
 
 var sourceMySQLHostname = os.Getenv("TF_VAR_source_mysql_hostname")
 var sourceMySQLPassword = os.Getenv("TF_VAR_source_mysql_password")
-var sourceMySQLSSHHost = os.Getenv("TF_VAR_source_mysql_ssh_host")
 
 func TestAccSourceMySQLResource(t *testing.T) {
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+	nameExclude := acctestName(t, "exclude")
+	nameStatic := acctestName(t, "static")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_mysql_hostname" {
 	type        = string
 	description = "The hostname of the MySQL database"
@@ -29,7 +34,7 @@ variable "source_mysql_password" {
 	description = "The password of the MySQL database"
 }
 resource "streamkap_source_mysql" "test" {
-	name                                      = "test-source-mysql"
+	name                                      = %q
 	database_hostname                         = var.source_mysql_hostname
 	database_port                             = 3306
 	database_user                             = "root"
@@ -44,9 +49,9 @@ resource "streamkap_source_mysql" "test" {
 	binary_handling_mode                      = "bytes"
 	ssh_enabled                               = false
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "name", "test-source-mysql"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "database_hostname", sourceMySQLHostname),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "database_port", "3306"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "database_user", "root"),
@@ -73,7 +78,7 @@ resource "streamkap_source_mysql" "test" {
 			},
 			// Step 3: Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_mysql_hostname" {
 	type        = string
 	description = "The hostname of the MySQL database"
@@ -84,7 +89,7 @@ variable "source_mysql_password" {
 	description = "The password of the MySQL database"
 }
 resource "streamkap_source_mysql" "test" {
-	name                                      = "test-source-mysql-updated"
+	name                                      = %q
 	database_hostname                         = var.source_mysql_hostname
 	database_port                             = 3306
 	database_user                             = "root"
@@ -100,9 +105,9 @@ resource "streamkap_source_mysql" "test" {
 	binary_handling_mode                      = "bytes"
 	ssh_enabled                               = false
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "name", "test-source-mysql-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "database_include_list", "crm"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "table_include_list", "crm.demo"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "heartbeat_enabled", "true"),
@@ -112,7 +117,7 @@ resource "streamkap_source_mysql" "test" {
 			},
 			// Step 4: Update to test column_exclude_list
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_mysql_hostname" {
 	type        = string
 	description = "The hostname of the MySQL database"
@@ -123,7 +128,7 @@ variable "source_mysql_password" {
 	description = "The password of the MySQL database"
 }
 resource "streamkap_source_mysql" "test" {
-	name                                      = "test-source-mysql-exclude"
+	name                                      = %q
 	database_hostname                         = var.source_mysql_hostname
 	database_port                             = 3306
 	database_user                             = "root"
@@ -139,16 +144,16 @@ resource "streamkap_source_mysql" "test" {
 	binary_handling_mode                      = "bytes"
 	ssh_enabled                               = false
 }
-`,
+`, nameExclude),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "name", "test-source-mysql-exclude"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "name", nameExclude),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "column_exclude_list", "crm.demo.name"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "column_include_list", "crm[.]demo[.](id|name)"),
 				),
 			},
 			// Step 5: Update to test insert_static_* fields
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_mysql_hostname" {
 	type        = string
 	description = "The hostname of the MySQL database"
@@ -159,7 +164,7 @@ variable "source_mysql_password" {
 	description = "The password of the MySQL database"
 }
 resource "streamkap_source_mysql" "test" {
-	name                                      = "test-source-mysql-static"
+	name                                      = %q
 	database_hostname                         = var.source_mysql_hostname
 	database_port                             = 3306
 	database_user                             = "root"
@@ -175,9 +180,9 @@ resource "streamkap_source_mysql" "test" {
 	binary_handling_mode                      = "bytes"
 	ssh_enabled                               = false
 }
-`,
+`, nameStatic),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "name", "test-source-mysql-static"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "name", nameStatic),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "column_include_list", "crm[.]demo[.](id|name)"),
 				),
 			},

@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
@@ -72,57 +70,21 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 	var resp Source
 	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
-		if strings.Contains(err.Error(), "already exists") {
-			tflog.Info(ctx, fmt.Sprintf(
-				"Source %q already exists — attempting to adopt existing resource", reqPayload.Name))
-			adopted, adoptErr := s.adoptSourceByName(ctx, reqPayload.Name)
-			if adoptErr == nil {
-				return adopted, nil
-			}
-			// Adopt lookup failed — surface the original "already exists"
-			// error so the user sees something actionable (clean up the
-			// orphan) instead of the cryptic "reported as existing but
-			// not found in list" that can happen when the backend's
-			// dup-name check is scoped differently from the list endpoint
-			// (e.g. orphans in a different service of the same tenant).
-			return nil, fmt.Errorf("%w (also tried to adopt the existing resource but could not locate it via the list endpoint: %v)", err, adoptErr)
+		// Sources reach the create_before_destroy trigger too: the generated
+		// schemas carry RequiresReplace attributes. See adoptRefusedError.
+		if isAlreadyExists(err) {
+			return nil, adoptRefusedError(adoptConflict{
+				Kind:        "source",
+				Name:        reqPayload.Name,
+				UniqueScope: "tenant",
+				ImportAddr:  "streamkap_source_<connector>.<resource_name> <source_id>",
+				ListPath:    "/sources",
+			}, err)
 		}
 		return nil, err
 	}
 
 	return &resp, nil
-}
-
-// adoptSourceByName finds an existing source by name and returns it,
-// allowing Terraform to adopt it into state after a 409/422 conflict.
-// The /sources endpoint only accepts a `partial_name` filter — there is no
-// exact-name filter — so we narrow server-side with partial_name and match
-// exactly client-side. Iterates all pages: a single prefix can legitimately
-// match many sources, and stopping at page 1 would miss the exact match.
-func (s *streamkapAPI) adoptSourceByName(ctx context.Context, name string) (*Source, error) {
-	const pageSize = 100
-	const maxPages = 1000 // hard cap as a runaway safeguard
-	for page := 1; page <= maxPages; page++ {
-		reqURL := fmt.Sprintf("%s/sources?secret_returned=true&page=%d&page_size=%d&partial_name=%s",
-			s.cfg.BaseURL, page, pageSize, url.QueryEscape(name))
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
-		if err != nil {
-			return nil, fmt.Errorf("failed to build adopt request for %q: %w", name, err)
-		}
-		var resp GetSourceResponse
-		if err := s.doRequest(ctx, req, &resp); err != nil {
-			return nil, fmt.Errorf("failed to list sources while adopting %q: %w", name, err)
-		}
-		for i := range resp.Result {
-			if resp.Result[i].Name == name {
-				return &resp.Result[i], nil
-			}
-		}
-		if len(resp.Result) < pageSize {
-			break
-		}
-	}
-	return nil, fmt.Errorf("source %q reported as existing but not found in list", name)
 }
 
 func (s *streamkapAPI) GetSource(ctx context.Context, sourceID string) (*Source, error) {
@@ -181,24 +143,7 @@ func (s *streamkapAPI) ListSources(ctx context.Context) ([]Source, error) {
 }
 
 func (s *streamkapAPI) DeleteSource(ctx context.Context, sourceID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/sources/"+sourceID+"?secret_returned=true&wait=false", http.NoBody)
-	if err != nil {
-		return err
-	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"DeleteSource request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n",
-		req.Method,
-		req.URL.String(),
-	))
-	var resp Source
-	err = s.doRequestWithRetry(ctx, req, &resp)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.deleteResource(ctx, "DeleteSource", s.cfg.BaseURL+"/sources/"+sourceID+"?secret_returned=true&wait=false")
 }
 
 func (s *streamkapAPI) UpdateSource(ctx context.Context, sourceID string, reqPayload Source) (*Source, error) {

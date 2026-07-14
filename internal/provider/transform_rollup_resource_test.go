@@ -1,12 +1,15 @@
 package provider
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccTransformRollupResource_basic(t *testing.T) {
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -14,9 +17,9 @@ func TestAccTransformRollupResource_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read
 			{
-				Config: testAccTransformRollupResourceConfig("tf-acc-test-transform-rollup"),
+				Config: testAccTransformRollupResourceConfig(name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_transform_rollup.test", "name", "tf-acc-test-transform-rollup"),
+					resource.TestCheckResourceAttr("streamkap_transform_rollup.test", "name", name),
 					resource.TestCheckResourceAttrSet("streamkap_transform_rollup.test", "id"),
 					resource.TestCheckResourceAttrSet("streamkap_transform_rollup.test", "transform_type"),
 					resource.TestCheckResourceAttr("streamkap_transform_rollup.test", "transforms_language", "SQL"),
@@ -35,9 +38,9 @@ func TestAccTransformRollupResource_basic(t *testing.T) {
 			},
 			// Update
 			{
-				Config: testAccTransformRollupResourceConfigUpdated("tf-acc-test-transform-rollup-updated"),
+				Config: testAccTransformRollupResourceConfigUpdated(nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_transform_rollup.test", "name", "tf-acc-test-transform-rollup-updated"),
+					resource.TestCheckResourceAttr("streamkap_transform_rollup.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_transform_rollup.test", "transforms_input_serialization_format", "Json"),
 					resource.TestCheckResourceAttr("streamkap_transform_rollup.test", "transforms_output_serialization_format", "Json"),
 				),
@@ -47,6 +50,7 @@ func TestAccTransformRollupResource_basic(t *testing.T) {
 }
 
 func TestAccTransformRollupResource_withImplementation(t *testing.T) {
+	name := acctestName(t, "impl")
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -54,9 +58,9 @@ func TestAccTransformRollupResource_withImplementation(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create with implementation_json
 			{
-				Config: testAccTransformRollupWithImplementationConfig(),
+				Config: testAccTransformRollupWithImplementationConfig(name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_transform_rollup.test_impl", "name", "tf-acc-test-transform-rollup-impl"),
+					resource.TestCheckResourceAttr("streamkap_transform_rollup.test_impl", "name", name),
 					resource.TestCheckResourceAttr("streamkap_transform_rollup.test_impl", "transforms_language", "SQL"),
 					resource.TestCheckResourceAttrSet("streamkap_transform_rollup.test_impl", "id"),
 					resource.TestCheckResourceAttrSet("streamkap_transform_rollup.test_impl", "implementation_json"),
@@ -74,35 +78,35 @@ func TestAccTransformRollupResource_withImplementation(t *testing.T) {
 }
 
 func testAccTransformRollupResourceConfig(name string) string {
-	return `
+	return fmt.Sprintf(`
 resource "streamkap_transform_rollup" "test" {
-  name                                   = "` + name + `"
+  name                                   = %q
   transforms_language                    = "SQL"
   transforms_input_topic_pattern         = "test-input-topic"
   transforms_output_topic_pattern        = "test-output-topic"
   transforms_input_serialization_format  = "Avro"
   transforms_output_serialization_format = "Avro"
 }
-`
+`, name)
 }
 
 func testAccTransformRollupResourceConfigUpdated(name string) string {
-	return `
+	return fmt.Sprintf(`
 resource "streamkap_transform_rollup" "test" {
-  name                                   = "` + name + `"
+  name                                   = %q
   transforms_language                    = "SQL"
   transforms_input_topic_pattern         = "test-input-topic-updated"
   transforms_output_topic_pattern        = "test-output-topic-updated"
   transforms_input_serialization_format  = "Json"
   transforms_output_serialization_format = "Json"
 }
-`
+`, name)
 }
 
-func testAccTransformRollupWithImplementationConfig() string {
-	return `
+func testAccTransformRollupWithImplementationConfig(name string) string {
+	return fmt.Sprintf(`
 resource "streamkap_transform_rollup" "test_impl" {
-  name                                   = "tf-acc-test-transform-rollup-impl"
+  name                                   = %q
   transforms_language                    = "SQL"
   transforms_input_topic_pattern         = "test-input-.*"
   transforms_output_topic_pattern        = "test-output-topic"
@@ -121,5 +125,5 @@ resource "streamkap_transform_rollup" "test_impl" {
     keyFields  = ["product_id"]
   })
 }
-`
+`, name)
 }
