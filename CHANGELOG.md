@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0-beta.26] - 2026-07-14 (Pre-release)
+
 Remediation of the 2026-07-11 provider audit. Grouped by what a user actually notices.
 
 ### Security
@@ -38,8 +40,24 @@ Remediation of the 2026-07-11 provider audit. Grouped by what a user actually no
   to adopt for this reason (it destroyed a customer's pipelines). Tags still
   adopt deliberately. Recovery for a genuinely lost create response is
   `terraform import`, which the error message spells out.
+- **`file_name_template` no longer carries a client-side default** on
+  `streamkap_destination_s3`, `_gcs`, `_r2`, `_azblob` and `_starburst`. The
+  sinks declare a default of `{{topic}}-{{partition}}-{{start_offset}}` that they
+  do not store: the connector appends the extension it derives from the output
+  format and compression. The value is now whatever the backend computes, and
+  shows as `(known after apply)` when an input it derives from changes.
 
 ### Fixed
+- **`streamkap_destination_s3` could never be created from scratch.** Every
+  `terraform apply` failed with `Provider produced inconsistent result after
+  apply: .file_name_template: was cty.StringVal("…{{start_offset}}"), but now
+  cty.StringVal("…{{start_offset}}.json.gz")`, because the provider planned a
+  default the sink rewrites. It went unnoticed because Create used to adopt an
+  existing record on a name collision and the tests reused one long-lived
+  destination whose stored value already matched. See the Breaking note above.
+- **A transient gateway error during a read no longer kills the apply.** Reads
+  went out with no retry at all, so a single `502 Bad Gateway` on a GET failed
+  `terraform apply`/`import` outright. GETs are idempotent and are now replayed.
 - **Long applies no longer die on an expired token.** The OAuth token was
   fetched once at provider startup and never refreshed, so any apply outliving
   the token TTL failed every remaining resource with an opaque 401. The client
@@ -76,6 +94,9 @@ Remediation of the 2026-07-11 provider audit. Grouped by what a user actually no
   the `streamkap_tags` data source.
 - Multi-select attributes (e.g. `format_output_fields`) now validate their
   allowed values instead of accepting any string.
+- **Retry behaviour is configurable** via `api.Config.Retry` (defaults to 5
+  attempts, 10–60s backoff). Useful for a tenant hitting sustained 429s, or an
+  environment that would rather fail fast.
 
 ### Changed
 - **Deprecated v2 attributes now have a stated end date: they are removed in
@@ -85,6 +106,17 @@ Remediation of the 2026-07-11 provider audit. Grouped by what a user actually no
   their purpose. They keep working, with a deprecation warning, for all of v3.x.
 
 ### Changed (contributors)
+- **Acceptance runs sweep the tenant before and after.** A leaked fixture holds
+  database-level resources — a signal table, a replication slot — keyed to the
+  database rather than the connector's name, so one leftover failed every later
+  run with "Signal table … is already in use by another connector". Fixed fixture
+  names plus adopt-on-exists used to absorb this; with adoption gone and names
+  unique per run, the leaks have to be swept instead.
+- Five connectors are quarantined from the PR gate — ClickHouse, Oracle,
+  OracleAWS and PlanetScale point at unreachable or stale test databases, and
+  SQL Server's signal table is held by a connector created outside Terraform.
+  Each is listed with its cause in `scripts/acceptance-tests.txt` and still runs
+  under `make testacc`.
 - **The VCR/cassette test tier is removed.** It was scaffolding: the single
   `TestIntegration_` function began with an unconditional `t.Skip` placed
   *before* the `UPDATE_CASSETTES` check, so it never ran and `make cassettes`
