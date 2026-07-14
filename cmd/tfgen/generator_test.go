@@ -1809,3 +1809,41 @@ func TestIsSecretField(t *testing.T) {
 		})
 	}
 }
+
+// TestRewrittenDefault_DropsClientSideDefault locks the fix for the object-storage
+// sinks: the backend declares a default for file.name.template that it does not
+// store (it appends the extension it derives from format + compression), so a
+// client-side default makes Terraform plan a value the apply can never produce.
+func TestRewrittenDefault_DropsClientSideDefault(t *testing.T) {
+	entry := &ConfigEntry{
+		Name:        "file.name.template",
+		UserDefined: true,
+		Value: ValueObject{
+			Control: "string",
+			Default: "{{topic}}-{{partition}}-{{start_offset}}",
+		},
+	}
+
+	g := NewGenerator("", "destinations")
+	field := g.entryToFieldData(entry)
+
+	if field.HasDefault {
+		t.Errorf("file_name_template must not carry a client-side default; got %q", field.DefaultFunc)
+	}
+	if !field.Optional || !field.Computed {
+		t.Errorf("file_name_template must stay Optional+Computed, got Optional=%v Computed=%v", field.Optional, field.Computed)
+	}
+	if !field.NeedsPlanMod {
+		t.Error("file_name_template must use UseStateForUnknown to keep the planned value stable")
+	}
+
+	// A field with an ordinary default is untouched.
+	other := &ConfigEntry{
+		Name:        "file.name.prefix",
+		UserDefined: true,
+		Value:       ValueObject{Control: "string", Default: "prefix-"},
+	}
+	if of := g.entryToFieldData(other); !of.HasDefault {
+		t.Error("an ordinary default must still be emitted")
+	}
+}

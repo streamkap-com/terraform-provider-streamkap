@@ -102,7 +102,7 @@ output "example_destination_gcs" {
 - `consumer_override_max_poll_records` (Number) The maximum number of records returned in a single call to poll(). Defaults to `10000`.
 - `file_compression_type` (String) Compression type for files written to GCS. Defaults to `gzip`. Valid values: `none`, `gzip`, `snappy`, `zstd`.
 - `file_name_prefix` (String) Prefix for the filename. Prefixes can be used to specify a directory for the file (e.g. dir1/dir2/).
-- `file_name_template` (String) The format of the filename. See documentation for more information about formatting options. Defaults to `{{topic}}-{{partition}}-{{start_offset}}`.
+- `file_name_template` (String) The format of the filename. See documentation for more information about formatting options.
 - `format` (String) The format to use when writing data to the store. Defaults to `CSV`. Valid values: `CSV`, `JSON Lines`, `JSON Array`, `Parquet`.
 - `format_output_fields` (List of String) A comma separated list of fields to include in output? Options to include key, offset, timestamp, value, headers. Valid values: `key`, `offset`, `timestamp`, `value`, `headers`.
 - `gcs_credentials_json` (String, Sensitive) GCP credentials as a JSON string with escaped quotes (" into \").

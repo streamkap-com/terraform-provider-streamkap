@@ -71,6 +71,7 @@ import (
 	"go/format"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -1022,6 +1023,34 @@ func isPortField(tfAttrName string) bool {
 // Matching is deliberately narrow: an exact name or an underscore-suffixed
 // name. `api_key_enabled` is a flag, `http_authorization_type` is an enum, and
 // `oauth2_access_token_url` is an endpoint — none are secrets.
+// rewrittenDefaultNames are fields whose declared default the backend does not
+// actually store, so emitting it as a client-side default makes Terraform plan a
+// value the apply can never produce.
+//
+// `file.name.template` is declared as "{{topic}}-{{partition}}-{{start_offset}}"
+// by the object-storage sinks (s3, gcs, r2, azblob, starburst), but the Aiven
+// sink appends the extension it derives from the output format and compression,
+// and stores "{{topic}}-{{partition}}-{{start_offset}}.json.gz". A fresh create
+// therefore died with "Provider produced inconsistent result after apply:
+// .file_name_template: was cty.StringVal("…start_offset}}"), but now
+// cty.StringVal("…start_offset}}.json.gz")".
+//
+// It went unnoticed because Create used to adopt an existing record on a name
+// collision, and the acceptance fixtures reused one long-lived destination whose
+// stored template already matched. Creating one from scratch — which is what a
+// real user does — always failed.
+//
+// Dropping the client-side default lets the backend's value stand. A user who
+// sets the template explicitly still plans a value the backend will rewrite;
+// that is a narrower, backend-side contract problem, tracked separately.
+var rewrittenDefaultNames = []string{
+	"file_name_template",
+}
+
+func isRewrittenDefault(tfAttrName string) bool {
+	return slices.Contains(rewrittenDefaultNames, tfAttrName)
+}
+
 var forcedSecretNames = []string{
 	"api_key",
 	"authorization",
@@ -1117,12 +1146,15 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 		field.NeedsPlanMod = true
 	} else if entry.IsRequired() && !entry.HasDefault() && !entry.IsConditional() {
 		field.Required = true
-	} else if entry.HasPlaceholderDefault() {
+	} else if entry.HasPlaceholderDefault() || isRewrittenDefault(tfAttrName) {
 		// Placeholder-string defaults (e.g. "<SSH.PUBLIC.KEY>", "<API_KEY>")
 		// are resolved by the backend at apply time, so the plan value
 		// won't match the applied value. Skip the Default and use
 		// UseStateForUnknown to keep the planned value stable across runs.
 		// See GitHub issue #72.
+		//
+		// isRewrittenDefault covers the same failure with a different cause: the
+		// backend declares a default it does not actually store.
 		field.Optional = true
 		field.Computed = true
 		field.NeedsPlanMod = true

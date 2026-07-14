@@ -109,7 +109,7 @@ output "example_destination_azblob" {
 - `azblob_container_name` (String) The name of an existing blob container to use
 - `compression` (String) The compression type to use when writing data to the storage.
 - `consumer_override_max_poll_records` (Number) The maximum number of records returned in a single call to poll(). Defaults to `10000`.
-- `file_name_template` (String) The format of the filename. See documentation for more information about formatting options. Defaults to `{{topic}}-{{partition}}-{{start_offset}}`.
+- `file_name_template` (String) The format of the filename. See documentation for more information about formatting options.
 - `file_size` (Number) Minimum size (in bytes) per file. Records are held in memory until this file size is met or the **Rotate interval** is exceeded. Defaults to `65536`.
 - `flush_size` (Number) Number of records to write per file. Defaults to `1000`.
 - `format` (String) The format to use when writing data to file storage. Defaults to `json`. Valid values: `json`, `csv`, `avro`, `parquet`.

@@ -3,10 +3,18 @@ package provider
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
+
+// fileNameTemplateRE matches the configured template, allowing for the extension
+// the Aiven S3 sink derives from the output format and compression and appends
+// server-side (e.g. "…{{start_offset}}.json.gz"). The provider deliberately emits
+// no client-side default for file_name_template, precisely because the stored
+// value is not the declared one — see rewrittenDefaultNames in cmd/tfgen.
+var fileNameTemplateRE = regexp.MustCompile(`^\{\{topic\}\}-\{\{partition\}\}-\{\{start_offset\}\}`)
 
 // Define environment variables for S3 configuration
 var s3AwsAccessId = os.Getenv("TF_VAR_s3_aws_access_key_id")
@@ -49,7 +57,7 @@ resource "streamkap_destination_s3" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_s3_region", "us-west-2"),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_s3_bucket_name", "bucketname"),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "format", "JSON Array"),
-					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "file_name_template", "{{topic}}-{{partition}}-{{start_offset}}"),
+					resource.TestMatchResourceAttr("streamkap_destination_s3.test", "file_name_template", fileNameTemplateRE),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "file_compression_type", "gzip"),
 				),
 			},
@@ -89,7 +97,7 @@ resource "streamkap_destination_s3" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_s3_region", "us-west-2"),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_s3_bucket_name", "bucketname-updated"),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "format", "JSON Array"),
-					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "file_name_template", "{{topic}}-{{partition}}-{{start_offset}}"),
+					resource.TestMatchResourceAttr("streamkap_destination_s3.test", "file_name_template", fileNameTemplateRE),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "file_compression_type", "none"),
 				),
 			},
