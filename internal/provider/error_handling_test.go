@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
@@ -15,9 +16,18 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 )
 
+// fastRetry keeps the retry path exercised without sleeping through the
+// production backoff. Reads are now retried, so a test that mocks a persistent
+// 5xx on a GET would otherwise burn 5 attempts x 10-60s and time the package out.
+var fastRetry = api.RetryConfig{
+	MaxRetries: 3,
+	MinDelay:   time.Millisecond,
+	MaxDelay:   5 * time.Millisecond,
+}
+
 // newTestAPIClient creates a test API client for error handling tests
 func newTestAPIClient(baseURL string) api.StreamkapAPI {
-	client := api.NewClient(&api.Config{BaseURL: baseURL})
+	client := api.NewClient(&api.Config{BaseURL: baseURL, Retry: &fastRetry})
 	client.SetToken(&api.Token{AccessToken: "test-token"})
 	return client
 }

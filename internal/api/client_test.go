@@ -17,9 +17,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// testRetry keeps the retry path exercised without sleeping through the
+// production backoff (5 attempts x 10-60s). Reads are retried now, so a test
+// that mocks a persistent 5xx on a GET would otherwise stall the package.
+var testRetry = RetryConfig{
+	MaxRetries: 3,
+	MinDelay:   time.Millisecond,
+	MaxDelay:   5 * time.Millisecond,
+}
+
 // Helper function to create a configured test client
 func newTestClient(baseURL string) StreamkapAPI {
-	client := NewClient(&Config{BaseURL: baseURL})
+	client := NewClient(&Config{BaseURL: baseURL, Retry: &testRetry})
 	client.SetToken(&Token{AccessToken: "test-token"})
 	return client
 }
@@ -1015,8 +1024,6 @@ func TestGetRetriesTransient5xx(t *testing.T) {
 
 	baseURL := "https://api.test.streamkap.com"
 	client := newTestClient(baseURL)
-	// Shrink the backoff so the retry path runs without a real 10s sleep.
-	client.(*streamkapAPI).retryCfg = RetryConfig{MaxRetries: 3, MinDelay: time.Millisecond, MaxDelay: 5 * time.Millisecond}
 
 	calls := 0
 	httpmock.RegisterResponder(

@@ -209,6 +209,11 @@ type Config struct {
 	BaseURL        string `mapstructure:"base_url"`
 	AdminTenantID  string
 	AdminServiceID string
+
+	// Retry overrides the backoff applied to retryable failures. Nil means
+	// DefaultRetryConfig(). Tests set it to keep a mocked 5xx from sleeping
+	// through a real 10-60s backoff.
+	Retry *RetryConfig
 }
 
 // tokenRenewSkew renews the access token this long before it actually expires,
@@ -239,10 +244,14 @@ type streamkapAPI struct {
 }
 
 func NewClient(cfg *Config) StreamkapAPI {
+	retry := DefaultRetryConfig()
+	if cfg != nil && cfg.Retry != nil {
+		retry = *cfg.Retry
+	}
 	return &streamkapAPI{
 		cfg:      cfg,
 		client:   http.DefaultClient,
-		retryCfg: DefaultRetryConfig(),
+		retryCfg: retry,
 	}
 }
 
