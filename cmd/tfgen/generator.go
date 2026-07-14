@@ -1146,18 +1146,30 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 		field.NeedsPlanMod = true
 	} else if entry.IsRequired() && !entry.HasDefault() && !entry.IsConditional() {
 		field.Required = true
-	} else if entry.HasPlaceholderDefault() || isRewrittenDefault(tfAttrName) {
+	} else if entry.HasPlaceholderDefault() {
 		// Placeholder-string defaults (e.g. "<SSH.PUBLIC.KEY>", "<API_KEY>")
 		// are resolved by the backend at apply time, so the plan value
 		// won't match the applied value. Skip the Default and use
 		// UseStateForUnknown to keep the planned value stable across runs.
 		// See GitHub issue #72.
-		//
-		// isRewrittenDefault covers the same failure with a different cause: the
-		// backend declares a default it does not actually store.
 		field.Optional = true
 		field.Computed = true
 		field.NeedsPlanMod = true
+	} else if isRewrittenDefault(tfAttrName) {
+		// Same symptom as the placeholder case, but the value is *derived from
+		// other attributes*, so it must NOT be pinned with UseStateForUnknown:
+		// file_name_template gains the extension the sink computes from the
+		// output format and compression, so flipping file_compression_type from
+		// "gzip" to "none" changes it. UseStateForUnknown would plan the stale
+		// ".json.gz" from state while the apply produces ".json", and Terraform
+		// would reject the update the same way it rejected the create.
+		//
+		// Planning it unknown lets the backend's value stand on both create and
+		// update. It shows as "(known after apply)" whenever an input it derives
+		// from changes, which is honest: the provider genuinely cannot predict it.
+		field.Optional = true
+		field.Computed = true
+		field.NeedsPlanMod = false
 	} else if entry.HasDefault() {
 		field.Optional = true
 		field.Computed = true

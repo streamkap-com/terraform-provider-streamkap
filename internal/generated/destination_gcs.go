@@ -151,9 +151,6 @@ func DestinationGcsSchema() schema.Schema {
 				Computed:            true,
 				Description:         "The format of the filename. See documentation for more information about formatting options.",
 				MarkdownDescription: "The format of the filename. See documentation for more information about formatting options.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"file_name_prefix": schema.StringAttribute{
 				Optional:            true,

@@ -1833,8 +1833,9 @@ func TestRewrittenDefault_DropsClientSideDefault(t *testing.T) {
 	if !field.Optional || !field.Computed {
 		t.Errorf("file_name_template must stay Optional+Computed, got Optional=%v Computed=%v", field.Optional, field.Computed)
 	}
-	if !field.NeedsPlanMod {
-		t.Error("file_name_template must use UseStateForUnknown to keep the planned value stable")
+	if field.NeedsPlanMod {
+		t.Error("file_name_template must NOT use UseStateForUnknown: it is derived from format+compression, " +
+			"so pinning the prior state plans a stale value and the update is rejected")
 	}
 
 	// A field with an ordinary default is untouched.

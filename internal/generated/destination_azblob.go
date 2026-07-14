@@ -169,9 +169,6 @@ func DestinationAzblobSchema() schema.Schema {
 				Computed:            true,
 				Description:         "The format of the filename. See documentation for more information about formatting options.",
 				MarkdownDescription: "The format of the filename. See documentation for more information about formatting options.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"flush_size": schema.Int64Attribute{
 				Optional:            true,

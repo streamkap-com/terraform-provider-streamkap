@@ -232,12 +232,17 @@ type streamkapAPI struct {
 	// request 401s at once, and without this they would all hit the auth
 	// endpoint simultaneously.
 	renewMu sync.Mutex
+
+	// retryCfg is DefaultRetryConfig() in production. Tests shrink the delays so
+	// they exercise the retry path without sleeping through a real backoff.
+	retryCfg RetryConfig
 }
 
 func NewClient(cfg *Config) StreamkapAPI {
 	return &streamkapAPI{
-		cfg:    cfg,
-		client: http.DefaultClient,
+		cfg:      cfg,
+		client:   http.DefaultClient,
+		retryCfg: DefaultRetryConfig(),
 	}
 }
 
@@ -311,6 +316,18 @@ func (s *streamkapAPI) renewToken(ctx context.Context, staleToken string) error 
 }
 
 func (s *streamkapAPI) doRequest(ctx context.Context, req *http.Request, result any) error {
+	// A GET is idempotent, so a transient failure is safe to replay. Reads went
+	// out with no retry at all, so a single 502 from the gateway during Read or
+	// ImportState failed the whole apply:
+	//
+	//   Unable to read source: GET /sources/<id>?secret_returned=true:
+	//   non-JSON response body: <html> … 502 Bad Gateway …
+	//
+	// Writes keep their explicit doRequestWithRetry call sites: replaying a POST
+	// or PUT is a decision each one has to make for itself.
+	if req.Method == http.MethodGet {
+		return s.doRequestWithRetry(ctx, req, result)
+	}
 	return s.do(ctx, req, result, true)
 }
 
@@ -456,16 +473,17 @@ func snippet(b []byte) string {
 	return s
 }
 
-// doRequestWithRetry wraps doRequest with retry logic for transient errors.
-// Use this for Create/Update/Delete operations only, not for Read.
+// doRequestWithRetry replays req on a transient failure. Writes call it
+// explicitly; GETs reach it through doRequest, which is why the inner call goes
+// straight to do() — routing it back through doRequest would recurse.
 func (s *streamkapAPI) doRequestWithRetry(ctx context.Context, req *http.Request, result any) error {
-	cfg := DefaultRetryConfig()
+	cfg := s.retryCfg
 
 	return RetryWithBackoff(ctx, cfg, func() error {
 		if err := rewindBody(req); err != nil {
 			return err
 		}
-		return s.doRequest(ctx, req, result)
+		return s.do(ctx, req, result, true)
 	})
 }
 

@@ -999,3 +999,44 @@ func TestNewClient(t *testing.T) {
 	assert.NotNil(t, client)
 	// Interface compliance is verified at compile time via NewClient's return type (StreamkapAPI)
 }
+
+// TestGetRetriesTransient5xx covers a real acceptance failure: a single 502 from
+// the gateway during ImportState killed the apply, because reads went out with no
+// retry at all ("Unable to read source: GET …: non-JSON response body: <html> …
+// 502 Bad Gateway"). GETs are idempotent, so they are replayed.
+//
+// It also guards the recursion trap: doRequest sends a GET through
+// doRequestWithRetry, whose inner call must go to do() and not back to
+// doRequest. If that regresses, this test hangs rather than fails, which is the
+// loudest possible signal.
+func TestGetRetriesTransient5xx(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	baseURL := "https://api.test.streamkap.com"
+	client := newTestClient(baseURL)
+	// Shrink the backoff so the retry path runs without a real 10s sleep.
+	client.(*streamkapAPI).retryCfg = RetryConfig{MaxRetries: 3, MinDelay: time.Millisecond, MaxDelay: 5 * time.Millisecond}
+
+	calls := 0
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		baseURL+"/sources/src-1?secret_returned=true",
+		func(req *http.Request) (*http.Response, error) {
+			calls++
+			if calls == 1 {
+				return httpmock.NewStringResponse(http.StatusBadGateway,
+					`<html><head><title>502 Bad Gateway</title></head></html>`), nil
+			}
+			return httpmock.NewJsonResponse(http.StatusOK, GetSourceResponse{
+				Result: []Source{{ID: "src-1", Name: "recovered"}},
+			})
+		},
+	)
+
+	src, err := client.GetSource(context.Background(), "src-1")
+	require.NoError(t, err, "a transient 502 on a GET must be retried, not surfaced")
+	require.NotNil(t, src)
+	assert.Equal(t, "recovered", src.Name)
+	assert.Equal(t, 2, calls, "expected one failure then one success")
+}
