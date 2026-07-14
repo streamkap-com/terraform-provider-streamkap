@@ -17,11 +17,7 @@ TestAccSourceMySQLResource
 TestAccSourceDynamoDBResource
 TestAccSourceMongoDBResource
 TestAccSourceMongoDBHostedResource
-TestAccSourceSQLServerResource
-TestAccSourcePlanetScaleResource
 TestAccSourceMariaDBResource
-TestAccSourceOracleResource
-TestAccSourceOracleAWSResource
 TestAccSourceS3Resource
 TestAccSourceWebhookResource
 TestAccSourceShopifyWebhookResource
@@ -38,7 +34,6 @@ TestAccSourceInformixResource
 # --- Destinations ---
 TestAccDestinationAzblobResource
 TestAccDestinationBigqueryResource
-TestAccDestinationClickHouseResource
 TestAccDestinationCockroachdbResource
 TestAccDestinationDatabricksResource
 TestAccDestinationDb2Resource
@@ -95,3 +90,29 @@ TestAccTransformMapFilterResource_basic
 TestAccTransformMapFilterResource_withImplementation
 TestAccTransformRollupResource
 TestAccTransformSqlJoinResource
+
+# --- Quarantined: blocked on staging infrastructure, not on the provider ---
+#
+# These pass or fail on whether an external system is reachable, so leaving them
+# in the merge gate keeps it permanently red — which is how it has been on
+# develop, and why it stopped being read. They still run under `make testacc`.
+# Re-add each one the moment its cause below is fixed.
+#
+#   TestAccDestinationClickHouseResource
+#       Kafka Connect: "Cannot connect to: Clickhouse". The staging ClickHouse
+#       instance is unreachable. (Also blocks Iceberg and the DynamoDB→ClickHouse
+#       pipeline, which stand up a ClickHouse destination.)
+#
+#   TestAccSourceOracleResource
+#   TestAccSourceOracleAWSResource
+#       Kafka Connect: "Unable to connect: Failed to resolve Oracle database
+#       version". The Oracle test database is unreachable.
+#
+#   TestAccSourcePlanetScaleResource
+#       Kafka Connect: "Unexpected error while running query: SHOW DATABASES".
+#
+#   TestAccSourceSQLServerResource
+#       Backend: "Signal table '<db>.<t>_signal' is already in use by another
+#       connector (Limited-Privilege-Stream-Only-Test)". That connector was
+#       created outside Terraform, so the sweeper does not match it. Delete it,
+#       or give the test its own signal table, and re-add.
