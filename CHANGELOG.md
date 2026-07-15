@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **`streamkap_destination_s3`: `format_output_envelope`** (bool, default
+  `true`) — controls whether each output record is wrapped in an envelope
+  with Kafka metadata (key, offset, timestamp, headers) alongside the value.
+  Set to `false` to write only the record's own value structure. No effect on
+  CSV; for Parquet, only applies when the value is a record or map. Resolves
+  [ENG-2491](https://linear.app/streamkap/issue/ENG-2491).
 - **`streamkap_destination_s3`: cross-account IAM role authentication** —
   `aws_auth_mode` (`Access Keys` default, or `Cross-Account Role`),
   `aws_sts_role_arn`, and `aws_sts_role_external_id` let Streamkap assume an

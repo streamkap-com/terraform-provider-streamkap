@@ -37,6 +37,7 @@ type DestinationS3Model struct {
 	FileNamePrefix                                   types.String   `tfsdk:"file_name_prefix"`
 	FileCompressionType                              types.String   `tfsdk:"file_compression_type"`
 	FormatOutputFields                               types.List     `tfsdk:"format_output_fields"`
+	FormatOutputEnvelope                             types.Bool     `tfsdk:"format_output_envelope"`
 	ConsumerOverrideMaxPollRecords                   types.Int64    `tfsdk:"consumer_override_max_poll_records"`
 	PreserveNullValues                               types.Bool     `tfsdk:"preserve_null_values"`
 	QuoteIdentifiers                                 types.Bool     `tfsdk:"quote_identifiers"`
@@ -229,6 +230,13 @@ func DestinationS3Schema() schema.Schema {
 				ElementType:         types.StringType,
 				Description:         "A comma separated list of fields to include in output? Options to include key, offset, timestamp, value, headers.",
 				MarkdownDescription: "A comma separated list of fields to include in output? Options to include key, offset, timestamp, value, headers.",
+			},
+			"format_output_envelope": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "When enabled (default), each output record is wrapped in an envelope with Kafka metadata (key, offset, timestamp, headers) alongside the value. Disable to write only the record's own value structure. No effect on CSV; for Parquet, only applies when the value is a record or map. Defaults to true.",
+				MarkdownDescription: "When enabled (default), each output record is wrapped in an envelope with Kafka metadata (key, offset, timestamp, headers) alongside the value. Disable to write only the record's own value structure. No effect on CSV; for Parquet, only applies when the value is a record or map. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
 			},
 			"consumer_override_max_poll_records": schema.Int64Attribute{
 				Optional:            true,
@@ -530,6 +538,7 @@ var DestinationS3FieldMappings = map[string]string{
 	"file_name_prefix":                                        "file.name.prefix",
 	"file_compression_type":                                   "file.compression.type",
 	"format_output_fields":                                    "format.output.fields.user.defined",
+	"format_output_envelope":                                  "format.output.envelope",
 	"consumer_override_max_poll_records":                      "consumer.override.max.poll.records",
 	"preserve_null_values":                                    "preserve.null.values",
 	"quote_identifiers":                                       "quote.identifiers",

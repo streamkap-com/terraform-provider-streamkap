@@ -41,6 +41,7 @@ This resource creates and manages an S3 destination for Streamkap data pipelines
 - `file_name_prefix` (String) Prefix for the filename. Prefixes can be used to specify a directory for the file (e.g. dir1/dir2/).
 - `file_name_template` (String) The format of the filename. See documentation for more information about formatting options. Defaults to `{{topic}}-{{partition}}-{{start_offset}}`.
 - `format` (String) The format to use when writing data to the store. Defaults to `JSON Array`. Valid values: `JSON Lines`, `JSON Array`, `Parquet`.
+- `format_output_envelope` (Boolean) When enabled (default), each output record is wrapped in an envelope with Kafka metadata (key, offset, timestamp, headers) alongside the value. Disable to write only the record's own value structure. No effect on CSV; for Parquet, only applies when the value is a record or map. Defaults to `true`.
 - `format_output_fields` (List of String) A comma separated list of fields to include in output? Options to include key, offset, timestamp, value, headers.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.

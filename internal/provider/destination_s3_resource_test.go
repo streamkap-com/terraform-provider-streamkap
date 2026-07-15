@@ -76,6 +76,7 @@ resource "streamkap_destination_s3" "test" {
   aws_s3_region     = "us-west-2"
   aws_s3_bucket_name    = "bucketname-updated"
   file_compression_type         = "none"
+  format_output_envelope        = false
 }
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -87,6 +88,7 @@ resource "streamkap_destination_s3" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "format", "JSON Array"),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "file_name_template", "{{topic}}-{{partition}}-{{start_offset}}"),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "file_compression_type", "none"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "format_output_envelope", "false"),
 				),
 			},
 			// Delete testing is automatically handled by the test framework

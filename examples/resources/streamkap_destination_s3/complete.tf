@@ -47,6 +47,12 @@ resource "streamkap_destination_s3" "example" {
 
   # Output fields to include: key, offset, timestamp, value, headers
   format_output_fields = ["value", "key"]
+
+  # Wrap each record in an envelope with Kafka metadata (key, offset, timestamp,
+  # headers) alongside the value. Set to false to write only the record's own
+  # value structure. No effect on CSV; for Parquet, only applies when the value
+  # is a record or map.
+  format_output_envelope = true
 }
 
 output "s3_destination_id" {

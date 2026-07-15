@@ -109,6 +109,18 @@
       "computed": true,
       "sensitive": false
     },
+    "table_name_prefix": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false
+    },
     "tasks_max": {
       "required": false,
       "optional": true,
