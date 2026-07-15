@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,16 @@ func TestAccSourceRedisResource(t *testing.T) {
 		t.Skip("Skipping TestAccSourceRedisResource: TF_VAR_source_redis_host or TF_VAR_source_redis_password not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_redis_host" {
 	type        = string
 	description = "The hostname of the Redis server"
@@ -32,7 +36,7 @@ variable "source_redis_password" {
 	description = "The password for the Redis server"
 }
 resource "streamkap_source_redis" "test" {
-	name                       = "tf-acc-test-source-redis"
+	name                       = %q
 	connector_class_type       = "Stream"
 	redis_host                 = var.source_redis_host
 	redis_port                 = 6379
@@ -49,9 +53,9 @@ resource "streamkap_source_redis" "test" {
 	topic                      = "streamkap-redis-test-topic"
 	tasks_max                  = 1
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_redis.test", "name", "tf-acc-test-source-redis"),
+					resource.TestCheckResourceAttr("streamkap_source_redis.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_redis.test", "connector_class_type", "Stream"),
 					resource.TestCheckResourceAttr("streamkap_source_redis.test", "redis_host", sourceRedisHost),
 					resource.TestCheckResourceAttr("streamkap_source_redis.test", "redis_port", "6379"),
@@ -78,7 +82,7 @@ resource "streamkap_source_redis" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_redis_host" {
 	type        = string
 	description = "The hostname of the Redis server"
@@ -89,7 +93,7 @@ variable "source_redis_password" {
 	description = "The password for the Redis server"
 }
 resource "streamkap_source_redis" "test" {
-	name                       = "tf-acc-test-source-redis-updated"
+	name                       = %q
 	connector_class_type       = "Stream"
 	redis_host                 = var.source_redis_host
 	redis_port                 = 6379
@@ -106,9 +110,9 @@ resource "streamkap_source_redis" "test" {
 	topic                      = "streamkap-redis-test-topic-updated"
 	tasks_max                  = 2
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_redis.test", "name", "tf-acc-test-source-redis-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_redis.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_redis.test", "redis_stream_name", "streamkap-test-stream-updated"),
 					resource.TestCheckResourceAttr("streamkap_source_redis.test", "redis_stream_offset", "Earliest"),
 					resource.TestCheckResourceAttr("streamkap_source_redis.test", "redis_stream_delivery", "At Most Once"),

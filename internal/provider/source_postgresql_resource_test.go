@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -9,16 +10,19 @@ import (
 
 var sourcePostgreSQLHostname = os.Getenv("TF_VAR_source_postgresql_hostname")
 var sourcePostgreSQLPassword = os.Getenv("TF_VAR_source_postgresql_password")
-var sourcePostgreSQLSSHHost = os.Getenv("TF_VAR_source_postgresql_ssh_host")
 
 func TestAccSourcePostgreSQLResource(t *testing.T) {
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+	nameExclude := acctestName(t, "exclude")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_postgresql_hostname" {
 	type        = string
 	description = "The hostname of the PostgreSQL database"
@@ -29,7 +33,7 @@ variable "source_postgresql_password" {
 	description = "The password of the PostgreSQL database"
 }
 resource "streamkap_source_postgresql" "test" {
-	name                                         = "test-source-postgresql"
+	name                                         = %q
 	database_hostname                            = var.source_postgresql_hostname
 	database_port                                = "5432"
 	database_user                                = "streamkap"
@@ -49,9 +53,9 @@ resource "streamkap_source_postgresql" "test" {
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "name", "test-source-postgresql"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_hostname", sourcePostgreSQLHostname),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_port", "5432"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_user", "streamkap"),
@@ -81,7 +85,7 @@ resource "streamkap_source_postgresql" "test" {
 			},
 			// Step 3: Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_postgresql_hostname" {
 	type        = string
 	description = "The hostname of the PostgreSQL database"
@@ -92,7 +96,7 @@ variable "source_postgresql_password" {
 	description = "The password of the PostgreSQL database"
 }
 resource "streamkap_source_postgresql" "test" {
-	name                                         = "test-source-postgresql-updated"
+	name                                         = %q
 	database_hostname                            = var.source_postgresql_hostname
 	database_port                                = "5432"
 	database_user                                = "streamkap"
@@ -112,9 +116,9 @@ resource "streamkap_source_postgresql" "test" {
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "name", "test-source-postgresql-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_hostname", sourcePostgreSQLHostname),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_port", "5432"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_user", "streamkap"),
@@ -136,7 +140,7 @@ resource "streamkap_source_postgresql" "test" {
 			},
 			// Step 4: Update to test column_exclude_list
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_postgresql_hostname" {
 	type        = string
 	description = "The hostname of the PostgreSQL database"
@@ -147,7 +151,7 @@ variable "source_postgresql_password" {
 	description = "The password of the PostgreSQL database"
 }
 resource "streamkap_source_postgresql" "test" {
-	name                                         = "test-source-postgresql-exclude"
+	name                                         = %q
 	database_hostname                            = var.source_postgresql_hostname
 	database_port                                = "5432"
 	database_user                                = "streamkap"
@@ -172,9 +176,9 @@ resource "streamkap_source_postgresql" "test" {
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
-`,
+`, nameExclude),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "name", "test-source-postgresql-exclude"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "name", nameExclude),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_hostname", sourcePostgreSQLHostname),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_port", "5432"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_user", "streamkap"),
@@ -269,12 +273,14 @@ resource "streamkap_source_postgresql" "test" {
 }
 
 func TestAccSourcePostgreSQLResource_WithTimeout(t *testing.T) {
+	name := acctestName(t, "timeout")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_postgresql_hostname" {
 	type = string
 }
@@ -283,7 +289,7 @@ variable "source_postgresql_password" {
 	sensitive = true
 }
 resource "streamkap_source_postgresql" "test_timeout" {
-	name              = "test-source-postgresql-timeout"
+	name              = %q
 	database_hostname = var.source_postgresql_hostname
 	database_port     = "5432"
 	database_user     = "streamkap"
@@ -303,9 +309,9 @@ resource "streamkap_source_postgresql" "test_timeout" {
 		delete = "15m"
 	}
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test_timeout", "name", "test-source-postgresql-timeout"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test_timeout", "name", name),
 				),
 			},
 		},

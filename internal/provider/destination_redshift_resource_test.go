@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -17,13 +18,16 @@ func TestAccDestinationRedshiftResource(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationRedshiftResource: TF_VAR_destination_redshift_domain, TF_VAR_destination_redshift_username, or TF_VAR_destination_redshift_password not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_redshift_domain" {
 	type        = string
 	description = "Redshift cluster domain"
@@ -43,7 +47,7 @@ variable "destination_redshift_database" {
 	default     = ""
 }
 resource "streamkap_destination_redshift" "test" {
-	name                 = "tf-acc-test-destination-redshift"
+	name                 = %q
 	aws_redshift_domain  = var.destination_redshift_domain
 	aws_redshift_port    = 5439
 	aws_redshift_database = var.destination_redshift_database
@@ -54,9 +58,9 @@ resource "streamkap_destination_redshift" "test" {
 	table_name_prefix    = "streamkap"
 	tasks_max            = 5
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_redshift.test", "name", "tf-acc-test-destination-redshift"),
+					resource.TestCheckResourceAttr("streamkap_destination_redshift.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_redshift.test", "aws_redshift_domain", destinationRedshiftDomain),
 					resource.TestCheckResourceAttr("streamkap_destination_redshift.test", "aws_redshift_port", "5439"),
 					resource.TestCheckResourceAttr("streamkap_destination_redshift.test", "connection_username", destinationRedshiftUsername),
@@ -77,7 +81,7 @@ resource "streamkap_destination_redshift" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_redshift_domain" {
 	type        = string
 	description = "Redshift cluster domain"
@@ -97,7 +101,7 @@ variable "destination_redshift_database" {
 	default     = ""
 }
 resource "streamkap_destination_redshift" "test" {
-	name                 = "tf-acc-test-destination-redshift-updated"
+	name                 = %q
 	aws_redshift_domain  = var.destination_redshift_domain
 	aws_redshift_port    = 5439
 	aws_redshift_database = var.destination_redshift_database
@@ -108,9 +112,9 @@ resource "streamkap_destination_redshift" "test" {
 	table_name_prefix    = "streamkap_updated"
 	tasks_max            = 10
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_redshift.test", "name", "tf-acc-test-destination-redshift-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_redshift.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_redshift.test", "primary_key_fields", "id,created_at"),
 					resource.TestCheckResourceAttr("streamkap_destination_redshift.test", "schema_evolution", "none"),
 					resource.TestCheckResourceAttr("streamkap_destination_redshift.test", "table_name_prefix", "streamkap_updated"),

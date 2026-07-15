@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
@@ -97,46 +96,16 @@ func (s *streamkapAPI) CreatePipeline(ctx context.Context, reqPayload Pipeline) 
 	var resp Pipeline
 	err = s.doRequestWithRetry(ctx, req, &resp)
 	if err != nil {
-		// Do NOT auto-adopt pipelines on 409. Streamkap enforces unique
-		// {tenant_id, service_id, name} for pipelines, so a 409 means one
-		// already exists with this name. Two scenarios produce it:
-		//
-		//   1. A previous apply created the pipeline but lost the response
-		//      (network, timeout) — Terraform's state thinks the resource
-		//      doesn't exist but the backend has it. Recovery: `terraform
-		//      import`.
-		//
-		//   2. A `lifecycle { create_before_destroy = true }` replace
-		//      operation is in flight: Terraform created a *deposed* state
-		//      entry from the old live instance (id=X), then asked the
-		//      provider to create the *new* live instance, which collides
-		//      on name with the still-existing backend pipeline X.
-		//
-		// An earlier version of this code adopted the existing pipeline by
-		// name and returned it as the create result. That is *unsafe* under
-		// scenario 2: the new live state entry would end up with the same
-		// backend id as the deposed entry, and the next step of the apply
-		// (destroy the deposed) would DELETE the very pipeline we just
-		// "adopted", leaving the live state pointing at a tombstone. We
-		// confirmed this trace against a real customer log
-		// (0_Terraform Apply.txt) — they had 4 deposed entries all pointing
-		// to the same backend pipeline because of repeated adoption.
-		//
-		// We can't disambiguate the two scenarios from inside the API
-		// client (no state visibility) and a content-comparison adopt is
-		// also unsafe (taint + create_before_destroy + no config change
-		// collapses to the same data-loss). So we surface a clear error
-		// and leave recovery to the user. Loud failure beats silent data
-		// loss.
-		if strings.Contains(err.Error(), "already exists") {
-			return nil, fmt.Errorf(
-				"streamkap_pipeline %q already exists on the backend, and auto-adoption is unsafe for this resource (would risk destroying the live pipeline under create_before_destroy). Recovery options:\n"+
-					"  • If this is a `lifecycle { create_before_destroy = true }` replace: remove that directive — Streamkap enforces unique pipeline names per tenant/service so a new and an old pipeline cannot coexist by name. Use the default destroy-then-create, or change the pipeline name so old and new can briefly coexist.\n"+
-					"  • If you already have deposed entries from previous failed applies (visible in `terraform plan` as `<address> (destroy deposed <key>)`), they point at the same backend record and must be removed from state before any retry will work: `terraform state rm '<resource_address>'` (Terraform will refuse the deposed-key bit automatically; the address alone removes both live and deposed copies). See docs/MIGRATION.md → \"Known limitations\".\n"+
-					"  • If this is recovering from a previous apply that lost its response: run `terraform import streamkap_pipeline.<resource_name> <pipeline_id>` (find the id via the Streamkap UI or `GET /pipelines?partial_name=%s`) and re-run apply.\n"+
-					"Original backend error: %w",
-				reqPayload.Name, reqPayload.Name, err,
-			)
+		// Pipelines answer this collision with a 409 rather than a 422; the
+		// refusal is the same. See adoptRefusedError.
+		if isAlreadyExists(err) {
+			return nil, adoptRefusedError(adoptConflict{
+				Kind:        "pipeline",
+				Name:        reqPayload.Name,
+				UniqueScope: "tenant/service",
+				ImportAddr:  "streamkap_pipeline.<resource_name> <pipeline_id>",
+				ListPath:    "/pipelines",
+			}, err)
 		}
 		return nil, err
 	}
@@ -196,24 +165,7 @@ func (s *streamkapAPI) ListPipelines(ctx context.Context) ([]Pipeline, error) {
 }
 
 func (s *streamkapAPI) DeletePipeline(ctx context.Context, pipelineID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, s.cfg.BaseURL+"/pipelines/"+pipelineID+"?secret_returned=true&wait=false", http.NoBody)
-	if err != nil {
-		return err
-	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"DeletePipeline request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n",
-		req.Method,
-		req.URL.String(),
-	))
-	var resp Pipeline
-	err = s.doRequestWithRetry(ctx, req, &resp)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.deleteResource(ctx, "DeletePipeline", s.cfg.BaseURL+"/pipelines/"+pipelineID+"?secret_returned=true&wait=false")
 }
 
 func (s *streamkapAPI) UpdatePipeline(ctx context.Context, pipelineID string, reqPayload Pipeline) (*Pipeline, error) {

@@ -5,37 +5,50 @@
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "deploy": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "id": {
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "implementation_json": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "jsontypes.NormalizedType"
     },
     "name": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "replay_window": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.SetType[basetypes.StringType]"
     },
     "tags": {
       "required": false,
@@ -47,55 +60,64 @@
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_async_capacity": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "transforms_async_timeout_ms": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "transforms_input_job_parallelism": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "transforms_input_serialization_format": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_input_topic_pattern": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_language": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_output_serialization_format": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_output_topic_pattern": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     }
   }
 }

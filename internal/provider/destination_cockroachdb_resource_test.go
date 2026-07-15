@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,16 @@ func TestAccDestinationCockroachdbResource(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationCockroachdbResource: TF_VAR_destination_cockroachdb_hostname or TF_VAR_destination_cockroachdb_password not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_cockroachdb_hostname" {
 	type        = string
 	description = "CockroachDB hostname"
@@ -32,7 +36,7 @@ variable "destination_cockroachdb_password" {
 	description = "CockroachDB password"
 }
 resource "streamkap_destination_cockroachdb" "test" {
-	name                 = "tf-acc-test-destination-cockroachdb"
+	name                 = %q
 	database_hostname    = var.destination_cockroachdb_hostname
 	database_port        = 26257
 	database_database    = "defaultdb"
@@ -45,9 +49,9 @@ resource "streamkap_destination_cockroachdb" "test" {
 	primary_key_mode     = "record_key"
 	tasks_max            = 5
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "name", "tf-acc-test-destination-cockroachdb"),
+					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "database_hostname", destinationCockroachdbHostname),
 					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "database_port", "26257"),
 					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "database_database", "defaultdb"),
@@ -72,7 +76,7 @@ resource "streamkap_destination_cockroachdb" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_cockroachdb_hostname" {
 	type        = string
 	description = "CockroachDB hostname"
@@ -83,7 +87,7 @@ variable "destination_cockroachdb_password" {
 	description = "CockroachDB password"
 }
 resource "streamkap_destination_cockroachdb" "test" {
-	name                 = "tf-acc-test-destination-cockroachdb-updated"
+	name                 = %q
 	database_hostname    = var.destination_cockroachdb_hostname
 	database_port        = 26257
 	database_database    = "defaultdb"
@@ -97,9 +101,9 @@ resource "streamkap_destination_cockroachdb" "test" {
 	primary_key_fields   = "id"
 	tasks_max            = 3
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "name", "tf-acc-test-destination-cockroachdb-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "table_name_prefix", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "schema_evolution", "none"),
 					resource.TestCheckResourceAttr("streamkap_destination_cockroachdb.test", "insert_mode", "upsert"),

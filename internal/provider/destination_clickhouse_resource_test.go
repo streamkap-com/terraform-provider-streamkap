@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -12,13 +13,15 @@ func TestAccDestinationClickHouseResource(t *testing.T) {
 	var destinationClickHouseHostname = os.Getenv("TF_VAR_destination_clickhouse_hostname")
 	var destinationClickHouseUsername = os.Getenv("TF_VAR_destination_clickhouse_connection_username")
 	var destinationClickHousePassword = os.Getenv("TF_VAR_destination_clickhouse_connection_password")
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read Testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_clickhouse_hostname" {
 	type        = string
 	description = "The hostname of the ClickHouse database"
@@ -33,7 +36,7 @@ variable "destination_clickhouse_connection_password" {
 	description = "The password for the ClickHouse database"
 }
 resource "streamkap_destination_clickhouse" "test" {
-	name                 = "test-destination-clickhouse"
+	name                 = %q
 	hostname             = var.destination_clickhouse_hostname
 	connection_username  = var.destination_clickhouse_connection_username
 	connection_password  = var.destination_clickhouse_connection_password
@@ -45,9 +48,9 @@ resource "streamkap_destination_clickhouse" "test" {
 	ssl                  = true
 	schema_evolution     = "basic"
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "name", "test-destination-clickhouse"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "hostname", destinationClickHouseHostname),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connection_username", destinationClickHouseUsername),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connection_password", destinationClickHousePassword),
@@ -71,7 +74,7 @@ resource "streamkap_destination_clickhouse" "test" {
 			},
 			// Step 3: Update and Read Testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_clickhouse_hostname" {
 	type        = string
 	description = "The hostname of the ClickHouse database"
@@ -86,7 +89,7 @@ variable "destination_clickhouse_connection_password" {
 	description = "The password for the ClickHouse database"
 }
 resource "streamkap_destination_clickhouse" "test" {
-	name                 = "test-destination-clickhouse-updated"
+	name                 = %q
 	hostname             = var.destination_clickhouse_hostname
 	connection_username  = var.destination_clickhouse_connection_username
 	connection_password  = var.destination_clickhouse_connection_password
@@ -98,9 +101,9 @@ resource "streamkap_destination_clickhouse" "test" {
 	ssl                  = false
 	schema_evolution     = "none"
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "name", "test-destination-clickhouse-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "hostname", destinationClickHouseHostname),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connection_username", destinationClickHouseUsername),
 					resource.TestCheckResourceAttr("streamkap_destination_clickhouse.test", "connection_password", destinationClickHousePassword),

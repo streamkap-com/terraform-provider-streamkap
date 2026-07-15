@@ -5,97 +5,120 @@
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": true,
+      "type": "basetypes.StringType"
     },
     "aws_s3_bucket_name": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "aws_s3_bucket_prefix": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "aws_s3_region": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "aws_secret_access_key": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": true
+      "sensitive": true,
+      "type": "basetypes.StringType"
     },
     "connector": {
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "connector_status": {
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "csv_has_headers": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "format": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "fs_cleanup_policy_class": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "fs_scan_interval_ms": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "id": {
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "insert_topic_name_enabled": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "kc_cluster_id": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "name": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "preserve_null_values": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.SetType[basetypes.StringType]"
     },
     "tags": {
       "required": false,
@@ -107,103 +130,120 @@
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "topic_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "topic_postfix": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "topic_routing_advanced_expression": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "topic_routing_enabled": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "topic_routing_folder_levels": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "topic_routing_folder_skip": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "transforms_oversized_records_fields_exclude_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_oversized_records_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_oversized_records_max_field_size_bytes": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "transforms_oversized_records_max_record_size_bytes": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "transforms_oversized_records_oversized_field_behavior": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_oversized_records_replace_null_with_default": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "transforms_oversized_records_semantic_types_exclude": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_oversized_records_truncation_suffix": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_value_to_key_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_value_to_key_replace_null_with_default": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     }
   }
 }

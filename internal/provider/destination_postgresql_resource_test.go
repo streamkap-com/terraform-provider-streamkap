@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -12,13 +13,16 @@ var destinationPostgresqlHostname = os.Getenv("TF_VAR_destination_postgresql_hos
 var destinationPostgresqlPassword = os.Getenv("TF_VAR_destination_postgresql_password")
 
 func TestAccDestinationPostgresqlResource(t *testing.T) {
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read Testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_postgresql_hostname" {
 	type        = string
 	description = "The hostname of the PostgreSQL database"
@@ -30,7 +34,7 @@ variable "destination_postgresql_password" {
 }
 
 resource "streamkap_destination_postgresql" "test" {
-	name                 = "test-destination-postgresql"
+	name                 = %q
 	database_hostname    = var.destination_postgresql_hostname
 	database_port        = 5432
 	database_database      = "sandbox"
@@ -39,9 +43,9 @@ resource "streamkap_destination_postgresql" "test" {
 	table_name_prefix = "streamkap"
 	
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "name", "test-destination-postgresql"),
+					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_hostname", destinationPostgresqlHostname),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_port", "5432"),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_database", "sandbox"),
@@ -66,7 +70,7 @@ resource "streamkap_destination_postgresql" "test" {
 			},
 			// Step 3: Update and Read Testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_postgresql_hostname" {
 	type        = string
 	description = "The hostname of the PostgreSQL database"
@@ -78,7 +82,7 @@ variable "destination_postgresql_password" {
 }
 
 resource "streamkap_destination_postgresql" "test" {
-	name                 = "test-destination-postgresql-updated"
+	name                 = %q
 	database_hostname    = var.destination_postgresql_hostname
 	database_port        = 5432
 	database_database    = "sandbox"
@@ -90,9 +94,9 @@ resource "streamkap_destination_postgresql" "test" {
 	delete_enabled       = true
 	ssh_enabled          = false
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "name", "test-destination-postgresql-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_hostname", destinationPostgresqlHostname),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_port", "5432"),
 					resource.TestCheckResourceAttr("streamkap_destination_postgresql.test", "database_database", "sandbox"),

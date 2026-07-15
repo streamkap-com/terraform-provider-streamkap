@@ -15,15 +15,19 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Resources                                   │
 ├──────────────────┬──────────────────┬──────────────────┬────────┤
-│  Sources (20)    │  Destinations(23)│  Transforms (6)  │ Other  │
+│  Sources (25)    │  Destinations(24)│  Transforms (7)  │ Other  │
 │  PostgreSQL      │  Snowflake       │  MapFilter       │Pipeline│
 │  MySQL, MongoDB  │  ClickHouse      │  Enrich          │ Topic  │
 │  DynamoDB        │  Databricks      │  EnrichAsync     │  Tag   │
-│  SQLServer       │  PostgreSQL, S3  │  SQLJoin         │KfkUser │
-│  KafkaDirect     │  Iceberg, Kafka  │  Rollup, FanOut  │CliCred │
-│  Oracle, Redis   │  BigQuery, GCS   │                  │        │
-│  + 12 more...    │  + 15 more...    │                  │        │
+│  SQLServer       │  PostgreSQL, S3  │  SQLJoin         │        │
+│  KafkaDirect     │  Iceberg, Kafka  │  Rollup, FanOut  │        │
+│  Oracle, Redis   │  BigQuery, GCS   │  TopicRouter     │        │
+│  + 17 more...    │  + 16 more...    │                  │        │
 └──────────────────┴──────────────────┴──────────────────┴────────┘
+
+59 resources in total (25 sources + 24 destinations + 7 transforms + pipeline,
+topic, tag) and 6 data sources. `internal/provider/provider.go` is the register
+of record — `Resources()` / `DataSources()`.
               │
               ▼
 ┌─────────────────────────────────────────────────────────────────┐
@@ -203,11 +207,12 @@ TopicsConfigMap map[string]clickHouseTopicsConfigMapItemModel `tfsdk:"topics_con
 |-----------|-------|------|---------|
 | snowflake | `auto_qa_dedupe_table_mapping` | `map_string` | Table deduplication mapping |
 | clickhouse | `topics_config_map` | `map_nested` | Per-topic delete SQL config |
-| sqlserveraws | `snapshot_custom_table_config` | `map_nested` | Custom snapshot parallelism |
 
 #### Override Precedence
 
 When an `api_field_name` in overrides matches a field in the backend config, the override takes precedence and the backend field is skipped. This prevents duplicate fields.
+
+An override's `api_field_name` **must** resolve to a field the backend declares; tfgen fails the build otherwise. Overrides are hand-written and nothing else validates them, so an override can outlive the backend field it targets and go on generating an attribute that Terraform accepts and the backend silently discards. That is not hypothetical: `sqlserveraws.snapshot_custom_table_config` did exactly that until the check was added.
 
 ### Generated Code Structure
 
@@ -261,6 +266,11 @@ Validators are automatically generated based on backend config:
 Fields are marked sensitive (`Sensitive: true`) when:
 - `control: "password"`
 - `encrypt: true` in backend config
+- the attribute is named or suffixed `api_key` / `authorization` (`isSecretField`
+  in `cmd/tfgen/generator.go`) — the webhook plugins ship `api.key` and the
+  http-sink ships `http.headers.authorization` with neither flag set, and the
+  backend keeps regressing it. Fix credential-marking gaps there, never by editing
+  `internal/generated/`.
 
 ### Default Value Handling
 
@@ -297,17 +307,9 @@ resource "streamkap_destination_clickhouse" "example" {
 }
 ```
 
-**SQL Server AWS `snapshot_custom_table_config`:**
-```hcl
-resource "streamkap_source_sqlserveraws" "example" {
-  # ...
-  snapshot_custom_table_config = {
-    "db.Some_Tbl" = {
-      chunks = 5
-    }
-  }
-}
-```
+(The backend plugin is named `sqlserveraws`, so the generated schema is
+`internal/generated/source_sqlserveraws.go` — but the Terraform resource it backs
+is `streamkap_source_sqlserver`. `overrides.json` keys on the backend name.)
 
 ## BaseTransformResource Design
 
@@ -338,8 +340,16 @@ resource "streamkap_transform_map_filter" "example" {
 ## Non-Connector Resources
 
 Resources that don't follow the connector pattern have their own implementations:
+`pipeline`, `topic`, and `tag` implement CRUD directly against the API client.
 
-### Kafka User (`internal/resource/kafka_user/`)
+> **Not currently registered:** `kafka_user`, `client_credential`, and the `roles`
+> data source below are **not** in `provider.go`'s `Resources()` / `DataSources()`
+> — they were unregistered in `084d08f`, with the source preserved for future
+> re-enabling. A config referencing them today fails with "provider does not
+> support resource type". The design notes are kept here for whoever re-enables
+> them; they are not a description of the shipping provider.
+
+### Kafka User (`internal/resource/kafka_user/`) — not registered
 - CRUD via `/kafka-access/kafka-users` endpoints
 - `username` is the resource ID (ForceNew — cannot change after creation)
 - `password` is write-only (not returned by API on read, uses `UseStateForUnknown`)
@@ -347,16 +357,16 @@ Resources that don't follow the connector pattern have their own implementations
 - Import uses username as the ID
 - No individual GET endpoint — reads filter from list
 
-### Client Credential (`internal/resource/client_credential/`)
+### Client Credential (`internal/resource/client_credential/`) — not registered
 - Create/List/Delete only — no Update endpoint exists in the backend
 - All writable fields (`role_ids`, `description`, `service_id`) use ForceNew plan modifiers
 - `secret` is only returned on creation, preserved in state on reads
 - `roles` is a computed `ListNestedBlock` resolved from `role_ids`
-- Uses a custom `listRequiresReplace` plan modifier for the `role_ids` list
+- `role_ids` uses the framework-standard `listplanmodifier.RequiresReplace()`
 
-### Roles Data Source (`internal/datasource/roles.go`)
+### Roles Data Source (`internal/datasource/roles.go`) — not registered
 - Lists available roles from `/auth/roles`
-- Used to discover role IDs for `streamkap_client_credential` resources
+- Would be used to discover role IDs for `streamkap_client_credential` resources
 
 ## BaseConnectorResource Design
 
@@ -518,45 +528,65 @@ terraform-provider-streamkap/
 │   ├── resource/
 │   │   ├── connector/            # Generic base resource
 │   │   │   └── base.go           # BaseConnectorResource
-│   │   ├── source/               # Source config wrappers
-│   │   │   └── *_generated.go    # ConnectorConfig implementations
-│   │   ├── destination/          # Destination config wrappers
-│   │   │   └── *_generated.go    # ConnectorConfig implementations
+│   │   ├── shared/               # Reflection bridge (marshaling.go)
+│   │   ├── source/               # Source config wrappers — hand-maintained
+│   │   │   └── *_generated.go    # ConnectorConfig impls (NOT generated; see below)
+│   │   ├── destination/          # Destination config wrappers — hand-maintained
+│   │   │   └── *_generated.go    # ConnectorConfig impls (NOT generated; see below)
 │   │   ├── transform/            # Transform config wrappers
 │   │   │   ├── base.go           # BaseTransformResource
 │   │   │   └── *_generated.go    # TransformConfig implementations
 │   │   ├── pipeline/             # Pipeline resource
 │   │   ├── topic/                # Topic resource
 │   │   ├── tag/                  # Tag resource
-│   │   ├── kafka_user/           # Kafka user resource
-│   │   └── client_credential/    # Client credential resource
+│   │   ├── kafka_user/           # Kafka user resource (not registered)
+│   │   └── client_credential/    # Client credential resource (not registered)
 │   │
 │   ├── datasource/               # Data sources
 │   │   ├── transform.go          # Transform datasource
-│   │   ├── tag.go                # Tag datasource
+│   │   ├── tag.go                # Tag datasource (single, by id)
+│   │   ├── tags.go               # Tags list/filter datasource
 │   │   ├── topics.go             # Topics list datasource
 │   │   ├── topic.go              # Topic datasource
 │   │   ├── topic_metrics.go      # Topic metrics datasource
-│   │   └── roles.go              # Roles list datasource
+│   │   ├── topic_serialization.go # Shared topic (de)serialization helpers
+│   │   └── roles.go              # Roles list datasource (not registered)
 │   │
 │   └── helper/                   # Utility functions
-│       └── helper.go             # Type conversion helpers
+│       ├── helper.go             # Type conversion helpers
+│       └── timeouts.go           # Default CRUD timeouts
 │
-├── examples/                     # Example TF configs
-│   └── resources/
-│       └── streamkap_*/
+├── examples/                     # Example TF configs (also the docs source)
+│   ├── provider/provider.tf      # Embedded in docs/index.md
+│   ├── data-sources/streamkap_*/data-source.tf
+│   └── resources/streamkap_*/    # basic.tf, complete.tf, import.sh
 │
-├── docs/                         # Documentation
-│   ├── DEVELOPMENT.md            # Developer guide
+├── templates/                    # tfplugindocs templates
+│   ├── index.md.tmpl             # Provider index page
+│   └── resources.md.tmpl         # Per-resource page (embeds basic.tf + complete.tf)
+│
+├── docs/                         # Generated registry docs + hand-written guides
+│   ├── index.md                  # Generated
+│   ├── resources/, data-sources/ # Generated
 │   ├── ARCHITECTURE.md           # This file
-│   └── plans/                    # Implementation plans
+│   ├── CODE_GENERATOR.md         # tfgen internals
+│   └── MIGRATION.md              # v2 → v3 migration guide
 │
-└── .github/workflows/            # CI/CD
-    ├── ci.yml                    # Build + test
+└── .github/workflows/            # CI/CD (see "CI/CD Workflows" below)
+    ├── ci.yml                    # Build, vet, lint, credential-free tests
+    ├── docs-drift.yml            # docs/ must match committed schemas
+    ├── acceptance.yml            # Nightly + push acceptance suite
+    ├── pr-acceptance.yml         # Curated acceptance subset on PRs
+    ├── migration.yml             # v2 → v3 migration acceptance tests
     ├── security.yml              # Security scans
     ├── regenerate.yml            # Schema regeneration
     └── release.yml               # Release automation
 ```
+
+Note the naming trap: `internal/resource/{source,destination,transform}/*_generated.go`
+are **hand-maintained** despite the suffix. The generated code lives in
+`internal/generated/`; the wrappers embed it and add the deprecated-alias
+attributes. Edit the wrappers freely; never edit `internal/generated/`.
 
 ## Authentication Flow
 
@@ -687,16 +717,21 @@ func TestAccSourcePostgreSQL_basic(t *testing.T) {
 | Variable | Purpose | Required For |
 |----------|---------|--------------|
 | `TF_ACC=1` | Enable acceptance tests | Acceptance tests |
-| `STREAMKAP_HOST` | API endpoint | Acceptance tests |
 | `STREAMKAP_CLIENT_ID` | OAuth client ID | Acceptance tests |
 | `STREAMKAP_SECRET` | OAuth secret | Acceptance tests |
-| `STREAMKAP_BACKEND_PATH` | Backend repo path | Generator integration tests |
+| `STREAMKAP_HOST` | API endpoint | Optional — defaults to `https://api.streamkap.com` (`provider.go`) |
+| `STREAMKAP_BACKEND_PATH` | Backend repo path | Code generation; generator integration tests |
+| `UPDATE_SNAPSHOTS=1` | Rewrite schema snapshots | `make snapshots` |
 
 ### Running Tests
 
+Tests auto-load `.env` via godotenv, and a `TF_ACC=1` line there turns any
+unfiltered `go test` into a live-API acceptance run. Prefer the `make` targets —
+`make test` clears `TF_ACC` for exactly this reason.
+
 ```bash
-# Unit tests only (fast, no external deps)
-go test -v -short ./...
+# Unit + schema-compat + validators (fast, no API)
+make test-all
 
 # Generator tests
 go test -v ./cmd/tfgen/...
@@ -704,13 +739,11 @@ go test -v ./cmd/tfgen/...
 # Generator integration tests (requires backend)
 STREAMKAP_BACKEND_PATH=/path/to/backend go test -v ./cmd/tfgen/...
 
-# Acceptance tests (creates real resources)
-TF_ACC=1 STREAMKAP_HOST=https://api.streamkap.com \
-  STREAMKAP_CLIENT_ID=xxx STREAMKAP_SECRET=xxx \
-  go test -v ./internal/provider -timeout 30m
+# Acceptance tests (creates real resources; needs STREAMKAP_CLIENT_ID/SECRET)
+make testacc
 
 # Single acceptance test
-go test -v ./internal/provider -run TestAccSourcePostgreSQL_basic
+TF_ACC=1 go test -v ./internal/provider -run TestAccSourcePostgreSQL_basic
 ```
 
 ### Test Best Practices
@@ -725,24 +758,41 @@ go test -v ./internal/provider -run TestAccSourcePostgreSQL_basic
 
 ### ci.yml - Continuous Integration
 
-Runs on every PR and push to main:
+The core gate. Runs on every PR and push to `develop` / `main`, needs no
+credentials (so it also covers fork PRs):
 1. Build - `go build ./...`
-2. Lint - `golangci-lint run`
-3. Unit Tests - `go test -short ./...`
-4. Generator Tests - `go test ./cmd/tfgen/...`
+2. Vet - `go vet ./...`
+3. Unit + schema-compat + validator tests - `make test test-schema test-validators`
+4. Lint - `golangci-lint` (separate job)
+
+It pins `TF_ACC=""` for the whole workflow so a stray value can never turn the
+credential-free tiers into a live-API run.
+
+### docs-drift.yml - Docs match committed schemas
+
+On PRs touching `internal/generated/`, `docs/`, `templates/`, `examples/provider/`,
+`main.go` or `go.mod`: re-renders the docs from the *committed* schemas with
+`tfplugindocs` (no backend needed) and fails if `docs/` changes. This structurally
+prevents the beta.18 bug where `go generate ./...` rendered docs one regen behind.
+
+### acceptance.yml / pr-acceptance.yml / migration.yml - Acceptance suites
+
+`acceptance.yml` runs the full `TestAcc` suite on a schedule and on push;
+`pr-acceptance.yml` runs a curated subset (`scripts/acceptance-tests.txt`) on PRs;
+`migration.yml` runs the v2 → v3 `TestAcc.*Migration` suite. All three need API
+credentials, sourced from 1Password, so they skip fork PRs.
 
 ### security.yml - Security Scanning
 
-Runs security scans:
+Runs on push and PR:
 - **Trivy** - Vulnerability scanning
 - **Checkov** - Infrastructure-as-code security
 
 ### regenerate.yml - Schema Regeneration
 
-Manual workflow to regenerate all connector schemas:
-1. Checkout backend repository
-2. Run `go run ./cmd/tfgen generate --backend-path=...`
-3. Create PR with changes
+Manually dispatched workflow to regenerate connector schemas against the backend
+repository. Locally the equivalent is
+`STREAMKAP_BACKEND_PATH=<path> make generate` — never `go generate ./...`.
 
 ### release.yml - Release Automation
 

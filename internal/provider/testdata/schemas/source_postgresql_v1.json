@@ -5,85 +5,106 @@
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "column_exclude_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "column_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "column_include_list_toggled": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "connector": {
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "connector_status": {
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "database_dbname": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "database_hostname": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "database_password": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": true
+      "sensitive": true,
+      "type": "basetypes.StringType"
     },
     "database_port": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "database_sslmode": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "database_user": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "heartbeat_data_collection_schema_or_database": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "heartbeat_enabled": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "heartbeat_use_logical_message": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "heartbeat_use_logical_message": {
       "required": false,
@@ -95,79 +116,99 @@
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "include_source_db_name_in_table_name": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "insert_static_key_field_1": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "insert_static_key_field_2": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "insert_static_key_value_1": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "insert_static_key_value_2": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "insert_static_value_1": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "insert_static_value_2": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "insert_static_value_field_1": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "insert_static_value_field_2": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "insert_topic_name_enabled": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "kc_cluster_id": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "name": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "post_processors": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "post_processors": {
       "required": false,
@@ -179,97 +220,127 @@
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "predicates_istopictoenrich_pattern": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "preserve_null_values": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "publication_name": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "schema_include_list": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "signal_data_collection_schema_or_database": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "slot_name": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "snapshot_read_only": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "source_regex_support_enabled": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "ssh_enabled": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "ssh_host": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "ssh_port": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "ssh_public_key": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "ssh_user": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "streamkap_snapshot_chunk_size_bytes": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "streamkap_snapshot_max_split_size_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "streamkap_snapshot_parallelism": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "streamkap_snapshot_state_refresh_ms": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "streamkap_snapshot_state_refresh_ms": {
       "required": false,
@@ -281,7 +352,15 @@
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.SetType[basetypes.StringType]"
     },
     "tags": {
       "required": false,
@@ -293,127 +372,148 @@
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_insert_static_key1_static_value": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_insert_static_key2_static_field": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_insert_static_key2_static_value": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_insert_static_value1_static_field": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_insert_static_value1_static_value": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_insert_static_value2_static_field": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_insert_static_value2_static_value": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_oversized_records_fields_exclude_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_oversized_records_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_oversized_records_max_field_size_bytes": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "transforms_oversized_records_max_record_size_bytes": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "transforms_oversized_records_oversized_field_behavior": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_oversized_records_replace_null_with_default": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "transforms_oversized_records_semantic_types_exclude": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_oversized_records_truncation_suffix": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_source_regex_support_key_field_template": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_source_regex_support_metadata_field_name": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_source_regex_support_regex_replacement": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_value_to_key_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_value_to_key_replace_null_with_default": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     }
   }
 }

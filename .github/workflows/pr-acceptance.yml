@@ -115,6 +115,30 @@ jobs:
           count="$(printf '%s' "$STREAMKAP_ENV_JSON" | jq -r 'keys | length')"
           echo "Exported $count credential variables from env.json."
 
+      # Sweep BEFORE the tests, not just after.
+      #
+      # A connector left behind by an earlier run holds database-level resources
+      # — a SQL Server/PostgreSQL signal table, a replication slot — that are
+      # keyed to the database, not to the connector's name. A fresh run then
+      # fails with "Signal table '<db>.<t>_signal' is already in use by another
+      # connector" even though its own fixture name is unique. One leaked
+      # fixture therefore poisons every subsequent run until it is removed.
+      #
+      # This used to be masked: fixture names were fixed and Create adopted an
+      # existing record on a name collision, so a leftover was silently reused.
+      # Adoption is gone (it deletes live resources under create_before_destroy)
+      # and fixture names are now unique per run, so the leaks have to be swept
+      # instead of absorbed.
+      #
+      # NOTE: this deletes resources on the staging tenant whose names carry a
+      # test prefix (tf-acc-test*, tf-migration-test*, test-source-*,
+      # test-destination-*, test-pipeline*). It touches nothing else.
+      - name: Sweep leaked fixtures from previous runs
+        continue-on-error: true # a sweep hiccup must not mask the test results
+        env:
+          TF_ACC: '1'
+        run: make sweep
+
       - name: Run acceptance tests (curated set; uncredentialed connectors self-skip)
         env:
           TF_ACC: '1'
@@ -125,6 +149,14 @@ jobs:
             --junitfile acceptance-results.xml \
             -- -count=1 -v -timeout 90m -parallel 2 \
             -run "$PATTERN" ./internal/provider/...
+
+      # Always sweep after, including on failure: a failed run is exactly the one
+      # that leaves resources behind, and leaving them poisons the next run.
+      - name: Sweep fixtures left by this run
+        if: always()
+        env:
+          TF_ACC: '1'
+        run: make sweep || true
 
       - name: Summarize ran vs skipped connectors
         if: always()

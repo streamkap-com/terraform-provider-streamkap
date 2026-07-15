@@ -1,12 +1,16 @@
 package provider
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccSourceWebhookResource(t *testing.T) {
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	// Webhook source has no external credentials required - it generates webhook_url and api_key
 	// Skip only if TF_ACC is not set (handled by framework) or if explicitly disabled
 	resource.Test(t, resource.TestCase{
@@ -15,17 +19,17 @@ func TestAccSourceWebhookResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 resource "streamkap_source_webhook" "test" {
-	name                                    = "tf-acc-test-source-webhook"
+	name                                    = %q
 	topic_include_list                      = "webhook_events"
 	format                                  = "json"
 	camel_source_camel_message_header_key   = "key"
 	transforms_infer_schema_add_delete_field = false
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_webhook.test", "name", "tf-acc-test-source-webhook"),
+					resource.TestCheckResourceAttr("streamkap_source_webhook.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_webhook.test", "topic_include_list", "webhook_events"),
 					resource.TestCheckResourceAttr("streamkap_source_webhook.test", "format", "json"),
 					resource.TestCheckResourceAttr("streamkap_source_webhook.test", "camel_source_camel_message_header_key", "key"),
@@ -43,17 +47,17 @@ resource "streamkap_source_webhook" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 resource "streamkap_source_webhook" "test" {
-	name                                    = "tf-acc-test-source-webhook-updated"
+	name                                    = %q
 	topic_include_list                      = "webhook_events_updated"
 	format                                  = "string"
 	camel_source_camel_message_header_key   = "event_key"
 	transforms_infer_schema_add_delete_field = true
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_webhook.test", "name", "tf-acc-test-source-webhook-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_webhook.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_webhook.test", "topic_include_list", "webhook_events_updated"),
 					resource.TestCheckResourceAttr("streamkap_source_webhook.test", "format", "string"),
 					resource.TestCheckResourceAttr("streamkap_source_webhook.test", "camel_source_camel_message_header_key", "event_key"),

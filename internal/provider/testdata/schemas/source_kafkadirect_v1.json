@@ -5,67 +5,78 @@
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "connector_status": {
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "format": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "id": {
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "kafka_format": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "kc_cluster_id": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "name": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "schemas_enable": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "tags": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "types.SetType[basetypes.StringType]"
     },
     "topic_include_list": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "topic_prefix": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     }
   }
 }

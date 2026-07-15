@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -14,13 +15,16 @@ func TestAccDestinationAzblobResource(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationAzblobResource: TF_VAR_destination_azblob_connection_string or TF_VAR_destination_azblob_container_name not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_azblob_connection_string" {
 	type        = string
 	sensitive   = true
@@ -31,7 +35,7 @@ variable "destination_azblob_container_name" {
 	description = "Azure Blob Storage container name"
 }
 resource "streamkap_destination_azblob" "test" {
-	name                      = "tf-acc-test-destination-azblob"
+	name                      = %q
 	azblob_connection_string  = var.destination_azblob_connection_string
 	azblob_container_name     = var.destination_azblob_container_name
 	format                    = "json"
@@ -39,9 +43,9 @@ resource "streamkap_destination_azblob" "test" {
 	file_size                 = 65536
 	rotate_interval_ms        = -1
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_azblob.test", "name", "tf-acc-test-destination-azblob"),
+					resource.TestCheckResourceAttr("streamkap_destination_azblob.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_azblob.test", "azblob_connection_string", destinationAzblobConnectionString),
 					resource.TestCheckResourceAttr("streamkap_destination_azblob.test", "azblob_container_name", destinationAzblobContainerName),
 					resource.TestCheckResourceAttr("streamkap_destination_azblob.test", "format", "json"),
@@ -61,7 +65,7 @@ resource "streamkap_destination_azblob" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_azblob_connection_string" {
 	type        = string
 	sensitive   = true
@@ -72,7 +76,7 @@ variable "destination_azblob_container_name" {
 	description = "Azure Blob Storage container name"
 }
 resource "streamkap_destination_azblob" "test" {
-	name                      = "tf-acc-test-destination-azblob-updated"
+	name                      = %q
 	azblob_connection_string  = var.destination_azblob_connection_string
 	azblob_container_name     = var.destination_azblob_container_name
 	format                    = "parquet"
@@ -81,9 +85,9 @@ resource "streamkap_destination_azblob" "test" {
 	rotate_interval_ms        = 60000
 	topics_dir                = "streamkap/data"
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_azblob.test", "name", "tf-acc-test-destination-azblob-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_azblob.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_azblob.test", "format", "parquet"),
 					resource.TestCheckResourceAttr("streamkap_destination_azblob.test", "flush_size", "2000"),
 					resource.TestCheckResourceAttr("streamkap_destination_azblob.test", "file_size", "131072"),

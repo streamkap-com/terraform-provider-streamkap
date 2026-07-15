@@ -423,6 +423,62 @@ func TestGetDefault(t *testing.T) {
 	}
 }
 
+// TestGetDefaultBool_StringEncoded covers GEN-5. The backend stores some
+// defaults as strings; GetDefaultInt64 already parses those (the #91 fix) but
+// GetDefaultBool did not, so a `"true"` default silently emitted
+// booldefault.StaticBool(false) — the same bug class, on the bool side.
+func TestGetDefaultBool_StringEncoded(t *testing.T) {
+	tests := []struct {
+		name         string
+		defaultValue any
+		want         bool
+	}{
+		{name: "string true", defaultValue: "true", want: true},
+		{name: "string True", defaultValue: "True", want: true},
+		{name: "string TRUE", defaultValue: "TRUE", want: true},
+		{name: "string 1", defaultValue: "1", want: true},
+		{name: "string false", defaultValue: "false", want: false},
+		{name: "string 0", defaultValue: "0", want: false},
+		{name: "native bool true", defaultValue: true, want: true},
+		{name: "native bool false", defaultValue: false, want: false},
+		{name: "non-boolean string", defaultValue: "maybe", want: false},
+		{name: "nil", defaultValue: nil, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			entry := ConfigEntry{Value: ValueObject{Default: tt.defaultValue}}
+			if got := entry.GetDefaultBool(); got != tt.want {
+				t.Errorf("GetDefaultBool() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBoolDefaultIsUnparseableString(t *testing.T) {
+	tests := []struct {
+		name         string
+		defaultValue any
+		want         bool
+	}{
+		{name: "boolean string", defaultValue: "true", want: false},
+		{name: "numeric boolean string", defaultValue: "0", want: false},
+		{name: "non-boolean string", defaultValue: "maybe", want: true},
+		{name: "empty string", defaultValue: "", want: false},
+		{name: "native bool", defaultValue: true, want: false},
+		{name: "nil", defaultValue: nil, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			entry := ConfigEntry{Value: ValueObject{Default: tt.defaultValue}}
+			if got := entry.BoolDefaultIsUnparseableString(); got != tt.want {
+				t.Errorf("BoolDefaultIsUnparseableString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestInt64DefaultIsUnparseableString(t *testing.T) {
 	tests := []struct {
 		name         string

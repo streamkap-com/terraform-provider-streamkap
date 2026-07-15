@@ -5,6 +5,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/shared"
 )
 
 type fakeModel struct {
@@ -38,7 +40,7 @@ func (fakeConfig) NewModelInstance() any               { return &fakeModel{} }
 func TestSensitiveStringAttrNames(t *testing.T) {
 	r := NewBaseConnectorResource(fakeConfig{}).(*BaseConnectorResource)
 
-	got := r.sensitiveStringAttrNames()
+	got := shared.SensitiveStringAttrNames(r.config.GetSchema())
 	want := map[string]bool{"password": true, "token": true}
 	if len(got) != len(want) {
 		t.Fatalf("sensitiveStringAttrNames() = %v, want exactly %v", got, []string{"password", "token"})

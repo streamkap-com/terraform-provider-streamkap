@@ -4,9 +4,46 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/http"
 	"testing"
 	"time"
 )
+
+// TestIsRetryableError_APIError covers the classification that matters in
+// production: the status class decides, not the wording. The string-matching
+// version retried a 400 whose detail merely contained "4290" and never retried
+// a 429 whose detail omitted the digits.
+func TestIsRetryableError_APIError(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      error
+		expected bool
+	}{
+		{"429 without the digits in the detail", &APIError{StatusCode: http.StatusTooManyRequests, Detail: "rate limit exceeded for this tenant"}, true},
+		{"502", &APIError{StatusCode: http.StatusBadGateway, Detail: "upstream connect error"}, true},
+		{"503", &APIError{StatusCode: http.StatusServiceUnavailable, Detail: "no healthy upstream"}, true},
+		{"504", &APIError{StatusCode: http.StatusGatewayTimeout, Detail: "upstream request timeout"}, true},
+		{"400 whose detail contains a status-like number", &APIError{StatusCode: http.StatusBadRequest, Detail: "port 4290 invalid"}, false},
+		{"400 mentioning 502 in prose", &APIError{StatusCode: http.StatusBadRequest, Detail: "hostname db-502.example.com is unreachable"}, false},
+		{"401", &APIError{StatusCode: http.StatusUnauthorized, Detail: "Unauthorized"}, false},
+		{"404", &APIError{StatusCode: http.StatusNotFound, Detail: "Source not found"}, false},
+		{"422", &APIError{StatusCode: http.StatusUnprocessableEntity, Detail: "Validation error: missing required field"}, false},
+		{"plain 500", &APIError{StatusCode: http.StatusInternalServerError, Detail: "Internal server error"}, false},
+		{"500 carrying a Kafka Connect rebalance", &APIError{StatusCode: http.StatusInternalServerError, Detail: "Request cannot be completed because a rebalance is expected"}, true},
+		{"500 carrying a Kafka Connect 409", &APIError{StatusCode: http.StatusInternalServerError, Detail: "Kafka Connect API call failed with status code 409 and response ..."}, true},
+		{"500 carrying a KC timeout", &APIError{StatusCode: http.StatusInternalServerError, Detail: "KafkaConnectTimeout: timed out on all nodes"}, true},
+		{"wrapped 429", fmt.Errorf("CreateSource: %w", &APIError{StatusCode: http.StatusTooManyRequests, Detail: "slow down"}), true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsRetryableError(tt.err); got != tt.expected {
+				t.Errorf("IsRetryableError(%v) = %v, want %v", tt.err, got, tt.expected)
+			}
+		})
+	}
+}
 
 func TestIsRetryableError(t *testing.T) {
 	tests := []struct {

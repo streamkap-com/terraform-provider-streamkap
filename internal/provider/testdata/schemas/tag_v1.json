@@ -5,37 +5,43 @@
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "description": {
       "required": false,
       "optional": true,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "id": {
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "name": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "system": {
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "type": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "types.SetType[basetypes.StringType]"
     }
   }
 }

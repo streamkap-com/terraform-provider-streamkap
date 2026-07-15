@@ -1,0 +1,194 @@
+{
+  "version": "v3.0.0",
+  "attributes": {
+    "api_key": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": true,
+      "type": "basetypes.StringType"
+    },
+    "camel_source_dlq_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "camel_source_payload_router_fanout_fields": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "camel_source_payload_router_flatten_detail": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "camel_source_payload_router_flatten_detail_prefix": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "camel_source_payload_router_include_event": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "camel_source_payload_router_unknown_type_behavior": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "camel_source_payload_router_unknown_type_default_topic": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "connector": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "connector_status": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "insert_topic_name_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "kc_cluster_id": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "name": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "preserve_null_values": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.SetType[basetypes.StringType]"
+    },
+    "transforms_oversized_records_fields_exclude_list": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_oversized_records_fields_include_list": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_oversized_records_max_field_size_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "transforms_oversized_records_max_record_size_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "transforms_oversized_records_oversized_field_behavior": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_oversized_records_replace_null_with_default": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "transforms_oversized_records_semantic_types_exclude": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_oversized_records_truncation_suffix": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_value_to_key_fields_include_list": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_value_to_key_replace_null_with_default": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "webhook_url": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    }
+  }
+}

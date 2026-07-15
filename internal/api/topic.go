@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -87,12 +89,20 @@ type TopicDetailsResponse struct {
 	Result   []TopicDetails `json:"result"`
 }
 
-// TopicListParams represents query parameters for listing topics
+// TopicListParams represents query parameters for listing topics.
+// There is deliberately no limit/offset: the backend's TopicDetailsReq declares
+// only page/page_size, so limit/offset were accepted and ignored. ListTopics
+// paginates internally and returns every match.
 type TopicListParams struct {
 	EntityType string   // Filter by entity type: "sources", "transforms", "destinations"
 	EntityIDs  []string // Filter by specific entity IDs
-	Limit      int      // Pagination limit
-	Offset     int      // Pagination offset
+}
+
+// topicsSearchBody mirrors the backend's TopicDetailsReqBody for
+// POST /topics/details/search. entity_id accepts an array or a comma-separated
+// string; body values take precedence over query params.
+type topicsSearchBody struct {
+	EntityID []string `json:"entity_id,omitempty"`
 }
 
 // TopicMetricsEntity represents an entity with its topic IDs for metrics request
@@ -241,50 +251,108 @@ func (s *streamkapAPI) DeleteTopic(ctx context.Context, topicID string) error {
 	return nil
 }
 
+// ListTopics returns every topic matching params. The backend defaults to
+// page_size=10 (max 100), so it iterates pages until a short one comes back —
+// the same pattern as ListPipelines, with the same runaway guard. The returned
+// response describes the aggregate: Result holds all pages, Total is the count
+// the backend reported for the query.
 func (s *streamkapAPI) ListTopics(ctx context.Context, params *TopicListParams) (*TopicDetailsResponse, error) {
-	url := s.cfg.BaseURL + "/topics/details"
+	const pageSize = 100
+	const maxPages = 1000
 
-	// Build query parameters
-	queryParams := make([]string, 0)
+	var all []TopicDetails
+	total := 0
+	for page := 1; page <= maxPages; page++ {
+		req, err := s.newTopicDetailsRequest(ctx, params, page, pageSize)
+		if err != nil {
+			return nil, err
+		}
+		tflog.Debug(ctx, fmt.Sprintf(
+			"ListTopics request details:\n"+
+				"\tMethod: %s\n"+
+				"\tURL: %s\n",
+			req.Method,
+			req.URL.String(),
+		))
+
+		var resp TopicDetailsResponse
+		if err := s.doRequest(ctx, req, &resp); err != nil {
+			return nil, err
+		}
+		all = append(all, resp.Result...)
+		total = resp.Total
+
+		// Short-page termination only; `total` can lie under concurrent topic
+		// creation, and maxPages caps the runaway. Same reasoning as ListSources.
+		if len(resp.Result) < pageSize {
+			break
+		}
+	}
+
+	// Page/PageSize/HasNext describe one backend page and are meaningless once
+	// every page has been merged, so they are left at zero rather than filled
+	// with invented values (PageSize is a request parameter, not a result count).
+	// The only consumer, the topics data source, reads Total and Result.
+	return &TopicDetailsResponse{
+		Total:  total,
+		Result: all,
+	}, nil
+}
+
+// newTopicDetailsRequest builds one page request for /topics/details.
+//
+// entity_id is a single scalar query param that the backend splits on commas —
+// sending it as a repeated key made a multi-element filter collapse to one
+// arbitrary ID. When the joined list would blow up the URL, the request is
+// re-routed to POST /topics/details/search, which carries the same filters in a
+// body (the backend documents it for exactly this case).
+func (s *streamkapAPI) newTopicDetailsRequest(ctx context.Context, params *TopicListParams, page, pageSize int) (*http.Request, error) {
+	parsedURL, err := url.Parse(s.cfg.BaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("ListTopics: invalid base URL %q: %w", s.cfg.BaseURL, err)
+	}
+	parsedURL = parsedURL.JoinPath("topics", "details")
+
+	q := parsedURL.Query()
+	q.Set("page", strconv.Itoa(page))
+	q.Set("page_size", strconv.Itoa(pageSize))
+
+	var entityIDs []string
 	if params != nil {
 		if params.EntityType != "" {
-			queryParams = append(queryParams, "entity_type="+params.EntityType)
+			q.Set("entity_type", params.EntityType)
 		}
-		if len(params.EntityIDs) > 0 {
-			for _, id := range params.EntityIDs {
-				queryParams = append(queryParams, "entity_id="+id)
-			}
-		}
-		if params.Limit > 0 {
-			queryParams = append(queryParams, fmt.Sprintf("limit=%d", params.Limit))
-		}
-		if params.Offset > 0 {
-			queryParams = append(queryParams, fmt.Sprintf("offset=%d", params.Offset))
-		}
+		entityIDs = params.EntityIDs
 	}
-	if len(queryParams) > 0 {
-		url += "?" + strings.Join(queryParams, "&")
+	if len(entityIDs) > 0 {
+		q.Set("entity_id", strings.Join(entityIDs, ","))
+	}
+	parsedURL.RawQuery = q.Encode()
+
+	if len(parsedURL.String()) <= listURLLengthThreshold {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, parsedURL.String(), http.NoBody)
+		if err != nil {
+			return nil, fmt.Errorf("ListTopics: failed to build the request: %w", err)
+		}
+		return req, nil
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	// The entity IDs move into the body; the other filters stay on the query
+	// string, which the search endpoint reads exactly like the GET does.
+	q.Del("entity_id")
+	searchURL := *parsedURL
+	searchURL.Path += "/search"
+	searchURL.RawQuery = q.Encode()
+
+	body, err := json.Marshal(topicsSearchBody{EntityID: entityIDs})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ListTopics: failed to encode the search body: %w", err)
 	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"ListTopics request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n",
-		req.Method,
-		req.URL.String(),
-	))
-
-	var resp TopicDetailsResponse
-	err = s.doRequest(ctx, req, &resp)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, searchURL.String(), bytes.NewBuffer(body))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ListTopics: failed to build the search request: %w", err)
 	}
-
-	return &resp, nil
+	return req, nil
 }
 
 func (s *streamkapAPI) GetTopicTableMetrics(ctx context.Context, reqPayload TopicTableMetricsRequest) (TopicTableMetricsResponse, error) {

@@ -5,193 +5,232 @@
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "connector_status": {
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "consumer_override_max_poll_records": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "iceberg_catalog_auth_mode": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "iceberg_catalog_client_assume_role_arn": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "iceberg_catalog_client_region": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "iceberg_catalog_credential": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": true
+      "sensitive": true,
+      "type": "basetypes.StringType"
     },
     "iceberg_catalog_name": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "iceberg_catalog_s3_access_key_id": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "iceberg_catalog_s3_credentials_enabled": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "iceberg_catalog_s3_secret_access_key": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": true
+      "sensitive": true,
+      "type": "basetypes.StringType"
     },
     "iceberg_catalog_scope": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "iceberg_catalog_token": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": true
+      "sensitive": true,
+      "type": "basetypes.StringType"
     },
     "iceberg_catalog_type": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "iceberg_catalog_uri": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "iceberg_catalog_warehouse": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "iceberg_tables_compaction_commit_threshold": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "iceberg_tables_compaction_enabled": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "iceberg_tables_compaction_expire_snapshots": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "iceberg_tables_compaction_max_files_per_run": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "iceberg_tables_compaction_min_small_files": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "iceberg_tables_compaction_retain_last": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "iceberg_tables_compaction_target_file_size_bytes": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "iceberg_tables_default_id_columns": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "iceberg_tables_hard_delete_enabled": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "id": {
       "required": false,
       "optional": false,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "insert_mode": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "kc_cluster_id": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "name": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "preserve_null_values": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "quote_identifiers": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "table_name_prefix": {
       "required": true,
       "optional": false,
       "computed": false,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.SetType[basetypes.StringType]"
     },
     "tags": {
       "required": false,
@@ -203,181 +242,211 @@
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_change_topic_name_match_regex": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_copy_field_copy_field_mapping": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_drop_fields_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_header_to_field_custom_header_mappings": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_mark_columns_as_optional_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_mark_columns_as_required_fields_include_all": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "transforms_mark_columns_as_required_null_sentinel_mode": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_oversized_records_fields_exclude_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_oversized_records_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_oversized_records_max_field_size_bytes": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "transforms_oversized_records_max_record_size_bytes": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "transforms_oversized_records_oversized_field_behavior": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_oversized_records_replace_null_with_default": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "transforms_oversized_records_semantic_types_exclude": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_oversized_records_truncation_suffix": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_rename_fields_renames": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_string_replace_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_string_replace_regex_patterns": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_string_replace_replacement_values": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_to_decimal_j_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_to_decimal_j_truncate_to_max_precision": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "transforms_to_float_j_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_to_int_j_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_to_json_j_convert_all_complex_types": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "transforms_to_json_j_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_to_jsonb_j_convert_all_complex_types": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "transforms_to_jsonb_j_convert_all_json": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "transforms_to_jsonb_j_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "transforms_to_string_j_fields_include_list": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false
+      "sensitive": false,
+      "type": "basetypes.StringType"
     }
   }
 }

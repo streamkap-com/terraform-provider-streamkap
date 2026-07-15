@@ -5,6 +5,7 @@ package generated
 import (
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -139,8 +140,9 @@ func DestinationS3Schema() schema.Schema {
 			"aws_access_key_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The AWS Access Key ID used to connect to S3.",
-				MarkdownDescription: "The AWS Access Key ID used to connect to S3.",
+				Sensitive:           true,
+				Description:         "The AWS Access Key ID used to connect to S3. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The AWS Access Key ID used to connect to S3.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -201,9 +203,8 @@ func DestinationS3Schema() schema.Schema {
 			"file_name_template": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The format of the filename. See documentation for more information about formatting options. Defaults to \"{{topic}}-{{partition}}-{{start_offset}}\".",
-				MarkdownDescription: "The format of the filename. See documentation for more information about formatting options. Defaults to `{{topic}}-{{partition}}-{{start_offset}}`.",
-				Default:             stringdefault.StaticString("{{topic}}-{{partition}}-{{start_offset}}"),
+				Description:         "The format of the filename. See documentation for more information about formatting options.",
+				MarkdownDescription: "The format of the filename. See documentation for more information about formatting options.",
 			},
 			"file_name_prefix": schema.StringAttribute{
 				Optional:            true,
@@ -228,8 +229,11 @@ func DestinationS3Schema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				ElementType:         types.StringType,
-				Description:         "A comma separated list of fields to include in output? Options to include key, offset, timestamp, value, headers.",
-				MarkdownDescription: "A comma separated list of fields to include in output? Options to include key, offset, timestamp, value, headers.",
+				Description:         "A comma separated list of fields to include in output? Options to include key, offset, timestamp, value, headers. Valid values: key, offset, timestamp, value, headers.",
+				MarkdownDescription: "A comma separated list of fields to include in output? Options to include key, offset, timestamp, value, headers. Valid values: `key`, `offset`, `timestamp`, `value`, `headers`.",
+				Validators: []validator.List{
+					listvalidator.ValueStringsAre(stringvalidator.OneOf("key", "offset", "timestamp", "value", "headers")),
+				},
 			},
 			"format_output_envelope": schema.BoolAttribute{
 				Optional:            true,

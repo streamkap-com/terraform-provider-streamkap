@@ -144,11 +144,10 @@ func TestIssue80_OptionalFieldsArePlanStable(t *testing.T) {
 var issue82MapOverrideFields = map[string]bool{
 	"destination_snowflake.auto_qa_dedupe_table_mapping": true,
 	"destination_clickhouse.topics_config_map":           true,
-	"source_sqlserver.snapshot_custom_table_config":      true,
 }
 
 // TestIssue82_MapOverridesAreOptionalOnly is the regression guard for issue
-// #82: the three map-override fields above must be `Optional: true` and NOT
+// #82: the map-override fields above must be `Optional: true` and NOT
 // `Computed: true`, otherwise the framework crashes on Create with
 // "Received unknown value, however the target type cannot handle unknown
 // values" (path: <map field>, target type: map[string]…).
@@ -163,7 +162,6 @@ func TestIssue82_MapOverridesAreOptionalOnly(t *testing.T) {
 	}{
 		{"destination_snowflake", "auto_qa_dedupe_table_mapping", destination.NewSnowflakeResource},
 		{"destination_clickhouse", "topics_config_map", destination.NewClickHouseResource},
-		{"source_sqlserver", "snapshot_custom_table_config", source.NewSQLServerResource},
 	}
 
 	for _, tc := range cases {

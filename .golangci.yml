@@ -1,34 +1,81 @@
-run:
-  timeout: 5m
-  # golangci-lint v1.64.8 is built with go1.24 and refuses to run when the
-  # module targets a newer Go (go.mod says 1.25.0). Pin the analysis target to
-  # 1.24 to unblock. Proper fix: upgrade to golangci-lint v2.x (built with
-  # go1.25) + golangci-lint-action v7 and migrate this config to the v2 schema.
-  go: "1.24"
+version: "2"
 
+# golangci-lint v2 (>= 2.x). v2 dropped the v1 `run.go: "1.24"` pin this config used
+# to carry as a workaround for v1 being built against an older toolchain than go.mod
+# targets; v2 analyses against the go.mod language version directly.
+#
+# Linter set: v2's `standard` default is errcheck, govet, ineffassign, staticcheck,
+# unused — the same set v1 enabled by hand here, minus `gosimple` (merged into
+# staticcheck in v2) and `typecheck` (no longer selectable; type errors always fail
+# the run). The three below are what v1 added on top of the default.
 linters:
   enable:
-    - errcheck
-    - gosec
-    - govet
-    - staticcheck
     - bodyclose
+    - gosec
     - nilerr
-    - gosimple
-    - ineffassign
-    - unused
-    - typecheck
 
-issues:
-  exclude-dirs:
-    - internal/generated
-  exclude-rules:
-    # Test files can have more relaxed rules
-    - path: _test\.go
-      linters:
-        - gosec
-        - errcheck
-    # Allow unchecked errors in test helpers
-    - path: internal/provider/test_helpers
-      linters:
-        - errcheck
+  settings:
+    govet:
+      disable:
+        # Suggests rewriting `reflect.Ptr` as `reflect.Pointer`. A style rewrite
+        # shipped with a newer x/tools than the v1 config was written against;
+        # it is not a correctness check and is not what this config selects govet for.
+        - inline
+    staticcheck:
+      # v2's default check set, plus one subtraction. Spelling `all` here REPLACES the
+      # default list, so the ST* entries below must be restated or stylecheck's naming
+      # rules (ST1003 &c.) switch on — 24 findings this config never asked for, since v1
+      # enabled staticcheck+gosimple but never stylecheck.
+      checks:
+        - all
+        - -ST1000
+        - -ST1003
+        - -ST1016
+        - -ST1020
+        - -ST1021
+        - -ST1022
+        # QF* are staticcheck's "quickfix" refactor suggestions; v1 ran none of them
+        # under any linter this config enabled.
+        - -QF1*
+
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      # Rewritten wholesale by `make generate`; a finding here must be fixed in
+      # cmd/tfgen, never in the output.
+      - internal/generated
+    rules:
+      # Test files can have more relaxed rules.
+      - path: _test\.go
+        linters:
+          - gosec
+          - errcheck
+      # Allow unchecked errors in test helpers.
+      - path: internal/provider/test_helpers
+        linters:
+          - errcheck
+
+      # gosec G117 fires on any struct field whose JSON key looks like a credential
+      # being marshaled. An API client necessarily puts credentials in request bodies —
+      # the control against leaking them is redactSensitiveJSON at the logging boundary
+      # (internal/api/redact.go), not refusing to marshal them.
+      - path: internal/api/
+        text: G117
+        linters:
+          - gosec
+      # gosec G703 taint-tracks tfgen's own --backend-path flag into os.ReadFile. tfgen
+      # is a build-time developer tool pointed at a local backend checkout; the "taint"
+      # source is the operator's own argv.
+      - path: cmd/tfgen/
+        text: G703
+        linters:
+          - gosec
+
+formatters:
+  enable:
+    - gofmt

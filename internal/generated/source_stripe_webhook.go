@@ -114,8 +114,9 @@ func SourceStripeWebhookSchema() schema.Schema {
 			"api_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "API Key. Append to the Webhook URL as ?api_key=<API_KEY> when registering webhooks in Stripe. Generated after source is created.",
-				MarkdownDescription: "API Key. Append to the Webhook URL as ?api_key=<API_KEY> when registering webhooks in Stripe. Generated after source is created.",
+				Sensitive:           true,
+				Description:         "API Key. Append to the Webhook URL as ?api_key=<API_KEY> when registering webhooks in Stripe. Generated after source is created. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "API Key. Append to the Webhook URL as ?api_key=<API_KEY> when registering webhooks in Stripe. Generated after source is created.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

@@ -1,12 +1,15 @@
 package provider
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccTransformFanOutResource_basic(t *testing.T) {
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -14,9 +17,9 @@ func TestAccTransformFanOutResource_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read
 			{
-				Config: testAccTransformFanOutResourceConfig("tf-acc-test-transform-fan-out"),
+				Config: testAccTransformFanOutResourceConfig(name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_transform_fan_out.test", "name", "tf-acc-test-transform-fan-out"),
+					resource.TestCheckResourceAttr("streamkap_transform_fan_out.test", "name", name),
 					resource.TestCheckResourceAttrSet("streamkap_transform_fan_out.test", "id"),
 					resource.TestCheckResourceAttrSet("streamkap_transform_fan_out.test", "transform_type"),
 					resource.TestCheckResourceAttr("streamkap_transform_fan_out.test", "transforms_language", "JavaScript"),
@@ -35,9 +38,9 @@ func TestAccTransformFanOutResource_basic(t *testing.T) {
 			},
 			// Update
 			{
-				Config: testAccTransformFanOutResourceConfigUpdated("tf-acc-test-transform-fan-out-updated"),
+				Config: testAccTransformFanOutResourceConfigUpdated(nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_transform_fan_out.test", "name", "tf-acc-test-transform-fan-out-updated"),
+					resource.TestCheckResourceAttr("streamkap_transform_fan_out.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_transform_fan_out.test", "transforms_input_serialization_format", "Json"),
 					resource.TestCheckResourceAttr("streamkap_transform_fan_out.test", "transforms_output_serialization_format", "Json"),
 				),
@@ -47,6 +50,7 @@ func TestAccTransformFanOutResource_basic(t *testing.T) {
 }
 
 func TestAccTransformFanOutResource_withImplementation(t *testing.T) {
+	name := acctestName(t, "impl")
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -54,9 +58,9 @@ func TestAccTransformFanOutResource_withImplementation(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create with implementation_json
 			{
-				Config: testAccTransformFanOutWithImplementationConfig(),
+				Config: testAccTransformFanOutWithImplementationConfig(name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_transform_fan_out.test_impl", "name", "tf-acc-test-transform-fan-out-impl"),
+					resource.TestCheckResourceAttr("streamkap_transform_fan_out.test_impl", "name", name),
 					resource.TestCheckResourceAttr("streamkap_transform_fan_out.test_impl", "transforms_language", "JavaScript"),
 					resource.TestCheckResourceAttrSet("streamkap_transform_fan_out.test_impl", "id"),
 					resource.TestCheckResourceAttrSet("streamkap_transform_fan_out.test_impl", "implementation_json"),
@@ -74,35 +78,35 @@ func TestAccTransformFanOutResource_withImplementation(t *testing.T) {
 }
 
 func testAccTransformFanOutResourceConfig(name string) string {
-	return `
+	return fmt.Sprintf(`
 resource "streamkap_transform_fan_out" "test" {
-  name                                   = "` + name + `"
+  name                                   = %q
   transforms_language                    = "JavaScript"
   transforms_input_topic_pattern         = "test-input-topic"
   transforms_output_topic_pattern        = "test-output-topic"
   transforms_input_serialization_format  = "Avro"
   transforms_output_serialization_format = "Avro"
 }
-`
+`, name)
 }
 
 func testAccTransformFanOutResourceConfigUpdated(name string) string {
-	return `
+	return fmt.Sprintf(`
 resource "streamkap_transform_fan_out" "test" {
-  name                                   = "` + name + `"
+  name                                   = %q
   transforms_language                    = "JavaScript"
   transforms_input_topic_pattern         = "test-input-topic-updated"
   transforms_output_topic_pattern        = "test-output-topic-updated"
   transforms_input_serialization_format  = "Json"
   transforms_output_serialization_format = "Json"
 }
-`
+`, name)
 }
 
-func testAccTransformFanOutWithImplementationConfig() string {
-	return `
+func testAccTransformFanOutWithImplementationConfig(name string) string {
+	return fmt.Sprintf(`
 resource "streamkap_transform_fan_out" "test_impl" {
-  name                                   = "tf-acc-test-transform-fan-out-impl"
+  name                                   = %q
   transforms_language                    = "JavaScript"
   transforms_input_topic_pattern         = "test-input-topic"
   transforms_output_topic_pattern        = "test-output-topic"
@@ -115,5 +119,5 @@ resource "streamkap_transform_fan_out" "test_impl" {
     topic_transform = "function _streamkap_transform_topic(valueObject, keyObject, topic, timestamp, commonObject, valueSchema, keySchema) { return topic + '_' + valueObject.entity_type; }"
   })
 }
-`
+`, name)
 }

@@ -174,7 +174,7 @@ Generating transform_map_filter.go...
 Generating transform_enrich.go...
 ...
 
-Generation complete! Generated 51 schema files.
+Generation complete! Generated 56 schema files.
 ```
 
 ## Type Mapping
@@ -210,7 +210,8 @@ The generator applies smart conversions:
 
 1. **Port fields**: Fields named `port` or ending with `_port` are converted to `Int64` even if stored as strings in the backend
 2. **Sensitive fields**: Fields with `encrypt: true` or `control: "password"` are marked `Sensitive: true`
-3. **Set-once fields**: Fields with `set_once: true` get `RequiresReplace()` plan modifier
+3. **Credentials by name**: Fields named (or `_`-suffixed) `api_key` or `authorization` are forced `Sensitive: true` regardless of the spec. The webhook plugins declare `api.key`, and the http-sink declares `http.headers.authorization` (the literal `Bearer <token>` header value), with neither `encrypt` nor `control: "password"`. This has regressed in the backend more than once; hand-patching the generated file loses the fix on the next regen, so the rule lives in `isSecretField` (`cmd/tfgen/generator.go`). Matching is deliberately narrow — `api_key_enabled` is a flag, `http_authorization_type` is an enum, and `oauth2_access_token_url` is an endpoint.
+4. **Set-once fields**: Fields with `set_once: true` get `RequiresReplace()` plan modifier
 
 ### Go Field Naming (acronyms)
 
@@ -481,60 +482,77 @@ make generate
 
 ### Step 2: Create the Wrapper File
 
-Create `internal/resource/source/mynewconnector_generated.go` (or `destination/`):
+Create `internal/resource/source/mynewconnector_generated.go` (or `destination/`).
+
+Despite the `_generated.go` suffix, these wrapper files are **hand-maintained** —
+`tfgen` never writes them. The suffix is historical; the generated code lives in
+`internal/generated/`. Copy the shape from an existing wrapper, e.g.
+`internal/resource/source/postgresql_generated.go`:
 
 ```go
 package source
 
 import (
+    "github.com/hashicorp/terraform-plugin-framework/resource"
     "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+
     "github.com/streamkap-com/terraform-provider-streamkap/internal/generated"
     "github.com/streamkap-com/terraform-provider-streamkap/internal/resource/connector"
 )
 
-// Compile-time interface check
-var _ connector.ConnectorConfig = (*mynewconnectorConfig)(nil)
+// MyNewConnectorConfig implements the ConnectorConfig interface.
+type MyNewConnectorConfig struct{}
 
-type mynewconnectorConfig struct{}
+// Compile-time interface check.
+var _ connector.ConnectorConfig = (*MyNewConnectorConfig)(nil)
 
-func NewMynewconnectorResource() *connector.BaseConnectorResource {
-    return connector.NewBaseConnectorResource(&mynewconnectorConfig{})
-}
-
-func (c *mynewconnectorConfig) GetSchema() schema.Schema {
+func (c *MyNewConnectorConfig) GetSchema() schema.Schema {
     return generated.SourceMynewconnectorSchema()
 }
 
-func (c *mynewconnectorConfig) GetFieldMappings() map[string]string {
+func (c *MyNewConnectorConfig) GetFieldMappings() map[string]string {
     return generated.SourceMynewconnectorFieldMappings
 }
 
-func (c *mynewconnectorConfig) GetConnectorType() string {
-    return "source"
+// GetConnectorType returns the ConnectorType enum, not a bare string.
+func (c *MyNewConnectorConfig) GetConnectorType() connector.ConnectorType {
+    return connector.ConnectorTypeSource
 }
 
-func (c *mynewconnectorConfig) GetConnectorCode() string {
+func (c *MyNewConnectorConfig) GetConnectorCode() string {
     return "mynewconnector"
 }
 
-func (c *mynewconnectorConfig) GetResourceName() string {
-    return "streamkap_source_mynewconnector"
+// GetResourceName returns the name *without* the "streamkap_" prefix — the
+// framework prepends the provider type name.
+func (c *MyNewConnectorConfig) GetResourceName() string {
+    return "source_mynewconnector"
 }
 
-func (c *mynewconnectorConfig) NewModelInstance() any {
+func (c *MyNewConnectorConfig) NewModelInstance() any {
     return &generated.SourceMynewconnectorModel{}
+}
+
+// NewMyNewConnectorResource creates the resource.
+func NewMyNewConnectorResource() resource.Resource {
+    return connector.NewBaseConnectorResource(&MyNewConnectorConfig{})
 }
 ```
 
+If the connector needs deprecated v2 attribute aliases, the wrapper is also where
+they live — embed the generated model in a `…ModelWithDeprecated` struct and
+extend the field mappings. See `docs/MIGRATION.md` and
+`internal/resource/source/postgresql_generated.go` for a worked example.
+
 ### Step 3: Register the Resource
 
-Add to `internal/provider/provider.go`:
+Add to `internal/provider/provider.go` (the provider type is unexported):
 
 ```go
-func (p *StreamkapProvider) Resources(ctx context.Context) []func() resource.Resource {
+func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resource {
     return []func() resource.Resource{
         // ... existing resources ...
-        source.NewMynewconnectorResource,
+        source.NewMyNewConnectorResource,
     }
 }
 ```
@@ -574,6 +592,10 @@ resource "streamkap_source_mynewconnector" "example" {
 ```bash
 terraform import streamkap_source_mynewconnector.example <connector-id>
 ```
+
+`basic.tf` and `complete.tf` are **not optional**: `templates/resources.md.tmpl`
+embeds both into the resource's registry page, so `tfplugindocs` fails if either
+is missing. `import.sh` is optional — it renders the "Import" section when present.
 
 ### Step 5: Write Tests
 
@@ -625,8 +647,12 @@ resource "streamkap_source_mynewconnector" "test" {
 # Build
 go build ./...
 
+# Record the schema snapshot for the new resource. Every registered resource needs
+# one — TestEveryResourceHasSchemaSnapshot fails without it. Read the diff.
+make snapshots
+
 # Run schema compatibility tests
-go test -v -run 'TestSchemaBackwardsCompatibility' ./internal/provider/...
+make test-schema
 
 # Run your new tests (if credentials available)
 TF_ACC=1 go test -v -run 'TestAccSourceMynewconnector' ./internal/provider/...

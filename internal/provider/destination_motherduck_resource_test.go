@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,16 @@ func TestAccDestinationMotherduckResource(t *testing.T) {
 		t.Skip("Skipping TestAccDestinationMotherduckResource: TF_VAR_destination_motherduck_token or TF_VAR_destination_motherduck_catalog not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckDestinationDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_motherduck_token" {
 	type        = string
 	sensitive   = true
@@ -32,7 +36,7 @@ variable "destination_motherduck_catalog" {
 	description = "Motherduck catalog/database name"
 }
 resource "streamkap_destination_motherduck" "test" {
-	name               = "tf-acc-test-destination-motherduck"
+	name               = %q
 	motherduck_token   = var.destination_motherduck_token
 	motherduck_catalog = var.destination_motherduck_catalog
 	ingestion_mode     = "upsert"
@@ -41,9 +45,9 @@ resource "streamkap_destination_motherduck" "test" {
 	hard_delete        = false
 	tasks_max          = 5
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_motherduck.test", "name", "tf-acc-test-destination-motherduck"),
+					resource.TestCheckResourceAttr("streamkap_destination_motherduck.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_motherduck.test", "motherduck_catalog", destinationMotherduckCatalog),
 					resource.TestCheckResourceAttr("streamkap_destination_motherduck.test", "ingestion_mode", "upsert"),
 					resource.TestCheckResourceAttr("streamkap_destination_motherduck.test", "schema_evolution", "basic"),
@@ -63,7 +67,7 @@ resource "streamkap_destination_motherduck" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "destination_motherduck_token" {
 	type        = string
 	sensitive   = true
@@ -74,7 +78,7 @@ variable "destination_motherduck_catalog" {
 	description = "Motherduck catalog/database name"
 }
 resource "streamkap_destination_motherduck" "test" {
-	name               = "tf-acc-test-destination-motherduck-updated"
+	name               = %q
 	motherduck_token   = var.destination_motherduck_token
 	motherduck_catalog = var.destination_motherduck_catalog
 	ingestion_mode     = "append"
@@ -83,9 +87,9 @@ resource "streamkap_destination_motherduck" "test" {
 	hard_delete        = true
 	tasks_max          = 10
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_destination_motherduck.test", "name", "tf-acc-test-destination-motherduck-updated"),
+					resource.TestCheckResourceAttr("streamkap_destination_motherduck.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_motherduck.test", "ingestion_mode", "append"),
 					resource.TestCheckResourceAttr("streamkap_destination_motherduck.test", "schema_evolution", "none"),
 					resource.TestCheckResourceAttr("streamkap_destination_motherduck.test", "table_name_prefix", "streamkap_updated"),

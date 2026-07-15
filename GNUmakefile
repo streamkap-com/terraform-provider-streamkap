@@ -26,9 +26,13 @@ generate:
 	@git status --porcelain internal/generated docs || true
 
 # Run unit tests (fast, no API needed)
+# TF_ACC is cleared because this is the one target with no -run filter: `-short`
+# does not gate resource.Test, and godotenv loads TF_ACC=1 from a developer's
+# .env, which otherwise turns this into a 10-minute run against the live API.
+# godotenv does not overwrite a variable that is already set, so this wins.
 .PHONY: test
 test:
-	go test -v -short ./...
+	TF_ACC= go test -v -short ./...
 
 # Run schema compatibility tests
 .PHONY: test-schema
@@ -40,11 +44,6 @@ test-schema:
 test-validators:
 	go test -v -run 'Test.*Validator' ./internal/provider/...
 
-# Run integration tests with VCR cassettes
-.PHONY: test-integration
-test-integration:
-	go test -v -run 'TestIntegration_' ./internal/provider/...
-
 # Run acceptance tests (requires API credentials)
 .PHONY: testacc
 testacc:
@@ -55,9 +54,16 @@ testacc:
 test-migration:
 	TF_ACC=1 go test -v -timeout 180m -run 'TestAcc.*Migration' ./internal/provider/...
 
-# Run all tests except acceptance
+# Run all tests except acceptance.
+#
+# This is just `test`: `go test -short ./...` already executes the schema-compat and
+# validator tests — neither is gated on -short, and both live under ./internal/provider.
+# Listing the dedicated targets here as well ran each of those tiers a second time.
+# They stay as separate targets for running one tier in isolation.
+# Depending on `test` also inherits its TF_ACC guard, which the -run-filtered targets
+# do not set.
 .PHONY: test-all
-test-all: test test-schema test-validators test-integration
+test-all: test
 
 # Run linter
 .PHONY: lint
@@ -80,11 +86,6 @@ tidy:
 clean:
 	rm -f $(BINARY)
 	go clean
-
-# Record new VCR cassettes (requires API credentials)
-.PHONY: cassettes
-cassettes:
-	UPDATE_CASSETTES=1 go test -v -run 'TestIntegration_' ./internal/provider/...
 
 # Update schema snapshots after intentional changes
 .PHONY: snapshots
@@ -118,11 +119,10 @@ help:
 	@echo "Available targets:"
 	@echo "  build            - Build the provider binary"
 	@echo "  install          - Install provider to GOBIN"
-	@echo "  generate         - Generate documentation"
+	@echo "  generate         - Regenerate schemas from the backend (tfgen), then docs (tfplugindocs)"
 	@echo "  test             - Run unit tests (fast)"
 	@echo "  test-schema      - Run schema compatibility tests"
 	@echo "  test-validators  - Run validator tests"
-	@echo "  test-integration - Run integration tests with VCR"
 	@echo "  testacc          - Run acceptance tests (requires API)"
 	@echo "  test-migration   - Run migration tests (requires API)"
 	@echo "  test-all         - Run all tests except acceptance"
@@ -130,7 +130,6 @@ help:
 	@echo "  fmt              - Format Go code"
 	@echo "  tidy             - Tidy Go modules"
 	@echo "  clean            - Remove build artifacts"
-	@echo "  cassettes        - Record new VCR cassettes"
 	@echo "  snapshots        - Update schema snapshots"
 	@echo "  sweep            - Clean up orphaned test resources"
 	@echo "  validate-examples - Validate example Terraform files"

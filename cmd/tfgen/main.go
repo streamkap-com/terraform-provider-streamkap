@@ -3,6 +3,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -123,8 +124,8 @@ func runGenerate(backendPath, output, entityType, connector string) error {
 // cwd-relative "cmd/tfgen/overrides.json" candidate does not resolve. Without
 // this, a full regen silently loads ZERO overrides and emits the auto-parsed
 // fallback for every map_string/map_nested field (snowflake
-// auto_qa_dedupe_table_mapping, clickhouse topics_config_map, sqlserveraws
-// snapshot_custom_table_config), producing stale generated files. `go run`
+// auto_qa_dedupe_table_mapping, clickhouse topics_config_map), producing stale
+// generated files. `go run`
 // keeps the source tree on disk, so the returned path is valid during codegen.
 func tfgenSourceDir() string {
 	_, file, _, ok := runtime.Caller(0)
@@ -196,7 +197,10 @@ func processEntity(backendPath, output string, entity EntityConfig, specificConn
 	}
 
 	generator := NewGeneratorWithOverrides(output, entity.Type, overrides)
-	var count int
+	var (
+		count    int
+		problems []error
+	)
 
 	for _, entry := range entries {
 		if !entry.IsDir() {
@@ -222,10 +226,13 @@ func processEntity(backendPath, output string, entity EntityConfig, specificConn
 			continue
 		}
 
-		// Parse the config
+		// Parse the config. The file exists (checked above), so a parse failure
+		// is a broken schema, not an absent connector: warning and continuing
+		// would drop the connector from the generated set while the run still
+		// reports success.
 		config, err := ParseConnectorConfig(configPath)
 		if err != nil {
-			fmt.Printf("Warning: failed to parse %s: %v\n", configPath, err)
+			problems = append(problems, fmt.Errorf("failed to parse %s %s config: %w", entity.Type, connectorCode, err))
 			continue
 		}
 
@@ -242,10 +249,14 @@ func processEntity(backendPath, output string, entity EntityConfig, specificConn
 		// Generate the schema
 		fmt.Printf("Generating %s_%s.go...\n", entity.Type, connectorCode)
 		if err := generator.Generate(config, connectorCode, backendPath); err != nil {
-			return count, fmt.Errorf("failed to generate %s %s: %w", entity.Type, connectorCode, err)
+			problems = append(problems, fmt.Errorf("failed to generate %s %s: %w", entity.Type, connectorCode, err))
+			continue
 		}
 		count++
 	}
 
-	return count, nil
+	// Report every broken connector, not just the first. A regen touches ~50
+	// connectors and the snapshot diff is only trustworthy as a changelog if the
+	// run either succeeds wholly or names everything that went wrong.
+	return count, errors.Join(problems...)
 }

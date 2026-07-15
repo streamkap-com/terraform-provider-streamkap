@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,16 @@ func TestAccSourceSupabaseResource(t *testing.T) {
 		t.Skip("Skipping TestAccSourceSupabaseResource: TF_VAR_source_supabase_hostname or TF_VAR_source_supabase_password not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_supabase_hostname" {
 	type        = string
 	description = "The hostname of the Supabase database"
@@ -32,7 +36,7 @@ variable "source_supabase_password" {
 	description = "The password of the Supabase database"
 }
 resource "streamkap_source_supabase" "test" {
-	name                                         = "tf-acc-test-source-supabase"
+	name                                         = %q
 	database_hostname                            = var.source_supabase_hostname
 	database_port                                = 5432
 	database_user                                = "streamkap"
@@ -51,9 +55,9 @@ resource "streamkap_source_supabase" "test" {
 	include_source_db_name_in_table_name         = false
 	ssh_enabled                                  = false
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "name", "tf-acc-test-source-supabase"),
+					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "database_hostname", sourceSupabaseHostname),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "database_port", "5432"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "database_user", "streamkap"),
@@ -82,7 +86,7 @@ resource "streamkap_source_supabase" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_supabase_hostname" {
 	type        = string
 	description = "The hostname of the Supabase database"
@@ -93,7 +97,7 @@ variable "source_supabase_password" {
 	description = "The password of the Supabase database"
 }
 resource "streamkap_source_supabase" "test" {
-	name                                         = "tf-acc-test-source-supabase-updated"
+	name                                         = %q
 	database_hostname                            = var.source_supabase_hostname
 	database_port                                = 5432
 	database_user                                = "streamkap"
@@ -112,9 +116,9 @@ resource "streamkap_source_supabase" "test" {
 	include_source_db_name_in_table_name         = true
 	ssh_enabled                                  = false
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "name", "tf-acc-test-source-supabase-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "snapshot_read_only", "No"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "table_include_list", "public.users,public.orders"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "heartbeat_enabled", "false"),

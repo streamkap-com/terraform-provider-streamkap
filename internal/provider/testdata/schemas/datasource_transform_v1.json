@@ -1,0 +1,40 @@
+{
+  "version": "v3.0.0",
+  "attributes": {
+    "id": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "name": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "start_time": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "topic_ids": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.ListType[basetypes.StringType]"
+    },
+    "topic_map": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.ListType[types.ObjectType[\"id\":basetypes.StringType, \"name\":basetypes.StringType]]"
+    }
+  }
+}

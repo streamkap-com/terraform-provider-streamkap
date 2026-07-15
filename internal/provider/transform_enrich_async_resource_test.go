@@ -1,12 +1,15 @@
 package provider
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
 func TestAccTransformEnrichAsyncResource_basic(t *testing.T) {
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -14,9 +17,9 @@ func TestAccTransformEnrichAsyncResource_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read
 			{
-				Config: testAccTransformEnrichAsyncResourceConfig("tf-acc-test-transform-enrich-async"),
+				Config: testAccTransformEnrichAsyncResourceConfig(name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_transform_enrich_async.test", "name", "tf-acc-test-transform-enrich-async"),
+					resource.TestCheckResourceAttr("streamkap_transform_enrich_async.test", "name", name),
 					resource.TestCheckResourceAttrSet("streamkap_transform_enrich_async.test", "id"),
 					resource.TestCheckResourceAttrSet("streamkap_transform_enrich_async.test", "transform_type"),
 					resource.TestCheckResourceAttr("streamkap_transform_enrich_async.test", "transforms_language", "JavaScript"),
@@ -37,9 +40,9 @@ func TestAccTransformEnrichAsyncResource_basic(t *testing.T) {
 			},
 			// Update
 			{
-				Config: testAccTransformEnrichAsyncResourceConfigUpdated("tf-acc-test-transform-enrich-async-updated"),
+				Config: testAccTransformEnrichAsyncResourceConfigUpdated(nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_transform_enrich_async.test", "name", "tf-acc-test-transform-enrich-async-updated"),
+					resource.TestCheckResourceAttr("streamkap_transform_enrich_async.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_transform_enrich_async.test", "transforms_language", "Python"),
 					resource.TestCheckResourceAttr("streamkap_transform_enrich_async.test", "transforms_async_timeout_ms", "2000"),
 					resource.TestCheckResourceAttr("streamkap_transform_enrich_async.test", "transforms_async_capacity", "20"),
@@ -52,6 +55,7 @@ func TestAccTransformEnrichAsyncResource_basic(t *testing.T) {
 }
 
 func TestAccTransformEnrichAsyncResource_withImplementation(t *testing.T) {
+	name := acctestName(t, "impl")
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -59,9 +63,9 @@ func TestAccTransformEnrichAsyncResource_withImplementation(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create with implementation_json
 			{
-				Config: testAccTransformEnrichAsyncWithImplementationConfig(),
+				Config: testAccTransformEnrichAsyncWithImplementationConfig(name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_transform_enrich_async.test_impl", "name", "tf-acc-test-transform-enrich-async-impl"),
+					resource.TestCheckResourceAttr("streamkap_transform_enrich_async.test_impl", "name", name),
 					resource.TestCheckResourceAttr("streamkap_transform_enrich_async.test_impl", "transforms_language", "JavaScript"),
 					resource.TestCheckResourceAttrSet("streamkap_transform_enrich_async.test_impl", "id"),
 					resource.TestCheckResourceAttrSet("streamkap_transform_enrich_async.test_impl", "implementation_json"),
@@ -79,9 +83,9 @@ func TestAccTransformEnrichAsyncResource_withImplementation(t *testing.T) {
 }
 
 func testAccTransformEnrichAsyncResourceConfig(name string) string {
-	return `
+	return fmt.Sprintf(`
 resource "streamkap_transform_enrich_async" "test" {
-  name                                   = "` + name + `"
+  name                                   = %q
   transforms_language                    = "JavaScript"
   transforms_async_timeout_ms            = 1000
   transforms_async_capacity              = 10
@@ -90,13 +94,13 @@ resource "streamkap_transform_enrich_async" "test" {
   transforms_input_serialization_format  = "Avro"
   transforms_output_serialization_format = "Avro"
 }
-`
+`, name)
 }
 
 func testAccTransformEnrichAsyncResourceConfigUpdated(name string) string {
-	return `
+	return fmt.Sprintf(`
 resource "streamkap_transform_enrich_async" "test" {
-  name                                   = "` + name + `"
+  name                                   = %q
   transforms_language                    = "Python"
   transforms_async_timeout_ms            = 2000
   transforms_async_capacity              = 20
@@ -105,13 +109,13 @@ resource "streamkap_transform_enrich_async" "test" {
   transforms_input_serialization_format  = "Json"
   transforms_output_serialization_format = "Json"
 }
-`
+`, name)
 }
 
-func testAccTransformEnrichAsyncWithImplementationConfig() string {
-	return `
+func testAccTransformEnrichAsyncWithImplementationConfig(name string) string {
+	return fmt.Sprintf(`
 resource "streamkap_transform_enrich_async" "test_impl" {
-  name                                   = "tf-acc-test-transform-enrich-async-impl"
+  name                                   = %q
   transforms_language                    = "JavaScript"
   transforms_async_timeout_ms            = 1000
   transforms_async_capacity              = 10
@@ -125,5 +129,5 @@ resource "streamkap_transform_enrich_async" "test_impl" {
     value_transform = "function _streamkap_transform(inputObj, keyObj, topicName, timestamp, commonObject) { return inputObj; }"
   })
 }
-`
+`, name)
 }

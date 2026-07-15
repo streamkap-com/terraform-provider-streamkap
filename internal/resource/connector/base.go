@@ -143,12 +143,20 @@ func (r *BaseConnectorResource) Schema(ctx context.Context, req resource.SchemaR
 	baseSchema.Blocks = map[string]schema.Block{
 		"timeouts": timeouts.Block(ctx, timeouts.Opts{
 			Create: true,
+			Read:   true,
 			Update: true,
 			Delete: true,
 		}),
 	}
 
 	resp.Schema = baseSchema
+}
+
+// Config exposes the connector's ConnectorConfig. Provider-level tests use it to
+// cross-check field mappings against the model and schema, which would otherwise
+// require reaching into unexported state.
+func (r *BaseConnectorResource) Config() ConnectorConfig {
+	return r.config
 }
 
 // Configure sets the API client for this resource.
@@ -205,7 +213,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	// Capture user-supplied secrets before the API echo can overwrite them.
-	plannedSecrets := shared.CaptureStringFields(model, r.sensitiveStringAttrNames())
+	plannedSecrets := shared.CaptureStringFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
 
 	// Get name from model
 	name := r.getStringField(model, "Name")
@@ -227,7 +235,9 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Creating %s %s with config: %+v", r.config.GetConnectorType(), r.config.GetConnectorCode(), configMap))
+	// Never log configMap: it holds decrypted credentials keyed by API field name
+	// and bypasses the redaction applied to the request body in internal/api.
+	tflog.Debug(ctx, fmt.Sprintf("Creating %s %s", r.config.GetConnectorType(), r.config.GetConnectorCode()))
 
 	// Call the appropriate API based on connector type
 	var id string
@@ -309,6 +319,23 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
+	// Get timeout from state (Read runs without a config on refresh)
+	var timeoutsValue timeouts.Value
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("timeouts"), &timeoutsValue)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	readTimeout, diags := timeoutsValue.Read(ctx, helper.DefaultReadTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
 	// Create a new model instance for this connector
 	model := r.config.NewModelInstance()
 
@@ -317,6 +344,11 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// Snapshot the secrets already in state. The API response can null them out
+	// (see shared.FillNullStringFields); prior state is the only source we have
+	// on refresh, since Read gets no plan.
+	priorSecrets := shared.CaptureStringFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
 
 	// Get ID from model
 	id := r.getStringField(model, "ID")
@@ -388,6 +420,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 	r.setStringField(model, "KcClusterId", kcClusterId)
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(priorTags, responseTags))
 	r.configMapToModel(ctx, responseConfig, model)
+	shared.FillNullStringFields(model, priorSecrets)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
@@ -430,7 +463,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Capture user-supplied secrets before the API echo can overwrite them.
-	plannedSecrets := shared.CaptureStringFields(model, r.sensitiveStringAttrNames())
+	plannedSecrets := shared.CaptureStringFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
 
 	// Get ID and name from model
 	id := r.getStringField(model, "ID")
@@ -453,7 +486,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Updating %s %s with ID: %s, config: %+v", r.config.GetConnectorType(), r.config.GetConnectorCode(), id, configMap))
+	tflog.Debug(ctx, fmt.Sprintf("Updating %s %s with ID: %s", r.config.GetConnectorType(), r.config.GetConnectorCode(), id))
 
 	// Call the appropriate API based on connector type
 	var connectorName string
@@ -682,22 +715,6 @@ func (r *BaseConnectorResource) isJSONStringField(fieldName string, jsonStringFi
 // configMapToModel updates a model struct from a config map using the field mappings.
 func (r *BaseConnectorResource) configMapToModel(ctx context.Context, cfg map[string]any, model any) {
 	shared.ConfigMapToModel(ctx, cfg, model, r.config.GetFieldMappings(), r.setValueHook())
-}
-
-// sensitiveStringAttrNames returns the tfsdk names of every Sensitive string
-// attribute in this connector's schema. Create/Update restore the user-supplied
-// value for these after applying the API response, because the Streamkap
-// backend does not reliably echo secrets back (see
-// shared.PreserveKnownStringFields). All sensitive connector attributes are
-// strings; non-string types are intentionally ignored.
-func (r *BaseConnectorResource) sensitiveStringAttrNames() []string {
-	var names []string
-	for name, attr := range r.config.GetSchema().Attributes {
-		if sa, ok := attr.(schema.StringAttribute); ok && sa.Sensitive {
-			names = append(names, name)
-		}
-	}
-	return names
 }
 
 // extractValueHook returns a hook for shared.ExtractTerraformValue that handles

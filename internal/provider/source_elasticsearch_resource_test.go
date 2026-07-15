@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,13 +16,16 @@ func TestAccSourceElasticsearchResource(t *testing.T) {
 		t.Skip("Skipping TestAccSourceElasticsearchResource: TF_VAR_source_elasticsearch_host or TF_VAR_source_elasticsearch_password not set")
 	}
 
+	name := acctestName(t, "main")
+	nameUpdated := acctestName(t, "updated")
+
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccCheckSourceDestroy,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_elasticsearch_host" {
 	type        = string
 	description = "The hostname of the Elasticsearch cluster"
@@ -32,7 +36,7 @@ variable "source_elasticsearch_password" {
 	description = "The password of the Elasticsearch user"
 }
 resource "streamkap_source_elasticsearch" "test" {
-	name                  = "tf-acc-test-source-elasticsearch"
+	name                  = %q
 	es_host               = var.source_elasticsearch_host
 	es_scheme             = "https"
 	es_port               = 443
@@ -43,9 +47,9 @@ resource "streamkap_source_elasticsearch" "test" {
 	datetime_field_name   = "timestamp"
 	tasks_max             = 5
 }
-`,
+`, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_elasticsearch.test", "name", "tf-acc-test-source-elasticsearch"),
+					resource.TestCheckResourceAttr("streamkap_source_elasticsearch.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_elasticsearch.test", "es_host", sourceElasticsearchHost),
 					resource.TestCheckResourceAttr("streamkap_source_elasticsearch.test", "es_scheme", "https"),
 					resource.TestCheckResourceAttr("streamkap_source_elasticsearch.test", "es_port", "443"),
@@ -66,7 +70,7 @@ resource "streamkap_source_elasticsearch" "test" {
 			},
 			// Update and Read testing
 			{
-				Config: providerConfig + `
+				Config: providerConfig + fmt.Sprintf(`
 variable "source_elasticsearch_host" {
 	type        = string
 	description = "The hostname of the Elasticsearch cluster"
@@ -77,7 +81,7 @@ variable "source_elasticsearch_password" {
 	description = "The password of the Elasticsearch user"
 }
 resource "streamkap_source_elasticsearch" "test" {
-	name                  = "tf-acc-test-source-elasticsearch-updated"
+	name                  = %q
 	es_host               = var.source_elasticsearch_host
 	es_scheme             = "https"
 	es_port               = 9200
@@ -88,9 +92,9 @@ resource "streamkap_source_elasticsearch" "test" {
 	datetime_field_name   = "updated_at"
 	tasks_max             = 3
 }
-`,
+`, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr("streamkap_source_elasticsearch.test", "name", "tf-acc-test-source-elasticsearch-updated"),
+					resource.TestCheckResourceAttr("streamkap_source_elasticsearch.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_elasticsearch.test", "es_port", "9200"),
 					resource.TestCheckResourceAttr("streamkap_source_elasticsearch.test", "endpoint_include_list", "my-index,my-other-index"),
 					resource.TestCheckResourceAttr("streamkap_source_elasticsearch.test", "datetime_field_name", "updated_at"),

@@ -18,7 +18,7 @@
 //	      "name": "database.hostname.user.defined",
 //	      "user_defined": true,
 //	      "required": true,
-//	      "value": {"control": "text", "type": "raw"}
+//	      "value": {"control": "string", "type": "raw"}
 //	    }
 //	  ]
 //	}
@@ -30,9 +30,9 @@
 // ConfigEntry: Individual configuration field with name, user_defined flag,
 // required status, display settings, and value metadata.
 //
-// ValueObject: Field value metadata including control type (text, select, toggle,
-// slider, password), default values, validation constraints (min/max/step for
-// sliders), and raw_values for select options.
+// ValueObject: Field value metadata including control type (string, one-select,
+// toggle, slider, password), default values, validation constraints (min/max/step
+// for sliders), and raw_values for select options.
 //
 // Condition: Conditional visibility rules (EQ, NE, IN operators) for fields
 // that depend on other field values.
@@ -40,10 +40,12 @@
 // # Type Mapping
 //
 // The TerraformType method maps backend controls to Terraform types:
-//   - text, select, textarea, password, file → types.String
+//   - string, password, textarea, datetime, one-select → types.String
 //   - number, slider → types.Int64
-//   - toggle, checkbox → types.Bool
-//   - multi_select → types.List[types.String]
+//   - boolean, toggle → types.Bool
+//   - multi-select → types.List[types.String]
+//   - json → jsontypes.Normalized
+//   - any other control → types.String
 //
 // # User-Defined Field Filtering
 //
@@ -305,6 +307,9 @@ func (e *ConfigEntry) Int64DefaultIsUnparseableString() bool {
 }
 
 // GetDefaultBool returns the default value as bool, or false if not set or not a boolean.
+// As with number defaults, the backend stores some toggle defaults as strings
+// (e.g. "true"), so the string case is parsed rather than treated as unset —
+// otherwise such fields would emit a bogus StaticBool(false) default.
 func (e *ConfigEntry) GetDefaultBool() bool {
 	if e.Value.Default == nil {
 		return false
@@ -312,9 +317,27 @@ func (e *ConfigEntry) GetDefaultBool() bool {
 	switch v := e.Value.Default.(type) {
 	case bool:
 		return v
+	case string:
+		if val, err := strconv.ParseBool(v); err == nil {
+			return val
+		}
+		return false
 	default:
 		return false
 	}
+}
+
+// BoolDefaultIsUnparseableString reports whether the default is a non-empty
+// string that does not parse as a bool. Such a default silently collapses to
+// false via GetDefaultBool, so callers emitting a Bool default should surface it
+// rather than ship a wrong false.
+func (e *ConfigEntry) BoolDefaultIsUnparseableString() bool {
+	s, ok := e.Value.Default.(string)
+	if !ok || s == "" {
+		return false
+	}
+	_, err := strconv.ParseBool(s)
+	return err != nil
 }
 
 // TerraformType returns the appropriate Terraform type for this config entry.

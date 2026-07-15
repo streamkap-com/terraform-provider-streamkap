@@ -8,6 +8,5 @@ package main
 import (
 	_ "github.com/jarcoal/httpmock"
 	_ "github.com/stretchr/testify/assert"
-	_ "gopkg.in/dnaeon/go-vcr.v4/pkg/recorder"
 	_ "gotest.tools/gotestsum"
 )

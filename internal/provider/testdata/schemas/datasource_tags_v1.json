@@ -1,0 +1,33 @@
+{
+  "version": "v3.0.0",
+  "attributes": {
+    "filter_ids": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.SetType[basetypes.StringType]"
+    },
+    "filter_name": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "filter_type": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.SetType[basetypes.StringType]"
+    },
+    "tags": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.ListType[types.ObjectType[\"custom\":basetypes.BoolType, \"description\":basetypes.StringType, \"id\":basetypes.StringType, \"name\":basetypes.StringType, \"system\":basetypes.BoolType, \"type\":types.SetType[basetypes.StringType]]]"
+    }
+  }
+}
