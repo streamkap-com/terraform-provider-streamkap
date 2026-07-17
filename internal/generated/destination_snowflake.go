@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
@@ -40,6 +41,7 @@ type DestinationSnowflakeModel struct {
 	SchemaEvolution                                  types.String            `tfsdk:"schema_evolution"`
 	UseHybridTables                                  types.Bool              `tfsdk:"use_hybrid_tables"`
 	ApplyDynamicTableScript                          types.Bool              `tfsdk:"apply_dynamic_table_script"`
+	SnowflakeStreamingIcebergEnabled                 types.Bool              `tfsdk:"snowflake_streaming_iceberg_enabled"`
 	CreateSQLExecute                                 types.String            `tfsdk:"create_sql_execute"`
 	SQLTableName                                     types.String            `tfsdk:"sql_table_name"`
 	CreateSQLData                                    types.String            `tfsdk:"create_sql_data"`
@@ -240,6 +242,16 @@ func DestinationSnowflakeSchema() schema.Schema {
 				Description:         "Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only). Defaults to false.",
 				MarkdownDescription: "Specifies whether the connector should create Dynamic Tables & Cleanup Tasks (applies to `append` only). Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
+			},
+			"snowflake_streaming_iceberg_enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Specifies whether the connector should write into a pre-existing Snowflake-managed Iceberg table instead of a standard Snowflake table (applies to `append` only). The target table must already exist in Snowflake before enabling this option. Defaults to false.",
+				MarkdownDescription: "Specifies whether the connector should write into a pre-existing Snowflake-managed Iceberg table instead of a standard Snowflake table (applies to `append` only). The target table must already exist in Snowflake before enabling this option. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+				},
 			},
 			"create_sql_execute": schema.StringAttribute{
 				Optional:            true,
@@ -580,6 +592,7 @@ var DestinationSnowflakeFieldMappings = map[string]string{
 	"schema_evolution":                                        "schema.evolution",
 	"use_hybrid_tables":                                       "use.hybrid.tables",
 	"apply_dynamic_table_script":                              "apply.dynamic.table.script",
+	"snowflake_streaming_iceberg_enabled":                     "snowflake.streaming.iceberg.enabled",
 	"create_sql_execute":                                      "create.sql.execute",
 	"sql_table_name":                                          "sql.table.name",
 	"create_sql_data":                                         "create.sql.data",
