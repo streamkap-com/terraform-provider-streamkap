@@ -35,12 +35,19 @@ type SourcePlanetscaleModel struct {
 	TableIncludeList                                   types.String   `tfsdk:"table_include_list"`
 	SchemaHistoryInternalStoreOnlyCapturedDatabasesDdl types.Bool     `tfsdk:"schema_history_internal_store_only_captured_databases_ddl"`
 	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool     `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
+	DatabaseSSLDisabled                                types.Bool     `tfsdk:"database_ssl_disabled"`
+	VitessSetBasicAuthenticationHeader                 types.Bool     `tfsdk:"vitess_set_basic_authentication_header"`
 	SSHEnabled                                         types.Bool     `tfsdk:"ssh_enabled"`
 	SSHHost                                            types.String   `tfsdk:"ssh_host"`
 	SSHPort                                            types.Int64    `tfsdk:"ssh_port"`
 	SSHUser                                            types.String   `tfsdk:"ssh_user"`
 	ColumnExcludeList                                  types.String   `tfsdk:"column_exclude_list"`
 	SSHPublicKey                                       types.String   `tfsdk:"ssh_public_key"`
+	StreamkapSnapshotParallelism                       types.Int64    `tfsdk:"streamkap_snapshot_parallelism"`
+	StreamkapSnapshotChunkSizeBytes                    types.Int64    `tfsdk:"streamkap_snapshot_chunk_size_bytes"`
+	StreamkapSnapshotMaxSplitSizeBytes                 types.Int64    `tfsdk:"streamkap_snapshot_max_split_size_bytes"`
+	StreamkapSnapshotStateRefreshMs                    types.Int64    `tfsdk:"streamkap_snapshot_state_refresh_ms"`
+	VtgateMysqlPort                                    types.Int64    `tfsdk:"vtgate_mysql_port"`
 	TransformsValueToKeyFieldsIncludeList              types.String   `tfsdk:"transforms_value_to_key_fields_include_list"`
 	TransformsValueToKeyReplaceNullWithDefault         types.Bool     `tfsdk:"transforms_value_to_key_replace_null_with_default"`
 	PreserveNullValues                                 types.Bool     `tfsdk:"preserve_null_values"`
@@ -172,6 +179,20 @@ func SourcePlanetscaleSchema() schema.Schema {
 				MarkdownDescription: "Specifies whether the connector records schema structures from all logical tables in the captured schemas or databases, or only captured tables. Enabling this when you have many tables can improve performance and avoid timeouts. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
+			"database_ssl_disabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Disable TLS on the VTGate gRPC connection and use plaintext. Leave off for PlanetScale Cloud (TLS required); enable only for a local / self-hosted plaintext Vitess. Defaults to false.",
+				MarkdownDescription: "Disable TLS on the VTGate gRPC connection and use plaintext. Leave off for PlanetScale Cloud (TLS required); enable only for a local / self-hosted plaintext Vitess. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"vitess_set_basic_authentication_header": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Send an HTTP-style `authorization: Basic` header on VTGate gRPC calls. Keep on for PlanetScale Cloud (its gateway requires it); turn off for a self-hosted vtgate started with `--grpc_auth_mode static`, which instead expects vitess-native StaticAuthCredentials. Defaults to true.",
+				MarkdownDescription: "Send an HTTP-style `authorization: Basic` header on VTGate gRPC calls. Keep on for PlanetScale Cloud (its gateway requires it); turn off for a self-hosted vtgate started with `--grpc_auth_mode static`, which instead expects vitess-native StaticAuthCredentials. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -219,6 +240,53 @@ func SourcePlanetscaleSchema() schema.Schema {
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"streamkap_snapshot_parallelism": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How many parallel chunk requests to send to the source DB. Defaults to 1.",
+				MarkdownDescription: "How many parallel chunk requests to send to the source DB. Defaults to `1`.",
+				Default:             int64default.StaticInt64(1),
+				Validators: []validator.Int64{
+					int64validator.Between(1, 50),
+				},
+			},
+			"streamkap_snapshot_chunk_size_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to 524288.",
+				MarkdownDescription: "Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to `524288`.",
+				Default:             int64default.StaticInt64(524288),
+				Validators: []validator.Int64{
+					int64validator.Between(4096, 8388608),
+				},
+			},
+			"streamkap_snapshot_max_split_size_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "A table with an estimated size greater than max split size will trigger intra-table paralelism. Table will be split into max.split.size.bytes parts and the parts will be processed in parallel. Defaults to 53687091200.",
+				MarkdownDescription: "A table with an estimated size greater than max split size will trigger intra-table paralelism. Table will be split into max.split.size.bytes parts and the parts will be processed in parallel. Defaults to `53687091200`.",
+				Default:             int64default.StaticInt64(53687091200),
+				Validators: []validator.Int64{
+					int64validator.Between(10485760, 214748364800),
+				},
+			},
+			"streamkap_snapshot_state_refresh_ms": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Snapshot progress publish candence, publishing more often can affect performance. Defaults to 30000.",
+				MarkdownDescription: "Snapshot progress publish candence, publishing more often can affect performance. Defaults to `30000`.",
+				Default:             int64default.StaticInt64(30000),
+				Validators: []validator.Int64{
+					int64validator.Between(1000, 60000),
+				},
+			},
+			"vtgate_mysql_port": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Port of the VTGate MySQL wire-protocol endpoint used for parallel-snapshot chunk reads (the gRPC vstream endpoint is database.port). PlanetScale Cloud = 3306; self-hosted vtgate typically 15306. Defaults to 3306.",
+				MarkdownDescription: "Port of the VTGate MySQL wire-protocol endpoint used for parallel-snapshot chunk reads (the gRPC vstream endpoint is database.port). PlanetScale Cloud = 3306; self-hosted vtgate typically 15306. Defaults to `3306`.",
+				Default:             int64default.StaticInt64(3306),
 			},
 			"transforms_value_to_key_fields_include_list": schema.StringAttribute{
 				Optional:            true,
@@ -335,22 +403,29 @@ var SourcePlanetscaleFieldMappings = map[string]string{
 	"table_include_list":     "table.include.list.user.defined",
 	"schema_history_internal_store_only_captured_databases_ddl": "schema.history.internal.store.only.captured.databases.ddl",
 	"schema_history_internal_store_only_captured_tables_ddl":    "schema.history.internal.store.only.captured.tables.ddl",
-	"ssh_enabled":         "ssh.enabled",
-	"ssh_host":            "ssh.host",
-	"ssh_port":            "ssh.port",
-	"ssh_user":            "ssh.user",
-	"column_exclude_list": "column.exclude.list.user.defined",
-	"ssh_public_key":      "ssh.public.key.user.displayed",
-	"transforms_value_to_key_fields_include_list":            "transforms.ValueToKey.fields.include.list",
-	"transforms_value_to_key_replace_null_with_default":      "transforms.ValueToKey.replace.null.with.default",
-	"preserve_null_values":                                   "preserve.null.values",
-	"transforms_oversized_records_fields_include_list":       "transforms.OversizedRecords.fields.include.list",
-	"transforms_oversized_records_fields_exclude_list":       "transforms.OversizedRecords.fields.exclude.list",
-	"transforms_oversized_records_max_field_size_bytes":      "transforms.OversizedRecords.max.field.size.bytes",
-	"transforms_oversized_records_oversized_field_behavior":  "transforms.OversizedRecords.oversized.field.behavior",
-	"transforms_oversized_records_truncation_suffix":         "transforms.OversizedRecords.truncation.suffix",
-	"transforms_oversized_records_max_record_size_bytes":     "transforms.OversizedRecords.max.record.size.bytes",
-	"transforms_oversized_records_semantic_types_exclude":    "transforms.OversizedRecords.semantic.types.exclude",
-	"transforms_oversized_records_replace_null_with_default": "transforms.OversizedRecords.replace.null.with.default",
-	"insert_topic_name_enabled":                              "InsertTopicName.enabled",
+	"database_ssl_disabled":                                     "database.ssl.disabled",
+	"vitess_set_basic_authentication_header":                    "vitess.set.basic.authentication.header",
+	"ssh_enabled":                                               "ssh.enabled",
+	"ssh_host":                                                  "ssh.host",
+	"ssh_port":                                                  "ssh.port",
+	"ssh_user":                                                  "ssh.user",
+	"column_exclude_list":                                       "column.exclude.list.user.defined",
+	"ssh_public_key":                                            "ssh.public.key.user.displayed",
+	"streamkap_snapshot_parallelism":                            "streamkap.snapshot.parallelism",
+	"streamkap_snapshot_chunk_size_bytes":                       "streamkap.snapshot.chunk.size.bytes",
+	"streamkap_snapshot_max_split_size_bytes":                   "streamkap.snapshot.max.split.size.bytes",
+	"streamkap_snapshot_state_refresh_ms":                       "streamkap.snapshot.state.refresh.ms",
+	"vtgate_mysql_port":                                         "vtgate.mysql.port",
+	"transforms_value_to_key_fields_include_list":               "transforms.ValueToKey.fields.include.list",
+	"transforms_value_to_key_replace_null_with_default":         "transforms.ValueToKey.replace.null.with.default",
+	"preserve_null_values":                                      "preserve.null.values",
+	"transforms_oversized_records_fields_include_list":          "transforms.OversizedRecords.fields.include.list",
+	"transforms_oversized_records_fields_exclude_list":          "transforms.OversizedRecords.fields.exclude.list",
+	"transforms_oversized_records_max_field_size_bytes":         "transforms.OversizedRecords.max.field.size.bytes",
+	"transforms_oversized_records_oversized_field_behavior":     "transforms.OversizedRecords.oversized.field.behavior",
+	"transforms_oversized_records_truncation_suffix":            "transforms.OversizedRecords.truncation.suffix",
+	"transforms_oversized_records_max_record_size_bytes":        "transforms.OversizedRecords.max.record.size.bytes",
+	"transforms_oversized_records_semantic_types_exclude":       "transforms.OversizedRecords.semantic.types.exclude",
+	"transforms_oversized_records_replace_null_with_default":    "transforms.OversizedRecords.replace.null.with.default",
+	"insert_topic_name_enabled":                                 "InsertTopicName.enabled",
 }

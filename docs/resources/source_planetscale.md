@@ -138,6 +138,7 @@ output "example-source-planetscale" {
 - `column_exclude_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.
 - `converter_tinyint_bool` (Boolean) Convert tinyInt(1) columns to boolean. Defaults to `false`.
 - `database_port` (Number) Integer port number of the PlanetScale database server (VTGate). Defaults to `443`.
+- `database_ssl_disabled` (Boolean) Disable TLS on the VTGate gRPC connection and use plaintext. Leave off for PlanetScale Cloud (TLS required); enable only for a local / self-hosted plaintext Vitess. Defaults to `false`.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
@@ -148,6 +149,10 @@ output "example-source-planetscale" {
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
+- `streamkap_snapshot_chunk_size_bytes` (Number) Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to `524288`.
+- `streamkap_snapshot_max_split_size_bytes` (Number) A table with an estimated size greater than max split size will trigger intra-table paralelism. Table will be split into max.split.size.bytes parts and the parts will be processed in parallel. Defaults to `53687091200`.
+- `streamkap_snapshot_parallelism` (Number) How many parallel chunk requests to send to the source DB. Defaults to `1`.
+- `streamkap_snapshot_state_refresh_ms` (Number) Snapshot progress publish candence, publishing more often can affect performance. Defaults to `30000`.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
@@ -160,7 +165,9 @@ output "example-source-planetscale" {
 - `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
 - `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
+- `vitess_set_basic_authentication_header` (Boolean) Send an HTTP-style `authorization: Basic` header on VTGate gRPC calls. Keep on for PlanetScale Cloud (its gateway requires it); turn off for a self-hosted vtgate started with `--grpc_auth_mode static`, which instead expects vitess-native StaticAuthCredentials. Defaults to `true`.
 - `vitess_tablet_type` (String) The type of Tablet (hence MySQL) from which to stream the changes. Defaults to `MASTER`. Valid values: `MASTER`, `REPLICA`, `RDONLY`.
+- `vtgate_mysql_port` (Number) Port of the VTGate MySQL wire-protocol endpoint used for parallel-snapshot chunk reads (the gRPC vstream endpoint is database.port). PlanetScale Cloud = 3306; self-hosted vtgate typically 15306. Defaults to `3306`.
 
 ### Read-Only
 

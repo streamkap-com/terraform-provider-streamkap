@@ -172,9 +172,9 @@ output "example-source-postgresql" {
 - `column_include_list_toggled` (Boolean) Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to `true`.
 - `database_port` (Number) PostgreSQL Port. For example, 5432. Defaults to `5432`.
 - `database_sslmode` (String) Whether to use an encrypted connection to the PostgreSQL server. Defaults to `require`. Valid values: `require`, `disable`.
-- `heartbeat_data_collection_schema_or_database` (String) Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.
-- `heartbeat_enabled` (Boolean) When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to `true`.
-- `heartbeat_use_logical_message` (Boolean) Use a logical-message heartbeat instead of a heartbeat table. Runs SELECT pg_logical_emit_message(true, ...) on each beat to keep the replication slot advancing — works on PG14+ primaries with a SELECT-only role and is compatible with read-only mode. No table or write grant required on the source. Defaults to `false`.
+- `heartbeat_data_collection_schema_or_database` (String) Optional. The schema containing a 'streamkap_heartbeat' table  -  providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.
+- `heartbeat_enabled` (Boolean) When enabled, the connector emits a periodic heartbeat to a Kafka topic  -  this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to `true`.
+- `heartbeat_use_logical_message` (Boolean) Use a logical-message heartbeat instead of a heartbeat table. Runs SELECT pg_logical_emit_message(true, ...) on each beat to keep the replication slot advancing  -  works on PG14+ primaries with a SELECT-only role and is compatible with read-only mode. No table or write grant required on the source. Defaults to `false`.
 - `include_source_db_name_in_table_name` (Boolean) Changes the format of topics to 'DatabaseName_TopicName'. Defaults to `false`.
 - `insert_static_key_field_1` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key1_static_field' instead.
 - `insert_static_key_field_2` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key2_static_field' instead.
@@ -186,11 +186,12 @@ output "example-source-postgresql" {
 - `insert_static_value_field_2` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_value2_static_field' instead.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
-- `post_processors` (String) Post processors. Valid values: `reselector`.
+- `post_processors_reselect_enabled` (Boolean) When enabled, TOAST columns that cannot be read from the WAL are re-fetched from the source database at event time. Defaults to `true`.
 - `predicates_is_topic_to_enrich_pattern` (String) Regex pattern to match topics for enrichment. Defaults to `$^`.
 - `predicates_istopictoenrich_pattern` (String, Deprecated) DEPRECATED: Use 'predicates_is_topic_to_enrich_pattern' instead.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `publication_name` (String) The name of the publication for the connector to use. Defaults to `streamkap_pub`.
+- `reselector_reselect_error_handling_mode` (String) Controls what happens when the re-select post processor fails to fetch a column. 'Fail' stops the connector; 'Warn' logs a warning and continues. Defaults to `fail`. Valid values: `fail`, `warn`.
 - `signal_data_collection_schema_or_database` (String) Full path to the signal table including schema and table name (e.g., 'public.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.
 - `slot_name` (String) The name of the replication slot for the connector to use. Defaults to `streamkap_pgoutput_slot`.
 - `snapshot_read_only` (String) When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots. Defaults to `Yes`. Valid values: `Yes`, `No`.
@@ -203,7 +204,7 @@ output "example-source-postgresql" {
 - `streamkap_snapshot_chunk_size_bytes` (Number) Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to `524288`.
 - `streamkap_snapshot_max_split_size_bytes` (Number) A table whose on-disk size exceeds this splits into ceil(size / threshold) disjoint ctid page-range sub-ranges so it doesn't monopolize one snapshot worker. Applies only to unfiltered ctid snapshots. Default 50 GiB. Defaults to `53687091200`.
 - `streamkap_snapshot_parallelism` (Number) How many parallel chunk requests to send to the source DB. Defaults to `1`.
-- `streamkap_snapshot_state_refresh_ms` (Number) Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to `30000`.
+- `streamkap_snapshot_state_refresh_ms` (Number) Executor publish cadence (ms)  -  how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to `30000`.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_insert_static_key1_static_field` (String) The name of the static field to be added to the message key.

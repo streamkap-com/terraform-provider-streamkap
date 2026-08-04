@@ -24,6 +24,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `aws_secret_access_key` change from `Required` to `Optional`/`Computed`
   to accommodate the new mode; existing configurations using access keys are
   unaffected.
+- **Mask Field transform options on every destination** —
+  `transforms_mask_field_fields_include_list`,
+  `transforms_mask_field_fields_exclude_list`,
+  `transforms_mask_field_mask_function` (`SHA256_TRUNCATE` default,
+  `MD5_TRUNCATE`, `SHA256`, `MD5`, `REDACT`, `FIXED`, `NULLIFY`),
+  `transforms_mask_field_mask_salt`, `transforms_mask_field_mask_char`,
+  `transforms_mask_field_mask_fixed_value`, and
+  `transforms_mask_field_replace_null_with_default` mask (anonymise) string
+  columns in-place on the way into the destination.
+- **`streamkap_destination_s3`**: `file_max_records` and
+  `aws_s3_part_size_bytes`.
+- **`streamkap_source_mysql` / `streamkap_source_mariadb`**:
+  `inconsistent_schema_handling_mode` plus the streaming-snapshot tuning set
+  `streamkap_snapshot_chunk_size_bytes`,
+  `streamkap_snapshot_max_split_size_bytes`, `streamkap_snapshot_parallelism`,
+  `streamkap_snapshot_state_refresh_ms`.
+- **`streamkap_source_sqlserver`**: `streamkap_snapshot_max_split_size_bytes`.
+- **`streamkap_source_oracle` / `streamkap_source_oracleaws`**: `lob_enabled`,
+  `log_mining_strategy`, `post_processors_reselect_enabled`,
+  `reselector_reselect_error_handling_mode`.
+- **`streamkap_source_postgresql` / `streamkap_source_alloydb` /
+  `streamkap_source_supabase`**: `post_processors_reselect_enabled` and
+  `reselector_reselect_error_handling_mode`.
+- **`streamkap_source_planetscale`**: `database_ssl_disabled`,
+  `vtgate_mysql_port`, `vitess_set_basic_authentication_header`, and the
+  streaming-snapshot tuning set above.
+
+### Security
+- **`streamkap_destination_iceberg`: `iceberg_catalog_s3_access_key_id` is now
+  marked sensitive.** The backend ships it without `encrypt`; tfgen's forced
+  `Sensitive` rule for `*access_key_id` (introduced in beta.26) now applies to
+  it on regeneration. A Terraform `output` exposing it needs
+  `sensitive = true`.
+
+### Breaking
+- **`streamkap_destination_s3`: `file_name_prefix` is removed** — the backend
+  dropped the field. Use `file_name_template` to control file naming.
+  (`streamkap_destination_gcs`/`_r2`/`_starburst` keep their
+  `file_name_prefix`.)
+- **`streamkap_source_postgresql` / `streamkap_source_alloydb` /
+  `streamkap_source_supabase`: `post_processors` is removed.** The backend now
+  derives it from the new `post_processors_reselect_enabled` toggle; set that
+  instead of the raw processor list.
+
 ## [3.0.0-beta.26] - 2026-07-14 (Pre-release)
 
 Remediation of the 2026-07-11 provider audit. Grouped by what a user actually notices.

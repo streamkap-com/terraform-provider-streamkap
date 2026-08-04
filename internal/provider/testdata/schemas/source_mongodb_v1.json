@@ -232,12 +232,6 @@
       "sensitive": false,
       "type": "types.SetType[basetypes.StringType]"
     },
-    "tags": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
     "transforms_insert_static_key1_static_field": {
       "required": false,
       "optional": true,

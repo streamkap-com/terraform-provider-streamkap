@@ -50,6 +50,13 @@
       "sensitive": false,
       "type": "basetypes.Int64Type"
     },
+    "database_ssl_disabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
     "database_user": {
       "required": true,
       "optional": false,
@@ -141,6 +148,34 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "streamkap_snapshot_chunk_size_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "streamkap_snapshot_max_split_size_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "streamkap_snapshot_parallelism": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "streamkap_snapshot_state_refresh_ms": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
     "table_include_list": {
       "required": true,
       "optional": false,
@@ -154,12 +189,6 @@
       "computed": true,
       "sensitive": false,
       "type": "types.SetType[basetypes.StringType]"
-    },
-    "tags": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
     },
     "transforms_oversized_records_fields_exclude_list": {
       "required": false,
@@ -238,12 +267,26 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "vitess_set_basic_authentication_header": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
     "vitess_tablet_type": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
+    },
+    "vtgate_mysql_port": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     }
   }
 }

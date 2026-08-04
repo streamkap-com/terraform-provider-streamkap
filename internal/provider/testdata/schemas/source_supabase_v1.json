@@ -134,18 +134,12 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "post_processors": {
+    "post_processors_reselect_enabled": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "post_processors": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
+      "type": "basetypes.BoolType"
     },
     "predicates_is_topic_to_enrich_pattern": {
       "required": false,
@@ -162,6 +156,13 @@
       "type": "basetypes.BoolType"
     },
     "publication_name": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "reselector_reselect_error_handling_mode": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -244,12 +245,6 @@
       "computed": true,
       "sensitive": false,
       "type": "types.SetType[basetypes.StringType]"
-    },
-    "tags": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
     },
     "transforms_insert_static_key1_static_field": {
       "required": false,

@@ -35,6 +35,7 @@ type SourceMariadbModel struct {
 	HeartbeatEnabled                                   types.Bool     `tfsdk:"heartbeat_enabled"`
 	HeartbeatDataCollectionSchemaOrDatabase            types.String   `tfsdk:"heartbeat_data_collection_schema_or_database"`
 	DatabaseConnectionTimeZone                         types.String   `tfsdk:"database_connection_time_zone"`
+	InconsistentSchemaHandlingMode                     types.String   `tfsdk:"inconsistent_schema_handling_mode"`
 	SnapshotGtid                                       types.String   `tfsdk:"snapshot_gtid"`
 	SourceRegexSupportEnabled                          types.Bool     `tfsdk:"source_regex_support_enabled"`
 	TransformsSourceRegexSupportRegexReplacement       types.String   `tfsdk:"transforms_source_regex_support_regex_replacement"`
@@ -50,6 +51,10 @@ type SourceMariadbModel struct {
 	SSHUser                                            types.String   `tfsdk:"ssh_user"`
 	ColumnExcludeList                                  types.String   `tfsdk:"column_exclude_list"`
 	SSHPublicKey                                       types.String   `tfsdk:"ssh_public_key"`
+	StreamkapSnapshotParallelism                       types.Int64    `tfsdk:"streamkap_snapshot_parallelism"`
+	StreamkapSnapshotChunkSizeBytes                    types.Int64    `tfsdk:"streamkap_snapshot_chunk_size_bytes"`
+	StreamkapSnapshotMaxSplitSizeBytes                 types.Int64    `tfsdk:"streamkap_snapshot_max_split_size_bytes"`
+	StreamkapSnapshotStateRefreshMs                    types.Int64    `tfsdk:"streamkap_snapshot_state_refresh_ms"`
 	TransformsValueToKeyFieldsIncludeList              types.String   `tfsdk:"transforms_value_to_key_fields_include_list"`
 	TransformsValueToKeyReplaceNullWithDefault         types.Bool     `tfsdk:"transforms_value_to_key_replace_null_with_default"`
 	PreserveNullValues                                 types.Bool     `tfsdk:"preserve_null_values"`
@@ -185,6 +190,16 @@ func SourceMariadbSchema() schema.Schema {
 					stringvalidator.OneOf("SERVER", "UTC", "Africa/Cairo", "Asia/Riyadh", "Africa/Casablanca", "Asia/Seoul", "Africa/Harare", "Asia/Shanghai", "Africa/Monrovia", "Asia/Singapore", "Africa/Nairobi", "Asia/Taipei", "Africa/Tripoli", "Asia/Tehran", "Africa/Windhoek", "Asia/Tokyo", "America/Araguaina", "Asia/Ulaanbaatar", "America/Asuncion", "Asia/Vladivostok", "America/Bogota", "Asia/Yakutsk", "America/Buenos_Aires", "Asia/Yerevan", "America/Caracas", "Atlantic/Azores", "America/Chihuahua", "Australia/Adelaide", "America/Cuiaba", "Australia/Brisbane", "America/Denver", "Australia/Darwin", "America/Fortaleza", "Australia/Hobart", "America/Guatemala", "Australia/Perth", "America/Halifax", "Australia/Sydney", "America/Manaus", "Brazil/East", "America/Matamoros", "Canada/Newfoundland", "America/Monterrey", "Canada/Saskatchewan", "America/Montevideo", "Canada/Yukon", "America/Phoenix", "Europe/Amsterdam", "America/Santiago", "Europe/Athens", "America/Tijuana", "Europe/Dublin", "Asia/Amman", "Europe/Helsinki", "Asia/Ashgabat", "Europe/Istanbul", "Asia/Baghdad", "Europe/Kaliningrad", "Asia/Baku", "Europe/Moscow", "Asia/Bangkok", "Europe/Paris", "Asia/Beirut", "Europe/Prague", "Asia/Calcutta", "Europe/Sarajevo", "Asia/Damascus", "Pacific/Auckland", "Asia/Dhaka", "Pacific/Fiji", "Asia/Irkutsk", "Pacific/Guam", "Asia/Jerusalem", "Pacific/Honolulu", "Asia/Kabul", "Pacific/Samoa", "Asia/Karachi", "US/Alaska", "Asia/Kathmandu", "US/Central", "Asia/Krasnoyarsk", "US/Eastern", "Asia/Magadan", "US/East-Indiana", "Asia/Muscat", "US/Pacific", "Asia/Novosibirsk"),
 				},
 			},
+			"inconsistent_schema_handling_mode": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How to handle a change event for a table whose schema is unknown or unreadable (for example a regex-matched database the connector lacks privileges on). 'Automatic' uses Warn when regex support is enabled (skip the event and keep streaming) and Fail otherwise. Defaults to \"Automatic\". Valid values: Automatic, Fail, Warn, Skip.",
+				MarkdownDescription: "How to handle a change event for a table whose schema is unknown or unreadable (for example a regex-matched database the connector lacks privileges on). 'Automatic' uses Warn when regex support is enabled (skip the event and keep streaming) and Fail otherwise. Defaults to `Automatic`. Valid values: `Automatic`, `Fail`, `Warn`, `Skip`.",
+				Default:             stringdefault.StaticString("Automatic"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("Automatic", "Fail", "Warn", "Skip"),
+				},
+			},
 			"snapshot_gtid": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -198,8 +213,8 @@ func SourceMariadbSchema() schema.Schema {
 			"source_regex_support_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Enable regex support. Useful for merging multiple tables into the same output topic. NOTE: most times when regex support is enabled there will be 100s of 1000s of tables and \"Capture Only Captured Tables DDL?\" must also be enabled. Defaults to false.",
-				MarkdownDescription: "Enable regex support. Useful for merging multiple tables into the same output topic. NOTE: most times when regex support is enabled there will be 100s of 1000s of tables and \"Capture Only Captured Tables DDL?\" must also be enabled. Defaults to `false`.",
+				Description:         "Enable regex support. Useful for merging multiple tables into the same output topic. Defaults to false.",
+				MarkdownDescription: "Enable regex support. Useful for merging multiple tables into the same output topic. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"transforms_source_regex_support_regex_replacement": schema.StringAttribute{
@@ -303,6 +318,46 @@ func SourceMariadbSchema() schema.Schema {
 				MarkdownDescription: "Public key to add to SSH server",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"streamkap_snapshot_parallelism": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How many parallel chunk requests to send to the source DB. Defaults to 1.",
+				MarkdownDescription: "How many parallel chunk requests to send to the source DB. Defaults to `1`.",
+				Default:             int64default.StaticInt64(1),
+				Validators: []validator.Int64{
+					int64validator.Between(1, 50),
+				},
+			},
+			"streamkap_snapshot_chunk_size_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to 524288.",
+				MarkdownDescription: "Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to `524288`.",
+				Default:             int64default.StaticInt64(524288),
+				Validators: []validator.Int64{
+					int64validator.Between(4096, 8388608),
+				},
+			},
+			"streamkap_snapshot_max_split_size_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "A table with an estimated size greater than max split size will trigger intra-table paralelism. Table will be split into max.split.size.bytes parts and the parts will be processed in parallel. Defaults to 53687091200.",
+				MarkdownDescription: "A table with an estimated size greater than max split size will trigger intra-table paralelism. Table will be split into max.split.size.bytes parts and the parts will be processed in parallel. Defaults to `53687091200`.",
+				Default:             int64default.StaticInt64(53687091200),
+				Validators: []validator.Int64{
+					int64validator.Between(10485760, 214748364800),
+				},
+			},
+			"streamkap_snapshot_state_refresh_ms": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Snapshot progress publish candence, publishing more often can affect performance. Defaults to 30000.",
+				MarkdownDescription: "Snapshot progress publish candence, publishing more often can affect performance. Defaults to `30000`.",
+				Default:             int64default.StaticInt64(30000),
+				Validators: []validator.Int64{
+					int64validator.Between(1000, 60000),
 				},
 			},
 			"transforms_value_to_key_fields_include_list": schema.StringAttribute{
@@ -420,6 +475,7 @@ var SourceMariadbFieldMappings = map[string]string{
 	"heartbeat_enabled":                                         "heartbeat.enabled",
 	"heartbeat_data_collection_schema_or_database":              "heartbeat.data.collection.schema.or.database",
 	"database_connection_time_zone":                             "database.connectionTimeZone",
+	"inconsistent_schema_handling_mode":                         "inconsistent.schema.handling.mode.user.defined",
 	"snapshot_gtid":                                             "snapshot.gtid",
 	"source_regex_support_enabled":                              "SourceRegexSupport.enabled",
 	"transforms_source_regex_support_regex_replacement":         "transforms.SourceRegexSupport.regex.replacement",
@@ -435,6 +491,10 @@ var SourceMariadbFieldMappings = map[string]string{
 	"ssh_user":                                                  "ssh.user",
 	"column_exclude_list":                                       "column.exclude.list.user.defined",
 	"ssh_public_key":                                            "ssh.public.key.user.displayed",
+	"streamkap_snapshot_parallelism":                            "streamkap.snapshot.parallelism",
+	"streamkap_snapshot_chunk_size_bytes":                       "streamkap.snapshot.chunk.size.bytes",
+	"streamkap_snapshot_max_split_size_bytes":                   "streamkap.snapshot.max.split.size.bytes",
+	"streamkap_snapshot_state_refresh_ms":                       "streamkap.snapshot.state.refresh.ms",
 	"transforms_value_to_key_fields_include_list":               "transforms.ValueToKey.fields.include.list",
 	"transforms_value_to_key_replace_null_with_default":         "transforms.ValueToKey.replace.null.with.default",
 	"preserve_null_values":                                      "preserve.null.values",

@@ -46,7 +46,8 @@ type SourcePostgresqlModel struct {
 	PublicationName                                  types.String   `tfsdk:"publication_name"`
 	SchemaIncludeList                                types.String   `tfsdk:"schema_include_list"`
 	TableIncludeList                                 types.String   `tfsdk:"table_include_list"`
-	PostProcessors                                   types.String   `tfsdk:"post_processors"`
+	PostProcessorsReselectEnabled                    types.Bool     `tfsdk:"post_processors_reselect_enabled"`
+	ReselectorReselectErrorHandlingMode              types.String   `tfsdk:"reselector_reselect_error_handling_mode"`
 	DatabaseSslmode                                  types.String   `tfsdk:"database_sslmode"`
 	IncludeSourceDBNameInTableName                   types.Bool     `tfsdk:"include_source_db_name_in_table_name"`
 	BinaryHandlingMode                               types.String   `tfsdk:"binary_handling_mode"`
@@ -238,15 +239,15 @@ func SourcePostgresqlSchema() schema.Schema {
 			"heartbeat_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to true.",
-				MarkdownDescription: "When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to `true`.",
+				Description:         "When enabled, the connector emits a periodic heartbeat to a Kafka topic  -  this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to true.",
+				MarkdownDescription: "When enabled, the connector emits a periodic heartbeat to a Kafka topic  -  this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
-				MarkdownDescription: "Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
+				Description:         "Optional. The schema containing a 'streamkap_heartbeat' table  -  providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
+				MarkdownDescription: "Optional. The schema containing a 'streamkap_heartbeat' table  -  providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -254,8 +255,8 @@ func SourcePostgresqlSchema() schema.Schema {
 			"heartbeat_use_logical_message": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Use a logical-message heartbeat instead of a heartbeat table. Runs SELECT pg_logical_emit_message(true, ...) on each beat to keep the replication slot advancing — works on PG14+ primaries with a SELECT-only role and is compatible with read-only mode. No table or write grant required on the source. Defaults to false.",
-				MarkdownDescription: "Use a logical-message heartbeat instead of a heartbeat table. Runs SELECT pg_logical_emit_message(true, ...) on each beat to keep the replication slot advancing — works on PG14+ primaries with a SELECT-only role and is compatible with read-only mode. No table or write grant required on the source. Defaults to `false`.",
+				Description:         "Use a logical-message heartbeat instead of a heartbeat table. Runs SELECT pg_logical_emit_message(true, ...) on each beat to keep the replication slot advancing  -  works on PG14+ primaries with a SELECT-only role and is compatible with read-only mode. No table or write grant required on the source. Defaults to false.",
+				MarkdownDescription: "Use a logical-message heartbeat instead of a heartbeat table. Runs SELECT pg_logical_emit_message(true, ...) on each beat to keep the replication slot advancing  -  works on PG14+ primaries with a SELECT-only role and is compatible with read-only mode. No table or write grant required on the source. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"slot_name": schema.StringAttribute{
@@ -282,16 +283,21 @@ func SourcePostgresqlSchema() schema.Schema {
 				Description:         "Source tables to sync.",
 				MarkdownDescription: "Source tables to sync.",
 			},
-			"post_processors": schema.StringAttribute{
+			"post_processors_reselect_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Post processors. Valid values: reselector.",
-				MarkdownDescription: "Post processors. Valid values: `reselector`.",
+				Description:         "When enabled, TOAST columns that cannot be read from the WAL are re-fetched from the source database at event time. Defaults to true.",
+				MarkdownDescription: "When enabled, TOAST columns that cannot be read from the WAL are re-fetched from the source database at event time. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
+			"reselector_reselect_error_handling_mode": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Controls what happens when the re-select post processor fails to fetch a column. 'Fail' stops the connector; 'Warn' logs a warning and continues. Defaults to \"fail\". Valid values: fail, warn.",
+				MarkdownDescription: "Controls what happens when the re-select post processor fails to fetch a column. 'Fail' stops the connector; 'Warn' logs a warning and continues. Defaults to `fail`. Valid values: `fail`, `warn`.",
+				Default:             stringdefault.StaticString("fail"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("reselector"),
-				},
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+					stringvalidator.OneOf("fail", "warn"),
 				},
 			},
 			"database_sslmode": schema.StringAttribute{
@@ -407,7 +413,7 @@ func SourcePostgresqlSchema() schema.Schema {
 				MarkdownDescription: "How many parallel chunk requests to send to the source DB. Defaults to `1`.",
 				Default:             int64default.StaticInt64(1),
 				Validators: []validator.Int64{
-					int64validator.Between(1, 10),
+					int64validator.Between(1, 50),
 				},
 			},
 			"streamkap_snapshot_chunk_size_bytes": schema.Int64Attribute{
@@ -433,8 +439,8 @@ func SourcePostgresqlSchema() schema.Schema {
 			"streamkap_snapshot_state_refresh_ms": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to 30000.",
-				MarkdownDescription: "Executor publish cadence (ms) — how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to `30000`.",
+				Description:         "Executor publish cadence (ms)  -  how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to 30000.",
+				MarkdownDescription: "Executor publish cadence (ms)  -  how often the parallel-snapshot executor publishes SourceSnapshotState (rows_scanned, status transitions) to the streamkap_state topic. Lower values surface progress faster at the cost of state-topic traffic. Defaults to `30000`.",
 				Default:             int64default.StaticInt64(30000),
 				Validators: []validator.Int64{
 					int64validator.Between(1000, 60000),
@@ -605,7 +611,8 @@ var SourcePostgresqlFieldMappings = map[string]string{
 	"publication_name":                                       "publication.name",
 	"schema_include_list":                                    "schema.include.list",
 	"table_include_list":                                     "table.include.list.user.defined",
-	"post_processors":                                        "post.processors",
+	"post_processors_reselect_enabled":                       "post.processors.reselect.enabled",
+	"reselector_reselect_error_handling_mode":                "reselector.reselect.error.handling.mode",
 	"database_sslmode":                                       "database.sslmode",
 	"include_source_db_name_in_table_name":                   "include.source.db.name.in.table.name.user.defined",
 	"binary_handling_mode":                                   "binary.handling.mode",

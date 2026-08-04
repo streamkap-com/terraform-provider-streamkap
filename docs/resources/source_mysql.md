@@ -153,6 +153,7 @@ output "example-source-mysql" {
 - `database_port` (Number) MySQL Port. For example, 3306. Defaults to `3306`.
 - `heartbeat_data_collection_schema_or_database` (String) Optional. The database containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.
 - `heartbeat_enabled` (Boolean) When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Database' below; leave it blank for Kafka-only mode. Defaults to `true`.
+- `inconsistent_schema_handling_mode` (String) How to handle a change event for a table whose schema is unknown or unreadable (for example a regex-matched database the connector lacks privileges on). 'Automatic' uses Warn when regex support is enabled (skip the event and keep streaming) and Fail otherwise. Defaults to `Automatic`. Valid values: `Automatic`, `Fail`, `Warn`, `Skip`.
 - `insert_static_key_field_1` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key1_static_field' instead.
 - `insert_static_key_field_2` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key2_static_field' instead.
 - `insert_static_key_value_1` (String, Deprecated) DEPRECATED: Use 'transforms_insert_static_key1_static_value' instead.
@@ -170,12 +171,16 @@ output "example-source-mysql" {
 - `schema_history_internal_store_only_captured_tables_ddl` (Boolean) Specifies whether the connector records schema structures from all logical tables in the captured schemas or databases, or only captured tables. Enabling this when you have many tables can improve performance and avoid timeouts. Defaults to `false`.
 - `signal_data_collection_schema_or_database` (String) Full path to the signal table including database and table name (e.g., 'mydb.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.
 - `snapshot_gtid` (String) Whether or not to use a read-only connection. Requires GTID mode to be enabled on the source database. Defaults to `Yes`. Valid values: `Yes`, `No`.
-- `source_regex_support_enabled` (Boolean) Enable regex support. Useful for merging multiple tables into the same output topic. NOTE: most times when regex support is enabled there will be 100s of 1000s of tables and "Capture Only Captured Tables DDL?" must also be enabled. Defaults to `false`.
+- `source_regex_support_enabled` (Boolean) Enable regex support. Useful for merging multiple tables into the same output topic. Defaults to `false`.
 - `ssh_enabled` (Boolean) <span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
+- `streamkap_snapshot_chunk_size_bytes` (Number) Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to `524288`.
+- `streamkap_snapshot_max_split_size_bytes` (Number) A table with an estimated size greater than max split size will trigger intra-table paralelism. Table will be split into max.split.size.bytes parts and the parts will be processed in parallel. Defaults to `53687091200`.
+- `streamkap_snapshot_parallelism` (Number) How many parallel chunk requests to send to the source DB. Defaults to `1`.
+- `streamkap_snapshot_state_refresh_ms` (Number) Snapshot progress publish candence, publishing more often can affect performance. Defaults to `30000`.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_insert_static_key1_static_field` (String) The name of the static field to be added to the message key.

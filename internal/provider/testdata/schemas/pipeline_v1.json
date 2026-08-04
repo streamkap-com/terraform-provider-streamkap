@@ -50,12 +50,6 @@
       "sensitive": false,
       "type": "types.ListType[types.ObjectType[\"regex\":basetypes.StringType, \"transform_id\":basetypes.StringType]]"
     },
-    "topic_auto_discovery_transforms": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
     "transforms": {
       "required": false,
       "optional": true,

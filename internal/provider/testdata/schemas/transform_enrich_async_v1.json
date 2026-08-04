@@ -50,12 +50,6 @@
       "sensitive": false,
       "type": "types.SetType[basetypes.StringType]"
     },
-    "tags": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
     "transform_type": {
       "required": false,
       "optional": false,

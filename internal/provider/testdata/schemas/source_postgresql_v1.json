@@ -106,12 +106,6 @@
       "sensitive": false,
       "type": "basetypes.BoolType"
     },
-    "heartbeat_use_logical_message": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
     "id": {
       "required": false,
       "optional": false,
@@ -203,18 +197,12 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "post_processors": {
+    "post_processors_reselect_enabled": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "post_processors": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
+      "type": "basetypes.BoolType"
     },
     "predicates_is_topic_to_enrich_pattern": {
       "required": false,
@@ -238,6 +226,13 @@
       "type": "basetypes.BoolType"
     },
     "publication_name": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "reselector_reselect_error_handling_mode": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -342,12 +337,6 @@
       "sensitive": false,
       "type": "basetypes.Int64Type"
     },
-    "streamkap_snapshot_state_refresh_ms": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
     "table_include_list": {
       "required": true,
       "optional": false,
@@ -361,12 +350,6 @@
       "computed": true,
       "sensitive": false,
       "type": "types.SetType[basetypes.StringType]"
-    },
-    "tags": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
     },
     "transforms_insert_static_key1_static_field": {
       "required": false,
