@@ -50,9 +50,20 @@ resource "streamkap_destination_redis" "test" {
 	redis_key           = "streamkap-test-key"
 	redis_key_data_type = "Stream"
 	tasks_max           = 5
+	transforms_mask_field_fields_include_list       = "public.users.email"
+	transforms_mask_field_fields_exclude_list       = "public.users.id"
+	transforms_mask_field_mask_function             = "REDACT"
+	transforms_mask_field_mask_char                 = "#"
+	transforms_mask_field_replace_null_with_default = false
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "transforms_mask_field_fields_include_list", "public.users.email"),
+					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "transforms_mask_field_mask_function", "REDACT"),
+					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "transforms_mask_field_mask_fixed_value", "***"),
+					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "transforms_mask_field_replace_null_with_default", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "redis_host", destinationRedisHost),
 					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "redis_port", "6379"),
@@ -98,9 +109,21 @@ resource "streamkap_destination_redis" "test" {
 	redis_key           = "streamkap-test-key-updated"
 	redis_key_data_type = "List"
 	tasks_max           = 10
+	transforms_mask_field_fields_include_list       = "public.users.email,public.users.phone"
+	transforms_mask_field_fields_exclude_list       = "public.users.id"
+	transforms_mask_field_mask_function             = "FIXED"
+	transforms_mask_field_mask_char                 = "#"
+	transforms_mask_field_mask_fixed_value          = "MASKED"
+	transforms_mask_field_replace_null_with_default = true
 }
 `, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "transforms_mask_field_fields_include_list", "public.users.email,public.users.phone"),
+					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "transforms_mask_field_mask_function", "FIXED"),
+					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "transforms_mask_field_mask_fixed_value", "MASKED"),
+					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "transforms_mask_field_replace_null_with_default", "true"),
 					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "ssl_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_redis.test", "redis_key", "streamkap-test-key-updated"),

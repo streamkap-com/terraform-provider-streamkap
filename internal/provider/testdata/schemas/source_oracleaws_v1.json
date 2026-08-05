@@ -99,6 +99,20 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "lob_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "log_mining_strategy": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
     "name": {
       "required": true,
       "optional": false,
@@ -106,12 +120,26 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "post_processors_reselect_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
     "preserve_null_values": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false,
       "type": "basetypes.BoolType"
+    },
+    "reselector_reselect_error_handling_mode": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "schema_history_internal_store_only_captured_databases_ddl": {
       "required": false,
@@ -189,12 +217,6 @@
       "computed": true,
       "sensitive": false,
       "type": "types.SetType[basetypes.StringType]"
-    },
-    "tags": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
     },
     "transforms_oversized_records_fields_exclude_list": {
       "required": false,

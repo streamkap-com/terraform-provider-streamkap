@@ -48,6 +48,10 @@ resource "streamkap_source_mysql" "test" {
 	snapshot_gtid                             = "Yes"
 	binary_handling_mode                      = "bytes"
 	ssh_enabled                               = false
+	inconsistent_schema_handling_mode         = "Warn"
+	streamkap_snapshot_chunk_size_bytes       = 262144
+	streamkap_snapshot_max_split_size_bytes   = 21474836480
+	streamkap_snapshot_state_refresh_ms       = 15000
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -65,8 +69,13 @@ resource "streamkap_source_mysql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "snapshot_gtid", "Yes"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "binary_handling_mode", "bytes"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "ssh_enabled", "false"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "inconsistent_schema_handling_mode", "Warn"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "streamkap_snapshot_chunk_size_bytes", "262144"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "streamkap_snapshot_max_split_size_bytes", "21474836480"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "streamkap_snapshot_state_refresh_ms", "15000"),
 					// Check defaults for unset attributes
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "heartbeat_enabled", "true"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "streamkap_snapshot_parallelism", "1"),
 				),
 			},
 			// Step 2: ImportState testing
@@ -104,6 +113,10 @@ resource "streamkap_source_mysql" "test" {
 	snapshot_gtid                             = "Yes"
 	binary_handling_mode                      = "bytes"
 	ssh_enabled                               = false
+	inconsistent_schema_handling_mode         = "Skip"
+	streamkap_snapshot_chunk_size_bytes       = 1048576
+	streamkap_snapshot_max_split_size_bytes   = 107374182400
+	streamkap_snapshot_state_refresh_ms       = 45000
 }
 `, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -113,6 +126,10 @@ resource "streamkap_source_mysql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "heartbeat_enabled", "true"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "heartbeat_data_collection_schema_or_database", "crm"),
 					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "column_include_list", "crm[.]demo[.](id|name)"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "inconsistent_schema_handling_mode", "Skip"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "streamkap_snapshot_chunk_size_bytes", "1048576"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "streamkap_snapshot_max_split_size_bytes", "107374182400"),
+					resource.TestCheckResourceAttr("streamkap_source_mysql.test", "streamkap_snapshot_state_refresh_ms", "45000"),
 				),
 			},
 			// Step 4: Update to test column_exclude_list

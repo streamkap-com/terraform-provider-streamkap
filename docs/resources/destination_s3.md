@@ -92,13 +92,18 @@ resource "streamkap_destination_s3" "example" {
 
   # File naming configuration
   file_name_template = "{{topic}}-{{partition}}-{{start_offset}}"
-  file_name_prefix   = "data/"
 
   # Compression options: none, gzip, snappy, zstd
   file_compression_type = "gzip"
 
   # Output fields to include: key, offset, timestamp, value, headers
   format_output_fields = ["value", "key"]
+
+  # Wrap each record in an envelope with Kafka metadata (key, offset, timestamp,
+  # headers) alongside the value. Set to false to write only the record's own
+  # value structure. No effect on CSV; for Parquet, only applies when the value
+  # is a record or map.
+  format_output_envelope = true
 }
 
 output "s3_destination_id" {
@@ -120,6 +125,7 @@ output "s3_destination_id" {
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `aws_auth_mode` (String) How Streamkap authenticates with S3. Choose `Access Keys` to use an AWS Access Key ID and Secret. Choose `Cross-Account Role` to have Streamkap assume an IAM role in your account using a Role ARN and External ID (recommended for production — see https://docs.streamkap.com/aws-cross-account-iam). Defaults to `Access Keys`. Valid values: `Access Keys`, `Cross-Account Role`.
+- `aws_s3_part_size_bytes` (Number) Size of each part in a multipart upload to S3, in bytes. Larger parts mean fewer S3 API calls for big files but more memory used per upload. AWS requires multipart parts to be at least 5MB (except the last part of a file). Defaults to `5242880`.
 - `aws_s3_region` (String) The AWS region to be used. Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.
 - `aws_secret_access_key` (String, Sensitive) The AWS Secret Access Key used to connect to S3.
 
@@ -128,9 +134,10 @@ output "s3_destination_id" {
 - `aws_sts_role_external_id` (String) The External ID configured in your role's trust-policy condition. Streamkap passes this value verbatim when assuming the role.
 - `consumer_override_max_poll_records` (Number) The maximum number of records returned in a single call to poll(). Defaults to `10000`.
 - `file_compression_type` (String) Compression type for files written to S3. Defaults to `gzip`. Valid values: `none`, `gzip`, `snappy`, `zstd`.
-- `file_name_prefix` (String) Prefix for the filename. Prefixes can be used to specify a directory for the file (e.g. dir1/dir2/).
-- `file_name_template` (String) The format of the filename. See documentation for more information about formatting options.
+- `file_max_records` (Number) Maximum number of records buffered into a single file before it is rotated. The rotated file is still only uploaded to S3 on the next flush interval. Set to 0 for unlimited (one file per topic-partition per flush interval). Defaults to `0`.
+- `file_name_template` (String) The format of the filename. Static text can be added anywhere in the template, including at the start, to act as a directory prefix (e.g. dir1/dir2/{{topic}}-{{partition}}-{{start_offset}}). See documentation for more information about formatting options.
 - `format` (String) The format to use when writing data to the store. Defaults to `JSON Array`. Valid values: `JSON Lines`, `JSON Array`, `Parquet`.
+- `format_output_envelope` (Boolean) When enabled (default), each output record is wrapped in an envelope with Kafka metadata (key, offset, timestamp, headers) alongside the value. Disable to write only the record's own value structure. No effect on CSV; for Parquet, only applies when the value is a record or map. Defaults to `true`.
 - `format_output_fields` (List of String) A comma separated list of fields to include in output? Options to include key, offset, timestamp, value, headers. Valid values: `key`, `offset`, `timestamp`, `value`, `headers`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
@@ -145,6 +152,13 @@ output "s3_destination_id" {
 - `transforms_mark_columns_as_optional_fields_include_list` (String) Mark columns as optional/nullable. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_mark_columns_as_required_fields_include_all` (Boolean) When enabled, converts ALL optional columns to required (NOT NULL). The exclude list is still respected. Enabling this automatically disables 'Mark Column(s) as Optional'. Defaults to `false`.
 - `transforms_mark_columns_as_required_null_sentinel_mode` (String) Controls how NULL values are handled when columns become required. NONE: throws an error on NULL values. TYPE_MIN: replaces NULLs with type-specific sentinel values (e.g. MIN_VALUE for integers, '__null__' for strings, epoch for dates). Defaults to `NONE`. Valid values: `NONE`, `TYPE_MIN`.
+- `transforms_mask_field_fields_exclude_list` (String) Columns to exclude from masking. Comma separated list in format 'table1.column1,table2.column2'.
+- `transforms_mask_field_fields_include_list` (String) Mask (anonymise) string column(s) in-place. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*').
+- `transforms_mask_field_mask_char` (String) Fill character used by the REDACT function (length is preserved). Defaults to `*`.
+- `transforms_mask_field_mask_fixed_value` (String) Constant replacement used by the FIXED function. Defaults to `***`.
+- `transforms_mask_field_mask_function` (String) Masking algorithm. Hash functions are deterministic (same input -> same token) and length-preserving. Defaults to `SHA256_TRUNCATE`. Valid values: `SHA256_TRUNCATE`, `MD5_TRUNCATE`, `SHA256`, `MD5`, `REDACT`, `FIXED`, `NULLIFY`.
+- `transforms_mask_field_mask_salt` (String) Secret salt prepended before hashing (used by the SHA256/MD5 functions). Strongly recommended: without it, low-cardinality values (phone, SSN, email) are reversible via a precomputed rainbow table. Defaults to ``.
+- `transforms_mask_field_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
 - `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
 - `transforms_oversized_records_max_field_size_bytes` (Number) Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.

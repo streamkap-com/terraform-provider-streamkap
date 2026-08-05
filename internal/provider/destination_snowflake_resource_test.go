@@ -57,9 +57,20 @@ resource "streamkap_destination_snowflake" "test" {
 		users                   = "JUNIT.USERS",
 		itst_scen20240528103635 = "ITST_SCEN20240528103635"
 	}
+	transforms_mask_field_fields_include_list       = "public.users.email"
+	transforms_mask_field_fields_exclude_list       = "public.users.id"
+	transforms_mask_field_mask_function             = "REDACT"
+	transforms_mask_field_mask_char                 = "#"
+	transforms_mask_field_replace_null_with_default = false
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_fields_include_list", "public.users.email"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_mask_function", "REDACT"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_mask_fixed_value", "***"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_replace_null_with_default", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "snowflake_url_name", destinationSnowflakeURLName),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "snowflake_user_name", "STREAMKAP_USER_JUNIT"),
@@ -113,9 +124,21 @@ resource "streamkap_destination_snowflake" "test" {
 	snowflake_schema_name            = "JUNIT"
 	snowflake_role_name              = "STREAMKAP_ROLE_JUNIT"
 	ingestion_mode                   = "append"
+	transforms_mask_field_fields_include_list       = "public.users.email,public.users.phone"
+	transforms_mask_field_fields_exclude_list       = "public.users.id"
+	transforms_mask_field_mask_function             = "FIXED"
+	transforms_mask_field_mask_char                 = "#"
+	transforms_mask_field_mask_fixed_value          = "MASKED"
+	transforms_mask_field_replace_null_with_default = true
 }
 `, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_fields_include_list", "public.users.email,public.users.phone"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_mask_function", "FIXED"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_mask_fixed_value", "MASKED"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_replace_null_with_default", "true"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "snowflake_url_name", destinationSnowflakeURLName),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "snowflake_user_name", "STREAMKAP_USER_JUNIT"),
@@ -215,9 +238,21 @@ resource "streamkap_destination_snowflake" "test" {
 		users                   = "JUNIT.USERS",
 		itst_scen20240528103635 = "ITST_SCEN20240528103635"
 	}
+	transforms_mask_field_fields_include_list       = "public.users.email,public.users.phone"
+	transforms_mask_field_fields_exclude_list       = "public.users.id"
+	transforms_mask_field_mask_function             = "FIXED"
+	transforms_mask_field_mask_char                 = "#"
+	transforms_mask_field_mask_fixed_value          = "MASKED"
+	transforms_mask_field_replace_null_with_default = true
 }
 `, namePassphrase),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_fields_include_list", "public.users.email,public.users.phone"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_mask_function", "FIXED"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_mask_fixed_value", "MASKED"),
+					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "transforms_mask_field_replace_null_with_default", "true"),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "name", namePassphrase),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "snowflake_url_name", destinationSnowflakeURLName),
 					resource.TestCheckResourceAttr("streamkap_destination_snowflake.test", "snowflake_user_name", "STREAMKAP_USER_JUNIT"),

@@ -40,7 +40,6 @@ resource "streamkap_destination_s3" "example" {
 
   # File naming configuration
   file_name_template = "{{topic}}-{{partition}}-{{start_offset}}"
-  file_name_prefix   = "data/"
 
   # Compression options: none, gzip, snappy, zstd
   file_compression_type = "gzip"

@@ -53,6 +53,8 @@ resource "streamkap_source_alloydb" "test" {
 	publication_name                             = "streamkap_pub"
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
+	post_processors_reselect_enabled             = true
+	reselector_reselect_error_handling_mode      = "warn"
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -73,6 +75,8 @@ resource "streamkap_source_alloydb" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "publication_name", "streamkap_pub"),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "binary_handling_mode", "bytes"),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "ssh_enabled", "false"),
+					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "post_processors_reselect_enabled", "true"),
+					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "reselector_reselect_error_handling_mode", "warn"),
 				),
 			},
 			// ImportState testing
@@ -112,6 +116,8 @@ resource "streamkap_source_alloydb" "test" {
 	publication_name                             = "streamkap_pub"
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
+	post_processors_reselect_enabled             = true
+	reselector_reselect_error_handling_mode      = "fail"
 }
 `, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -119,6 +125,8 @@ resource "streamkap_source_alloydb" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "snapshot_read_only", "No"),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "table_include_list", "streamkap.customer,streamkap.orders"),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "heartbeat_enabled", "false"),
+					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "post_processors_reselect_enabled", "true"),
+					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "reselector_reselect_error_handling_mode", "fail"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

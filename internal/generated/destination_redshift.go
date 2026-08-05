@@ -58,6 +58,13 @@ type DestinationRedshiftModel struct {
 	TransformsOversizedRecordsMaxRecordSizeBytes     types.Int64    `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
 	TransformsOversizedRecordsSemanticTypesExclude   types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
 	TransformsOversizedRecordsReplaceNullWithDefault types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
+	TransformsMaskFieldFieldsIncludeList             types.String   `tfsdk:"transforms_mask_field_fields_include_list"`
+	TransformsMaskFieldFieldsExcludeList             types.String   `tfsdk:"transforms_mask_field_fields_exclude_list"`
+	TransformsMaskFieldMaskFunction                  types.String   `tfsdk:"transforms_mask_field_mask_function"`
+	TransformsMaskFieldMaskSalt                      types.String   `tfsdk:"transforms_mask_field_mask_salt"`
+	TransformsMaskFieldMaskChar                      types.String   `tfsdk:"transforms_mask_field_mask_char"`
+	TransformsMaskFieldMaskFixedValue                types.String   `tfsdk:"transforms_mask_field_mask_fixed_value"`
+	TransformsMaskFieldReplaceNullWithDefault        types.Bool     `tfsdk:"transforms_mask_field_replace_null_with_default"`
 	TransformsAddStringSuffixFieldsIncludeList       types.String   `tfsdk:"transforms_add_string_suffix_fields_include_list"`
 	TransformsChangeTopicNameMatchRegex              types.String   `tfsdk:"transforms_change_topic_name_match_regex"`
 	TransformsRenameFieldsRenames                    types.String   `tfsdk:"transforms_rename_fields_renames"`
@@ -384,6 +391,62 @@ func DestinationRedshiftSchema() schema.Schema {
 				MarkdownDescription: "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
+			"transforms_mask_field_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Mask (anonymise) string column(s) in-place. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*').",
+				MarkdownDescription: "Mask (anonymise) string column(s) in-place. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*').",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_mask_field_fields_exclude_list": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Columns to exclude from masking. Comma separated list in format 'table1.column1,table2.column2'.",
+				MarkdownDescription: "Columns to exclude from masking. Comma separated list in format 'table1.column1,table2.column2'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_mask_field_mask_function": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Masking algorithm. Hash functions are deterministic (same input -> same token) and length-preserving. Defaults to \"SHA256_TRUNCATE\". Valid values: SHA256_TRUNCATE, MD5_TRUNCATE, SHA256, MD5, REDACT, FIXED, NULLIFY.",
+				MarkdownDescription: "Masking algorithm. Hash functions are deterministic (same input -> same token) and length-preserving. Defaults to `SHA256_TRUNCATE`. Valid values: `SHA256_TRUNCATE`, `MD5_TRUNCATE`, `SHA256`, `MD5`, `REDACT`, `FIXED`, `NULLIFY`.",
+				Default:             stringdefault.StaticString("SHA256_TRUNCATE"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("SHA256_TRUNCATE", "MD5_TRUNCATE", "SHA256", "MD5", "REDACT", "FIXED", "NULLIFY"),
+				},
+			},
+			"transforms_mask_field_mask_salt": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Secret salt prepended before hashing (used by the SHA256/MD5 functions). Strongly recommended: without it, low-cardinality values (phone, SSN, email) are reversible via a precomputed rainbow table. Defaults to \"\".",
+				MarkdownDescription: "Secret salt prepended before hashing (used by the SHA256/MD5 functions). Strongly recommended: without it, low-cardinality values (phone, SSN, email) are reversible via a precomputed rainbow table. Defaults to ``.",
+				Default:             stringdefault.StaticString(""),
+			},
+			"transforms_mask_field_mask_char": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Fill character used by the REDACT function (length is preserved). Defaults to \"*\".",
+				MarkdownDescription: "Fill character used by the REDACT function (length is preserved). Defaults to `*`.",
+				Default:             stringdefault.StaticString("*"),
+			},
+			"transforms_mask_field_mask_fixed_value": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Constant replacement used by the FIXED function. Defaults to \"***\".",
+				MarkdownDescription: "Constant replacement used by the FIXED function. Defaults to `***`.",
+				Default:             stringdefault.StaticString("***"),
+			},
+			"transforms_mask_field_replace_null_with_default": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to true.",
+				MarkdownDescription: "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
 			"transforms_add_string_suffix_fields_include_list": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -503,6 +566,13 @@ var DestinationRedshiftFieldMappings = map[string]string{
 	"transforms_oversized_records_max_record_size_bytes":      "transforms.OversizedRecords.max.record.size.bytes",
 	"transforms_oversized_records_semantic_types_exclude":     "transforms.OversizedRecords.semantic.types.exclude",
 	"transforms_oversized_records_replace_null_with_default":  "transforms.OversizedRecords.replace.null.with.default",
+	"transforms_mask_field_fields_include_list":               "transforms.MaskField.fields.include.list",
+	"transforms_mask_field_fields_exclude_list":               "transforms.MaskField.fields.exclude.list",
+	"transforms_mask_field_mask_function":                     "transforms.MaskField.mask.function",
+	"transforms_mask_field_mask_salt":                         "transforms.MaskField.mask.salt",
+	"transforms_mask_field_mask_char":                         "transforms.MaskField.mask.char",
+	"transforms_mask_field_mask_fixed_value":                  "transforms.MaskField.mask.fixed.value",
+	"transforms_mask_field_replace_null_with_default":         "transforms.MaskField.replace.null.with.default",
 	"transforms_add_string_suffix_fields_include_list":        "transforms.AddStringSuffix.fields.include.list",
 	"transforms_change_topic_name_match_regex":                "transforms.changeTopicName.match.regex.user.defined",
 	"transforms_rename_fields_renames":                        "transforms.RenameFields.renames.user.defined",

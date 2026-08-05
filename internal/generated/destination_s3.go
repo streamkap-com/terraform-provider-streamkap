@@ -35,10 +35,11 @@ type DestinationS3Model struct {
 	AWSS3BucketName                                  types.String   `tfsdk:"aws_s3_bucket_name"`
 	Format                                           types.String   `tfsdk:"format"`
 	FileNameTemplate                                 types.String   `tfsdk:"file_name_template"`
-	FileNamePrefix                                   types.String   `tfsdk:"file_name_prefix"`
 	FileCompressionType                              types.String   `tfsdk:"file_compression_type"`
-	FormatOutputFields                               types.List     `tfsdk:"format_output_fields"`
+	FileMaxRecords                                   types.Int64    `tfsdk:"file_max_records"`
+	AWSS3PartSizeBytes                               types.Int64    `tfsdk:"aws_s3_part_size_bytes"`
 	FormatOutputEnvelope                             types.Bool     `tfsdk:"format_output_envelope"`
+	FormatOutputFields                               types.List     `tfsdk:"format_output_fields"`
 	ConsumerOverrideMaxPollRecords                   types.Int64    `tfsdk:"consumer_override_max_poll_records"`
 	PreserveNullValues                               types.Bool     `tfsdk:"preserve_null_values"`
 	QuoteIdentifiers                                 types.Bool     `tfsdk:"quote_identifiers"`
@@ -63,6 +64,13 @@ type DestinationS3Model struct {
 	TransformsOversizedRecordsMaxRecordSizeBytes     types.Int64    `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
 	TransformsOversizedRecordsSemanticTypesExclude   types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
 	TransformsOversizedRecordsReplaceNullWithDefault types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
+	TransformsMaskFieldFieldsIncludeList             types.String   `tfsdk:"transforms_mask_field_fields_include_list"`
+	TransformsMaskFieldFieldsExcludeList             types.String   `tfsdk:"transforms_mask_field_fields_exclude_list"`
+	TransformsMaskFieldMaskFunction                  types.String   `tfsdk:"transforms_mask_field_mask_function"`
+	TransformsMaskFieldMaskSalt                      types.String   `tfsdk:"transforms_mask_field_mask_salt"`
+	TransformsMaskFieldMaskChar                      types.String   `tfsdk:"transforms_mask_field_mask_char"`
+	TransformsMaskFieldMaskFixedValue                types.String   `tfsdk:"transforms_mask_field_mask_fixed_value"`
+	TransformsMaskFieldReplaceNullWithDefault        types.Bool     `tfsdk:"transforms_mask_field_replace_null_with_default"`
 	TransformsAddStringSuffixFieldsIncludeList       types.String   `tfsdk:"transforms_add_string_suffix_fields_include_list"`
 	TransformsChangeTopicNameMatchRegex              types.String   `tfsdk:"transforms_change_topic_name_match_regex"`
 	TransformsRenameFieldsRenames                    types.String   `tfsdk:"transforms_rename_fields_renames"`
@@ -203,17 +211,8 @@ func DestinationS3Schema() schema.Schema {
 			"file_name_template": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The format of the filename. See documentation for more information about formatting options.",
-				MarkdownDescription: "The format of the filename. See documentation for more information about formatting options.",
-			},
-			"file_name_prefix": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Prefix for the filename. Prefixes can be used to specify a directory for the file (e.g. dir1/dir2/).",
-				MarkdownDescription: "Prefix for the filename. Prefixes can be used to specify a directory for the file (e.g. dir1/dir2/).",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Description:         "The format of the filename. Static text can be added anywhere in the template, including at the start, to act as a directory prefix (e.g. dir1/dir2/{{topic}}-{{partition}}-{{start_offset}}). See documentation for more information about formatting options.",
+				MarkdownDescription: "The format of the filename. Static text can be added anywhere in the template, including at the start, to act as a directory prefix (e.g. dir1/dir2/{{topic}}-{{partition}}-{{start_offset}}). See documentation for more information about formatting options.",
 			},
 			"file_compression_type": schema.StringAttribute{
 				Optional:            true,
@@ -225,6 +224,33 @@ func DestinationS3Schema() schema.Schema {
 					stringvalidator.OneOf("none", "gzip", "snappy", "zstd"),
 				},
 			},
+			"file_max_records": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Maximum number of records buffered into a single file before it is rotated. The rotated file is still only uploaded to S3 on the next flush interval. Set to 0 for unlimited (one file per topic-partition per flush interval). Defaults to 0.",
+				MarkdownDescription: "Maximum number of records buffered into a single file before it is rotated. The rotated file is still only uploaded to S3 on the next flush interval. Set to 0 for unlimited (one file per topic-partition per flush interval). Defaults to `0`.",
+				Default:             int64default.StaticInt64(0),
+				Validators: []validator.Int64{
+					int64validator.Between(0, 100000),
+				},
+			},
+			"aws_s3_part_size_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Size of each part in a multipart upload to S3, in bytes. Larger parts mean fewer S3 API calls for big files but more memory used per upload. AWS requires multipart parts to be at least 5MB (except the last part of a file). Defaults to 5242880.",
+				MarkdownDescription: "Size of each part in a multipart upload to S3, in bytes. Larger parts mean fewer S3 API calls for big files but more memory used per upload. AWS requires multipart parts to be at least 5MB (except the last part of a file). Defaults to `5242880`.",
+				Default:             int64default.StaticInt64(5242880),
+				Validators: []validator.Int64{
+					int64validator.Between(5242880, 104857600),
+				},
+			},
+			"format_output_envelope": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "When enabled (default), each output record is wrapped in an envelope with Kafka metadata (key, offset, timestamp, headers) alongside the value. Disable to write only the record's own value structure. No effect on CSV; for Parquet, only applies when the value is a record or map. Defaults to true.",
+				MarkdownDescription: "When enabled (default), each output record is wrapped in an envelope with Kafka metadata (key, offset, timestamp, headers) alongside the value. Disable to write only the record's own value structure. No effect on CSV; for Parquet, only applies when the value is a record or map. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
 			"format_output_fields": schema.ListAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -234,13 +260,6 @@ func DestinationS3Schema() schema.Schema {
 				Validators: []validator.List{
 					listvalidator.ValueStringsAre(stringvalidator.OneOf("key", "offset", "timestamp", "value", "headers")),
 				},
-			},
-			"format_output_envelope": schema.BoolAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "When enabled (default), each output record is wrapped in an envelope with Kafka metadata (key, offset, timestamp, headers) alongside the value. Disable to write only the record's own value structure. No effect on CSV; for Parquet, only applies when the value is a record or map. Defaults to true.",
-				MarkdownDescription: "When enabled (default), each output record is wrapped in an envelope with Kafka metadata (key, offset, timestamp, headers) alongside the value. Disable to write only the record's own value structure. No effect on CSV; for Parquet, only applies when the value is a record or map. Defaults to `true`.",
-				Default:             booldefault.StaticBool(true),
 			},
 			"consumer_override_max_poll_records": schema.Int64Attribute{
 				Optional:            true,
@@ -444,6 +463,62 @@ func DestinationS3Schema() schema.Schema {
 				MarkdownDescription: "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
+			"transforms_mask_field_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Mask (anonymise) string column(s) in-place. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*').",
+				MarkdownDescription: "Mask (anonymise) string column(s) in-place. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*').",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_mask_field_fields_exclude_list": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Columns to exclude from masking. Comma separated list in format 'table1.column1,table2.column2'.",
+				MarkdownDescription: "Columns to exclude from masking. Comma separated list in format 'table1.column1,table2.column2'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_mask_field_mask_function": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Masking algorithm. Hash functions are deterministic (same input -> same token) and length-preserving. Defaults to \"SHA256_TRUNCATE\". Valid values: SHA256_TRUNCATE, MD5_TRUNCATE, SHA256, MD5, REDACT, FIXED, NULLIFY.",
+				MarkdownDescription: "Masking algorithm. Hash functions are deterministic (same input -> same token) and length-preserving. Defaults to `SHA256_TRUNCATE`. Valid values: `SHA256_TRUNCATE`, `MD5_TRUNCATE`, `SHA256`, `MD5`, `REDACT`, `FIXED`, `NULLIFY`.",
+				Default:             stringdefault.StaticString("SHA256_TRUNCATE"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("SHA256_TRUNCATE", "MD5_TRUNCATE", "SHA256", "MD5", "REDACT", "FIXED", "NULLIFY"),
+				},
+			},
+			"transforms_mask_field_mask_salt": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Secret salt prepended before hashing (used by the SHA256/MD5 functions). Strongly recommended: without it, low-cardinality values (phone, SSN, email) are reversible via a precomputed rainbow table. Defaults to \"\".",
+				MarkdownDescription: "Secret salt prepended before hashing (used by the SHA256/MD5 functions). Strongly recommended: without it, low-cardinality values (phone, SSN, email) are reversible via a precomputed rainbow table. Defaults to ``.",
+				Default:             stringdefault.StaticString(""),
+			},
+			"transforms_mask_field_mask_char": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Fill character used by the REDACT function (length is preserved). Defaults to \"*\".",
+				MarkdownDescription: "Fill character used by the REDACT function (length is preserved). Defaults to `*`.",
+				Default:             stringdefault.StaticString("*"),
+			},
+			"transforms_mask_field_mask_fixed_value": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Constant replacement used by the FIXED function. Defaults to \"***\".",
+				MarkdownDescription: "Constant replacement used by the FIXED function. Defaults to `***`.",
+				Default:             stringdefault.StaticString("***"),
+			},
+			"transforms_mask_field_replace_null_with_default": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to true.",
+				MarkdownDescription: "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
 			"transforms_add_string_suffix_fields_include_list": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -539,10 +614,11 @@ var DestinationS3FieldMappings = map[string]string{
 	"aws_s3_bucket_name":                                      "aws.s3.bucket.name",
 	"format":                                                  "format.user.defined",
 	"file_name_template":                                      "file.name.template",
-	"file_name_prefix":                                        "file.name.prefix",
 	"file_compression_type":                                   "file.compression.type",
-	"format_output_fields":                                    "format.output.fields.user.defined",
+	"file_max_records":                                        "file.max.records",
+	"aws_s3_part_size_bytes":                                  "aws.s3.part.size.bytes",
 	"format_output_envelope":                                  "format.output.envelope",
+	"format_output_fields":                                    "format.output.fields.user.defined",
 	"consumer_override_max_poll_records":                      "consumer.override.max.poll.records",
 	"preserve_null_values":                                    "preserve.null.values",
 	"quote_identifiers":                                       "quote.identifiers",
@@ -567,6 +643,13 @@ var DestinationS3FieldMappings = map[string]string{
 	"transforms_oversized_records_max_record_size_bytes":      "transforms.OversizedRecords.max.record.size.bytes",
 	"transforms_oversized_records_semantic_types_exclude":     "transforms.OversizedRecords.semantic.types.exclude",
 	"transforms_oversized_records_replace_null_with_default":  "transforms.OversizedRecords.replace.null.with.default",
+	"transforms_mask_field_fields_include_list":               "transforms.MaskField.fields.include.list",
+	"transforms_mask_field_fields_exclude_list":               "transforms.MaskField.fields.exclude.list",
+	"transforms_mask_field_mask_function":                     "transforms.MaskField.mask.function",
+	"transforms_mask_field_mask_salt":                         "transforms.MaskField.mask.salt",
+	"transforms_mask_field_mask_char":                         "transforms.MaskField.mask.char",
+	"transforms_mask_field_mask_fixed_value":                  "transforms.MaskField.mask.fixed.value",
+	"transforms_mask_field_replace_null_with_default":         "transforms.MaskField.replace.null.with.default",
 	"transforms_add_string_suffix_fields_include_list":        "transforms.AddStringSuffix.fields.include.list",
 	"transforms_change_topic_name_match_regex":                "transforms.changeTopicName.match.regex.user.defined",
 	"transforms_rename_fields_renames":                        "transforms.RenameFields.renames.user.defined",

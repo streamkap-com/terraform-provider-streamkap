@@ -781,6 +781,306 @@ func TestMotherduckTasksMaxValidator(t *testing.T) {
 	}
 }
 
+// TestMaskFieldFunctionValidator tests the MaskField mask function validator
+// shared by every destination via the common transforms.
+func TestMaskFieldFunctionValidator(t *testing.T) {
+	v := stringvalidator.OneOf("SHA256_TRUNCATE", "MD5_TRUNCATE", "SHA256", "MD5", "REDACT", "FIXED", "NULLIFY")
+
+	tests := []struct {
+		name      string
+		value     string
+		wantError bool
+	}{
+		{"valid_sha256_truncate", "SHA256_TRUNCATE", false},
+		{"valid_md5_truncate", "MD5_TRUNCATE", false},
+		{"valid_sha256", "SHA256", false},
+		{"valid_md5", "MD5", false},
+		{"valid_redact", "REDACT", false},
+		{"valid_fixed", "FIXED", false},
+		{"valid_nullify", "NULLIFY", false},
+		{"invalid_lowercase", "sha256_truncate", true},
+		{"invalid_sha512", "SHA512", true},
+		{"empty_string", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := validator.StringRequest{
+				ConfigValue: types.StringValue(tt.value),
+				Path:        path.Root("transforms_mask_field_mask_function"),
+			}
+			resp := &validator.StringResponse{}
+			v.ValidateString(context.Background(), req, resp)
+
+			assert.Equal(t, tt.wantError, resp.Diagnostics.HasError(),
+				"value %q: expected error=%v, got error=%v", tt.value, tt.wantError, resp.Diagnostics.HasError())
+		})
+	}
+}
+
+// TestInconsistentSchemaHandlingModeValidator tests the inconsistent schema handling
+// mode validator used in MySQL and MariaDB sources.
+func TestInconsistentSchemaHandlingModeValidator(t *testing.T) {
+	v := stringvalidator.OneOf("Automatic", "Fail", "Warn", "Skip")
+
+	tests := []struct {
+		name      string
+		value     string
+		wantError bool
+	}{
+		{"valid_automatic", "Automatic", false},
+		{"valid_fail", "Fail", false},
+		{"valid_warn", "Warn", false},
+		{"valid_skip", "Skip", false},
+		{"invalid_lowercase_fail", "fail", true},
+		{"invalid_ignore", "Ignore", true},
+		{"empty_string", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := validator.StringRequest{
+				ConfigValue: types.StringValue(tt.value),
+				Path:        path.Root("inconsistent_schema_handling_mode"),
+			}
+			resp := &validator.StringResponse{}
+			v.ValidateString(context.Background(), req, resp)
+
+			assert.Equal(t, tt.wantError, resp.Diagnostics.HasError(),
+				"value %q: expected error=%v, got error=%v", tt.value, tt.wantError, resp.Diagnostics.HasError())
+		})
+	}
+}
+
+// TestLogMiningStrategyValidator tests the LogMiner strategy validator used in
+// Oracle and Oracle AWS sources.
+func TestLogMiningStrategyValidator(t *testing.T) {
+	v := stringvalidator.OneOf("online_catalog", "redo_log_catalog", "hybrid")
+
+	tests := []struct {
+		name      string
+		value     string
+		wantError bool
+	}{
+		{"valid_online_catalog", "online_catalog", false},
+		{"valid_redo_log_catalog", "redo_log_catalog", false},
+		{"valid_hybrid", "hybrid", false},
+		{"invalid_uppercase", "ONLINE_CATALOG", true},
+		{"invalid_mixed", "online", true},
+		{"empty_string", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := validator.StringRequest{
+				ConfigValue: types.StringValue(tt.value),
+				Path:        path.Root("log_mining_strategy"),
+			}
+			resp := &validator.StringResponse{}
+			v.ValidateString(context.Background(), req, resp)
+
+			assert.Equal(t, tt.wantError, resp.Diagnostics.HasError(),
+				"value %q: expected error=%v, got error=%v", tt.value, tt.wantError, resp.Diagnostics.HasError())
+		})
+	}
+}
+
+// TestReselectErrorHandlingModeValidator tests the re-select post processor error
+// handling mode validator used in PostgreSQL, AlloyDB, Supabase and Oracle sources.
+func TestReselectErrorHandlingModeValidator(t *testing.T) {
+	v := stringvalidator.OneOf("fail", "warn")
+
+	tests := []struct {
+		name      string
+		value     string
+		wantError bool
+	}{
+		{"valid_fail", "fail", false},
+		{"valid_warn", "warn", false},
+		{"invalid_uppercase_fail", "Fail", true},
+		{"invalid_skip", "skip", true},
+		{"empty_string", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := validator.StringRequest{
+				ConfigValue: types.StringValue(tt.value),
+				Path:        path.Root("reselector_reselect_error_handling_mode"),
+			}
+			resp := &validator.StringResponse{}
+			v.ValidateString(context.Background(), req, resp)
+
+			assert.Equal(t, tt.wantError, resp.Diagnostics.HasError(),
+				"value %q: expected error=%v, got error=%v", tt.value, tt.wantError, resp.Diagnostics.HasError())
+		})
+	}
+}
+
+// TestSnapshotChunkSizeBytesValidator tests the snapshot chunk size validator used
+// in MySQL, MariaDB, PlanetScale and SQL Server sources.
+func TestSnapshotChunkSizeBytesValidator(t *testing.T) {
+	v := int64validator.Between(4096, 8388608)
+
+	tests := []struct {
+		name      string
+		value     int64
+		wantError bool
+	}{
+		{"valid_min", 4096, false},
+		{"valid_default", 524288, false},
+		{"valid_max", 8388608, false},
+		{"invalid_below_min", 4095, true},
+		{"invalid_above_max", 8388609, true},
+		{"invalid_zero", 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := validator.Int64Request{
+				ConfigValue: types.Int64Value(tt.value),
+				Path:        path.Root("streamkap_snapshot_chunk_size_bytes"),
+			}
+			resp := &validator.Int64Response{}
+			v.ValidateInt64(context.Background(), req, resp)
+
+			assert.Equal(t, tt.wantError, resp.Diagnostics.HasError(),
+				"value %d: expected error=%v, got error=%v", tt.value, tt.wantError, resp.Diagnostics.HasError())
+		})
+	}
+}
+
+// TestSnapshotMaxSplitSizeBytesValidator tests the snapshot max split size validator
+// used in MySQL, MariaDB, PlanetScale and SQL Server sources.
+func TestSnapshotMaxSplitSizeBytesValidator(t *testing.T) {
+	v := int64validator.Between(10485760, 214748364800)
+
+	tests := []struct {
+		name      string
+		value     int64
+		wantError bool
+	}{
+		{"valid_min", 10485760, false},
+		{"valid_default", 53687091200, false},
+		{"valid_max", 214748364800, false},
+		{"invalid_below_min", 10485759, true},
+		{"invalid_above_max", 214748364801, true},
+		{"invalid_zero", 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := validator.Int64Request{
+				ConfigValue: types.Int64Value(tt.value),
+				Path:        path.Root("streamkap_snapshot_max_split_size_bytes"),
+			}
+			resp := &validator.Int64Response{}
+			v.ValidateInt64(context.Background(), req, resp)
+
+			assert.Equal(t, tt.wantError, resp.Diagnostics.HasError(),
+				"value %d: expected error=%v, got error=%v", tt.value, tt.wantError, resp.Diagnostics.HasError())
+		})
+	}
+}
+
+// TestSnapshotStateRefreshMsValidator tests the snapshot state refresh cadence
+// validator used in MySQL, MariaDB, PlanetScale and SQL Server sources.
+func TestSnapshotStateRefreshMsValidator(t *testing.T) {
+	v := int64validator.Between(1000, 60000)
+
+	tests := []struct {
+		name      string
+		value     int64
+		wantError bool
+	}{
+		{"valid_min", 1000, false},
+		{"valid_default", 30000, false},
+		{"valid_max", 60000, false},
+		{"invalid_below_min", 999, true},
+		{"invalid_above_max", 60001, true},
+		{"invalid_zero", 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := validator.Int64Request{
+				ConfigValue: types.Int64Value(tt.value),
+				Path:        path.Root("streamkap_snapshot_state_refresh_ms"),
+			}
+			resp := &validator.Int64Response{}
+			v.ValidateInt64(context.Background(), req, resp)
+
+			assert.Equal(t, tt.wantError, resp.Diagnostics.HasError(),
+				"value %d: expected error=%v, got error=%v", tt.value, tt.wantError, resp.Diagnostics.HasError())
+		})
+	}
+}
+
+// TestFileMaxRecordsValidator tests the file max records validator used in the S3
+// destination (0 = unlimited).
+func TestFileMaxRecordsValidator(t *testing.T) {
+	v := int64validator.Between(0, 100000)
+
+	tests := []struct {
+		name      string
+		value     int64
+		wantError bool
+	}{
+		{"valid_default_unlimited", 0, false},
+		{"valid_mid", 50000, false},
+		{"valid_max", 100000, false},
+		{"invalid_negative", -1, true},
+		{"invalid_above_max", 100001, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := validator.Int64Request{
+				ConfigValue: types.Int64Value(tt.value),
+				Path:        path.Root("file_max_records"),
+			}
+			resp := &validator.Int64Response{}
+			v.ValidateInt64(context.Background(), req, resp)
+
+			assert.Equal(t, tt.wantError, resp.Diagnostics.HasError(),
+				"value %d: expected error=%v, got error=%v", tt.value, tt.wantError, resp.Diagnostics.HasError())
+		})
+	}
+}
+
+// TestS3PartSizeBytesValidator tests the multipart upload part size validator used
+// in the S3 destination (AWS minimum part size is 5MB).
+func TestS3PartSizeBytesValidator(t *testing.T) {
+	v := int64validator.Between(5242880, 104857600)
+
+	tests := []struct {
+		name      string
+		value     int64
+		wantError bool
+	}{
+		{"valid_min_default", 5242880, false},
+		{"valid_mid", 52428800, false},
+		{"valid_max", 104857600, false},
+		{"invalid_below_min", 5242879, true},
+		{"invalid_above_max", 104857601, true},
+		{"invalid_zero", 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := validator.Int64Request{
+				ConfigValue: types.Int64Value(tt.value),
+				Path:        path.Root("aws_s3_part_size_bytes"),
+			}
+			resp := &validator.Int64Response{}
+			v.ValidateInt64(context.Background(), req, resp)
+
+			assert.Equal(t, tt.wantError, resp.Diagnostics.HasError(),
+				"value %d: expected error=%v, got error=%v", tt.value, tt.wantError, resp.Diagnostics.HasError())
+		})
+	}
+}
+
 // TestNullValueHandling verifies validators handle null/unknown values correctly.
 func TestNullValueHandling(t *testing.T) {
 	t.Run("string_validator_with_null", func(t *testing.T) {

@@ -43,6 +43,10 @@ type SourceOracleawsModel struct {
 	SSHPort                                            types.Int64    `tfsdk:"ssh_port"`
 	SSHUser                                            types.String   `tfsdk:"ssh_user"`
 	ColumnExcludeList                                  types.String   `tfsdk:"column_exclude_list"`
+	LogMiningStrategy                                  types.String   `tfsdk:"log_mining_strategy"`
+	LobEnabled                                         types.Bool     `tfsdk:"lob_enabled"`
+	PostProcessorsReselectEnabled                      types.Bool     `tfsdk:"post_processors_reselect_enabled"`
+	ReselectorReselectErrorHandlingMode                types.String   `tfsdk:"reselector_reselect_error_handling_mode"`
 	SSHPublicKey                                       types.String   `tfsdk:"ssh_public_key"`
 	TransformsValueToKeyFieldsIncludeList              types.String   `tfsdk:"transforms_value_to_key_fields_include_list"`
 	TransformsValueToKeyReplaceNullWithDefault         types.Bool     `tfsdk:"transforms_value_to_key_replace_null_with_default"`
@@ -157,15 +161,15 @@ func SourceOracleawsSchema() schema.Schema {
 			"heartbeat_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to true.",
-				MarkdownDescription: "When enabled, the connector emits a periodic heartbeat to a Kafka topic — this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to `true`.",
+				Description:         "When enabled, the connector emits a periodic heartbeat to a Kafka topic  -  this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to true.",
+				MarkdownDescription: "When enabled, the connector emits a periodic heartbeat to a Kafka topic  -  this keeps the poll loop active and offsets advancing on low-traffic sources, preventing replication-slot/log lag and false-positive health alerts. To also write to a 'streamkap_heartbeat' table in the source database (keeps the source transaction log moving), set 'Heartbeat Table Schema' below; leave it blank for Kafka-only mode. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
 			},
 			"heartbeat_data_collection_schema_or_database": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
-				MarkdownDescription: "Optional. The schema containing a 'streamkap_heartbeat' table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
+				Description:         "Optional. The schema containing a 'streamkap_heartbeat' table  -  providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
+				MarkdownDescription: "Optional. The schema containing a 'streamkap_heartbeat' table  -  providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave blank for Kafka-only heartbeat (no table or write grant required). See the Streamkap documentation for table setup.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -231,6 +235,40 @@ func SourceOracleawsSchema() schema.Schema {
 				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"log_mining_strategy": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Controls how LogMiner resolves column metadata. 'online_catalog' (default) is fastest; 'redo_log_catalog' mines the data dictionary from redo logs and handles schema changes better; 'hybrid' combines both but has limitations with certain settings (e.g. LOB capture is not supported). Defaults to \"online_catalog\". Valid values: online_catalog, redo_log_catalog, hybrid.",
+				MarkdownDescription: "Controls how LogMiner resolves column metadata. 'online_catalog' (default) is fastest; 'redo_log_catalog' mines the data dictionary from redo logs and handles schema changes better; 'hybrid' combines both but has limitations with certain settings (e.g. LOB capture is not supported). Defaults to `online_catalog`. Valid values: `online_catalog`, `redo_log_catalog`, `hybrid`.",
+				Default:             stringdefault.StaticString("online_catalog"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("online_catalog", "redo_log_catalog", "hybrid"),
+				},
+			},
+			"lob_enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Enables capture of CLOB, NCLOB, and BLOB columns. Not supported with the Hybrid strategy. When combined with the Re-select Post Processor, LOB values unavailable in the redo log are re-fetched from the source at event time, producing one merged event per row change. Defaults to false.",
+				MarkdownDescription: "Enables capture of CLOB, NCLOB, and BLOB columns. Not supported with the Hybrid strategy. When combined with the Re-select Post Processor, LOB values unavailable in the redo log are re-fetched from the source at event time, producing one merged event per row change. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"post_processors_reselect_enabled": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "When enabled, columns unavailable in the redo log (e.g. LOB columns) are re-fetched from the source database at event time. For LOB capture, enable together with 'Redo Log Catalog' strategy and 'Enable LOB Column Capture'. Defaults to false.",
+				MarkdownDescription: "When enabled, columns unavailable in the redo log (e.g. LOB columns) are re-fetched from the source database at event time. For LOB capture, enable together with 'Redo Log Catalog' strategy and 'Enable LOB Column Capture'. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"reselector_reselect_error_handling_mode": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Controls what happens when the re-select post processor fails to fetch a column. 'Fail' stops the connector; 'Warn' logs a warning and continues. Defaults to \"fail\". Valid values: fail, warn.",
+				MarkdownDescription: "Controls what happens when the re-select post processor fails to fetch a column. 'Fail' stops the connector; 'Warn' logs a warning and continues. Defaults to `fail`. Valid values: `fail`, `warn`.",
+				Default:             stringdefault.StaticString("fail"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("fail", "warn"),
 				},
 			},
 			"ssh_public_key": schema.StringAttribute{
@@ -359,13 +397,17 @@ var SourceOracleawsFieldMappings = map[string]string{
 	"heartbeat_data_collection_schema_or_database": "heartbeat.data.collection.schema.or.database",
 	"schema_history_internal_store_only_captured_databases_ddl": "schema.history.internal.store.only.captured.databases.ddl",
 	"schema_history_internal_store_only_captured_tables_ddl":    "schema.history.internal.store.only.captured.tables.ddl",
-	"binary_handling_mode": "binary.handling.mode",
-	"ssh_enabled":          "ssh.enabled",
-	"ssh_host":             "ssh.host",
-	"ssh_port":             "ssh.port",
-	"ssh_user":             "ssh.user",
-	"column_exclude_list":  "column.exclude.list.user.defined",
-	"ssh_public_key":       "ssh.public.key.user.displayed",
+	"binary_handling_mode":             "binary.handling.mode",
+	"ssh_enabled":                      "ssh.enabled",
+	"ssh_host":                         "ssh.host",
+	"ssh_port":                         "ssh.port",
+	"ssh_user":                         "ssh.user",
+	"column_exclude_list":              "column.exclude.list.user.defined",
+	"log_mining_strategy":              "log.mining.strategy",
+	"lob_enabled":                      "lob.enabled",
+	"post_processors_reselect_enabled": "post.processors.reselect.enabled",
+	"reselector_reselect_error_handling_mode": "reselector.reselect.error.handling.mode",
+	"ssh_public_key": "ssh.public.key.user.displayed",
 	"transforms_value_to_key_fields_include_list":            "transforms.ValueToKey.fields.include.list",
 	"transforms_value_to_key_replace_null_with_default":      "transforms.ValueToKey.replace.null.with.default",
 	"preserve_null_values":                                   "preserve.null.values",

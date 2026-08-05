@@ -50,6 +50,10 @@ resource "streamkap_source_mariadb" "test" {
 	binary_handling_mode                         = "bytes"
 	database_ssl_mode                            = "disable"
 	ssh_enabled                                  = false
+	inconsistent_schema_handling_mode            = "Warn"
+	streamkap_snapshot_chunk_size_bytes          = 262144
+	streamkap_snapshot_max_split_size_bytes      = 21474836480
+	streamkap_snapshot_state_refresh_ms          = 15000
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -67,6 +71,11 @@ resource "streamkap_source_mariadb" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "binary_handling_mode", "bytes"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_ssl_mode", "disable"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "ssh_enabled", "false"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "inconsistent_schema_handling_mode", "Warn"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "streamkap_snapshot_chunk_size_bytes", "262144"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "streamkap_snapshot_max_split_size_bytes", "21474836480"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "streamkap_snapshot_state_refresh_ms", "15000"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "streamkap_snapshot_parallelism", "1"),
 				),
 			},
 			// ImportState testing
@@ -103,6 +112,10 @@ resource "streamkap_source_mariadb" "test" {
 	binary_handling_mode                         = "base64"
 	database_ssl_mode                            = "disable"
 	ssh_enabled                                  = false
+	inconsistent_schema_handling_mode            = "Skip"
+	streamkap_snapshot_chunk_size_bytes          = 1048576
+	streamkap_snapshot_max_split_size_bytes      = 107374182400
+	streamkap_snapshot_state_refresh_ms          = 45000
 }
 `, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -112,6 +125,10 @@ resource "streamkap_source_mariadb" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "database_connection_time_zone", "UTC"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "snapshot_gtid", "No"),
 					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "binary_handling_mode", "base64"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "inconsistent_schema_handling_mode", "Skip"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "streamkap_snapshot_chunk_size_bytes", "1048576"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "streamkap_snapshot_max_split_size_bytes", "107374182400"),
+					resource.TestCheckResourceAttr("streamkap_source_mariadb.test", "streamkap_snapshot_state_refresh_ms", "45000"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

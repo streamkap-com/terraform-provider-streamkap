@@ -61,7 +61,7 @@
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false,
+      "sensitive": true,
       "type": "basetypes.StringType"
     },
     "iceberg_catalog_s3_credentials_enabled": {
@@ -232,12 +232,6 @@
       "sensitive": false,
       "type": "types.SetType[basetypes.StringType]"
     },
-    "tags": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false
-    },
     "transforms_add_string_suffix_fields_include_list": {
       "required": false,
       "optional": true,
@@ -293,6 +287,55 @@
       "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
+    },
+    "transforms_mask_field_fields_exclude_list": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_mask_field_fields_include_list": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_mask_field_mask_char": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_mask_field_mask_fixed_value": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_mask_field_mask_function": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_mask_field_mask_salt": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_mask_field_replace_null_with_default": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "transforms_oversized_records_fields_exclude_list": {
       "required": false,

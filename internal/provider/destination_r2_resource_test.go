@@ -53,9 +53,20 @@ resource "streamkap_destination_r2" "test" {
 	aws_s3_bucket_name    = var.destination_r2_bucket_name
 	format                = "JSON Array"
 	file_compression_type = "gzip"
+	transforms_mask_field_fields_include_list       = "public.users.email"
+	transforms_mask_field_fields_exclude_list       = "public.users.id"
+	transforms_mask_field_mask_function             = "REDACT"
+	transforms_mask_field_mask_char                 = "#"
+	transforms_mask_field_replace_null_with_default = false
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "transforms_mask_field_fields_include_list", "public.users.email"),
+					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "transforms_mask_field_mask_function", "REDACT"),
+					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "transforms_mask_field_mask_fixed_value", "***"),
+					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "transforms_mask_field_replace_null_with_default", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "r2_account", destinationR2Account),
 					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "aws_access_key_id", destinationR2AccessKeyID),
@@ -102,9 +113,21 @@ resource "streamkap_destination_r2" "test" {
 	format                = "Parquet"
 	file_compression_type = "none"
 	file_name_prefix      = "updated/"
+	transforms_mask_field_fields_include_list       = "public.users.email,public.users.phone"
+	transforms_mask_field_fields_exclude_list       = "public.users.id"
+	transforms_mask_field_mask_function             = "FIXED"
+	transforms_mask_field_mask_char                 = "#"
+	transforms_mask_field_mask_fixed_value          = "MASKED"
+	transforms_mask_field_replace_null_with_default = true
 }
 `, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "transforms_mask_field_fields_include_list", "public.users.email,public.users.phone"),
+					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "transforms_mask_field_mask_function", "FIXED"),
+					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "transforms_mask_field_mask_fixed_value", "MASKED"),
+					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "transforms_mask_field_replace_null_with_default", "true"),
 					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "format", "Parquet"),
 					resource.TestCheckResourceAttr("streamkap_destination_r2.test", "file_compression_type", "none"),
