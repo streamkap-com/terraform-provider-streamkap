@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	resourceschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -993,6 +994,80 @@ func TestSchemaValidation_ComputedFields(t *testing.T) {
 			require.True(t, attr.IsComputed(), "attribute %s should be computed", field)
 		})
 	}
+}
+
+// TestSchemaValidation_MaskFieldAttributesOnAllDestinations verifies that every
+// destination schema carries the full set of shared MaskField transform
+// attributes from configurations_for_all.json, with the expected shape. The
+// Kafka Direct destination is the deliberate exception: the backend resolves its
+// configuration from the plugin config alone, so it must not carry them.
+func TestSchemaValidation_MaskFieldAttributesOnAllDestinations(t *testing.T) {
+	destinationSchemas := map[string]func() resourceschema.Schema{
+		"azblob":      generated.DestinationAzblobSchema,
+		"bigquery":    generated.DestinationBigquerySchema,
+		"clickhouse":  generated.DestinationClickhouseSchema,
+		"cockroachdb": generated.DestinationCockroachdbSchema,
+		"databricks":  generated.DestinationDatabricksSchema,
+		"db2":         generated.DestinationDb2Schema,
+		"gcs":         generated.DestinationGcsSchema,
+		"httpsink":    generated.DestinationHttpsinkSchema,
+		"iceberg":     generated.DestinationIcebergSchema,
+		"kafka":       generated.DestinationKafkaSchema,
+		"motherduck":  generated.DestinationMotherduckSchema,
+		"mysql":       generated.DestinationMysqlSchema,
+		"oracle":      generated.DestinationOracleSchema,
+		"pinecone":    generated.DestinationPineconeSchema,
+		"postgresql":  generated.DestinationPostgresqlSchema,
+		"r2":          generated.DestinationR2Schema,
+		"redis":       generated.DestinationRedisSchema,
+		"redshift":    generated.DestinationRedshiftSchema,
+		"s3":          generated.DestinationS3Schema,
+		"snowflake":   generated.DestinationSnowflakeSchema,
+		"sqlserver":   generated.DestinationSqlserverSchema,
+		"starburst":   generated.DestinationStarburstSchema,
+		"weaviate":    generated.DestinationWeaviateSchema,
+	}
+
+	maskFieldStringAttrs := []string{
+		"transforms_mask_field_fields_include_list",
+		"transforms_mask_field_fields_exclude_list",
+		"transforms_mask_field_mask_function",
+		"transforms_mask_field_mask_salt",
+		"transforms_mask_field_mask_char",
+		"transforms_mask_field_mask_fixed_value",
+	}
+	const maskFieldBoolAttr = "transforms_mask_field_replace_null_with_default"
+
+	for name, schemaFn := range destinationSchemas {
+		t.Run(name, func(t *testing.T) {
+			s := schemaFn()
+
+			for _, attrName := range maskFieldStringAttrs {
+				attr, ok := s.Attributes[attrName]
+				require.True(t, ok, "destination %s should have attribute %s", name, attrName)
+				assert.True(t, attr.IsOptional(), "%s should be optional", attrName)
+				assert.True(t, attr.IsComputed(), "%s should be computed", attrName)
+				_, isString := attr.(resourceschema.StringAttribute)
+				assert.True(t, isString, "%s should be a string attribute", attrName)
+			}
+
+			attr, ok := s.Attributes[maskFieldBoolAttr]
+			require.True(t, ok, "destination %s should have attribute %s", name, maskFieldBoolAttr)
+			assert.True(t, attr.IsOptional(), "%s should be optional", maskFieldBoolAttr)
+			assert.True(t, attr.IsComputed(), "%s should be computed", maskFieldBoolAttr)
+			_, isBool := attr.(resourceschema.BoolAttribute)
+			assert.True(t, isBool, "%s should be a bool attribute", maskFieldBoolAttr)
+		})
+	}
+
+	t.Run("kafkadirect_has_no_maskfield_attributes", func(t *testing.T) {
+		s := generated.DestinationKafkadirectSchema()
+		for _, attrName := range append(maskFieldStringAttrs, maskFieldBoolAttr) {
+			_, ok := s.Attributes[attrName]
+			assert.False(t, ok,
+				"kafkadirect resolves its config from the plugin alone and must not carry shared transform %s", attrName)
+		}
+	})
 }
 
 // =============================================================================

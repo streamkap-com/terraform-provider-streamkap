@@ -41,9 +41,20 @@ resource "streamkap_destination_bigquery" "test" {
 	time_partitioning_type = "DAY"
 	auto_create_tables     = true
 	tasks_max              = 5
+	transforms_mask_field_fields_include_list       = "public.users.email"
+	transforms_mask_field_fields_exclude_list       = "public.users.id"
+	transforms_mask_field_mask_function             = "REDACT"
+	transforms_mask_field_mask_char                 = "#"
+	transforms_mask_field_replace_null_with_default = false
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_fields_include_list", "public.users.email"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_mask_function", "REDACT"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_mask_fixed_value", "***"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_replace_null_with_default", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "default_dataset", destinationBigqueryDataset),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "time_partitioning_type", "DAY"),
@@ -80,9 +91,21 @@ resource "streamkap_destination_bigquery" "test" {
 	tasks_max                = 3
 	custom_partition_field   = "_streamkap_ts"
 	custom_clustering_fields = "id"
+	transforms_mask_field_fields_include_list       = "public.users.email,public.users.phone"
+	transforms_mask_field_fields_exclude_list       = "public.users.id"
+	transforms_mask_field_mask_function             = "FIXED"
+	transforms_mask_field_mask_char                 = "#"
+	transforms_mask_field_mask_fixed_value          = "MASKED"
+	transforms_mask_field_replace_null_with_default = true
 }
 `, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_fields_include_list", "public.users.email,public.users.phone"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_mask_function", "FIXED"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_mask_fixed_value", "MASKED"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_replace_null_with_default", "true"),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "time_partitioning_type", "HOUR"),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "tasks_max", "3"),
@@ -132,9 +155,20 @@ resource "streamkap_destination_bigquery" "test" {
 	time_partitioning_type   = "DAY"
 	custom_partition_field   = "created_at"
 	custom_clustering_fields = "category_id"
+	transforms_mask_field_fields_include_list       = "public.users.email"
+	transforms_mask_field_fields_exclude_list       = "public.users.id"
+	transforms_mask_field_mask_function             = "REDACT"
+	transforms_mask_field_mask_char                 = "#"
+	transforms_mask_field_replace_null_with_default = false
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_fields_include_list", "public.users.email"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_mask_function", "REDACT"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_mask_fixed_value", "***"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_replace_null_with_default", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "time_partitioning_type", "DAY"),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "custom_partition_field", "created_at"),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "custom_clustering_fields", "category_id"),
@@ -160,9 +194,21 @@ resource "streamkap_destination_bigquery" "test" {
 	time_partitioning_type   = "HOUR"
 	custom_partition_field   = "order_date"
 	custom_clustering_fields = "customer_id,status,order_number"
+	transforms_mask_field_fields_include_list       = "public.users.email,public.users.phone"
+	transforms_mask_field_fields_exclude_list       = "public.users.id"
+	transforms_mask_field_mask_function             = "FIXED"
+	transforms_mask_field_mask_char                 = "#"
+	transforms_mask_field_mask_fixed_value          = "MASKED"
+	transforms_mask_field_replace_null_with_default = true
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_fields_include_list", "public.users.email,public.users.phone"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_mask_function", "FIXED"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_mask_fixed_value", "MASKED"),
+					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "transforms_mask_field_replace_null_with_default", "true"),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "time_partitioning_type", "HOUR"),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "custom_partition_field", "order_date"),
 					resource.TestCheckResourceAttr("streamkap_destination_bigquery.test", "custom_clustering_fields", "customer_id,status,order_number"),

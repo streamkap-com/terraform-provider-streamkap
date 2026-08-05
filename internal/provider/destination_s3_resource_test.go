@@ -48,9 +48,20 @@ resource "streamkap_destination_s3" "test" {
   aws_s3_region     = "us-west-2"
   aws_s3_bucket_name    = "bucketname"
   format         = "JSON Array"
+  transforms_mask_field_fields_include_list       = "public.users.email"
+  transforms_mask_field_fields_exclude_list       = "public.users.id"
+  transforms_mask_field_mask_function             = "REDACT"
+  transforms_mask_field_mask_char                 = "#"
+  transforms_mask_field_replace_null_with_default = false
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "transforms_mask_field_fields_include_list", "public.users.email"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "transforms_mask_field_mask_function", "REDACT"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "transforms_mask_field_mask_fixed_value", "***"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "transforms_mask_field_replace_null_with_default", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_access_key_id", s3AwsAccessId),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_secret_access_key", s3AwsSecretKey),
@@ -59,6 +70,8 @@ resource "streamkap_destination_s3" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "format", "JSON Array"),
 					resource.TestMatchResourceAttr("streamkap_destination_s3.test", "file_name_template", fileNameTemplateRE),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "file_compression_type", "gzip"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "file_max_records", "0"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_s3_part_size_bytes", "5242880"),
 				),
 			},
 			// Step 2: ImportState Testing
@@ -89,9 +102,23 @@ resource "streamkap_destination_s3" "test" {
   aws_s3_bucket_name    = "bucketname-updated"
   file_compression_type         = "none"
   format_output_envelope        = false
+  file_max_records              = 50000
+  aws_s3_part_size_bytes        = 10485760
+  transforms_mask_field_fields_include_list       = "public.users.email,public.users.phone"
+  transforms_mask_field_fields_exclude_list       = "public.users.id"
+  transforms_mask_field_mask_function             = "FIXED"
+  transforms_mask_field_mask_char                 = "#"
+  transforms_mask_field_mask_fixed_value          = "MASKED"
+  transforms_mask_field_replace_null_with_default = true
 }
 `, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "transforms_mask_field_fields_include_list", "public.users.email,public.users.phone"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "transforms_mask_field_mask_function", "FIXED"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "transforms_mask_field_mask_fixed_value", "MASKED"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "transforms_mask_field_replace_null_with_default", "true"),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_access_key_id", s3AwsAccessId),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_secret_access_key", s3AwsSecretKey),
@@ -101,6 +128,8 @@ resource "streamkap_destination_s3" "test" {
 					resource.TestMatchResourceAttr("streamkap_destination_s3.test", "file_name_template", fileNameTemplateRE),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "file_compression_type", "none"),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "format_output_envelope", "false"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "file_max_records", "50000"),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_s3_part_size_bytes", "10485760"),
 				),
 			},
 			// Delete testing is automatically handled by the test framework

@@ -54,6 +54,8 @@ resource "streamkap_source_supabase" "test" {
 	binary_handling_mode                         = "bytes"
 	include_source_db_name_in_table_name         = false
 	ssh_enabled                                  = false
+	post_processors_reselect_enabled             = true
+	reselector_reselect_error_handling_mode      = "warn"
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -75,6 +77,8 @@ resource "streamkap_source_supabase" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "binary_handling_mode", "bytes"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "include_source_db_name_in_table_name", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "ssh_enabled", "false"),
+					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "post_processors_reselect_enabled", "true"),
+					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "reselector_reselect_error_handling_mode", "warn"),
 				),
 			},
 			// ImportState testing
@@ -115,6 +119,8 @@ resource "streamkap_source_supabase" "test" {
 	binary_handling_mode                         = "base64"
 	include_source_db_name_in_table_name         = true
 	ssh_enabled                                  = false
+	post_processors_reselect_enabled             = true
+	reselector_reselect_error_handling_mode      = "fail"
 }
 `, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -124,6 +130,8 @@ resource "streamkap_source_supabase" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "heartbeat_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "binary_handling_mode", "base64"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "include_source_db_name_in_table_name", "true"),
+					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "post_processors_reselect_enabled", "true"),
+					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "reselector_reselect_error_handling_mode", "fail"),
 				),
 			},
 			// Delete testing automatically occurs in TestCase

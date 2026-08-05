@@ -52,6 +52,8 @@ resource "streamkap_source_postgresql" "test" {
 	publication_name                             = "terraform_pub_test"
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
+	post_processors_reselect_enabled             = true
+	reselector_reselect_error_handling_mode      = "warn"
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -74,6 +76,8 @@ resource "streamkap_source_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", "terraform_pub_test"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "binary_handling_mode", "bytes"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "ssh_enabled", "false"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "post_processors_reselect_enabled", "true"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "reselector_reselect_error_handling_mode", "warn"),
 				),
 			},
 			// Step 2: ImportState testing
@@ -115,6 +119,8 @@ resource "streamkap_source_postgresql" "test" {
 	publication_name                             = "terraform_pub_test"
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
+	post_processors_reselect_enabled             = true
+	reselector_reselect_error_handling_mode      = "fail"
 }
 `, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -136,6 +142,8 @@ resource "streamkap_source_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", "terraform_pub_test"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "binary_handling_mode", "bytes"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "ssh_enabled", "false"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "post_processors_reselect_enabled", "true"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "reselector_reselect_error_handling_mode", "fail"),
 				),
 			},
 			// Step 4: Update to test column_exclude_list

@@ -44,6 +44,10 @@ resource "streamkap_source_planetscale" "test" {
 	vitess_tablet_type  = "MASTER"
 	table_include_list  = "sandbox.customer"
 	ssh_enabled         = false
+	vtgate_mysql_port   = 3306
+	streamkap_snapshot_chunk_size_bytes     = 262144
+	streamkap_snapshot_max_split_size_bytes = 21474836480
+	streamkap_snapshot_state_refresh_ms     = 15000
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -56,6 +60,13 @@ resource "streamkap_source_planetscale" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "vitess_tablet_type", "MASTER"),
 					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "table_include_list", "sandbox.customer"),
 					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "ssh_enabled", "false"),
+					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "vtgate_mysql_port", "3306"),
+					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "streamkap_snapshot_chunk_size_bytes", "262144"),
+					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "streamkap_snapshot_max_split_size_bytes", "21474836480"),
+					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "streamkap_snapshot_state_refresh_ms", "15000"),
+					// Check defaults for unset attributes
+					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "database_ssl_disabled", "false"),
+					resource.TestCheckResourceAttr("streamkap_source_planetscale.test", "vitess_set_basic_authentication_header", "true"),
 				),
 			},
 			// ImportState testing

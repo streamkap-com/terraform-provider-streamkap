@@ -58,9 +58,20 @@ resource "streamkap_destination_sqlserver" "test" {
 	delete_enabled      = false
 	primary_key_mode    = "record_key"
 	tasks_max           = 5
+	transforms_mask_field_fields_include_list       = "public.users.email"
+	transforms_mask_field_fields_exclude_list       = "public.users.id"
+	transforms_mask_field_mask_function             = "REDACT"
+	transforms_mask_field_mask_char                 = "#"
+	transforms_mask_field_replace_null_with_default = false
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "transforms_mask_field_fields_include_list", "public.users.email"),
+					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "transforms_mask_field_mask_function", "REDACT"),
+					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "transforms_mask_field_mask_fixed_value", "***"),
+					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "transforms_mask_field_replace_null_with_default", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "database_hostname", destinationSqlserverHostname),
 					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "database_port", "1433"),
@@ -116,9 +127,21 @@ resource "streamkap_destination_sqlserver" "test" {
 	delete_enabled      = true
 	primary_key_mode    = "record_value"
 	tasks_max           = 10
+	transforms_mask_field_fields_include_list       = "public.users.email,public.users.phone"
+	transforms_mask_field_fields_exclude_list       = "public.users.id"
+	transforms_mask_field_mask_function             = "FIXED"
+	transforms_mask_field_mask_char                 = "#"
+	transforms_mask_field_mask_fixed_value          = "MASKED"
+	transforms_mask_field_replace_null_with_default = true
 }
 `, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "transforms_mask_field_fields_include_list", "public.users.email,public.users.phone"),
+					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "transforms_mask_field_mask_function", "FIXED"),
+					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "transforms_mask_field_mask_fixed_value", "MASKED"),
+					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "transforms_mask_field_replace_null_with_default", "true"),
 					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "table_name_prefix", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_destination_sqlserver.test", "schema_evolution", "none"),

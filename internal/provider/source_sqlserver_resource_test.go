@@ -45,6 +45,7 @@ resource "streamkap_source_sqlserver" "test" {
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = null
 	binary_handling_mode                         = "bytes"
+	streamkap_snapshot_max_split_size_bytes      = 21474836480
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -57,6 +58,7 @@ resource "streamkap_source_sqlserver" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "schema_include_list", "dbo"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "table_include_list", "dbo.Orders,dbo.Customers"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "signal_data_collection_schema_or_database", "streamkap"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "streamkap_snapshot_max_split_size_bytes", "21474836480"),
 					// Check defaults for unset attributes
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "heartbeat_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "binary_handling_mode", "bytes"),
@@ -95,6 +97,7 @@ resource "streamkap_source_sqlserver" "test" {
 	heartbeat_data_collection_schema_or_database = null
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
+	streamkap_snapshot_max_split_size_bytes      = 107374182400
 }
 `, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -110,6 +113,7 @@ resource "streamkap_source_sqlserver" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "heartbeat_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "binary_handling_mode", "bytes"),
 					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "ssh_enabled", "false"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.test", "streamkap_snapshot_max_split_size_bytes", "107374182400"),
 				),
 			},
 			// Step 4: Update to test column_exclude_list

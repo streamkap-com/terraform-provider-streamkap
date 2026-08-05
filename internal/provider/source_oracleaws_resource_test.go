@@ -48,6 +48,10 @@ resource "streamkap_source_oracleaws" "test" {
 	heartbeat_data_collection_schema_or_database = "STREAMKAP"
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
+	lob_enabled                                  = true
+	log_mining_strategy                          = "redo_log_catalog"
+	post_processors_reselect_enabled             = true
+	reselector_reselect_error_handling_mode      = "warn"
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -64,6 +68,10 @@ resource "streamkap_source_oracleaws" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_oracleaws.test", "heartbeat_data_collection_schema_or_database", "STREAMKAP"),
 					resource.TestCheckResourceAttr("streamkap_source_oracleaws.test", "binary_handling_mode", "bytes"),
 					resource.TestCheckResourceAttr("streamkap_source_oracleaws.test", "ssh_enabled", "false"),
+					resource.TestCheckResourceAttr("streamkap_source_oracleaws.test", "lob_enabled", "true"),
+					resource.TestCheckResourceAttr("streamkap_source_oracleaws.test", "log_mining_strategy", "redo_log_catalog"),
+					resource.TestCheckResourceAttr("streamkap_source_oracleaws.test", "post_processors_reselect_enabled", "true"),
+					resource.TestCheckResourceAttr("streamkap_source_oracleaws.test", "reselector_reselect_error_handling_mode", "warn"),
 				),
 			},
 			// ImportState testing

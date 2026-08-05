@@ -50,9 +50,20 @@ resource "streamkap_destination_starburst" "test" {
 	file_name_template    = "{{topic}}-{{partition}}-{{start_offset}}"
 	file_name_prefix      = "streamkap/"
 	file_compression_type = "gzip"
+	transforms_mask_field_fields_include_list       = "public.users.email"
+	transforms_mask_field_fields_exclude_list       = "public.users.id"
+	transforms_mask_field_mask_function             = "REDACT"
+	transforms_mask_field_mask_char                 = "#"
+	transforms_mask_field_replace_null_with_default = false
 }
 `, name),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "transforms_mask_field_fields_include_list", "public.users.email"),
+					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "transforms_mask_field_mask_function", "REDACT"),
+					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "transforms_mask_field_mask_fixed_value", "***"),
+					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "transforms_mask_field_replace_null_with_default", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "aws_access_key_id", destinationStarburstAccessKeyID),
 					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "aws_s3_region", "us-west-2"),
@@ -98,9 +109,21 @@ resource "streamkap_destination_starburst" "test" {
 	file_name_template    = "{{topic}}/{{partition}}/{{start_offset}}"
 	file_name_prefix      = "streamkap-updated/"
 	file_compression_type = "snappy"
+	transforms_mask_field_fields_include_list       = "public.users.email,public.users.phone"
+	transforms_mask_field_fields_exclude_list       = "public.users.id"
+	transforms_mask_field_mask_function             = "FIXED"
+	transforms_mask_field_mask_char                 = "#"
+	transforms_mask_field_mask_fixed_value          = "MASKED"
+	transforms_mask_field_replace_null_with_default = true
 }
 `, nameUpdated),
 				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "transforms_mask_field_fields_include_list", "public.users.email,public.users.phone"),
+					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "transforms_mask_field_fields_exclude_list", "public.users.id"),
+					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "transforms_mask_field_mask_function", "FIXED"),
+					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "transforms_mask_field_mask_char", "#"),
+					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "transforms_mask_field_mask_fixed_value", "MASKED"),
+					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "transforms_mask_field_replace_null_with_default", "true"),
 					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "aws_s3_region", "us-east-1"),
 					resource.TestCheckResourceAttr("streamkap_destination_starburst.test", "format", "Parquet"),
