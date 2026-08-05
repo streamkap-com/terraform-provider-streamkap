@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.0.0-beta.27] - 2026-08-05 (Pre-release)
 
 ### Added
 - **`streamkap_destination_s3`: `format_output_envelope`** (bool, default
@@ -52,6 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   streaming-snapshot tuning set above.
 
 ### Security
+- **`google.golang.org/grpc` bumped to v1.82.1**, clearing GHSA-hrxh-6v49-42gf
+  (xDS RBAC and HTTP/2 vulnerabilities), the sole HIGH finding in the
+  dependency scan.
 - **`streamkap_destination_iceberg`: `iceberg_catalog_s3_access_key_id` is now
   marked sensitive.** The backend ships it without `encrypt`; tfgen's forced
   `Sensitive` rule for `*access_key_id` (introduced in beta.26) now applies to
