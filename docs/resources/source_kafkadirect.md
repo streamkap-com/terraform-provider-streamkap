@@ -88,6 +88,7 @@ output "example-source-kafkadirect" {
 - `format` (String) The serialised format of the data written to the Kafka topic. Defaults to `string`. Valid values: `json`, `string`, `avro`.
 - `kafka_format` (String, Deprecated) DEPRECATED: Use 'format' instead.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
+- `records_carry_streamkap_metadata` (Boolean) Enable when this topic is fed by another Streamkap pipeline and records already carry `_streamkap_offset`, `_streamkap_ts_ms`, `_streamkap_source_ts_ms`. Skips destination-side InsertField so upstream offsets are preserved. Defaults to `false`.
 - `schemas_enable` (Boolean) If untoggled (default), Streamkap attempts to infer schema from your data - depending on the Destination. Otherwise, Streamkap assumes the Kafka message key and value contain `schema` and `payload` structures. Defaults to `false`.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))

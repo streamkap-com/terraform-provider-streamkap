@@ -37,6 +37,7 @@ type SourceDynamodbModel struct {
 	SnapshotParallelTimeOffset                       types.Int64    `tfsdk:"snapshot_parallel_time_offset"`
 	PollTimeoutMs                                    types.Int64    `tfsdk:"poll_timeout_ms"`
 	IncrementalSnapshotChunkSize                     types.Int64    `tfsdk:"incremental_snapshot_chunk_size"`
+	IncrementalSnapshotIntervalMs                    types.Int64    `tfsdk:"incremental_snapshot_interval_ms"`
 	IncrementalSnapshotMaxThreads                    types.Int64    `tfsdk:"incremental_snapshot_max_threads"`
 	FullExportExpirationTimeMs                       types.Int64    `tfsdk:"full_export_expiration_time_ms"`
 	SignalKafkaPollTimeoutMs                         types.Int64    `tfsdk:"signal_kafka_poll_timeout_ms"`
@@ -184,9 +185,16 @@ func SourceDynamodbSchema() schema.Schema {
 			"incremental_snapshot_chunk_size": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Incremental snapshot chunk size. Defaults to 32768.",
-				MarkdownDescription: "Incremental snapshot chunk size. Defaults to `32768`.",
-				Default:             int64default.StaticInt64(32768),
+				Description:         "Number of rows read per snapshot chunk. Lower values throttle snapshot throughput to prevent backlog on the destination. Defaults to 8192.",
+				MarkdownDescription: "Number of rows read per snapshot chunk. Lower values throttle snapshot throughput to prevent backlog on the destination. Defaults to `8192`.",
+				Default:             int64default.StaticInt64(8192),
+			},
+			"incremental_snapshot_interval_ms": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Delay in milliseconds between reading snapshot chunks. Higher values throttle snapshot throughput to prevent backlog on the destination. Defaults to 6000.",
+				MarkdownDescription: "Delay in milliseconds between reading snapshot chunks. Higher values throttle snapshot throughput to prevent backlog on the destination. Defaults to `6000`.",
+				Default:             int64default.StaticInt64(6000),
 			},
 			"incremental_snapshot_max_threads": schema.Int64Attribute{
 				Optional:            true,
@@ -339,6 +347,7 @@ var SourceDynamodbFieldMappings = map[string]string{
 	"snapshot_parallel_time_offset":                          "snapshot.parallel.time.offset",
 	"poll_timeout_ms":                                        "poll.timeout.ms",
 	"incremental_snapshot_chunk_size":                        "incremental.snapshot.chunk.size",
+	"incremental_snapshot_interval_ms":                       "incremental.snapshot.interval.ms",
 	"incremental_snapshot_max_threads":                       "incremental.snapshot.max.threads",
 	"full_export_expiration_time_ms":                         "full.export.expiration.time.ms",
 	"signal_kafka_poll_timeout_ms":                           "signal.kafka.poll.timeout.ms",

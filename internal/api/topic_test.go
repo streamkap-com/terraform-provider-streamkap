@@ -299,6 +299,10 @@ func TestGetTopicDetailed(t *testing.T) {
 			t.Errorf("Expected GET, got %s", r.Method)
 		}
 		w.Header().Set("Content-Type", "application/json")
+		// Shape mirrors the backend's TopicDetailsWithKafka: kafka.partitions is
+		// an object (TopicKafkaPartitions), and kafka.configs keys are
+		// underscored strings (TopicKafkaConfigs), not dotted Kafka property
+		// names carrying numbers.
 		w.Write([]byte(`{
 			"id": "topic-123",
 			"name": "my-topic",
@@ -314,10 +318,23 @@ func TestGetTopicDetailed(t *testing.T) {
 				"name": "my-postgres"
 			},
 			"kafka": {
-				"partitions": 3,
+				"partitions": {
+					"count": 3,
+					"replication_factor": 3,
+					"under_replicated_count": 0,
+					"offline_count": 0,
+					"details": []
+				},
 				"configs": {
-					"retention.ms": 604800000,
-					"cleanup.policy": "delete"
+					"retention_ms": "604800000",
+					"cleanup_policy": "delete"
+				},
+				"health": {
+					"is_healthy": true,
+					"under_replicated_partitions": 0,
+					"offline_partitions": 0,
+					"total_replicas": 3,
+					"in_sync_replicas": 3
 				}
 			}
 		}`))
@@ -337,14 +354,14 @@ func TestGetTopicDetailed(t *testing.T) {
 	if topic.Name != "my-topic" {
 		t.Errorf("Expected name my-topic, got %s", topic.Name)
 	}
-	if topic.Kafka == nil || topic.Kafka.Partitions != 3 {
+	if topic.Kafka == nil || topic.Kafka.Partitions.Count != 3 {
 		t.Error("Expected 3 partitions")
 	}
-	if topic.Kafka.Configs == nil || topic.Kafka.Configs.RetentionMs == nil || *topic.Kafka.Configs.RetentionMs != 604800000 {
-		t.Error("Expected retention.ms 604800000")
+	if topic.Kafka.Configs == nil || topic.Kafka.Configs.RetentionMs == nil || *topic.Kafka.Configs.RetentionMs != "604800000" {
+		t.Error("Expected retention_ms 604800000")
 	}
 	if topic.Kafka.Configs.CleanupPolicy == nil || *topic.Kafka.Configs.CleanupPolicy != "delete" {
-		t.Error("Expected cleanup.policy delete")
+		t.Error("Expected cleanup_policy delete")
 	}
 	if topic.Entity == nil || topic.Entity.EntityID != "source-456" {
 		t.Error("Expected entity_id source-456")

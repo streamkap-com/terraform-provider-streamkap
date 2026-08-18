@@ -29,15 +29,9 @@ type Topic struct {
 	// PartitionCount is filled from `kafka.partitions.count` after Unmarshal —
 	// the backend does not return a top-level `partition_count` key, so we copy
 	// it out of the nested struct explicitly in GetTopic.
-	PartitionCount int             `json:"-"`
-	Tags           []string        `json:"tags"`
-	Kafka          *TopicKafkaInfo `json:"kafka,omitempty"`
-}
-
-// TopicKafkaInfo captures only the field of TopicKafkaMetadata we care about
-// (live partition count) — the full backend struct is much larger.
-type TopicKafkaInfo struct {
-	Partitions TopicPartitionsInfo `json:"partitions"`
+	PartitionCount int         `json:"-"`
+	Tags           []string    `json:"tags"`
+	Kafka          *TopicKafka `json:"kafka,omitempty"`
 }
 
 // TopicPartitionsInfo carries the live partition count from the broker.
@@ -139,16 +133,21 @@ type TopicMetrics struct {
 // Map structure: entity_id -> topic_id -> metrics
 type TopicTableMetricsResponse map[string]map[string]TopicMetrics
 
-// TopicKafkaConfig represents Kafka configuration for a topic
+// TopicKafkaConfig mirrors the backend's TopicKafkaConfigs. The keys are
+// underscored field names carrying strings, not the dotted Kafka property names
+// (`retention.ms`) the broker itself uses — the backend renames and stringifies
+// them on the way out.
 type TopicKafkaConfig struct {
-	RetentionMs   *int64  `json:"retention.ms,omitempty"`
-	CleanupPolicy *string `json:"cleanup.policy,omitempty"`
+	RetentionMs   *string `json:"retention_ms,omitempty"`
+	CleanupPolicy *string `json:"cleanup_policy,omitempty"`
 }
 
-// TopicKafka represents Kafka-specific metadata
+// TopicKafka mirrors the slice of the backend's TopicKafkaMetadata the provider
+// reads. `partitions` is an object (TopicKafkaPartitions), so decoding it as a
+// bare count fails the whole response.
 type TopicKafka struct {
-	Partitions int               `json:"partitions"`
-	Configs    *TopicKafkaConfig `json:"configs,omitempty"`
+	Partitions TopicPartitionsInfo `json:"partitions"`
+	Configs    *TopicKafkaConfig   `json:"configs,omitempty"`
 }
 
 // TopicDetailed represents the full topic response from /topics/{id}?detailed=true

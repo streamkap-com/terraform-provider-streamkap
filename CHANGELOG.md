@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **`streamkap_destination_iceberg`**: `iceberg_catalog_oauth2_server_uri`,
+  `iceberg_catalog_audience`, and `iceberg_catalog_resource` — OAuth2 token
+  endpoint, audience, and resource parameters for REST catalogs whose
+  authorization server is not the catalog endpoint itself.
+- **`streamkap_source_dynamodb`**: `incremental_snapshot_interval_ms` (default
+  `6000`) — delay between snapshot chunks, to throttle snapshot throughput and
+  keep the destination from backing up.
+- **`streamkap_source_kafkadirect`**: `records_carry_streamkap_metadata`
+  (default `false`) — set when the topic is fed by another Streamkap pipeline
+  and records already carry `_streamkap_offset`, `_streamkap_ts_ms` and
+  `_streamkap_source_ts_ms`, so the destination skips its own InsertField and
+  upstream offsets survive.
+
+### Fixed
+- **`data.streamkap_topic` failed on every read.** The client decoded
+  `kafka.partitions` as an integer, but the API returns an object
+  (`{count, replication_factor, ...}`), so the response failed to unmarshal and
+  the data source returned an error instead of topic details. `kafka.configs`
+  was read under dotted Kafka property names (`retention.ms`,
+  `cleanup.policy`); the API sends `retention_ms` and `cleanup_policy` as
+  strings. `retention_ms` is parsed back to an integer, so the attribute type is
+  unchanged.
+- **`make generate` failed outside a `terraform-provider-streamkap` directory.**
+  `tfplugindocs` derives the provider name from the checkout directory name, so
+  a differently-named clone produced `data source entitled "<dir>" does not
+  exist` after deleting `docs/`. The name is now passed explicitly, and the
+  docs-drift workflow runs `main.go`'s own directives so the two cannot diverge.
+
+### Changed
+- **`streamkap_source_dynamodb`: `incremental_snapshot_chunk_size` default is
+  now `8192`** (was `32768`), matching the backend. Configurations that omit the
+  attribute will show a diff on the next plan.
+
 ## [3.0.0-beta.27] - 2026-08-05 (Pre-release)
 
 ### Added

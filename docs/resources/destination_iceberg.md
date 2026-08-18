@@ -113,6 +113,7 @@ output "iceberg_destination_id" {
 ### Optional
 
 - `consumer_override_max_poll_records` (Number) The maximum number of records returned in a single call to poll(). Defaults to `10000`.
+- `iceberg_catalog_audience` (String) Optional OAuth2 audience parameter to request from the token endpoint.
 - `iceberg_catalog_auth_mode` (String) How to authenticate with the Iceberg catalog. 'No Auth' for catalogs that don't require authentication. 'Token' for bearer token authentication (e.g., Cloudflare R2). 'OAuth2 Credential' for OAuth2 client credential authentication (e.g., Polaris, DataHub). Defaults to `none`. Valid values: `none`, `token`, `oauth2`.
 - `iceberg_catalog_client_assume_role_arn` (String) AWS IAM role (e.g., arn:aws:iam::<your-account>:role/<role-name>)
 - `iceberg_catalog_client_region` (String) The AWS region to be used. For Cloudflare R2, select 'auto'. Defaults to `us-west-2`. Valid values: `ap-south-1`, `eu-west-2`, `eu-west-1`, `ap-northeast-2`, `ap-northeast-1`, `ca-central-1`, `sa-east-1`, `cn-north-1`, `us-gov-west-1`, `ap-southeast-1`, `ap-southeast-2`, `eu-central-1`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`, `auto`.
@@ -120,6 +121,8 @@ output "iceberg_destination_id" {
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `iceberg_catalog_name` (String) Iceberg catalog name
+- `iceberg_catalog_oauth2_server_uri` (String) OAuth2 token endpoint URI. Required when the REST catalog endpoint is not also the OAuth2 authorization server.
+- `iceberg_catalog_resource` (String) Optional OAuth2 resource parameter to request from the token endpoint.
 - `iceberg_catalog_s3_access_key_id` (String, Sensitive) The access key ID used to connect to S3 or S3-compatible storage.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
