@@ -39,8 +39,11 @@ jobs:
         with:
           terraform_wrapper: false
 
+      # `go generate main.go` runs main.go's own directives, so this check can never
+      # drift from the flags `make generate` uses (tfplugindocs derives the provider
+      # name from the checkout directory unless told otherwise).
       - name: Render docs from committed schemas
-        run: go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate
+        run: go generate main.go
 
       - name: Fail if docs drifted
         run: |

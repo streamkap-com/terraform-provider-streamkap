@@ -111,7 +111,8 @@ resource "streamkap_source_dynamodb" "example-source-dynamodb" {
   tasks_max                        = 3        # Maximum number of parallel tasks (1-40)
   batch_size                       = 1024     # Records per batch
   poll_timeout_ms                  = 1000     # Poll timeout in milliseconds
-  incremental_snapshot_chunk_size  = 32768    # Chunk size for incremental snapshots
+  incremental_snapshot_chunk_size  = 8192     # Rows read per snapshot chunk
+  incremental_snapshot_interval_ms = 6000     # Delay between snapshot chunks
   incremental_snapshot_max_threads = 8        # Max threads for incremental snapshots
   full_export_expiration_time_ms   = 86400000 # Export expiration (24 hours)
   signal_kafka_poll_timeout_ms     = 1000     # Kafka signal poll timeout
@@ -151,7 +152,8 @@ output "example-source-dynamodb" {
 - `batch_size` (Number) Batch Size
 - `dynamodb_service_endpoint` (String) Dynamodb Service Endpoint (optional)
 - `full_export_expiration_time_ms` (Number) Full Export Expiration Time (ms). Defaults to `86400000`.
-- `incremental_snapshot_chunk_size` (Number) Incremental snapshot chunk size. Defaults to `32768`.
+- `incremental_snapshot_chunk_size` (Number) Number of rows read per snapshot chunk. Lower values throttle snapshot throughput to prevent backlog on the destination. Defaults to `8192`.
+- `incremental_snapshot_interval_ms` (Number) Delay in milliseconds between reading snapshot chunks. Higher values throttle snapshot throughput to prevent backlog on the destination. Defaults to `6000`.
 - `incremental_snapshot_max_threads` (Number) Incremental snapshot max threads. Defaults to `8`.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.

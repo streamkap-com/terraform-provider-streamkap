@@ -3,6 +3,7 @@ package datasource
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	ds "github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -152,12 +153,21 @@ func (d *TopicDataSource) Read(ctx context.Context, req ds.ReadRequest, resp *ds
 	}
 
 	if topic.Kafka != nil {
-		config.Partitions = types.Int64Value(int64(topic.Kafka.Partitions))
+		config.Partitions = types.Int64Value(int64(topic.Kafka.Partitions.Count))
 		if topic.Kafka.Configs != nil {
-			if topic.Kafka.Configs.RetentionMs != nil {
-				config.RetentionMs = types.Int64Value(*topic.Kafka.Configs.RetentionMs)
-			} else {
-				config.RetentionMs = types.Int64Null()
+			// The backend sends retention_ms as a string; the attribute stays an
+			// Int64 because the value is a millisecond count.
+			config.RetentionMs = types.Int64Null()
+			if raw := topic.Kafka.Configs.RetentionMs; raw != nil {
+				retentionMs, err := strconv.ParseInt(*raw, 10, 64)
+				if err != nil {
+					resp.Diagnostics.AddWarning(
+						"Unparseable retention_ms",
+						fmt.Sprintf("Topic %s reported kafka.configs.retention_ms=%q, which is not an integer; leaving retention_ms unset.", topicID, *raw),
+					)
+				} else {
+					config.RetentionMs = types.Int64Value(retentionMs)
+				}
 			}
 			config.CleanupPolicy = types.StringPointerValue(topic.Kafka.Configs.CleanupPolicy)
 		} else {

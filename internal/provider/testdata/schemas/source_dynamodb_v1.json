@@ -78,6 +78,13 @@
       "sensitive": false,
       "type": "basetypes.Int64Type"
     },
+    "incremental_snapshot_interval_ms": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
     "incremental_snapshot_max_threads": {
       "required": false,
       "optional": true,

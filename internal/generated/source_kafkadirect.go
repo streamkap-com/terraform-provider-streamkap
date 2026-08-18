@@ -17,17 +17,18 @@ import (
 
 // SourceKafkadirectModel is the Terraform model for the kafkadirect source.
 type SourceKafkadirectModel struct {
-	ID               types.String   `tfsdk:"id"`
-	Name             types.String   `tfsdk:"name"`
-	Connector        types.String   `tfsdk:"connector"`
-	ConnectorStatus  types.String   `tfsdk:"connector_status"`
-	KcClusterId      types.String   `tfsdk:"kc_cluster_id"`
-	Tags             types.Set      `tfsdk:"tags"`
-	TopicPrefix      types.String   `tfsdk:"topic_prefix"`
-	TopicIncludeList types.String   `tfsdk:"topic_include_list"`
-	Format           types.String   `tfsdk:"format"`
-	SchemasEnable    types.Bool     `tfsdk:"schemas_enable"`
-	Timeouts         timeouts.Value `tfsdk:"timeouts"`
+	ID                            types.String   `tfsdk:"id"`
+	Name                          types.String   `tfsdk:"name"`
+	Connector                     types.String   `tfsdk:"connector"`
+	ConnectorStatus               types.String   `tfsdk:"connector_status"`
+	KcClusterId                   types.String   `tfsdk:"kc_cluster_id"`
+	Tags                          types.Set      `tfsdk:"tags"`
+	TopicPrefix                   types.String   `tfsdk:"topic_prefix"`
+	TopicIncludeList              types.String   `tfsdk:"topic_include_list"`
+	Format                        types.String   `tfsdk:"format"`
+	SchemasEnable                 types.Bool     `tfsdk:"schemas_enable"`
+	RecordsCarryStreamkapMetadata types.Bool     `tfsdk:"records_carry_streamkap_metadata"`
+	Timeouts                      timeouts.Value `tfsdk:"timeouts"`
 }
 
 // SourceKafkadirectSchema returns the Terraform schema for the kafkadirect source.
@@ -109,14 +110,22 @@ func SourceKafkadirectSchema() schema.Schema {
 				MarkdownDescription: "If untoggled (default), Streamkap attempts to infer schema from your data - depending on the Destination. Otherwise, Streamkap assumes the Kafka message key and value contain `schema` and `payload` structures. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
+			"records_carry_streamkap_metadata": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Enable when this topic is fed by another Streamkap pipeline and records already carry `_streamkap_offset`, `_streamkap_ts_ms`, `_streamkap_source_ts_ms`. Skips destination-side InsertField so upstream offsets are preserved. Defaults to false.",
+				MarkdownDescription: "Enable when this topic is fed by another Streamkap pipeline and records already carry `_streamkap_offset`, `_streamkap_ts_ms`, `_streamkap_source_ts_ms`. Skips destination-side InsertField so upstream offsets are preserved. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
 		},
 	}
 }
 
 // SourceKafkadirectFieldMappings maps Terraform attribute names to API field names.
 var SourceKafkadirectFieldMappings = map[string]string{
-	"topic_prefix":       "topic.prefix",
-	"topic_include_list": "topic.include.list.user.defined",
-	"format":             "format",
-	"schemas_enable":     "schemas.enable",
+	"topic_prefix":                     "topic.prefix",
+	"topic_include_list":               "topic.include.list.user.defined",
+	"format":                           "format",
+	"schemas_enable":                   "schemas.enable",
+	"records_carry_streamkap_metadata": "records.carry.streamkap.metadata",
 }

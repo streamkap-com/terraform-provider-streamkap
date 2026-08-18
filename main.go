@@ -18,7 +18,9 @@ import (
 
 // Run the docs generation tool, check its repository for more information on how it works and how docs
 // can be customized.
-//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+// --provider-name is explicit because tfplugindocs otherwise derives it from the
+// checkout directory name, which need not be terraform-provider-streamkap.
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name streamkap --rendered-provider-name terraform-provider-streamkap
 
 var (
 	// these will be set by the goreleaser configuration

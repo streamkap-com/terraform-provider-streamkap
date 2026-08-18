@@ -33,6 +33,9 @@ type DestinationIcebergModel struct {
 	IcebergCatalogToken                              types.String   `tfsdk:"iceberg_catalog_token"`
 	IcebergCatalogCredential                         types.String   `tfsdk:"iceberg_catalog_credential"`
 	IcebergCatalogScope                              types.String   `tfsdk:"iceberg_catalog_scope"`
+	IcebergCatalogOauth2ServerUri                    types.String   `tfsdk:"iceberg_catalog_oauth2_server_uri"`
+	IcebergCatalogAudience                           types.String   `tfsdk:"iceberg_catalog_audience"`
+	IcebergCatalogResource                           types.String   `tfsdk:"iceberg_catalog_resource"`
 	IcebergCatalogS3CredentialsEnabled               types.Bool     `tfsdk:"iceberg_catalog_s3_credentials_enabled"`
 	IcebergCatalogS3AccessKeyID                      types.String   `tfsdk:"iceberg_catalog_s3_access_key_id"`
 	IcebergCatalogS3SecretAccessKey                  types.String   `tfsdk:"iceberg_catalog_s3_secret_access_key"`
@@ -220,6 +223,33 @@ func DestinationIcebergSchema() schema.Schema {
 				Description:         "OAuth2 scope for catalog authentication (e.g., PRINCIPAL_ROLE:ALL). Defaults to \"PRINCIPAL_ROLE:ALL\".",
 				MarkdownDescription: "OAuth2 scope for catalog authentication (e.g., PRINCIPAL_ROLE:ALL). Defaults to `PRINCIPAL_ROLE:ALL`.",
 				Default:             stringdefault.StaticString("PRINCIPAL_ROLE:ALL"),
+			},
+			"iceberg_catalog_oauth2_server_uri": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "OAuth2 token endpoint URI. Required when the REST catalog endpoint is not also the OAuth2 authorization server.",
+				MarkdownDescription: "OAuth2 token endpoint URI. Required when the REST catalog endpoint is not also the OAuth2 authorization server.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"iceberg_catalog_audience": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Optional OAuth2 audience parameter to request from the token endpoint.",
+				MarkdownDescription: "Optional OAuth2 audience parameter to request from the token endpoint.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"iceberg_catalog_resource": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Optional OAuth2 resource parameter to request from the token endpoint.",
+				MarkdownDescription: "Optional OAuth2 resource parameter to request from the token endpoint.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"iceberg_catalog_s3_credentials_enabled": schema.BoolAttribute{
 				Optional:            true,
@@ -695,6 +725,9 @@ var DestinationIcebergFieldMappings = map[string]string{
 	"iceberg_catalog_token":                                   "iceberg.catalog.token",
 	"iceberg_catalog_credential":                              "iceberg.catalog.credential",
 	"iceberg_catalog_scope":                                   "iceberg.catalog.scope",
+	"iceberg_catalog_oauth2_server_uri":                       "iceberg.catalog.oauth2-server-uri",
+	"iceberg_catalog_audience":                                "iceberg.catalog.audience",
+	"iceberg_catalog_resource":                                "iceberg.catalog.resource",
 	"iceberg_catalog_s3_credentials_enabled":                  "iceberg.catalog.s3.credentials.enabled",
 	"iceberg_catalog_s3_access_key_id":                        "iceberg.catalog.s3.access-key-id",
 	"iceberg_catalog_s3_secret_access_key":                    "iceberg.catalog.s3.secret-access-key",

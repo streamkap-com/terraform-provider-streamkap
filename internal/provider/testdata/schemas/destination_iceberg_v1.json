@@ -22,6 +22,13 @@
       "sensitive": false,
       "type": "basetypes.Int64Type"
     },
+    "iceberg_catalog_audience": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
     "iceberg_catalog_auth_mode": {
       "required": false,
       "optional": true,
@@ -51,6 +58,20 @@
       "type": "basetypes.StringType"
     },
     "iceberg_catalog_name": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "iceberg_catalog_oauth2_server_uri": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "iceberg_catalog_resource": {
       "required": false,
       "optional": true,
       "computed": true,

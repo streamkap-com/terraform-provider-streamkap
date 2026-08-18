@@ -50,6 +50,13 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "records_carry_streamkap_metadata": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
     "schemas_enable": {
       "required": false,
       "optional": true,
