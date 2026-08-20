@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   disable. Snowflake-only: the backend ships the KeyToValue SMT in the Snowflake
   plugin config rather than the shared destination config.
 
+### Security
+- Bumped the indirect `golang.org/x/mod` to `v0.40.0` (pulling `x/crypto`,
+  `x/net`, `x/text` and `x/tools` up with it), clearing CVE-2026-56864 and
+  CVE-2026-56865. Both concern module fetching via a malicious GOSUMDB/GOPROXY;
+  the package is build tooling and is not linked into the provider binary, so
+  released builds were never exposed.
+
 ## [3.0.0-beta.28] - 2026-08-18 (Pre-release)
 
 ### Added
