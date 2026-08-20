@@ -44,6 +44,7 @@ type DestinationSnowflakeModel struct {
 	SQLTableName                                     types.String            `tfsdk:"sql_table_name"`
 	CreateSQLData                                    types.String            `tfsdk:"create_sql_data"`
 	SnowflakeTopic2tableMap                          types.String            `tfsdk:"snowflake_topic2table_map"`
+	TransformsKeyToValueFieldsIncludeList            types.String            `tfsdk:"transforms_key_to_value_fields_include_list"`
 	ConsumerOverrideMaxPollRecords                   types.Int64             `tfsdk:"consumer_override_max_poll_records"`
 	PreserveNullValues                               types.Bool              `tfsdk:"preserve_null_values"`
 	QuoteIdentifiers                                 types.Bool              `tfsdk:"quote_identifiers"`
@@ -277,6 +278,15 @@ func DestinationSnowflakeSchema() schema.Schema {
 				Description:         "Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5</code> uses only the last segment as table name. Defaults to \"REGEX_MATCHER>^([-\\\\w]+\\\\.)([-\\\\w]+\\\\.)?([-\\\\w]+\\\\.)?([-\\\\w]+\\\\.)?([-\\\\w]+):$5\".",
 				MarkdownDescription: "Define custom topic-to-table name mapping using regex. Format: <code>matching_pattern:replacement_pattern</code>. Use $1, $2, etc. for captured groups. Example: <code>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5</code> uses only the last segment as table name. Defaults to `REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5`.",
 				Default:             stringdefault.StaticString("REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5"),
+			},
+			"transforms_key_to_value_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Comma-separated list of key fields to copy into each record's value so they land as columns at the destination. Use `*` to copy all key fields, or `<topic>.<field>` patterns to scope by topic and field name (e.g. `*.pk,*.sk` where `*` matches any topic). Leave empty to disable.",
+				MarkdownDescription: "Comma-separated list of key fields to copy into each record's value so they land as columns at the destination. Use `*` to copy all key fields, or `<topic>.<field>` patterns to scope by topic and field name (e.g. `*.pk,*.sk` where `*` matches any topic). Leave empty to disable.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"consumer_override_max_poll_records": schema.Int64Attribute{
 				Optional:            true,
@@ -647,6 +657,7 @@ var DestinationSnowflakeFieldMappings = map[string]string{
 	"sql_table_name":                                          "sql.table.name",
 	"create_sql_data":                                         "create.sql.data",
 	"snowflake_topic2table_map":                               "snowflake.topic2table.map",
+	"transforms_key_to_value_fields_include_list":             "transforms.KeyToValue.fields.include.list",
 	"consumer_override_max_poll_records":                      "consumer.override.max.poll.records",
 	"preserve_null_values":                                    "preserve.null.values",
 	"quote_identifiers":                                       "quote.identifiers",

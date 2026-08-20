@@ -239,6 +239,13 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "transforms_key_to_value_fields_include_list": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
     "transforms_mark_columns_as_optional_fields_include_list": {
       "required": false,
       "optional": true,

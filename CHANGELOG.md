@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0-beta.29] - 2026-08-20 (Pre-release)
+
+### Added
+- **`streamkap_destination_snowflake`: `transforms_key_to_value_fields_include_list`**
+  — comma-separated list of key fields to copy into each record's value so they
+  land as columns in Snowflake. `*` copies every key field; `<topic>.<field>`
+  patterns scope by topic and field name (e.g. `*.pk,*.sk`). Leave unset to
+  disable. Snowflake-only: the backend ships the KeyToValue SMT in the Snowflake
+  plugin config rather than the shared destination config.
+
 ## [3.0.0-beta.28] - 2026-08-18 (Pre-release)
 
 ### Added
