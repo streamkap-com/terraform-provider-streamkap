@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **`streamkap_kafka_user`, `streamkap_client_credential` and the
+  `streamkap_roles` data source are registered again.** They were unregistered
+  in beta.4 with the source left in the tree, so every reference to them failed
+  with "provider does not support resource type" while `README.md`,
+  `AGENTS.md`, `CHANGELOG.md` and `docs/MIGRATION.md` still advertised them.
+  Each now ships with examples, registry documentation, a schema snapshot,
+  acceptance tests and a sweeper.
+- **`streamkap_client_credential` supports in-place updates.** `role_ids` and
+  `description` now go through `PATCH /auth/client-credentials/{client_id}`
+  instead of forcing replacement. Replacing a credential issues a new secret and
+  invalidates the old one, so a role change used to silently break whatever was
+  authenticating with it. `service_id` still forces replacement — the update
+  endpoint does not accept it.
+
+### Fixed
+- **`streamkap_kafka_user` could never be applied.** The API accepts an ACL's
+  topic under `topic_name` but returns it under `name`, so the decoded value was
+  always empty and every apply failed with "Provider produced inconsistent
+  result after apply" on `kafka_acls[*].topic_name`. The client now writes the
+  documented alias and reads both spellings.
+- **`streamkap_kafka_user` accepted usernames the API rejects.** The validator
+  allowed 1-2 character names, which the backend refuses with a 400. Minimum
+  length is now 3, matching the backend.
+- **`streamkap_client_credential` could fail on apply for multi-role
+  credentials.** `role_ids` was an ordered list, but the API resolves roles in
+  its own catalog order; a mismatch surfaced as an inconsistent-result error.
+  It is now a set.
+- **`streamkap_client_credential.roles` and `data.streamkap_roles.roles` were
+  declared as configuration blocks** rather than computed attributes, so
+  server-populated values conflicted with the empty block list in the plan.
+
+### Changed
+- **`streamkap_client_credential.role_ids` is now a set, not a list.** Existing
+  configurations keep working; ordering no longer produces a diff.
+
 ## [3.0.0-beta.29] - 2026-08-20 (Pre-release)
 
 ### Added

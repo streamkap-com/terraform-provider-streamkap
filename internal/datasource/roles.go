@@ -42,21 +42,24 @@ func (d *RolesDataSource) Schema(ctx context.Context, req ds.SchemaRequest, resp
 		MarkdownDescription: "Lists all available **roles** that can be assigned to client credentials.\n\n" +
 			"Use this data source to discover role IDs needed when creating " +
 			"`streamkap_client_credential` resources.\n\n" +
+			"**Note:** the `/auth/roles` endpoint requires the `fe.secure.read.roles` permission. " +
+			"A token without it gets a 403 rather than an empty list.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
-		Blocks: map[string]schema.Block{
-			"roles": schema.ListNestedBlock{
+		Attributes: map[string]schema.Attribute{
+			"roles": schema.ListNestedAttribute{
 				Description:         "List of available roles.",
 				MarkdownDescription: "List of available roles.",
-				NestedObject: schema.NestedBlockObject{
+				Computed:            true,
+				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
-							Description:         "The unique identifier of the role.",
-							MarkdownDescription: "The unique identifier of the role.",
+							Description:         "The unique identifier of the role. Pass this to a streamkap_client_credential's role_ids.",
+							MarkdownDescription: "The unique identifier of the role. Pass this to a `streamkap_client_credential`'s `role_ids`.",
 							Computed:            true,
 						},
 						"key": schema.StringAttribute{
-							Description:         "The key identifier of the role.",
-							MarkdownDescription: "The key identifier of the role.",
+							Description:         "The key identifier of the role, e.g. Admin or ReadOnly.",
+							MarkdownDescription: "The key identifier of the role, e.g. `Admin` or `ReadOnly`.",
 							Computed:            true,
 						},
 						"name": schema.StringAttribute{
@@ -92,12 +95,6 @@ func (d *RolesDataSource) Configure(ctx context.Context, req ds.ConfigureRequest
 }
 
 func (d *RolesDataSource) Read(ctx context.Context, req ds.ReadRequest, resp *ds.ReadResponse) {
-	var config RolesDataSourceModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	roles, err := d.client.ListRoles(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Error reading roles", fmt.Sprintf("Unable to list roles: %s", err))
@@ -113,7 +110,5 @@ func (d *RolesDataSource) Read(ctx context.Context, req ds.ReadRequest, resp *ds
 			Description: types.StringValue(role.Description),
 		}
 	}
-	config.Roles = roleModels
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &RolesDataSourceModel{Roles: roleModels})...)
 }

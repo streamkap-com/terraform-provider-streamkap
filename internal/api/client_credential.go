@@ -20,7 +20,10 @@ type Role struct {
 }
 
 type ClientCredential struct {
-	ClientID    string `json:"client_id"`
+	ClientID string `json:"client_id"`
+	// Secret carries the real value only on create. List and update responses
+	// return the masked form the backend persists ("abc******xyz"), so callers
+	// must keep the created value rather than trusting a later echo.
 	Secret      string `json:"secret,omitempty"`
 	Description string `json:"description,omitempty"`
 	CreatedAt   string `json:"created_at,omitempty"`
@@ -32,6 +35,14 @@ type CreateClientCredentialRequest struct {
 	RoleIDs     []string `json:"role_ids"`
 	Description string   `json:"description,omitempty"`
 	ServiceID   string   `json:"service_id,omitempty"`
+}
+
+// UpdateClientCredentialRequest is the PATCH body. The backend rejects a body
+// with no field set, and rejects role_ids together with permission_ids; the
+// provider always sends a non-empty role_ids, so both hold.
+type UpdateClientCredentialRequest struct {
+	RoleIDs     []string `json:"role_ids"`
+	Description string   `json:"description,omitempty"`
 }
 
 func (s *streamkapAPI) CreateClientCredential(ctx context.Context, reqPayload CreateClientCredentialRequest) (*ClientCredential, error) {
@@ -57,6 +68,33 @@ func (s *streamkapAPI) CreateClientCredential(ctx context.Context, reqPayload Cr
 	}
 	tflog.Debug(ctx, fmt.Sprintf(
 		"CreateClientCredential request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n"+
+			"\tBody: %s",
+		req.Method,
+		req.URL.String(),
+		redactSensitiveJSON(payload),
+	))
+	var resp ClientCredential
+	err = s.doRequestWithRetry(ctx, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+func (s *streamkapAPI) UpdateClientCredential(ctx context.Context, clientID string, reqPayload UpdateClientCredentialRequest) (*ClientCredential, error) {
+	payload, err := json.Marshal(reqPayload)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, s.cfg.BaseURL+"/auth/client-credentials/"+clientID, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"UpdateClientCredential request details:\n"+
 			"\tMethod: %s\n"+
 			"\tURL: %s\n"+
 			"\tBody: %s",

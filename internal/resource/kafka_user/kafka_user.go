@@ -62,6 +62,8 @@ func (r *KafkaUserResource) Schema(ctx context.Context, req res.SchemaRequest, r
 		MarkdownDescription: "Manages a **Streamkap Kafka user** with ACL rules for topic access control.\n\n" +
 			"This resource creates and manages Kafka users that can connect to the Streamkap Kafka proxy " +
 			"endpoint with fine-grained access control via ACL rules.\n\n" +
+			"**Note:** A Kafka user created by a Project Key cannot be updated through this " +
+			"resource — the API rejects the update with a 409. Manage it through its Project Key instead.\n\n" +
 			"[Documentation](https://docs.streamkap.com/kafka-access)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -73,14 +75,14 @@ func (r *KafkaUserResource) Schema(ctx context.Context, req res.SchemaRequest, r
 				},
 			},
 			"username": schema.StringAttribute{
-				Description:         "Username for the Kafka user. Must be 1-24 characters, alphanumeric with dashes only (cannot start or end with a dash). Cannot be changed after creation.",
-				MarkdownDescription: "Username for the Kafka user. Must be 1-24 characters, alphanumeric with dashes only (cannot start or end with a dash). **Cannot be changed after creation.**",
+				Description:         "Username for the Kafka user. Must be 3-24 characters, alphanumeric with dashes only (cannot start or end with a dash). Cannot be changed after creation.",
+				MarkdownDescription: "Username for the Kafka user. Must be 3-24 characters, alphanumeric with dashes only (cannot start or end with a dash). **Cannot be changed after creation.**",
 				Required:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 				Validators: []validator.String{
-					stringvalidator.LengthBetween(1, 24),
+					stringvalidator.LengthBetween(3, 24),
 					stringvalidator.RegexMatches(
 						regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$|^[a-zA-Z0-9]$`),
 						"must be alphanumeric with dashes only, cannot start or end with a dash",
@@ -92,16 +94,13 @@ func (r *KafkaUserResource) Schema(ctx context.Context, req res.SchemaRequest, r
 				MarkdownDescription: "Password for the Kafka user. Must be 12-128 characters.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs. Write-only: not returned by the API on read.",
 				Required:            true,
 				Sensitive:           true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 				Validators: []validator.String{
 					stringvalidator.LengthBetween(12, 128),
 				},
 			},
 			"whitelist_ips": schema.StringAttribute{
-				Description:         "Comma-separated list of whitelisted IP addresses or CIDR ranges. Maximum 1000 characters.",
-				MarkdownDescription: "Comma-separated list of whitelisted IP addresses or CIDR ranges. Maximum 1000 characters.",
+				Description:         "Comma-separated list of whitelisted IPv4 addresses or CIDR ranges, e.g. \"10.0.0.0/8,192.168.1.5\". Maximum 1000 characters. Defaults to \"\" (no restriction beyond the platform default).",
+				MarkdownDescription: "Comma-separated list of whitelisted IPv4 addresses or CIDR ranges, e.g. `10.0.0.0/8,192.168.1.5`. Maximum 1000 characters. Defaults to `\"\"` (no restriction beyond the platform default).",
 				Optional:            true,
 				Computed:            true,
 				Default:             stringdefault.StaticString(""),

@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -40,14 +41,14 @@ type RoleModel struct {
 }
 
 type ClientCredentialResourceModel struct {
-	ID          types.String   `tfsdk:"id"`
-	ClientID    types.String   `tfsdk:"client_id"`
-	Secret      types.String   `tfsdk:"secret"`
-	RoleIDs     []types.String `tfsdk:"role_ids"`
-	Description types.String   `tfsdk:"description"`
-	ServiceID   types.String   `tfsdk:"service_id"`
-	CreatedAt   types.String   `tfsdk:"created_at"`
-	Roles       []RoleModel    `tfsdk:"roles"`
+	ID          types.String `tfsdk:"id"`
+	ClientID    types.String `tfsdk:"client_id"`
+	Secret      types.String `tfsdk:"secret"`
+	RoleIDs     types.Set    `tfsdk:"role_ids"`
+	Description types.String `tfsdk:"description"`
+	ServiceID   types.String `tfsdk:"service_id"`
+	CreatedAt   types.String `tfsdk:"created_at"`
+	Roles       []RoleModel  `tfsdk:"roles"`
 }
 
 func (r *ClientCredentialResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -59,9 +60,10 @@ func (r *ClientCredentialResource) Schema(ctx context.Context, req res.SchemaReq
 		Description: "Manages a Streamkap client credential (API token) for machine-to-machine authentication.",
 		MarkdownDescription: "Manages a **Streamkap client credential** (API token) for machine-to-machine authentication.\n\n" +
 			"Client credentials are used to authenticate API access programmatically. " +
-			"The secret is only returned on creation and cannot be retrieved afterwards.\n\n" +
-			"**Note:** This resource does not support updates. Any change to configuration will " +
-			"destroy the existing credential and create a new one.\n\n" +
+			"The secret is only returned on creation and cannot be retrieved afterwards — later reads " +
+			"echo a masked value, so Terraform keeps the created secret in state.\n\n" +
+			"`role_ids` and `description` can be changed in place. Changing `service_id` replaces the " +
+			"credential, which issues a new secret and invalidates the old one.\n\n" +
 			"[Documentation](https://docs.streamkap.com/api-tokens)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -89,31 +91,27 @@ func (r *ClientCredentialResource) Schema(ctx context.Context, req res.SchemaReq
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"role_ids": schema.ListAttribute{
-				Description:         "List of role IDs to assign to this client credential. At least one role is required. Cannot be changed after creation.",
-				MarkdownDescription: "List of role IDs to assign to this client credential. At least one role is required. **Cannot be changed after creation.**",
+			"role_ids": schema.SetAttribute{
+				Description:         "Role IDs to assign to this client credential. At least one role is required. Look IDs up with the streamkap_roles data source. Changing this updates the credential in place; the secret is not rotated.",
+				MarkdownDescription: "Role IDs to assign to this client credential. At least one role is required. Look IDs up with the `streamkap_roles` data source. Changing this updates the credential in place; the secret is **not** rotated.",
 				Required:            true,
 				ElementType:         types.StringType,
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.RequiresReplace(),
-				},
-				Validators: []validator.List{
-					listvalidator.SizeAtLeast(1),
+				Validators: []validator.Set{
+					setvalidator.SizeAtLeast(1),
 				},
 			},
 			"description": schema.StringAttribute{
-				Description:         "Optional description of the client credential's purpose. Cannot be changed after creation.",
-				MarkdownDescription: "Optional description of the client credential's purpose. **Cannot be changed after creation.**",
+				Description:         "Optional description of the client credential's purpose. Changing this updates the credential in place. Once set it cannot be cleared, only replaced with another value.",
+				MarkdownDescription: "Optional description of the client credential's purpose. Changing this updates the credential in place. Once set it cannot be cleared, only replaced with another value.",
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"service_id": schema.StringAttribute{
-				Description:         "Optional service ID to associate with this credential. Cannot be changed after creation.",
-				MarkdownDescription: "Optional service ID to associate with this credential. **Cannot be changed after creation.**",
+				Description:         "Optional service ID to associate with this credential. The update endpoint does not accept it, so changing it replaces the credential and issues a new secret.",
+				MarkdownDescription: "Optional service ID to associate with this credential. The update endpoint does not accept it, so changing it **replaces** the credential and issues a new secret.",
 				Optional:            true,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
@@ -129,12 +127,11 @@ func (r *ClientCredentialResource) Schema(ctx context.Context, req res.SchemaReq
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-		},
-		Blocks: map[string]schema.Block{
-			"roles": schema.ListNestedBlock{
+			"roles": schema.ListNestedAttribute{
 				Description:         "Resolved role objects assigned to this credential. Computed by the server.",
 				MarkdownDescription: "Resolved role objects assigned to this credential. Computed by the server.",
-				NestedObject: schema.NestedBlockObject{
+				Computed:            true,
+				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
 							Description:         "Role ID.",
@@ -185,9 +182,10 @@ func (r *ClientCredentialResource) Create(ctx context.Context, req res.CreateReq
 		return
 	}
 
-	roleIDs := make([]string, len(plan.RoleIDs))
-	for i, r := range plan.RoleIDs {
-		roleIDs[i] = r.ValueString()
+	roleIDs, diags := roleIDsFromSet(ctx, plan.RoleIDs)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	cred, err := r.client.CreateClientCredential(ctx, api.CreateClientCredentialRequest{
@@ -200,7 +198,7 @@ func (r *ClientCredentialResource) Create(ctx context.Context, req res.CreateReq
 		return
 	}
 
-	r.modelFromAPIObject(cred, &plan)
+	r.modelFromAPIObject(ctx, cred, &plan, &resp.Diagnostics)
 	// Secret is only available on creation
 	plan.Secret = types.StringValue(cred.Secret)
 	tflog.Info(ctx, "Created client credential: "+cred.ClientID)
@@ -224,19 +222,43 @@ func (r *ClientCredentialResource) Read(ctx context.Context, req res.ReadRequest
 		return
 	}
 
-	// Preserve the secret from state since API doesn't return it on reads
+	// Reads echo a masked secret, so the value captured at create time wins.
 	secret := state.Secret
-	r.modelFromAPIObject(cred, &state)
+	r.modelFromAPIObject(ctx, cred, &state, &resp.Diagnostics)
 	state.Secret = secret
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
 func (r *ClientCredentialResource) Update(ctx context.Context, req res.UpdateRequest, resp *res.UpdateResponse) {
-	// No Update API exists — all writable fields are ForceNew, so this should never be called.
-	resp.Diagnostics.AddError(
-		"Update not supported",
-		"Client credentials cannot be updated. Any change requires destroying and recreating the resource.",
-	)
+	var plan, state ClientCredentialResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	roleIDs, diags := roleIDsFromSet(ctx, plan.RoleIDs)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	cred, err := r.client.UpdateClientCredential(ctx, state.ClientID.ValueString(), api.UpdateClientCredentialRequest{
+		RoleIDs:     roleIDs,
+		Description: plan.Description.ValueString(),
+	})
+	if err != nil {
+		resp.Diagnostics.AddError("Error updating client credential", fmt.Sprintf("Unable to update client credential: %s", err))
+		return
+	}
+
+	// The update response echoes the masked secret, never the real one, so the
+	// value captured at create time stays authoritative.
+	secret := state.Secret
+	r.modelFromAPIObject(ctx, cred, &plan, &resp.Diagnostics)
+	plan.Secret = secret
+	tflog.Info(ctx, "Updated client credential: "+cred.ClientID)
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 func (r *ClientCredentialResource) Delete(ctx context.Context, req res.DeleteRequest, resp *res.DeleteResponse) {
@@ -260,10 +282,17 @@ func (r *ClientCredentialResource) ImportState(ctx context.Context, req res.Impo
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("client_id"), req.ID)...)
 }
 
+// roleIDsFromSet flattens the configured role_ids set into the slice the API expects.
+func roleIDsFromSet(ctx context.Context, set types.Set) ([]string, diag.Diagnostics) {
+	var roleIDs []string
+	diags := set.ElementsAs(ctx, &roleIDs, false)
+	return roleIDs, diags
+}
+
 // modelFromAPIObject maps API response to Terraform model.
-// Note: Secret is intentionally not set here — it is write-only (only returned on creation).
-// The caller must handle Secret preservation separately.
-func (r *ClientCredentialResource) modelFromAPIObject(apiObject *api.ClientCredential, model *ClientCredentialResourceModel) {
+// Note: Secret is intentionally not set here — the API only returns the real value on
+// creation and a masked one afterwards. The caller must handle Secret preservation.
+func (r *ClientCredentialResource) modelFromAPIObject(ctx context.Context, apiObject *api.ClientCredential, model *ClientCredentialResourceModel, diags *diag.Diagnostics) {
 	model.ID = types.StringValue(apiObject.ClientID)
 	model.ClientID = types.StringValue(apiObject.ClientID)
 	model.Description = types.StringValue(apiObject.Description)
@@ -271,6 +300,7 @@ func (r *ClientCredentialResource) modelFromAPIObject(apiObject *api.ClientCrede
 	model.ServiceID = types.StringValue(apiObject.ServiceID)
 
 	roles := make([]RoleModel, len(apiObject.Roles))
+	roleIDs := make([]attr.Value, len(apiObject.Roles))
 	for i, role := range apiObject.Roles {
 		roles[i] = RoleModel{
 			ID:          types.StringValue(role.ID),
@@ -278,13 +308,13 @@ func (r *ClientCredentialResource) modelFromAPIObject(apiObject *api.ClientCrede
 			Name:        types.StringValue(role.Name),
 			Description: types.StringValue(role.Description),
 		}
+		roleIDs[i] = roles[i].ID
 	}
 	model.Roles = roles
 
-	// Extract role_ids from the resolved roles in the same pass
-	roleIDs := make([]types.String, len(apiObject.Roles))
-	for i := range roles {
-		roleIDs[i] = roles[i].ID
-	}
-	model.RoleIDs = roleIDs
+	// role_ids is a set: the API resolves roles in its own catalog order, which need
+	// not match the order they were configured in.
+	idSet, d := types.SetValue(types.StringType, roleIDs)
+	diags.Append(d...)
+	model.RoleIDs = idSet
 }

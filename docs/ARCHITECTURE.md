@@ -25,9 +25,10 @@
 │  + 17 more...    │  + 16 more...    │                  │        │
 └──────────────────┴──────────────────┴──────────────────┴────────┘
 
-59 resources in total (25 sources + 24 destinations + 7 transforms + pipeline,
-topic, tag) and 6 data sources. `internal/provider/provider.go` is the register
-of record — `Resources()` / `DataSources()`.
+61 resources in total (25 sources + 24 destinations + 7 transforms + pipeline,
+topic, tag, kafka_user, client_credential) and 7 data sources.
+`internal/provider/provider.go` is the register of record — `Resources()` /
+`DataSources()`.
               │
               ▼
 ┌─────────────────────────────────────────────────────────────────┐
@@ -340,33 +341,41 @@ resource "streamkap_transform_map_filter" "example" {
 ## Non-Connector Resources
 
 Resources that don't follow the connector pattern have their own implementations:
-`pipeline`, `topic`, and `tag` implement CRUD directly against the API client.
+`pipeline`, `topic`, `tag`, `kafka_user`, and `client_credential` implement CRUD
+directly against the API client.
 
-> **Not currently registered:** `kafka_user`, `client_credential`, and the `roles`
-> data source below are **not** in `provider.go`'s `Resources()` / `DataSources()`
-> — they were unregistered in `084d08f`, with the source preserved for future
-> re-enabling. A config referencing them today fails with "provider does not
-> support resource type". The design notes are kept here for whoever re-enables
-> them; they are not a description of the shipping provider.
+`kafka_user`, `client_credential`, and the `roles` data source were unregistered
+in `084d08f` and re-registered once their wire formats were reconciled with the
+backend (see the API-quirks list in `AGENTS.md` for the two mismatches that made
+them unusable).
 
-### Kafka User (`internal/resource/kafka_user/`) — not registered
+### Kafka User (`internal/resource/kafka_user/`)
 - CRUD via `/kafka-access/kafka-users` endpoints
-- `username` is the resource ID (ForceNew — cannot change after creation)
-- `password` is write-only (not returned by API on read, uses `UseStateForUnknown`)
-- `kafka_acls` is a `ListNestedBlock` with ACL rules (topic_name, operation, resource_pattern_type, resource)
+- `username` is the resource ID (ForceNew — cannot change after creation), 3-24
+  chars alphanumeric+hyphen: the intersection of the request model's
+  `min_length=3` and the service layer's 1-24 regex
+- `password` is write-only (never returned by the API; Create/Update keep the
+  configured value, Read keeps the prior state value)
+- `kafka_acls` is a `ListNestedBlock` with ACL rules (topic_name, operation,
+  resource_pattern_type, resource). Blocks are invisible to schema snapshots, so
+  the ACL sub-schema has no drift protection — same as `pipeline`
 - Import uses username as the ID
 - No individual GET endpoint — reads filter from list
 
-### Client Credential (`internal/resource/client_credential/`) — not registered
-- Create/List/Delete only — no Update endpoint exists in the backend
-- All writable fields (`role_ids`, `description`, `service_id`) use ForceNew plan modifiers
-- `secret` is only returned on creation, preserved in state on reads
-- `roles` is a computed `ListNestedBlock` resolved from `role_ids`
-- `role_ids` uses the framework-standard `listplanmodifier.RequiresReplace()`
+### Client Credential (`internal/resource/client_credential/`)
+- Create/List/Update/Delete. `PATCH /auth/client-credentials/{client_id}` accepts
+  `description` and `role_ids`, so both change in place; only `service_id` is
+  ForceNew, because the update endpoint does not accept it
+- `secret` is real only in the create response; list and update echo a masked
+  form, so Create captures it and Read/Update preserve it from state
+- `roles` is a computed `ListNestedAttribute` resolved from `role_ids`
+- `role_ids` is a `SetAttribute`: the backend resolves roles in its own catalog
+  order, which need not match the configured order
 
-### Roles Data Source (`internal/datasource/roles.go`) — not registered
-- Lists available roles from `/auth/roles`
-- Would be used to discover role IDs for `streamkap_client_credential` resources
+### Roles Data Source (`internal/datasource/roles.go`)
+- Lists available roles from `/auth/roles`; requires the `fe.secure.read.roles`
+  permission
+- Used to discover role IDs for `streamkap_client_credential` resources
 
 ## BaseConnectorResource Design
 
@@ -511,7 +520,7 @@ terraform-provider-streamkap/
 │   │   ├── tag.go                # Tag CRUD
 │   │   ├── transform.go          # Transform CRUD
 │   │   ├── kafka_user.go         # Kafka User CRUD
-│   │   ├── client_credential.go  # Client Credential Create/List/Delete
+│   │   ├── client_credential.go  # Client Credential Create/List/Update/Delete
 │   │   └── role.go               # Role list
 │   │
 │   ├── generated/                # Generated code (DO NOT EDIT)
@@ -539,8 +548,8 @@ terraform-provider-streamkap/
 │   │   ├── pipeline/             # Pipeline resource
 │   │   ├── topic/                # Topic resource
 │   │   ├── tag/                  # Tag resource
-│   │   ├── kafka_user/           # Kafka user resource (not registered)
-│   │   └── client_credential/    # Client credential resource (not registered)
+│   │   ├── kafka_user/           # Kafka user resource
+│   │   └── client_credential/    # Client credential resource
 │   │
 │   ├── datasource/               # Data sources
 │   │   ├── transform.go          # Transform datasource
@@ -550,7 +559,7 @@ terraform-provider-streamkap/
 │   │   ├── topic.go              # Topic datasource
 │   │   ├── topic_metrics.go      # Topic metrics datasource
 │   │   ├── topic_serialization.go # Shared topic (de)serialization helpers
-│   │   └── roles.go              # Roles list datasource (not registered)
+│   │   └── roles.go              # Roles list datasource
 │   │
 │   └── helper/                   # Utility functions
 │       ├── helper.go             # Type conversion helpers

@@ -12,11 +12,40 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
 )
 
+// KafkaACL is one ACL rule attached to a Kafka user.
+//
+// The topic field is asymmetric on the wire: the backend model declares it as
+// `name` with `topic_name` only as an input alias, and serialises responses by
+// field name. So requests may carry either, but responses always come back as
+// `name`. Marshaling uses `topic_name` (the documented public alias);
+// UnmarshalJSON accepts both so the value round-trips.
 type KafkaACL struct {
 	TopicName           string `json:"topic_name"`
 	Operation           string `json:"operation"`
 	ResourcePatternType string `json:"resource_pattern_type"`
 	Resource            string `json:"resource"`
+}
+
+func (a *KafkaACL) UnmarshalJSON(data []byte) error {
+	var wire struct {
+		TopicName           string `json:"topic_name"`
+		Name                string `json:"name"`
+		Operation           string `json:"operation"`
+		ResourcePatternType string `json:"resource_pattern_type"`
+		Resource            string `json:"resource"`
+	}
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return fmt.Errorf("KafkaACL.UnmarshalJSON: %w", err)
+	}
+
+	a.TopicName = wire.TopicName
+	if a.TopicName == "" {
+		a.TopicName = wire.Name
+	}
+	a.Operation = wire.Operation
+	a.ResourcePatternType = wire.ResourcePatternType
+	a.Resource = wire.Resource
+	return nil
 }
 
 type KafkaUser struct {

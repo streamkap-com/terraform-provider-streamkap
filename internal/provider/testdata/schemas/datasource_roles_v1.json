@@ -1,0 +1,12 @@
+{
+  "version": "v3.0.0",
+  "attributes": {
+    "roles": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.ListType[types.ObjectType[\"description\":basetypes.StringType, \"id\":basetypes.StringType, \"key\":basetypes.StringType, \"name\":basetypes.StringType]]"
+    }
+  }
+}

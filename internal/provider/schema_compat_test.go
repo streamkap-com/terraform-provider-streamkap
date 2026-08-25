@@ -17,7 +17,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	ds "github.com/streamkap-com/terraform-provider-streamkap/internal/datasource"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/client_credential"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/destination"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/kafka_user"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/pipeline"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/tag"
@@ -324,6 +326,14 @@ func TestSchemaBackwardsCompatibility_DataSourceTopic(t *testing.T) {
 		name:              "datasource_topic",
 		snapshotFile:      "datasource_topic_v1.json",
 		dataSourceFactory: ds.NewTopicDataSource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_DataSourceRoles(t *testing.T) {
+	runDataSourceSchemaCompatTest(t, dataSourceCompatTestCase{
+		name:              "datasource_roles",
+		snapshotFile:      "datasource_roles_v1.json",
+		dataSourceFactory: ds.NewRolesDataSource,
 	})
 }
 
@@ -832,5 +842,21 @@ func TestSchemaBackwardsCompatibility_Tag(t *testing.T) {
 		name:            "tag",
 		snapshotFile:    "tag_v1.json",
 		resourceFactory: tag.NewTagResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_KafkaUser(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "kafka_user",
+		snapshotFile:    "kafka_user_v1.json",
+		resourceFactory: kafka_user.NewKafkaUserResource,
+	})
+}
+
+func TestSchemaBackwardsCompatibility_ClientCredential(t *testing.T) {
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "client_credential",
+		snapshotFile:    "client_credential_v1.json",
+		resourceFactory: client_credential.NewClientCredentialResource,
 	})
 }

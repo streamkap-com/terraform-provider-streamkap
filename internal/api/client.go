@@ -76,6 +76,7 @@ type StreamkapAPI interface {
 
 	// Client Credential APIs
 	CreateClientCredential(ctx context.Context, reqPayload CreateClientCredentialRequest) (*ClientCredential, error)
+	UpdateClientCredential(ctx context.Context, clientID string, reqPayload UpdateClientCredentialRequest) (*ClientCredential, error)
 	GetClientCredential(ctx context.Context, clientID string) (*ClientCredential, error)
 	ListClientCredentials(ctx context.Context) ([]ClientCredential, error)
 	DeleteClientCredential(ctx context.Context, clientID string) error
