@@ -144,9 +144,10 @@ Affects `streamkap_source_postgresql`, `streamkap_source_alloydb` and
 `streamkap_source_supabase`. The old attribute only ever accepted the single
 value `"reselector"`, so the swap is mechanical.
 
-`post_processors_reselect_enabled` defaults to `true` on those three resources,
-which is the behaviour they already had — re-selection of TOAST columns was
-always on and not configurable. **Deleting the old attribute without adding the
+`post_processors_reselect_enabled` defaults to `true` on those three resources
+purely for backwards compatibility — re-selection of TOAST columns was always on
+and not configurable, so the default reproduces the behaviour you already had
+rather than recommending it. **Deleting the old attribute without adding the
 new one changes nothing**, so if you never set `post_processors`, you can ignore
 this entirely. Setting the toggle to `false` is the new capability: it drops
 `post.processors` from the connector configuration, so TOAST values that cannot
@@ -154,10 +155,11 @@ be read from the WAL arrive as unavailable-value placeholders instead of
 triggering a re-select query against the source.
 
 The same toggle is new on `streamkap_source_oracle` and
-`streamkap_source_oracleaws`, where it defaults to `false` — those connectors
-never re-selected, and existing Oracle sources keep that behaviour. Both also
-gain `reselector_reselect_error_handling_mode` (`fail` default, or `warn` to log
-and continue), which only takes effect while re-selection is enabled.
+`streamkap_source_oracleaws`, where it defaults to `false`. Re-selection is a
+brand new capability there rather than an existing behaviour being exposed, so it
+is opt-in and existing Oracle sources are unaffected. Both also gain
+`reselector_reselect_error_handling_mode` (`fail` default, or `warn` to log and
+continue), which only takes effect while re-selection is enabled.
 
 ### Deprecated Attribute Removal (Planned)
 
