@@ -117,6 +117,50 @@ The value is still readable — `terraform output -raw webhook_key`, or
 registering the webhook URL. `Sensitive` only stops it appearing in plan diffs
 and logs. Passing `api_key` into another module needs no change.
 
+#### Breaking (beta only) — `post_processors` is replaced by `post_processors_reselect_enabled`
+
+**This does not affect anyone upgrading from v2.** `post_processors` never
+shipped in a v2 release — it existed only in `v3.0.0-beta.22` through
+`v3.0.0-beta.26`. If you are coming from v2.x, there is nothing to change and
+nothing to remove.
+
+If you ran one of those five betas and set the attribute, `v3.0.0-beta.27`
+onward rejects it at plan time with *An argument named `post_processors` is not
+expected here*. Swap it for the toggle:
+
+```hcl
+# v3.0.0-beta.22 – beta.26
+resource "streamkap_source_postgresql" "example" {
+  post_processors = "reselector"
+}
+
+# v3.0.0-beta.27 onward
+resource "streamkap_source_postgresql" "example" {
+  post_processors_reselect_enabled = true
+}
+```
+
+Affects `streamkap_source_postgresql`, `streamkap_source_alloydb` and
+`streamkap_source_supabase`. The old attribute only ever accepted the single
+value `"reselector"`, so the swap is mechanical.
+
+`post_processors_reselect_enabled` defaults to `true` on those three resources
+purely for backwards compatibility — re-selection of TOAST columns was always on
+and not configurable, so the default reproduces the behaviour you already had
+rather than recommending it. **Deleting the old attribute without adding the
+new one changes nothing**, so if you never set `post_processors`, you can ignore
+this entirely. Setting the toggle to `false` is the new capability: it drops
+`post.processors` from the connector configuration, so TOAST values that cannot
+be read from the WAL arrive as unavailable-value placeholders instead of
+triggering a re-select query against the source.
+
+The same toggle is new on `streamkap_source_oracle` and
+`streamkap_source_oracleaws`, where it defaults to `false`. Re-selection is a
+brand new capability there rather than an existing behaviour being exposed, so it
+is opt-in and existing Oracle sources are unaffected. Both also gain
+`reselector_reselect_error_handling_mode` (`fail` default, or `warn` to log and
+continue), which only takes effect while re-selection is enabled.
+
 ### Deprecated Attribute Removal (Planned)
 
 The deprecated attributes below keep working, with a deprecation warning, for the

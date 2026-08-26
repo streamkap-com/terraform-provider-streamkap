@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Documentation
+- **Migration guide now covers the `post_processors` removal.** `docs/MIGRATION.md`
+  documents the swap to `post_processors_reselect_enabled` for
+  `streamkap_source_postgresql`, `streamkap_source_alloydb` and
+  `streamkap_source_supabase`, including why the `true` default preserves existing
+  behaviour and what setting it to `false` actually changes. The entry is scoped
+  to beta users explicitly: `post_processors` shipped only in beta.22 through
+  beta.26, so **anyone upgrading from v2.x is unaffected** and has nothing to
+  remove. The removal landed in beta.27 with only a CHANGELOG line, which left
+  beta users on those five releases with a plan-time error and no documented fix.
+- **`complete.tf` examples cover the new Oracle and re-select attributes.**
+  `streamkap_source_oracle` and `streamkap_source_oracleaws` show the three-setting
+  combination LOB capture requires (`log_mining_strategy = "redo_log_catalog"`,
+  `lob_enabled`, `post_processors_reselect_enabled`) plus
+  `reselector_reselect_error_handling_mode`; the PostgreSQL, AlloyDB and Supabase
+  examples show the re-select pair.
+
 ## [3.0.0-beta.30] - 2026-08-25 (Pre-release)
 
 ### Added
