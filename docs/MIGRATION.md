@@ -117,6 +117,48 @@ The value is still readable — `terraform output -raw webhook_key`, or
 registering the webhook URL. `Sensitive` only stops it appearing in plan diffs
 and logs. Passing `api_key` into another module needs no change.
 
+#### Breaking (beta only) — `post_processors` is replaced by `post_processors_reselect_enabled`
+
+**This does not affect anyone upgrading from v2.** `post_processors` never
+shipped in a v2 release — it existed only in `v3.0.0-beta.22` through
+`v3.0.0-beta.26`. If you are coming from v2.x, there is nothing to change and
+nothing to remove.
+
+If you ran one of those five betas and set the attribute, `v3.0.0-beta.27`
+onward rejects it at plan time with *An argument named `post_processors` is not
+expected here*. Swap it for the toggle:
+
+```hcl
+# v3.0.0-beta.22 – beta.26
+resource "streamkap_source_postgresql" "example" {
+  post_processors = "reselector"
+}
+
+# v3.0.0-beta.27 onward
+resource "streamkap_source_postgresql" "example" {
+  post_processors_reselect_enabled = true
+}
+```
+
+Affects `streamkap_source_postgresql`, `streamkap_source_alloydb` and
+`streamkap_source_supabase`. The old attribute only ever accepted the single
+value `"reselector"`, so the swap is mechanical.
+
+`post_processors_reselect_enabled` defaults to `true` on those three resources,
+which is the behaviour they already had — re-selection of TOAST columns was
+always on and not configurable. **Deleting the old attribute without adding the
+new one changes nothing**, so if you never set `post_processors`, you can ignore
+this entirely. Setting the toggle to `false` is the new capability: it drops
+`post.processors` from the connector configuration, so TOAST values that cannot
+be read from the WAL arrive as unavailable-value placeholders instead of
+triggering a re-select query against the source.
+
+The same toggle is new on `streamkap_source_oracle` and
+`streamkap_source_oracleaws`, where it defaults to `false` — those connectors
+never re-selected, and existing Oracle sources keep that behaviour. Both also
+gain `reselector_reselect_error_handling_mode` (`fail` default, or `warn` to log
+and continue), which only takes effect while re-selection is enabled.
+
 ### Deprecated Attribute Removal (Planned)
 
 The deprecated attributes below keep working, with a deprecation warning, for the
@@ -275,19 +317,15 @@ changed. If your v2.1.19 configuration uses them, rename them before upgrading t
 
 #### Attributes Removed by the Backend (Config Edit Required)
 
-A production backend release dropped these connector config fields. None of them
-can be aliased, so each one needs a configuration edit — either delete the
-attribute or swap it for the replacement named below.
+A production backend release dropped these connector config fields. There is no
+replacement attribute and no alias — remove them from your configuration.
 
 | Resource | Removed attribute | Notes |
 |----------|-------------------|-------|
 | `streamkap_source_postgresql` | `streamkap_snapshot_large_table_threshold` | Backend dropped `streamkap.snapshot.large.table.threshold`. |
 | `streamkap_source_postgresql` | `streamkap_snapshot_custom_table_config` | Backend dropped the field. |
-| `streamkap_source_postgresql` | `post_processors` | Replaced by `post_processors_reselect_enabled` (bool). The backend now derives `post.processors` from the toggle instead of accepting the processor list directly. |
 | `streamkap_source_sqlserver` | `streamkap_snapshot_large_table_threshold` | The `snapshot_large_table_threshold` v2 alias is removed with it. |
 | `streamkap_source_sqlserver` | `snapshot_custom_table_config` | The backend has no `streamkap.snapshot.custom.table.config.user.defined` field, so **every value ever set here was silently discarded** — it never reached the connector. Per-table chunk counts are no longer configurable; the backend sizes chunks itself. Use `snapshot_parallelism` (and, if needed, `streamkap_snapshot_chunk_size_bytes`) to tune snapshot throughput. |
-| `streamkap_source_alloydb` | `post_processors` | As PostgreSQL above. |
-| `streamkap_source_supabase` | `post_processors` | As PostgreSQL above. |
 
 `streamkap_snapshot_parallelism` is unaffected and keeps its
 `snapshot_parallelism` alias.
@@ -299,25 +337,6 @@ attribute or swap it for the replacement named below.
 > ignored the unknown key. tfgen now fails the build when an override targets a
 > field the backend does not declare, so this class of dead attribute cannot
 > ship again.
-
-**Migrating `post_processors`.** The attribute only ever accepted the single value
-`"reselector"`, so the migration is a straight swap:
-
-```hcl
-# v2.x
-resource "streamkap_source_postgresql" "example" {
-  post_processors = "reselector"
-}
-
-# v3.x
-resource "streamkap_source_postgresql" "example" {
-  post_processors_reselect_enabled = true
-}
-```
-
-`post_processors_reselect_enabled` defaults to `true` on `streamkap_source_postgresql`, `streamkap_source_alloydb` and `streamkap_source_supabase`, which is the behaviour those connectors already had — re-selection of TOAST columns was previously always on and not configurable. Deleting the old attribute without adding the new one therefore changes nothing. Setting it to `false` is the new capability: it drops `post.processors` from the connector configuration entirely, so TOAST values that cannot be read from the WAL arrive as unavailable-value placeholders rather than triggering a re-select query against the source.
-
-The same toggle is new on `streamkap_source_oracle` and `streamkap_source_oracleaws`, where it defaults to `false` — those connectors never re-selected, and existing Oracle sources keep that behaviour. Both also gain `reselector_reselect_error_handling_mode` (`fail` default, or `warn` to log and continue), which only takes effect while re-selection is enabled.
 
 ### Breaking Changes (Require Immediate Action)
 
