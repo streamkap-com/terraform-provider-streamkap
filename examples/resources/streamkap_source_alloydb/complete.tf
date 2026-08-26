@@ -67,6 +67,14 @@ resource "streamkap_source_alloydb" "example-source-alloydb" {
   # Binary data handling
   binary_handling_mode = "bytes" # Options: bytes, base64, base64-url-safe, hex
 
+  # TOAST column re-selection
+  # On by default: TOAST values the WAL cannot carry are re-fetched from the
+  # source at event time, one extra query per affected row. Set to false to
+  # skip the re-select and accept unavailable-value placeholders instead;
+  # REPLICA IDENTITY FULL on the affected tables avoids re-selects entirely.
+  post_processors_reselect_enabled        = true
+  reselector_reselect_error_handling_mode = "fail" # Options: fail, warn
+
   # SSH tunnel settings (optional)
   ssh_enabled = false
   # When ssh_enabled = true, also configure:
