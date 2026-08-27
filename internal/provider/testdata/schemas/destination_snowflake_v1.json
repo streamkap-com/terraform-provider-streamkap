@@ -169,6 +169,13 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "snowflake_streaming_iceberg_enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
     "snowflake_topic2table_map": {
       "required": false,
       "optional": true,
