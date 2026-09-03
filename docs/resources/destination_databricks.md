@@ -78,6 +78,10 @@ resource "streamkap_destination_databricks" "example-destination-databricks" {
   databricks_token   = var.destination_databricks_token
   databricks_catalog = "hive_metastore"
   schema_evolution   = "basic"
+
+  # Unity Catalog volume to stage parquet files in. Leave unset to stage on DBFS root,
+  # which is unavailable in workspaces created after Databricks disabled it.
+  databricks_stage_path = "/Volumes/main/streamkap/stage/"
 }
 
 output "example-destination-databricks" {
@@ -101,6 +105,7 @@ output "example-destination-databricks" {
 - `connection_timeout` (Number) Connection Timeout. Defaults to `180`.
 - `consumer_wait_time_for_larger_batch_ms` (String) Controls how long the connector waits to accumulate a larger batch before writing to Databricks. Higher values = larger batches = better throughput and fewer MERGE INTOs, but higher latency. Defaults to `10000`. Valid values: `500`, `5000`, `10000`, `20000`, `30000`, `60000`, `120000`, `180000`, `240000`, `300000`.
 - `databricks_catalog` (String) The name of the Databricks catalog to use. Defaults to `hive_metastore`.
+- `databricks_stage_path` (String) Unity Catalog volume used to stage data files, for example /Volumes/my_catalog/my_schema/my_volume/. Leave blank to stage on DBFS root, which is unavailable in workspaces created after Databricks disabled it.
 - `hard_delete` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database. Defaults to `false`.
 - `ingestion_mode` (String) Upsert or append modes are available. Defaults to `upsert`. Valid values: `upsert`, `append`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.

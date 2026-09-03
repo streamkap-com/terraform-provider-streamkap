@@ -25,6 +25,7 @@ type DestinationDatabricksModel struct {
 	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
 	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
 	Tags                                             types.Set      `tfsdk:"tags"`
+	DatabricksStagePath                              types.String   `tfsdk:"databricks_stage_path"`
 	IngestionMode                                    types.String   `tfsdk:"ingestion_mode"`
 	DatabricksToken                                  types.String   `tfsdk:"databricks_token"`
 	ConnectionURL                                    types.String   `tfsdk:"connection_url"`
@@ -130,6 +131,15 @@ func DestinationDatabricksSchema() schema.Schema {
 				MarkdownDescription: "Optional set of tag IDs to apply to this destination. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.",
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"databricks_stage_path": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Unity Catalog volume used to stage data files, for example /Volumes/my_catalog/my_schema/my_volume/. Leave blank to stage on DBFS root, which is unavailable in workspaces created after Databricks disabled it.",
+				MarkdownDescription: "Unity Catalog volume used to stage data files, for example /Volumes/my_catalog/my_schema/my_volume/. Leave blank to stage on DBFS root, which is unavailable in workspaces created after Databricks disabled it.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"ingestion_mode": schema.StringAttribute{
@@ -571,6 +581,7 @@ func DestinationDatabricksSchema() schema.Schema {
 
 // DestinationDatabricksFieldMappings maps Terraform attribute names to API field names.
 var DestinationDatabricksFieldMappings = map[string]string{
+	"databricks_stage_path":                                   "databricks.stage.path.user.defined",
 	"ingestion_mode":                                          "ingestion.mode",
 	"databricks_token":                                        "databricks.token",
 	"connection_url":                                          "connection.url.user.defined",

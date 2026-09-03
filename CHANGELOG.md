@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **`streamkap_destination_databricks.databricks_stage_path`.** Optional Unity
+  Catalog volume (for example `/Volumes/main/streamkap/stage/`) that the
+  connector stages parquet files in. Left unset or blank, staging stays on DBFS
+  root exactly as before, so existing configurations plan clean. Workspaces
+  created after Databricks disabled DBFS root cannot write to it and need a
+  volume.
+
 ## [3.0.0-beta.30] - 2026-08-25 (Pre-release)
 
 ### Added

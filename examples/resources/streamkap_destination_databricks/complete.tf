@@ -32,6 +32,10 @@ resource "streamkap_destination_databricks" "example-destination-databricks" {
   databricks_token   = var.destination_databricks_token
   databricks_catalog = "hive_metastore"
   schema_evolution   = "basic"
+
+  # Unity Catalog volume to stage parquet files in. Leave unset to stage on DBFS root,
+  # which is unavailable in workspaces created after Databricks disabled it.
+  databricks_stage_path = "/Volumes/main/streamkap/stage/"
 }
 
 output "example-destination-databricks" {

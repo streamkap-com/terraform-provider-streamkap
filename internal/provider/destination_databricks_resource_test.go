@@ -40,6 +40,7 @@ resource "streamkap_destination_databricks" "test" {
 	hard_delete          = true
 	tasks_max            = 3
 	schema_evolution     = "basic"
+	databricks_stage_path = "/Volumes/main/streamkap/stage/"
 	transforms_mask_field_fields_include_list       = "public.users.email"
 	transforms_mask_field_fields_exclude_list       = "public.users.id"
 	transforms_mask_field_mask_function             = "REDACT"
@@ -63,6 +64,7 @@ resource "streamkap_destination_databricks" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "tasks_max", "3"),
 					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "table_name_prefix", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "schema_evolution", "basic"),
+					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "databricks_stage_path", "/Volumes/main/streamkap/stage/"),
 					resource.TestCheckResourceAttrSet("streamkap_destination_databricks.test", "id"),
 					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "connector", "databricks"),
 				),
@@ -96,6 +98,7 @@ resource "streamkap_destination_databricks" "test" {
 	hard_delete          = false
 	tasks_max            = 5
 	schema_evolution     = "none"
+	databricks_stage_path = ""
 	transforms_mask_field_fields_include_list       = "public.users.email,public.users.phone"
 	transforms_mask_field_fields_exclude_list       = "public.users.id"
 	transforms_mask_field_mask_function             = "FIXED"
@@ -118,6 +121,7 @@ resource "streamkap_destination_databricks" "test" {
 					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "partition_mode", "by_topic"),
 					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "hard_delete", "false"),
 					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "tasks_max", "5"),
+					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "databricks_stage_path", ""),
 					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "table_name_prefix", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_destination_databricks.test", "schema_evolution", "none"),
 					resource.TestCheckResourceAttrSet("streamkap_destination_databricks.test", "id"),
