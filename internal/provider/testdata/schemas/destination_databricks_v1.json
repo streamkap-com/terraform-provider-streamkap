@@ -43,6 +43,13 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "databricks_stage_path": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
     "databricks_token": {
       "required": true,
       "optional": false,
