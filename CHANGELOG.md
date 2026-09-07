@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   warning naming them.
 
 ### Fixed
+- `streamkap_client_credential` failed every create and update with
+  "Value Conversion Error ... Path: roles": the computed `roles` list is unknown
+  in the plan and was decoded into a Go slice. It is now a framework list type.
 - Correct topic-metrics decoding and expose the broker metadata and status the
   API returns. Preserve legacy inputs and result fields with deprecation notices;
   unavailable metrics and ambiguous entity associations are null.

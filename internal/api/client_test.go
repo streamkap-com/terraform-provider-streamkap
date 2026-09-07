@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -1127,4 +1128,36 @@ func TestGetRetriesTransient5xx(t *testing.T) {
 	require.NotNil(t, src)
 	assert.Equal(t, "recovered", src.Name)
 	assert.Equal(t, 2, calls, "expected one failure then one success")
+}
+
+// TestAPIError_LongJSONBodyIsCapped guards the diagnostic surface: a 422 whose
+// structured body is thousands of characters must reach Terraform truncated,
+// with the rejected input values redacted rather than echoed.
+func TestAPIError_LongJSONBodyIsCapped(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	baseURL := "https://api.test.streamkap.com"
+	client := NewClient(&Config{BaseURL: baseURL, Retry: &RetryConfig{MaxRetries: 0}})
+	client.SetToken(&Token{AccessToken: "test-token"})
+
+	longMessage := strings.Repeat("x", 5000)
+	httpmock.RegisterResponder(http.MethodGet, baseURL+"/sources/src-1?secret_returned=true",
+		httpmock.NewJsonResponderOrPanic(http.StatusUnprocessableEntity, map[string]any{
+			"detail": []map[string]any{{
+				"loc":   []string{"body", "config", "database.password"},
+				"msg":   longMessage,
+				"type":  "value_error",
+				"input": "plain-text-secret",
+			}},
+		}))
+
+	_, err := client.GetSource(context.Background(), "src-1")
+	require.Error(t, err)
+
+	var apiErr *APIError
+	require.True(t, errors.As(err, &apiErr))
+	assert.Contains(t, apiErr.Detail, "...[truncated]")
+	assert.Less(t, len(apiErr.Detail), 400, "detail must be capped, got %d chars", len(apiErr.Detail))
+	assert.NotContains(t, apiErr.Detail, "plain-text-secret")
 }

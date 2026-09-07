@@ -40,6 +40,17 @@ type RoleModel struct {
 	Description types.String `tfsdk:"description"`
 }
 
+// roleObjectType is the element type of the computed `roles` list. It must
+// match the nested attribute schema below.
+var roleObjectType = types.ObjectType{
+	AttrTypes: map[string]attr.Type{
+		"id":          types.StringType,
+		"key":         types.StringType,
+		"name":        types.StringType,
+		"description": types.StringType,
+	},
+}
+
 type ClientCredentialResourceModel struct {
 	ID          types.String `tfsdk:"id"`
 	ClientID    types.String `tfsdk:"client_id"`
@@ -48,7 +59,10 @@ type ClientCredentialResourceModel struct {
 	Description types.String `tfsdk:"description"`
 	ServiceID   types.String `tfsdk:"service_id"`
 	CreatedAt   types.String `tfsdk:"created_at"`
-	Roles       []RoleModel  `tfsdk:"roles"`
+	// Roles is Computed with no plan modifier, so it is unknown in every Create
+	// and Update plan. A framework type is required: decoding an unknown value
+	// into a Go slice fails with "Value Conversion Error".
+	Roles types.List `tfsdk:"roles"`
 }
 
 func (r *ClientCredentialResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -320,7 +334,9 @@ func (r *ClientCredentialResource) modelFromAPIObject(ctx context.Context, apiOb
 		}
 		roleIDs[i] = roles[i].ID
 	}
-	model.Roles = roles
+	roleList, d := types.ListValueFrom(ctx, roleObjectType, roles)
+	diags.Append(d...)
+	model.Roles = roleList
 
 	// role_ids is a set: the API resolves roles in its own catalog order, which need
 	// not match the order they were configured in.

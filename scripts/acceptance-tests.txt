@@ -53,6 +53,9 @@ TestAccDestinationRedisResource
 TestAccDestinationRedshiftResource
 TestAccDestinationS3Resource
 TestAccDestinationSnowflakeResource
+# Only the config round-trip of the ClickHouse destination; it does not need the
+# staging ClickHouse instance to be reachable (see the quarantine list below).
+TestAccDestinationClickHouseResource_topicsConfigMapRoundTrip
 TestAccDestinationSqlserverResource
 TestAccDestinationStarburstResource
 TestAccDestinationWeaviateResource
@@ -70,6 +73,7 @@ TestAccDataSourceTransform
 
 # --- Pipelines ---
 TestAccPostgreSQLSnowflakePipelineResource
+TestAccPipeline_PeriodicAuditSurvivesUpdate
 # TestAccDynamoDBClickHousePipelineResource — re-add once the staging ClickHouse
 # instance is reachable again; its destination half cannot pass until then.
 
@@ -81,6 +85,7 @@ TestAccPostgreSQLSnowflakePipelineResource
 TestProviderConfig_MissingClientID
 TestDriftDetection_SourceModifiedExternally
 TestAccTagsLifecycle_TransformAttachAndClear
+TestAccTagResource_descriptionShapes
 
 # --- Transforms ---
 TestAccTransformEnrichAsyncResource
