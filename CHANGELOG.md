@@ -28,6 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cap and redact API error bodies surfaced in diagnostics.
 - Deprecate `messages_7d` and `messages_30d` on `streamkap_topics`; the topic
   details API has never returned them, so both are always null.
+- Stop deleting a pipeline's periodic row-level audit. The backend removes
+  `periodic_audit` whenever an update omits it, so every apply that touched a
+  pipeline silently discarded an audit configured outside Terraform. The
+  provider now reads and carries it through, narrowing its topics (with a
+  warning) if the pipeline no longer streams them.
+- Reject `admin_service_id` without `admin_tenant_id`. The backend ignores the
+  service header unless the tenant header is present, so the request ran against
+  the credential's own tenant instead of the intended one.
 - Say when a request was replayed after a transient failure, so an
   "already exists" error from a retried create is not read as a name collision.
 - Preserve redacted error context when the API returns null or empty details.

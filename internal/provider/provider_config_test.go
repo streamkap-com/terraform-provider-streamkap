@@ -464,3 +464,45 @@ data "streamkap_topics" "test" {}
 func MustCompile(pattern string) *regexp.Regexp {
 	return regexp.MustCompile(pattern)
 }
+
+// The backend ignores X-Admin-Service-Id unless X-Admin-Tenant-Id is also set,
+// so a lone service id silently targets the credential's own tenant.
+func TestProviderConfig_AdminServiceIDWithoutTenantID(t *testing.T) {
+	t.Setenv("STREAMKAP_ADMIN_TENANT_ID", "")
+	t.Setenv("STREAMKAP_ADMIN_SERVICE_ID", "")
+
+	ctx := context.Background()
+	providerUnderTest := New("test")()
+	var schemaResponse frameworkprovider.SchemaResponse
+	providerUnderTest.Schema(ctx, frameworkprovider.SchemaRequest{}, &schemaResponse)
+
+	objectType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+		"host":             tftypes.String,
+		"client_id":        tftypes.String,
+		"secret":           tftypes.String,
+		"admin_tenant_id":  tftypes.String,
+		"admin_service_id": tftypes.String,
+	}}
+
+	var configureResponse frameworkprovider.ConfigureResponse
+	providerUnderTest.Configure(ctx, frameworkprovider.ConfigureRequest{
+		Config: tfsdk.Config{
+			Raw: tftypes.NewValue(objectType, map[string]tftypes.Value{
+				"host":             tftypes.NewValue(tftypes.String, "https://api.streamkap.com"),
+				"client_id":        tftypes.NewValue(tftypes.String, "client-id"),
+				"secret":           tftypes.NewValue(tftypes.String, "secret"),
+				"admin_tenant_id":  tftypes.NewValue(tftypes.String, nil),
+				"admin_service_id": tftypes.NewValue(tftypes.String, "service-1"),
+			}),
+			Schema: schemaResponse.Schema,
+		},
+	}, &configureResponse)
+
+	if !configureResponse.Diagnostics.HasError() {
+		t.Fatal("admin_service_id without admin_tenant_id must fail configuration")
+	}
+	if !regexp.MustCompile(`(?s)admin_service_id only takes effect alongside admin_tenant_id`).
+		MatchString(configureResponse.Diagnostics.Errors()[0].Detail()) {
+		t.Fatalf("unexpected diagnostic: %s", configureResponse.Diagnostics.Errors()[0].Detail())
+	}
+}

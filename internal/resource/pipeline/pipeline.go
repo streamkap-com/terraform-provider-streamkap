@@ -3,10 +3,12 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	res "github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -442,6 +444,18 @@ func (r *PipelineResource) Update(ctx context.Context, req res.UpdateRequest, re
 		return
 	}
 
+	// periodic_audit is configured outside Terraform, but the backend $unsets it
+	// whenever a PUT omits the key, so an unrelated update silently deletes it.
+	// Read the live value and carry it through.
+	if existing, getErr := r.client.GetPipeline(ctx, plan.ID.ValueString()); getErr != nil {
+		resp.Diagnostics.AddWarning(
+			"Could not read the pipeline before updating it",
+			fmt.Sprintf("A periodic row-level audit configured outside Terraform may be removed by this update: %s", getErr),
+		)
+	} else if existing != nil {
+		payload.PeriodicAudit = preservePeriodicAudit(existing.PeriodicAudit, payload.Source.Topics, &resp.Diagnostics)
+	}
+
 	pipeline, err := r.client.UpdatePipeline(ctx, plan.ID.ValueString(), *payload)
 
 	if err != nil {
@@ -764,4 +778,56 @@ func (r *PipelineResource) api2Model(ctx context.Context, apiObject api.Pipeline
 	model.Tags = tags
 
 	return nil
+}
+
+// preservePeriodicAudit carries the backend's periodic row-level audit config
+// through an update. Terraform does not manage the field, but the backend lists
+// it in _CONDITIONAL_ENTITY_FIELDS and so removes it whenever a PUT omits the
+// key. Read returns topics as pretty names and update expects the same form, so
+// the value echoes back unchanged.
+//
+// The backend also rejects an update whose audit topics are not a subset of the
+// pipeline's topics, so topics no longer streamed are dropped from the audit
+// rather than failing an otherwise valid apply.
+func preservePeriodicAudit(existing *api.PipelinePeriodicAudit, pipelineTopics []string, diags *diag.Diagnostics) *api.PipelinePeriodicAudit {
+	if existing == nil {
+		return nil
+	}
+
+	streamed := make(map[string]struct{}, len(pipelineTopics))
+	for _, topic := range pipelineTopics {
+		streamed[topic] = struct{}{}
+	}
+
+	kept := make([]string, 0, len(existing.Topics))
+	dropped := make([]string, 0)
+	for _, topic := range existing.Topics {
+		if _, ok := streamed[topic]; ok {
+			kept = append(kept, topic)
+			continue
+		}
+		dropped = append(dropped, topic)
+	}
+	sort.Strings(dropped)
+
+	if len(kept) == 0 {
+		diags.AddWarning(
+			"Periodic audit removed from pipeline",
+			fmt.Sprintf("This pipeline's periodic row-level audit covered only topics the pipeline no longer streams (%s), so it was removed. "+
+				"Reconfigure it in the Streamkap UI if it is still needed.", strings.Join(dropped, ", ")),
+		)
+		return nil
+	}
+
+	if len(dropped) > 0 {
+		diags.AddWarning(
+			"Periodic audit topics narrowed",
+			fmt.Sprintf("These topics are no longer streamed by the pipeline, so they were dropped from its periodic row-level audit: %s",
+				strings.Join(dropped, ", ")),
+		)
+	}
+
+	preserved := *existing
+	preserved.Topics = kept
+	return &preserved
 }

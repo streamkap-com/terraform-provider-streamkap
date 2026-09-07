@@ -191,6 +191,21 @@ func (p *streamkapProvider) Configure(ctx context.Context, req provider.Configur
 		adminServiceID = config.AdminServiceID.ValueString()
 	}
 
+	// The backend only enters its admin path when X-Admin-Tenant-Id is present;
+	// a service id on its own is dropped and the request silently runs against
+	// the credential's own tenant. A tenant id alone IS valid — the backend
+	// resolves a single-service tenant and returns a clear 400 for a
+	// multi-service one — so only this direction is rejected.
+	if adminServiceID != "" && adminTenantID == "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("admin_service_id"),
+			"Admin Service ID Without Admin Tenant ID",
+			"admin_service_id only takes effect alongside admin_tenant_id. On its own it is ignored and every request "+
+				"runs against the tenant that owns the client credentials, which is unlikely to be what you meant. "+
+				"Set admin_tenant_id (or STREAMKAP_ADMIN_TENANT_ID), or remove admin_service_id.",
+		)
+	}
+
 	// If any of the expected configurations are missing, return
 	// errors with provider-specific guidance.
 	if host == "" {
