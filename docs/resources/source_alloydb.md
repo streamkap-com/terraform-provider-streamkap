@@ -18,6 +18,10 @@ This resource creates and manages an AlloyDB source for Streamkap data pipelines
 
 ## Example Usage
 
+These examples describe this documentation version. Select the matching provider
+release in `required_providers`; beta releases require an exact prerelease version.
+Without a version constraint, Terraform selects a stable release.
+
 ### Basic
 
 ```terraform
@@ -39,7 +43,7 @@ resource "streamkap_source_alloydb" "example" {
   table_include_list  = "public.orders,public.customers"
 
   # Signal and heartbeat tables (required)
-  signal_data_collection_schema_or_database    = "streamkap"
+  signal_data_collection_schema_or_database    = "streamkap.streamkap_signal"
   heartbeat_data_collection_schema_or_database = "streamkap"
 }
 
@@ -60,8 +64,9 @@ variable "db_password" {
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = "3.0.0-beta.30"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -98,7 +103,7 @@ resource "streamkap_source_alloydb" "example-source-alloydb" {
   snapshot_read_only = "Yes" # Options: Yes, No
 
   # Signal table for incremental snapshots
-  signal_data_collection_schema_or_database = "streamkap"
+  signal_data_collection_schema_or_database = "streamkap.streamkap_signal"
 
   # Schema and table selection
   schema_include_list = "public,analytics"

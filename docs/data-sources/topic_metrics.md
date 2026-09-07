@@ -93,7 +93,7 @@ Read-Only:
 - `avg_latency_ms` (Number, Deprecated) **Deprecated:** Always null because the current API does not return average latency.
 - `bytes_in` (Number, Deprecated) **Deprecated:** Always null because the current API does not return `bytes_in`.
 - `bytes_out` (Number, Deprecated) **Deprecated:** Always null because the current API does not return `bytes_out`.
-- `entity_id` (String) Entity ID associated with the requested topic.
+- `entity_id` (String) Entity ID associated with the requested topic. Null if multiple requested entities share the topic.
 - `id` (String) Topic identifier returned in the response row.
 - `lag` (Number, Deprecated) **Deprecated:** Always null because the current API does not return `lag`.
 - `last_message_timestamp` (Number) Unix timestamp in milliseconds of the latest message. Null when unavailable.

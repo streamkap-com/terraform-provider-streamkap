@@ -458,7 +458,7 @@ func parseAPIErrorDetail(body []byte) (string, bool) {
 
 	var detail string
 	if err := json.Unmarshal(envelope.Detail, &detail); err == nil {
-		return detail, true
+		return detail, strings.TrimSpace(detail) != ""
 	}
 
 	return redactSensitiveErrorJSON(envelope.Detail), true

@@ -18,6 +18,10 @@ This resource creates and manages a PostgreSQL source for Streamkap data pipelin
 
 ## Example Usage
 
+These examples describe this documentation version. Select the matching provider
+release in `required_providers`; beta releases require an exact prerelease version.
+Without a version constraint, Terraform selects a stable release.
+
 ### Basic
 
 ```terraform
@@ -42,8 +46,8 @@ resource "streamkap_source_postgresql" "example" {
   slot_name        = "streamkap_slot"
   publication_name = "streamkap_pub"
 
-  # Signal table for incremental snapshots (required)
-  signal_data_collection_schema_or_database = "streamkap"
+  # Signal table for incremental snapshots
+  signal_data_collection_schema_or_database = "streamkap.streamkap_signal"
 }
 
 variable "db_password" {
@@ -63,8 +67,9 @@ variable "db_password" {
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = "3.0.0-beta.30"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -106,9 +111,9 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   # Column filtering (optional, uses regex pattern: schema[.]table[.](col1|col2))
   column_include_list = "streamkap[.]customer[.](id|name)"
 
-  # Signal table for incremental snapshots (required)
+  # Signal table for incremental snapshots
   # This schema must contain a 'streamkap_signal' table for snapshot coordination
-  signal_data_collection_schema_or_database = "streamkap"
+  signal_data_collection_schema_or_database = "streamkap.streamkap_signal"
 
   # Heartbeat configuration (optional, for monitoring replication lag)
   heartbeat_enabled                            = false # Enable heartbeat messages

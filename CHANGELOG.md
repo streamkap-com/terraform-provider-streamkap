@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Correct topic-metrics decoding and expose the broker metadata and status the
   API returns. Preserve legacy inputs and result fields with deprecation notices;
-  unavailable metrics are null.
+  unavailable metrics and ambiguous entity associations are null.
+- Preserve redacted error context when the API returns null or empty details.
 - Honor cancellation during authentication and reject unknown admin scope IDs
   before configuring an API client.
 - Avoid retrying failed client-credential creation requests, which can issue
@@ -20,7 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keep topic read failures visible unless the API confirms a missing topic.
 - Refresh backend-derived MongoDB hostnames after connection-string updates
   while preserving existing attribute configurability.
-- Correct required attributes, numeric ports and beta version pins in examples.
+- Correct required attributes, numeric ports and full signal-table paths in examples.
+- Use sensitive variables consistently for example credentials.
+- Replace fixed beta pins in embedded examples with guidance to select the release
+  matching the documentation.
 
 ### Security
 - Update gRPC to v1.83.1 to address CVE-2026-84304.

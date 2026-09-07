@@ -40,12 +40,13 @@
 // # Type Mapping
 //
 // The TerraformType method maps backend controls to Terraform types:
-//   - string, password, textarea, datetime, one-select → types.String
+//   - string, password, textarea, datetime, one-select, code-editor → types.String
 //   - number, slider → types.Int64
 //   - boolean, toggle → types.Bool
 //   - multi-select → types.List[types.String]
 //   - json → jsontypes.Normalized
-//   - any other control → types.String
+//
+// Unsupported controls are rejected before template generation.
 //
 // # User-Defined Field Filtering
 //
@@ -348,7 +349,7 @@ func (e *ConfigEntry) BoolDefaultIsUnparseableString() bool {
 }
 
 // TerraformType returns the appropriate Terraform type for this config entry.
-// This maps control types to Terraform types as specified in the audit document.
+// Callers must validate HasSupportedControl before using the returned type.
 func (e *ConfigEntry) TerraformType() TerraformType {
 	switch e.Value.Control {
 	case "string", "password", "textarea", "datetime", "code-editor":
@@ -367,7 +368,7 @@ func (e *ConfigEntry) TerraformType() TerraformType {
 	case "slider":
 		return TerraformTypeInt64
 	default:
-		// Default to string for unknown control types
+		// Generation rejects unsupported controls through HasSupportedControl.
 		return TerraformTypeString
 	}
 }

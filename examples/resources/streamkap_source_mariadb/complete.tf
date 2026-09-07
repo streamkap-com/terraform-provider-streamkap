@@ -5,8 +5,9 @@
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = "3.0.0-beta.30"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -39,8 +40,8 @@ resource "streamkap_source_mariadb" "example-source-mariadb" {
   database_include_list = "ecommerce,analytics"
   table_include_list    = "ecommerce.orders,ecommerce.customers,analytics.events"
 
-  # Signal table for incremental snapshots (optional)
-  signal_data_collection_schema_or_database = "streamkap"
+  # Signal table for incremental snapshots
+  signal_data_collection_schema_or_database = "streamkap.streamkap_signal"
 
   # Heartbeat configuration
   heartbeat_enabled                            = true

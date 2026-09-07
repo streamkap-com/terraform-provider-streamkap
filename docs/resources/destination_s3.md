@@ -18,6 +18,10 @@ This resource creates and manages an S3 destination for Streamkap data pipelines
 
 ## Example Usage
 
+These examples describe this documentation version. Select the matching provider
+release in `required_providers`; beta releases require an exact prerelease version.
+Without a version constraint, Terraform selects a stable release.
+
 ### Basic
 
 ```terraform
@@ -31,6 +35,7 @@ resource "streamkap_destination_s3" "example" {
 }
 
 variable "aws_access_key_id" {
+  sensitive   = true
   description = "AWS Access Key ID"
   type        = string
 }
@@ -53,8 +58,9 @@ variable "s3_bucket_name" {
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = "3.0.0-beta.30"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -63,6 +69,7 @@ terraform {
 provider "streamkap" {}
 
 variable "s3_aws_access_key_id" {
+  sensitive   = true
   type        = string
   description = "The AWS Access Key ID used to connect to S3"
 }

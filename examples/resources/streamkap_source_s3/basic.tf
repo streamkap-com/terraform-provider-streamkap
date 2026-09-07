@@ -14,6 +14,7 @@ resource "streamkap_source_s3" "example" {
 }
 
 variable "aws_access_key_id" {
+  sensitive   = true
   description = "AWS access key ID"
   type        = string
 }

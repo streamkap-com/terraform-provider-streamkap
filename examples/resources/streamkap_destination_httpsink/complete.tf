@@ -1,14 +1,21 @@
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = "3.0.0-beta.30"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
 }
 
 provider "streamkap" {}
+
+variable "destination_httpsink_http_headers_authorization" {
+  type        = string
+  sensitive   = true
+  description = "Static HTTP authorization header"
+}
 
 variable "destination_httpsink_oauth2_client_secret" {
   type        = string
@@ -24,8 +31,8 @@ resource "streamkap_destination_httpsink" "example" {
   http_url = "https://api.example.com/webhook"
 
   # Authentication
-  http_authorization_type    = "oauth2"          # Valid values: none, static, oauth2. Default: none
-  http_headers_authorization = "Bearer token123" # Static authorization header (for static auth)
+  http_authorization_type    = "oauth2"                                            # Valid values: none, static, oauth2. Default: none
+  http_headers_authorization = var.destination_httpsink_http_headers_authorization # Static authorization header (for static auth)
 
   # OAuth2 settings (when http_authorization_type = oauth2)
   oauth2_access_token_url = "https://auth.example.com/oauth/token"

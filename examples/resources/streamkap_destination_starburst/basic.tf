@@ -9,6 +9,7 @@ resource "streamkap_destination_starburst" "example" {
 }
 
 variable "aws_access_key_id" {
+  sensitive   = true
   description = "AWS access key ID"
   type        = string
 }

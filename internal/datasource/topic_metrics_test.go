@@ -58,3 +58,26 @@ func TestFlattenTopicTableMetricsPreservesNullsAndSortsRows(t *testing.T) {
 		t.Fatalf("unavailable legacy metrics must remain null")
 	}
 }
+
+func TestFlattenTopicTableMetricsAmbiguousEntity(t *testing.T) {
+	metrics := api.TopicTableMetricsResponse{"shared": {ID: "shared"}, "unique": {ID: "unique"}}
+	entities := []api.TopicMetricsEntity{
+		{ID: "source", TopicIDs: []string{"shared", "unique"}},
+		{ID: "source", TopicIDs: []string{"unique"}},
+		{ID: "destination", TopicIDs: []string{"shared"}},
+	}
+	var diagnostics diag.Diagnostics
+	results := flattenTopicTableMetrics(metrics, entities, &diagnostics)
+	if diagnostics.HasError() {
+		t.Fatalf("unexpected diagnostics: %v", diagnostics)
+	}
+	if len(results) != 2 {
+		t.Fatalf("result count = %d, want 2", len(results))
+	}
+	if !results[0].EntityID.IsNull() {
+		t.Fatal("a shared topic must not be assigned to an arbitrary entity")
+	}
+	if got := results[1].EntityID.ValueString(); got != "source" {
+		t.Fatalf("unique topic entity = %q, want source", got)
+	}
+}

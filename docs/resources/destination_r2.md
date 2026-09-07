@@ -18,6 +18,10 @@ This resource creates and manages a R2 destination for Streamkap data pipelines.
 
 ## Example Usage
 
+These examples describe this documentation version. Select the matching provider
+release in `required_providers`; beta releases require an exact prerelease version.
+Without a version constraint, Terraform selects a stable release.
+
 ### Basic
 
 ```terraform
@@ -37,6 +41,7 @@ variable "r2_account" {
 }
 
 variable "r2_access_key_id" {
+  sensitive   = true
   description = "R2 access key ID"
   type        = string
 }
@@ -59,14 +64,21 @@ variable "r2_bucket_name" {
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = "3.0.0-beta.30"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
 }
 
 provider "streamkap" {}
+
+variable "destination_r2_aws_access_key_id" {
+  type        = string
+  sensitive   = true
+  description = "Cloudflare R2 access key ID"
+}
 
 variable "destination_r2_secret_access_key" {
   type        = string
@@ -80,7 +92,7 @@ resource "streamkap_destination_r2" "example" {
 
   # Connection settings (required)
   r2_account            = "your-cloudflare-account-id"
-  aws_access_key_id     = "your-r2-access-key-id"
+  aws_access_key_id     = var.destination_r2_aws_access_key_id
   aws_secret_access_key = var.destination_r2_secret_access_key
   aws_s3_bucket_name    = "my-r2-bucket"
 

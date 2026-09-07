@@ -1,14 +1,21 @@
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = "3.0.0-beta.30"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
 }
 
 provider "streamkap" {}
+
+variable "destination_starburst_aws_access_key_id" {
+  type        = string
+  sensitive   = true
+  description = "AWS access key ID for Starburst S3 access"
+}
 
 variable "destination_starburst_secret_access_key" {
   type        = string
@@ -21,7 +28,7 @@ resource "streamkap_destination_starburst" "example" {
   name = "example-destination-starburst"
 
   # AWS S3 settings
-  aws_access_key_id     = "your-access-key-id"
+  aws_access_key_id     = var.destination_starburst_aws_access_key_id
   aws_secret_access_key = var.destination_starburst_secret_access_key
   aws_s3_region         = "us-west-2" # Default: us-west-2
   # Valid values: ap-south-1, eu-west-2, eu-west-1, ap-northeast-2, ap-northeast-1,

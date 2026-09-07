@@ -131,8 +131,8 @@ func (d *TopicMetricsDataSource) Schema(ctx context.Context, req ds.SchemaReques
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"entity_id": schema.StringAttribute{
-							Description:         "Entity ID associated with the requested topic.",
-							MarkdownDescription: "Entity ID associated with the requested topic.",
+							Description:         "Entity ID associated with the requested topic. Null if multiple requested entities share the topic.",
+							MarkdownDescription: "Entity ID associated with the requested topic. Null if multiple requested entities share the topic.",
 							Computed:            true,
 						},
 						"topic_id": schema.StringAttribute{
@@ -268,11 +268,13 @@ func deprecatedUnavailableMetric(name string) schema.Int64Attribute {
 }
 
 func flattenTopicTableMetrics(metrics api.TopicTableMetricsResponse, entities []api.TopicMetricsEntity, diags *diag.Diagnostics) []TopicMetricsResultModel {
-	entityByTopicID := make(map[string]string)
+	entityByTopicID := make(map[string]types.String)
 	for _, entity := range entities {
 		for _, topicID := range entity.TopicIDs {
-			if _, exists := entityByTopicID[topicID]; !exists {
-				entityByTopicID[topicID] = entity.ID
+			if existing, exists := entityByTopicID[topicID]; !exists {
+				entityByTopicID[topicID] = types.StringValue(entity.ID)
+			} else if existing.ValueString() != entity.ID {
+				entityByTopicID[topicID] = types.StringNull()
 			}
 		}
 	}
@@ -288,7 +290,7 @@ func flattenTopicTableMetrics(metrics api.TopicTableMetricsResponse, entities []
 		row := metrics[topicID]
 		entityID := types.StringNull()
 		if value, ok := entityByTopicID[topicID]; ok {
-			entityID = types.StringValue(value)
+			entityID = value
 		}
 		snapshotStatus, err := json.Marshal(row.SnapshotStatus)
 		if err != nil {

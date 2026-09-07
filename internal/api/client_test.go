@@ -637,26 +637,29 @@ func TestAPIError_StructuredValidationDetailIsRedacted(t *testing.T) {
 }
 
 func TestAPIError_JSONWithoutDetailIsRedacted(t *testing.T) {
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-
-	baseURL := "https://api.test.streamkap.com"
-	client := newTestClient(baseURL)
-	httpmock.RegisterResponder(
-		http.MethodGet,
-		baseURL+"/sources/source-123?secret_returned=true",
-		httpmock.NewJsonResponderOrPanic(http.StatusBadRequest, map[string]any{
-			"message":  "request rejected",
-			"password": "plain-text-secret",
-		}),
-	)
-
-	_, err := client.GetSource(context.Background(), "source-123")
-
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "request rejected")
-	assert.Contains(t, err.Error(), redactedPlaceholder)
-	assert.NotContains(t, err.Error(), "plain-text-secret")
+	for _, detail := range []string{"missing", "null", "empty", "whitespace"} {
+		t.Run(detail, func(t *testing.T) {
+			httpmock.Activate()
+			defer httpmock.DeactivateAndReset()
+			baseURL := "https://api.test.streamkap.com"
+			client := newTestClient(baseURL)
+			body := map[string]any{"message": "request rejected", "password": "plain-text-secret"}
+			switch detail {
+			case "null":
+				body["detail"] = nil
+			case "empty":
+				body["detail"] = ""
+			case "whitespace":
+				body["detail"] = " "
+			}
+			httpmock.RegisterResponder(http.MethodGet, baseURL+"/sources/source-123?secret_returned=true", httpmock.NewJsonResponderOrPanic(http.StatusBadRequest, body))
+			_, err := client.GetSource(context.Background(), "source-123")
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "request rejected")
+			assert.Contains(t, err.Error(), redactedPlaceholder)
+			assert.NotContains(t, err.Error(), "plain-text-secret")
+		})
+	}
 }
 
 // TestTokenRenewal_On401RetriesWithFreshToken — the OAuth token used to be

@@ -5,8 +5,9 @@
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = "3.0.0-beta.30"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -41,7 +42,7 @@ resource "streamkap_source_oracleaws" "example-source-oracleaws" {
   table_include_list  = "HR.EMPLOYEES,HR.DEPARTMENTS,SALES.ORDERS"
 
   # Signal table for incremental snapshots
-  signal_data_collection_schema_or_database = "STREAMKAP"
+  signal_data_collection_schema_or_database = "STREAMKAP.STREAMKAP_SIGNAL"
 
   # Heartbeat configuration
   heartbeat_enabled                            = true

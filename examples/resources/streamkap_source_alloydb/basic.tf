@@ -16,7 +16,7 @@ resource "streamkap_source_alloydb" "example" {
   table_include_list  = "public.orders,public.customers"
 
   # Signal and heartbeat tables (required)
-  signal_data_collection_schema_or_database    = "streamkap"
+  signal_data_collection_schema_or_database    = "streamkap.streamkap_signal"
   heartbeat_data_collection_schema_or_database = "streamkap"
 }
 

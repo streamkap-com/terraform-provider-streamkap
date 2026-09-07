@@ -18,6 +18,10 @@ This resource creates and manages an S3 source for Streamkap data pipelines. Use
 
 ## Example Usage
 
+These examples describe this documentation version. Select the matching provider
+release in `required_providers`; beta releases require an exact prerelease version.
+Without a version constraint, Terraform selects a stable release.
+
 ### Basic
 
 ```terraform
@@ -37,6 +41,7 @@ resource "streamkap_source_s3" "example" {
 }
 
 variable "aws_access_key_id" {
+  sensitive   = true
   description = "AWS access key ID"
   type        = string
 }
@@ -58,8 +63,9 @@ variable "aws_secret_access_key" {
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = "3.0.0-beta.30"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -68,6 +74,7 @@ terraform {
 provider "streamkap" {}
 
 variable "source_s3_access_key_id" {
+  sensitive   = true
   type        = string
   description = "AWS access key ID"
 }

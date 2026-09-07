@@ -18,6 +18,10 @@ This resource creates and manages a MongoDB Atlas source for Streamkap data pipe
 
 ## Example Usage
 
+These examples describe this documentation version. Select the matching provider
+release in `required_providers`; beta releases require an exact prerelease version.
+Without a version constraint, Terraform selects a stable release.
+
 ### Basic
 
 ```terraform
@@ -34,8 +38,8 @@ resource "streamkap_source_mongodb" "example" {
   database_include_list   = "mydb"
   collection_include_list = "mydb.orders,mydb.customers"
 
-  # Signal collection for incremental snapshots (required)
-  signal_data_collection_schema_or_database = "streamkap"
+  # Signal collection for incremental snapshots
+  signal_data_collection_schema_or_database = "streamkap.streamkap_signal"
 }
 
 variable "mongodb_connection_string" {
@@ -55,8 +59,9 @@ variable "mongodb_connection_string" {
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = "3.0.0-beta.30"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -82,9 +87,9 @@ resource "streamkap_source_mongodb" "example-source-mongodb" {
   database_include_list   = "Test"                            # Databases to sync
   collection_include_list = "Test.test_data4,Test.test_data2" # Collections to capture (db.collection format)
 
-  # Signal collection for incremental snapshots (required)
+  # Signal collection for incremental snapshots
   # This database must contain a 'streamkap_signal' collection for snapshot coordination
-  signal_data_collection_schema_or_database = "Test"
+  signal_data_collection_schema_or_database = "Test.streamkap_signal"
 
   # Data encoding options
   transforms_unwrap_array_encoding    = "array_string" # Options: array, array_string

@@ -187,7 +187,8 @@ optional/computed behavior and state preservation.
 | `string` | `schema.StringAttribute` | `types.String` | Basic string input |
 | `password` | `schema.StringAttribute` | `types.String` | Marked `Sensitive: true` |
 | `textarea` | `schema.StringAttribute` | `types.String` | Multi-line text |
-| `json` | `schema.StringAttribute` | `types.String` | JSON as string |
+| `json` | `schema.StringAttribute` | `jsontypes.Normalized` | JSON string with semantic equality |
+| `code-editor` | `schema.StringAttribute` | `types.String` | Implementation text |
 | `datetime` | `schema.StringAttribute` | `types.String` | ISO datetime string |
 | `number` | `schema.Int64Attribute` | `types.Int64` | Integer values |
 | `boolean` | `schema.BoolAttribute` | `types.Bool` | True/false toggle |

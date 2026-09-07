@@ -15,8 +15,8 @@ resource "streamkap_source_db2" "example" {
   schema_include_list = "MYSCHEMA"
   table_include_list  = "MYSCHEMA.ORDERS,MYSCHEMA.CUSTOMERS"
 
-  # Signal table for incremental snapshots (required)
-  signal_data_collection_schema_or_database = "STREAMKAP"
+  # Signal table for incremental snapshots
+  signal_data_collection_schema_or_database = "STREAMKAP.streamkap_signal"
 }
 
 variable "db_password" {
