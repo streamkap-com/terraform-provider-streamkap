@@ -13,10 +13,10 @@ on:
       - develop
       - main
     paths:
-      - internal/generated/**
+      - internal/**
       - docs/**
       - templates/**
-      - examples/provider/**
+      - examples/**
       - main.go
       - go.mod
 
@@ -28,14 +28,14 @@ jobs:
     name: Docs match committed schemas
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: "go.mod"
           cache: true
 
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_wrapper: false
 
@@ -47,7 +47,9 @@ jobs:
 
       - name: Fail if docs drifted
         run: |
-          if ! git diff --exit-code docs/; then
+          if [ -n "$(git status --porcelain --untracked-files=all -- docs/)" ]; then
+            git diff -- docs/
+            git status --short --untracked-files=all -- docs/
             echo "::error::docs/ is stale relative to the committed schemas in internal/generated/."
             echo "Run 'make generate' (never 'go generate ./...') and commit the regenerated docs."
             exit 1

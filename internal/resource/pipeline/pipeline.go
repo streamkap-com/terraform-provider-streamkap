@@ -658,8 +658,6 @@ func (r *PipelineResource) model2API(ctx context.Context, model PipelineResource
 	// transform hasn't been deployed yet and has no Topics/TopicIDs of its own.
 	apiTransforms, err := r.model2APITransforms(ctx, model.Transforms, model.Source.ID.ValueString())
 	if err != nil {
-		// Log error and continue to next transform
-		fmt.Printf("error enriching model Transforms: %s\n", err)
 		return nil, err
 	}
 

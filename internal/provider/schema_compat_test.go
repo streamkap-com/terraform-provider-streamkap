@@ -29,8 +29,19 @@ import (
 
 // SchemaSnapshot represents a saved schema for backwards compatibility testing.
 type SchemaSnapshot struct {
-	Version    string                   `json:"version"`
-	Attributes map[string]AttributeInfo `json:"attributes"`
+	Version          string                   `json:"version"`
+	Attributes       map[string]AttributeInfo `json:"attributes"`
+	NestedAttributes map[string]AttributeInfo `json:"nested_attributes,omitempty"`
+	Blocks           map[string]BlockInfo     `json:"blocks,omitempty"`
+	BlockAttributes  map[string]AttributeInfo `json:"block_attributes,omitempty"`
+}
+
+// BlockInfo records a block's container shape. Attributes inside the block are
+// flattened into BlockAttributes so their Required/Optional/Computed/Sensitive
+// flags are checked with the same rules as top-level attributes.
+type BlockInfo struct {
+	NestingMode string `json:"nesting_mode"`
+	Type        string `json:"type"`
 }
 
 // AttributeInfo captures the key properties of a schema attribute.
@@ -85,11 +96,18 @@ type dataSourceCompatTestCase struct {
 // extractSchemaSnapshot extracts schema information into a snapshot structure.
 func extractSchemaSnapshot(s schema.Schema) SchemaSnapshot {
 	snapshot := SchemaSnapshot{
-		Attributes: make(map[string]AttributeInfo),
+		Attributes:       make(map[string]AttributeInfo),
+		NestedAttributes: make(map[string]AttributeInfo),
+		Blocks:           make(map[string]BlockInfo),
+		BlockAttributes:  make(map[string]AttributeInfo),
 	}
 
 	for name, attribute := range s.Attributes {
 		snapshot.Attributes[name] = attributeInfo(attribute)
+		addResourceNestedAttributes(snapshot.NestedAttributes, name, attribute)
+	}
+	for name, block := range s.Blocks {
+		addResourceBlock(&snapshot, name, block)
 	}
 
 	return snapshot
@@ -98,14 +116,133 @@ func extractSchemaSnapshot(s schema.Schema) SchemaSnapshot {
 // extractDataSourceSchemaSnapshot is extractSchemaSnapshot for data sources.
 func extractDataSourceSchemaSnapshot(s dsschema.Schema) SchemaSnapshot {
 	snapshot := SchemaSnapshot{
-		Attributes: make(map[string]AttributeInfo),
+		Attributes:       make(map[string]AttributeInfo),
+		NestedAttributes: make(map[string]AttributeInfo),
+		Blocks:           make(map[string]BlockInfo),
+		BlockAttributes:  make(map[string]AttributeInfo),
 	}
 
 	for name, attribute := range s.Attributes {
 		snapshot.Attributes[name] = attributeInfo(attribute)
+		addDataSourceNestedAttributes(snapshot.NestedAttributes, name, attribute)
+	}
+	for name, block := range s.Blocks {
+		addDataSourceBlock(&snapshot, name, block)
 	}
 
 	return snapshot
+}
+
+func TestExtractSchemaSnapshotIncludesNestedShapes(t *testing.T) {
+	ctx := context.Background()
+
+	kafkaResponse := &resource.SchemaResponse{}
+	kafka_user.NewKafkaUserResource().Schema(ctx, resource.SchemaRequest{}, kafkaResponse)
+	require.False(t, kafkaResponse.Diagnostics.HasError())
+	kafkaSnapshot := extractSchemaSnapshot(kafkaResponse.Schema)
+	require.Equal(t, "list", kafkaSnapshot.Blocks["kafka_acls"].NestingMode)
+	require.True(t, kafkaSnapshot.BlockAttributes["kafka_acls.topic_name"].Required)
+	require.True(t, kafkaSnapshot.BlockAttributes["kafka_acls.resource"].Optional)
+
+	pipelineResponse := &resource.SchemaResponse{}
+	pipeline.NewPipelineResource().Schema(ctx, resource.SchemaRequest{}, pipelineResponse)
+	require.False(t, pipelineResponse.Diagnostics.HasError())
+	pipelineSnapshot := extractSchemaSnapshot(pipelineResponse.Schema)
+	require.True(t, pipelineSnapshot.NestedAttributes["source.id"].Required)
+	require.Equal(t, "single", pipelineSnapshot.Blocks["timeouts"].NestingMode)
+	require.True(t, pipelineSnapshot.BlockAttributes["timeouts.create"].Optional)
+}
+
+func addResourceNestedAttributes(target map[string]AttributeInfo, prefix string, attribute schema.Attribute) {
+	var attributes map[string]schema.Attribute
+	switch a := attribute.(type) {
+	case schema.ListNestedAttribute:
+		attributes = a.NestedObject.Attributes
+	case schema.SetNestedAttribute:
+		attributes = a.NestedObject.Attributes
+	case schema.MapNestedAttribute:
+		attributes = a.NestedObject.Attributes
+	case schema.SingleNestedAttribute:
+		attributes = a.Attributes
+	default:
+		return
+	}
+	for name, nested := range attributes {
+		path := prefix + "." + name
+		target[path] = attributeInfo(nested)
+		addResourceNestedAttributes(target, path, nested)
+	}
+}
+
+func addDataSourceNestedAttributes(target map[string]AttributeInfo, prefix string, attribute dsschema.Attribute) {
+	var attributes map[string]dsschema.Attribute
+	switch a := attribute.(type) {
+	case dsschema.ListNestedAttribute:
+		attributes = a.NestedObject.Attributes
+	case dsschema.SetNestedAttribute:
+		attributes = a.NestedObject.Attributes
+	case dsschema.MapNestedAttribute:
+		attributes = a.NestedObject.Attributes
+	case dsschema.SingleNestedAttribute:
+		attributes = a.Attributes
+	default:
+		return
+	}
+	for name, nested := range attributes {
+		path := prefix + "." + name
+		target[path] = attributeInfo(nested)
+		addDataSourceNestedAttributes(target, path, nested)
+	}
+}
+
+func addResourceBlock(snapshot *SchemaSnapshot, path string, block schema.Block) {
+	var attributes map[string]schema.Attribute
+	var blocks map[string]schema.Block
+	mode := ""
+	switch b := block.(type) {
+	case schema.ListNestedBlock:
+		mode, attributes, blocks = "list", b.NestedObject.Attributes, b.NestedObject.Blocks
+	case schema.SetNestedBlock:
+		mode, attributes, blocks = "set", b.NestedObject.Attributes, b.NestedObject.Blocks
+	case schema.SingleNestedBlock:
+		mode, attributes, blocks = "single", b.Attributes, b.Blocks
+	default:
+		mode = "unknown"
+	}
+	snapshot.Blocks[path] = BlockInfo{NestingMode: mode, Type: block.Type().String()}
+	for name, attribute := range attributes {
+		attributePath := path + "." + name
+		snapshot.BlockAttributes[attributePath] = attributeInfo(attribute)
+		addResourceNestedAttributes(snapshot.BlockAttributes, attributePath, attribute)
+	}
+	for name, nested := range blocks {
+		addResourceBlock(snapshot, path+"."+name, nested)
+	}
+}
+
+func addDataSourceBlock(snapshot *SchemaSnapshot, path string, block dsschema.Block) {
+	var attributes map[string]dsschema.Attribute
+	var blocks map[string]dsschema.Block
+	mode := ""
+	switch b := block.(type) {
+	case dsschema.ListNestedBlock:
+		mode, attributes, blocks = "list", b.NestedObject.Attributes, b.NestedObject.Blocks
+	case dsschema.SetNestedBlock:
+		mode, attributes, blocks = "set", b.NestedObject.Attributes, b.NestedObject.Blocks
+	case dsschema.SingleNestedBlock:
+		mode, attributes, blocks = "single", b.Attributes, b.Blocks
+	default:
+		mode = "unknown"
+	}
+	snapshot.Blocks[path] = BlockInfo{NestingMode: mode, Type: block.Type().String()}
+	for name, attribute := range attributes {
+		attributePath := path + "." + name
+		snapshot.BlockAttributes[attributePath] = attributeInfo(attribute)
+		addDataSourceNestedAttributes(snapshot.BlockAttributes, attributePath, attribute)
+	}
+	for name, nested := range blocks {
+		addDataSourceBlock(snapshot, path+"."+name, nested)
+	}
 }
 
 // runSchemaCompatTest executes a schema backwards compatibility test.
@@ -171,40 +308,9 @@ func compareAgainstSnapshot(t *testing.T, snapshotFile string, currentSnapshot S
 	var baseline SchemaSnapshot
 	require.NoError(t, json.Unmarshal(baselineData, &baseline))
 
-	// Track breaking changes
-	breakingChanges := 0
-
-	// Check for breaking changes
-	for attrName, baseAttr := range baseline.Attributes {
-		currentAttr, exists := currentSnapshot.Attributes[attrName]
-
-		// Breaking: Required attribute removed
-		if !exists && baseAttr.Required {
-			t.Errorf("BREAKING CHANGE: Required attribute %q was removed", attrName)
-			breakingChanges++
-			continue
-		}
-
-		// Breaking: Optional changed to required
-		if exists && baseAttr.Optional && !baseAttr.Required && currentAttr.Required {
-			t.Errorf("BREAKING CHANGE: Attribute %q changed from optional to required", attrName)
-			breakingChanges++
-		}
-
-		// Breaking: type changed. A String→Int64 flip invalidates every existing
-		// config and state for the attribute, and it has no alias escape hatch —
-		// CLAUDE.md lists type changes as not aliasable.
-		if exists && baseAttr.Type != "" && baseAttr.Type != currentAttr.Type {
-			t.Errorf("BREAKING CHANGE: Attribute %q changed type from %s to %s",
-				attrName, baseAttr.Type, currentAttr.Type)
-			breakingChanges++
-		}
-
-		// Warning: Computed attribute removed (might break references)
-		if !exists && baseAttr.Computed {
-			t.Logf("WARNING: Computed attribute %q was removed - may break user references", attrName)
-		}
-	}
+	breakingChanges := checkAttributeCompatibility(t, "attribute", baseline.Attributes, currentSnapshot.Attributes)
+	breakingChanges += checkAttributeCompatibility(t, "nested attribute", baseline.NestedAttributes, currentSnapshot.NestedAttributes)
+	breakingChanges += checkAttributeCompatibility(t, "block attribute", baseline.BlockAttributes, currentSnapshot.BlockAttributes)
 
 	// Drift: the snapshot is the schema of record that humans and tooling read
 	// from the repo. Additive changes are not breaking, but treating them as
@@ -212,20 +318,10 @@ func compareAgainstSnapshot(t *testing.T, snapshotFile string, currentSnapshot S
 	// from 48 snapshots for two months that way. Any divergence fails here;
 	// `make snapshots` accepts it.
 	var added, removed, changed []string
-	for attrName, currentAttr := range currentSnapshot.Attributes {
-		baseAttr, exists := baseline.Attributes[attrName]
-		switch {
-		case !exists:
-			added = append(added, attrName)
-		case baseAttr != currentAttr:
-			changed = append(changed, attrName)
-		}
-	}
-	for attrName := range baseline.Attributes {
-		if _, exists := currentSnapshot.Attributes[attrName]; !exists {
-			removed = append(removed, attrName)
-		}
-	}
+	collectDrift("attribute", baseline.Attributes, currentSnapshot.Attributes, &added, &removed, &changed)
+	collectDrift("nested_attribute", baseline.NestedAttributes, currentSnapshot.NestedAttributes, &added, &removed, &changed)
+	collectDrift("block", baseline.Blocks, currentSnapshot.Blocks, &added, &removed, &changed)
+	collectDrift("block_attribute", baseline.BlockAttributes, currentSnapshot.BlockAttributes, &added, &removed, &changed)
 
 	if len(added)+len(removed)+len(changed) > 0 {
 		sort.Strings(added)
@@ -240,6 +336,48 @@ func compareAgainstSnapshot(t *testing.T, snapshotFile string, currentSnapshot S
 	if breakingChanges == 0 {
 		t.Logf("Schema compatibility check passed. %d attrs, snapshot in sync.",
 			len(currentSnapshot.Attributes))
+	}
+}
+
+func checkAttributeCompatibility(t *testing.T, kind string, baseline, current map[string]AttributeInfo) int {
+	t.Helper()
+	breakingChanges := 0
+	for name, before := range baseline {
+		after, exists := current[name]
+		if !exists && before.Required {
+			t.Errorf("BREAKING CHANGE: Required %s %q was removed", kind, name)
+			breakingChanges++
+			continue
+		}
+		if exists && before.Optional && !before.Required && after.Required {
+			t.Errorf("BREAKING CHANGE: %s %q changed from optional to required", kind, name)
+			breakingChanges++
+		}
+		if exists && before.Type != "" && before.Type != after.Type {
+			t.Errorf("BREAKING CHANGE: %s %q changed type from %s to %s", kind, name, before.Type, after.Type)
+			breakingChanges++
+		}
+		if !exists && before.Computed {
+			t.Logf("WARNING: Computed %s %q was removed - may break user references", kind, name)
+		}
+	}
+	return breakingChanges
+}
+
+func collectDrift[T comparable](kind string, baseline, current map[string]T, added, removed, changed *[]string) {
+	for name, after := range current {
+		before, exists := baseline[name]
+		switch {
+		case !exists:
+			*added = append(*added, kind+"."+name)
+		case before != after:
+			*changed = append(*changed, kind+"."+name)
+		}
+	}
+	for name := range baseline {
+		if _, exists := current[name]; !exists {
+			*removed = append(*removed, kind+"."+name)
+		}
 	}
 }
 

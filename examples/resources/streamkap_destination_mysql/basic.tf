@@ -3,6 +3,7 @@
 resource "streamkap_destination_mysql" "example" {
   name                = "my-mysql-dest"
   database_hostname   = var.mysql_hostname
+  database_database   = "mydb"
   connection_username = var.mysql_username
   connection_password = var.mysql_password
 }

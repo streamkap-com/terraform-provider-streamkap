@@ -26,7 +26,9 @@ This resource creates and manages a Redis destination for Streamkap data pipelin
 resource "streamkap_destination_redis" "example" {
   name           = "my-redis-dest"
   redis_host     = var.redis_host
+  redis_username = "streamkap_user"
   redis_password = var.redis_password
+  redis_key      = "streamkap:events"
 }
 
 variable "redis_host" {
@@ -48,7 +50,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"

@@ -29,5 +29,49 @@
       "sensitive": false,
       "type": "types.ListType[types.ObjectType[\"custom\":basetypes.BoolType, \"description\":basetypes.StringType, \"id\":basetypes.StringType, \"name\":basetypes.StringType, \"system\":basetypes.BoolType, \"type\":types.SetType[basetypes.StringType]]]"
     }
+  },
+  "nested_attributes": {
+    "tags.custom": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "tags.description": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "tags.id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "tags.name": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "tags.system": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "tags.type": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.SetType[basetypes.StringType]"
+    }
   }
 }

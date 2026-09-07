@@ -590,12 +590,12 @@ func SourcePostgresqlSchema() schema.Schema {
 
 // SourcePostgresqlFieldMappings maps Terraform attribute names to API field names.
 var SourcePostgresqlFieldMappings = map[string]string{
-	"database_hostname":                                      "database.hostname.user.defined",
-	"database_port":                                          "database.port.user.defined",
-	"database_user":                                          "database.user",
-	"database_password":                                      "database.password",
-	"database_dbname":                                        "database.dbname",
-	"snapshot_read_only":                                     "snapshot.read.only.user.defined",
+	"database_hostname":  "database.hostname.user.defined",
+	"database_port":      "database.port.user.defined",
+	"database_user":      "database.user",
+	"database_password":  "database.password",
+	"database_dbname":    "database.dbname",
+	"snapshot_read_only": "snapshot.read.only.user.defined",
 	"signal_data_collection_schema_or_database":              "signal.data.collection.schema.or.database",
 	"column_include_list_toggled":                            "column.include.list.toggled",
 	"source_regex_support_enabled":                           "SourceRegexSupport.enabled",

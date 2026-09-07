@@ -6,7 +6,7 @@ resource "streamkap_source_db2" "example" {
 
   # Connection details
   database_hostname = "db2.example.com"
-  database_port     = "50000"
+  database_port     = 50000
   database_user     = "streamkap_user"
   database_password = var.db_password
   database_dbname   = "SAMPLE"

@@ -29,7 +29,8 @@ resource "streamkap_source_redis" "example" {
 
   # Connection details
   redis_host     = "redis.example.com"
-  redis_port     = "6379"
+  redis_port     = 6379
+  redis_username = "default"
   redis_password = var.redis_password
 
   # Stream to capture
@@ -57,7 +58,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"
@@ -85,7 +86,7 @@ resource "streamkap_source_redis" "example-source-redis" {
 
   # Connection settings
   redis_host     = var.source_redis_host
-  redis_port     = "6379"
+  redis_port     = 6379
   redis_username = "default" # For Redis 6+ ACL
   redis_password = var.source_redis_password
 

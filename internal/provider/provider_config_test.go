@@ -2,10 +2,14 @@
 package provider
 
 import (
+	"context"
 	"os"
 	"regexp"
 	"testing"
 
+	frameworkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/tfversion"
 )
@@ -15,6 +19,59 @@ import (
 // =============================================================================
 // These tests verify that the provider properly handles various configuration
 // scenarios: missing credentials, invalid values, and environment variable fallbacks.
+
+func TestProviderConfig_UnknownAdminScope(t *testing.T) {
+	tests := map[string]string{
+		"admin tenant ID":  "admin_tenant_id",
+		"admin service ID": "admin_service_id",
+	}
+
+	for name, unknownAttribute := range tests {
+		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
+			providerUnderTest := New("test")()
+			var schemaResponse frameworkprovider.SchemaResponse
+			providerUnderTest.Schema(ctx, frameworkprovider.SchemaRequest{}, &schemaResponse)
+
+			values := map[string]tftypes.Value{
+				"host":             tftypes.NewValue(tftypes.String, "https://api.streamkap.com"),
+				"client_id":        tftypes.NewValue(tftypes.String, "client-id"),
+				"secret":           tftypes.NewValue(tftypes.String, "secret"),
+				"admin_tenant_id":  tftypes.NewValue(tftypes.String, nil),
+				"admin_service_id": tftypes.NewValue(tftypes.String, nil),
+			}
+			values[unknownAttribute] = tftypes.NewValue(tftypes.String, tftypes.UnknownValue)
+
+			var configureResponse frameworkprovider.ConfigureResponse
+			providerUnderTest.Configure(ctx, frameworkprovider.ConfigureRequest{
+				Config: tfsdk.Config{
+					Raw: tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+						"host":             tftypes.String,
+						"client_id":        tftypes.String,
+						"secret":           tftypes.String,
+						"admin_tenant_id":  tftypes.String,
+						"admin_service_id": tftypes.String,
+					}}, values),
+					Schema: schemaResponse.Schema,
+				},
+			}, &configureResponse)
+
+			if !configureResponse.Diagnostics.HasError() {
+				t.Fatal("expected unknown admin scope to prevent provider configuration")
+			}
+			found := false
+			for _, diagnostic := range configureResponse.Diagnostics {
+				if regexp.MustCompile(`Unknown Streamkap Admin`).MatchString(diagnostic.Summary()) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("missing unknown admin scope diagnostic: %v", configureResponse.Diagnostics)
+			}
+		})
+	}
+}
 
 // TestProviderConfig_MissingClientID tests that missing client_id produces a clear error
 func TestProviderConfig_MissingClientID(t *testing.T) {

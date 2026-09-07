@@ -605,6 +605,60 @@ func TestAPIError_NonJSONBody(t *testing.T) {
 	assert.NotContains(t, err.Error(), "invalid character")
 }
 
+func TestAPIError_StructuredValidationDetailIsRedacted(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	baseURL := "https://api.test.streamkap.com"
+	client := newTestClient(baseURL)
+
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		baseURL+"/sources/source-123?secret_returned=true",
+		httpmock.NewJsonResponderOrPanic(http.StatusUnprocessableEntity, map[string]any{
+			"detail": []map[string]any{{
+				"type":  "string_too_short",
+				"loc":   []string{"body", "database_password"},
+				"msg":   "String should have at least 8 characters",
+				"input": "secret1",
+			}},
+		}),
+	)
+
+	_, err := client.GetSource(context.Background(), "source-123")
+
+	require.Error(t, err)
+	var apiErr *APIError
+	require.True(t, errors.As(err, &apiErr))
+	assert.Contains(t, apiErr.Detail, "String should have at least 8 characters")
+	assert.Contains(t, apiErr.Detail, redactedPlaceholder)
+	assert.NotContains(t, apiErr.Detail, "secret1")
+	assert.NotContains(t, apiErr.Detail, "non-JSON")
+}
+
+func TestAPIError_JSONWithoutDetailIsRedacted(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	baseURL := "https://api.test.streamkap.com"
+	client := newTestClient(baseURL)
+	httpmock.RegisterResponder(
+		http.MethodGet,
+		baseURL+"/sources/source-123?secret_returned=true",
+		httpmock.NewJsonResponderOrPanic(http.StatusBadRequest, map[string]any{
+			"message":  "request rejected",
+			"password": "plain-text-secret",
+		}),
+	)
+
+	_, err := client.GetSource(context.Background(), "source-123")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "request rejected")
+	assert.Contains(t, err.Error(), redactedPlaceholder)
+	assert.NotContains(t, err.Error(), "plain-text-secret")
+}
+
 // TestTokenRenewal_On401RetriesWithFreshToken — the OAuth token used to be
 // fetched once in provider.Configure and never renewed, so any apply outliving
 // the token TTL failed every remaining resource with an opaque 401.
@@ -630,7 +684,7 @@ func TestTokenRenewal_On401RetriesWithFreshToken(t *testing.T) {
 
 	// The provider's Configure flow: exchange credentials, then hand the token
 	// to the client. The credentials stay behind so it can renew on its own.
-	token, err := client.GetAccessToken("client-id", "client-secret")
+	token, err := client.GetAccessToken(context.Background(), "client-id", "client-secret")
 	require.NoError(t, err)
 	client.SetToken(token)
 	require.Equal(t, 1, authCalls)
@@ -675,6 +729,30 @@ func TestTokenRenewal_On401RetriesWithFreshToken(t *testing.T) {
 	assert.Contains(t, seenBodies[1], "db.example.com")
 }
 
+func TestGetAccessToken_UsesCallerContext(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	baseURL := "https://api.test.streamkap.com"
+	client := NewClient(&Config{BaseURL: baseURL})
+	requests := 0
+	httpmock.RegisterResponder(
+		http.MethodPost,
+		baseURL+"/auth/access-token",
+		func(req *http.Request) (*http.Response, error) {
+			requests++
+			return httpmock.NewJsonResponse(http.StatusOK, Token{AccessToken: "unexpected"})
+		},
+	)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err := client.GetAccessToken(ctx, "client-id", "client-secret")
+
+	require.ErrorIs(t, err, context.Canceled)
+	assert.Zero(t, requests, "a canceled Configure must not start authentication")
+}
+
 // TestTokenRenewal_ProactiveBeforeExpiry renews inside the skew window without
 // waiting for a 401.
 func TestTokenRenewal_ProactiveBeforeExpiry(t *testing.T) {
@@ -697,7 +775,7 @@ func TestTokenRenewal_ProactiveBeforeExpiry(t *testing.T) {
 		},
 	)
 
-	_, err := client.GetAccessToken("client-id", "client-secret")
+	_, err := client.GetAccessToken(context.Background(), "client-id", "client-secret")
 	require.NoError(t, err)
 	// A token whose remaining lifetime is inside tokenRenewSkew: the next
 	// request renews before sending rather than racing the expiry.
@@ -747,7 +825,7 @@ func TestTokenRenewal_SingleFlight(t *testing.T) {
 		},
 	)
 
-	_, err := client.GetAccessToken("client-id", "client-secret")
+	_, err := client.GetAccessToken(context.Background(), "client-id", "client-secret")
 	require.NoError(t, err)
 	client.SetToken(&Token{AccessToken: "stale-token", ExpiresIn: 3600})
 
@@ -831,7 +909,7 @@ func TestTokenRenewal_BadCredentialsDoNotRecurse(t *testing.T) {
 		},
 	)
 
-	token, err := client.GetAccessToken("client-id", "revoked-secret")
+	token, err := client.GetAccessToken(context.Background(), "client-id", "revoked-secret")
 	require.NoError(t, err)
 	client.SetToken(token)
 
@@ -926,7 +1004,7 @@ func TestGetAccessToken_Success(t *testing.T) {
 		},
 	)
 
-	token, err := client.GetAccessToken("test-client-id", "test-secret")
+	token, err := client.GetAccessToken(context.Background(), "test-client-id", "test-secret")
 
 	require.NoError(t, err)
 	require.NotNil(t, token)
@@ -955,7 +1033,7 @@ func TestGetAccessToken_InvalidCredentials(t *testing.T) {
 		},
 	)
 
-	token, err := client.GetAccessToken("wrong-client-id", "wrong-secret")
+	token, err := client.GetAccessToken(context.Background(), "wrong-client-id", "wrong-secret")
 
 	require.Error(t, err)
 	assert.Nil(t, token)

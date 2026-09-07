@@ -6,7 +6,7 @@ resource "streamkap_source_supabase" "example" {
 
   # Connection details
   database_hostname = "db.xxxx.supabase.co"
-  database_port     = "5432"
+  database_port     = 5432
   database_user     = "postgres"
   database_password = var.db_password
   database_dbname   = "postgres"

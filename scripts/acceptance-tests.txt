@@ -116,3 +116,8 @@ TestAccTransformSqlJoinResource
 #       connector (Limited-Privilege-Stream-Only-Test)". That connector was
 #       created outside Terraform, so the sweeper does not match it. Delete it,
 #       or give the test its own signal table, and re-add.
+
+# --- Access control ---
+TestAccKafkaUserResource
+TestAccClientCredentialResource
+TestAccDataSourceRoles

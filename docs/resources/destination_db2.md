@@ -26,6 +26,7 @@ This resource creates and manages a Db2 destination for Streamkap data pipelines
 resource "streamkap_destination_db2" "example" {
   name                = "my-db2-dest"
   database_hostname   = var.db2_hostname
+  database_database   = "mydb"
   connection_username = var.db2_username
   connection_password = var.db2_password
 }
@@ -54,7 +55,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"

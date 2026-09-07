@@ -24,10 +24,12 @@ This resource creates and manages a Redshift destination for Streamkap data pipe
 # Minimal Redshift destination configuration
 
 resource "streamkap_destination_redshift" "example" {
-  name                = "my-redshift-dest"
-  aws_redshift_domain = var.redshift_domain
-  connection_username = var.redshift_username
-  connection_password = var.redshift_password
+  name                  = "my-redshift-dest"
+  aws_redshift_domain   = var.redshift_domain
+  aws_redshift_database = "mydb"
+  connection_username   = var.redshift_username
+  connection_password   = var.redshift_password
+  table_name_prefix     = "public"
 }
 
 variable "redshift_domain" {
@@ -54,7 +56,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"

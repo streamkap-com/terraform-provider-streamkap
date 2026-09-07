@@ -67,6 +67,12 @@ func TestRedactSensitiveJSON_MasksKnownSecretKeys(t *testing.T) {
 			bad:  []string{"p1", "p2"},
 		},
 		{
+			name: "transform implementation",
+			in:   `{"implementation":{"language":"JavaScript","value_transform":"return fetch('https://user:secret@example.com');"}}`,
+			want: []string{`"implementation":"***REDACTED***"`},
+			bad:  []string{"value_transform", "user:secret"},
+		},
+		{
 			// Connector configs go over the wire with dotted Kafka-Connect field
 			// names, not the underscored Terraform attribute names. Those are the
 			// keys redaction actually sees.
@@ -108,6 +114,21 @@ func TestRedactSensitiveJSON_MasksKnownSecretKeys(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestRedactSensitiveErrorJSON_MasksValidationInput(t *testing.T) {
+	in := `[{"type":"string_too_short","loc":["body","password"],"msg":"too short","input":"plain-text-secret","ctx":{"error":"embedded-secret"}}]`
+	got := redactSensitiveErrorJSON([]byte(in))
+
+	if !strings.Contains(got, `"input":"***REDACTED***"`) {
+		t.Fatalf("validation input was not redacted: %s", got)
+	}
+	if strings.Contains(got, "plain-text-secret") {
+		t.Fatalf("validation input leaked: %s", got)
+	}
+	if !strings.Contains(got, `"ctx":"***REDACTED***"`) || strings.Contains(got, "embedded-secret") {
+		t.Fatalf("validation context was not redacted: %s", got)
 	}
 }
 

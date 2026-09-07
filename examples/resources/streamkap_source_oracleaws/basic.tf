@@ -6,7 +6,7 @@ resource "streamkap_source_oracleaws" "example" {
 
   # Connection details
   database_hostname = "oracle.xxxx.rds.amazonaws.com"
-  database_port     = "1521"
+  database_port     = 1521
   database_user     = "streamkap_user"
   database_password = var.db_password
   database_dbname   = "ORCL"

@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"regexp"
+	"strings"
 )
 
 // sensitiveKeyRegex matches JSON keys that are likely to carry secrets. We
@@ -18,7 +19,7 @@ var sensitiveKeyRegex = regexp.MustCompile(`(?i)` +
 	`(password|passwd|secret|token|credential|passphrase|` +
 	`api[_.-]?key|private[_.-]?key|public[_.-]?key|` +
 	`access[_.-]?key|auth|bearer|session|cookie|` +
-	`client[_.-]?secret|client[_.-]?id|sasl|pem)`)
+	`client[_.-]?secret|client[_.-]?id|sasl|pem|implementation)`)
 
 const redactedPlaceholder = "***REDACTED***"
 
@@ -31,14 +32,24 @@ const redactedPlaceholder = "***REDACTED***"
 // not rely on it to make a debug log safe to publish — treat any provider
 // debug log as sensitive and restrict access accordingly.
 func redactSensitiveJSON(body []byte) string {
+	return redactJSON(body, false, "<non-JSON body omitted from logs>")
+}
+
+// redactSensitiveErrorJSON also masks Pydantic's `input` and `ctx` fields,
+// which can contain rejected request values in structured validation errors.
+func redactSensitiveErrorJSON(body []byte) string {
+	return redactJSON(body, true, "<error response omitted from logs>")
+}
+
+func redactJSON(body []byte, errorResponse bool, malformedPlaceholder string) string {
 	if len(body) == 0 {
 		return ""
 	}
 	var obj any
 	if err := json.Unmarshal(body, &obj); err != nil {
-		return "<non-JSON body omitted from logs>"
+		return malformedPlaceholder
 	}
-	redacted := redactValue(obj)
+	redacted := redactValue(obj, errorResponse)
 	out, err := json.Marshal(redacted)
 	if err != nil {
 		return "<body redaction failed; omitted from logs>"
@@ -46,20 +57,21 @@ func redactSensitiveJSON(body []byte) string {
 	return string(out)
 }
 
-func redactValue(v any) any {
+func redactValue(v any, errorResponse bool) any {
 	switch val := v.(type) {
 	case map[string]any:
 		for k, inner := range val {
-			if sensitiveKeyRegex.MatchString(k) {
+			if sensitiveKeyRegex.MatchString(k) ||
+				(errorResponse && (strings.EqualFold(k, "input") || strings.EqualFold(k, "ctx"))) {
 				val[k] = redactedPlaceholder
 				continue
 			}
-			val[k] = redactValue(inner)
+			val[k] = redactValue(inner, errorResponse)
 		}
 		return val
 	case []any:
 		for i, inner := range val {
-			val[i] = redactValue(inner)
+			val[i] = redactValue(inner, errorResponse)
 		}
 		return val
 	default:

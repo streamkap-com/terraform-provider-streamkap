@@ -6,7 +6,7 @@ resource "streamkap_source_planetscale" "example" {
 
   # Connection details
   database_hostname = "aws.connect.psdb.cloud"
-  database_port     = "443"
+  database_port     = 443
   database_user     = "branch_user"
   database_password = var.db_password
 

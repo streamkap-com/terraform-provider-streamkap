@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- Correct topic-metrics decoding and expose the broker metadata and status the
+  API returns. Preserve legacy inputs and result fields with deprecation notices;
+  unavailable metrics are null.
+- Honor cancellation during authentication and reject unknown admin scope IDs
+  before configuring an API client.
+- Avoid retrying failed client-credential creation requests, which can issue
+  duplicate credentials when a response is lost.
+- Report terminal transform deployment failures as errors and support read timeouts.
+- Preserve explicitly empty connector maps and tag descriptions.
+- Keep topic read failures visible unless the API confirms a missing topic.
+- Refresh backend-derived MongoDB hostnames after connection-string updates
+  while preserving existing attribute configurability.
+- Correct required attributes, numeric ports and beta version pins in examples.
+
+### Security
+- Redact transform implementation payloads and structured validation inputs from
+  API diagnostics and logs.
+- Update Go, dependencies and pinned workflow actions. Gate releases on security
+  scans and serialize acceptance jobs that share staging fixtures.
+
+### Changed
+- Validate migration from the current stable v2.2.0 baseline.
+- Track nested attributes and block fields in schema snapshots; reject unsupported
+  backend controls during generation.
+- Mark beta GitHub releases as prereleases automatically and check the exact
+  changelog heading before publishing.
+- Consolidate development documentation and correct migration guidance.
+
 ## [3.0.0-beta.30] - 2026-08-25 (Pre-release)
 
 ### Added
@@ -103,14 +134,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `true`) — controls whether each output record is wrapped in an envelope
   with Kafka metadata (key, offset, timestamp, headers) alongside the value.
   Set to `false` to write only the record's own value structure. No effect on
-  CSV; for Parquet, only applies when the value is a record or map. Resolves
-  [ENG-2491](https://linear.app/streamkap/issue/ENG-2491).
+  CSV; for Parquet, only applies when the value is a record or map.
 - **`streamkap_destination_s3`: cross-account IAM role authentication** —
   `aws_auth_mode` (`Access Keys` default, or `Cross-Account Role`),
   `aws_sts_role_arn`, and `aws_sts_role_external_id` let Streamkap assume an
   IAM role in your account instead of using long-lived access keys. This
   schema catch-up reflects backend support already live
-  ([STR-4635](https://linear.app/streamkap/issue/STR-4635)/[STR-4636](https://linear.app/streamkap/issue/STR-4636))
   that had not yet been regenerated into the provider. `aws_access_key_id`
   and `aws_secret_access_key` change from `Required` to `Optional`/`Computed`
   to accommodate the new mode; existing configurations using access keys are

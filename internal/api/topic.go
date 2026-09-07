@@ -111,27 +111,28 @@ type TopicMetricsEntity struct {
 
 // TopicTableMetricsRequest represents the request body for /topics/table_metrics
 type TopicTableMetricsRequest struct {
-	Entities      []TopicMetricsEntity `json:"entities"`
-	TimestampFrom *string              `json:"timestamp_from,omitempty"` // ISO 8601 string
-	TimestampTo   *string              `json:"timestamp_to,omitempty"`   // ISO 8601 string
-	TimeType      *string              `json:"time_type,omitempty"`      // "latest", "timeseries", "timesummary"
-	TimeInterval  *int                 `json:"time_interval,omitempty"`
-	TimeUnit      *string              `json:"time_unit,omitempty"` // "minute", "hour", "day", "week", "month"
+	Entities []TopicMetricsEntity `json:"entities"`
 }
 
-// TopicMetrics represents metrics for a single topic
-type TopicMetrics struct {
-	MessagesIn   *int64   `json:"messages_in,omitempty"`
-	MessagesOut  *int64   `json:"messages_out,omitempty"`
-	BytesIn      *int64   `json:"bytes_in,omitempty"`
-	BytesOut     *int64   `json:"bytes_out,omitempty"`
-	Lag          *int64   `json:"lag,omitempty"`
-	AvgLatencyMs *float64 `json:"avg_latency_ms,omitempty"`
+type TopicTableKafkaMetrics struct {
+	PartitionCount    *int64 `json:"partition_count"`
+	ReplicationFactor *int64 `json:"replication_factor"`
+	RetentionMs       *int64 `json:"retention_ms"`
 }
 
-// TopicTableMetricsResponse represents the response from /topics/table_metrics
-// Map structure: entity_id -> topic_id -> metrics
-type TopicTableMetricsResponse map[string]map[string]TopicMetrics
+// TopicTableMetricsRow mirrors one value in the topic-id-keyed response from
+// POST /topics/table_metrics. Broker and ClickHouse values are nullable because
+// either subsystem may have no data for a valid topic.
+type TopicTableMetricsRow struct {
+	ID                   string                 `json:"id"`
+	Kafka                TopicTableKafkaMetrics `json:"kafka"`
+	LastMessageTimestamp *int64                 `json:"lastMessageTimestamp"`
+	SnapshotStatus       []map[string]any       `json:"snapshotStatus"`
+	RecordErrorTotal     *int64                 `json:"recordErrorTotal"`
+}
+
+// TopicTableMetricsResponse is keyed by Kafka topic ID.
+type TopicTableMetricsResponse map[string]TopicTableMetricsRow
 
 // TopicKafkaConfig mirrors the backend's TopicKafkaConfigs. The keys are
 // underscored field names carrying strings, not the dotted Kafka property names

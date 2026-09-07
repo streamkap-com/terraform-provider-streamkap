@@ -6,7 +6,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"
@@ -31,7 +31,7 @@ resource "streamkap_source_alloydb" "example-source-alloydb" {
 
   # Connection settings
   database_hostname = var.source_alloydb_hostname
-  database_port     = "5432"
+  database_port     = 5432
   database_user     = "streamkap_user"
   database_password = var.source_alloydb_password
   database_dbname   = "mydb"
@@ -71,7 +71,7 @@ resource "streamkap_source_alloydb" "example-source-alloydb" {
   ssh_enabled = false
   # When ssh_enabled = true, also configure:
   # ssh_host = "bastion.example.com"
-  # ssh_port = "22"
+  # ssh_port = 22
   # ssh_user = "streamkap"
 }
 

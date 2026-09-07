@@ -56,7 +56,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"
@@ -103,7 +103,7 @@ resource "streamkap_source_mongodbhosted" "example-source-mongodbhosted" {
   ssh_enabled = false
   # When ssh_enabled = true, also configure:
   # ssh_host = "bastion.example.com"
-  # ssh_port = "22"
+  # ssh_port = 22
   # ssh_user = "streamkap"
 }
 

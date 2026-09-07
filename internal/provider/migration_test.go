@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 )
 
-// Migration tests validate behavioral equivalence between OLD provider (v2.1.18)
+// Migration tests validate behavioral equivalence between the current stable provider (v2.2.0)
 // and NEW provider (this branch).
 //
 // Pattern:
@@ -70,7 +70,7 @@ resource "streamkap_source_postgresql" "migration_test" {
 
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
-			// Step 1: Create with OLD provider (v2.1.18)
+			// Step 1: Create with stable provider (v2.2.0)
 			{
 				ExternalProviders: legacyProviderConfig(),
 				Config:            config,
@@ -199,7 +199,7 @@ resource "streamkap_destination_snowflake" "migration_test" {
 // v3's pipeline schema is a breaking change from v2: `source_id` /
 // `destination_id` were replaced with nested `source { id name connector
 // topics }` and `destination { id name connector }` blocks. A single shared
-// HCL config can't satisfy both providers, so Step 1 (v2.1.18 provider) and
+// HCL config can't satisfy both providers, so Step 1 (v2.2.0 stable provider) and
 // Step 2 (v3 provider) require different configs — neither of which the
 // sibling source/destination migration tests have to deal with, because
 // their schemas stayed compatible across versions.
@@ -255,7 +255,7 @@ resource "streamkap_source_mysql" "migration_test" {
 
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
-			// Step 1: Create with OLD provider (v2.1.18)
+			// Step 1: Create with stable provider (v2.2.0)
 			{
 				ExternalProviders: legacyProviderConfig(),
 				Config:            config,
@@ -310,7 +310,7 @@ resource "streamkap_source_mongodb" "migration_test" {
 
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
-			// Step 1: Create with OLD provider (v2.1.18)
+			// Step 1: Create with stable provider (v2.2.0)
 			{
 				ExternalProviders: legacyProviderConfig(),
 				Config:            config,
@@ -373,7 +373,7 @@ resource "streamkap_source_dynamodb" "migration_test" {
 
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
-			// Step 1: Create with OLD provider (v2.1.18)
+			// Step 1: Create with stable provider (v2.2.0)
 			{
 				ExternalProviders: legacyProviderConfig(),
 				Config:            config,
@@ -441,7 +441,7 @@ resource "streamkap_source_sqlserver" "migration_test" {
 
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
-			// Step 1: Create with OLD provider (v2.1.18)
+			// Step 1: Create with stable provider (v2.2.0)
 			{
 				ExternalProviders: legacyProviderConfig(),
 				Config:            config,
@@ -484,7 +484,7 @@ resource "streamkap_source_kafkadirect" "migration_test" {
 
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
-			// Step 1: Create with OLD provider (v2.1.18)
+			// Step 1: Create with stable provider (v2.2.0)
 			{
 				ExternalProviders: legacyProviderConfig(),
 				Config:            config,
@@ -546,7 +546,7 @@ resource "streamkap_destination_clickhouse" "migration_test" {
 
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
-			// Step 1: Create with OLD provider (v2.1.18)
+			// Step 1: Create with stable provider (v2.2.0)
 			{
 				ExternalProviders: legacyProviderConfig(),
 				Config:            config,
@@ -599,7 +599,7 @@ resource "streamkap_destination_databricks" "migration_test" {
 
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
-			// Step 1: Create with OLD provider (v2.1.18)
+			// Step 1: Create with stable provider (v2.2.0)
 			{
 				ExternalProviders: legacyProviderConfig(),
 				Config:            config,
@@ -654,7 +654,7 @@ resource "streamkap_destination_postgresql" "migration_test" {
 
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
-			// Step 1: Create with OLD provider (v2.1.18)
+			// Step 1: Create with stable provider (v2.2.0)
 			{
 				ExternalProviders: legacyProviderConfig(),
 				Config:            config,
@@ -704,7 +704,7 @@ resource "streamkap_destination_s3" "migration_test" {
 
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
-			// Step 1: Create with OLD provider (v2.1.18)
+			// Step 1: Create with stable provider (v2.2.0)
 			{
 				ExternalProviders: legacyProviderConfig(),
 				Config:            config,
@@ -757,7 +757,7 @@ resource "streamkap_destination_iceberg" "migration_test" {
 
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
-			// Step 1: Create with OLD provider (v2.1.18)
+			// Step 1: Create with stable provider (v2.2.0)
 			{
 				ExternalProviders: legacyProviderConfig(),
 				Config:            config,

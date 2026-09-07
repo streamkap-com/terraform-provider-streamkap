@@ -6,7 +6,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"
@@ -32,7 +32,7 @@ resource "streamkap_source_elasticsearch" "example-source-elasticsearch" {
   # Connection settings
   es_host   = var.source_es_host # Can use semicolon for multiple hosts
   es_scheme = "https"            # Options: http, https
-  es_port   = "443"              # Default: 443 for HTTPS, 9200 for HTTP
+  es_port   = 443                # Default: 443 for HTTPS, 9200 for HTTP
 
   # Authentication
   http_auth          = "Basic" # Options: None, Basic

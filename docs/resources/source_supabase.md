@@ -29,7 +29,7 @@ resource "streamkap_source_supabase" "example" {
 
   # Connection details
   database_hostname = "db.xxxx.supabase.co"
-  database_port     = "5432"
+  database_port     = 5432
   database_user     = "postgres"
   database_password = var.db_password
   database_dbname   = "postgres"
@@ -61,7 +61,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"
@@ -86,7 +86,7 @@ resource "streamkap_source_supabase" "example-source-supabase" {
 
   # Connection settings
   database_hostname = var.source_supabase_hostname
-  database_port     = "5432"
+  database_port     = 5432
   database_user     = "postgres"
   database_password = var.source_supabase_password
   database_dbname   = "postgres"
@@ -126,7 +126,7 @@ resource "streamkap_source_supabase" "example-source-supabase" {
   ssh_enabled = false
   # When ssh_enabled = true, also configure:
   # ssh_host = "bastion.example.com"
-  # ssh_port = "22"
+  # ssh_port = 22
   # ssh_user = "streamkap"
 }
 

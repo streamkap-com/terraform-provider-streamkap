@@ -6,7 +6,7 @@ resource "streamkap_source_oracle" "example" {
 
   # Connection details
   database_hostname = "oracle.example.com"
-  database_port     = "1521"
+  database_port     = 1521
   database_user     = "streamkap_user"
   database_password = var.db_password
   database_dbname   = "ORCL"

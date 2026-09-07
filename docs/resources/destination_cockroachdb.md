@@ -26,6 +26,7 @@ This resource creates and manages a CockroachDB destination for Streamkap data p
 resource "streamkap_destination_cockroachdb" "example" {
   name                = "my-cockroachdb-dest"
   database_hostname   = var.cockroachdb_hostname
+  database_database   = "mydb"
   connection_username = var.cockroachdb_username
   connection_password = var.cockroachdb_password
 }
@@ -54,7 +55,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"

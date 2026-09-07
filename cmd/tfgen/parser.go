@@ -126,22 +126,23 @@ type ConfigEntry struct {
 
 // ValueObject represents the value field in a config entry.
 type ValueObject struct {
-	Control       string   `json:"control,omitempty"`
-	Type          string   `json:"type,omitempty"`           // "raw" or "dynamic"
-	Default       any      `json:"default,omitempty"`        // Can be string, int, bool, etc.
-	RawValue      any      `json:"raw_value,omitempty"`      // Static value when type=raw, user_defined=false
-	RawValues     []any    `json:"raw_values,omitempty"`     // Options for select controls (can be strings or bools)
-	FunctionName  string   `json:"function_name,omitempty"`  // Dynamic resolution function
-	Dependencies  []string `json:"dependencies,omitempty"`   // Dependencies for dynamic resolution
-	Max           *float64 `json:"max,omitempty"`            // Slider: maximum value
-	Min           *float64 `json:"min,omitempty"`            // Slider: minimum value
-	Step          *float64 `json:"step,omitempty"`           // Slider: step increment
-	Rows          *int     `json:"rows,omitempty"`           // Textarea: display rows
-	Placeholder   string   `json:"placeholder,omitempty"`    // Input placeholder text
-	Readonly      bool     `json:"readonly,omitempty"`       // Read-only field
-	Multiline     bool     `json:"multiline,omitempty"`      // Textarea: allow multiline input
-	EarlyResolved string   `json:"early_resolved,omitempty"` // Early resolution function
-	Validation    any      `json:"validation,omitempty"`     // Custom validation rules (flexible type)
+	Control        string   `json:"control,omitempty"`
+	Type           string   `json:"type,omitempty"`            // "raw" or "dynamic"
+	Default        any      `json:"default,omitempty"`         // Can be string, int, bool, etc.
+	RawValue       any      `json:"raw_value,omitempty"`       // Static value when type=raw, user_defined=false
+	RawValues      []any    `json:"raw_values,omitempty"`      // Options for select controls (can be strings or bools)
+	FunctionName   string   `json:"function_name,omitempty"`   // Dynamic resolution function
+	DeriveFunction string   `json:"derive_function,omitempty"` // Derives a user-defined value after input resolution
+	Dependencies   []string `json:"dependencies,omitempty"`    // Dependencies for dynamic resolution
+	Max            *float64 `json:"max,omitempty"`             // Slider: maximum value
+	Min            *float64 `json:"min,omitempty"`             // Slider: minimum value
+	Step           *float64 `json:"step,omitempty"`            // Slider: step increment
+	Rows           *int     `json:"rows,omitempty"`            // Textarea: display rows
+	Placeholder    string   `json:"placeholder,omitempty"`     // Input placeholder text
+	Readonly       bool     `json:"readonly,omitempty"`        // Read-only field
+	Multiline      bool     `json:"multiline,omitempty"`       // Textarea: allow multiline input
+	EarlyResolved  string   `json:"early_resolved,omitempty"`  // Early resolution function
+	Validation     any      `json:"validation,omitempty"`      // Custom validation rules (flexible type)
 }
 
 // Condition represents conditional visibility based on other field values.
@@ -206,6 +207,12 @@ func (e *ConfigEntry) IsSetOnce() bool {
 // IsReadOnly returns true if this config entry is read-only.
 func (e *ConfigEntry) IsReadOnly() bool {
 	return e.Value.Readonly
+}
+
+// IsBackendDerived reports whether the backend recalculates a readonly value
+// from other configuration. These fields must not preserve stale prior state.
+func (e *ConfigEntry) IsBackendDerived() bool {
+	return e.IsReadOnly() && e.Value.DeriveFunction != ""
 }
 
 // IsDynamic returns true if this config entry's value is dynamically computed by the backend.
@@ -344,7 +351,7 @@ func (e *ConfigEntry) BoolDefaultIsUnparseableString() bool {
 // This maps control types to Terraform types as specified in the audit document.
 func (e *ConfigEntry) TerraformType() TerraformType {
 	switch e.Value.Control {
-	case "string", "password", "textarea", "datetime":
+	case "string", "password", "textarea", "datetime", "code-editor":
 		return TerraformTypeString
 	case "json":
 		return TerraformTypeJSON
@@ -362,6 +369,19 @@ func (e *ConfigEntry) TerraformType() TerraformType {
 	default:
 		// Default to string for unknown control types
 		return TerraformTypeString
+	}
+}
+
+// HasSupportedControl reports whether TerraformType has an intentional mapping
+// for the backend control. Unknown controls must stop generation instead of
+// silently becoming string attributes with potentially incompatible values.
+func (e *ConfigEntry) HasSupportedControl() bool {
+	switch e.Value.Control {
+	case "string", "password", "textarea", "datetime", "code-editor", "json",
+		"number", "boolean", "toggle", "one-select", "multi-select", "slider":
+		return true
+	default:
+		return false
 	}
 }
 

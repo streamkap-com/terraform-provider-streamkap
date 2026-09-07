@@ -26,8 +26,10 @@ This resource creates and manages a SQL Server destination for Streamkap data pi
 resource "streamkap_destination_sqlserver" "example" {
   name                = "my-sqlserver-dest"
   database_hostname   = var.sqlserver_hostname
+  database_database   = "mydb"
   connection_username = var.sqlserver_username
   connection_password = var.sqlserver_password
+  table_name_prefix   = "dbo"
 }
 
 variable "sqlserver_hostname" {
@@ -54,7 +56,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"

@@ -26,6 +26,7 @@ This resource creates and manages a MySQL destination for Streamkap data pipelin
 resource "streamkap_destination_mysql" "example" {
   name                = "my-mysql-dest"
   database_hostname   = var.mysql_hostname
+  database_database   = "mydb"
   connection_username = var.mysql_username
   connection_password = var.mysql_password
 }
@@ -54,7 +55,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"

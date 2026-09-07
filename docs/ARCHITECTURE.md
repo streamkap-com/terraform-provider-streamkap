@@ -53,264 +53,16 @@ topic, tag, kafka_user, client_credential) and 7 data sources.
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Code Generation Architecture
+## Code generation
 
-The `tfgen` tool generates Terraform provider schemas from backend `configuration.latest.json` files.
+`cmd/tfgen` reads backend plugin configurations, merges common fields, applies
+`overrides.json`, and emits schemas, models and field mappings under
+`internal/generated/`. The handwritten resource wrappers add CRUD wiring and
+v2 attribute aliases.
 
-### Generation Flow
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│  Backend Repository (python-be-streamkap)                            │
-│  app/{sources,destinations,transforms}/plugins/*/configuration.latest.json │
-└───────────────────────────────┬──────────────────────────────────────┘
-                                │
-                                ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│  cmd/tfgen/parser.go                                                 │
-│  - Parse JSON into ConfigEntry structs                               │
-│  - Extract: name, type, control, default, required, sensitive        │
-│  - Filter: user_defined=true fields only                             │
-└───────────────────────────────┬──────────────────────────────────────┘
-                                │
-                                ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│  cmd/tfgen/generator.go                                              │
-│  - Load overrides from overrides.json                                │
-│  - Apply automatic type conversions (port fields → Int64)            │
-│  - Convert ConfigEntry → FieldData                                   │
-│  - Apply Go template to generate code                                │
-└───────────────────────────────┬──────────────────────────────────────┘
-                                │
-                                ▼
-┌──────────────────────────────────────────────────────────────────────┐
-│  internal/generated/{source,destination,transform}_*.go              │
-│  Generated code contains:                                            │
-│  - Nested model types (for map_nested overrides)                     │
-│  - Main model struct with tfsdk tags                                 │
-│  - Schema function returning schema.Schema                           │
-│  - Field mappings map[string]string                                  │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
-### Parser: Backend Config → ConfigEntry
-
-The parser reads `configuration.latest.json` and extracts field metadata:
-
-```go
-type ConfigEntry struct {
-    Name        string      // API field name: "database.hostname.user.defined"
-    Description string      // Field description
-    DisplayName string      // Human-readable name
-    UserDefined bool        // true = user-editable field
-    Value       ValueConfig // Type info, defaults, validation
-}
-
-type ValueConfig struct {
-    Control string      // UI control: string, password, number, boolean, one-select, etc.
-    Type    string      // raw, list
-    Default interface{} // Default value
-    Values  []string    // Enum values for one-select
-    Min     *float64    // Min for slider
-    Max     *float64    // Max for slider
-}
-```
-
-### Type Mapping: Control → Terraform Type
-
-| Backend Control | Terraform Type | Go Type | Schema Attribute |
-|-----------------|----------------|---------|------------------|
-| `string` | String | `types.String` | `schema.StringAttribute` |
-| `password` | String (sensitive) | `types.String` | `schema.StringAttribute` |
-| `textarea` | String | `types.String` | `schema.StringAttribute` |
-| `json` | String | `types.String` | `schema.StringAttribute` |
-| `datetime` | String | `types.String` | `schema.StringAttribute` |
-| `number` | Int64 | `types.Int64` | `schema.Int64Attribute` |
-| `slider` | Int64 | `types.Int64` | `schema.Int64Attribute` |
-| `boolean` | Bool | `types.Bool` | `schema.BoolAttribute` |
-| `toggle` | Bool | `types.Bool` | `schema.BoolAttribute` |
-| `one-select` | String | `types.String` | `schema.StringAttribute` |
-| `multi-select` | List[String] | `types.List` | `schema.ListAttribute` |
-
-### Automatic Type Conversions
-
-#### Port Fields → Int64
-
-Fields named `port` or ending in `_port` are automatically converted from String to Int64:
-
-```
-Backend: "ssh.port" with control="string", default="22"
-    ↓
-Generated: SSHPort types.Int64 with int64default.StaticInt64(22)
-```
-
-**Detection:** `tfAttrName == "port" || strings.HasSuffix(tfAttrName, "_port")`
-
-#### Go Abbreviation Handling
-
-Common abbreviations are preserved in uppercase per Go conventions:
-
-| Abbreviation | Example Input | Go Field Name |
-|--------------|---------------|---------------|
-| `ID` | `connector_id` | `ConnectorID` |
-| `SSH` | `ssh_port` | `SSHPort` |
-| `SSL` | `ssl_enabled` | `SSLEnabled` |
-| `SQL` | `delete_sql_execute` | `DeleteSQLExecute` |
-| `DB` | `db_name` | `DBName` |
-| `URL` | `api_url` | `APIURL` |
-| `API` | `api_key` | `APIKey` |
-| `AWS` | `aws_region` | `AWSRegion` |
-| `ARN` | `role_arn` | `RoleARN` |
-| `QA` | `auto_qa_dedupe` | `AutoQADedupe` |
-
-### Override System
-
-Some fields require special handling that can't be auto-generated. These are defined in `cmd/tfgen/overrides.json`.
-
-#### Override Types
-
-**`map_string`** - Simple string maps:
-```go
-// Generated model field:
-AutoQADedupeTableMapping map[string]types.String `tfsdk:"auto_qa_dedupe_table_mapping"`
-
-// Generated schema:
-"auto_qa_dedupe_table_mapping": schema.MapAttribute{
-    ElementType: types.StringType,
-    Optional:    true,
-}
-```
-
-**`map_nested`** - Nested object maps:
-```go
-// Generated nested model:
-type clickHouseTopicsConfigMapItemModel struct {
-    DeleteSQLExecute types.String `tfsdk:"delete_sql_execute"`
-}
-
-// Generated model field:
-TopicsConfigMap map[string]clickHouseTopicsConfigMapItemModel `tfsdk:"topics_config_map"`
-
-// Generated schema:
-"topics_config_map": schema.MapNestedAttribute{
-    Optional: true,
-    NestedObject: schema.NestedAttributeObject{
-        Attributes: map[string]schema.Attribute{
-            "delete_sql_execute": schema.StringAttribute{Optional: true},
-        },
-    },
-}
-```
-
-#### Current Overrides
-
-| Connector | Field | Type | Purpose |
-|-----------|-------|------|---------|
-| snowflake | `auto_qa_dedupe_table_mapping` | `map_string` | Table deduplication mapping |
-| clickhouse | `topics_config_map` | `map_nested` | Per-topic delete SQL config |
-
-#### Override Precedence
-
-When an `api_field_name` in overrides matches a field in the backend config, the override takes precedence and the backend field is skipped. This prevents duplicate fields.
-
-An override's `api_field_name` **must** resolve to a field the backend declares; tfgen fails the build otherwise. Overrides are hand-written and nothing else validates them, so an override can outlive the backend field it targets and go on generating an attribute that Terraform accepts and the backend silently discards. That is not hypothetical: `sqlserveraws.snapshot_custom_table_config` did exactly that until the check was added.
-
-### Generated Code Structure
-
-Each generated file contains:
-
-```go
-// 1. Nested model types (if map_nested overrides exist)
-type clickHouseTopicsConfigMapItemModel struct {
-    DeleteSQLExecute types.String `tfsdk:"delete_sql_execute"`
-}
-
-// 2. Main model struct
-type DestinationClickhouseModel struct {
-    ID              types.String   `tfsdk:"id"`
-    Name            types.String   `tfsdk:"name"`
-    Connector       types.String   `tfsdk:"connector"`
-    // ... connector-specific fields
-    TopicsConfigMap map[string]clickHouseTopicsConfigMapItemModel `tfsdk:"topics_config_map"`
-    Timeouts        timeouts.Value `tfsdk:"timeouts"`
-}
-
-// 3. Schema function
-func DestinationClickhouseSchema() schema.Schema {
-    return schema.Schema{
-        Description: "Manages a ClickHouse destination connector.",
-        Attributes: map[string]schema.Attribute{
-            // ... all attributes with descriptions, defaults, validators
-        },
-    }
-}
-
-// 4. Field mappings
-var DestinationClickhouseFieldMappings = map[string]string{
-    "hostname": "connection.hostname",
-    "port":     "connection.port.user.defined",
-    // ... TF attribute → API field name
-}
-```
-
-### Validator Generation
-
-Validators are automatically generated based on backend config:
-
-| Backend Config | Generated Validator |
-|----------------|---------------------|
-| `control: "one-select"` with `values: ["a", "b"]` | `stringvalidator.OneOf("a", "b")` |
-| `control: "slider"` with `min: 1, max: 100` | `int64validator.Between(1, 100)` |
-
-### Sensitive Field Detection
-
-Fields are marked sensitive (`Sensitive: true`) when:
-- `control: "password"`
-- `encrypt: true` in backend config
-- the attribute is named or suffixed `api_key` / `authorization` (`isSecretField`
-  in `cmd/tfgen/generator.go`) — the webhook plugins ship `api.key` and the
-  http-sink ships `http.headers.authorization` with neither flag set, and the
-  backend keeps regressing it. Fix credential-marking gaps there, never by editing
-  `internal/generated/`.
-
-### Default Value Handling
-
-| Backend | Generated |
-|---------|-----------|
-| `default: "value"` | `stringdefault.StaticString("value")` |
-| `default: 5432` (on port field) | `int64default.StaticInt64(5432)` |
-| `default: true` | `booldefault.StaticBool(true)` |
-
-### Required/Optional/Computed Logic
-
-| Backend Config | Terraform Schema |
-|----------------|------------------|
-| `required: true`, no default | `Required: true` |
-| `required: true`, has default | `Optional: true, Computed: true` |
-| `required: false` | `Optional: true` |
-| `user_defined: false` | Field skipped (not user-editable) |
-
-## Supported Type Mappings
-
-### Nested Map Types
-
-The base resource supports nested map types (`map[string]struct`) for complex configurations:
-
-**ClickHouse `topics_config_map`:**
-```hcl
-resource "streamkap_destination_clickhouse" "example" {
-  # ...
-  topics_config_map = {
-    "my_topic" = {
-      delete_sql_execute = "DELETE FROM my_table WHERE id = ?"
-    }
-  }
-}
-```
-
-(The backend plugin is named `sqlserveraws`, so the generated schema is
-`internal/generated/source_sqlserveraws.go` — but the Terraform resource it backs
-is `streamkap_source_sqlserver`. `overrides.json` keys on the backend name.)
+Use `STREAMKAP_BACKEND_PATH=<backend-main-checkout> make generate` to generate
+schemas before registry documentation. See [Code Generator](CODE_GENERATOR.md)
+for type mapping, defaults, sensitivity, overrides and the new-connector procedure.
 
 ## BaseTransformResource Design
 
@@ -336,7 +88,9 @@ resource "streamkap_transform_map_filter" "example" {
 }
 ```
 
-**Note:** If `implementation_json` is not specified, the implementation is managed outside Terraform (e.g., via Streamkap UI) and is preserved during updates.
+If `implementation_json` is omitted, updates preserve the implementation managed
+outside Terraform. With `deploy = true`, terminal failed or stopped deployment
+status produces an error while preserving the saved transform in state.
 
 ## Non-Connector Resources
 
@@ -357,8 +111,8 @@ them unusable).
 - `password` is write-only (never returned by the API; Create/Update keep the
   configured value, Read keeps the prior state value)
 - `kafka_acls` is a `ListNestedBlock` with ACL rules (topic_name, operation,
-  resource_pattern_type, resource). Blocks are invisible to schema snapshots, so
-  the ACL sub-schema has no drift protection — same as `pipeline`
+  resource_pattern_type, resource). Schema snapshots track these nested fields
+  and their flags, including pipeline attributes and timeout blocks.
 - Import uses username as the ID
 - No individual GET endpoint — reads filter from list
 
@@ -608,6 +362,18 @@ attributes. Edit the wrappers freely; never edit `internal/generated/`.
 
 ## Error Handling
 
+Authentication honors the provider Configure context. Unknown admin tenant or
+service scope is rejected before client creation, preventing a fallback to the
+credential's default tenant.
+
+The client retries transient failures for eligible operations. Client-credential
+creation does not retry failed responses. The endpoint has no idempotency key,
+and a failed response can hide successful creation, so replaying the request
+could issue an extra credential.
+
+Structured validation errors are reported without their input values, and
+transform implementation bodies are omitted from request logs.
+
 ```go
 // API errors are returned in JSON format:
 {
@@ -623,6 +389,7 @@ resp.Diagnostics.AddError(
 
 ## State Management
 
+- Empty connector maps clear mappings; null leaves them unset. Marshaling preserves this distinction.
 - ID is stored as `id` attribute (computed)
 - Sensitive fields use `Sensitive: true` in schema
 - Computed fields use `UseStateForUnknown()` plan modifier
@@ -657,69 +424,11 @@ resp.Diagnostics.AddError(
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Generator Tests (`cmd/tfgen/*_test.go`)
-
-**Unit tests** verify individual components:
-- `TestToPascalCase` - Attribute name to Go field name conversion
-- `TestFieldTypeMapping` - Control type → Terraform type mapping
-- `TestSensitiveFieldHandling` - Sensitive field detection
-- `TestDefaultValueHandling` - Default value generation
-- `TestValidatorGeneration` - Validator code generation
-
-**Integration tests** verify the full pipeline:
-- `TestGenerateFile_Integration` - Full file generation
-- `TestGeneratePostgreSQL_Integration` - Real connector generation
-- `TestGenerateSnowflake_Integration` - Connector with overrides
-
-```go
-// Example integration test
-func TestGeneratePostgreSQL_Integration(t *testing.T) {
-    backendPath := os.Getenv("STREAMKAP_BACKEND_PATH")
-    if backendPath == "" {
-        t.Skip("STREAMKAP_BACKEND_PATH not set")
-    }
-    // Parse real backend config
-    // Generate code
-    // Verify output compiles
-}
-```
-
-### Acceptance Tests (`internal/provider/*_test.go`)
-
-Acceptance tests create real resources in the Streamkap API:
-
-```go
-func TestAccSourcePostgreSQL_basic(t *testing.T) {
-    resource.Test(t, resource.TestCase{
-        ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-        Steps: []resource.TestStep{
-            // Step 1: Create
-            {
-                Config: testAccSourcePostgreSQLConfig("test-source"),
-                Check: resource.ComposeAggregateTestCheckFunc(
-                    resource.TestCheckResourceAttr(
-                        "streamkap_source_postgresql.test", "name", "test-source"),
-                    resource.TestCheckResourceAttrSet(
-                        "streamkap_source_postgresql.test", "id"),
-                ),
-            },
-            // Step 2: Import
-            {
-                ResourceName:      "streamkap_source_postgresql.test",
-                ImportState:       true,
-                ImportStateVerify: true,
-                ImportStateVerifyIgnore: []string{"database_password"},
-            },
-            // Step 3: Update
-            {
-                Config: testAccSourcePostgreSQLConfig("test-source-updated"),
-                Check: resource.TestCheckResourceAttr(
-                    "streamkap_source_postgresql.test", "name", "test-source-updated"),
-            },
-        },
-    })
-}
-```
+Generator tests cover parser inputs and emitted schemas. Offline API tests use
+`httpmock`; acceptance tests use the Terraform testing framework against a real
+backend. Schema snapshots track the public attribute contract. Read
+`internal/provider/schema_compat_test.go` for what is compared and
+`internal/provider/migration_test.go` for the v2 configurations exercised.
 
 ### Test Environment Variables
 
@@ -771,31 +480,42 @@ The core gate. Runs on every PR and push to `develop` / `main`, needs no
 credentials (so it also covers fork PRs):
 1. Build - `go build ./...`
 2. Vet - `go vet ./...`
-3. Unit + schema-compat + validator tests - `make test test-schema test-validators`
+3. Unit + schema-compat + validator tests - `make test-all`
 4. Lint - `golangci-lint` (separate job)
+5. Workflow validation - `actionlint` (separate job)
 
 It pins `TF_ACC=""` for the whole workflow so a stray value can never turn the
 credential-free tiers into a live-API run.
 
 ### docs-drift.yml - Docs match committed schemas
 
-On PRs touching `internal/generated/`, `docs/`, `templates/`, `examples/provider/`,
+On PRs touching `internal/`, `docs/`, `templates/`, `examples/`,
 `main.go` or `go.mod`: re-renders the docs from the *committed* schemas with
 `tfplugindocs` (no backend needed) and fails if `docs/` changes. This structurally
 prevents the beta.18 bug where `go generate ./...` rendered docs one regen behind.
 
 ### acceptance.yml / pr-acceptance.yml / migration.yml - Acceptance suites
 
-`acceptance.yml` runs the full `TestAcc` suite on a schedule and on push;
-`pr-acceptance.yml` runs a curated subset (`scripts/acceptance-tests.txt`) on PRs;
-`migration.yml` runs the v2 → v3 `TestAcc.*Migration` suite. All three need API
-credentials, sourced from 1Password, so they skip fork PRs.
+`acceptance.yml` runs the full `TestAcc` suite on a schedule, pushes to `main` and `develop`,
+and manual dispatch, using Terraform 1.0.11, the existing 1.8–1.11 lines, and 1.16.1. Scheduled runs use the
+repository default branch. `pr-acceptance.yml` runs a curated subset
+(`scripts/acceptance-tests.txt`) on same-repository PRs. `migration.yml` runs
+the v2 → v3 `TestAcc.*Migration` suite on same-repository PRs to `main` and
+`develop`, and on manual dispatch.
+
+All three share the `streamkap-staging-fixtures` concurrency group and do not
+cancel active runs. `queue: max` retains up to 100 waiting jobs, because their fixtures and sweepers share a tenant. PR
+acceptance loads credentials from 1Password; nightly acceptance and migration
+use environment secrets. Tests may skip when connector credentials are absent;
+a green job is not proof that every connector ran.
 
 ### security.yml - Security Scanning
 
 Runs on push and PR:
+- **govulncheck** - Go call-graph vulnerability analysis
 - **Trivy** - Vulnerability scanning
 - **Checkov** - Infrastructure-as-code security
+- **Gitleaks** - Secret scanning of the checked-out tree
 
 ### regenerate.yml - Schema Regeneration
 
@@ -806,6 +526,11 @@ repository. Locally the equivalent is
 ### release.yml - Release Automation
 
 Triggered on version tags (`v*`):
-1. Run GoReleaser
-2. Build binaries for all platforms
-3. Publish to Terraform Registry
+1. Verify stable tags belong to `main` and beta tags to `develop`; require a matching
+   changelog heading, unchanged module metadata, a successful build and
+   credential-free tests.
+2. Require the reusable security scans to pass.
+3. Build and sign release archives with GoReleaser, then publish GitHub release assets for the Terraform Registry.
+
+Prerelease tags are marked as prereleases in GitHub. Pushing a tag publishes
+public artifacts; it still requires explicit release approval.

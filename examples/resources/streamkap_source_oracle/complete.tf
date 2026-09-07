@@ -6,7 +6,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"
@@ -31,7 +31,7 @@ resource "streamkap_source_oracle" "example-source-oracle" {
 
   # Connection settings
   database_hostname = var.source_oracle_hostname
-  database_port     = "1521"
+  database_port     = 1521
   database_user     = "c##streamkap"
   database_password = var.source_oracle_password
   database_dbname   = "ORCL" # CDB name for container databases
@@ -64,7 +64,7 @@ resource "streamkap_source_oracle" "example-source-oracle" {
   ssh_enabled = false
   # When ssh_enabled = true, also configure:
   # ssh_host = "bastion.example.com"
-  # ssh_port = "22"
+  # ssh_port = 22
   # ssh_user = "streamkap"
 }
 

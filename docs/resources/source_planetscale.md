@@ -29,7 +29,7 @@ resource "streamkap_source_planetscale" "example" {
 
   # Connection details
   database_hostname = "aws.connect.psdb.cloud"
-  database_port     = "443"
+  database_port     = 443
   database_user     = "branch_user"
   database_password = var.db_password
 
@@ -58,7 +58,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"
@@ -83,7 +83,7 @@ resource "streamkap_source_planetscale" "example-source-planetscale" {
 
   # Connection settings
   database_hostname = var.source_planetscale_hostname
-  database_port     = "443"
+  database_port     = 443
   database_user     = "eu0akgouilvei5flomiy"
   database_password = var.source_planetscale_password
 
@@ -110,7 +110,7 @@ resource "streamkap_source_planetscale" "example-source-planetscale" {
   ssh_enabled = false
   # When ssh_enabled = true, also configure:
   # ssh_host = "bastion.example.com"
-  # ssh_port = "22"
+  # ssh_port = 22
   # ssh_user = "streamkap"
 }
 

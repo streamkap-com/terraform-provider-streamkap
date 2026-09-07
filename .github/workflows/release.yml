@@ -16,27 +16,46 @@ env:
   TF_ACC: ""
 
 jobs:
-  # Pushing a tag used to be sufficient to publish a signed public release: goreleaser
-  # ran with no build, no tests and no changelog check, so a `git push --tags` from a
-  # stale local branch could ship a commit that nothing had ever compiled. These checks
-  # are credential-free and take about a minute; goreleaser now `needs:` them.
+  security:
+    uses: ./.github/workflows/security.yml
+
+  # Validate the tagged source before importing the release signing key.
   preflight:
     name: Preflight (build, tests, changelog)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
 
-      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+      - name: Verify tag and release branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            release_branch=main
+          elif [[ "$GITHUB_REF_NAME" =~ ^v3\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-beta\.(0|[1-9][0-9]*)$ ]]; then
+            release_branch=develop
+          else
+            echo "::error::Unsupported release tag: $GITHUB_REF_NAME"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor HEAD "origin/$release_branch"; then
+            echo "::error::Release commit is not contained in $release_branch."
+            exit 1
+          fi
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: "go.mod"
           cache: true
 
       # The -short tier includes resource.UnitTest cases, which shell out to a real
       # terraform binary.
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
-          terraform_version: '1.11.*'
+          terraform_version: '1.16.1'
           terraform_wrapper: false
 
       # CHANGELOG.md headings look like `## [3.0.0-beta.25] - 2026-07-10 (Pre-release)`,
@@ -46,12 +65,15 @@ jobs:
         run: |
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
-          if ! grep -qF "[${version}]" CHANGELOG.md; then
+          if ! awk -v heading="## [${version}]" '$0 == heading || index($0, heading " - ") == 1 { found=1 } END { exit !found }' CHANGELOG.md; then
             echo "::error::CHANGELOG.md has no [${version}] entry for tag ${GITHUB_REF_NAME}."
             echo "Add the release section to CHANGELOG.md, then re-tag."
             exit 1
           fi
           echo "CHANGELOG.md documents ${version}."
+
+      - name: Module metadata is tidy
+        run: go mod tidy -diff
 
       - name: Build
         run: go build ./...
@@ -60,29 +82,30 @@ jobs:
         run: make test-all
 
   goreleaser:
-    needs: preflight
+    needs: [preflight, security]
     runs-on: ubuntu-latest
     permissions:
       # Creating a release and uploading assets counts as writing contents.
       contents: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Allow goreleaser to access older tag information.
           fetch-depth: 0
-      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: "go.mod"
           cache: true
       - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@cb9bde2e2525e640591a934b1fd28eef1dcaf5e5 # v6.2.0
+        uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
         id: import_gpg
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@90a3faa9d0182683851fbfa97ca1a2cb983bfca3 # v6.2.1
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
+          version: v2.18.1
           args: release --clean
         env:
           # GitHub sets the GITHUB_TOKEN secret automatically.

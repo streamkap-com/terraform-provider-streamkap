@@ -29,7 +29,7 @@ resource "streamkap_source_db2" "example" {
 
   # Connection details
   database_hostname = "db2.example.com"
-  database_port     = "50000"
+  database_port     = 50000
   database_user     = "streamkap_user"
   database_password = var.db_password
   database_dbname   = "SAMPLE"
@@ -60,7 +60,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"
@@ -85,7 +85,7 @@ resource "streamkap_source_db2" "example-source-db2" {
 
   # Connection settings
   database_hostname = var.source_db2_hostname
-  database_port     = "50000" # DB2 default port
+  database_port     = 50000 # DB2 default port
   database_user     = "db2admin"
   database_password = var.source_db2_password
   database_dbname   = "SAMPLE"
@@ -108,7 +108,7 @@ resource "streamkap_source_db2" "example-source-db2" {
   ssh_enabled = false
   # When ssh_enabled = true, also configure:
   # ssh_host = "bastion.example.com"
-  # ssh_port = "22"
+  # ssh_port = 22
   # ssh_user = "streamkap"
 }
 

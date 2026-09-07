@@ -6,7 +6,7 @@ resource "streamkap_source_elasticsearch" "example" {
 
   # Connection details
   es_host            = "elasticsearch.example.com"
-  es_port            = "443"
+  es_port            = 443
   http_auth_user     = "elastic"
   http_auth_password = var.es_password
 

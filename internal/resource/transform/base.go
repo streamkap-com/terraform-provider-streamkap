@@ -140,6 +140,7 @@ func (r *BaseTransformResource) Schema(ctx context.Context, req resource.SchemaR
 	baseSchema.Blocks = map[string]schema.Block{
 		"timeouts": timeouts.Block(ctx, timeouts.Opts{
 			Create: true,
+			Read:   true,
 			Update: true,
 			Delete: true,
 		}),
@@ -358,6 +359,21 @@ func (r *BaseTransformResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
+	var timeoutsValue timeouts.Value
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("timeouts"), &timeoutsValue)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	readTimeout, diags := timeoutsValue.Read(ctx, helper.DefaultReadTimeout)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+
 	// Create a new model instance for this transform
 	model := r.config.NewModelInstance()
 
@@ -468,11 +484,9 @@ func (r *BaseTransformResource) Read(ctx context.Context, req resource.ReadReque
 	//                      state (users rely on this field for automation
 	//                      gates).
 	//
-	// The backend's /job_status endpoint rewrites HTTPException(404) into 400
-	// through a broad except-clause (see app/api/transforms_api.py::
-	// get_jobs_status), so we cannot rely on the HTTP status to tell
-	// "transform truly not deployed" apart from "transient failure".
-	// We fall back to matching the detail string: "Job not found" /
+	// Current backends return 404 for a missing transform or job. Match the
+	// detail as well so refresh remains compatible with older deployments that
+	// rewrote the same misses to 400. "Job not found" /
 	// "Transform not found" are authoritative "not deployed" signals and
 	// should demote prior state to UNKNOWN. Any other error is treated as
 	// transient — preserve the prior value so a 5xx or network blip does
@@ -511,9 +525,8 @@ func (r *BaseTransformResource) Read(ctx context.Context, req resource.ReadReque
 
 // isJobNotDeployedError returns true when the backend's /job_status response
 // means "no deployment exists" as opposed to a transient failure. The backend
-// rewrites its 404 into a 400 via a broad except-clause, so we match on the
-// detail string the handler emits for both transform-level and job-level
-// misses (see app/api/transforms_api.py::get_jobs_status).
+// has used the same detail strings with both 404 and 400 responses, so match
+// the handler's transform-level and job-level messages rather than one status.
 func isJobNotDeployedError(err error) bool {
 	if err == nil {
 		return false
@@ -819,8 +832,10 @@ func (r *BaseTransformResource) deployFromPlan(ctx context.Context, transformID 
 		// Poll for RUNNING status — returns final status to avoid redundant API call
 		finalStatus, err := r.waitForDeployment(ctx, transformID)
 		if err != nil {
-			diagnostics.AddWarning("Transform deployed but not yet active",
-				fmt.Sprintf("Deployment initiated but status check timed out: %s", err))
+			diagnostics.AddError(
+				"Transform deployment failed",
+				fmt.Sprintf("Deployment did not reach RUNNING: %s", err),
+			)
 		}
 		if finalStatus != nil {
 			diagnostics.Append(state.SetAttribute(ctx, path.Root("connector_status"), types.StringValue(finalStatus.Status))...)
@@ -857,16 +872,24 @@ func (r *BaseTransformResource) waitForDeployment(ctx context.Context, transform
 				continue
 			}
 			tflog.Debug(ctx, fmt.Sprintf("Transform %s deployment status: %s", transformID, status.Status))
-			switch status.Status {
-			case constants.JobStatusRunning:
-				return status, nil
-			case constants.JobStatusFailed:
-				return status, fmt.Errorf("transform deployment failed (Flink status: %s)", constants.JobStatusFailed)
-			case constants.JobStatusCanceled, constants.JobStatusStopped:
-				return status, fmt.Errorf("transform deployment stopped (status: %s)", status.Status)
-				// INITIALIZING, DEPLOYING, CREATED, RESTARTING — keep polling
+			done, outcomeErr := deploymentStatusOutcome(status.Status)
+			if done {
+				return status, outcomeErr
 			}
 		}
+	}
+}
+
+func deploymentStatusOutcome(status string) (bool, error) {
+	switch status {
+	case constants.JobStatusRunning:
+		return true, nil
+	case constants.JobStatusFailed:
+		return true, fmt.Errorf("transform deployment failed (Flink status: %s)", status)
+	case constants.JobStatusCanceled, constants.JobStatusStopped:
+		return true, fmt.Errorf("transform deployment stopped (status: %s)", status)
+	default:
+		return false, nil
 	}
 }
 

@@ -26,6 +26,7 @@ This resource creates and manages an Oracle destination for Streamkap data pipel
 resource "streamkap_destination_oracle" "example" {
   name                = "my-oracle-dest"
   database_hostname   = var.oracle_hostname
+  database_database   = "ORCL"
   connection_username = var.oracle_username
   connection_password = var.oracle_password
 }
@@ -54,7 +55,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"

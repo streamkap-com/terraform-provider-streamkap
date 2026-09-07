@@ -2,7 +2,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "3.0.0-beta.30"
     }
   }
   required_version = ">= 1.5.0"
@@ -34,7 +34,7 @@ resource "streamkap_destination_clickhouse" "example-destination-clickhouse" {
   hostname            = var.destination_clickhouse_hostname
   connection_username = var.destination_clickhouse_connection_username
   connection_password = var.destination_clickhouse_connection_password
-  port                = "8443"
+  port                = 8443
   database            = "demo"
   ssl                 = true
   schema_evolution    = "basic"

@@ -179,6 +179,27 @@ func TestUpdateClientCredential_PatchesRolesAndDescription(t *testing.T) {
 	assert.Equal(t, "updated", cred.Description)
 }
 
+func TestCreateClientCredential_DoesNotRetryFailedResponse(t *testing.T) {
+	for _, status := range []int{http.StatusTooManyRequests, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			httpmock.Activate()
+			defer httpmock.DeactivateAndReset()
+			baseURL := "https://api.test.streamkap.com"
+			client := NewClient(&Config{BaseURL: baseURL, Retry: &RetryConfig{MaxRetries: 1}})
+			client.SetToken(&Token{AccessToken: "test-token"})
+			requests := 0
+			httpmock.RegisterResponder(http.MethodPost, baseURL+"/auth/client-credentials", func(req *http.Request) (*http.Response, error) {
+				requests++
+				return httpmock.NewJsonResponse(status, APIErrorResponse{Detail: "upstream failure"})
+			})
+			credential, err := client.CreateClientCredential(context.Background(), CreateClientCredentialRequest{RoleIDs: []string{"role-1"}, Description: "terraform-managed"})
+			require.Error(t, err)
+			assert.Nil(t, credential)
+			assert.Equal(t, 1, requests, "a retry can create an untracked active credential")
+		})
+	}
+}
+
 func TestListRoles_Decodes(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()

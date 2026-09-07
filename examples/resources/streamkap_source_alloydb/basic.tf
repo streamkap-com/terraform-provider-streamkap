@@ -6,7 +6,7 @@ resource "streamkap_source_alloydb" "example" {
 
   # Connection details
   database_hostname = "alloydb.example.com"
-  database_port     = "5432"
+  database_port     = 5432
   database_user     = "streamkap_user"
   database_password = var.db_password
   database_dbname   = "mydb"
