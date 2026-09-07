@@ -70,8 +70,11 @@ type TopicDetails struct {
 	Entity        *TopicEntity        `json:"entity,omitempty"`
 	Prefix        *string             `json:"prefix,omitempty"`
 	Serialization *TopicSerialization `json:"serialization,omitempty"`
-	Messages7D    *int64              `json:"messages_7d,omitempty"`
-	Messages30D   *int64              `json:"messages_30d,omitempty"`
+	// The topic details endpoint declares neither field and the backend has no
+	// such key, so both always decode to nil. Kept so the data source keeps
+	// parsing; see the deprecation notices on the Terraform attributes.
+	Messages7D  *int64 `json:"messages_7d,omitempty"`
+	Messages30D *int64 `json:"messages_30d,omitempty"`
 }
 
 // TopicDetailsResponse represents the paginated response from /topics/details

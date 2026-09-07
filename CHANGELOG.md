@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   API returns. Preserve legacy inputs and result fields with deprecation notices;
   unavailable metrics and ambiguous entity associations are null.
 - Cap and redact API error bodies surfaced in diagnostics.
+- Deprecate `messages_7d` and `messages_30d` on `streamkap_topics`; the topic
+  details API has never returned them, so both are always null.
 - Say when a request was replayed after a transient failure, so an
   "already exists" error from a retried create is not read as a name collision.
 - Preserve redacted error context when the API returns null or empty details.

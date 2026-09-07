@@ -351,6 +351,8 @@ The API client exposes `CreateTransform / GetTransform / UpdateTransform / Delet
 - Empty connector maps (`{}`) clear mappings; null leaves them unset. Keep nil and non-nil empty Go maps distinct when marshaling.
 - Transform `deploy = true` must report terminal deployment failure as an error. A saved transform ID still belongs in state so the failed deployment can be recovered.
 - Transform implementation bodies and validation-error input values must be redacted before logging.
+- **A pipeline update wipes `periodic_audit`.** `UpdatePipelineReq.periodic_audit` defaults to `None`, and the backend only copies it into the entity body when it is non-null; `periodic_audit` is in `_CONDITIONAL_ENTITY_FIELDS`, so an absent key is `$unset`. The provider does not model the field, so every `terraform apply` that updates a pipeline deletes a periodic row-level audit configured in the UI or API. Echoing the stored value straight back is **not** the fix: the backend runs `audit_config["topics"]` through `get_topic_ids_from_pretty_name`, which unconditionally prepends `source_<id>.`, so stored ids come back double-prefixed. A fix has to reverse ids to pretty names first, and needs acceptance coverage.
+- `streamkap_topics` exposes `messages_7d` and `messages_30d`, which the topic details API has never returned — both are always null and are deprecated.
 - Sources Read uses `?secret_returned=true` to get sensitive fields back.
 - POST/PUT/DELETE on `/sources`, `/destinations`, `/pipelines` must include `&wait=false` — Mock URLs need it too.
 - List endpoints default `page_size=10` (max 100). `ListSources/ListDestinations/ListPipelines` paginate until `resp.Total`; anything else silently truncates tenants with >10 resources (affects sweepers and adopt-on-exists).
