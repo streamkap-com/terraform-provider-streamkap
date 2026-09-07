@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Correct required attributes, numeric ports and beta version pins in examples.
 
 ### Security
+- Update gRPC to v1.83.1 to address CVE-2026-84304.
 - Redact transform implementation payloads and structured validation inputs from
   API diagnostics and logs.
 - Update Go, dependencies and pinned workflow actions. Gate releases on security

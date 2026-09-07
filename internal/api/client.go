@@ -375,6 +375,10 @@ func (s *streamkapAPI) do(ctx context.Context, req *http.Request, result any, al
 }
 
 func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, bearer string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
