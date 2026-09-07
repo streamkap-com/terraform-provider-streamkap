@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	ds "github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -156,8 +157,8 @@ func (d *TopicMetricsDataSource) Schema(ctx context.Context, req ds.SchemaReques
 							Computed:            true,
 						},
 						"retention_ms": schema.Int64Attribute{
-							Description:         "Kafka retention period in milliseconds. Null when broker metadata is unavailable.",
-							MarkdownDescription: "Kafka retention period in milliseconds. Null when broker metadata is unavailable.",
+							Description:         "Kafka retention period in milliseconds. -1 means unlimited retention. Null when broker metadata is unavailable.",
+							MarkdownDescription: "Kafka retention period in milliseconds. `-1` means unlimited retention. Null when broker metadata is unavailable.",
 							Computed:            true,
 						},
 						"last_message_timestamp": schema.Int64Attribute{
@@ -166,8 +167,8 @@ func (d *TopicMetricsDataSource) Schema(ctx context.Context, req ds.SchemaReques
 							Computed:            true,
 						},
 						"snapshot_status_json": schema.StringAttribute{
-							Description:         "Snapshot status entries as JSON. The backend may add fields to these entries.",
-							MarkdownDescription: "Snapshot status entries as JSON. The backend may add fields to these entries.",
+							Description:         "Snapshot status entries as a JSON array, empty when the backend reports none. The backend may add fields to these entries.",
+							MarkdownDescription: "Snapshot status entries as a JSON array, empty when the backend reports none. The backend may add fields to these entries.",
 							Computed:            true,
 						},
 						"record_error_total": schema.Int64Attribute{
@@ -292,7 +293,11 @@ func flattenTopicTableMetrics(metrics api.TopicTableMetricsResponse, entities []
 		if value, ok := entityByTopicID[topicID]; ok {
 			entityID = value
 		}
-		snapshotStatus, err := json.Marshal(row.SnapshotStatus)
+		snapshotStatusEntries := row.SnapshotStatus
+		if snapshotStatusEntries == nil {
+			snapshotStatusEntries = []map[string]any{}
+		}
+		snapshotStatus, err := json.Marshal(snapshotStatusEntries)
 		if err != nil {
 			diags.AddError("Error mapping topic metrics", fmt.Sprintf("Unable to encode snapshot status for topic %s: %s", topicID, err))
 			continue
@@ -315,5 +320,31 @@ func flattenTopicTableMetrics(metrics api.TopicTableMetricsResponse, entities []
 			AvgLatencyMs:         types.Float64Null(),
 		})
 	}
+	warnUnreturnedTopics(entityByTopicID, metrics, diags)
 	return results
+}
+
+// warnUnreturnedTopics reports requested topics absent from the response. The
+// backend drops topics the tenant/service does not own rather than returning
+// them with null metrics, which otherwise shortens `results` with no signal.
+func warnUnreturnedTopics(requested map[string]types.String, metrics api.TopicTableMetricsResponse, diags *diag.Diagnostics) {
+	missing := make([]string, 0, len(requested))
+	for topicID := range requested {
+		if _, ok := metrics[topicID]; !ok {
+			missing = append(missing, topicID)
+		}
+	}
+	if len(missing) == 0 {
+		return
+	}
+	sort.Strings(missing)
+
+	diags.AddWarning(
+		"Topic metrics not returned for some requested topics",
+		fmt.Sprintf(
+			"The API returned no row for %d of the requested topics, so they are absent from results. "+
+				"This usually means the topic does not exist or is not owned by the authenticated tenant and service: %s",
+			len(missing), strings.Join(missing, ", "),
+		),
+	)
 }

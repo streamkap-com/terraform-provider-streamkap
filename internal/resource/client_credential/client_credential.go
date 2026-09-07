@@ -194,7 +194,17 @@ func (r *ClientCredentialResource) Create(ctx context.Context, req res.CreateReq
 		ServiceID:   plan.ServiceID.ValueString(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError("Error creating client credential", fmt.Sprintf("Unable to create client credential: %s", err))
+		// This create is deliberately not retried, so a lost response means the
+		// credential may exist on the backend while Terraform has no record of
+		// it — and unlike sources or pipelines there is no name uniqueness to
+		// surface it on the next apply.
+		resp.Diagnostics.AddError(
+			"Error creating client credential",
+			fmt.Sprintf("Unable to create client credential: %s\n\n"+
+				"If the request reached the backend before failing, a credential may have been created "+
+				"without being recorded in state. Check the client credentials list in the Streamkap UI "+
+				"and delete any orphan, or import it, before retrying.", err),
+		)
 		return
 	}
 

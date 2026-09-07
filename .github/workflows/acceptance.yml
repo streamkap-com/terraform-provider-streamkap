@@ -28,7 +28,11 @@ jobs:
       fail-fast: false
       max-parallel: 1  # Serialize to avoid API conflicts
       matrix:
-        terraform-version: ['1.0.11', '1.8.5', '1.9.8', '1.10.5', '1.11.4', '1.16.1']
+        # A push runs the newest Terraform only. The job holds the shared
+        # staging-fixture concurrency group for its whole matrix, so the full
+        # six-version sweep on every develop merge would block PR acceptance
+        # for hours. The nightly schedule and manual dispatch still run all of them.
+        terraform-version: ${{ (github.event_name == 'push' && fromJSON('["1.16.1"]')) || fromJSON('["1.0.11", "1.8.5", "1.9.8", "1.10.5", "1.11.4", "1.16.1"]') }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

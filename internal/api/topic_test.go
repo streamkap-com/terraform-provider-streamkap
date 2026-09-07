@@ -314,6 +314,9 @@ func TestGetTopicTableMetrics(t *testing.T) {
 	if row.Kafka.ReplicationFactor == nil || *row.Kafka.ReplicationFactor != 2 {
 		t.Errorf("Expected replication_factor 2, got %v", row.Kafka.ReplicationFactor)
 	}
+	if row.Kafka.RetentionMs == nil || *row.Kafka.RetentionMs != 604800000 {
+		t.Errorf("Expected retention_ms 604800000, got %v", row.Kafka.RetentionMs)
+	}
 	if row.LastMessageTimestamp == nil || *row.LastMessageTimestamp != 1713657600000 {
 		t.Errorf("Expected lastMessageTimestamp, got %v", row.LastMessageTimestamp)
 	}

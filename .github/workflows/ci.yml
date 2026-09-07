@@ -92,14 +92,12 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-      # Upstream PR #654 adds GitHub concurrency.queue support; v1.7.12 rejects it.
+      # Released actionlint does not yet know GitHub's concurrency.queue setting
+      # (upstream PR #654), so that one key is ignored rather than building an
+      # unreleased revision: an unmerged commit can vanish from the base repo and
+      # would break this job permanently. Drop the -ignore once a release lands.
       - name: Validate workflows
         run: |
           set -euo pipefail
-          actionlint_source="$RUNNER_TEMP/actionlint"
-          git init -q "$actionlint_source"
-          git -C "$actionlint_source" remote add origin https://github.com/rhysd/actionlint.git
-          git -C "$actionlint_source" fetch --quiet --depth=1 origin 644076a59742c2d1540ebd4686eab3c308f0e562
-          git -C "$actionlint_source" checkout --quiet --detach FETCH_HEAD
-          go build -C "$actionlint_source" -o "$RUNNER_TEMP/actionlint-bin" ./cmd/actionlint
-          "$RUNNER_TEMP/actionlint-bin"
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          "$(go env GOPATH)/bin/actionlint" -ignore 'unexpected key "queue"'

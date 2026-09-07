@@ -353,6 +353,15 @@ func checkAttributeCompatibility(t *testing.T, kind string, baseline, current ma
 			t.Errorf("BREAKING CHANGE: %s %q changed from optional to required", kind, name)
 			breakingChanges++
 		}
+		// A credential losing Sensitive is caught by the generic drift check too,
+		// but that reports it as a stale snapshot whose stated remedy is
+		// `make snapshots` — which would silently bless the downgrade. Call it
+		// out separately so it cannot be resolved by regenerating.
+		if exists && before.Sensitive && !after.Sensitive {
+			t.Errorf("BREAKING CHANGE (SECURITY): %s %q is no longer Sensitive; its value would now appear in plan output and state as plaintext. "+
+				"Do NOT resolve this with `make snapshots` — restore the flag at its source (tfgen isSecretField, or the backend field's encrypt/control).", kind, name)
+			breakingChanges++
+		}
 		if exists && before.Type != "" && before.Type != after.Type {
 			t.Errorf("BREAKING CHANGE: %s %q changed type from %s to %s", kind, name, before.Type, after.Type)
 			breakingChanges++

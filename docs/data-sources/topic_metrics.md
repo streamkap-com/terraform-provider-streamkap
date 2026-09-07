@@ -38,7 +38,6 @@ data "streamkap_topic_metrics" "example" {
       topic_db_ids = ["64abc123def456789012345c"]
     }
   ]
-
 }
 
 # Output metrics
@@ -102,6 +101,6 @@ Read-Only:
 - `partition_count` (Number) Kafka partition count. Null when broker metadata is unavailable.
 - `record_error_total` (Number) Latest record error total. Null when ClickHouse metrics are unavailable.
 - `replication_factor` (Number) Kafka replication factor. Null when broker metadata is unavailable.
-- `retention_ms` (Number) Kafka retention period in milliseconds. Null when broker metadata is unavailable.
-- `snapshot_status_json` (String) Snapshot status entries as JSON. The backend may add fields to these entries.
+- `retention_ms` (Number) Kafka retention period in milliseconds. `-1` means unlimited retention. Null when broker metadata is unavailable.
+- `snapshot_status_json` (String) Snapshot status entries as a JSON array, empty when the backend reports none. The backend may add fields to these entries.
 - `topic_id` (String) Topic ID.

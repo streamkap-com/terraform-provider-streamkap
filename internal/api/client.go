@@ -420,7 +420,7 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 			return &APIError{StatusCode: resp.StatusCode, Detail: detail, RequestID: requestID}
 		}
 		if json.Valid(body) {
-			detail := fmt.Sprintf("%s %s: JSON error response: %s", req.Method, req.URL, redactSensitiveErrorJSON(body))
+			detail := fmt.Sprintf("%s %s: JSON error response: %s", req.Method, req.URL, snippet([]byte(redactSensitiveErrorJSON(body))))
 			return &APIError{StatusCode: resp.StatusCode, Detail: detail, RequestID: requestID}
 		}
 		tflog.Debug(ctx,
@@ -461,7 +461,7 @@ func parseAPIErrorDetail(body []byte) (string, bool) {
 		return detail, strings.TrimSpace(detail) != ""
 	}
 
-	return redactSensitiveErrorJSON(envelope.Detail), true
+	return snippet([]byte(redactSensitiveErrorJSON(envelope.Detail))), true
 }
 
 func isUnauthorized(err error) bool {

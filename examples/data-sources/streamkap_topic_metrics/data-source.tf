@@ -17,7 +17,6 @@ data "streamkap_topic_metrics" "example" {
       topic_db_ids = ["64abc123def456789012345c"]
     }
   ]
-
 }
 
 # Output metrics

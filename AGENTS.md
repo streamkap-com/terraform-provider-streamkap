@@ -279,8 +279,8 @@ Schema regeneration: `STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap make g
 
 `make generate` rewrites every connector, so a backend change you didn't ask for rides along. Work this list before committing:
 
-1. `make snapshots`, then **read the diff**. It is the regen's changelog. `added=` are new backend fields; `removed=` means the backend dropped a field — check whether a hand-maintained alias in `internal/resource/{source,destination}/*_generated.go` still points at it (`TestDeprecatedAliasTargetsExist` catches this).
-2. **`changed=` on a `Sensitive` flag is a security regression until proven otherwise.** The backend repeatedly ships `api.key` and `http.headers.authorization` with no `encrypt`/`control`. `isSecretField` forces those; if a *different* credential shows up unmarked, add it there — never to `internal/generated/`.
+1. `make snapshots`, then **read the diff**. It is the regen's changelog. `added=` are new backend fields; `removed=` means the backend dropped a field — check by hand whether a deprecated alias in `internal/resource/{source,destination}/*_generated.go` still points at it. `TestDeprecatedAliasTargetsExist` does **not** cover this: it only checks that the replacement attribute named in a `DeprecationMessage` exists in the Terraform schema and that `ConflictsWith` paths resolve. It never reads the backend spec, so an alias mapped to a dropped API field stays green.
+2. **`changed=` on a `Sensitive` flag is a security regression until proven otherwise.** The backend repeatedly ships `api.key` and `http.headers.authorization` with no `encrypt`/`control`. `isSecretField` (`cmd/tfgen/generator.go`) forces those; if a *different* credential shows up unmarked, add it there — never to `internal/generated/`. It is not consulted for fields supplied by `overrides.json`, so a credential added that way needs its own `Sensitive` handling.
 3. `git status` the provider tree for stray connector files (a wrong-branch run adds/removes plugins).
 4. Confirm the backend repo is back on its original branch. Regenerating leaves it on `main` otherwise.
 5. Every registered resource needs a snapshot or it silently skips drift checks — `TestEveryResourceHasSchemaSnapshot` enforces this.
@@ -325,7 +325,7 @@ Control→TF-type mapping table lives in `docs/CODE_GENERATOR.md` (kept in sync 
 - Unsupported backend controls stop generation; `code-editor` maps to String.
 - Backend `readonly` is sometimes a UI hint. Preserve configurable fields such as SSH public keys and S3 topic selection; omit `UseStateForUnknown` for derived fields so updates can recompute them.
 - `control: "password"` OR `encrypt: true` → `Sensitive: true`.
-- Fields named/suffixed `api_key` or `authorization` → forced `Sensitive: true` (`isSecretField`), because the webhook plugins ship `api.key` and the http-sink ships `http.headers.authorization` with neither flag, and the backend keeps regressing it. Never re-fix this by editing `internal/generated/`.
+- Fields named/suffixed `api_key` or `authorization` → forced `Sensitive: true` (`isSecretField`, in `cmd/tfgen/generator.go`), because the webhook plugins ship `api.key` and the http-sink ships `http.headers.authorization` with neither flag, and the backend keeps regressing it. Never re-fix this by editing `internal/generated/`.
 - Every connector merges the entity-wide `configurations_for_all.json` common fields **except `kafkadirect`**, which the backend (`_load_global_configuration`) resolves from its plugin config alone. tfgen mirrors this skip in `Generate()`; the Kafka Direct source/destination expose only their plugin fields.
 - Go field naming preserves: `ID SSH SSL SQL DB URL API AWS ARN QA` uppercase. So `ssh_port` → `SSHPort`, `role_arn` → `RoleARN`.
 
@@ -333,7 +333,7 @@ Control→TF-type mapping table lives in `docs/CODE_GENERATOR.md` (kept in sync 
 - `map_string` — `map[string]types.String` (e.g. snowflake `auto_qa_dedupe_table_mapping`).
 - `map_nested` — map of nested objects (e.g. clickhouse `topics_config_map`).
 
-An override's `api_field_name` must resolve to a field the backend actually declares — tfgen fails the build otherwise. Nothing else validates overrides, so one can outlive its backend field and keep generating an attribute Terraform accepts and the backend silently drops; `sqlserveraws.snapshot_custom_table_config` did exactly that for several releases.
+An override's `api_field_name` must resolve to a field the backend actually declares — tfgen fails the build otherwise, for both `field_overrides` and `additional_fields`. Nothing else validates overrides, so one can outlive its backend field and keep generating an attribute Terraform accepts and the backend silently drops; `sqlserveraws.snapshot_custom_table_config` did exactly that for several releases.
 When an override's `api_field_name` matches a backend field, the override wins and the auto-parsed version is dropped.
 
 ### Fix the generator, not the generated output

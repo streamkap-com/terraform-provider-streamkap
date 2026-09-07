@@ -199,10 +199,9 @@ func (s *streamkapAPI) UpdateTopic(ctx context.Context, topicID string, reqPaylo
 }
 
 func (s *streamkapAPI) GetTopic(ctx context.Context, topicID string) (*Topic, error) {
-	// Backend returns full TopicDetailsWithKafka by default (detailed=true is the
-	// default). We rely on the `kafka.partitions.count` nested field — pin
-	// detailed=true explicitly so a future backend default flip can't silently
-	// strip the partition count from our Read path.
+	// The backend defaults to detailed=false, which omits the nested kafka
+	// block. Read relies on `kafka.partitions.count`, so detailed=true is
+	// required here, not merely a defensive pin.
 	req, err := http.NewRequestWithContext(
 		ctx, http.MethodGet, s.cfg.BaseURL+"/topics/"+topicID+"?detailed=true", http.NoBody)
 	if err != nil {

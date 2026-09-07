@@ -636,6 +636,16 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 	// Process additional fields (fields with user_defined=false that should still be in Terraform)
 	additionalFields := g.getAdditionalFieldsForConnector(connectorCode)
 	for _, af := range additionalFields {
+		// Same orphan hazard as field_overrides above: an additional_fields entry
+		// is emitted straight from overrides.json, so a backend field that goes
+		// away leaves a Terraform attribute mapped to a dead API key.
+		if config.GetEntryByName(af.APIFieldName) == nil {
+			problems = append(problems, fmt.Errorf(
+				"overrides.json: additional field %q (%s/%s) targets API field %q, which does not exist in this connector's backend config — remove the entry, or restore the field upstream",
+				af.TerraformAttrName, af.EntityType, af.Connector, af.APIFieldName))
+			continue
+		}
+
 		field := g.additionalFieldToFieldData(&af)
 
 		emit, err := claimAttr(attrOwners, field.TfAttrName, apiFieldOwner(af.APIFieldName))

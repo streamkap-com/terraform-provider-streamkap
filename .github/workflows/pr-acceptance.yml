@@ -29,6 +29,14 @@ on:
 permissions:
   contents: read
 
+# Supersede in-flight runs for the same PR. The job-level group below serialises
+# access to the shared staging fixtures across every workflow; without this one,
+# pushing N commits queues N full live-API runs behind each other instead of
+# cancelling the stale ones.
+concurrency:
+  group: pr-acceptance-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   acceptance:
     name: Acceptance (credentialed connectors)

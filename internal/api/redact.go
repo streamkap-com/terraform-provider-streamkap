@@ -21,6 +21,11 @@ var sensitiveKeyRegex = regexp.MustCompile(`(?i)` +
 	`access[_.-]?key|auth|bearer|session|cookie|` +
 	`client[_.-]?secret|client[_.-]?id|sasl|pem|implementation)`)
 
+// Note: `implementation` masks the whole transform implementation subtree
+// (language, topic patterns and the JS/SQL body together), because an enrich
+// transform's code can embed an outbound credential. Debugging a transform body
+// therefore has to go through the API, not provider debug logs.
+
 const redactedPlaceholder = "***REDACTED***"
 
 // redactSensitiveJSON takes a JSON request body and returns its textual form

@@ -315,10 +315,13 @@ resource "streamkap_destination_databricks" "example" {
 
 #### SSH public keys and server-assigned fields
 
-`ssh_public_key` remains optional and computed. Leave it unset to use the
-backend-generated key. Explicit custom keys remain supported at creation;
-the backend preserves the stored key during updates. Remove any literal
-`"<SSH.PUBLIC.KEY>"` placeholder left by early versions.
+`ssh_public_key` remains optional and computed, but the backend resolves it
+server-side and ignores whatever the configuration sends — on create it returns
+the tenant tunnel key, and on update it returns the already-stored key. Leave it
+unset and read the resource output. Setting it has no effect and will show as
+drift once the backend's own value lands in state. Remove any literal
+`"<SSH.PUBLIC.KEY>"` placeholder left by early versions. If you need a specific
+key installed, contact Streamkap support — it cannot be set through Terraform.
 
 The `mongodb_connection_hostname` attribute in MongoDB and MongoDB Hosted remains optional and
 computed. When omitted, updates can refresh the derived hostname after the

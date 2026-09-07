@@ -7,10 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (breaking, v3 beta)
+- `streamkap_topic_metrics` now decodes the backend's topic-keyed table metrics.
+  `results` gains `id`, `partition_count`, `replication_factor`, `retention_ms`,
+  `last_message_timestamp`, `snapshot_status_json` and `record_error_total`.
+  **`messages_in`, `messages_out`, `bytes_in`, `bytes_out`, `lag` and
+  `avg_latency_ms` are now always null** — this endpoint has never returned them,
+  so the previous schema reported nulls under names the API does not emit. They
+  remain in the schema, deprecated, so existing configurations still parse.
+  The `time_interval` and `time_unit` inputs are likewise deprecated and ignored.
+  Outputs, monitoring or expressions consuming the six legacy metrics must move
+  to the new attributes or to another metrics endpoint before upgrading.
+  Topics the tenant does not own are omitted from `results` and now raise a
+  warning naming them.
+
 ### Fixed
 - Correct topic-metrics decoding and expose the broker metadata and status the
   API returns. Preserve legacy inputs and result fields with deprecation notices;
   unavailable metrics and ambiguous entity associations are null.
+- Cap and redact API error bodies surfaced in diagnostics.
+- Say when a request was replayed after a transient failure, so an
+  "already exists" error from a retried create is not read as a name collision.
 - Preserve redacted error context when the API returns null or empty details.
 - Honor cancellation during authentication and reject unknown admin scope IDs
   before configuring an API client.

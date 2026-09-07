@@ -836,6 +836,11 @@ func (r *BaseTransformResource) deployFromPlan(ctx context.Context, transformID 
 				"Transform deployment failed",
 				fmt.Sprintf("Deployment did not reach RUNNING: %s", err),
 			)
+			if ctx.Err() != nil {
+				// Polling ran out the context. The status read below would be
+				// issued on a dead context and fail without reaching the API.
+				return
+			}
 		}
 		if finalStatus != nil {
 			diagnostics.Append(state.SetAttribute(ctx, path.Root("connector_status"), types.StringValue(finalStatus.Status))...)
