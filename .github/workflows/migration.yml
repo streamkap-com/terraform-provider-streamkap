@@ -41,14 +41,52 @@ jobs:
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@v1.13.0
 
+      # Credentials come from the same single env.json blob in 1Password that
+      # pr-acceptance.yml uses. This job previously read repo secrets named
+      # STREAMKAP_CLIENT_ID / STREAMKAP_SECRET directly; those do not exist, so
+      # every migration case that does not self-skip failed with
+      # "Missing Streamkap API client_id" before reaching any provider code.
+      - name: Load env.json from 1Password
+        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
+        with:
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          # OP_ENV_REF holds the op://<vault>/<item>/<field> reference so internal
+          # vault and item names stay out of this public repo.
+          STREAMKAP_ENV_JSON: ${{ secrets.OP_ENV_REF }}
+
+      - name: Export credentials into the job environment
+        run: |
+          set -euo pipefail
+          if [ -z "${STREAMKAP_ENV_JSON:-}" ]; then
+            echo "STREAMKAP_ENV_JSON is empty — check the op:// reference and the vault item." >&2
+            exit 1
+          fi
+          printf '%s' "$STREAMKAP_ENV_JSON" | jq -e 'type == "object"' >/dev/null \
+            || { echo "env.json must be a flat JSON object of {\"VAR\": \"value\"}." >&2; exit 1; }
+
+          # Values may be multiline (PEM keys), so use the heredoc form of
+          # $GITHUB_ENV and mask every value line.
+          while IFS= read -r key; do
+            value="$(printf '%s' "$STREAMKAP_ENV_JSON" | jq -r --arg k "$key" '.[$k]')"
+            while IFS= read -r line; do
+              [ -n "$line" ] && echo "::add-mask::$line"
+            done <<< "$value"
+            delim="EOF_$(printf '%s' "$key" | tr -c 'A-Za-z0-9' '_')"
+            {
+              echo "${key}<<${delim}"
+              printf '%s\n' "$value"
+              echo "${delim}"
+            } >> "$GITHUB_ENV"
+          done < <(printf '%s' "$STREAMKAP_ENV_JSON" | jq -r 'keys[]')
+
+          count="$(printf '%s' "$STREAMKAP_ENV_JSON" | jq -r 'keys | length')"
+          echo "Exported $count credential variables from env.json."
+
       - name: Run Migration Tests
         env:
           TF_ACC: '1'
-          STREAMKAP_CLIENT_ID: ${{ secrets.STREAMKAP_CLIENT_ID }}
-          STREAMKAP_SECRET: ${{ secrets.STREAMKAP_SECRET }}
-          STREAMKAP_HOST: ${{ secrets.STREAMKAP_HOST }}
-          TF_VAR_source_postgresql_hostname: ${{ secrets.TF_VAR_SOURCE_POSTGRESQL_HOSTNAME }}
-          TF_VAR_source_postgresql_password: ${{ secrets.TF_VAR_SOURCE_POSTGRESQL_PASSWORD }}
         run: |
           gotestsum --jsonfile migration-results.json \
             --junitfile migration-results.xml \
