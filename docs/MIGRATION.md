@@ -6,7 +6,7 @@ This guide helps existing users migrate their Terraform configurations between m
 
 ## v2.x to v3.0
 
-> **The v3.0.0 beta line is available for testing** (latest: `3.0.0-beta.30`). This is a
+> **The v3.0.0 beta line is available for testing** (latest: `3.0.0-beta.31`). This is a
 > pre-release — do not use it in production. If you are on v2.x and your setup is working,
 > **there is no need to migrate yet**. Wait for the stable v3.0.0 release. The beta may
 > introduce further breaking changes before the final release.
@@ -139,7 +139,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = "3.0.0-beta.30"
+      version = "3.0.0-beta.31"
     }
   }
 }

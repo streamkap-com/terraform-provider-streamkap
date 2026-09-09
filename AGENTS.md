@@ -239,6 +239,18 @@ Sessions here typically open right after a merge landed elsewhere — `git pull`
 
 "Release the next beta" = checkout `develop`, `git pull`, verify clean tree + passing tests, find the latest tag (`git tag --sort=-v:refname | head -1`), bump the beta number by one. **Pushing the tag triggers the public release workflow** — surface the exact `git tag`/`git push` commands and STOP for explicit approval. Never push tags or push `develop` unprompted.
 
+Two preflight gates reject a tag before goreleaser runs, so check both *before* tagging:
+
+- The tag must match `^v3\.<minor>\.<patch>-beta\.<n>$` (betas release from `develop`; a bare `vX.Y.Z` releases from `main`), and the tagged commit must already be an ancestor of that branch. **Push the branch first, then tag.**
+- `CHANGELOG.md` must carry a `## [<version>]` heading matching the tag. The top section sits at `## [Unreleased]` between releases, so cutting it to `## [<version>] - <date> (Pre-release)` is a required release step, not bookkeeping. Verify with the same check the workflow uses:
+  `awk -v heading="## [3.0.0-beta.N]" '$0 == heading || index($0, heading " - ") == 1 {f=1} END{exit !f}' CHANGELOG.md`
+
+**Publishing is also gated on the security workflow, and trivy fails on any HIGH or CRITICAL advisory.** That gate is severity-only — it does not ask whether the code path is reachable — so a CVE disclosed against a transitive dependency makes an already-tagged release unpublishable with no code change. It happened on v3.0.0-beta.31: gRPC v1.83.1, which this line had bumped *to* for CVE-2026-84304, was itself hit by CVE-2026-84445.
+
+When that happens, `goreleaser` shows as `skipped` and **nothing is published** — no GitHub release, no registry artifacts. Confirm with `gh release view <tag>` returning "release not found". Then bump the dependency, push `develop`, and re-point the tag (`git push origin :refs/tags/<tag>` then re-tag and push). Re-pointing is safe *only* because the tag published nothing; once a release exists, burn the number and cut the next one instead.
+
+**Bump the version pins in the same commit that cuts the CHANGELOG, before tagging.** The registry renders each version's pages from that version's own tag, so a pin updated after the tag ships a page telling users to install the *previous* beta. The pin lives in `examples/provider/provider.tf` (`docs/index.md` is generated from it — edit the example and re-render with `go generate main.go`, never hand-edit the doc), plus `README.md` and `docs/MIGRATION.md`.
+
 ## Public repository — content hygiene
 
 This repo is public. Do not commit internal ticket IDs/URLs, customer or tenant identifiers, real credentials, internal hostnames, verbatim production traces, or unannounced roadmap details. Public GitHub issue numbers (`#75`) are fine. Prefer `https://api.streamkap.com` and `https://docs.streamkap.com` when referencing surfaces. Flag any new occurrences you find.
