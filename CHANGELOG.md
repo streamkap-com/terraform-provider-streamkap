@@ -21,6 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Topics the tenant does not own are omitted from `results` and now raise a
   warning naming them.
 
+### Known issues
+- Upgrading a resource created under v2 can plan an in-place `update` with no
+  configuration change, because v3 adds optional attributes that carry
+  client-side defaults. Confirmed on the Kafka Direct source and the Databricks
+  destination; see `docs/MIGRATION.md` → "Expect an in-place update on your
+  first v3 plan". No replacement occurs and no data is lost.
+
 ### Fixed
 - `streamkap_client_credential` failed every create and update with
   "Value Conversion Error ... Path: roles": the computed `roles` list is unknown

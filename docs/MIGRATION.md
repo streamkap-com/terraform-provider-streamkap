@@ -379,6 +379,22 @@ behavior, and inspect the plan before applying:
 | PostgreSQL Source | `heartbeat_enabled` | `false` | `true` |
 | Snowflake Destination | `hard_delete` | `false` | `true` |
 
+#### Expect an in-place update on your first v3 plan
+
+Beyond the table above, v3 **adds** optional attributes to existing connectors,
+and many of them carry a client-side default. For a resource created under v2
+the default was never part of the config, so the first v3 plan writes it and the
+resource shows as an in-place `update` even though nothing in your
+configuration changed. Migration validation observes this on the Kafka Direct
+source (`format` defaults to `string`, `records_carry_streamkap_metadata` to
+`false`) and the Databricks destination (`connection_timeout` to `180`,
+`preserve_null_values` to `false`, plus the `transforms_*` family), and it can
+occur on any connector that gained a defaulted attribute.
+
+This is an update, never a replacement, and no data is lost. Review the plan
+before applying: if a new default is not what you want, set the attribute
+explicitly to the value you intend.
+
 ### Migration Steps
 
 #### Step 1: Backup Your State
