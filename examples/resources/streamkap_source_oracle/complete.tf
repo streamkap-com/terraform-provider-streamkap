@@ -5,8 +5,9 @@
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -31,7 +32,7 @@ resource "streamkap_source_oracle" "example-source-oracle" {
 
   # Connection settings
   database_hostname = var.source_oracle_hostname
-  database_port     = "1521"
+  database_port     = 1521
   database_user     = "c##streamkap"
   database_password = var.source_oracle_password
   database_dbname   = "ORCL" # CDB name for container databases
@@ -44,7 +45,7 @@ resource "streamkap_source_oracle" "example-source-oracle" {
   table_include_list  = "HR.EMPLOYEES,HR.DEPARTMENTS,SALES.ORDERS"
 
   # Signal table for incremental snapshots
-  signal_data_collection_schema_or_database = "STREAMKAP"
+  signal_data_collection_schema_or_database = "STREAMKAP.STREAMKAP_SIGNAL"
 
   # Heartbeat configuration
   heartbeat_enabled                            = true
@@ -64,7 +65,7 @@ resource "streamkap_source_oracle" "example-source-oracle" {
   ssh_enabled = false
   # When ssh_enabled = true, also configure:
   # ssh_host = "bastion.example.com"
-  # ssh_port = "22"
+  # ssh_port = 22
   # ssh_user = "streamkap"
 }
 

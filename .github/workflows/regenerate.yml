@@ -51,17 +51,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: "go.mod"
           cache: true
 
       # `make generate` shells out to tfplugindocs and `terraform fmt -recursive`.
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
-          terraform_version: '1.11.*'
+          terraform_version: '1.16.1'
           terraform_wrapper: false
 
       - name: Clone backend repository (main)
@@ -120,7 +120,7 @@ jobs:
         id: drift
         run: |
           set -euo pipefail
-          if git diff --exit-code --stat -- internal/generated; then
+          if [ -z "$(git status --porcelain --untracked-files=all -- internal/generated)" ]; then
             echo "drift=false" >> "$GITHUB_OUTPUT"
             echo "No schema drift against backend main @ ${BACKEND_SHA}."
           else
@@ -139,11 +139,11 @@ jobs:
             echo
             echo '### Schema snapshot diff — the changelog for this regen'
             echo '```diff'
-            git diff -- internal/provider/testdata/schemas | head -400
+            git diff -- internal/provider/testdata/schemas | awk 'NR <= 400'
             echo '```'
           } > regen-report.md
 
-          if git diff -U0 -- internal/provider/testdata/schemas | grep -iq '^[+-].*sensitive'; then
+          if git diff -U0 -- internal/provider/testdata/schemas | grep -i '^[+-].*sensitive' >/dev/null; then
             {
               echo
               echo '> [!WARNING]'
@@ -159,7 +159,7 @@ jobs:
 
       - name: Open pull request
         if: steps.drift.outputs.drift == 'true' && env.MODE == 'pr'
-        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6.1.0
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore: regenerate schemas from backend main"

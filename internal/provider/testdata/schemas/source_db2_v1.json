@@ -239,5 +239,41 @@
       "sensitive": false,
       "type": "basetypes.BoolType"
     }
+  },
+  "blocks": {
+    "timeouts": {
+      "nesting_mode": "single",
+      "type": "timeouts.Type"
+    }
+  },
+  "block_attributes": {
+    "timeouts.create": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "timeouts.delete": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "timeouts.read": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "timeouts.update": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    }
   }
 }

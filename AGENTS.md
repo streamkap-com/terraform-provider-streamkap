@@ -7,7 +7,7 @@ Provider address: `github.com/streamkap-com/streamkap` · Registry: `streamkap-c
 ## Versions and branches
 
 - **v2.x (stable)** — what users should pin in production: `version = "~> 2.1"`. Lives on the `main` branch.
-- **v3.x (beta)** — new resources (`streamkap_destination_weaviate`, `streamkap_kafka_user`, `streamkap_client_credential`, `streamkap_roles` data source) plus deprecated-attribute removals. Lives on the `develop` branch. **Do not use in production yet.**
+- **v3.x (beta)** — new resources (`streamkap_destination_weaviate`, `streamkap_kafka_user`, `streamkap_client_credential`, `streamkap_roles` data source) plus schema and API changes. Deprecated v2 aliases remain supported through v3.x. Lives on the `develop` branch. **Do not use in production yet.**
 
 `develop` is **not** merged into `main` until v3 is promoted to stable. If you're consuming the provider today, target v2.x; if you're contributing, see [Branches](#branches) below.
 
@@ -182,7 +182,7 @@ terraform import streamkap_source_postgresql.main <resource-id>
 
 ## Errors and retry
 
-The provider auto-retries on HTTP 429, 502/503/504, network timeouts, and transient Kafka errors. Common application-level errors:
+The provider retries eligible operations on HTTP 429, 502/503/504, network timeouts, and transient Kafka errors. Client-credential creation does not retry failed responses; the API has no idempotency key, so replaying a request can issue an unmanaged credential. Common application-level errors:
 
 - `Unable to Create Streamkap API Client` → check `STREAMKAP_CLIENT_ID` / `STREAMKAP_SECRET`.
 - `404 Not Found` on read → resource was deleted out of band; `terraform refresh` will drop it from state.
@@ -279,8 +279,8 @@ Schema regeneration: `STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap make g
 
 `make generate` rewrites every connector, so a backend change you didn't ask for rides along. Work this list before committing:
 
-1. `make snapshots`, then **read the diff**. It is the regen's changelog. `added=` are new backend fields; `removed=` means the backend dropped a field — check whether a hand-maintained alias in `internal/resource/{source,destination}/*_generated.go` still points at it (`TestDeprecatedAliasTargetsExist` catches this).
-2. **`changed=` on a `Sensitive` flag is a security regression until proven otherwise.** The backend repeatedly ships `api.key` and `http.headers.authorization` with no `encrypt`/`control`. `isSecretField` forces those; if a *different* credential shows up unmarked, add it there — never to `internal/generated/`.
+1. `make snapshots`, then **read the diff**. It is the regen's changelog. `added=` are new backend fields; `removed=` means the backend dropped a field — check by hand whether a deprecated alias in `internal/resource/{source,destination}/*_generated.go` still points at it. `TestDeprecatedAliasTargetsExist` does **not** cover this: it only checks that the replacement attribute named in a `DeprecationMessage` exists in the Terraform schema and that `ConflictsWith` paths resolve. It never reads the backend spec, so an alias mapped to a dropped API field stays green.
+2. **`changed=` on a `Sensitive` flag is a security regression until proven otherwise.** The backend repeatedly ships `api.key` and `http.headers.authorization` with no `encrypt`/`control`. `isSecretField` (`cmd/tfgen/generator.go`) forces those; if a *different* credential shows up unmarked, add it there — never to `internal/generated/`. It is not consulted for fields supplied by `overrides.json`, so a credential added that way needs its own `Sensitive` handling.
 3. `git status` the provider tree for stray connector files (a wrong-branch run adds/removes plugins).
 4. Confirm the backend repo is back on its original branch. Regenerating leaves it on `main` otherwise.
 5. Every registered resource needs a snapshot or it silently skips drift checks — `TestEveryResourceHasSchemaSnapshot` enforces this.
@@ -322,8 +322,10 @@ Control→TF-type mapping table lives in `docs/CODE_GENERATOR.md` (kept in sync 
 - Fields named `port` or ending `_port` are forced to Int64 even if the backend says `control: "string"`.
 - Required+default → `Optional: true, Computed: true` (a Required field cannot have a default in TF).
 - `user_defined: false` → field skipped entirely.
+- Unsupported backend controls stop generation; `code-editor` maps to String.
+- Backend `readonly` is sometimes a UI hint. Preserve configurable fields such as SSH public keys and S3 topic selection; omit `UseStateForUnknown` for derived fields so updates can recompute them.
 - `control: "password"` OR `encrypt: true` → `Sensitive: true`.
-- Fields named/suffixed `api_key` or `authorization` → forced `Sensitive: true` (`isSecretField`), because the webhook plugins ship `api.key` and the http-sink ships `http.headers.authorization` with neither flag, and the backend keeps regressing it. Never re-fix this by editing `internal/generated/`.
+- Fields named/suffixed `api_key` or `authorization` → forced `Sensitive: true` (`isSecretField`, in `cmd/tfgen/generator.go`), because the webhook plugins ship `api.key` and the http-sink ships `http.headers.authorization` with neither flag, and the backend keeps regressing it. Never re-fix this by editing `internal/generated/`.
 - Every connector merges the entity-wide `configurations_for_all.json` common fields **except `kafkadirect`**, which the backend (`_load_global_configuration`) resolves from its plugin config alone. tfgen mirrors this skip in `Generate()`; the Kafka Direct source/destination expose only their plugin fields.
 - Go field naming preserves: `ID SSH SSL SQL DB URL API AWS ARN QA` uppercase. So `ssh_port` → `SSHPort`, `role_arn` → `RoleARN`.
 
@@ -331,7 +333,7 @@ Control→TF-type mapping table lives in `docs/CODE_GENERATOR.md` (kept in sync 
 - `map_string` — `map[string]types.String` (e.g. snowflake `auto_qa_dedupe_table_mapping`).
 - `map_nested` — map of nested objects (e.g. clickhouse `topics_config_map`).
 
-An override's `api_field_name` must resolve to a field the backend actually declares — tfgen fails the build otherwise. Nothing else validates overrides, so one can outlive its backend field and keep generating an attribute Terraform accepts and the backend silently drops; `sqlserveraws.snapshot_custom_table_config` did exactly that for several releases.
+An override's `api_field_name` must resolve to a field the backend actually declares — tfgen fails the build otherwise, for both `field_overrides` and `additional_fields`. Nothing else validates overrides, so one can outlive its backend field and keep generating an attribute Terraform accepts and the backend silently drops; `sqlserveraws.snapshot_custom_table_config` did exactly that for several releases.
 When an override's `api_field_name` matches a backend field, the override wins and the auto-parsed version is dropped.
 
 ### Fix the generator, not the generated output
@@ -345,11 +347,17 @@ The API client exposes `CreateTransform / GetTransform / UpdateTransform / Delet
 
 ## API quirks (non-obvious)
 
+- Provider authentication uses the Configure context. Unknown `admin_tenant_id` or `admin_service_id` must produce diagnostics before authentication; treating unknown as empty can target the default tenant.
+- Empty connector maps (`{}`) clear mappings; null leaves them unset. Keep nil and non-nil empty Go maps distinct when marshaling.
+- Transform `deploy = true` must report terminal deployment failure as an error. A saved transform ID still belongs in state so the failed deployment can be recovered.
+- Transform implementation bodies and validation-error input values must be redacted before logging.
+- **`periodic_audit` must be round-tripped on every pipeline update.** `UpdatePipelineReq.periodic_audit` defaults to `None`, the backend only copies it into the entity body when non-null, and the field is in `_CONDITIONAL_ENTITY_FIELDS` — so a PUT that omits the key `$unset`s it. Terraform does not manage the field, so the provider reads the live pipeline in Update and echoes the value back (`preservePeriodicAudit`); without that, every apply deleted an audit configured in the UI. The round-trip is safe because it is symmetric: Update converts pretty topic names to ids via `get_topic_ids_from_pretty_name`, and Read converts them back via `get_pretty_topic_name_from_id` (`app/utils/entity_searches.py`), so what GET returns is exactly what PUT expects. The backend also rejects an update whose audit topics are not a subset of the pipeline's topics, so topics dropped from the pipeline are dropped from the audit with a warning rather than failing the apply.
+- `streamkap_topics` exposes `messages_7d` and `messages_30d`, which the topic details API has never returned — both are always null and are deprecated.
 - Sources Read uses `?secret_returned=true` to get sensitive fields back.
-- POST/PUT/DELETE on `/sources`, `/destinations`, `/pipelines` must include `&wait=false` — VCR/mock URLs need it too.
+- POST/PUT/DELETE on `/sources`, `/destinations`, `/pipelines` must include `&wait=false` — Mock URLs need it too.
 - List endpoints default `page_size=10` (max 100). `ListSources/ListDestinations/ListPipelines` paginate until `resp.Total`; anything else silently truncates tenants with >10 resources (affects sweepers and adopt-on-exists).
 - `/sources`, `/destinations`, `/pipelines` accept `partial_name` only — there is no exact-name filter. Adopt-by-name uses `partial_name=<name>&page_size=100` and matches client-side.
-- Create returns 422 "already exists" when a non-deleted record with the same `{tenant_id, name}` exists. **No connector resource auto-adopts on this.** Sources and destinations used to; they no longer do (pipelines, transforms and tags never did). From inside the client, "a previous apply created the record but lost the response" and "a `create_before_destroy` replace whose deposed instance still holds the name" are the same 422 — and adopting is right for the first but destroys live data in the second (the new state entry inherits the deposed entry's backend id, so Terraform's next step deletes it). Create now fails with recovery guidance instead: `terraform import` for the lost-response case, `terraform state rm` of the deposed entries otherwise. Tags still adopt deliberately (leaked CI tags, different trade-off).
+- Create returns 422 "already exists" when a non-deleted record with the same `{tenant_id, name}` exists. **No connector resource auto-adopts on this.** Sources and destinations used to; pipelines and transforms also refuse adoption. From inside the client, "a previous apply created the record but lost the response" and "a `create_before_destroy` replace whose deposed instance still holds the name" are the same 422 — and adopting is right for the first but destroys live data in the second (the new state entry inherits the deposed entry's backend id, so Terraform's next step deletes it). Create now fails with recovery guidance instead: `terraform import` for the lost-response case, state backup and collision recovery for deposed entries otherwise. Tags still adopt deliberately (leaked CI tags, different trade-off).
 - Use `stringplanmodifier.UseStateForUnknown()` for computed fields that don't change to avoid spurious diffs.
 - Kafka Users (`/kafka-access/kafka-users`): username is the resource ID; password is write-only; no individual GET — Read filters from list.
 - Kafka ACLs are asymmetric on the wire. The backend model declares the topic field as `name` with `topic_name` only as an *input* alias, and serialises responses by field name — so requests may carry either, but every response comes back as `name`. `api.KafkaACL` marshals `topic_name` and unmarshals both (`UnmarshalJSON`); decoding `topic_name` alone silently blanked the value and every apply failed with "produced an unexpected new value". Any Pydantic `Field(alias=...)` on a response model has this shape — check the endpoint for `by_alias=True` before trusting the alias.
@@ -360,7 +368,7 @@ The API client exposes `CreateTransform / GetTransform / UpdateTransform / Delet
 
 ## Deprecated attribute pattern (v2 → v3 aliases)
 
-When the backend keeps a config field but the Terraform attribute name changes, add a deprecated alias (wrapper struct embedding the generated model + `Optional+Computed` schema entry with `DeprecationMessage`/`ConflictsWith` + a `fieldMappings` row to the same API target). Full step-by-step with code is in `docs/MIGRATION.md`. After adding one, add a `TestAcc<Connector>_MigrationFromLegacy` case in `internal/provider/migration_test.go`.
+When the backend keeps a config field but the Terraform attribute name changes, add a deprecated alias (wrapper struct embedding the generated model + `Optional+Computed` schema entry with `DeprecationMessage`/`ConflictsWith` + a `fieldMappings` row to the same API target). See `docs/CODE_GENERATOR.md#deprecated-attribute-aliases` for ownership and `internal/resource/source/postgresql_generated.go` for a concrete wrapper. After adding one, add a `TestAcc<Connector>_MigrationFromLegacy` case in `internal/provider/migration_test.go`.
 
 Not aliasable (document in MIGRATION.md + exceptions map):
 - Required fields (alias must be `Optional`, so required-only renames force a breaking change).
@@ -377,9 +385,9 @@ Not aliasable (document in MIGRATION.md + exceptions map):
 | Acceptance | `TestAcc` | Yes | ~15m |
 | Migration | `TestAcc.*Migration` | Yes | ~30m |
 
-Schema-compat detects: required attribute removed (breaking), optional→required (breaking), computed removed (warning). It also fails on *any* drift between a snapshot and the current schema — an added attribute, a removed one, or a flipped `Required`/`Optional`/`Computed`/`Sensitive` flag. Snapshots are the schema of record read by humans and tooling, so they must never lag. After an intentional schema change run `make snapshots` and review the diff.
+Schema-compat detects: required attribute removed (breaking), optional→required (breaking), computed removed (warning). It also fails on *any* drift between a snapshot and the current schema — an added attribute, a removed one, or a flipped `Required`/`Optional`/`Computed`/`Sensitive` flag, including nested attributes and block fields. Snapshots are the schema of record read by humans and tooling, so they must never lag. After an intentional schema change run `make snapshots` and review the diff.
 
-If `TestAcc.*Migration` produces a non-empty plan, the new provider diverges from v2.1.18 — inspect the plan to see which attribute differs; that signals a potential breaking change.
+If `TestAcc.*Migration` produces a non-empty plan, the new provider diverges from v2.2.0 — inspect the plan to see which attribute differs; that signals a potential breaking change.
 
 **Offline API coverage is httpmock, not VCR.** A VCR/cassette tier was scaffolded and never implemented; it was removed rather than left to imply coverage it did not have. Offline tests that need a fake backend belong in `internal/api/client_test.go` or `internal/provider/state_conflict_test.go`, which use `httpmock`. If a cassette tier is ever revived, redact bodies as well as header keys — the old hook matched key names only, so hostnames and tenant IDs would have landed in committed cassettes.
 

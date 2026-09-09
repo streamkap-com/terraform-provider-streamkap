@@ -127,9 +127,6 @@ func SourceMongodbhostedSchema() schema.Schema {
 				Computed:            true,
 				Description:         "The hostname(s) extracted from the MongoDB connection string.",
 				MarkdownDescription: "The hostname(s) extracted from the MongoDB connection string.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"transforms_unwrap_array_encoding": schema.StringAttribute{
 				Optional:            true,

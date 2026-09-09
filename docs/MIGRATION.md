@@ -6,7 +6,7 @@ This guide helps existing users migrate their Terraform configurations between m
 
 ## v2.x to v3.0
 
-> **The v3.0.0 beta line is available for testing** (latest: `3.0.0-beta.25`). This is a
+> **The v3.0.0 beta line is available for testing** (latest: `3.0.0-beta.30`). This is a
 > pre-release — do not use it in production. If you are on v2.x and your setup is working,
 > **there is no need to migrate yet**. Wait for the stable v3.0.0 release. The beta may
 > introduce further breaking changes before the final release.
@@ -45,8 +45,10 @@ The attribute is **Optional + Computed**:
   distinguishes `null` from empty-list on the wire so this works correctly.
 
 This is purely additive — existing v2 configs that do not reference `tags`
-produce an empty plan when re-planned against v3 (verified via
-`TestAcc.*Migration`).
+are intended to retain their tag behavior when re-planned against v3.
+The migration tests use v2.2.0 as the stable baseline and cover representative
+configurations; other breaking changes
+listed in this guide still require configuration updates.
 
 ```hcl
 resource "streamkap_tag" "prod" {
@@ -126,20 +128,7 @@ Removing them at v3.0.0 stable would defeat their purpose: they exist so a v2
 configuration can move to v3 without a rewrite. Migrate to the replacement names
 at your own pace during v3.x.
 
-| Resource | Deprecated Attribute | Replacement |
-|----------|---------------------|-------------|
-| PostgreSQL Source | `insert_static_key_field_1` | `transforms_insert_static_key1_static_field` |
-| PostgreSQL Source | `insert_static_key_value_1` | `transforms_insert_static_key1_static_value` |
-| PostgreSQL Source | `insert_static_value_field_1` | `transforms_insert_static_value1_static_field` |
-| PostgreSQL Source | `insert_static_value_1` | `transforms_insert_static_value1_static_value` |
-| PostgreSQL Source | `insert_static_key_field_2` | `transforms_insert_static_key2_static_field` |
-| PostgreSQL Source | `insert_static_key_value_2` | `transforms_insert_static_key2_static_value` |
-| PostgreSQL Source | `insert_static_value_field_2` | `transforms_insert_static_value2_static_field` |
-| PostgreSQL Source | `insert_static_value_2` | `transforms_insert_static_value2_static_value` |
-| PostgreSQL Source | `predicates_istopictoenrich_pattern` | `predicates_is_topic_to_enrich_pattern` |
-| Snowflake Destination | `auto_schema_creation` | `create_schema_auto` |
-
-**Action required before v3.0 stable:** If you use any of the deprecated attribute names listed above, rename them to the new names now. They will stop working in the final v3.0.0 release.
+See [the alias tables](#deprecated-attributes-still-work-but-migrate-soon) for replacements.
 
 ### Trying the Beta
 
@@ -150,7 +139,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = "3.0.0-beta.25"
+      version = "3.0.0-beta.30"
     }
   }
 }
@@ -171,11 +160,10 @@ If you encounter problems with the beta, please report them:
 
 ---
 
-## v1.x to v2.0
-
 ### Backward Compatibility
 
-**Good news!** Most attribute renames have **deprecated aliases** that provide backward compatibility. Your existing configurations will continue to work, but you'll see deprecation warnings.
+The aliases below preserve v2 attribute names through v3.x. Other removals, type
+changes and newly required fields still require configuration updates.
 
 #### Deprecated Attributes (Still Work, But Migrate Soon)
 
@@ -325,53 +313,41 @@ resource "streamkap_destination_databricks" "example" {
 }
 ```
 
-#### `ssh_public_key` is server-assigned — don't set it in Terraform
+#### SSH public keys and server-assigned fields
 
-For every source/destination that supports SSH tunnelling (`streamkap_source_*`
-with `ssh_enabled`, `streamkap_destination_postgresql`, etc.), the
-`ssh_public_key` attribute is **computed** — the backend generates and returns
-the real key, and the provider stores it in Terraform state. v2.1.x and early
-v3.x betas (<= beta.9) emitted a placeholder default (`"<SSH.PUBLIC.KEY>"`)
-that caused a "provider produced inconsistent result after apply" error on
-first apply (GitHub issue #72).
+`ssh_public_key` remains optional and computed, but the backend resolves it
+server-side and ignores whatever the configuration sends — on create it returns
+the tenant tunnel key, and on update it returns the already-stored key. Leave it
+unset and read the resource output. Setting it has no effect and will show as
+drift once the backend's own value lands in state. Remove any literal
+`"<SSH.PUBLIC.KEY>"` placeholder left by early versions. If you need a specific
+key installed, contact Streamkap support — it cannot be set through Terraform.
 
-**Action:**
-- If you previously set `ssh_public_key = "<SSH.PUBLIC.KEY>"` or any explicit
-  value in your `.tf` files, **remove the line**. Leave the attribute unset.
-- If an old state file already contains the literal `"<SSH.PUBLIC.KEY>"` (from
-  the bug), the next `terraform apply` will show state drift once the backend
-  returns the real key; accept the drift. A `terraform refresh` before the
-  apply is also safe.
-- If you truly need to set a specific SSH public key, work directly with
-  Streamkap support — the backend currently overrides user-provided values.
+The `mongodb_connection_hostname` attribute in MongoDB and MongoDB Hosted remains optional and
+computed. When omitted, updates can refresh the derived hostname after the
+connection string changes. Webhook `webhook_url` and `api_key` also remain
+optional and computed for configuration compatibility. Normally leave these
+server-populated attributes unset and read their resource outputs.
 
-#### PostgreSQL Source
+#### Topic metrics data source
 
-##### Type Change: database_port
+`streamkap_topic_metrics` now reads the backend's topic-keyed table metrics.
+Use `partition_count`, `replication_factor`, `retention_ms`,
+`last_message_timestamp`, `snapshot_status_json`, and `record_error_total`.
+Missing metrics remain null; a reported zero remains zero.
 
-**Before (v1.x):**
-```hcl
-resource "streamkap_source_postgresql" "example" {
-  database_port = 5432  # Integer - NO LONGER WORKS
-}
-```
+Existing `time_interval` and `time_unit` inputs remain accepted but are
+deprecated and ignored. The legacy throughput, lag and latency result fields
+remain in the schema as deprecated null values because the API does not return
+them. Update expressions that expect numeric values before relying on these
+results. Source and transform requests require topic database IDs alongside
+topic IDs; see the data source example.
 
-**After (v2.0):**
-```hcl
-resource "streamkap_source_postgresql" "example" {
-  database_port = "5432"  # String - REQUIRED
-}
-```
+#### PostgreSQL source types and signal table
 
-##### New Required Field
-
-`signal_data_collection_schema_or_database` is now required:
-
-```hcl
-resource "streamkap_source_postgresql" "example" {
-  signal_data_collection_schema_or_database = "public"
-}
-```
+`database_port` is numeric in v3 (`database_port = 5432`); it defaults to 5432.
+`signal_data_collection_schema_or_database` is optional and computed. If set,
+use a full table path such as `public.streamkap_signal`, not just `public`.
 
 #### Snowflake Destination & ClickHouse Destination — map fields are unchanged
 
@@ -394,26 +370,45 @@ resource "streamkap_destination_snowflake" "example" {
 
 ### Default Value Changes
 
-These affect NEW resources only. Existing resources are unaffected:
+Changed defaults can produce a plan for existing resources when the attribute
+is omitted from configuration. Set an explicit value to preserve the previous
+behavior, and inspect the plan before applying:
 
 | Resource | Attribute | Old Default | New Default |
 |----------|-----------|-------------|-------------|
 | PostgreSQL Source | `heartbeat_enabled` | `false` | `true` |
 | Snowflake Destination | `hard_delete` | `false` | `true` |
 
+#### Expect an in-place update on your first v3 plan
+
+Beyond the table above, v3 **adds** optional attributes to existing connectors,
+and many of them carry a client-side default. For a resource created under v2
+the default was never part of the config, so the first v3 plan writes it and the
+resource shows as an in-place `update` even though nothing in your
+configuration changed. Migration validation observes this on the Kafka Direct
+source (`format` defaults to `string`, `records_carry_streamkap_metadata` to
+`false`) and the Databricks destination (`connection_timeout` to `180`,
+`preserve_null_values` to `false`, plus the `transforms_*` family), and it can
+occur on any connector that gained a defaulted attribute.
+
+This is an update, never a replacement, and no data is lost. Review the plan
+before applying: if a new default is not what you want, set the attribute
+explicitly to the value you intend.
+
 ### Migration Steps
 
 #### Step 1: Backup Your State
 
 ```bash
-cp terraform.tfstate terraform.tfstate.backup
+terraform state pull > terraform.tfstate.backup
 ```
 
 #### Step 2: Fix Breaking Changes
 
 Update these in your `.tf` files:
-1. Change `database_port = 5432` to `database_port = "5432"`
-2. Add `signal_data_collection_schema_or_database = "public"` if missing
+1. Apply the required renames and removals listed above.
+2. Set any newly required destination fields.
+3. Review defaults and any planned replacements before applying.
 
 #### Step 3: (Optional) Fix Deprecated Attributes
 
@@ -436,35 +431,6 @@ You should see:
 ```bash
 terraform apply
 ```
-
-### New Features in v2.0
-
-#### Transform Resources
-
-Six new transform resource types:
-
-- `streamkap_transform_map_filter` - Transform/Filter Records
-- `streamkap_transform_enrich` - Enrich transforms
-- `streamkap_transform_enrich_async` - Async Enrich transforms
-- `streamkap_transform_sql_join` - SQL Join transforms
-- `streamkap_transform_rollup` - Rollup transforms
-- `streamkap_transform_fan_out` - Fan Out transforms
-
-Example:
-```hcl
-resource "streamkap_transform_map_filter" "example" {
-  name                                   = "my-transform"
-  transforms_input_topic_pattern         = "source-topic"
-  transforms_output_topic_pattern        = "output-topic"
-  transforms_input_serialization_format  = "AVRO"
-  transforms_output_serialization_format = "AVRO"
-}
-```
-
-#### New Destination Connectors
-
-- `streamkap_destination_kafka` - Kafka destination
-- `streamkap_destination_iceberg` - Iceberg destination
 
 ## Known limitations
 
@@ -491,9 +457,14 @@ actionable error. To recover:
    `streamkap_transform_*` resources, use the default destroy-then-create. If
    you specifically need create-before-destroy semantics, rename the resource
    so old and new can coexist by name.
-2. **If you have accumulated deposed entries**, clean them up with
-   `terraform state rm '<resource_address>.deposed.<key>'` (one for each
-   deposed entry; quote the address because of the dot), then re-run apply.
+2. **If you have accumulated deposed entries**, back up the state with
+   `terraform state pull` and inspect the plan before applying. Terraform normally
+   removes deposed objects during apply. If an old provider adopted the same
+   backend ID into both current and deposed instances, stop before applying: a
+   deposed destroy could delete the current object. Resolve that state collision
+   using a supported recovery procedure for your Terraform version. Do not append
+   `.deposed.<key>` to a resource address; that is not valid `terraform state rm`
+   syntax.
 3. **If the resource already exists on the backend but not in state** (e.g.
    from a previous apply whose response was lost), use `terraform import`
    to bring it into state and then `terraform apply` to reconcile any drift.

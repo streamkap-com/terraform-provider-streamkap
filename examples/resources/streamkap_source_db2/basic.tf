@@ -6,7 +6,7 @@ resource "streamkap_source_db2" "example" {
 
   # Connection details
   database_hostname = "db2.example.com"
-  database_port     = "50000"
+  database_port     = 50000
   database_user     = "streamkap_user"
   database_password = var.db_password
   database_dbname   = "SAMPLE"
@@ -15,8 +15,8 @@ resource "streamkap_source_db2" "example" {
   schema_include_list = "MYSCHEMA"
   table_include_list  = "MYSCHEMA.ORDERS,MYSCHEMA.CUSTOMERS"
 
-  # Signal table for incremental snapshots (required)
-  signal_data_collection_schema_or_database = "STREAMKAP"
+  # Signal table for incremental snapshots
+  signal_data_collection_schema_or_database = "STREAMKAP.streamkap_signal"
 }
 
 variable "db_password" {

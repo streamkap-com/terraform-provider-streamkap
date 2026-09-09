@@ -3,14 +3,15 @@ package transform
 import (
 	"errors"
 	"testing"
+
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
 )
 
 // TestIsJobNotDeployedError validates the string match that distinguishes
 // an authoritative "no deployment exists" signal from a transient backend
-// failure. The backend's /job_status handler rewrites HTTPException(404) into
-// 400 with either "Job not found" or "Transform not found" — those two detail
-// strings are the only signals we can rely on to demote connector_status to
-// UNKNOWN without letting transient 5xx errors silently lose state.
+// failure. Backend versions have returned either 404 or 400 with "Job not
+// found" / "Transform not found", so the detail remains the compatible signal
+// for demoting connector_status to UNKNOWN.
 func TestIsJobNotDeployedError(t *testing.T) {
 	cases := []struct {
 		name string
@@ -33,6 +34,27 @@ func TestIsJobNotDeployedError(t *testing.T) {
 				t.Fatalf("isJobNotDeployedError(%v) = %v, want %v", tc.err, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestDeploymentStatusOutcome(t *testing.T) {
+	cases := []struct {
+		status  string
+		done    bool
+		wantErr bool
+	}{
+		{status: constants.JobStatusRunning, done: true},
+		{status: constants.JobStatusFailed, done: true, wantErr: true},
+		{status: constants.JobStatusCanceled, done: true, wantErr: true},
+		{status: constants.JobStatusStopped, done: true, wantErr: true},
+		{status: "DEPLOYING"},
+	}
+
+	for _, tc := range cases {
+		done, err := deploymentStatusOutcome(tc.status)
+		if done != tc.done || (err != nil) != tc.wantErr {
+			t.Errorf("deploymentStatusOutcome(%q) = (%v, %v), want done=%v error=%v", tc.status, done, err, tc.done, tc.wantErr)
+		}
 	}
 }
 

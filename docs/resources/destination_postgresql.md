@@ -18,6 +18,10 @@ This resource creates and manages a PostgreSQL destination for Streamkap data pi
 
 ## Example Usage
 
+These examples describe this documentation version. Select the matching provider
+release in `required_providers`; beta releases require an exact prerelease version.
+Without a version constraint, Terraform selects a stable release.
+
 ### Basic
 
 ```terraform
@@ -26,6 +30,7 @@ This resource creates and manages a PostgreSQL destination for Streamkap data pi
 resource "streamkap_destination_postgresql" "example" {
   name                = "my-postgresql-dest"
   database_hostname   = var.postgresql_hostname
+  database_database   = "mydb"
   connection_username = var.postgresql_username
   connection_password = var.postgresql_password
   table_name_prefix   = "streamkap"
@@ -54,8 +59,9 @@ variable "postgresql_password" {
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -109,7 +115,7 @@ resource "streamkap_destination_postgresql" "example" {
   # SSH tunnel configuration (optional)
   ssh_enabled = false
   # ssh_host = "bastion.example.com"
-  # ssh_port = "22"
+  # ssh_port = 22
   # ssh_user = "streamkap"
 
   # Topic to table mapping (optional)

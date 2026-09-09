@@ -268,8 +268,27 @@ func TestGetTopicTableMetrics(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("Expected POST, got %s", r.Method)
 		}
+		var request TopicTableMetricsRequest
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		if len(request.Entities) != 1 || len(request.Entities[0].TopicDBIDs) != 1 || request.Entities[0].TopicDBIDs[0] != "topic-db-1" {
+			t.Fatalf("unexpected metrics request: %#v", request)
+		}
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"entity-1": {"topic-1": {"messages_in": 100}}}`))
+		w.Write([]byte(`{
+			"source_1.public.orders": {
+				"id": "source_1.public.orders",
+				"kafka": {
+					"partition_count": 3,
+					"replication_factor": 2,
+					"retention_ms": 604800000
+				},
+				"lastMessageTimestamp": 1713657600000,
+				"snapshotStatus": [{"status": "completed"}],
+				"recordErrorTotal": 0
+			}
+		}`))
 	}))
 	defer server.Close()
 
@@ -277,13 +296,35 @@ func TestGetTopicTableMetrics(t *testing.T) {
 	client.SetToken(&Token{AccessToken: "test-token"})
 
 	metrics, err := client.GetTopicTableMetrics(context.Background(), TopicTableMetricsRequest{
-		Entities: []TopicMetricsEntity{{ID: "entity-1", EntityType: "sources", Connector: "postgresql", TopicIDs: []string{"topic-1"}, TopicDBIDs: []string{}}},
+		Entities: []TopicMetricsEntity{{ID: "entity-1", EntityType: "sources", Connector: "postgresql", TopicIDs: []string{"topic-1"}, TopicDBIDs: []string{"topic-db-1"}}},
 	})
 	if err != nil {
 		t.Fatalf("GetTopicTableMetrics failed: %v", err)
 	}
 	if metrics == nil {
 		t.Error("Expected metrics, got nil")
+	}
+	row := metrics["source_1.public.orders"]
+	if row.ID != "source_1.public.orders" {
+		t.Errorf("Expected response row ID, got %q", row.ID)
+	}
+	if row.Kafka.PartitionCount == nil || *row.Kafka.PartitionCount != 3 {
+		t.Errorf("Expected partition_count 3, got %v", row.Kafka.PartitionCount)
+	}
+	if row.Kafka.ReplicationFactor == nil || *row.Kafka.ReplicationFactor != 2 {
+		t.Errorf("Expected replication_factor 2, got %v", row.Kafka.ReplicationFactor)
+	}
+	if row.Kafka.RetentionMs == nil || *row.Kafka.RetentionMs != 604800000 {
+		t.Errorf("Expected retention_ms 604800000, got %v", row.Kafka.RetentionMs)
+	}
+	if row.LastMessageTimestamp == nil || *row.LastMessageTimestamp != 1713657600000 {
+		t.Errorf("Expected lastMessageTimestamp, got %v", row.LastMessageTimestamp)
+	}
+	if row.RecordErrorTotal == nil || *row.RecordErrorTotal != 0 {
+		t.Errorf("Expected recordErrorTotal 0, got %v", row.RecordErrorTotal)
+	}
+	if len(row.SnapshotStatus) != 1 || row.SnapshotStatus[0]["status"] != "completed" {
+		t.Errorf("Expected snapshot status, got %#v", row.SnapshotStatus)
 	}
 }
 

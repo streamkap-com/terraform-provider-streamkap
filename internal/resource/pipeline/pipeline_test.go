@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
@@ -334,5 +335,85 @@ func TestPipelineAutoDiscovery_EmptyMarshalsToList(t *testing.T) {
 	}
 	if len(apiObj.TopicAutoDiscoveryTransforms) != 0 {
 		t.Fatalf("expected empty slice, got %v", apiObj.TopicAutoDiscoveryTransforms)
+	}
+}
+
+func TestPreservePeriodicAuditRoundTripsUnchanged(t *testing.T) {
+	fixDeletes := true
+	existing := &api.PipelinePeriodicAudit{
+		Topics:          []string{"public.orders", "public.customers"},
+		TimestampColumn: "updated_at",
+		IntervalMinutes: 60,
+		FixDeletesOnly:  &fixDeletes,
+	}
+
+	var diags diag.Diagnostics
+	got := preservePeriodicAudit(existing, []string{"public.customers", "public.orders"}, &diags)
+	if got == nil {
+		t.Fatal("an audit whose topics are all still streamed must be preserved")
+	}
+	if len(diags) != 0 {
+		t.Fatalf("unchanged audit must not warn, got %v", diags)
+	}
+	if len(got.Topics) != 2 {
+		t.Fatalf("topics = %v, want both preserved", got.Topics)
+	}
+	if got.TimestampColumn != "updated_at" || got.IntervalMinutes != 60 {
+		t.Fatalf("audit settings not carried through: %+v", got)
+	}
+	if got.FixDeletesOnly == nil || !*got.FixDeletesOnly {
+		t.Fatal("fix_deletes_only must round-trip")
+	}
+	if existing.Topics[0] != "public.orders" {
+		t.Fatal("the caller's audit must not be mutated")
+	}
+}
+
+func TestPreservePeriodicAuditDropsUnstreamedTopics(t *testing.T) {
+	existing := &api.PipelinePeriodicAudit{
+		Topics:          []string{"public.orders", "public.removed", "public.gone"},
+		TimestampColumn: "updated_at",
+		IntervalMinutes: 30,
+	}
+
+	var diags diag.Diagnostics
+	got := preservePeriodicAudit(existing, []string{"public.orders"}, &diags)
+	if got == nil {
+		t.Fatal("an audit with at least one streamed topic must survive")
+	}
+	if len(got.Topics) != 1 || got.Topics[0] != "public.orders" {
+		t.Fatalf("topics = %v, want only the streamed one", got.Topics)
+	}
+	if diags.WarningsCount() != 1 {
+		t.Fatalf("warning count = %d, want 1", diags.WarningsCount())
+	}
+	if detail := diags.Warnings()[0].Detail(); !strings.Contains(detail, "public.gone, public.removed") {
+		t.Fatalf("warning must name dropped topics in sorted order, got %q", detail)
+	}
+}
+
+func TestPreservePeriodicAuditRemovedWhenNoTopicsRemain(t *testing.T) {
+	existing := &api.PipelinePeriodicAudit{
+		Topics:          []string{"public.removed"},
+		TimestampColumn: "updated_at",
+		IntervalMinutes: 30,
+	}
+
+	var diags diag.Diagnostics
+	if got := preservePeriodicAudit(existing, []string{"public.orders"}, &diags); got != nil {
+		t.Fatalf("audit covering no streamed topic must be dropped, got %+v", got)
+	}
+	if diags.WarningsCount() != 1 {
+		t.Fatalf("warning count = %d, want 1", diags.WarningsCount())
+	}
+}
+
+func TestPreservePeriodicAuditNilIsNoop(t *testing.T) {
+	var diags diag.Diagnostics
+	if got := preservePeriodicAudit(nil, []string{"public.orders"}, &diags); got != nil {
+		t.Fatal("no audit configured must stay nil")
+	}
+	if len(diags) != 0 {
+		t.Fatalf("no audit must not warn, got %v", diags)
 	}
 }

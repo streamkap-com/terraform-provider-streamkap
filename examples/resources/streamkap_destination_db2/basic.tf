@@ -3,6 +3,7 @@
 resource "streamkap_destination_db2" "example" {
   name                = "my-db2-dest"
   database_hostname   = var.db2_hostname
+  database_database   = "mydb"
   connection_username = var.db2_username
   connection_password = var.db2_password
 }

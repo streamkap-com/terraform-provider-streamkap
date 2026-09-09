@@ -4,7 +4,7 @@ page_title: "streamkap_topic_metrics Data Source - terraform-provider-streamkap"
 subcategory: ""
 description: |-
   Retrieves metrics for specific Streamkap Kafka topics.
-  Use this data source to query throughput and latency metrics for topics.
+  Use this data source to query broker metadata and recent status for topics.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Retrieves metrics for specific **Streamkap Kafka topics**.
 
-Use this data source to query throughput and latency metrics for topics.
+Use this data source to query broker metadata and recent status for topics.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -38,19 +38,19 @@ data "streamkap_topic_metrics" "example" {
       topic_db_ids = ["64abc123def456789012345c"]
     }
   ]
-
-  time_interval = 24
-  time_unit     = "hours"
 }
 
 # Output metrics
-output "topic_throughput" {
+output "topic_status" {
   value = {
     for r in data.streamkap_topic_metrics.example.results :
     r.topic_id => {
-      messages_in  = r.messages_in
-      messages_out = r.messages_out
-      lag          = r.lag
+      partition_count        = r.partition_count
+      replication_factor     = r.replication_factor
+      retention_ms           = r.retention_ms
+      last_message_timestamp = r.last_message_timestamp
+      snapshot_status        = jsondecode(r.snapshot_status_json)
+      record_error_total     = r.record_error_total
     }
   }
 }
@@ -65,8 +65,8 @@ output "topic_throughput" {
 
 ### Optional
 
-- `time_interval` (Number) Time interval for aggregation. Defaults to `1`.
-- `time_unit` (String) Time unit for interval. Valid values: `minutes`, `hours`, `days`. Defaults to `hours`.
+- `time_interval` (Number, Deprecated) **Deprecated:** Accepted for configuration compatibility but ignored by the current API.
+- `time_unit` (String, Deprecated) **Deprecated:** Accepted for configuration compatibility but ignored by the current API.
 
 ### Read-Only
 
@@ -80,7 +80,7 @@ Required:
 - `connector` (String) Connector type (e.g., `postgresql`, `snowflake`, `map_filter`).
 - `entity_type` (String) Entity type. Valid values: `sources`, `transforms`, `destinations`.
 - `id` (String) Entity ID (source, transform, or destination ID).
-- `topic_db_ids` (List of String) List of topic database IDs (MongoDB ObjectIds).
+- `topic_db_ids` (List of String) List of topic database IDs corresponding by position to `topic_ids`. Required for sources and transforms; use an empty list for destinations.
 - `topic_ids` (List of String) List of topic IDs for this entity.
 
 
@@ -89,11 +89,18 @@ Required:
 
 Read-Only:
 
-- `avg_latency_ms` (Number) Average latency in milliseconds.
-- `bytes_in` (Number) Bytes received.
-- `bytes_out` (Number) Bytes sent.
-- `entity_id` (String) Entity ID.
-- `lag` (Number) Consumer lag.
-- `messages_in` (Number) Number of messages received.
-- `messages_out` (Number) Number of messages sent.
+- `avg_latency_ms` (Number, Deprecated) **Deprecated:** Always null because the current API does not return average latency.
+- `bytes_in` (Number, Deprecated) **Deprecated:** Always null because the current API does not return `bytes_in`.
+- `bytes_out` (Number, Deprecated) **Deprecated:** Always null because the current API does not return `bytes_out`.
+- `entity_id` (String) Entity ID associated with the requested topic. Null if multiple requested entities share the topic.
+- `id` (String) Topic identifier returned in the response row.
+- `lag` (Number, Deprecated) **Deprecated:** Always null because the current API does not return `lag`.
+- `last_message_timestamp` (Number) Unix timestamp in milliseconds of the latest message. Null when unavailable.
+- `messages_in` (Number, Deprecated) **Deprecated:** Always null because the current API does not return `messages_in`.
+- `messages_out` (Number, Deprecated) **Deprecated:** Always null because the current API does not return `messages_out`.
+- `partition_count` (Number) Kafka partition count. Null when broker metadata is unavailable.
+- `record_error_total` (Number) Latest record error total. Null when ClickHouse metrics are unavailable.
+- `replication_factor` (Number) Kafka replication factor. Null when broker metadata is unavailable.
+- `retention_ms` (Number) Kafka retention period in milliseconds. `-1` means unlimited retention. Null when broker metadata is unavailable.
+- `snapshot_status_json` (String) Snapshot status entries as a JSON array, empty when the backend reports none. The backend may add fields to these entries.
 - `topic_id` (String) Topic ID.

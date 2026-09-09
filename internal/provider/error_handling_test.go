@@ -121,7 +121,7 @@ func TestAPIError401_InvalidCredentials(t *testing.T) {
 		},
 	)
 
-	token, err := client.GetAccessToken("invalid-client-id", "invalid-secret")
+	token, err := client.GetAccessToken(context.Background(), "invalid-client-id", "invalid-secret")
 
 	require.Error(t, err, "Expected error for invalid credentials")
 	assert.Nil(t, token, "Token should be nil when credentials are invalid")

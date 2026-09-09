@@ -17,19 +17,19 @@ data "streamkap_topic_metrics" "example" {
       topic_db_ids = ["64abc123def456789012345c"]
     }
   ]
-
-  time_interval = 24
-  time_unit     = "hours"
 }
 
 # Output metrics
-output "topic_throughput" {
+output "topic_status" {
   value = {
     for r in data.streamkap_topic_metrics.example.results :
     r.topic_id => {
-      messages_in  = r.messages_in
-      messages_out = r.messages_out
-      lag          = r.lag
+      partition_count        = r.partition_count
+      replication_factor     = r.replication_factor
+      retention_ms           = r.retention_ms
+      last_message_timestamp = r.last_message_timestamp
+      snapshot_status        = jsondecode(r.snapshot_status_json)
+      record_error_total     = r.record_error_total
     }
   }
 }

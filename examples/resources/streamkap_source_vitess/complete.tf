@@ -5,8 +5,9 @@
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -37,9 +38,9 @@ resource "streamkap_source_vitess" "example-source-vitess" {
 
   # VTGate connection settings
   database_hostname = var.source_vitess_vtgate_hostname
-  database_port     = "15991"
-  database_user     = "vt_user"                         # Optional for unauthenticated gRPC
-  database_password = var.source_vitess_vtgate_password # Optional
+  database_port     = 15991
+  database_user     = "vt_user"
+  database_password = var.source_vitess_vtgate_password
 
   # Vitess keyspace
   vitess_keyspace = "ecommerce"
@@ -49,7 +50,7 @@ resource "streamkap_source_vitess" "example-source-vitess" {
 
   # VTCtld connection (required for schema discovery)
   vitess_vtctld_host     = "vtctld.example.com"
-  vitess_vtctld_port     = "15999"
+  vitess_vtctld_port     = 15999
   vitess_vtctld_user     = "admin"
   vitess_vtctld_password = var.source_vitess_vtctld_password
 
@@ -63,7 +64,7 @@ resource "streamkap_source_vitess" "example-source-vitess" {
   ssh_enabled = false
   # When ssh_enabled = true, also configure:
   # ssh_host = "bastion.example.com"
-  # ssh_port = "22"
+  # ssh_port = 22
   # ssh_user = "streamkap"
 }
 

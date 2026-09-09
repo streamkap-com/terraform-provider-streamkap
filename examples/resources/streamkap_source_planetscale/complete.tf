@@ -5,8 +5,9 @@
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -31,7 +32,7 @@ resource "streamkap_source_planetscale" "example-source-planetscale" {
 
   # Connection settings
   database_hostname = var.source_planetscale_hostname
-  database_port     = "443"
+  database_port     = 443
   database_user     = "eu0akgouilvei5flomiy"
   database_password = var.source_planetscale_password
 
@@ -58,7 +59,7 @@ resource "streamkap_source_planetscale" "example-source-planetscale" {
   ssh_enabled = false
   # When ssh_enabled = true, also configure:
   # ssh_host = "bastion.example.com"
-  # ssh_port = "22"
+  # ssh_port = 22
   # ssh_user = "streamkap"
 }
 

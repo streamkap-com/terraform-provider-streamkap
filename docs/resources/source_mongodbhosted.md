@@ -18,6 +18,10 @@ This resource creates and manages a MongoDB source for Streamkap data pipelines.
 
 ## Example Usage
 
+These examples describe this documentation version. Select the matching provider
+release in `required_providers`; beta releases require an exact prerelease version.
+Without a version constraint, Terraform selects a stable release.
+
 ### Basic
 
 ```terraform
@@ -34,8 +38,8 @@ resource "streamkap_source_mongodbhosted" "example" {
   database_include_list   = "mydb"
   collection_include_list = "mydb.orders,mydb.customers"
 
-  # Signal collection for incremental snapshots (required)
-  signal_data_collection_schema_or_database = "streamkap"
+  # Signal collection for incremental snapshots
+  signal_data_collection_schema_or_database = "streamkap.streamkap_signal"
 }
 
 variable "connection_string" {
@@ -55,8 +59,9 @@ variable "connection_string" {
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -82,7 +87,7 @@ resource "streamkap_source_mongodbhosted" "example-source-mongodbhosted" {
   collection_include_list = "ecommerce.orders,ecommerce.customers,analytics.events"
 
   # Signal collection for incremental snapshots
-  signal_data_collection_schema_or_database = "streamkap"
+  signal_data_collection_schema_or_database = "streamkap.streamkap_signal"
 
   # Array encoding (for mixed-type arrays)
   transforms_unwrap_array_encoding = "array_string" # Options: array, array_string
@@ -103,7 +108,7 @@ resource "streamkap_source_mongodbhosted" "example-source-mongodbhosted" {
   ssh_enabled = false
   # When ssh_enabled = true, also configure:
   # ssh_host = "bastion.example.com"
-  # ssh_port = "22"
+  # ssh_port = 22
   # ssh_user = "streamkap"
 }
 

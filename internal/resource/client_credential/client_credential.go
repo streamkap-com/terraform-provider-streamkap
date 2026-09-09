@@ -40,6 +40,17 @@ type RoleModel struct {
 	Description types.String `tfsdk:"description"`
 }
 
+// roleObjectType is the element type of the computed `roles` list. It must
+// match the nested attribute schema below.
+var roleObjectType = types.ObjectType{
+	AttrTypes: map[string]attr.Type{
+		"id":          types.StringType,
+		"key":         types.StringType,
+		"name":        types.StringType,
+		"description": types.StringType,
+	},
+}
+
 type ClientCredentialResourceModel struct {
 	ID          types.String `tfsdk:"id"`
 	ClientID    types.String `tfsdk:"client_id"`
@@ -48,7 +59,10 @@ type ClientCredentialResourceModel struct {
 	Description types.String `tfsdk:"description"`
 	ServiceID   types.String `tfsdk:"service_id"`
 	CreatedAt   types.String `tfsdk:"created_at"`
-	Roles       []RoleModel  `tfsdk:"roles"`
+	// Roles is Computed with no plan modifier, so it is unknown in every Create
+	// and Update plan. A framework type is required: decoding an unknown value
+	// into a Go slice fails with "Value Conversion Error".
+	Roles types.List `tfsdk:"roles"`
 }
 
 func (r *ClientCredentialResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -194,7 +208,17 @@ func (r *ClientCredentialResource) Create(ctx context.Context, req res.CreateReq
 		ServiceID:   plan.ServiceID.ValueString(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError("Error creating client credential", fmt.Sprintf("Unable to create client credential: %s", err))
+		// This create is deliberately not retried, so a lost response means the
+		// credential may exist on the backend while Terraform has no record of
+		// it — and unlike sources or pipelines there is no name uniqueness to
+		// surface it on the next apply.
+		resp.Diagnostics.AddError(
+			"Error creating client credential",
+			fmt.Sprintf("Unable to create client credential: %s\n\n"+
+				"If the request reached the backend before failing, a credential may have been created "+
+				"without being recorded in state. Check the client credentials list in the Streamkap UI "+
+				"and delete any orphan, or import it, before retrying.", err),
+		)
 		return
 	}
 
@@ -310,7 +334,9 @@ func (r *ClientCredentialResource) modelFromAPIObject(ctx context.Context, apiOb
 		}
 		roleIDs[i] = roles[i].ID
 	}
-	model.Roles = roles
+	roleList, d := types.ListValueFrom(ctx, roleObjectType, roles)
+	diags.Append(d...)
+	model.Roles = roleList
 
 	// role_ids is a set: the API resolves roles in its own catalog order, which need
 	// not match the order they were configured in.

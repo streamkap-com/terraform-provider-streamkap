@@ -490,6 +490,12 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 		if overrideAPIFields[entry.Name] {
 			continue
 		}
+		if !entry.HasSupportedControl() {
+			problems = append(problems, fmt.Errorf(
+				"API field %q uses unsupported backend control %q — teach cmd/tfgen how to map it before regenerating",
+				entry.Name, entry.Value.Control))
+			continue
+		}
 
 		field := g.entryToFieldData(&entry)
 
@@ -630,6 +636,16 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 	// Process additional fields (fields with user_defined=false that should still be in Terraform)
 	additionalFields := g.getAdditionalFieldsForConnector(connectorCode)
 	for _, af := range additionalFields {
+		// Same orphan hazard as field_overrides above: an additional_fields entry
+		// is emitted straight from overrides.json, so a backend field that goes
+		// away leaves a Terraform attribute mapped to a dead API key.
+		if config.GetEntryByName(af.APIFieldName) == nil {
+			problems = append(problems, fmt.Errorf(
+				"overrides.json: additional field %q (%s/%s) targets API field %q, which does not exist in this connector's backend config — remove the entry, or restore the field upstream",
+				af.TerraformAttrName, af.EntityType, af.Connector, af.APIFieldName))
+			continue
+		}
+
 		field := g.additionalFieldToFieldData(&af)
 
 		emit, err := claimAttr(attrOwners, field.TfAttrName, apiFieldOwner(af.APIFieldName))
@@ -1127,20 +1143,22 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 	// must be Optional in the Terraform schema — making them always-Required would
 	// break plans that don't enable the gating flag. The backend enforces the
 	// conditional requirement at the API layer.
-	if entry.IsReadOnly() {
+	if entry.IsBackendDerived() {
 		// Backend derives this value from another field at apply time (e.g.
 		// mongodb_connection_hostname is computed by `get_mongodb_connection_hostname`
-		// from the user's mongodb_connection_string). Emitting Default("") here
-		// would lock the plan to "" while the backend writes back the real value,
-		// triggering "Provider produced inconsistent result after apply: was
-		// cty.StringVal(""), but now cty.StringVal("...")".
+		// from the user's mongodb_connection_string). Preserving prior state here
+		// would lock the plan to the old hostname while the backend writes back a
+		// new value after the connection string changes.
 		//
-		// Optional+Computed+UseStateForUnknown:
-		//   - Default: none (backend fills it; no client-side seed)
-		//   - User CAN still set the field for documentation parity with the
-		//     backend schema, but the backend will overwrite from the derive
-		//     function — acceptable since `readonly: true` upstream signals the
-		//     same "not user-controllable" intent.
+		// Optional+Computed preserves configurations that already supply the exact
+		// derived value. Omitting UseStateForUnknown lets Terraform accept a new
+		// value when the configuration it is derived from changes.
+		field.Optional = true
+		field.Computed = true
+	} else if entry.IsReadOnly() {
+		// The backend also uses readonly as a UI hint for fields that its API
+		// accepts, such as an SSH public key or S3 topic selection. Preserve
+		// their established Terraform configurability.
 		field.Optional = true
 		field.Computed = true
 		field.NeedsPlanMod = true

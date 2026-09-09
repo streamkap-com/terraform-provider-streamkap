@@ -70,8 +70,11 @@ type TopicDetails struct {
 	Entity        *TopicEntity        `json:"entity,omitempty"`
 	Prefix        *string             `json:"prefix,omitempty"`
 	Serialization *TopicSerialization `json:"serialization,omitempty"`
-	Messages7D    *int64              `json:"messages_7d,omitempty"`
-	Messages30D   *int64              `json:"messages_30d,omitempty"`
+	// The topic details endpoint declares neither field and the backend has no
+	// such key, so both always decode to nil. Kept so the data source keeps
+	// parsing; see the deprecation notices on the Terraform attributes.
+	Messages7D  *int64 `json:"messages_7d,omitempty"`
+	Messages30D *int64 `json:"messages_30d,omitempty"`
 }
 
 // TopicDetailsResponse represents the paginated response from /topics/details
@@ -111,27 +114,28 @@ type TopicMetricsEntity struct {
 
 // TopicTableMetricsRequest represents the request body for /topics/table_metrics
 type TopicTableMetricsRequest struct {
-	Entities      []TopicMetricsEntity `json:"entities"`
-	TimestampFrom *string              `json:"timestamp_from,omitempty"` // ISO 8601 string
-	TimestampTo   *string              `json:"timestamp_to,omitempty"`   // ISO 8601 string
-	TimeType      *string              `json:"time_type,omitempty"`      // "latest", "timeseries", "timesummary"
-	TimeInterval  *int                 `json:"time_interval,omitempty"`
-	TimeUnit      *string              `json:"time_unit,omitempty"` // "minute", "hour", "day", "week", "month"
+	Entities []TopicMetricsEntity `json:"entities"`
 }
 
-// TopicMetrics represents metrics for a single topic
-type TopicMetrics struct {
-	MessagesIn   *int64   `json:"messages_in,omitempty"`
-	MessagesOut  *int64   `json:"messages_out,omitempty"`
-	BytesIn      *int64   `json:"bytes_in,omitempty"`
-	BytesOut     *int64   `json:"bytes_out,omitempty"`
-	Lag          *int64   `json:"lag,omitempty"`
-	AvgLatencyMs *float64 `json:"avg_latency_ms,omitempty"`
+type TopicTableKafkaMetrics struct {
+	PartitionCount    *int64 `json:"partition_count"`
+	ReplicationFactor *int64 `json:"replication_factor"`
+	RetentionMs       *int64 `json:"retention_ms"`
 }
 
-// TopicTableMetricsResponse represents the response from /topics/table_metrics
-// Map structure: entity_id -> topic_id -> metrics
-type TopicTableMetricsResponse map[string]map[string]TopicMetrics
+// TopicTableMetricsRow mirrors one value in the topic-id-keyed response from
+// POST /topics/table_metrics. Broker and ClickHouse values are nullable because
+// either subsystem may have no data for a valid topic.
+type TopicTableMetricsRow struct {
+	ID                   string                 `json:"id"`
+	Kafka                TopicTableKafkaMetrics `json:"kafka"`
+	LastMessageTimestamp *int64                 `json:"lastMessageTimestamp"`
+	SnapshotStatus       []map[string]any       `json:"snapshotStatus"`
+	RecordErrorTotal     *int64                 `json:"recordErrorTotal"`
+}
+
+// TopicTableMetricsResponse is keyed by Kafka topic ID.
+type TopicTableMetricsResponse map[string]TopicTableMetricsRow
 
 // TopicKafkaConfig mirrors the backend's TopicKafkaConfigs. The keys are
 // underscored field names carrying strings, not the dotted Kafka property names
@@ -198,10 +202,9 @@ func (s *streamkapAPI) UpdateTopic(ctx context.Context, topicID string, reqPaylo
 }
 
 func (s *streamkapAPI) GetTopic(ctx context.Context, topicID string) (*Topic, error) {
-	// Backend returns full TopicDetailsWithKafka by default (detailed=true is the
-	// default). We rely on the `kafka.partitions.count` nested field — pin
-	// detailed=true explicitly so a future backend default flip can't silently
-	// strip the partition count from our Read path.
+	// The backend defaults to detailed=false, which omits the nested kafka
+	// block. Read relies on `kafka.partitions.count`, so detailed=true is
+	// required here, not merely a defensive pin.
 	req, err := http.NewRequestWithContext(
 		ctx, http.MethodGet, s.cfg.BaseURL+"/topics/"+topicID+"?detailed=true", http.NoBody)
 	if err != nil {

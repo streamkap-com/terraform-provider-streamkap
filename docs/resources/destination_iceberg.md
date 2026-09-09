@@ -18,6 +18,10 @@ This resource creates and manages an Iceberg destination for Streamkap data pipe
 
 ## Example Usage
 
+These examples describe this documentation version. Select the matching provider
+release in `required_providers`; beta releases require an exact prerelease version.
+Without a version constraint, Terraform selects a stable release.
+
 ### Basic
 
 ```terraform
@@ -41,8 +45,9 @@ variable "iceberg_warehouse" {
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -51,6 +56,7 @@ terraform {
 provider "streamkap" {}
 
 variable "iceberg_catalog_s3_access_key_id" {
+  sensitive   = true
   type        = string
   description = "The AWS Access Key ID used to connect to S3 for Iceberg catalog"
 }

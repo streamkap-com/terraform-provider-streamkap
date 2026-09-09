@@ -14,6 +14,7 @@ variable "r2_account" {
 }
 
 variable "r2_access_key_id" {
+  sensitive   = true
   description = "R2 access key ID"
   type        = string
 }

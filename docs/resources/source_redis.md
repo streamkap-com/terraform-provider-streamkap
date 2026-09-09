@@ -18,6 +18,10 @@ This resource creates and manages a Redis source for Streamkap data pipelines. U
 
 ## Example Usage
 
+These examples describe this documentation version. Select the matching provider
+release in `required_providers`; beta releases require an exact prerelease version.
+Without a version constraint, Terraform selects a stable release.
+
 ### Basic
 
 ```terraform
@@ -29,7 +33,8 @@ resource "streamkap_source_redis" "example" {
 
   # Connection details
   redis_host     = "redis.example.com"
-  redis_port     = "6379"
+  redis_port     = 6379
+  redis_username = "default"
   redis_password = var.redis_password
 
   # Stream to capture
@@ -56,8 +61,9 @@ variable "redis_password" {
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -85,7 +91,7 @@ resource "streamkap_source_redis" "example-source-redis" {
 
   # Connection settings
   redis_host     = var.source_redis_host
-  redis_port     = "6379"
+  redis_port     = 6379
   redis_username = "default" # For Redis 6+ ACL
   redis_password = var.source_redis_password
 

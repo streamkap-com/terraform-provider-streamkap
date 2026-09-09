@@ -5,6 +5,79 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed (breaking, v3 beta)
+- `streamkap_topic_metrics` now decodes the backend's topic-keyed table metrics.
+  `results` gains `id`, `partition_count`, `replication_factor`, `retention_ms`,
+  `last_message_timestamp`, `snapshot_status_json` and `record_error_total`.
+  **`messages_in`, `messages_out`, `bytes_in`, `bytes_out`, `lag` and
+  `avg_latency_ms` are now always null** — this endpoint has never returned them,
+  so the previous schema reported nulls under names the API does not emit. They
+  remain in the schema, deprecated, so existing configurations still parse.
+  The `time_interval` and `time_unit` inputs are likewise deprecated and ignored.
+  Outputs, monitoring or expressions consuming the six legacy metrics must move
+  to the new attributes or to another metrics endpoint before upgrading.
+  Topics the tenant does not own are omitted from `results` and now raise a
+  warning naming them.
+
+### Known issues
+- Upgrading a resource created under v2 can plan an in-place `update` with no
+  configuration change, because v3 adds optional attributes that carry
+  client-side defaults. Confirmed on the Kafka Direct source and the Databricks
+  destination; see `docs/MIGRATION.md` → "Expect an in-place update on your
+  first v3 plan". No replacement occurs and no data is lost.
+
+### Fixed
+- `streamkap_client_credential` failed every create and update with
+  "Value Conversion Error ... Path: roles": the computed `roles` list is unknown
+  in the plan and was decoded into a Go slice. It is now a framework list type.
+- Correct topic-metrics decoding and expose the broker metadata and status the
+  API returns. Preserve legacy inputs and result fields with deprecation notices;
+  unavailable metrics and ambiguous entity associations are null.
+- Cap and redact API error bodies surfaced in diagnostics.
+- Deprecate `messages_7d` and `messages_30d` on `streamkap_topics`; the topic
+  details API has never returned them, so both are always null.
+- Stop deleting a pipeline's periodic row-level audit. The backend removes
+  `periodic_audit` whenever an update omits it, so every apply that touched a
+  pipeline silently discarded an audit configured outside Terraform. The
+  provider now reads and carries it through, narrowing its topics (with a
+  warning) if the pipeline no longer streams them.
+- Reject `admin_service_id` without `admin_tenant_id`. The backend ignores the
+  service header unless the tenant header is present, so the request ran against
+  the credential's own tenant instead of the intended one.
+- Say when a request was replayed after a transient failure, so an
+  "already exists" error from a retried create is not read as a name collision.
+- Preserve redacted error context when the API returns null or empty details.
+- Honor cancellation during authentication and reject unknown admin scope IDs
+  before configuring an API client.
+- Avoid retrying failed client-credential creation requests, which can issue
+  duplicate credentials when a response is lost.
+- Report terminal transform deployment failures as errors and support read timeouts.
+- Preserve explicitly empty connector maps and tag descriptions.
+- Keep topic read failures visible unless the API confirms a missing topic.
+- Refresh backend-derived MongoDB hostnames after connection-string updates
+  while preserving existing attribute configurability.
+- Correct required attributes, numeric ports and full signal-table paths in examples.
+- Use sensitive variables consistently for example credentials.
+- Replace fixed beta pins in embedded examples with guidance to select the release
+  matching the documentation.
+
+### Security
+- Update gRPC to v1.83.1 to address CVE-2026-84304.
+- Redact transform implementation payloads and structured validation inputs from
+  API diagnostics and logs.
+- Update Go, dependencies and pinned workflow actions. Gate releases on security
+  scans and serialize acceptance jobs that share staging fixtures.
+
+### Changed
+- Validate migration from the current stable v2.2.0 baseline.
+- Track nested attributes and block fields in schema snapshots; reject unsupported
+  backend controls during generation.
+- Mark beta GitHub releases as prereleases automatically and check the exact
+  changelog heading before publishing.
+- Consolidate development documentation and correct migration guidance.
+
 ## [3.0.0-beta.30] - 2026-08-25 (Pre-release)
 
 ### Added
@@ -103,14 +176,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `true`) — controls whether each output record is wrapped in an envelope
   with Kafka metadata (key, offset, timestamp, headers) alongside the value.
   Set to `false` to write only the record's own value structure. No effect on
-  CSV; for Parquet, only applies when the value is a record or map. Resolves
-  [ENG-2491](https://linear.app/streamkap/issue/ENG-2491).
+  CSV; for Parquet, only applies when the value is a record or map.
 - **`streamkap_destination_s3`: cross-account IAM role authentication** —
   `aws_auth_mode` (`Access Keys` default, or `Cross-Account Role`),
   `aws_sts_role_arn`, and `aws_sts_role_external_id` let Streamkap assume an
   IAM role in your account instead of using long-lived access keys. This
   schema catch-up reflects backend support already live
-  ([STR-4635](https://linear.app/streamkap/issue/STR-4635)/[STR-4636](https://linear.app/streamkap/issue/STR-4636))
   that had not yet been regenerated into the provider. `aws_access_key_id`
   and `aws_secret_access_key` change from `Required` to `Optional`/`Computed`
   to accommodate the new mode; existing configurations using access keys are

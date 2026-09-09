@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - develop
   schedule:
     - cron: '0 2 * * *'  # Nightly at 2 AM UTC
   workflow_dispatch:
@@ -16,32 +17,38 @@ jobs:
   acceptance-tests:
     name: Acceptance Tests (TF ${{ matrix.terraform-version }})
     runs-on: ubuntu-latest
-    # Only run on push to main, scheduled, or manual trigger
-    # Skip for PRs from forks (no secrets access)
     if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    concurrency:
+      group: streamkap-staging-fixtures
+      cancel-in-progress: false
+      queue: max
     environment: staging
     timeout-minutes: 120
     strategy:
       fail-fast: false
       max-parallel: 1  # Serialize to avoid API conflicts
       matrix:
-        terraform-version: ['1.8.*', '1.9.*', '1.10.*', '1.11.*']
+        # A push runs the newest Terraform only. The job holds the shared
+        # staging-fixture concurrency group for its whole matrix, so the full
+        # six-version sweep on every develop merge would block PR acceptance
+        # for hours. The nightly schedule and manual dispatch still run all of them.
+        terraform-version: ${{ (github.event_name == 'push' && fromJSON('["1.16.1"]')) || fromJSON('["1.0.11", "1.8.5", "1.9.8", "1.10.5", "1.11.4", "1.16.1"]') }}
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: 'go.mod'
           cache: true
 
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_version: ${{ matrix.terraform-version }}
           terraform_wrapper: false  # Required for Go tests
 
       - name: Install gotestsum
-        run: go install gotest.tools/gotestsum@latest
+        run: go install gotest.tools/gotestsum@v1.13.0
 
       - name: Run Acceptance Tests
         env:
@@ -59,7 +66,7 @@ jobs:
             -run 'TestAcc' ./internal/provider/...
 
       - name: Upload test results
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: acceptance-results-tf-${{ matrix.terraform-version }}

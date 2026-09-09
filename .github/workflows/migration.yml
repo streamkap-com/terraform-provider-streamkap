@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - main
+      - develop
     types: [opened, synchronize, ready_for_review]
   workflow_dispatch:
 
@@ -14,36 +15,78 @@ permissions:
 
 jobs:
   migration-tests:
-    name: Migration Validation (v2.1.18 → New)
+    name: Migration Validation (v2.2.0 → New)
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.draft == false)
+    concurrency:
+      group: streamkap-staging-fixtures
+      cancel-in-progress: false
+      queue: max
     environment: staging
-    timeout-minutes: 90
+    timeout-minutes: 190
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: 'go.mod'
           cache: true
 
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
-          terraform_version: '1.10.*'
+          terraform_version: '1.16.1'
           terraform_wrapper: false
 
       - name: Install gotestsum
-        run: go install gotest.tools/gotestsum@latest
+        run: go install gotest.tools/gotestsum@v1.13.0
+
+      # Credentials come from the same single env.json blob in 1Password that
+      # pr-acceptance.yml uses. This job previously read repo secrets named
+      # STREAMKAP_CLIENT_ID / STREAMKAP_SECRET directly; those do not exist, so
+      # every migration case that does not self-skip failed with
+      # "Missing Streamkap API client_id" before reaching any provider code.
+      - name: Load env.json from 1Password
+        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
+        with:
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          # OP_ENV_REF holds the op://<vault>/<item>/<field> reference so internal
+          # vault and item names stay out of this public repo.
+          STREAMKAP_ENV_JSON: ${{ secrets.OP_ENV_REF }}
+
+      - name: Export credentials into the job environment
+        run: |
+          set -euo pipefail
+          if [ -z "${STREAMKAP_ENV_JSON:-}" ]; then
+            echo "STREAMKAP_ENV_JSON is empty — check the op:// reference and the vault item." >&2
+            exit 1
+          fi
+          printf '%s' "$STREAMKAP_ENV_JSON" | jq -e 'type == "object"' >/dev/null \
+            || { echo "env.json must be a flat JSON object of {\"VAR\": \"value\"}." >&2; exit 1; }
+
+          # Values may be multiline (PEM keys), so use the heredoc form of
+          # $GITHUB_ENV and mask every value line.
+          while IFS= read -r key; do
+            value="$(printf '%s' "$STREAMKAP_ENV_JSON" | jq -r --arg k "$key" '.[$k]')"
+            while IFS= read -r line; do
+              [ -n "$line" ] && echo "::add-mask::$line"
+            done <<< "$value"
+            delim="EOF_$(printf '%s' "$key" | tr -c 'A-Za-z0-9' '_')"
+            {
+              echo "${key}<<${delim}"
+              printf '%s\n' "$value"
+              echo "${delim}"
+            } >> "$GITHUB_ENV"
+          done < <(printf '%s' "$STREAMKAP_ENV_JSON" | jq -r 'keys[]')
+
+          count="$(printf '%s' "$STREAMKAP_ENV_JSON" | jq -r 'keys | length')"
+          echo "Exported $count credential variables from env.json."
 
       - name: Run Migration Tests
         env:
           TF_ACC: '1'
-          STREAMKAP_CLIENT_ID: ${{ secrets.STREAMKAP_CLIENT_ID }}
-          STREAMKAP_SECRET: ${{ secrets.STREAMKAP_SECRET }}
-          STREAMKAP_HOST: ${{ secrets.STREAMKAP_HOST }}
-          TF_VAR_source_postgresql_hostname: ${{ secrets.TF_VAR_SOURCE_POSTGRESQL_HOSTNAME }}
-          TF_VAR_source_postgresql_password: ${{ secrets.TF_VAR_SOURCE_POSTGRESQL_PASSWORD }}
         run: |
           gotestsum --jsonfile migration-results.json \
             --junitfile migration-results.xml \
@@ -53,16 +96,19 @@ jobs:
       - name: Check for behavioral differences
         if: failure()
         run: |
-          echo "## Migration Test Failure" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The new provider produces different behavior than v2.1.18." >> $GITHUB_STEP_SUMMARY
-          echo "This indicates a potential breaking change." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Failed Tests:" >> $GITHUB_STEP_SUMMARY
-          jq -r '.[] | select(.Action == "fail") | "- \(.Test)"' migration-results.json >> $GITHUB_STEP_SUMMARY || true
+          {
+            echo "## Migration Test Failure"
+            echo ""
+            echo "Migration validation did not complete successfully. Inspect the job errors before attributing the failure to provider behavior."
+            echo ""
+            echo "### Failed Tests:"
+            if [ -f migration-results.json ]; then
+              jq -r 'select(.Action == "fail" and .Test != null) | "- \(.Test)"' migration-results.json
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload results
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: migration-test-results

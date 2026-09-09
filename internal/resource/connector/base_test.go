@@ -1,6 +1,8 @@
 package connector
 
 import (
+	"context"
+	"reflect"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -14,6 +16,27 @@ type fakeModel struct {
 	Password types.String `tfsdk:"password"`
 	Token    types.String `tfsdk:"token"`
 	Region   types.String `tfsdk:"region"`
+}
+
+func TestExtractValueHook_PreservesExplicitEmptyMap(t *testing.T) {
+	r := &BaseConnectorResource{}
+	hook := r.extractValueHook()
+
+	empty := map[string]types.String{}
+	got, handled := hook(context.Background(), reflect.ValueOf(empty))
+	if !handled {
+		t.Fatal("map value was not handled")
+	}
+	gotMap, ok := got.(map[string]string)
+	if !ok || gotMap == nil || len(gotMap) != 0 {
+		t.Fatalf("explicit empty map became %#v, want non-nil empty map", got)
+	}
+
+	var unset map[string]types.String
+	got, handled = hook(context.Background(), reflect.ValueOf(unset))
+	if !handled || got != nil {
+		t.Fatalf("unset map became %#v (handled=%v), want nil", got, handled)
+	}
 }
 
 type fakeConfig struct{}

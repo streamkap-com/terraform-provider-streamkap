@@ -54,7 +54,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "~> 2.1"
     }
   }
 }
@@ -76,7 +76,7 @@ export STREAMKAP_SECRET="your-secret"
 resource "streamkap_source_postgresql" "my_source" {
   name              = "production-postgres"
   database_hostname = "db.example.com"
-  database_port     = "5432"
+  database_port     = 5432
   database_user     = "streamkap"
   database_password = var.db_password
   database_dbname   = "mydb"
@@ -123,25 +123,7 @@ See [examples/](./examples/) for complete configurations covering every supporte
 ## Requirements
 
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.25 (for development — see the `go` directive in `go.mod`)
-
-## Installation
-
-```hcl
-terraform {
-  required_providers {
-    streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
-    }
-  }
-}
-
-provider "streamkap" {
-  # Credentials loaded from environment variables:
-  # STREAMKAP_CLIENT_ID and STREAMKAP_SECRET
-}
-```
+- [Go](https://golang.org/doc/install) >= 1.27.1 (for development — see the `go` directive in `go.mod`)
 
 ## Authentication
 
@@ -160,59 +142,6 @@ provider "streamkap" {
   secret    = "your-secret"
 }
 ```
-
-## Example Usage
-
-```hcl
-# Create a PostgreSQL source
-resource "streamkap_source_postgresql" "example" {
-  name              = "my-postgresql-source"
-  database_hostname = "db.example.com"
-  database_port     = "5432"
-  database_user     = "streamkap"
-  database_password = "secret"
-  database_dbname   = "mydb"
-}
-
-# Create a Snowflake destination
-resource "streamkap_destination_snowflake" "example" {
-  name                    = "my-snowflake-dest"
-  snowflake_url_name      = "account.snowflakecomputing.com"
-  snowflake_user_name     = "streamkap"
-  snowflake_private_key   = file("~/.ssh/snowflake_key.pem")
-  snowflake_database_name = "STREAMKAP_DB"
-  snowflake_schema_name   = "PUBLIC"
-}
-
-# Tag for organizing related resources in the Streamkap UI
-resource "streamkap_tag" "production" {
-  name        = "production"
-  description = "Production environment resources"
-  type        = ["sources", "destinations", "pipelines"]
-}
-
-# Create a pipeline connecting source to destination
-resource "streamkap_pipeline" "example" {
-  name = "my-pipeline"
-
-  source = {
-    id        = streamkap_source_postgresql.example.id
-    name      = streamkap_source_postgresql.example.name
-    connector = streamkap_source_postgresql.example.connector
-    topics    = ["public.orders"]
-  }
-
-  destination = {
-    id        = streamkap_destination_snowflake.example.id
-    name      = streamkap_destination_snowflake.example.name
-    connector = streamkap_destination_snowflake.example.connector
-  }
-
-  tags = [streamkap_tag.production.id]
-}
-```
-
-See the [examples](./examples/) directory for more complete examples.
 
 ## Development
 
@@ -307,30 +236,11 @@ connector.
 - [Changelog](CHANGELOG.md) - Version history and breaking changes
 - [Architecture](docs/ARCHITECTURE.md) - Provider design and code structure
 
-## AI-Agent Compatibility
+## Schema discovery
 
-This provider is optimized for use with AI assistants via the [Terraform MCP Server](https://github.com/hashicorp/terraform-mcp-server). AI agents can leverage:
-
-- **Rich Schema Descriptions**: All resources have detailed `MarkdownDescription` fields with valid values, defaults, and security notes
-- **Structured Examples**: Each resource includes `basic.tf` (minimal config) and `complete.tf` (all options) examples
-- **Semantic Documentation**: Enum fields list valid values, sensitive fields include security warnings
-
-### Using with AI Assistants
-
-When working with AI coding assistants (Claude, Copilot, etc.), the provider's enhanced schema descriptions enable:
-
-1. **Accurate code generation** - AI can suggest correct attribute names and valid values
-2. **Security awareness** - Sensitive fields are clearly marked
-3. **Default value knowledge** - AI knows what defaults are applied
-
-Example prompt for AI assistants:
-```
-Create a Streamkap PostgreSQL source connected to a Snowflake destination
-with CDC enabled and SSL required.
-```
-
-See [AGENTS.md](AGENTS.md) for the agent-facing guide: resource catalog, common
-patterns, authentication, and the errors agents hit most often.
+Use `terraform providers schema -json` to inspect attributes, types, sensitivity
+and descriptions. Resource examples live under `examples/resources/`; the
+[agent guide](AGENTS.md) documents configuration patterns and provider development.
 
 ## Upgrading
 
@@ -353,7 +263,7 @@ for the latest one. Each beta may introduce further breaking changes, so a range
 constraint can pull one you haven't validated:
 
 ```hcl
-version = "3.0.0-beta.25" # exact pin; do not use a range for pre-releases
+version = "3.0.0-beta.30" # exact pin; do not use a range for pre-releases
 ```
 
 ## License

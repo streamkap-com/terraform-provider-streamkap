@@ -62,12 +62,12 @@ func testAccPreCheck(t *testing.T) {
 	}
 }
 
-// legacyProviderConfig returns ExternalProvider config for the OLD provider (v2.1.18)
+// legacyProviderConfig returns ExternalProvider config for the current stable provider (v2.2.0)
 // Used in migration tests to create state with old provider, then verify new provider
 // produces no planned changes.
 //
 // Requirements:
-// - v2.1.18 must be available in Terraform Registry
+// - v2.2.0 must be available in Terraform Registry
 // - If provider fetch fails, migration tests will error (not skip)
 // - Verify with: terraform providers mirror -platform=linux_amd64 /tmp/mirror
 //
@@ -76,7 +76,7 @@ func testAccPreCheck(t *testing.T) {
 func legacyProviderConfig() map[string]resource.ExternalProvider {
 	return map[string]resource.ExternalProvider{
 		"streamkap": {
-			VersionConstraint: "2.1.18",
+			VersionConstraint: "2.2.0",
 			Source:            "streamkap-com/streamkap",
 		},
 	}

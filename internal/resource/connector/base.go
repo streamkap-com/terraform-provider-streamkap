@@ -734,7 +734,7 @@ func (r *BaseConnectorResource) extractValueHook() shared.ExtractValueFunc {
 		if fieldValue.Kind() == reflect.Map {
 			mapType := fieldValue.Type()
 			if mapType.Key().Kind() == reflect.String {
-				if fieldValue.IsNil() || fieldValue.Len() == 0 {
+				if fieldValue.IsNil() {
 					return nil, true
 				}
 
@@ -748,9 +748,6 @@ func (r *BaseConnectorResource) extractValueHook() shared.ExtractValueFunc {
 						if !value.IsNull() && !value.IsUnknown() {
 							result[key] = value.ValueString()
 						}
-					}
-					if len(result) == 0 {
-						return nil, true
 					}
 					return result, true
 				}
@@ -766,9 +763,6 @@ func (r *BaseConnectorResource) extractValueHook() shared.ExtractValueFunc {
 						if len(nestedMap) > 0 {
 							result[key] = nestedMap
 						}
-					}
-					if len(result) == 0 {
-						return nil, true
 					}
 					return result, true
 				}
@@ -897,8 +891,16 @@ func (r *BaseConnectorResource) setNestedMapValue(ctx context.Context, cfg map[s
 		return
 	}
 
-	if len(apiMap) == 0 {
+	if apiMap == nil {
 		fieldValue.Set(reflect.Zero(fieldValue.Type()))
+		return
+	}
+
+	// An explicit `{}` clears the mapping and has to round-trip as an empty map.
+	// Collapsing it to null makes Terraform reject the apply with
+	// "was cty.MapValEmpty(...), but now null".
+	if len(apiMap) == 0 {
+		fieldValue.Set(reflect.MakeMap(fieldValue.Type()))
 		return
 	}
 

@@ -5,8 +5,9 @@
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -31,7 +32,7 @@ resource "streamkap_source_supabase" "example-source-supabase" {
 
   # Connection settings
   database_hostname = var.source_supabase_hostname
-  database_port     = "5432"
+  database_port     = 5432
   database_user     = "postgres"
   database_password = var.source_supabase_password
   database_dbname   = "postgres"
@@ -43,7 +44,7 @@ resource "streamkap_source_supabase" "example-source-supabase" {
   snapshot_read_only = "Yes" # Options: Yes, No
 
   # Signal table for incremental snapshots
-  signal_data_collection_schema_or_database = "streamkap"
+  signal_data_collection_schema_or_database = "streamkap.streamkap_signal"
 
   # Schema and table selection
   schema_include_list = "public,auth"
@@ -71,7 +72,7 @@ resource "streamkap_source_supabase" "example-source-supabase" {
   ssh_enabled = false
   # When ssh_enabled = true, also configure:
   # ssh_host = "bastion.example.com"
-  # ssh_port = "22"
+  # ssh_port = 22
   # ssh_user = "streamkap"
 }
 

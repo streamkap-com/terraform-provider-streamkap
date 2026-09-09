@@ -5,8 +5,9 @@
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -31,7 +32,7 @@ resource "streamkap_source_alloydb" "example-source-alloydb" {
 
   # Connection settings
   database_hostname = var.source_alloydb_hostname
-  database_port     = "5432"
+  database_port     = 5432
   database_user     = "streamkap_user"
   database_password = var.source_alloydb_password
   database_dbname   = "mydb"
@@ -43,7 +44,7 @@ resource "streamkap_source_alloydb" "example-source-alloydb" {
   snapshot_read_only = "Yes" # Options: Yes, No
 
   # Signal table for incremental snapshots
-  signal_data_collection_schema_or_database = "streamkap"
+  signal_data_collection_schema_or_database = "streamkap.streamkap_signal"
 
   # Schema and table selection
   schema_include_list = "public,analytics"
@@ -71,7 +72,7 @@ resource "streamkap_source_alloydb" "example-source-alloydb" {
   ssh_enabled = false
   # When ssh_enabled = true, also configure:
   # ssh_host = "bastion.example.com"
-  # ssh_port = "22"
+  # ssh_port = 22
   # ssh_user = "streamkap"
 }
 

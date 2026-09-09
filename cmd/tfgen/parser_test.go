@@ -284,6 +284,7 @@ func TestTerraformType(t *testing.T) {
 		{"textarea", TerraformTypeString},
 		{"json", TerraformTypeJSON},
 		{"datetime", TerraformTypeString},
+		{"code-editor", TerraformTypeString},
 		{"number", TerraformTypeInt64},
 		{"boolean", TerraformTypeBool},
 		{"toggle", TerraformTypeBool},
@@ -300,6 +301,69 @@ func TestTerraformType(t *testing.T) {
 		if result != tt.expected {
 			t.Errorf("TerraformType() for control %q = %q, want %q", tt.control, result, tt.expected)
 		}
+	}
+}
+
+func TestHasSupportedControl(t *testing.T) {
+	for _, control := range []string{
+		"string", "password", "textarea", "datetime", "code-editor", "json",
+		"number", "boolean", "toggle", "one-select", "multi-select", "slider",
+	} {
+		t.Run(control, func(t *testing.T) {
+			entry := ConfigEntry{Value: ValueObject{Control: control}}
+			if !entry.HasSupportedControl() {
+				t.Errorf("HasSupportedControl() = false for %q", control)
+			}
+		})
+	}
+
+	entry := ConfigEntry{Value: ValueObject{Control: "future-control"}}
+	if entry.HasSupportedControl() {
+		t.Error("HasSupportedControl() = true for an unknown control")
+	}
+}
+
+func TestIsBackendDerived(t *testing.T) {
+	tests := []struct {
+		name  string
+		entry ConfigEntry
+		want  bool
+	}{
+		{
+			name: "derived readonly field",
+			entry: ConfigEntry{Value: ValueObject{
+				Readonly:       true,
+				DeriveFunction: "derive_value",
+			}},
+			want: true,
+		},
+		{
+			name:  "generated webhook URL",
+			entry: ConfigEntry{Name: "webhook.url", Value: ValueObject{Readonly: true}},
+		},
+		{
+			name:  "generated webhook API key",
+			entry: ConfigEntry{Name: "api.key", Value: ValueObject{Readonly: true}},
+		},
+		{
+			name: "readonly API field",
+			entry: ConfigEntry{Value: ValueObject{
+				Readonly:      true,
+				EarlyResolved: "default_value",
+			}},
+		},
+		{
+			name:  "editable API key",
+			entry: ConfigEntry{Name: "api.key", Value: ValueObject{Readonly: false}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.entry.IsBackendDerived(); got != tt.want {
+				t.Errorf("IsBackendDerived() = %t, want %t", got, tt.want)
+			}
+		})
 	}
 }
 
