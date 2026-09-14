@@ -13,6 +13,7 @@ var sourcePostgreSQLSSHHost = os.Getenv("TF_VAR_source_postgresql_ssh_host")
 
 func TestAccSourcePostgreSQLResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read testing

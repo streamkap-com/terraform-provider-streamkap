@@ -13,6 +13,7 @@ var sourceSQLServerSSHHost = os.Getenv("TF_VAR_source_sqlserver_ssh_host")
 
 func TestAccSourceSQLServerResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read testing

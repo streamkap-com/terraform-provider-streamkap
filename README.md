@@ -1,5 +1,22 @@
 # Terraform Provider
 
+## v2 maintenance
+
+When v3 becomes stable, v2 becomes the legacy maintenance line. Bug fixes and
+security patches continue through **15 October 2026**; new features and
+connectors are v3-only. From **16 October 2026**, v2 receives no further fixes
+or support. Published v2 releases remain available. Pin `version = "~> 2.2"`
+until you are ready to upgrade.
+
+## Releasing v2 patches
+
+Use `main` before branch promotion and `v2` afterwards. Prepare a new bracketed
+changelog heading such as `## [2.2.1] - <date>`, preserving older release entries.
+Fetch remote refs and run `bash scripts/release-preflight.sh <tag>`. The tagged
+commit must already be on the release branch. Branch and tag pushes require
+maintainer approval; verify the published download and registry installation
+before announcing a release.
+
 ## High Level Design
 
 The Streamkap Terraform provider is a wrapper over the Streamkap API implemented in the [backend project](../backend/)
@@ -14,7 +31,7 @@ Resources are streamkap sources, destinations, pipelines and transforms.
 ## Requirements
 
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.20
+- [Go](https://golang.org/doc/install) >= 1.27.1 (building the provider)
 
 ## Using the provider
 

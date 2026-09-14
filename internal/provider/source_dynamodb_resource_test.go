@@ -13,6 +13,7 @@ var sourceDynamoDBAWSSecretKey = os.Getenv("TF_VAR_source_dynamodb_aws_secret_ke
 
 func TestAccSourceDynamoDBResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing

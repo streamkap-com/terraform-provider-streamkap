@@ -13,6 +13,7 @@ var icebergAwsSecretKey = os.Getenv("TF_VAR_iceberg_aws_secret_key")
 
 func TestAccDestinationIcebergResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read Testing

@@ -13,6 +13,7 @@ var sourceMySQLSSHHost = os.Getenv("TF_VAR_source_mysql_ssh_host")
 
 func TestAccSourceMySQLResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read testing

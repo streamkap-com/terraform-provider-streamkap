@@ -12,6 +12,7 @@ var sourceMongoDBSSHHost = os.Getenv("TF_VAR_source_mongodb_ssh_host")
 
 func TestAccSourceMongoDBResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Step 1: Create and Read testing

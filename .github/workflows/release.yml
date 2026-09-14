@@ -8,14 +8,40 @@ on:
     tags:
       - "v*"
 
-# Releases need permissions to read and write the repository contents.
-# GitHub considers creating releases and uploading assets as writing contents.
 permissions:
-  contents: write
+  contents: read
+
+env:
+  TF_ACC: ""
 
 jobs:
-  goreleaser:
+  preflight:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Verify tag, release branch and changelog
+        run: bash scripts/release-preflight.sh "$GITHUB_REF_NAME"
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Test release preflight
+        run: bash scripts/release-preflight-test.sh
+      - name: Go vulnerability analysis
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.7.0 ./...
+      - name: Build and test
+        run: |
+          go build ./...
+          go vet ./...
+          go test -short ./...
+
+  goreleaser:
+    needs: preflight
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
         with:

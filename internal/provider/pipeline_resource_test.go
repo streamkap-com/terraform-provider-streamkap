@@ -100,6 +100,7 @@ data "streamkap_tag" "production-tag" {
 
 func TestAccPostgreSQLSnowflakePipelineResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
@@ -260,6 +261,7 @@ resource "streamkap_destination_clickhouse" "test" {
 
 func TestAccDynamoDBClickHousePipelineResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing

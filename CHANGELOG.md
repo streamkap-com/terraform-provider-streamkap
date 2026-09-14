@@ -1,6 +1,22 @@
 # Changelog
 
-## Unreleased
+## [Unreleased]
+
+### Fixed
+
+- Patch gRPC and Go networking/text dependencies for reported vulnerabilities,
+  build with Go 1.27.1, and require vulnerability analysis before publishing.
+
+- Run credential checks inside acceptance-test setup so offline release checks
+  work without API credentials.
+
+- Validate release tags, branch ancestry, changelog entries and offline checks
+  before publishing v2 patches, including after the legacy branch is renamed.
+
+### Maintenance
+
+- From v3 stable, v2 receives bug and security fixes only through 15 October
+  2026. Support ends on 16 October 2026.
 
 ## 2.2.0 (June 22, 2026)
 
