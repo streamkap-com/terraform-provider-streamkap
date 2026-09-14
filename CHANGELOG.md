@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0-beta.32] - 2026-09-14 (Pre-release)
+
 ### Fixed
+- Load the shared staging credentials for scheduled, push and manual acceptance
+  runs so they can exercise the provider instead of failing on missing inputs.
 - Run the docs drift check on every pull request so it can be required without
   leaving filtered changes waiting for a check that never starts.
 - Validate release tags and changelog entries before publishing, with branch
@@ -15,8 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Re-enable migration cases with version-specific configurations, stable-ID
   checks and post-apply convergence assertions. Report skipped or missing
   migration cases as incomplete coverage.
-- Restore full GitHub releases for beta tags; example pins use the registry's
-  published beta.30 until a subsequent beta is available.
+- Publish beta artifacts as full GitHub releases so the Terraform Registry can
+  ingest them.
 - Complete PostgreSQL and Iceberg destination migration guidance, correct the
   v2.2.0 baseline, and document behavior-changing defaults without blanket
   replacement or data-safety guarantees.

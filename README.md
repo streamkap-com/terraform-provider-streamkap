@@ -270,7 +270,7 @@ for the latest one. Each beta may introduce further breaking changes, so a range
 constraint can pull one you haven't validated:
 
 ```hcl
-version = "3.0.0-beta.30" # exact pin; do not use a range for pre-releases
+version = "3.0.0-beta.32" # exact pin; do not use a range for pre-releases
 ```
 
 ## License
