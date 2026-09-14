@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Connector create and update no longer fail with "produced an unexpected new
+  value: was cty.StringVal(...), but now null" when the backend drops a
+  defaulted string whose gating condition is unmet, such as
+  `iceberg_catalog_scope` on an Iceberg destination whose catalog auth mode is
+  not `oauth2`. The planned value is kept in state, as already done for
+  sensitive attributes; a non-null echo that differs from the plan still fails.
+
 ## [3.0.0-beta.32] - 2026-09-14 (Pre-release)
 
 ### Fixed

@@ -337,7 +337,7 @@ replacement attribute and no alias — remove them from your configuration.
 |----------|-------------------|-------|
 | `streamkap_source_postgresql` | `streamkap_snapshot_large_table_threshold` | Early-v3-beta field, absent from v2.2.0. Backend dropped `streamkap.snapshot.large.table.threshold`. |
 | `streamkap_source_postgresql` | `streamkap_snapshot_custom_table_config` | Early-v3-beta field, absent from v2.2.0. Backend dropped the field. |
-| `streamkap_source_sqlserver` | `snapshot_large_table_threshold` | The v2 attribute and its early-v3 replacement `streamkap_snapshot_large_table_threshold` are removed. |
+| `streamkap_source_sqlserver` | `snapshot_large_table_threshold` | The v2 attribute and its early-v3 replacement `streamkap_snapshot_large_table_threshold` are removed. Because v2.2.0 always sends its default, creating a **new** SQL Server source with v2.2.0 now fails with `was cty.NumberIntVal(20000), but now null`; existing v2-managed sources are unaffected and upgrade normally. |
 | `streamkap_source_sqlserver` | `snapshot_custom_table_config` | The backend has no `streamkap.snapshot.custom.table.config.user.defined` field, so **every value ever set here was silently discarded** — it never reached the connector. Per-table chunk counts are no longer configurable; the backend sizes chunks itself. Use `snapshot_parallelism` (and, if needed, `streamkap_snapshot_chunk_size_bytes`) to tune snapshot throughput. |
 
 `streamkap_snapshot_parallelism` is unaffected and keeps its

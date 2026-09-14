@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/shared"
@@ -16,6 +17,7 @@ type fakeModel struct {
 	Password types.String `tfsdk:"password"`
 	Token    types.String `tfsdk:"token"`
 	Region   types.String `tfsdk:"region"`
+	Scope    types.String `tfsdk:"scope"`
 }
 
 func TestExtractValueHook_PreservesExplicitEmptyMap(t *testing.T) {
@@ -48,6 +50,11 @@ func (fakeConfig) GetSchema() schema.Schema {
 			"password": schema.StringAttribute{Optional: true, Computed: true, Sensitive: true},
 			"token":    schema.StringAttribute{Required: true, Sensitive: true},
 			"region":   schema.StringAttribute{Optional: true},
+			"scope": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Default:  stringdefault.StaticString("PRINCIPAL_ROLE:ALL"),
+			},
 		},
 	}
 }
@@ -72,5 +79,40 @@ func TestSensitiveStringAttrNames(t *testing.T) {
 		if !want[name] {
 			t.Errorf("unexpected sensitive attr %q", name)
 		}
+	}
+}
+
+// TestDefaultedStringAttrNames locks the contract Create/Read/Update use to
+// refill defaulted strings the backend drops: only Optional+Computed string
+// attributes with a client-side Default qualify.
+func TestDefaultedStringAttrNames(t *testing.T) {
+	r := NewBaseConnectorResource(fakeConfig{}).(*BaseConnectorResource)
+
+	got := shared.DefaultedStringAttrNames(r.config.GetSchema())
+	if len(got) != 1 || got[0] != "scope" {
+		t.Fatalf("DefaultedStringAttrNames() = %v, want exactly [scope]", got)
+	}
+}
+
+// TestDefaultedStringNullEchoIsRefilled reproduces the Iceberg
+// iceberg_catalog_scope failure: the plan carries the Default, the backend
+// drops the field because its gating condition is unmet and echoes null, and
+// Terraform rejects the apply unless the planned value is put back. A non-null
+// echo that differs from the plan must survive so a real mismatch still fails.
+func TestDefaultedStringNullEchoIsRefilled(t *testing.T) {
+	r := NewBaseConnectorResource(fakeConfig{}).(*BaseConnectorResource)
+	model := &fakeModel{Name: types.StringValue("dest"), Scope: types.StringValue("PRINCIPAL_ROLE:ALL")}
+	planned := shared.CaptureStringFields(model, shared.DefaultedStringAttrNames(r.config.GetSchema()))
+
+	model.Scope = types.StringNull() // API echo omitted the field
+	shared.FillNullStringFields(model, planned)
+	if model.Scope.ValueString() != "PRINCIPAL_ROLE:ALL" {
+		t.Errorf("null echo not refilled from plan: got %#v", model.Scope)
+	}
+
+	model.Scope = types.StringValue("other")
+	shared.FillNullStringFields(model, planned)
+	if model.Scope.ValueString() != "other" {
+		t.Errorf("a differing non-null echo must be kept: got %#v", model.Scope)
 	}
 }

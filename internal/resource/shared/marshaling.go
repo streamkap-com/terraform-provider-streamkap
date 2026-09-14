@@ -34,6 +34,29 @@ func SensitiveStringAttrNames(s schema.Schema) []string {
 	return names
 }
 
+// DefaultedStringAttrNames returns the names of top-level Optional+Computed
+// string attributes that carry a client-side Default.
+//
+// The backend does not store every field it accepts: a conditionally visible
+// field whose gating condition is unmet (Iceberg's `iceberg.catalog.scope`
+// when `iceberg.catalog.auth.mode` is not `oauth2`) is dropped from the saved
+// config and echoed as null. Terraform has already resolved the Default into
+// the plan, so a null echo fails the apply with "produced an unexpected new
+// value: was cty.StringVal(...), but now null". Create/Update fill those nulls
+// back from the plan and Read fills them from prior state (see
+// FillNullStringFields); a non-null echo that differs from the plan is left
+// alone so a genuine mismatch still surfaces.
+func DefaultedStringAttrNames(s schema.Schema) []string {
+	var names []string
+	for name, attr := range s.Attributes {
+		sa, ok := attr.(schema.StringAttribute)
+		if ok && sa.Optional && sa.Computed && sa.Default != nil {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
 // BuildTfsdkFieldIndex builds a map from tfsdk struct tag to field index path
 // for quick lookup during reflection-based marshaling. It recurses into
 // anonymous (embedded) struct fields so promoted fields are discoverable.

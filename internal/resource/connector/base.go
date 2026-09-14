@@ -212,8 +212,10 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	// Capture user-supplied secrets before the API echo can overwrite them.
+	// Capture user-supplied secrets before the API echo can overwrite them, and
+	// the defaulted strings the backend may drop (see shared.DefaultedStringAttrNames).
 	plannedSecrets := shared.CaptureStringFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
+	plannedDefaults := shared.CaptureStringFields(model, shared.DefaultedStringAttrNames(r.config.GetSchema()))
 
 	// Get name from model
 	name := r.getStringField(model, "Name")
@@ -304,6 +306,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, responseTags))
 	r.configMapToModel(ctx, responseConfig, model)
 	shared.PreserveKnownStringFields(model, plannedSecrets)
+	shared.FillNullStringFields(model, plannedDefaults)
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
@@ -349,6 +352,9 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 	// (see shared.FillNullStringFields); prior state is the only source we have
 	// on refresh, since Read gets no plan.
 	priorSecrets := shared.CaptureStringFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
+	// Same for defaulted strings the backend drops when their gating condition
+	// is unmet: nulling them in state would plan the Default back every run.
+	priorDefaults := shared.CaptureStringFields(model, shared.DefaultedStringAttrNames(r.config.GetSchema()))
 
 	// Get ID from model
 	id := r.getStringField(model, "ID")
@@ -421,6 +427,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(priorTags, responseTags))
 	r.configMapToModel(ctx, responseConfig, model)
 	shared.FillNullStringFields(model, priorSecrets)
+	shared.FillNullStringFields(model, priorDefaults)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
@@ -462,8 +469,10 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	// Capture user-supplied secrets before the API echo can overwrite them.
+	// Capture user-supplied secrets before the API echo can overwrite them, and
+	// the defaulted strings the backend may drop (see shared.DefaultedStringAttrNames).
 	plannedSecrets := shared.CaptureStringFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
+	plannedDefaults := shared.CaptureStringFields(model, shared.DefaultedStringAttrNames(r.config.GetSchema()))
 
 	// Get ID and name from model
 	id := r.getStringField(model, "ID")
@@ -548,6 +557,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, responseTags))
 	r.configMapToModel(ctx, responseConfig, model)
 	shared.PreserveKnownStringFields(model, plannedSecrets)
+	shared.FillNullStringFields(model, plannedDefaults)
 
 	// connector_status handling on Update.
 	//
