@@ -327,6 +327,10 @@ explicitly to match your intended deletion behavior.
 
 `filename_prefix` was removed. Incorporate the intended prefix into
 `file_name_template` and review the resulting object paths before applying.
+Because v2.2.0 always sends its `""` default for the removed field, creating a
+**new** S3 destination with v2.2.0 now fails with
+`.filename_prefix: was cty.StringVal(""), but now null`; existing v2-managed
+S3 destinations are unaffected and upgrade normally.
 
 #### Attributes Removed by the Backend (Config Edit Required)
 

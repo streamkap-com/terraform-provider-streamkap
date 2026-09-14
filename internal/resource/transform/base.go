@@ -220,7 +220,7 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	// Capture user-supplied secrets before the API echo can overwrite them.
-	plannedSecrets := shared.CaptureStringFields(model, r.sensitiveStringAttrNames())
+	plannedSecrets := shared.CaptureFields(model, r.sensitiveStringAttrNames())
 
 	// Get name from model
 	name := r.getStringField(model, "Name")
@@ -272,7 +272,7 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 	r.setStringField(model, "ConnectorStatus", constants.JobStatusUnknown)
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, transform.Tags))
 	r.configMapToModel(ctx, transform.Config, model)
-	shared.PreserveKnownStringFields(model, plannedSecrets)
+	shared.PreserveKnownFields(model, plannedSecrets)
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
@@ -384,9 +384,9 @@ func (r *BaseTransformResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	// Snapshot the secrets already in state. The API response can null them out
-	// (see shared.FillNullStringFields); prior state is the only source we have
+	// (see shared.FillNullFields); prior state is the only source we have
 	// on refresh, since Read gets no plan.
-	priorSecrets := shared.CaptureStringFields(model, r.sensitiveStringAttrNames())
+	priorSecrets := shared.CaptureFields(model, r.sensitiveStringAttrNames())
 
 	// Get ID from model
 	id := r.getStringField(model, "ID")
@@ -420,7 +420,7 @@ func (r *BaseTransformResource) Read(ctx context.Context, req resource.ReadReque
 	r.setStringField(model, "TransformType", transform.TransformType)
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(priorTags, transform.Tags))
 	r.configMapToModel(ctx, transform.Config, model)
-	shared.FillNullStringFields(model, priorSecrets)
+	shared.FillNullFields(model, priorSecrets)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
@@ -572,7 +572,7 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Capture user-supplied secrets before the API echo can overwrite them.
-	plannedSecrets := shared.CaptureStringFields(model, r.sensitiveStringAttrNames())
+	plannedSecrets := shared.CaptureFields(model, r.sensitiveStringAttrNames())
 
 	// Get ID and name from model
 	id := r.getStringField(model, "ID")
@@ -646,7 +646,7 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 	r.setStringField(model, "ConnectorStatus", constants.JobStatusUnknown)
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, transform.Tags))
 	r.configMapToModel(ctx, transform.Config, model)
-	shared.PreserveKnownStringFields(model, plannedSecrets)
+	shared.PreserveKnownFields(model, plannedSecrets)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)

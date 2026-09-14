@@ -16,9 +16,9 @@ import (
 )
 
 // SensitiveStringAttrNames returns the tfsdk names of every Sensitive string
-// attribute in s. These are the fields CaptureStringFields snapshots, because
-// the backend does not reliably echo secrets back — see
-// PreserveKnownStringFields (Create/Update) and FillNullStringFields (Read).
+// attribute in s. These are the fields CaptureFields snapshots, because the
+// backend does not reliably echo secrets back — see PreserveKnownFields
+// (Create/Update) and FillNullFields (Read).
 //
 // Only top-level string attributes are considered. Every sensitive attribute in
 // the generated schemas is a string; a Sensitive attribute of any other type, or
@@ -34,23 +34,39 @@ func SensitiveStringAttrNames(s schema.Schema) []string {
 	return names
 }
 
-// DefaultedStringAttrNames returns the names of top-level Optional+Computed
-// string attributes that carry a client-side Default.
+// DefaultedAttrNames returns the names of top-level Optional+Computed string,
+// bool, int64 and float64 attributes that carry a client-side Default.
 //
-// The backend does not store every field it accepts: a conditionally visible
-// field whose gating condition is unmet (Iceberg's `iceberg.catalog.scope`
-// when `iceberg.catalog.auth.mode` is not `oauth2`) is dropped from the saved
-// config and echoed as null. Terraform has already resolved the Default into
-// the plan, so a null echo fails the apply with "produced an unexpected new
-// value: was cty.StringVal(...), but now null". Create/Update fill those nulls
-// back from the plan and Read fills them from prior state (see
-// FillNullStringFields); a non-null echo that differs from the plan is left
-// alone so a genuine mismatch still surfaces.
-func DefaultedStringAttrNames(s schema.Schema) []string {
+// The backend does not store every field it accepts: a field whose
+// `kafka_config` is a dynamic function nulls its stored value whenever that
+// function returns false (`entity_changes.py`, the `not is_kafka_cfg` branch),
+// so a conditionally visible field whose gating condition is unmet is echoed
+// as null regardless of its type — Iceberg's `iceberg.catalog.scope` unless
+// `iceberg.catalog.auth.mode` is `oauth2`, Oracle's `lob.enabled` when
+// `log.mining.strategy` is `hybrid`. Terraform has already resolved the
+// Default into the plan, so a null echo fails the apply with "produced an
+// unexpected new value: was cty.StringVal(...), but now null" (or cty.False,
+// cty.NumberIntVal). Create/Update fill those nulls back from the plan and
+// Read fills them from prior state (see FillNullFields); a non-null echo that
+// differs from the plan is left alone so a genuine mismatch still surfaces.
+//
+// List and set defaults exist only on the pipeline resource, which does not
+// go through this path, so collection attributes are not considered.
+func DefaultedAttrNames(s schema.Schema) []string {
 	var names []string
-	for name, attr := range s.Attributes {
-		sa, ok := attr.(schema.StringAttribute)
-		if ok && sa.Optional && sa.Computed && sa.Default != nil {
+	for name, a := range s.Attributes {
+		var defaulted bool
+		switch typed := a.(type) {
+		case schema.StringAttribute:
+			defaulted = typed.Optional && typed.Computed && typed.Default != nil
+		case schema.BoolAttribute:
+			defaulted = typed.Optional && typed.Computed && typed.Default != nil
+		case schema.Int64Attribute:
+			defaulted = typed.Optional && typed.Computed && typed.Default != nil
+		case schema.Float64Attribute:
+			defaulted = typed.Optional && typed.Computed && typed.Default != nil
+		}
+		if defaulted {
 			names = append(names, name)
 		}
 	}
@@ -240,34 +256,34 @@ func ConfigMapToModel(ctx context.Context, cfg map[string]any, model any, mappin
 	}
 }
 
-// CaptureStringFields snapshots the current types.String values of the named
-// tfsdk attributes from model, keyed by tfsdk name. tfsdk names that don't
-// resolve to a types.String field are skipped. Used with
-// PreserveKnownStringFields to carry user-supplied values across an API
-// round-trip that would otherwise overwrite them.
-func CaptureStringFields(model any, tfsdkNames []string) map[string]types.String {
+// CaptureFields snapshots the current values of the named tfsdk attributes
+// from model, keyed by tfsdk name. tfsdk names that don't resolve to an
+// attr.Value field (types.String, types.Bool, types.Int64, ...) are skipped.
+// Used with PreserveKnownFields and FillNullFields to carry plan or prior-state
+// values across an API round-trip that would otherwise overwrite them.
+func CaptureFields(model any, tfsdkNames []string) map[string]attr.Value {
 	if len(tfsdkNames) == 0 {
 		return nil
 	}
 
 	v, tfsdkToField := BuildTfsdkFieldIndex(model)
 
-	out := make(map[string]types.String, len(tfsdkNames))
+	out := make(map[string]attr.Value, len(tfsdkNames))
 	for _, name := range tfsdkNames {
 		fieldPath, ok := tfsdkToField[name]
 		if !ok {
 			continue
 		}
-		if s, ok := v.FieldByIndex(fieldPath).Interface().(types.String); ok {
-			out[name] = s
+		if val, ok := v.FieldByIndex(fieldPath).Interface().(attr.Value); ok {
+			out[name] = val
 		}
 	}
 	return out
 }
 
-// PreserveKnownStringFields writes captured values back into model for every
-// field whose captured value is known (not null, not unknown), overwriting
-// whatever a prior step set.
+// PreserveKnownFields writes captured values back into model for every field
+// whose captured value is known (not null, not unknown), overwriting whatever
+// a prior step set.
 //
 // This implements write-only semantics for sensitive credential fields. The
 // Streamkap backend does not faithfully echo every secret back on
@@ -279,13 +295,15 @@ func CaptureStringFields(model any, tfsdkNames []string) map[string]types.String
 // apply: <field>: inconsistent values for sensitive attribute" whenever the
 // planned value is known but the echo differs. Captured null/unknown values are
 // left untouched so an unset Optional+Computed secret still defers to the echo.
-func PreserveKnownStringFields(model any, captured map[string]types.String) {
-	restoreStringFields(model, captured, false)
+func PreserveKnownFields(model any, captured map[string]attr.Value) {
+	restoreFields(model, captured, false)
 }
 
-// FillNullStringFields writes captured values back into model only for fields
-// the API response left Null (or Unknown), and only when the captured value is
-// known. It is the refresh-time counterpart of PreserveKnownStringFields.
+// FillNullFields writes captured values back into model only for fields the
+// API response left Null (or Unknown), and only when the captured value is
+// known. It is the refresh-time counterpart of PreserveKnownFields for
+// secrets, and the Create/Update/Read treatment of defaulted attributes the
+// backend drops (see DefaultedAttrNames).
 //
 // Read has no plan to fall back on, so prior state is the source of truth — but
 // unlike Create/Update it must not clobber what the API actually returned. The
@@ -299,15 +317,16 @@ func PreserveKnownStringFields(model any, captured map[string]types.String) {
 // rotated in the UI comes back with a new value and overwrites state, as it
 // should. On import there is no prior state, so nothing is captured and the API
 // value stands.
-func FillNullStringFields(model any, captured map[string]types.String) {
-	restoreStringFields(model, captured, true)
+func FillNullFields(model any, captured map[string]attr.Value) {
+	restoreFields(model, captured, true)
 }
 
-// restoreStringFields writes each known captured value back into model. When
+// restoreFields writes each known captured value back into model. When
 // onlyIfNull is set, a field the API populated is left alone and only the nulls
 // are filled — the difference between the Create/Update and the Read semantics
-// described on the two exported wrappers above.
-func restoreStringFields(model any, captured map[string]types.String, onlyIfNull bool) {
+// described on the two exported wrappers above. A captured value is written
+// only into a field of its own concrete type.
+func restoreFields(model any, captured map[string]attr.Value, onlyIfNull bool) {
 	if len(captured) == 0 {
 		return
 	}
@@ -315,7 +334,7 @@ func restoreStringFields(model any, captured map[string]types.String, onlyIfNull
 	v, tfsdkToField := BuildTfsdkFieldIndex(model)
 
 	for name, val := range captured {
-		if val.IsNull() || val.IsUnknown() {
+		if val == nil || val.IsNull() || val.IsUnknown() {
 			continue
 		}
 		fieldPath, ok := tfsdkToField[name]
@@ -323,11 +342,11 @@ func restoreStringFields(model any, captured map[string]types.String, onlyIfNull
 			continue
 		}
 		field := v.FieldByIndex(fieldPath)
-		if !field.CanSet() || field.Type() != reflect.TypeOf(types.String{}) {
+		if !field.CanSet() || field.Type() != reflect.TypeOf(val) {
 			continue
 		}
 		if onlyIfNull {
-			current, ok := field.Interface().(types.String)
+			current, ok := field.Interface().(attr.Value)
 			if !ok || (!current.IsNull() && !current.IsUnknown()) {
 				continue
 			}

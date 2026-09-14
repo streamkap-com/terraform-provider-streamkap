@@ -800,27 +800,35 @@ resource "streamkap_destination_postgresql" "migration_test" {
 }
 
 func TestAccDestinationS3_MigrationFromLegacy(t *testing.T) {
-	s3AwsAccessKey := os.Getenv("TF_VAR_s3_aws_access_key")
-	s3AwsSecretKey := os.Getenv("TF_VAR_s3_aws_secret_key")
+	// v2.2.0 declares filename_prefix as Optional+Computed with a "" default and
+	// always sends it, but the backend has since dropped the field, so every S3
+	// destination create under v2.2.0 fails with "produced an unexpected new
+	// value: .filename_prefix: was cty.StringVal(""), but now null" before v3
+	// is ever involved (docs/MIGRATION.md, S3 Destination). No v2.2.0
+	// configuration can build the legacy baseline, so this case cannot produce
+	// upgrade evidence until a v2 patch stops sending the field.
+	t.Skip("v2.2.0 cannot create an S3 destination against the current backend (filename_prefix echoes null); no v2 baseline to migrate from")
 
-	if s3AwsAccessKey == "" || s3AwsSecretKey == "" {
-		t.Skip("S3 environment variables must be set")
+	// Same TF_VAR names as TestAccDestinationS3Resource, which is what the
+	// credential blob provides.
+	if os.Getenv("TF_VAR_s3_aws_access_key_id") == "" || os.Getenv("TF_VAR_s3_aws_secret_access_key") == "" {
+		t.Skip("TF_VAR_s3_aws_access_key_id and TF_VAR_s3_aws_secret_access_key must be set")
 	}
 
 	name := acctestName(t, "migration")
 	config := providerConfig + fmt.Sprintf(`
-variable "s3_aws_access_key" { type = string }
-variable "s3_aws_secret_key" {
+variable "s3_aws_access_key_id" { type = string }
+variable "s3_aws_secret_access_key" {
   type      = string
   sensitive = true
 }
 
 resource "streamkap_destination_s3" "migration_test" {
 	name                  = %q
-	aws_access_key_id     = var.s3_aws_access_key
-	aws_secret_access_key = var.s3_aws_secret_key
+	aws_access_key_id     = var.s3_aws_access_key_id
+	aws_secret_access_key = var.s3_aws_secret_access_key
 	aws_s3_region         = "us-west-2"
-	aws_s3_bucket_name    = "migration-test-bucket"
+	aws_s3_bucket_name    = "bucketname"
 	format                = "JSON Array"
 }
 `, name)
