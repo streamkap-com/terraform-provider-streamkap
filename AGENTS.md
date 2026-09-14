@@ -237,17 +237,54 @@ Sessions here typically open right after a merge landed elsewhere — `git pull`
 
 ### Release flow
 
-"Release the next beta" = checkout `develop`, `git pull`, verify clean tree + passing tests, find the latest tag (`git tag --sort=-v:refname | head -1`), bump the beta number by one. **Pushing the tag triggers the public release workflow** — surface the exact `git tag`/`git push` commands and STOP for explicit approval. Never push tags or push `develop` unprompted.
+"Release the next beta" = use `develop` before promotion or `main` after promotion, pull, verify a clean tree and passing checks, and select the next unused beta tag. **Pushing the tag triggers the public release workflow** — surface the exact `git tag`/`git push` commands and STOP for explicit approval. Never push tags or push `develop` unprompted.
 
 Two preflight gates reject a tag before goreleaser runs, so check both *before* tagging:
 
-- The tag must match `^v3\.<minor>\.<patch>-beta\.<n>$` (betas release from `develop`; a bare `vX.Y.Z` releases from `main`), and the tagged commit must already be an ancestor of that branch. **Push the branch first, then tag.**
-- `CHANGELOG.md` must carry a `## [<version>]` heading matching the tag. The top section sits at `## [Unreleased]` between releases, so cutting it to `## [<version>] - <date> (Pre-release)` is a required release step, not bookkeeping. Verify with the same check the workflow uses:
-  `awk -v heading="## [3.0.0-beta.N]" '$0 == heading || index($0, heading " - ") == 1 {f=1} END{exit !f}' CHANGELOG.md`
+- Run `bash scripts/release-preflight.sh <tag>` after fetching remote refs. It
+  checks the tag syntax, branch ancestry and matching changelog heading. v2
+  patches use `v2` once it exists, otherwise `main`; v3 betas use `develop`
+  while it exists, otherwise `main`; v3 stable releases use `main`.
+- Prepare a matching `## [<version>] - <date>` changelog section for **every**
+  release, including a trial beta. Preserve previous release sections. Update
+  the version pins and rendered docs in the same commit. **Push the approved
+  branch commit before tagging it.**
 
-**Publishing is also gated on the security workflow, and trivy fails on any HIGH or CRITICAL advisory.** That gate is severity-only — it does not ask whether the code path is reachable — so a CVE disclosed against a transitive dependency makes an already-tagged release unpublishable with no code change. It happened on v3.0.0-beta.31: gRPC v1.83.1, which this line had bumped *to* for CVE-2026-84304, was itself hit by CVE-2026-84445.
+### Stable promotion
 
-When that happens, `goreleaser` shows as `skipped` and **nothing is published** — no GitHub release, no registry artifacts. Confirm with `gh release view <tag>` returning "release not found". Then bump the dependency, push `develop`, and re-point the tag (`git push origin :refs/tags/<tag>` then re-tag and push). Re-pointing is safe *only* because the tag published nothing; once a release exists, burn the number and cut the next one instead.
+Promotion requires an explicitly authorized branch reorganization and separate
+approval for public tags. Before changing branches, record both remote SHAs,
+review open PR bases and effective repository/organization protection rules,
+and verify the intended release commit. Migration results must identify which
+cases ran, failed or skipped; a skipped case is not upgrade evidence.
+
+1. Prepare release workflows on both lines. Workflows run from the tagged
+   commit: changes on `develop` do not update the v2 line's workflow.
+2. Rename GitHub `main` to `v2`, then `develop` to `main`, and explicitly select
+   the new `main` as default. Verify both SHAs, PR bases and protections after
+   each rename. Creating a copy named `v2` does not free the name `main`.
+3. Require `Build, vet and credential-free tests`, `golangci-lint`, `Workflow
+   lint`, `Docs match committed schemas`, `Go vulnerability analysis`, `trivy`,
+   `checkov` and `Secret scan` on the new `main`. Verify these exact contexts
+   report on an ordinary PR. Acceptance and migration remain advisory signals;
+   record unresolved failures before authorizing a release.
+4. Update branch/version guidance to describe the completed swap. For local
+   clones, rename the old local `main` to `v2` and `develop` to `main` where
+   those branches exist; fetch/prune, set each upstream to its matching remote
+   branch, and run `git remote set-head origin -a`. Preserve local work.
+5. Prepare the next unused beta's changelog and pins, run preflight and checks,
+   obtain tag approval, then verify its registry download and a clean
+   `terraform init` with an exact pin. Repeat the full release preparation for
+   `v3.0.0`; publish the migration guide before sending the customer notice.
+
+From v3 GA, v2 is the legacy maintenance line: bug and security fixes only
+through 15 October 2026, with support ending 16 October 2026. Existing v2
+artifacts remain available. Verify registry availability and installability;
+a GitHub release alone does not prove registry ingestion.
+
+**Publishing v3 is also gated on the security workflow, and trivy fails on any HIGH or CRITICAL advisory.** That gate is severity-only — it does not ask whether the code path is reachable — so a CVE disclosed against a transitive dependency makes an already-tagged release unpublishable with no code change. It happened on v3.0.0-beta.31: gRPC v1.83.1, which this line had bumped *to* for CVE-2026-84304, was itself hit by CVE-2026-84445.
+
+When that happens, `goreleaser` shows as `skipped` and **nothing is published** — no GitHub release, no registry artifacts. Confirm with `gh release view <tag>` returning "release not found". Then bump the dependency, push the approved release branch, and re-point the tag (`git push origin :refs/tags/<tag>` then re-tag and push). Re-pointing is safe *only* because the tag published nothing; once a release exists, burn the number and cut the next one instead.
 
 **Bump the version pins in the same commit that cuts the CHANGELOG, before tagging.** The registry renders each version's pages from that version's own tag, so a pin updated after the tag ships a page telling users to install the *previous* beta. The pin lives in `examples/provider/provider.tf` (`docs/index.md` is generated from it — edit the example and re-render with `go generate main.go`, never hand-edit the doc), plus `README.md` and `docs/MIGRATION.md`.
 

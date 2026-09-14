@@ -12,13 +12,6 @@ on:
     branches:
       - develop
       - main
-    paths:
-      - internal/**
-      - docs/**
-      - templates/**
-      - examples/**
-      - main.go
-      - go.mod
 
 permissions:
   contents: read

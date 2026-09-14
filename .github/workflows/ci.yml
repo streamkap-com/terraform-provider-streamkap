@@ -101,3 +101,9 @@ jobs:
           set -euo pipefail
           go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
           "$(go env GOPATH)/bin/actionlint" -ignore 'unexpected key "queue"'
+
+      - name: Test release preflight
+        run: bash scripts/release-preflight-test.sh
+
+      - name: Test migration result checks
+        run: bash scripts/check-migration-results-test.sh

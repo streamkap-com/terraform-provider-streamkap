@@ -29,22 +29,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify tag and release branch
+      - name: Verify tag, release branch and changelog
         shell: bash
-        run: |
-          set -euo pipefail
-          if [[ "$GITHUB_REF_NAME" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-            release_branch=main
-          elif [[ "$GITHUB_REF_NAME" =~ ^v3\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)-beta\.(0|[1-9][0-9]*)$ ]]; then
-            release_branch=develop
-          else
-            echo "::error::Unsupported release tag: $GITHUB_REF_NAME"
-            exit 1
-          fi
-          if ! git merge-base --is-ancestor HEAD "origin/$release_branch"; then
-            echo "::error::Release commit is not contained in $release_branch."
-            exit 1
-          fi
+        run: bash scripts/release-preflight.sh "$GITHUB_REF_NAME"
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -57,20 +44,6 @@ jobs:
         with:
           terraform_version: '1.16.1'
           terraform_wrapper: false
-
-      # CHANGELOG.md headings look like `## [3.0.0-beta.25] - 2026-07-10 (Pre-release)`,
-      # so the tag's version must appear as a bracketed heading. Catches the classic
-      # "tagged before writing the changelog entry" release.
-      - name: Tag version is documented in CHANGELOG.md
-        run: |
-          set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
-          if ! awk -v heading="## [${version}]" '$0 == heading || index($0, heading " - ") == 1 { found=1 } END { exit !found }' CHANGELOG.md; then
-            echo "::error::CHANGELOG.md has no [${version}] entry for tag ${GITHUB_REF_NAME}."
-            echo "Add the release section to CHANGELOG.md, then re-tag."
-            exit 1
-          fi
-          echo "CHANGELOG.md documents ${version}."
 
       - name: Module metadata is tidy
         run: go mod tidy -diff

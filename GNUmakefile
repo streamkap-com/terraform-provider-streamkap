@@ -52,7 +52,11 @@ testacc:
 # Run migration tests
 .PHONY: test-migration
 test-migration:
-	TF_ACC=1 go test -v -timeout 180m -run 'TestAcc.*Migration' ./internal/provider/...
+	@results=$$(mktemp); trap 'rm -f "$$results"' EXIT; \
+	TF_ACC=1 go run gotest.tools/gotestsum --jsonfile "$$results" -- \
+		-count=1 -v -timeout 180m -run 'TestAcc.*Migration' ./internal/provider/...; \
+	test_status=$$?; bash scripts/check-migration-results.sh "$$results"; coverage_status=$$?; \
+	test "$$test_status" -eq 0 && test "$$coverage_status" -eq 0
 
 # Run all tests except acceptance.
 #

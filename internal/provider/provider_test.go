@@ -62,17 +62,7 @@ func testAccPreCheck(t *testing.T) {
 	}
 }
 
-// legacyProviderConfig returns ExternalProvider config for the current stable provider (v2.2.0)
-// Used in migration tests to create state with old provider, then verify new provider
-// produces no planned changes.
-//
-// Requirements:
-// - v2.2.0 must be available in Terraform Registry
-// - If provider fetch fails, migration tests will error (not skip)
-// - Verify with: terraform providers mirror -platform=linux_amd64 /tmp/mirror
-//
-// TEMPORARY: Delete this after v3.0.0 release is validated.
-// Tracked: create a GitHub issue for post-v3.0 cleanup (see also migration_test.go, migration.yml).
+// legacyProviderConfig pins the published baseline used to create migration state.
 func legacyProviderConfig() map[string]resource.ExternalProvider {
 	return map[string]resource.ExternalProvider{
 		"streamkap": {

@@ -246,6 +246,13 @@ and descriptions. Resource examples live under `examples/resources/`; the
 
 See [MIGRATION.md](docs/MIGRATION.md) for guidance on upgrading between major versions, including breaking changes and deprecated attributes.
 
+When v3 becomes stable, v2 becomes the legacy maintenance line, receiving bug
+fixes and security patches only through **15 October 2026**. New features and
+connectors are v3-only. From **16 October 2026**, v2 receives no further fixes
+or support. Existing releases remain available; pin `~> 2.2` until you are ready
+to migrate. See the [migration guide](docs/MIGRATION.md) for required edits and
+behavior-changing defaults.
+
 ### v3.0 (Beta)
 
 The v3.0 line adds:
@@ -263,7 +270,7 @@ for the latest one. Each beta may introduce further breaking changes, so a range
 constraint can pull one you haven't validated:
 
 ```hcl
-version = "3.0.0-beta.31" # exact pin; do not use a range for pre-releases
+version = "3.0.0-beta.30" # exact pin; do not use a range for pre-releases
 ```
 
 ## License

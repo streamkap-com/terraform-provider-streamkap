@@ -1,5 +1,4 @@
-# Migration tests workflow - validates old→new provider equivalence
-# TEMPORARY: Delete this file after v3.0.0 release validation.
+# Migration tests validate upgrades from v2.2.0 with representative configurations.
 name: Migration Tests
 
 on:
@@ -90,8 +89,14 @@ jobs:
         run: |
           gotestsum --jsonfile migration-results.json \
             --junitfile migration-results.xml \
-            -- -v -timeout 180m \
+            -- -count=1 -v -timeout 180m \
             -run 'TestAcc.*Migration' ./internal/provider/...
+
+      - name: Require executed migration coverage
+        if: always()
+        run: |
+          set -euo pipefail
+          bash scripts/check-migration-results.sh migration-results.json | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Check for behavioral differences
         if: failure()

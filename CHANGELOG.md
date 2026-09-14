@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- Run the docs drift check on every pull request so it can be required without
+  leaving filtered changes waiting for a check that never starts.
+- Validate release tags and changelog entries before publishing, with branch
+  routing for both the current layout and the v2/v3 branch promotion.
+- Re-enable migration cases with version-specific configurations, stable-ID
+  checks and post-apply convergence assertions. Report skipped or missing
+  migration cases as incomplete coverage.
+- Restore full GitHub releases for beta tags; example pins use the registry's
+  published beta.30 until a subsequent beta is available.
+- Complete PostgreSQL and Iceberg destination migration guidance, correct the
+  v2.2.0 baseline, and document behavior-changing defaults without blanket
+  replacement or data-safety guarantees.
+
+### Maintenance
+- From v3 stable, v2 receives bug and security fixes only through 15 October
+  2026. Support ends on 16 October 2026.
+
 ## [3.0.0-beta.31] - 2026-09-09 (Pre-release)
 
 ### Changed (breaking, v3 beta)
@@ -26,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   configuration change, because v3 adds optional attributes that carry
   client-side defaults. Confirmed on the Kafka Direct source and the Databricks
   destination; see `docs/MIGRATION.md` → "Expect an in-place update on your
-  first v3 plan". No replacement occurs and no data is lost.
+  first v3 plan". Review changed defaults and investigate unexpected replacements before applying.
 
 ### Fixed
 - `streamkap_client_credential` failed every create and update with

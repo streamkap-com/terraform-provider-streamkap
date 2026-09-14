@@ -6,14 +6,27 @@ This guide helps existing users migrate their Terraform configurations between m
 
 ## v2.x to v3.0
 
-> **The v3.0.0 beta line is available for testing** (latest: `3.0.0-beta.31`). This is a
+> **The v3.0.0 beta line is available for testing** (published example: `3.0.0-beta.30`). This is a
 > pre-release — do not use it in production. If you are on v2.x and your setup is working,
 > **there is no need to migrate yet**. Wait for the stable v3.0.0 release. The beta may
 > introduce further breaking changes before the final release.
 
+### v2 maintenance policy
+
+When v3.0.0 becomes stable, v2 becomes the legacy maintenance line. It receives
+bug fixes and security patches only, through **15 October 2026**. New features
+and connectors are v3-only. From **16 October 2026**, v2 receives no further
+fixes or support. Published v2 versions remain available, but availability does
+not guarantee compatibility with future backend changes.
+
+Keep a constraint such as `version = "~> 2.2"` until you are ready to migrate.
+An unconstrained configuration, or one without an upper bound below 3.0, can
+select v3 stable on `terraform init -upgrade` or on a fresh init without a lock
+file. Back up state, make the edits below, and review the plan before applying.
+
 ### What's New in v3.0
 
-v3.0 adds new resource types and data sources on top of everything in v2.x:
+New resources and data sources in v3.0 include:
 
 - **`streamkap_destination_weaviate`** — Weaviate vector database destination connector
 - **`streamkap_destination_pinecone`** — Pinecone vector database destination connector
@@ -96,6 +109,8 @@ printed in plan output and written to logs in the clear:
 |----------|-----------|
 | `streamkap_source_webhook`, `streamkap_source_shopify_webhook`, `streamkap_source_stripe_webhook`, `streamkap_source_salesforce_webhook`, `streamkap_source_zendesk_webhook` | `api_key` |
 | `streamkap_destination_httpsink` | `http_headers_authorization` |
+| `streamkap_source_dynamodb` | `aws_access_key_id` |
+| `streamkap_destination_iceberg` | `iceberg_catalog_s3_access_key_id` (formerly `aws_access_key`) |
 
 Terraform refuses to expose a sensitive value through a root module output
 unless the output itself is marked sensitive, so this config now fails at plan
@@ -139,7 +154,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = "3.0.0-beta.31"
+      version = "3.0.0-beta.30"
     }
   }
 }
@@ -244,22 +259,74 @@ deprecation warnings.
 > scheduled for removal in the next major version (v4.0). Migrate at your
 > convenience; no immediate action is required.
 
-#### Non-Aliasable Renames (Config Edit Required)
+#### Renames Without Compatibility Aliases (Config Edit Required)
 
-The following v2.1.19 attributes cannot be aliased because the underlying API contract
-changed. If your v2.1.19 configuration uses them, rename them before upgrading to v3.x.
+These attributes from v2.2.0 have no compatibility aliases in v3. Rename them
+before upgrading. Review the semantic changes alongside each table.
 
 ##### SQL Server Source
 
-| v2.1.19 Name | v3.x Name | Why no alias |
+| v2 name | v3.x name | Notes |
 |--------------|-----------|---------------|
-| `database_dbname` (string) | `database_names` (comma-separated) | Backend API field changed from `database.dbname` to `database.names` to support multiple databases per connector. |
+| `database_dbname` (string) | `database_names` (comma-separated) | The Terraform name now reflects the plural backend field `database.names`, which v2.2.0 already used. Set the same database selection under the new name. |
 
 ##### DynamoDB Source
 
-| v2.1.19 Name | v3.x Name | Why no alias |
+| v2 name | v3.x name | Notes |
 |--------------|-----------|---------------|
-| `table_include_list_user_defined` | `table_include_list` | v2.1.19 field was `Required`, so a deprecated alias would still force a plan-time choice between names. A straight rename is the cleanest migration. |
+| `table_include_list_user_defined` | `table_include_list` | Both names map to `table.include.list.user.defined`. Preserve the configured table selection. |
+
+##### PostgreSQL Destination
+
+| v2 name | v3.x name |
+|---------|-----------|
+| `database_dbname` | `database_database` |
+| `database_username` | `connection_username` |
+| `database_password` | `connection_password` |
+| `database_schema_name` | `table_name_prefix` |
+| `hard_delete` | `delete_enabled` |
+| `custom_primary_key` | `primary_key_fields` |
+
+Preserve the configured values, including deletion behavior and primary keys.
+`ssh_port` is now numeric; use `ssh_port = 22`.
+
+##### Iceberg Destination
+
+| v2 name | v3.x name |
+|---------|-----------|
+| `catalog_type` | `iceberg_catalog_type` |
+| `catalog_name` | `iceberg_catalog_name` |
+| `catalog_uri` | `iceberg_catalog_uri` |
+| `aws_access_key` | `iceberg_catalog_s3_access_key_id` |
+| `aws_secret_key` | `iceberg_catalog_s3_secret_access_key` |
+| `aws_iam_role` | `iceberg_catalog_client_assume_role_arn` |
+| `aws_region` | `iceberg_catalog_client_region` |
+| `bucket_path` | `iceberg_catalog_warehouse` |
+| `schema` | `table_name_prefix` |
+| `primary_key_fields` | `iceberg_tables_default_id_columns` |
+
+When supplying your own AWS credentials, also set
+`iceberg_catalog_s3_credentials_enabled = true`. Its default is `false`, which
+uses catalog-vended credentials. The access-key ID is now sensitive, so outputs
+that expose it must also be sensitive. Changing `iceberg_catalog_type` requires
+replacement in v3; inspect the plan before applying a catalog change.
+The new `iceberg_tables_hard_delete_enabled` setting defaults to `true`; set it
+explicitly to match your intended deletion behavior.
+
+##### S3 Destination
+
+| v2 name | v3.x name |
+|---------|-----------|
+| `aws_access_key` | `aws_access_key_id` |
+| `aws_secret_key` | `aws_secret_access_key` |
+| `aws_region` | `aws_s3_region` |
+| `bucket_name` | `aws_s3_bucket_name` |
+| `filename_template` | `file_name_template` |
+| `compression_type` | `file_compression_type` |
+| `output_fields` | `format_output_fields` |
+
+`filename_prefix` was removed. Incorporate the intended prefix into
+`file_name_template` and review the resulting object paths before applying.
 
 #### Attributes Removed by the Backend (Config Edit Required)
 
@@ -268,9 +335,9 @@ replacement attribute and no alias — remove them from your configuration.
 
 | Resource | Removed attribute | Notes |
 |----------|-------------------|-------|
-| `streamkap_source_postgresql` | `streamkap_snapshot_large_table_threshold` | Backend dropped `streamkap.snapshot.large.table.threshold`. |
-| `streamkap_source_postgresql` | `streamkap_snapshot_custom_table_config` | Backend dropped the field. |
-| `streamkap_source_sqlserver` | `streamkap_snapshot_large_table_threshold` | The `snapshot_large_table_threshold` v2 alias is removed with it. |
+| `streamkap_source_postgresql` | `streamkap_snapshot_large_table_threshold` | Early-v3-beta field, absent from v2.2.0. Backend dropped `streamkap.snapshot.large.table.threshold`. |
+| `streamkap_source_postgresql` | `streamkap_snapshot_custom_table_config` | Early-v3-beta field, absent from v2.2.0. Backend dropped the field. |
+| `streamkap_source_sqlserver` | `snapshot_large_table_threshold` | The v2 attribute and its early-v3 replacement `streamkap_snapshot_large_table_threshold` are removed. |
 | `streamkap_source_sqlserver` | `snapshot_custom_table_config` | The backend has no `streamkap.snapshot.custom.table.config.user.defined` field, so **every value ever set here was silently discarded** — it never reached the connector. Per-table chunk counts are no longer configurable; the backend sizes chunks itself. Use `snapshot_parallelism` (and, if needed, `streamkap_snapshot_chunk_size_bytes`) to tune snapshot throughput. |
 
 `streamkap_snapshot_parallelism` is unaffected and keeps its
@@ -288,30 +355,15 @@ replacement attribute and no alias — remove them from your configuration.
 
 These changes do NOT have backward compatibility and require updates:
 
-#### Newly Required Fields (added in v3.x)
+#### Newly Required Fields
 
-Some destination fields that were optional in v2.1.x have become required in the
-current backend schema. Update your `.tf` files to set them explicitly before
-upgrading, or `terraform plan` will fail with "Missing required argument".
+`streamkap_destination_clickhouse.database` was optional in v2.2.0 and is
+required in v3. Set it explicitly before upgrading, using the existing database
+name.
 
-| Resource | Field | Action |
-|----------|-------|--------|
-| `streamkap_destination_cockroachdb` | `database_database` | Add `database_database = "<db_name>"` |
-| `streamkap_destination_databricks` | `connection_url` | Add `connection_url = "<JDBC_URL>"` |
-| `streamkap_destination_databricks` | `databricks_token` (sensitive) | Add `databricks_token = "<TOKEN>"`. Keep the value out of source control — source from a variable or secret manager. |
-| `streamkap_destination_clickhouse` | `database` | Add `database = "<db_name>"` (was Optional with a default in v2.1.x). |
-
-Example for Databricks:
-
-```hcl
-resource "streamkap_destination_databricks" "example" {
-  name             = "my-warehouse"
-  hostname         = "dbc-xxxx.cloud.databricks.com"
-  connection_url   = var.databricks_jdbc_url    # now required
-  databricks_token = var.databricks_token       # now required, sensitive
-  # ...existing fields...
-}
-```
+Databricks `connection_url` and `databricks_token` were already required in
+v2.2.0. CockroachDB is a new destination in v3, so its required fields are not
+changes to an existing v2 resource.
 
 #### SSH public keys and server-assigned fields
 
@@ -345,7 +397,9 @@ topic IDs; see the data source example.
 
 #### PostgreSQL source types and signal table
 
-`database_port` is numeric in v3 (`database_port = 5432`); it defaults to 5432.
+`database_port` was already numeric in v2.2.0 and remains numeric
+(`database_port = 5432`). SSH ports changed from strings to numbers on the
+PostgreSQL destination and SQL Server source; use `ssh_port = 22` there.
 `signal_data_collection_schema_or_database` is optional and computed. If set,
 use a full table path such as `public.streamkap_signal`, not just `public`.
 
@@ -378,6 +432,9 @@ behavior, and inspect the plan before applying:
 |----------|-----------|-------------|-------------|
 | PostgreSQL Source | `heartbeat_enabled` | `false` | `true` |
 | Snowflake Destination | `hard_delete` | `false` | `true` |
+| SQL Server Source | `heartbeat_enabled` | `false` | `true` |
+| DynamoDB Source | `poll_timeout_ms` | `1000` | `180000` |
+| DynamoDB Source | `incremental_snapshot_chunk_size` | `32768` | `8192` |
 
 #### Expect an in-place update on your first v3 plan
 
@@ -391,9 +448,11 @@ source (`format` defaults to `string`, `records_carry_streamkap_metadata` to
 `preserve_null_values` to `false`, plus the `transforms_*` family), and it can
 occur on any connector that gained a defaulted attribute.
 
-This is an update, never a replacement, and no data is lost. Review the plan
-before applying: if a new default is not what you want, set the attribute
-explicitly to the value you intend.
+An in-place update can change connector behavior, including heartbeat and
+delete handling. Set explicit values to preserve the behavior you need. Stop
+and investigate an unexpected replacement or deletion before applying. The
+migration suite covers representative configurations, not every configuration
+or downstream data effect; skipped tests provide no upgrade evidence.
 
 ### Migration Steps
 
