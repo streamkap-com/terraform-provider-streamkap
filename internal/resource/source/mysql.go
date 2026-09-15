@@ -15,7 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
@@ -420,7 +419,6 @@ func (r *SourceMySQLResource) Create(ctx context.Context, req res.CreateRequest,
 		)
 		return
 	}
-	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", source))
 	plan.ID = types.StringValue(source.ID)
 	plan.Name = types.StringValue(source.Name)
 	plan.Connector = types.StringValue(source.Connector)
@@ -476,7 +474,6 @@ func (r *SourceMySQLResource) Update(ctx context.Context, req res.UpdateRequest,
 		return
 	}
 
-	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
 	config, err := r.model2ConfigMap(plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -558,20 +555,20 @@ func (r *SourceMySQLResource) model2ConfigMap(model SourceMySQLResourceModel) (m
 		"heartbeat.data.collection.schema.or.database": model.HeartbeatDataCollectionSchemaOrDatabase.ValueStringPointer(),
 		"database.connectionTimeZone":                  model.DatabaseConnectionTimezone.ValueString(),
 		"snapshot.gtid":                                snapshotGTIDStr,
-		"transforms.InsertStaticKey1.static.field":      model.InsertStaticKeyField1.ValueStringPointer(),
-		"transforms.InsertStaticKey1.static.value":      model.InsertStaticKeyValue1.ValueStringPointer(),
-		"transforms.InsertStaticValue1.static.field":    model.InsertStaticValueField1.ValueStringPointer(),
-		"transforms.InsertStaticValue1.static.value":    model.InsertStaticValue1.ValueStringPointer(),
-		"transforms.InsertStaticKey2.static.field":      model.InsertStaticKeyField2.ValueStringPointer(),
-		"transforms.InsertStaticKey2.static.value":      model.InsertStaticKeyValue2.ValueStringPointer(),
-		"transforms.InsertStaticValue2.static.field":    model.InsertStaticValueField2.ValueStringPointer(),
-		"transforms.InsertStaticValue2.static.value":    model.InsertStaticValue2.ValueStringPointer(),
+		"transforms.InsertStaticKey1.static.field":     model.InsertStaticKeyField1.ValueStringPointer(),
+		"transforms.InsertStaticKey1.static.value":     model.InsertStaticKeyValue1.ValueStringPointer(),
+		"transforms.InsertStaticValue1.static.field":   model.InsertStaticValueField1.ValueStringPointer(),
+		"transforms.InsertStaticValue1.static.value":   model.InsertStaticValue1.ValueStringPointer(),
+		"transforms.InsertStaticKey2.static.field":     model.InsertStaticKeyField2.ValueStringPointer(),
+		"transforms.InsertStaticKey2.static.value":     model.InsertStaticKeyValue2.ValueStringPointer(),
+		"transforms.InsertStaticValue2.static.field":   model.InsertStaticValueField2.ValueStringPointer(),
+		"transforms.InsertStaticValue2.static.value":   model.InsertStaticValue2.ValueStringPointer(),
 		"binary.handling.mode":                         model.BinaryHandlingMode.ValueString(),
 		"ssh.enabled":                                  model.SSHEnabled.ValueBool(),
 		"ssh.host":                                     model.SSHHost.ValueStringPointer(),
 		"ssh.port":                                     model.SSHPort.ValueString(),
 		"ssh.user":                                     model.SSHUser.ValueString(),
-		"predicates.IsTopicToEnrich.pattern":    model.PredicatesIsTopicToEnrichPattern.ValueString(),
+		"predicates.IsTopicToEnrich.pattern":           model.PredicatesIsTopicToEnrichPattern.ValueString(),
 	}
 
 	if !model.ColumnIncludeList.IsNull() {

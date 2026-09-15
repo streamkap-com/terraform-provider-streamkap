@@ -2,7 +2,17 @@
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-09-15
+
 ### Fixed
+
+- Keep legacy SQL Server snapshot thresholds and per-table chunk settings, and
+  S3 filename prefixes, in Terraform state without sending them to the current
+  backend, which no longer supports these settings. This avoids null-echo apply
+  failures while warning that the settings no longer affect connector behavior.
+
+- Stop logging source and destination request bodies and raw resource models,
+  which could expose configured credentials in provider logs.
 
 - Patch gRPC and Go networking/text dependencies for reported vulnerabilities,
   build with Go 1.27.1, and require vulnerability analysis before publishing.

@@ -17,7 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
@@ -152,8 +151,9 @@ func (r *DestinationS3Resource) Schema(ctx context.Context, req res.SchemaReques
 				Optional:            true,
 				Computed:            true,
 				Default:             stringdefault.StaticString(""),
-				Description:         "Prefix for the filename. Prefixes can be used to specify a directory for the file (e.g. dir1/dir2/).",
-				MarkdownDescription: "Prefix for the filename. Prefixes can be used to specify a directory for the file (e.g. dir1/dir2/).",
+				DeprecationMessage:  "The backend no longer supports this setting; it is retained for v2 state compatibility.",
+				Description:         "Deprecated compatibility value. The backend no longer applies this prefix; include a directory in filename_template instead.",
+				MarkdownDescription: "Deprecated compatibility value. The backend no longer applies this prefix; include a directory in `filename_template` instead.",
 			},
 			"compression_type": schema.StringAttribute{
 				Optional:            true,
@@ -222,14 +222,12 @@ func (r *DestinationS3Resource) Create(ctx context.Context, req res.CreateReques
 		return
 	}
 
-	tflog.Debug(ctx, "Pre CREATE ===> plan: "+fmt.Sprintf("%+v", plan))
 	config, diag := r.model2ConfigMap(plan, ctx)
 
 	if diag != nil {
 		return
 	}
 
-	tflog.Debug(ctx, "Pre CREATE ===> config: "+fmt.Sprintf("%+v", config))
 	destination, err := r.client.CreateDestination(ctx, api.Destination{
 		Name:      plan.Name.ValueString(),
 		Connector: plan.Connector.ValueString(),
@@ -242,14 +240,10 @@ func (r *DestinationS3Resource) Create(ctx context.Context, req res.CreateReques
 		)
 		return
 	}
-	tflog.Debug(ctx, "Post CREATE ===> config: "+fmt.Sprintf("%+v", destination.Config))
-
 	plan.ID = types.StringValue(destination.ID)
 	plan.Name = types.StringValue(destination.Name)
 	plan.Connector = types.StringValue(destination.Connector)
 	r.configMap2Model(destination.Config, &plan, ctx)
-	tflog.Debug(ctx, "Post CREATE ===> plan: "+fmt.Sprintf("%+v", plan))
-
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
@@ -284,8 +278,6 @@ func (r *DestinationS3Resource) Read(ctx context.Context, req res.ReadRequest, r
 	state.Name = types.StringValue(destination.Name)
 	state.Connector = types.StringValue(destination.Connector)
 	r.configMap2Model(destination.Config, &state, ctx)
-	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", state))
-
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -372,7 +364,6 @@ func (r *DestinationS3Resource) model2ConfigMap(model DestinationS3ResourceModel
 		"aws.s3.bucket.name":                model.BucketName.ValueString(),
 		"format.user.defined":               model.Format.ValueString(),
 		"file.name.template":                model.FilenameTemplate.ValueString(),
-		"file.name.prefix":                  model.FilenamePrefix.ValueString(),
 		"file.compression.type":             model.CompressionType.ValueString(),
 		"format.output.fields.user.defined": outputFields,
 	}
@@ -381,6 +372,9 @@ func (r *DestinationS3Resource) model2ConfigMap(model DestinationS3ResourceModel
 }
 
 func (r *DestinationS3Resource) configMap2Model(cfg map[string]any, model *DestinationS3ResourceModel, ctx context.Context) {
+	if model.FilenamePrefix.IsNull() || model.FilenamePrefix.IsUnknown() {
+		model.FilenamePrefix = types.StringValue("")
+	}
 	// Copy the config map to the model
 	model.AWSAccessKeyID = helper.GetTfCfgString(cfg, "aws.access.key.id")
 	model.AWSSecretKeyID = helper.GetTfCfgString(cfg, "aws.secret.access.key")
@@ -388,7 +382,6 @@ func (r *DestinationS3Resource) configMap2Model(cfg map[string]any, model *Desti
 	model.BucketName = helper.GetTfCfgString(cfg, "aws.s3.bucket.name")
 	model.Format = helper.GetTfCfgString(cfg, "format.user.defined")
 	model.FilenameTemplate = helper.GetTfCfgString(cfg, "file.name.template")
-	model.FilenamePrefix = helper.GetTfCfgString(cfg, "file.name.prefix")
 	model.CompressionType = helper.GetTfCfgString(cfg, "file.compression.type")
 	model.OutputFields = helper.GetTfCfgListString(ctx, cfg, "format.output.fields.user.defined")
 }

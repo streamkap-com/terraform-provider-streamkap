@@ -93,8 +93,8 @@ output "example-source-sqlserver" {
 - `insert_static_value` (String) The value of the static field to be added to the message value.
 - `insert_static_value_field` (String) The name of the static field to be added to the message value.
 - `signal_data_collection_schema_or_database` (String) Schema for signal data collection. If connector is in read-only mode (snapshot_gtid="Yes"), set this to null.
-- `snapshot_custom_table_config` (Attributes Map) Explicitly set nb of parallel chunks for tables. Format: {"db.Some_Tbl": {"chunks": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably (see [below for nested schema](#nestedatt--snapshot_custom_table_config))
-- `snapshot_large_table_threshold` (Number) The threshold in MB for a Large Table to require multiple chunks to be read in parallel
+- `snapshot_custom_table_config` (Attributes Map, Deprecated) Deprecated compatibility map. The backend no longer applies per-table chunk settings. (see [below for nested schema](#nestedatt--snapshot_custom_table_config))
+- `snapshot_large_table_threshold` (Number, Deprecated) Deprecated compatibility value. The backend no longer applies this large-table threshold.
 - `snapshot_parallelism` (Number) How many parallel chunk requests to send to the source DB
 - `ssh_enabled` (Boolean) Connect via SSH tunnel
 - `ssh_host` (String) Hostname of the SSH server, only required if `ssh_enabled` is true

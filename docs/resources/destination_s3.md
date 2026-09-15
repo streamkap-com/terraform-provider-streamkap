@@ -64,7 +64,7 @@ output "example-destination-s3" {
 
 - `aws_region` (String) The AWS region to be used
 - `compression_type` (String) Compression type for files written to S3.
-- `filename_prefix` (String) Prefix for the filename. Prefixes can be used to specify a directory for the file (e.g. dir1/dir2/).
+- `filename_prefix` (String, Deprecated) Deprecated compatibility value. The backend no longer applies this prefix; include a directory in `filename_template` instead.
 - `filename_template` (String) The format of the filename. See documentation for more information about formatting options.
 - `format` (String) The format to use when writing data to the store.
 - `output_fields` (List of String) A comma separated list of fields to include in output? Options to include key, offset, timestamp, value, headers.

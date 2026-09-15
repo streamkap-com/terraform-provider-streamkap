@@ -3,7 +3,6 @@ package source
 import (
 	"context"
 	"fmt"
-	"encoding/json"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -17,7 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
@@ -42,31 +40,31 @@ type SourceSQLServerResource struct {
 
 // SourceSQLServerResourceModel describes the resource data model.
 type SourceSQLServerResourceModel struct {
-	ID                                      types.String `tfsdk:"id"`
-	Name                                    types.String `tfsdk:"name"`
-	Connector                               types.String `tfsdk:"connector"`
-	DatabaseHostname                        types.String `tfsdk:"database_hostname"`
-	DatabasePort                            types.Int64  `tfsdk:"database_port"`
-	DatabaseUser                            types.String `tfsdk:"database_user"`
-	DatabasePassword                        types.String `tfsdk:"database_password"`
-	DatabaseName                            types.String `tfsdk:"database_dbname"`
-	SchemaIncludeList                       types.String `tfsdk:"schema_include_list"`
-	TableIncludeList                        types.String `tfsdk:"table_include_list"`
-	SignalDataCollectionSchemaOrDatabase    types.String `tfsdk:"signal_data_collection_schema_or_database"`
-	ColumnExcludeList                       types.String `tfsdk:"column_exclude_list"`
-	HeartbeatEnabled                        types.Bool   `tfsdk:"heartbeat_enabled"`
-	HeartbeatDataCollectionSchemaOrDatabase types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
-	BinaryHandlingMode                      types.String `tfsdk:"binary_handling_mode"`
-	InsertStaticKeyField                    types.String `tfsdk:"insert_static_key_field"`
-	InsertStaticKeyValue                    types.String `tfsdk:"insert_static_key_value"`
-	InsertStaticValueField                  types.String `tfsdk:"insert_static_value_field"`
-	InsertStaticValue                       types.String `tfsdk:"insert_static_value"`
-	SSHEnabled                              types.Bool   `tfsdk:"ssh_enabled"`
-	SSHHost                                 types.String `tfsdk:"ssh_host"`
-	SSHPort                                 types.String `tfsdk:"ssh_port"`
-	SSHUser                                 types.String `tfsdk:"ssh_user"`
-	SnapshotParallelism                     types.Int64 `tfsdk:"snapshot_parallelism"`
-	SnapshotLargeTableThreshold             types.Int64 `tfsdk:"snapshot_large_table_threshold"`
+	ID                                      types.String                              `tfsdk:"id"`
+	Name                                    types.String                              `tfsdk:"name"`
+	Connector                               types.String                              `tfsdk:"connector"`
+	DatabaseHostname                        types.String                              `tfsdk:"database_hostname"`
+	DatabasePort                            types.Int64                               `tfsdk:"database_port"`
+	DatabaseUser                            types.String                              `tfsdk:"database_user"`
+	DatabasePassword                        types.String                              `tfsdk:"database_password"`
+	DatabaseName                            types.String                              `tfsdk:"database_dbname"`
+	SchemaIncludeList                       types.String                              `tfsdk:"schema_include_list"`
+	TableIncludeList                        types.String                              `tfsdk:"table_include_list"`
+	SignalDataCollectionSchemaOrDatabase    types.String                              `tfsdk:"signal_data_collection_schema_or_database"`
+	ColumnExcludeList                       types.String                              `tfsdk:"column_exclude_list"`
+	HeartbeatEnabled                        types.Bool                                `tfsdk:"heartbeat_enabled"`
+	HeartbeatDataCollectionSchemaOrDatabase types.String                              `tfsdk:"heartbeat_data_collection_schema_or_database"`
+	BinaryHandlingMode                      types.String                              `tfsdk:"binary_handling_mode"`
+	InsertStaticKeyField                    types.String                              `tfsdk:"insert_static_key_field"`
+	InsertStaticKeyValue                    types.String                              `tfsdk:"insert_static_key_value"`
+	InsertStaticValueField                  types.String                              `tfsdk:"insert_static_value_field"`
+	InsertStaticValue                       types.String                              `tfsdk:"insert_static_value"`
+	SSHEnabled                              types.Bool                                `tfsdk:"ssh_enabled"`
+	SSHHost                                 types.String                              `tfsdk:"ssh_host"`
+	SSHPort                                 types.String                              `tfsdk:"ssh_port"`
+	SSHUser                                 types.String                              `tfsdk:"ssh_user"`
+	SnapshotParallelism                     types.Int64                               `tfsdk:"snapshot_parallelism"`
+	SnapshotLargeTableThreshold             types.Int64                               `tfsdk:"snapshot_large_table_threshold"`
 	SnapshotCustomTableConfig               map[string]snapshotCustomTableConfigModel `tfsdk:"snapshot_custom_table_config"`
 }
 
@@ -239,26 +237,28 @@ func (r *SourceSQLServerResource) Schema(ctx context.Context, req res.SchemaRequ
 				Computed:            true,
 				Optional:            true,
 				Default:             int64default.StaticInt64(20000),
-				Description:         "The threshold in MB for a Large Table to require multiple chunks to be read in parallel",
-				MarkdownDescription: "The threshold in MB for a Large Table to require multiple chunks to be read in parallel",
+				DeprecationMessage:  "The backend no longer supports this setting; it is retained for v2 state compatibility.",
+				Description:         "Deprecated compatibility value. The backend no longer applies this large-table threshold.",
+				MarkdownDescription: "Deprecated compatibility value. The backend no longer applies this large-table threshold.",
 				Validators: []validator.Int64{
 					int64validator.Between(1, 64000),
 				},
 			},
 			"snapshot_custom_table_config": schema.MapNestedAttribute{
-				Optional:            true,
+				Optional:           true,
+				DeprecationMessage: "The backend no longer supports this setting; it is retained for v2 state compatibility.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"chunks": schema.Int64Attribute{
-							Required:   true,
+							Required: true,
 							Validators: []validator.Int64{
 								int64validator.AtLeast(1),
 							},
 						},
 					},
 				},
-				Description:         "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",
-				MarkdownDescription: "Explicitly set nb of parallel chunks for tables. Format: {\"db.Some_Tbl\": {\"chunks\": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably",
+				Description:         "Deprecated compatibility map. The backend no longer applies per-table chunk settings.",
+				MarkdownDescription: "Deprecated compatibility map. The backend no longer applies per-table chunk settings.",
 			},
 		},
 	}
@@ -293,21 +293,13 @@ func (r *SourceSQLServerResource) Create(ctx context.Context, req res.CreateRequ
 		return
 	}
 
-	config, err := r.model2ConfigMap(plan)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error converting SQLServer source config",
-			fmt.Sprintf("Unable to convert SQLServer source config, got error: %s", err),
-		)
-		return
-	}
+	config := r.model2ConfigMap(plan)
 
 	source, err := r.client.CreateSource(ctx, api.Source{
 		Name:      plan.Name.ValueString(),
 		Connector: plan.Connector.ValueString(),
 		Config:    config,
 	})
-
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -316,7 +308,6 @@ func (r *SourceSQLServerResource) Create(ctx context.Context, req res.CreateRequ
 		)
 		return
 	}
-	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", source))
 	plan.ID = types.StringValue(source.ID)
 	plan.Name = types.StringValue(source.Name)
 	plan.Connector = types.StringValue(source.Connector)
@@ -372,15 +363,7 @@ func (r *SourceSQLServerResource) Update(ctx context.Context, req res.UpdateRequ
 		return
 	}
 
-	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
-	config, err := r.model2ConfigMap(plan)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error converting SQLServer source config",
-			fmt.Sprintf("Unable to convert SQLServer source config, got error: %s", err),
-		)
-		return
-	}
+	config := r.model2ConfigMap(plan)
 
 	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{
 		Name:      plan.Name.ValueString(),
@@ -432,39 +415,7 @@ func (r *SourceSQLServerResource) ImportState(ctx context.Context, req res.Impor
 }
 
 // Helpers
-func (r *SourceSQLServerResource) model2ConfigMap(model SourceSQLServerResourceModel) (map[string]any, error) {
-
-	var snapshotCustomTableConfigStr string
-	snapshotCustomTableConfigJSON := make(map[string]map[string]int64)
-	if len(model.SnapshotCustomTableConfig) != 0 {
-		for table, chunks := range model.SnapshotCustomTableConfig {
-			_, err := json.Marshal(map[string]int64{
-				"chunks": chunks.Chunks.ValueInt64(),
-			})
-			if err != nil {
-				return nil, err
-			}
-			chunksMap := map[string]int64{
-				"chunks": chunks.Chunks.ValueInt64(),
-			}
-			snapshotCustomTableConfigJSON[table] = chunksMap
-		}
-
-		snapshotCustomTableConfig, err := json.Marshal(snapshotCustomTableConfigJSON)
-		snapshotCustomTableConfigStr = string(snapshotCustomTableConfig)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	var expectedSnapshotCustomTableConfig *string
-
-	if snapshotCustomTableConfigStr == "" {
-		expectedSnapshotCustomTableConfig = nil
-	} else {
-		expectedSnapshotCustomTableConfig = &snapshotCustomTableConfigStr
-	}
-
+func (r *SourceSQLServerResource) model2ConfigMap(model SourceSQLServerResourceModel) map[string]any {
 	configMap := map[string]any{
 		"database.hostname.user.defined":               model.DatabaseHostname.ValueString(),
 		"database.port.user.defined":                   int(model.DatabasePort.ValueInt64()),
@@ -477,24 +428,25 @@ func (r *SourceSQLServerResource) model2ConfigMap(model SourceSQLServerResourceM
 		"column.exclude.list.user.defined":             model.ColumnExcludeList.ValueStringPointer(),
 		"heartbeat.enabled":                            model.HeartbeatEnabled.ValueBool(),
 		"heartbeat.data.collection.schema.or.database": model.HeartbeatDataCollectionSchemaOrDatabase.ValueStringPointer(),
-		"transforms.InsertStaticKey1.static.field":      model.InsertStaticKeyField.ValueStringPointer(),
-		"transforms.InsertStaticKey1.static.value":      model.InsertStaticKeyValue.ValueStringPointer(),
-		"transforms.InsertStaticValue1.static.field":    model.InsertStaticValueField.ValueStringPointer(),
-		"transforms.InsertStaticValue1.static.value":    model.InsertStaticValue.ValueStringPointer(),
+		"transforms.InsertStaticKey1.static.field":     model.InsertStaticKeyField.ValueStringPointer(),
+		"transforms.InsertStaticKey1.static.value":     model.InsertStaticKeyValue.ValueStringPointer(),
+		"transforms.InsertStaticValue1.static.field":   model.InsertStaticValueField.ValueStringPointer(),
+		"transforms.InsertStaticValue1.static.value":   model.InsertStaticValue.ValueStringPointer(),
 		"binary.handling.mode":                         model.BinaryHandlingMode.ValueString(),
 		"ssh.enabled":                                  model.SSHEnabled.ValueBool(),
 		"ssh.host":                                     model.SSHHost.ValueStringPointer(),
 		"ssh.port":                                     model.SSHPort.ValueString(),
 		"ssh.user":                                     model.SSHUser.ValueString(),
 		"streamkap.snapshot.parallelism":               model.SnapshotParallelism.ValueInt64(),
-		"streamkap.snapshot.large.table.threshold":     model.SnapshotLargeTableThreshold.ValueInt64(),
-		"streamkap.snapshot.custom.table.config.user.defined": expectedSnapshotCustomTableConfig,
 	}
 
-	return configMap, nil
+	return configMap
 }
 
-func (r *SourceSQLServerResource) configMap2Model(cfg map[string]any, model *SourceSQLServerResourceModel) (err error) {
+func (r *SourceSQLServerResource) configMap2Model(cfg map[string]any, model *SourceSQLServerResourceModel) {
+	if model.SnapshotLargeTableThreshold.IsNull() || model.SnapshotLargeTableThreshold.IsUnknown() {
+		model.SnapshotLargeTableThreshold = types.Int64Value(20000)
+	}
 	// Copy the config map to the model
 	model.DatabaseHostname = helper.GetTfCfgString(cfg, "database.hostname.user.defined")
 	model.DatabasePort = helper.GetTfCfgInt64(cfg, "database.port.user.defined")
@@ -517,35 +469,4 @@ func (r *SourceSQLServerResource) configMap2Model(cfg map[string]any, model *Sou
 	model.SSHPort = helper.GetTfCfgString(cfg, "ssh.port")
 	model.SSHUser = helper.GetTfCfgString(cfg, "ssh.user")
 	model.SnapshotParallelism = helper.GetTfCfgInt64(cfg, "streamkap.snapshot.parallelism")
-	model.SnapshotLargeTableThreshold = helper.GetTfCfgInt64(cfg, "streamkap.snapshot.large.table.threshold")
-
-	snapshotCustomTableConfigStr := helper.GetTfCfgString(cfg, "streamkap.snapshot.custom.table.config.user.defined").ValueString()
-	snapshotCustomTableConfig := make(map[string]snapshotCustomTableConfigModel)
-
-	snapshotCustomTableConfigPartialJSON := make(map[string]int64)
-	err = json.Unmarshal([]byte(snapshotCustomTableConfigStr), &snapshotCustomTableConfigPartialJSON)
-	if err != nil {
-		return
-	}
-
-	snapshotCustomTableConfigJSON := make(map[string]map[string]int64)
-	for table, chunks := range snapshotCustomTableConfigPartialJSON {
-		// chunksMap := make(map[string]int64)
-		// err = json.Unmarshal([]byte(chunks), &chunksMap)
-		// if err != nil {
-		// 	return
-		// }
-		chunksMap := map[string]int64{
-			"chunks": chunks,
-		}
-		snapshotCustomTableConfigJSON[table] = chunksMap
-	}
-
-	for table, chunks := range snapshotCustomTableConfigJSON {
-		snapshotCustomTableConfig[table] = snapshotCustomTableConfigModel{
-			Chunks: types.Int64Value(chunks["chunks"]),
-		}
-	}
-	model.SnapshotCustomTableConfig = snapshotCustomTableConfig
-	return
 }
