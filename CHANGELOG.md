@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.0.0-beta.32] - 2026-09-15 (Pre-release)
+## [3.0.0] - 2026-09-15
+
+### Stable release
+- Promote v3 to stable with generated connector schemas, tags on every entity,
+  new source and destination connectors, Kafka user and client credential
+  resources, and roles and tags data sources.
+- Upgrading from v2 includes removed attributes, type changes and new defaults.
+  Back up state and review the [migration guide](docs/MIGRATION.md) and Terraform
+  plan before applying. Deprecated v2 aliases remain supported through v3.x.
 
 ### Fixed
 - Resolve deprecated connector aliases before applying canonical defaults so
@@ -29,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Re-enable migration cases with version-specific configurations, stable-ID
   checks and post-apply convergence assertions. Report skipped or missing
   migration cases as incomplete coverage.
-- Publish beta artifacts as full GitHub releases so the Terraform Registry can
+- Publish artifacts as full GitHub releases so the Terraform Registry can
   ingest them.
 - Complete PostgreSQL and Iceberg destination migration guidance, correct the
   v2.2.0 baseline, and document behavior-changing defaults without blanket
@@ -37,8 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Maintenance
 - Preserve the v2 history on `v2` and move v3 development to the default `main`
-  branch. Retarget dependency updates and CI to the new branch layout. v3
-  remains in beta until the stable release is published.
+  branch. Retarget dependency updates and CI to the new branch layout.
 - From v3 stable, v2 receives bug and security fixes only through 15 October
   2026. Support ends on 16 October 2026.
 
