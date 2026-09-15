@@ -14,7 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
@@ -53,14 +52,14 @@ type SourceMongoDBResourceModel struct {
 	SSHPort                              types.String `tfsdk:"ssh_port"`
 	SSHUser                              types.String `tfsdk:"ssh_user"`
 	PredicatesIsTopicToEnrichPattern     types.String `tfsdk:"predicates_istopictoenrich_pattern"`
-	InsertStaticKeyField1                   types.String `tfsdk:"insert_static_key_field_1"`
-	InsertStaticKeyValue1                   types.String `tfsdk:"insert_static_key_value_1"`
-	InsertStaticValueField1                 types.String `tfsdk:"insert_static_value_field_1"`
-	InsertStaticValue1                      types.String `tfsdk:"insert_static_value_1"`
-	InsertStaticKeyField2                   types.String `tfsdk:"insert_static_key_field_2"`
-	InsertStaticKeyValue2                   types.String `tfsdk:"insert_static_key_value_2"`
-	InsertStaticValueField2                 types.String `tfsdk:"insert_static_value_field_2"`
-	InsertStaticValue2                      types.String `tfsdk:"insert_static_value_2"`
+	InsertStaticKeyField1                types.String `tfsdk:"insert_static_key_field_1"`
+	InsertStaticKeyValue1                types.String `tfsdk:"insert_static_key_value_1"`
+	InsertStaticValueField1              types.String `tfsdk:"insert_static_value_field_1"`
+	InsertStaticValue1                   types.String `tfsdk:"insert_static_value_1"`
+	InsertStaticKeyField2                types.String `tfsdk:"insert_static_key_field_2"`
+	InsertStaticKeyValue2                types.String `tfsdk:"insert_static_key_value_2"`
+	InsertStaticValueField2              types.String `tfsdk:"insert_static_value_field_2"`
+	InsertStaticValue2                   types.String `tfsdk:"insert_static_value_2"`
 }
 
 func (r *SourceMongoDBResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -259,7 +258,6 @@ func (r *SourceMongoDBResource) Create(ctx context.Context, req res.CreateReques
 		)
 		return
 	}
-	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", source))
 	plan.ID = types.StringValue(source.ID)
 	plan.Name = types.StringValue(source.Name)
 	plan.Connector = types.StringValue(source.Connector)
@@ -315,7 +313,6 @@ func (r *SourceMongoDBResource) Update(ctx context.Context, req res.UpdateReques
 		return
 	}
 
-	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
 	config := r.model2ConfigMap(plan)
 
 	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{
@@ -376,19 +373,19 @@ func (r *SourceMongoDBResource) model2ConfigMap(model SourceMongoDBResourceModel
 		"database.include.list":                     model.DatabaseIncludeList.ValueString(),
 		"collection.include.list.user.defined":      model.CollectionIncludeList.ValueString(),
 		"signal.data.collection.schema.or.database": model.SignalDataCollectionSchemaOrDatabase.ValueString(),
-		"ssh.enabled": model.SSHEnabled.ValueBool(),
-		"ssh.host":    model.SSHHost.ValueStringPointer(),
-		"ssh.port":    model.SSHPort.ValueString(),
-		"ssh.user":    model.SSHUser.ValueString(),
-		"predicates.IsTopicToEnrich.pattern":    model.PredicatesIsTopicToEnrichPattern.ValueString(),
-		"transforms.InsertStaticKey1.static.field":      model.InsertStaticKeyField1.ValueStringPointer(),
-		"transforms.InsertStaticKey1.static.value":      model.InsertStaticKeyValue1.ValueStringPointer(),
-		"transforms.InsertStaticValue1.static.field":    model.InsertStaticValueField1.ValueStringPointer(),
-		"transforms.InsertStaticValue1.static.value":    model.InsertStaticValue1.ValueStringPointer(),
-		"transforms.InsertStaticKey2.static.field":      model.InsertStaticKeyField2.ValueStringPointer(),
-		"transforms.InsertStaticKey2.static.value":      model.InsertStaticKeyValue2.ValueStringPointer(),
-		"transforms.InsertStaticValue2.static.field":    model.InsertStaticValueField2.ValueStringPointer(),
-		"transforms.InsertStaticValue2.static.value":    model.InsertStaticValue2.ValueStringPointer(),
+		"ssh.enabled":                        model.SSHEnabled.ValueBool(),
+		"ssh.host":                           model.SSHHost.ValueStringPointer(),
+		"ssh.port":                           model.SSHPort.ValueString(),
+		"ssh.user":                           model.SSHUser.ValueString(),
+		"predicates.IsTopicToEnrich.pattern": model.PredicatesIsTopicToEnrichPattern.ValueString(),
+		"transforms.InsertStaticKey1.static.field":   model.InsertStaticKeyField1.ValueStringPointer(),
+		"transforms.InsertStaticKey1.static.value":   model.InsertStaticKeyValue1.ValueStringPointer(),
+		"transforms.InsertStaticValue1.static.field": model.InsertStaticValueField1.ValueStringPointer(),
+		"transforms.InsertStaticValue1.static.value": model.InsertStaticValue1.ValueStringPointer(),
+		"transforms.InsertStaticKey2.static.field":   model.InsertStaticKeyField2.ValueStringPointer(),
+		"transforms.InsertStaticKey2.static.value":   model.InsertStaticKeyValue2.ValueStringPointer(),
+		"transforms.InsertStaticValue2.static.field": model.InsertStaticValueField2.ValueStringPointer(),
+		"transforms.InsertStaticValue2.static.value": model.InsertStaticValue2.ValueStringPointer(),
 	}
 }
 

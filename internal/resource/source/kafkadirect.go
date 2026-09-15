@@ -14,7 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
@@ -155,7 +154,6 @@ func (r *SourceKafkaDirectResource) Create(ctx context.Context, req res.CreateRe
 		)
 		return
 	}
-	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", source))
 	plan.ID = types.StringValue(source.ID)
 	plan.Name = types.StringValue(source.Name)
 	plan.Connector = types.StringValue(source.Connector)
@@ -211,7 +209,6 @@ func (r *SourceKafkaDirectResource) Update(ctx context.Context, req res.UpdateRe
 		return
 	}
 
-	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
 	config := r.model2ConfigMap(plan)
 
 	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{

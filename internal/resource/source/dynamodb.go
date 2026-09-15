@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
@@ -288,7 +287,6 @@ func (r *SourceDynamoDBResource) Update(ctx context.Context, req res.UpdateReque
 		return
 	}
 
-	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", plan))
 	config := r.model2ConfigMap(plan)
 
 	source, err := r.client.UpdateSource(ctx, plan.ID.ValueString(), api.Source{

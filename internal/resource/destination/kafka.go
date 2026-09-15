@@ -16,7 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
@@ -167,7 +166,6 @@ func (r *DestinationKafkaResource) Create(ctx context.Context, req res.CreateReq
 		return
 	}
 
-	tflog.Debug(ctx, "Pre CREATE ===> plan: "+fmt.Sprintf("%+v", plan))
 	config, err := r.model2ConfigMap(plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -177,7 +175,6 @@ func (r *DestinationKafkaResource) Create(ctx context.Context, req res.CreateReq
 		return
 	}
 
-	tflog.Debug(ctx, "Pre CREATE ===> config: "+fmt.Sprintf("%+v", config))
 	destination, err := r.client.CreateDestination(ctx, api.Destination{
 		Name:      plan.Name.ValueString(),
 		Connector: plan.Connector.ValueString(),
@@ -190,13 +187,11 @@ func (r *DestinationKafkaResource) Create(ctx context.Context, req res.CreateReq
 		)
 		return
 	}
-	tflog.Debug(ctx, "Post CREATE ===> config: "+fmt.Sprintf("%+v", destination.Config))
 
 	plan.ID = types.StringValue(destination.ID)
 	plan.Name = types.StringValue(destination.Name)
 	plan.Connector = types.StringValue(destination.Connector)
 	r.configMap2Model(destination.Config, &plan)
-	tflog.Debug(ctx, "Post CREATE ===> plan: "+fmt.Sprintf("%+v", plan))
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -232,7 +227,6 @@ func (r *DestinationKafkaResource) Read(ctx context.Context, req res.ReadRequest
 	state.Name = types.StringValue(destination.Name)
 	state.Connector = types.StringValue(destination.Connector)
 	r.configMap2Model(destination.Config, &state)
-	tflog.Info(ctx, "===> config: "+fmt.Sprintf("%+v", state))
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)

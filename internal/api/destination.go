@@ -33,11 +33,11 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destina
 
 	var payloadMap map[string]any
 	err = json.Unmarshal(payload, &payloadMap)
-    if err != nil {
-        return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
-    payloadMap["created_from"] = constants.TERRAFORM
+	payloadMap["created_from"] = constants.TERRAFORM
 
 	payload, err = json.Marshal(payloadMap)
 	if err != nil {
@@ -48,15 +48,6 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destina
 	if err != nil {
 		return nil, err
 	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"CreateDestination request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n"+
-			"\tBody: %s",
-		req.Method,
-		req.URL.String(),
-		payload,
-	))
 	var resp Destination
 	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
@@ -122,15 +113,6 @@ func (s *streamkapAPI) UpdateDestination(ctx context.Context, destinationID stri
 	if err != nil {
 		return nil, err
 	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"UpdateDestination request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n"+
-			"\tBody: %s",
-		req.Method,
-		req.URL.String(),
-		payload,
-	))
 	var resp Destination
 	err = s.doRequest(ctx, req, &resp)
 	if err != nil {

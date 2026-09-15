@@ -16,7 +16,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
@@ -215,10 +214,8 @@ func (r *DestinationDatabricksResource) Create(ctx context.Context, req res.Crea
 		return
 	}
 
-	tflog.Debug(ctx, "Pre CREATE ===> plan: "+fmt.Sprintf("%+v", plan))
 	config := r.model2ConfigMap(ctx, plan)
 
-	tflog.Debug(ctx, "Pre CREATE ===> config: "+fmt.Sprintf("%+v", config))
 	destination, err := r.client.CreateDestination(ctx, api.Destination{
 		Name:      plan.Name.ValueString(),
 		Connector: plan.Connector.ValueString(),
@@ -232,13 +229,11 @@ func (r *DestinationDatabricksResource) Create(ctx context.Context, req res.Crea
 		)
 		return
 	}
-	tflog.Debug(ctx, "Post CREATE ===> config: "+fmt.Sprintf("%+v", destination.Config))
 
 	plan.ID = types.StringValue(destination.ID)
 	plan.Name = types.StringValue(destination.Name)
 	plan.Connector = types.StringValue(destination.Connector)
 	r.configMap2Model(ctx, destination.Config, &plan)
-	tflog.Debug(ctx, "Post CREATE ===> plan: "+fmt.Sprintf("%+v", plan))
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -291,10 +286,8 @@ func (r *DestinationDatabricksResource) Update(ctx context.Context, req res.Upda
 		return
 	}
 
-	tflog.Debug(ctx, "Pre UPDATE ===> plan: "+fmt.Sprintf("%+v", plan))
 	config := r.model2ConfigMap(ctx, plan)
 
-	tflog.Debug(ctx, "Pre UPDATE ===> config: "+fmt.Sprintf("%+v", config))
 	destination, err := r.client.UpdateDestination(ctx, plan.ID.ValueString(), api.Destination{
 		Name:      plan.Name.ValueString(),
 		Connector: plan.Connector.ValueString(),
@@ -308,13 +301,11 @@ func (r *DestinationDatabricksResource) Update(ctx context.Context, req res.Upda
 		)
 		return
 	}
-	tflog.Debug(ctx, "Post UPDATE ===> config: "+fmt.Sprintf("%+v", destination.Config))
 
 	// Update resource state with updated items
 	plan.Name = types.StringValue(destination.Name)
 	plan.Connector = types.StringValue(destination.Connector)
 	r.configMap2Model(ctx, destination.Config, &plan)
-	tflog.Debug(ctx, "Post UPDATE ===> plan: "+fmt.Sprintf("%+v", plan))
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)

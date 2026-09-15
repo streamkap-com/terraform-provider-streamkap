@@ -80,8 +80,8 @@ resource "streamkap_destination_s3" "test" {
 `,
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "name", "example-destination-s3-updated"),
-					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_access_key", icebergAwsAccessKey),
-					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_secret_key", icebergAwsSecretKey),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_access_key", s3AwsAccessKey),
+					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_secret_key", s3AwsSecretKey),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "aws_region", "us-west-1"),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "bucket_name", "bucketname-updated"),
 					resource.TestCheckResourceAttr("streamkap_destination_s3.test", "format", "JSON Array"),
