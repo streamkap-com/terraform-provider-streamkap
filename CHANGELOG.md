@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   plan before applying. Deprecated v2 aliases remain supported through v3.x.
 
 ### Fixed
+- Give PostgreSQL, Supabase, AlloyDB and pipeline acceptance fixtures unique
+  replication slots and
+  publications so repeated runs do not reuse another connector's slot.
+- Correct SQL Server and S3 migration guidance to cover v2 refresh and update
+  failures as well as creation, and state the missing migration evidence.
+- Expand the home directory in the Snowflake quick-start key-file path.
 - Resolve deprecated connector aliases before applying canonical defaults so
   v2 configurations retain their configured values during v3 migration.
 - Connector create and update no longer fail with "produced an unexpected new

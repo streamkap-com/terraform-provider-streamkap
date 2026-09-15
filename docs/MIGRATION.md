@@ -58,9 +58,10 @@ The attribute is **Optional + Computed**:
 
 This is purely additive — existing v2 configs that do not reference `tags`
 are intended to retain their tag behavior when re-planned against v3.
-The migration tests use v2.2.0 as the stable baseline and cover representative
-configurations; other breaking changes
-listed in this guide still require configuration updates.
+The migration tests cover representative configurations where the v2.2.0
+baseline can run. SQL Server and S3 cannot create that baseline against the
+current backend; see their limitations below. Other breaking changes listed
+in this guide still require configuration updates.
 
 ```hcl
 resource "streamkap_tag" "prod" {
@@ -329,8 +330,11 @@ explicitly to match your intended deletion behavior.
 `file_name_template` and review the resulting object paths before applying.
 Because v2.2.0 always sends its `""` default for the removed field, creating a
 **new** S3 destination with v2.2.0 now fails with
-`.filename_prefix: was cty.StringVal(""), but now null`; existing v2-managed
-S3 destinations are unaffected and upgrade normally.
+`.filename_prefix: was cty.StringVal(""), but now null`. The same response
+mapping affects v2 refresh and update, so existing S3 destinations are not
+exempt. The migration test cannot create its v2.2.0 baseline and does not
+provide upgrade evidence for this connector. Back up existing state and
+validate the v3 plan before applying.
 
 #### Attributes Removed by the Backend (Config Edit Required)
 
@@ -341,7 +345,7 @@ replacement attribute and no alias — remove them from your configuration.
 |----------|-------------------|-------|
 | `streamkap_source_postgresql` | `streamkap_snapshot_large_table_threshold` | Early-v3-beta field, absent from v2.2.0. Backend dropped `streamkap.snapshot.large.table.threshold`. |
 | `streamkap_source_postgresql` | `streamkap_snapshot_custom_table_config` | Early-v3-beta field, absent from v2.2.0. Backend dropped the field. |
-| `streamkap_source_sqlserver` | `snapshot_large_table_threshold` | The v2 attribute and its early-v3 replacement `streamkap_snapshot_large_table_threshold` are removed. Because v2.2.0 always sends its default, creating a **new** SQL Server source with v2.2.0 now fails with `was cty.NumberIntVal(20000), but now null`; existing v2-managed sources are unaffected and upgrade normally. |
+| `streamkap_source_sqlserver` | `snapshot_large_table_threshold` | The v2 attribute and its early-v3 replacement `streamkap_snapshot_large_table_threshold` are removed. Because v2.2.0 always sends its default, creating a **new** SQL Server source with v2.2.0 now fails with `was cty.NumberIntVal(20000), but now null`; the same response mapping affects v2 refresh and update. The migration test cannot create its v2.2.0 baseline; upgrading existing state requires a backup and validation of the v3 plan. |
 | `streamkap_source_sqlserver` | `snapshot_custom_table_config` | The backend has no `streamkap.snapshot.custom.table.config.user.defined` field, so **every value ever set here was silently discarded** — it never reached the connector. Per-table chunk counts are no longer configurable; the backend sizes chunks itself. Use `snapshot_parallelism` (and, if needed, `streamkap_snapshot_chunk_size_bytes`) to tune snapshot throughput. |
 
 `streamkap_snapshot_parallelism` is unaffected and keeps its

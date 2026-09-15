@@ -17,6 +17,7 @@ func TestAccSourceSupabaseResource(t *testing.T) {
 	}
 
 	name := acctestName(t, "main")
+	slotName, publicationName := acctestReplicationNames(name)
 	nameUpdated := acctestName(t, "updated")
 
 	resource.Test(t, resource.TestCase{
@@ -49,15 +50,15 @@ resource "streamkap_source_supabase" "test" {
 	signal_data_collection_schema_or_database    = "public"
 	heartbeat_enabled                            = true
 	heartbeat_data_collection_schema_or_database = "public"
-	slot_name                                    = "terraform_pgoutput_slot_test"
-	publication_name                             = "terraform_pub_test"
+	slot_name                                    = %q
+	publication_name                             = %q
 	binary_handling_mode                         = "bytes"
 	include_source_db_name_in_table_name         = false
 	ssh_enabled                                  = false
 	post_processors_reselect_enabled             = true
 	reselector_reselect_error_handling_mode      = "warn"
 }
-`, name),
+`, name, slotName, publicationName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "database_hostname", sourceSupabaseHostname),
@@ -72,8 +73,8 @@ resource "streamkap_source_supabase" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "signal_data_collection_schema_or_database", "public"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "heartbeat_enabled", "true"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "heartbeat_data_collection_schema_or_database", "public"),
-					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "slot_name", "terraform_pgoutput_slot_test"),
-					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "publication_name", "terraform_pub_test"),
+					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "slot_name", slotName),
+					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "publication_name", publicationName),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "binary_handling_mode", "bytes"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "include_source_db_name_in_table_name", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "ssh_enabled", "false"),
@@ -114,15 +115,15 @@ resource "streamkap_source_supabase" "test" {
 	signal_data_collection_schema_or_database    = "public"
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = "public"
-	slot_name                                    = "terraform_pgoutput_slot_test"
-	publication_name                             = "terraform_pub_test"
+	slot_name                                    = %q
+	publication_name                             = %q
 	binary_handling_mode                         = "base64"
 	include_source_db_name_in_table_name         = true
 	ssh_enabled                                  = false
 	post_processors_reselect_enabled             = true
 	reselector_reselect_error_handling_mode      = "fail"
 }
-`, nameUpdated),
+`, nameUpdated, slotName, publicationName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_supabase.test", "snapshot_read_only", "No"),

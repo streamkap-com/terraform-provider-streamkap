@@ -17,6 +17,7 @@ func TestAccSourceAlloyDBResource(t *testing.T) {
 	}
 
 	name := acctestName(t, "main")
+	slotName, publicationName := acctestReplicationNames(name)
 	nameUpdated := acctestName(t, "updated")
 
 	resource.Test(t, resource.TestCase{
@@ -49,14 +50,14 @@ resource "streamkap_source_alloydb" "test" {
 	signal_data_collection_schema_or_database    = "streamkap"
 	heartbeat_enabled                            = true
 	heartbeat_data_collection_schema_or_database = "streamkap"
-	slot_name                                    = "streamkap_pgoutput_slot"
-	publication_name                             = "streamkap_pub"
+	slot_name                                    = %q
+	publication_name                             = %q
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 	post_processors_reselect_enabled             = true
 	reselector_reselect_error_handling_mode      = "warn"
 }
-`, name),
+`, name, slotName, publicationName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "database_hostname", sourceAlloyDBHostname),
@@ -71,8 +72,8 @@ resource "streamkap_source_alloydb" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "signal_data_collection_schema_or_database", "streamkap"),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "heartbeat_enabled", "true"),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "heartbeat_data_collection_schema_or_database", "streamkap"),
-					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "slot_name", "streamkap_pgoutput_slot"),
-					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "publication_name", "streamkap_pub"),
+					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "slot_name", slotName),
+					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "publication_name", publicationName),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "binary_handling_mode", "bytes"),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "ssh_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "post_processors_reselect_enabled", "true"),
@@ -112,14 +113,14 @@ resource "streamkap_source_alloydb" "test" {
 	signal_data_collection_schema_or_database    = "streamkap"
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = "streamkap"
-	slot_name                                    = "streamkap_pgoutput_slot"
-	publication_name                             = "streamkap_pub"
+	slot_name                                    = %q
+	publication_name                             = %q
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 	post_processors_reselect_enabled             = true
 	reselector_reselect_error_handling_mode      = "fail"
 }
-`, nameUpdated),
+`, nameUpdated, slotName, publicationName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_alloydb.test", "snapshot_read_only", "No"),

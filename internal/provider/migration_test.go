@@ -217,11 +217,6 @@ func TestAccPipeline_MigrationFromLegacy(t *testing.T) {
 	name := acctestName(t, "pipeline-migration")
 	connectors := pipelineSrcPostgreSQLResourceDef(acctestName(t, "source")) +
 		pipelineDestSnowflakeResourceDef(acctestName(t, "destination"))
-	slotName := fmt.Sprintf("tf_migration_%d", time.Now().UnixNano())
-	connectors = strings.NewReplacer(
-		"terraform_timeout_test_slot", slotName,
-		"terraform_timeout_test_pub", slotName+"_pub",
-	).Replace(connectors)
 	config := providerConfig + connectors + fmt.Sprintf(`
 resource "streamkap_pipeline" "migration_test" {
   name = %q
