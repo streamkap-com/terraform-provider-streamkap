@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.0.0-beta.32] - 2026-09-14 (Pre-release)
 
 ### Fixed
+- Resolve deprecated connector aliases before applying canonical defaults so
+  v2 configurations retain their configured values during v3 migration.
 - Connector create and update no longer fail with "produced an unexpected new
   value: was cty.StringVal(...), but now null" (or `cty.False`,
   `cty.NumberIntVal(...)`) when the backend drops a defaulted attribute whose

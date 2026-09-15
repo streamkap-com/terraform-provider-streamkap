@@ -351,6 +351,11 @@ are **hand-maintained** despite the suffix. The generated code lives in
 `internal/generated/`; the wrappers embed it and add the deprecated-alias
 attributes. Edit the wrappers freely; never edit `internal/generated/`.
 
+Connector `ModifyPlan` aligns deprecated aliases that share an API field.
+The configured name determines both planned values, including unknown values,
+so a canonical default cannot override an explicitly configured legacy alias.
+When neither name is configured, normal default and computed behavior applies.
+
 ## Authentication Flow
 
 ```

@@ -53,6 +53,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/defaults"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -113,6 +117,7 @@ var (
 	_ resource.Resource                = &BaseConnectorResource{}
 	_ resource.ResourceWithConfigure   = &BaseConnectorResource{}
 	_ resource.ResourceWithImportState = &BaseConnectorResource{}
+	_ resource.ResourceWithModifyPlan  = &BaseConnectorResource{}
 )
 
 // BaseConnectorResource is a generic resource implementation for connectors.
@@ -138,6 +143,39 @@ func (r *BaseConnectorResource) Metadata(ctx context.Context, req resource.Metad
 // Schema returns the schema for this resource.
 func (r *BaseConnectorResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	baseSchema := r.config.GetSchema()
+	// Alias defaults must wait until ModifyPlan. Applying them earlier marks
+	// computed fields unknown even when the alias resolves to unchanged state.
+	mappings := r.config.GetFieldMappings()
+	for alias, attribute := range baseSchema.Attributes {
+		if attribute.GetDeprecationMessage() == "" {
+			continue
+		}
+		for canonical, apiField := range mappings {
+			if canonical == alias || apiField != mappings[alias] {
+				continue
+			}
+			switch a := baseSchema.Attributes[canonical].(type) {
+			case schema.StringAttribute:
+				if a.Default != nil {
+					a.Default = nil
+					a.PlanModifiers = append(a.PlanModifiers, stringplanmodifier.UseStateForUnknown())
+					baseSchema.Attributes[canonical] = a
+				}
+			case schema.BoolAttribute:
+				if a.Default != nil {
+					a.Default = nil
+					a.PlanModifiers = append(a.PlanModifiers, boolplanmodifier.UseStateForUnknown())
+					baseSchema.Attributes[canonical] = a
+				}
+			case schema.Int64Attribute:
+				if a.Default != nil {
+					a.Default = nil
+					a.PlanModifiers = append(a.PlanModifiers, int64planmodifier.UseStateForUnknown())
+					baseSchema.Attributes[canonical] = a
+				}
+			}
+		}
+	}
 
 	// Add timeouts block to the schema
 	baseSchema.Blocks = map[string]schema.Block{
@@ -150,6 +188,76 @@ func (r *BaseConnectorResource) Schema(ctx context.Context, req resource.SchemaR
 	}
 
 	resp.Schema = baseSchema
+}
+
+// ModifyPlan aligns aliases before marshaling: schema defaults can otherwise
+// give two attributes different planned values for the same API field.
+func (r *BaseConnectorResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+	model := r.config.NewModelInstance()
+	resp.Diagnostics.Append(req.Config.Get(ctx, model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	mappings := r.config.GetFieldMappings()
+	names := make([]string, 0, len(mappings))
+	for name := range mappings {
+		names = append(names, name)
+	}
+	configured := shared.CaptureFields(model, names)
+	s := r.config.GetSchema()
+	for alias, attribute := range s.Attributes {
+		if attribute.GetDeprecationMessage() == "" {
+			continue
+		}
+		for canonical, apiField := range mappings {
+			if canonical == alias || apiField != mappings[alias] {
+				continue
+			}
+			oldValue, newValue := configured[alias], configured[canonical]
+			value := oldValue
+			if value.IsNull() {
+				value = newValue
+			}
+			if value.IsNull() {
+				p := path.Root(canonical)
+				switch a := s.Attributes[canonical].(type) {
+				case schema.StringAttribute:
+					if a.Default != nil {
+						var d defaults.StringResponse
+						a.Default.DefaultString(ctx, defaults.StringRequest{Path: p}, &d)
+						resp.Diagnostics.Append(d.Diagnostics...)
+						value = d.PlanValue
+					}
+				case schema.BoolAttribute:
+					if a.Default != nil {
+						var d defaults.BoolResponse
+						a.Default.DefaultBool(ctx, defaults.BoolRequest{Path: p}, &d)
+						resp.Diagnostics.Append(d.Diagnostics...)
+						value = d.PlanValue
+					}
+				case schema.Int64Attribute:
+					if a.Default != nil {
+						var d defaults.Int64Response
+						a.Default.DefaultInt64(ctx, defaults.Int64Request{Path: p}, &d)
+						resp.Diagnostics.Append(d.Diagnostics...)
+						value = d.PlanValue
+					}
+				}
+			}
+			if value.IsNull() || resp.Diagnostics.HasError() {
+				continue
+			}
+			if newValue.IsNull() && s.Attributes[canonical].IsComputed() {
+				resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(canonical), value)...)
+			}
+			if oldValue.IsNull() && attribute.IsComputed() {
+				resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(alias), value)...)
+			}
+		}
+	}
 }
 
 // Config exposes the connector's ConnectorConfig. Provider-level tests use it to

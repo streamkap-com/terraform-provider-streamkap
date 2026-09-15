@@ -249,6 +249,10 @@ deprecation warnings.
 |-----------------------|----------|--------|
 | `kafka_format` | `format` | Rename in config |
 
+The alias remains supported through v3.x. When `kafka_format` is configured,
+its value also determines the planned `format`; the default `"string"` applies
+only when neither name is configured.
+
 ##### Snowflake Destination
 
 | Deprecated (Old) Name | New Name | Action |
