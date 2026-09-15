@@ -10,7 +10,6 @@ name: Docs Drift
 on:
   pull_request:
     branches:
-      - develop
       - main
 
 permissions:

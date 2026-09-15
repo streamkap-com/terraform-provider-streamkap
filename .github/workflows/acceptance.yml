@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - develop
   schedule:
     - cron: '0 2 * * *'  # Nightly at 2 AM UTC
   workflow_dispatch:
@@ -30,7 +29,7 @@ jobs:
       matrix:
         # A push runs the newest Terraform only. The job holds the shared
         # staging-fixture concurrency group for its whole matrix, so the full
-        # six-version sweep on every develop merge would block PR acceptance
+        # six-version sweep on every main merge would block PR acceptance
         # for hours. The nightly schedule and manual dispatch still run all of them.
         terraform-version: ${{ (github.event_name == 'push' && fromJSON('["1.16.1"]')) || fromJSON('["1.0.11", "1.8.5", "1.9.8", "1.10.5", "1.11.4", "1.16.1"]') }}
 

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [3.0.0-beta.32] - 2026-09-14 (Pre-release)
+## [3.0.0-beta.32] - 2026-09-15 (Pre-release)
 
 ### Fixed
 - Resolve deprecated connector aliases before applying canonical defaults so
@@ -36,6 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   replacement or data-safety guarantees.
 
 ### Maintenance
+- Preserve the v2 history on `v2` and move v3 development to the default `main`
+  branch. Retarget dependency updates and CI to the new branch layout. v3
+  remains in beta until the stable release is published.
 - From v3 stable, v2 receives bug and security fixes only through 15 October
   2026. Support ends on 16 October 2026.
 

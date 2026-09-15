@@ -23,7 +23,6 @@ name: PR Acceptance Tests
 on:
   pull_request:
     branches:
-      - develop
       - main
 
 permissions:
