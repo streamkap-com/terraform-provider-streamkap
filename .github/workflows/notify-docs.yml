@@ -1,0 +1,136 @@
+name: notify-docs
+
+# Installed in a SOURCE repo — not the docs repo. On a merge to the default branch that touches a
+# watched path, it fires a `source-merged` repository_dispatch at each subscribed docs repo, whose
+# drift-sync caller turns it into a draft doc PR.
+#
+# ── Resolved for streamkap-com/terraform-provider-streamkap -> streamkap-com/streamkap-docs ─────────────────────────
+#
+# 1. `on.push.paths` MUST mirror, verbatim, this repository's entry in the docs repo's profile:
+#
+#        product.source_repos[]  ->  the entry whose `repo` == "streamkap-com/terraform-provider-streamkap"
+#                                ->  watch_paths
+#
+#    Nothing enforces the match: the two lists live in different repositories and drift in
+#    silence. Both directions fail, and one of them fails invisibly:
+#      - a path here that is NOT in `watch_paths` -> a run dispatches and finds nothing
+#        doc-relevant. Wasteful, but visible in the run log.
+#      - a path in `watch_paths` that is NOT here -> the merge never dispatches at all. The doc
+#        change is never even considered, no job runs, and no error appears anywhere. This is a
+#        silent miss, and it counts against the drift-sync recall bar.
+#    Treat `watch_paths` and this list as one edit: change them in the same change set.
+#
+# 2. `repository:` — one dispatch step per subscribed docs repo. A shared service feeding several
+#    doc sets repeats the step; see the commented fan-out step below.
+#
+# 3. THE DISPATCH TOKEN — one of two, chosen by whether the GitHub App is configured:
+#      - GitHub App (recommended for many repos/orgs). Set the `DOCWRIGHT_APP_ID` repo/org variable
+#        and the `DOCWRIGHT_APP_PRIVATE_KEY` secret on THIS source repo, and the mint step below
+#        issues a short-lived installation token scoped to the docs repo — no per-repo PAT to create
+#        or rotate. The App must be installed on the docs repo's org with Contents:Write (cross-repo
+#        repository_dispatch is a Contents:Write action; there is no separate dispatch permission).
+#      - `DOCS_DISPATCH_TOKEN` PAT (fallback, used when the App is not configured) — a secret on THIS
+#        repo, scoped to the docs repo(s). Classic: `repo`; fine-grained: Contents read & write +
+#        Metadata read, granted on the docs repo.
+#    Two facts hold on BOTH paths, otherwise each presents as a green step that does nothing:
+#      - the default `GITHUB_TOKEN` cannot dispatch to a *different* repository, at any
+#        `permissions:` setting. The App installation token now covers cross-repo dispatch without a
+#        PAT; the PAT remains the fallback when no App is set.
+#      - `repository_dispatch` only triggers workflows committed to the TARGET repo's DEFAULT
+#        branch. A drift-sync caller that exists only on a branch will never fire.
+
+on:
+  push:
+    # Merges land here. Both source repos run gitflow: `develop` integrates and `main` receives
+    # the release merge, so `main` is where a change becomes real for a reader — which is what the
+    # docs describe. Watching `develop` instead would document behaviour that is not released yet.
+    # Only one branch may be watched: the engine keeps ONE marker per source repo, so dispatches
+    # from two lineages would make the marker jump between tips and the ranges meaningless.
+    branches: [main]
+    # Mirrors profile `product.source_repos[streamkap-com/terraform-provider-streamkap].watch_paths` verbatim. Change
+    # both in the same edit: a path in the profile but missing here never dispatches, and nothing
+    # reports that miss. Tests, lockfiles, build output and generated code need no exclusion —
+    # the engine drops them inside the run, making such a merge a no-op rather than a PR.
+    paths:
+      - "internal/provider/**"
+      - "internal/resource/**"
+      - "internal/datasource/**"
+      - "examples/**"
+
+# Dispatching is an API call authenticated by DOCS_DISPATCH_TOKEN; nothing here reads this repo,
+# so the default token needs no scopes.
+permissions: {}
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      # GitHub App path (optional, additive). When the `DOCWRIGHT_APP_ID` variable is set, mint a
+      # short-lived installation token scoped to the docs repo with contents:write — enough to fire
+      # the cross-repo repository_dispatch. `owner`/`repositories` are the SAME docs owner/repo the
+      # dispatch targets below. Unset, the dispatch falls back to the DOCS_DISPATCH_TOKEN PAT byte-for-byte.
+      # SHA-pinned per invariant 6 (see planning/research/tech-stack-pins.md).
+      - name: Mint a docs-repo App token for cross-repo dispatch
+        id: dispatch_token
+        if: vars.DOCWRIGHT_APP_ID != ''
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.DOCWRIGHT_APP_ID }}
+          private-key: ${{ secrets.DOCWRIGHT_APP_PRIVATE_KEY }}
+          owner: streamkap-com
+          repositories: streamkap-docs
+          permission-contents: write
+
+      # SHA-pinned per invariant 6 (see planning/research/tech-stack-pins.md).
+      - name: Notify the docs repo
+        uses: peter-evans/repository-dispatch@28959ce8df70de7be546dd1250a005dd32156697 # v4.0.1
+        with:
+          token: ${{ steps.dispatch_token.outputs.token || secrets.DOCS_DISPATCH_TOKEN }}
+          repository: streamkap-com/streamkap-docs
+          event-type: source-merged
+          # `sha` is the only channel carrying the dispatched commit: the engine diffs its stored
+          # marker against it, and merge-bases against it when a force-push orphans that marker.
+          # `repo` selects which marker. Renaming or dropping either breaks both mechanisms.
+          #
+          # EXTENSION POINT — generated-OpenAPI transport. When the profile sets
+          # `openapi[].mode: generated`, a preceding step runs `openapi[].command` and appends
+          # keys to this JSON object (spec hash plus an artifact reference). Additive only: the
+          # two keys below keep their names and meaning.
+          client-payload: '{"repo":"${{ github.repository }}","sha":"${{ github.sha }}"}'
+
+      # Fan-out: a shared service feeding several doc sets adds one step per subscribed docs repo,
+      # identical except for `repository:`. Reuse the same token only if it is scoped to all of
+      # them; otherwise give each target its own secret.
+      # - name: Notify the second docs repo
+      #   uses: peter-evans/repository-dispatch@28959ce8df70de7be546dd1250a005dd32156697 # v4.0.1
+      #   with:
+      #     token: ${{ secrets.DOCS_DISPATCH_TOKEN }}
+      #     repository: <owner>/<other-docs-repo>
+      #     event-type: source-merged
+      #     client-payload: '{"repo":"${{ github.repository }}","sha":"${{ github.sha }}"}'
+
+      # ── GENERATED-OPENAPI TRANSPORT (OQ-5) ── uncomment + fill when the docs profile sets
+      #    `openapi[].mode: generated`. The engine renders the API reference FROM the spec (FR-J1), and
+      #    a generated spec is produced HERE in source CI (it needs this repo's toolchain), then carried
+      #    to the docs repo. Add these two steps BEFORE the "Notify the docs repo" step above, and add
+      #    the three spec keys to its client-payload. The engine's writer downloads the artifact,
+      #    verifies its sha256, and materializes the spec INTO the draft sync PR — never a push to the
+      #    docs default branch (invariant 1). The upload here uses the run's default token; for the
+      #    download side, the docs repo's SOURCE_READ_TOKEN must be scoped `actions: read` on this
+      #    source repo (a Wave-0 provisioning detail).
+      #
+      #   - name: Generate the OpenAPI spec
+      #     run: |
+      #       set -euo pipefail
+      #       # <profile openapi[].command> — must emit the spec file at the path named below:
+      #       python -m app.dump_openapi > openapi.json
+      #       echo "SPEC_SHA=$(sha256sum openapi.json | cut -d' ' -f1)" >> "$GITHUB_ENV"
+      #   - name: Upload the spec as a run artifact
+      #     uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      #     with:
+      #       name: openapi-spec          # -> client_payload.spec_artifact
+      #       path: openapi.json
+      #       if-no-files-found: error
+      #
+      #   then the dispatch step's client-payload becomes (additive — the two original keys are kept):
+      #     client-payload: '{"repo":"${{ github.repository }}","sha":"${{ github.sha }}","spec_sha":"${{ env.SPEC_SHA }}","spec_run_id":"${{ github.run_id }}","spec_artifact":"openapi-spec"}'
