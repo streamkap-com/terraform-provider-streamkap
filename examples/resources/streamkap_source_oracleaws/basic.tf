@@ -6,7 +6,7 @@ resource "streamkap_source_oracleaws" "example" {
 
   # Connection details
   database_hostname = "oracle.xxxx.rds.amazonaws.com"
-  database_port     = "1521"
+  database_port     = 1521
   database_user     = "streamkap_user"
   database_password = var.db_password
   database_dbname   = "ORCL"
@@ -16,7 +16,7 @@ resource "streamkap_source_oracleaws" "example" {
   table_include_list  = "HR.EMPLOYEES,HR.DEPARTMENTS"
 
   # Signal and heartbeat tables (required)
-  signal_data_collection_schema_or_database    = "STREAMKAP"
+  signal_data_collection_schema_or_database    = "STREAMKAP.STREAMKAP_SIGNAL"
   heartbeat_data_collection_schema_or_database = "STREAMKAP"
 }
 

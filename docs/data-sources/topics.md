@@ -66,8 +66,8 @@ Read-Only:
 - `entity_name` (String) Name of the entity that owns this topic.
 - `entity_type` (String) Type of entity: `sources`, `transforms`, or `destinations`.
 - `id` (String) Unique topic identifier.
-- `messages_30d` (Number) Number of messages in the last 30 days.
-- `messages_7d` (Number) Number of messages in the last 7 days.
+- `messages_30d` (Number, Deprecated) **Deprecated:** Always null — the topic details API does not return a 30-day message count.
+- `messages_7d` (Number, Deprecated) **Deprecated:** Always null — the topic details API does not return a 7-day message count.
 - `name` (String) Topic name.
 - `prefix` (String) Topic name prefix.
 - `serialization` (Attributes) Serialization format information for the topic, inherited from its producer (source/transform). (see [below for nested schema](#nestedatt--topics--serialization))

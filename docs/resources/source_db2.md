@@ -18,6 +18,10 @@ This resource creates and manages a Db2 source for Streamkap data pipelines. Use
 
 ## Example Usage
 
+These examples describe this documentation version. Select the matching provider
+release in `required_providers`; beta releases require an exact prerelease version.
+Without a version constraint, Terraform selects a stable release.
+
 ### Basic
 
 ```terraform
@@ -29,7 +33,7 @@ resource "streamkap_source_db2" "example" {
 
   # Connection details
   database_hostname = "db2.example.com"
-  database_port     = "50000"
+  database_port     = 50000
   database_user     = "streamkap_user"
   database_password = var.db_password
   database_dbname   = "SAMPLE"
@@ -38,8 +42,8 @@ resource "streamkap_source_db2" "example" {
   schema_include_list = "MYSCHEMA"
   table_include_list  = "MYSCHEMA.ORDERS,MYSCHEMA.CUSTOMERS"
 
-  # Signal table for incremental snapshots (required)
-  signal_data_collection_schema_or_database = "STREAMKAP"
+  # Signal table for incremental snapshots
+  signal_data_collection_schema_or_database = "STREAMKAP.streamkap_signal"
 }
 
 variable "db_password" {
@@ -59,8 +63,9 @@ variable "db_password" {
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -85,7 +90,7 @@ resource "streamkap_source_db2" "example-source-db2" {
 
   # Connection settings
   database_hostname = var.source_db2_hostname
-  database_port     = "50000" # DB2 default port
+  database_port     = 50000 # DB2 default port
   database_user     = "db2admin"
   database_password = var.source_db2_password
   database_dbname   = "SAMPLE"
@@ -95,7 +100,7 @@ resource "streamkap_source_db2" "example-source-db2" {
   table_include_list  = "MYSCHEMA.ORDERS,MYSCHEMA.CUSTOMERS,ANALYTICS.EVENTS"
 
   # Signal table for incremental snapshots
-  signal_data_collection_schema_or_database = "STREAMKAP"
+  signal_data_collection_schema_or_database = "STREAMKAP.streamkap_signal"
 
   # Schema history optimization (for large instances)
   schema_history_internal_store_only_captured_databases_ddl = false
@@ -108,7 +113,7 @@ resource "streamkap_source_db2" "example-source-db2" {
   ssh_enabled = false
   # When ssh_enabled = true, also configure:
   # ssh_host = "bastion.example.com"
-  # ssh_port = "22"
+  # ssh_port = 22
   # ssh_user = "streamkap"
 }
 

@@ -57,5 +57,113 @@
       "sensitive": false,
       "type": "types.ListType[types.ObjectType[\"id\":basetypes.StringType, \"topics\":types.SetType[basetypes.StringType]]]"
     }
+  },
+  "nested_attributes": {
+    "destination.connector": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "destination.id": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "destination.name": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "source.connector": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "source.id": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "source.name": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "source.topics": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.SetType[basetypes.StringType]"
+    },
+    "topic_auto_discovery_transforms.regex": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "topic_auto_discovery_transforms.transform_id": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms.id": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms.topics": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.SetType[basetypes.StringType]"
+    }
+  },
+  "blocks": {
+    "timeouts": {
+      "nesting_mode": "single",
+      "type": "timeouts.Type"
+    }
+  },
+  "block_attributes": {
+    "timeouts.create": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "timeouts.delete": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "timeouts.update": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    }
   }
 }

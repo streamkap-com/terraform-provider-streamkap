@@ -53,6 +53,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/defaults"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -113,6 +117,7 @@ var (
 	_ resource.Resource                = &BaseConnectorResource{}
 	_ resource.ResourceWithConfigure   = &BaseConnectorResource{}
 	_ resource.ResourceWithImportState = &BaseConnectorResource{}
+	_ resource.ResourceWithModifyPlan  = &BaseConnectorResource{}
 )
 
 // BaseConnectorResource is a generic resource implementation for connectors.
@@ -138,6 +143,39 @@ func (r *BaseConnectorResource) Metadata(ctx context.Context, req resource.Metad
 // Schema returns the schema for this resource.
 func (r *BaseConnectorResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	baseSchema := r.config.GetSchema()
+	// Alias defaults must wait until ModifyPlan. Applying them earlier marks
+	// computed fields unknown even when the alias resolves to unchanged state.
+	mappings := r.config.GetFieldMappings()
+	for alias, attribute := range baseSchema.Attributes {
+		if attribute.GetDeprecationMessage() == "" {
+			continue
+		}
+		for canonical, apiField := range mappings {
+			if canonical == alias || apiField != mappings[alias] {
+				continue
+			}
+			switch a := baseSchema.Attributes[canonical].(type) {
+			case schema.StringAttribute:
+				if a.Default != nil {
+					a.Default = nil
+					a.PlanModifiers = append(a.PlanModifiers, stringplanmodifier.UseStateForUnknown())
+					baseSchema.Attributes[canonical] = a
+				}
+			case schema.BoolAttribute:
+				if a.Default != nil {
+					a.Default = nil
+					a.PlanModifiers = append(a.PlanModifiers, boolplanmodifier.UseStateForUnknown())
+					baseSchema.Attributes[canonical] = a
+				}
+			case schema.Int64Attribute:
+				if a.Default != nil {
+					a.Default = nil
+					a.PlanModifiers = append(a.PlanModifiers, int64planmodifier.UseStateForUnknown())
+					baseSchema.Attributes[canonical] = a
+				}
+			}
+		}
+	}
 
 	// Add timeouts block to the schema
 	baseSchema.Blocks = map[string]schema.Block{
@@ -150,6 +188,76 @@ func (r *BaseConnectorResource) Schema(ctx context.Context, req resource.SchemaR
 	}
 
 	resp.Schema = baseSchema
+}
+
+// ModifyPlan aligns aliases before marshaling: schema defaults can otherwise
+// give two attributes different planned values for the same API field.
+func (r *BaseConnectorResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+	model := r.config.NewModelInstance()
+	resp.Diagnostics.Append(req.Config.Get(ctx, model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	mappings := r.config.GetFieldMappings()
+	names := make([]string, 0, len(mappings))
+	for name := range mappings {
+		names = append(names, name)
+	}
+	configured := shared.CaptureFields(model, names)
+	s := r.config.GetSchema()
+	for alias, attribute := range s.Attributes {
+		if attribute.GetDeprecationMessage() == "" {
+			continue
+		}
+		for canonical, apiField := range mappings {
+			if canonical == alias || apiField != mappings[alias] {
+				continue
+			}
+			oldValue, newValue := configured[alias], configured[canonical]
+			value := oldValue
+			if value.IsNull() {
+				value = newValue
+			}
+			if value.IsNull() {
+				p := path.Root(canonical)
+				switch a := s.Attributes[canonical].(type) {
+				case schema.StringAttribute:
+					if a.Default != nil {
+						var d defaults.StringResponse
+						a.Default.DefaultString(ctx, defaults.StringRequest{Path: p}, &d)
+						resp.Diagnostics.Append(d.Diagnostics...)
+						value = d.PlanValue
+					}
+				case schema.BoolAttribute:
+					if a.Default != nil {
+						var d defaults.BoolResponse
+						a.Default.DefaultBool(ctx, defaults.BoolRequest{Path: p}, &d)
+						resp.Diagnostics.Append(d.Diagnostics...)
+						value = d.PlanValue
+					}
+				case schema.Int64Attribute:
+					if a.Default != nil {
+						var d defaults.Int64Response
+						a.Default.DefaultInt64(ctx, defaults.Int64Request{Path: p}, &d)
+						resp.Diagnostics.Append(d.Diagnostics...)
+						value = d.PlanValue
+					}
+				}
+			}
+			if value.IsNull() || resp.Diagnostics.HasError() {
+				continue
+			}
+			if newValue.IsNull() && s.Attributes[canonical].IsComputed() {
+				resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(canonical), value)...)
+			}
+			if oldValue.IsNull() && attribute.IsComputed() {
+				resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(alias), value)...)
+			}
+		}
+	}
 }
 
 // Config exposes the connector's ConnectorConfig. Provider-level tests use it to
@@ -212,8 +320,10 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	// Capture user-supplied secrets before the API echo can overwrite them.
-	plannedSecrets := shared.CaptureStringFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
+	// Capture user-supplied secrets before the API echo can overwrite them, and
+	// the defaulted attributes the backend may drop (see shared.DefaultedAttrNames).
+	plannedSecrets := shared.CaptureFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
+	plannedDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(r.config.GetSchema()))
 
 	// Get name from model
 	name := r.getStringField(model, "Name")
@@ -303,7 +413,8 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	r.setStringField(model, "ConnectorStatus", connectorStatus)
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, responseTags))
 	r.configMapToModel(ctx, responseConfig, model)
-	shared.PreserveKnownStringFields(model, plannedSecrets)
+	shared.PreserveKnownFields(model, plannedSecrets)
+	shared.FillNullFields(model, plannedDefaults)
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
@@ -346,9 +457,13 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	// Snapshot the secrets already in state. The API response can null them out
-	// (see shared.FillNullStringFields); prior state is the only source we have
+	// (see shared.FillNullFields); prior state is the only source we have
 	// on refresh, since Read gets no plan.
-	priorSecrets := shared.CaptureStringFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
+	priorSecrets := shared.CaptureFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
+	// Same for defaulted attributes the backend drops when their gating
+	// condition is unmet: nulling them in state would plan the Default back
+	// every run.
+	priorDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(r.config.GetSchema()))
 
 	// Get ID from model
 	id := r.getStringField(model, "ID")
@@ -420,7 +535,8 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 	r.setStringField(model, "KcClusterId", kcClusterId)
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(priorTags, responseTags))
 	r.configMapToModel(ctx, responseConfig, model)
-	shared.FillNullStringFields(model, priorSecrets)
+	shared.FillNullFields(model, priorSecrets)
+	shared.FillNullFields(model, priorDefaults)
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
@@ -462,8 +578,10 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	// Capture user-supplied secrets before the API echo can overwrite them.
-	plannedSecrets := shared.CaptureStringFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
+	// Capture user-supplied secrets before the API echo can overwrite them, and
+	// the defaulted attributes the backend may drop (see shared.DefaultedAttrNames).
+	plannedSecrets := shared.CaptureFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
+	plannedDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(r.config.GetSchema()))
 
 	// Get ID and name from model
 	id := r.getStringField(model, "ID")
@@ -547,7 +665,8 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 	r.setStringField(model, "Connector", connectorCode)
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, responseTags))
 	r.configMapToModel(ctx, responseConfig, model)
-	shared.PreserveKnownStringFields(model, plannedSecrets)
+	shared.PreserveKnownFields(model, plannedSecrets)
+	shared.FillNullFields(model, plannedDefaults)
 
 	// connector_status handling on Update.
 	//
@@ -734,7 +853,7 @@ func (r *BaseConnectorResource) extractValueHook() shared.ExtractValueFunc {
 		if fieldValue.Kind() == reflect.Map {
 			mapType := fieldValue.Type()
 			if mapType.Key().Kind() == reflect.String {
-				if fieldValue.IsNil() || fieldValue.Len() == 0 {
+				if fieldValue.IsNil() {
 					return nil, true
 				}
 
@@ -748,9 +867,6 @@ func (r *BaseConnectorResource) extractValueHook() shared.ExtractValueFunc {
 						if !value.IsNull() && !value.IsUnknown() {
 							result[key] = value.ValueString()
 						}
-					}
-					if len(result) == 0 {
-						return nil, true
 					}
 					return result, true
 				}
@@ -766,9 +882,6 @@ func (r *BaseConnectorResource) extractValueHook() shared.ExtractValueFunc {
 						if len(nestedMap) > 0 {
 							result[key] = nestedMap
 						}
-					}
-					if len(result) == 0 {
-						return nil, true
 					}
 					return result, true
 				}
@@ -897,8 +1010,16 @@ func (r *BaseConnectorResource) setNestedMapValue(ctx context.Context, cfg map[s
 		return
 	}
 
-	if len(apiMap) == 0 {
+	if apiMap == nil {
 		fieldValue.Set(reflect.Zero(fieldValue.Type()))
+		return
+	}
+
+	// An explicit `{}` clears the mapping and has to round-trip as an empty map.
+	// Collapsing it to null makes Terraform reject the apply with
+	// "was cty.MapValEmpty(...), but now null".
+	if len(apiMap) == 0 {
+		fieldValue.Set(reflect.MakeMap(fieldValue.Type()))
 		return
 	}
 

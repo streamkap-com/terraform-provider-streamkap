@@ -156,6 +156,7 @@ func TestFieldTypeMapping(t *testing.T) {
 		{"string control", "string", "types.String", "schema.StringAttribute", false},
 		{"password control", "password", "types.String", "schema.StringAttribute", false},
 		{"textarea control", "textarea", "types.String", "schema.StringAttribute", false},
+		{"code-editor control", "code-editor", "types.String", "schema.StringAttribute", false},
 		{"json control", "json", "jsontypes.Normalized", "schema.StringAttribute", false},
 		{"datetime control", "datetime", "types.String", "schema.StringAttribute", false},
 		{"number control", "number", "types.Int64", "schema.Int64Attribute", false},
@@ -190,6 +191,67 @@ func TestFieldTypeMapping(t *testing.T) {
 				t.Errorf("IsListType = %v, want %v", field.IsListType, tt.wantIsListType)
 			}
 		})
+	}
+}
+
+func TestPrepareTemplateDataRejectsUnsupportedControl(t *testing.T) {
+	g := NewGenerator("/tmp", "source")
+	config := &ConnectorConfig{
+		DisplayName: "Test",
+		Config: []ConfigEntry{{
+			Name:        "future.field",
+			UserDefined: true,
+			Value:       ValueObject{Control: "future-control"},
+		}},
+	}
+
+	_, err := g.prepareTemplateData(config, "test")
+	if err == nil || !strings.Contains(err.Error(), `API field "future.field" uses unsupported backend control "future-control"`) {
+		t.Fatalf("prepareTemplateData() error = %v, want unsupported-control error", err)
+	}
+}
+
+func TestBackendDerivedFieldRemainsConfigurableWithoutStaleState(t *testing.T) {
+	g := NewGenerator("/tmp", "source")
+	entry := &ConfigEntry{
+		Name:        "mongodb.connection.hostname",
+		UserDefined: true,
+		Value: ValueObject{
+			Control:        "string",
+			Readonly:       true,
+			DeriveFunction: "get_mongodb_connection_hostname",
+		},
+	}
+
+	field := g.entryToFieldData(entry)
+	if !field.Optional || !field.Computed || field.Required {
+		t.Fatalf("backend-derived field flags = Required:%t Optional:%t Computed:%t, want optional+computed",
+			field.Required, field.Optional, field.Computed)
+	}
+	if field.NeedsPlanMod {
+		t.Error("backend-derived field must not preserve prior state")
+	}
+}
+
+func TestReadonlyAPIFieldRemainsConfigurable(t *testing.T) {
+	g := NewGenerator("/tmp", "source")
+	entry := &ConfigEntry{
+		Name:        "ssh.public.key.user.displayed",
+		UserDefined: true,
+		Value: ValueObject{
+			Control:       "string",
+			Readonly:      true,
+			EarlyResolved: "get_ssh_public_key_user_displayed",
+		},
+	}
+
+	field := g.entryToFieldData(entry)
+	if !field.Optional || !field.Computed || field.Required {
+		t.Fatalf("readonly API field flags = Required:%t Optional:%t Computed:%t, want optional+computed",
+			field.Required, field.Optional, field.Computed)
+	}
+	if !field.NeedsPlanMod {
+		t.Error("readonly API field must preserve prior state when omitted")
 	}
 }
 

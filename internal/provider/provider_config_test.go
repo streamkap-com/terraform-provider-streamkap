@@ -2,10 +2,17 @@
 package provider
 
 import (
+	"context"
+	"net/http"
 	"os"
 	"regexp"
 	"testing"
 
+	"github.com/jarcoal/httpmock"
+
+	frameworkprovider "github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/tfversion"
 )
@@ -15,6 +22,59 @@ import (
 // =============================================================================
 // These tests verify that the provider properly handles various configuration
 // scenarios: missing credentials, invalid values, and environment variable fallbacks.
+
+func TestProviderConfig_UnknownAdminScope(t *testing.T) {
+	tests := map[string]string{
+		"admin tenant ID":  "admin_tenant_id",
+		"admin service ID": "admin_service_id",
+	}
+
+	for name, unknownAttribute := range tests {
+		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
+			providerUnderTest := New("test")()
+			var schemaResponse frameworkprovider.SchemaResponse
+			providerUnderTest.Schema(ctx, frameworkprovider.SchemaRequest{}, &schemaResponse)
+
+			values := map[string]tftypes.Value{
+				"host":             tftypes.NewValue(tftypes.String, "https://api.streamkap.com"),
+				"client_id":        tftypes.NewValue(tftypes.String, "client-id"),
+				"secret":           tftypes.NewValue(tftypes.String, "secret"),
+				"admin_tenant_id":  tftypes.NewValue(tftypes.String, nil),
+				"admin_service_id": tftypes.NewValue(tftypes.String, nil),
+			}
+			values[unknownAttribute] = tftypes.NewValue(tftypes.String, tftypes.UnknownValue)
+
+			var configureResponse frameworkprovider.ConfigureResponse
+			providerUnderTest.Configure(ctx, frameworkprovider.ConfigureRequest{
+				Config: tfsdk.Config{
+					Raw: tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+						"host":             tftypes.String,
+						"client_id":        tftypes.String,
+						"secret":           tftypes.String,
+						"admin_tenant_id":  tftypes.String,
+						"admin_service_id": tftypes.String,
+					}}, values),
+					Schema: schemaResponse.Schema,
+				},
+			}, &configureResponse)
+
+			if !configureResponse.Diagnostics.HasError() {
+				t.Fatal("expected unknown admin scope to prevent provider configuration")
+			}
+			found := false
+			for _, diagnostic := range configureResponse.Diagnostics {
+				if regexp.MustCompile(`Unknown Streamkap Admin`).MatchString(diagnostic.Summary()) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("missing unknown admin scope diagnostic: %v", configureResponse.Diagnostics)
+			}
+		})
+	}
+}
 
 // TestProviderConfig_MissingClientID tests that missing client_id produces a clear error
 func TestProviderConfig_MissingClientID(t *testing.T) {
@@ -406,4 +466,132 @@ data "streamkap_topics" "test" {}
 // MustCompile is a helper that wraps regexp.MustCompile for test error patterns
 func MustCompile(pattern string) *regexp.Regexp {
 	return regexp.MustCompile(pattern)
+}
+
+// The backend ignores X-Admin-Service-Id unless X-Admin-Tenant-Id is also set,
+// so a lone service id silently targets the credential's own tenant.
+func TestProviderConfig_AdminServiceIDWithoutTenantID(t *testing.T) {
+	t.Setenv("STREAMKAP_ADMIN_TENANT_ID", "")
+	t.Setenv("STREAMKAP_ADMIN_SERVICE_ID", "")
+
+	ctx := context.Background()
+	providerUnderTest := New("test")()
+	var schemaResponse frameworkprovider.SchemaResponse
+	providerUnderTest.Schema(ctx, frameworkprovider.SchemaRequest{}, &schemaResponse)
+
+	objectType := tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+		"host":             tftypes.String,
+		"client_id":        tftypes.String,
+		"secret":           tftypes.String,
+		"admin_tenant_id":  tftypes.String,
+		"admin_service_id": tftypes.String,
+	}}
+
+	var configureResponse frameworkprovider.ConfigureResponse
+	providerUnderTest.Configure(ctx, frameworkprovider.ConfigureRequest{
+		Config: tfsdk.Config{
+			Raw: tftypes.NewValue(objectType, map[string]tftypes.Value{
+				"host":             tftypes.NewValue(tftypes.String, "https://api.streamkap.com"),
+				"client_id":        tftypes.NewValue(tftypes.String, "client-id"),
+				"secret":           tftypes.NewValue(tftypes.String, "secret"),
+				"admin_tenant_id":  tftypes.NewValue(tftypes.String, nil),
+				"admin_service_id": tftypes.NewValue(tftypes.String, "service-1"),
+			}),
+			Schema: schemaResponse.Schema,
+		},
+	}, &configureResponse)
+
+	if !configureResponse.Diagnostics.HasError() {
+		t.Fatal("admin_service_id without admin_tenant_id must fail configuration")
+	}
+	if !regexp.MustCompile(`(?s)admin_service_id only takes effect alongside admin_tenant_id`).
+		MatchString(configureResponse.Diagnostics.Errors()[0].Detail()) {
+		t.Fatalf("unexpected diagnostic: %s", configureResponse.Diagnostics.Errors()[0].Detail())
+	}
+}
+
+// TestProviderConfig_AdminServiceIDRequiresTenantID guards the backend quirk
+// where X-Admin-Service-Id without X-Admin-Tenant-Id is silently ignored and
+// every request runs against the credential's own tenant.
+func TestProviderConfig_AdminServiceIDRequiresTenantID(t *testing.T) {
+	t.Setenv("STREAMKAP_ADMIN_TENANT_ID", "")
+	t.Setenv("STREAMKAP_ADMIN_SERVICE_ID", "")
+
+	configureResponse := configureProviderWithAdminScope(t, nil, strPtr("service-1"))
+
+	if !configureResponse.Diagnostics.HasError() {
+		t.Fatal("admin_service_id without admin_tenant_id must be rejected")
+	}
+	found := false
+	for _, diagnostic := range configureResponse.Diagnostics {
+		if regexp.MustCompile(`Admin Service ID Without Admin Tenant ID`).MatchString(diagnostic.Summary()) {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("missing lone admin_service_id diagnostic: %v", configureResponse.Diagnostics)
+	}
+}
+
+// TestProviderConfig_AdminTenantIDAloneIsAccepted pins the deliberate asymmetry:
+// a tenant id on its own is valid because the backend resolves a single-service
+// tenant itself.
+func TestProviderConfig_AdminTenantIDAloneIsAccepted(t *testing.T) {
+	t.Setenv("STREAMKAP_ADMIN_TENANT_ID", "")
+	t.Setenv("STREAMKAP_ADMIN_SERVICE_ID", "")
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	httpmock.RegisterResponder(http.MethodPost, "https://api.test.streamkap.com/auth/access-token",
+		httpmock.NewJsonResponderOrPanic(http.StatusOK, map[string]any{
+			"accessToken": "token", "expires": "2099-01-01T00:00:00Z", "expiresIn": 3600,
+		}))
+
+	configureResponse := configureProviderWithAdminScope(t, strPtr("tenant-1"), nil)
+
+	if configureResponse.Diagnostics.HasError() {
+		t.Fatalf("admin_tenant_id alone must configure cleanly, got %v", configureResponse.Diagnostics)
+	}
+	if httpmock.GetTotalCallCount() != 1 {
+		t.Fatalf("expected exactly one token request, got %d", httpmock.GetTotalCallCount())
+	}
+}
+
+func strPtr(s string) *string { return &s }
+
+func configureProviderWithAdminScope(t *testing.T, tenantID, serviceID *string) frameworkprovider.ConfigureResponse {
+	t.Helper()
+	ctx := context.Background()
+	providerUnderTest := New("test")()
+	var schemaResponse frameworkprovider.SchemaResponse
+	providerUnderTest.Schema(ctx, frameworkprovider.SchemaRequest{}, &schemaResponse)
+
+	optional := func(v *string) tftypes.Value {
+		if v == nil {
+			return tftypes.NewValue(tftypes.String, nil)
+		}
+		return tftypes.NewValue(tftypes.String, *v)
+	}
+	values := map[string]tftypes.Value{
+		"host":             tftypes.NewValue(tftypes.String, "https://api.test.streamkap.com"),
+		"client_id":        tftypes.NewValue(tftypes.String, "client-id"),
+		"secret":           tftypes.NewValue(tftypes.String, "secret"),
+		"admin_tenant_id":  optional(tenantID),
+		"admin_service_id": optional(serviceID),
+	}
+
+	var configureResponse frameworkprovider.ConfigureResponse
+	providerUnderTest.Configure(ctx, frameworkprovider.ConfigureRequest{
+		Config: tfsdk.Config{
+			Raw: tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+				"host":             tftypes.String,
+				"client_id":        tftypes.String,
+				"secret":           tftypes.String,
+				"admin_tenant_id":  tftypes.String,
+				"admin_service_id": tftypes.String,
+			}}, values),
+			Schema: schemaResponse.Schema,
+		},
+	}, &configureResponse)
+	return configureResponse
 }

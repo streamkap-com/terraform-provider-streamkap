@@ -21,6 +21,10 @@ Client credentials are used to authenticate API access programmatically. The sec
 
 ## Example Usage
 
+These examples describe this documentation version. Select the matching provider
+release in `required_providers`; beta releases require an exact prerelease version.
+Without a version constraint, Terraform selects a stable release.
+
 ### Basic
 
 ```terraform

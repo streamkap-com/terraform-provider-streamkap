@@ -5,8 +5,9 @@
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -32,9 +33,9 @@ resource "streamkap_source_mongodb" "example-source-mongodb" {
   database_include_list   = "Test"                            # Databases to sync
   collection_include_list = "Test.test_data4,Test.test_data2" # Collections to capture (db.collection format)
 
-  # Signal collection for incremental snapshots (required)
+  # Signal collection for incremental snapshots
   # This database must contain a 'streamkap_signal' collection for snapshot coordination
-  signal_data_collection_schema_or_database = "Test"
+  signal_data_collection_schema_or_database = "Test.streamkap_signal"
 
   # Data encoding options
   transforms_unwrap_array_encoding    = "array_string" # Options: array, array_string

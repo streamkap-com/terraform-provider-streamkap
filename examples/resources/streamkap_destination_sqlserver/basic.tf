@@ -3,8 +3,10 @@
 resource "streamkap_destination_sqlserver" "example" {
   name                = "my-sqlserver-dest"
   database_hostname   = var.sqlserver_hostname
+  database_database   = "mydb"
   connection_username = var.sqlserver_username
   connection_password = var.sqlserver_password
+  table_name_prefix   = "dbo"
 }
 
 variable "sqlserver_hostname" {

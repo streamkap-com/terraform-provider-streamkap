@@ -2,8 +2,9 @@ package topic
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"strings"
+	"net/http"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -156,8 +157,7 @@ func (r *TopicResource) Read(ctx context.Context, req res.ReadRequest, resp *res
 		// Topic doesn't exist yet — keep state so Create/Update can auto-create via PUT.
 		// The backend's update_topic() has create-if-not-exists logic that creates the
 		// Kafka topic with the source connector's default settings.
-		errMsg := err.Error()
-		if strings.Contains(errMsg, "not found") || strings.Contains(errMsg, "not owned") {
+		if isMissingTopic(err, topicID) {
 			tflog.Info(ctx, "Topic not found during read, keeping state for create: "+topicID)
 			resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 			return
@@ -298,4 +298,20 @@ func normalizeTagsResponse(userTags, serverTags []string) []string {
 		return []string{}
 	}
 	return serverTags
+}
+
+func isMissingTopic(err error, topicID string) bool {
+	var apiErr *api.APIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+	if apiErr.StatusCode == http.StatusNotFound {
+		return true
+	}
+	// Older deployments returned 400 for the same ownership lookup failure.
+	if apiErr.StatusCode != http.StatusBadRequest {
+		return false
+	}
+	return apiErr.Detail == "Unauthorized. Topic is not owned by the tenant and/or service" ||
+		apiErr.Detail == fmt.Sprintf("Topic '%s' not found in database", topicID)
 }

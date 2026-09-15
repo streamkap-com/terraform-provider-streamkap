@@ -8,5 +8,35 @@
       "sensitive": false,
       "type": "types.ListType[types.ObjectType[\"description\":basetypes.StringType, \"id\":basetypes.StringType, \"key\":basetypes.StringType, \"name\":basetypes.StringType]]"
     }
+  },
+  "nested_attributes": {
+    "roles.description": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "roles.id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "roles.key": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "roles.name": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    }
   }
 }

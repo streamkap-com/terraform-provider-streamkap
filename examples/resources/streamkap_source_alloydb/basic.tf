@@ -6,7 +6,7 @@ resource "streamkap_source_alloydb" "example" {
 
   # Connection details
   database_hostname = "alloydb.example.com"
-  database_port     = "5432"
+  database_port     = 5432
   database_user     = "streamkap_user"
   database_password = var.db_password
   database_dbname   = "mydb"
@@ -16,7 +16,7 @@ resource "streamkap_source_alloydb" "example" {
   table_include_list  = "public.orders,public.customers"
 
   # Signal and heartbeat tables (required)
-  signal_data_collection_schema_or_database    = "streamkap"
+  signal_data_collection_schema_or_database    = "streamkap.streamkap_signal"
   heartbeat_data_collection_schema_or_database = "streamkap"
 }
 

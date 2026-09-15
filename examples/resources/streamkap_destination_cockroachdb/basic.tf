@@ -3,6 +3,7 @@
 resource "streamkap_destination_cockroachdb" "example" {
   name                = "my-cockroachdb-dest"
   database_hostname   = var.cockroachdb_hostname
+  database_database   = "mydb"
   connection_username = var.cockroachdb_username
   connection_password = var.cockroachdb_password
 }

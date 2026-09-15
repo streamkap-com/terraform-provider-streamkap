@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -371,14 +372,14 @@ type secretModel struct {
 	Secret types.String `tfsdk:"secret"`
 }
 
-// TestPreserveKnownStringFields reproduces the write-only-secret round-trip:
+// TestPreserveKnownFields reproduces the write-only-secret round-trip:
 // the user supplies a sensitive value in the plan, the backend echo nulls it
 // (the Streamkap API returns null for a secret whose stored value is absent or
 // decrypts to "null"), and the captured plan value must be restored so the
 // applied state matches the plan. Without restoration Terraform aborts with
 // "Provider produced inconsistent result after apply: <field>: inconsistent
 // values for sensitive attribute".
-func TestPreserveKnownStringFields(t *testing.T) {
+func TestPreserveKnownFields(t *testing.T) {
 	ctx := context.Background()
 	mappings := map[string]string{
 		"name":   "name",
@@ -387,7 +388,7 @@ func TestPreserveKnownStringFields(t *testing.T) {
 
 	t.Run("restores known plan secret when echo is null", func(t *testing.T) {
 		model := &secretModel{Name: types.StringValue("dest"), Secret: types.StringValue("p@ss")}
-		captured := CaptureStringFields(model, []string{"secret"})
+		captured := CaptureFields(model, []string{"secret"})
 
 		// Echo omits the secret -> ConfigMapToModel nulls it.
 		ConfigMapToModel(ctx, map[string]any{"name": "dest"}, model, mappings, nil)
@@ -395,7 +396,7 @@ func TestPreserveKnownStringFields(t *testing.T) {
 			t.Fatalf("precondition: expected echo to null the secret, got %#v", model.Secret)
 		}
 
-		PreserveKnownStringFields(model, captured)
+		PreserveKnownFields(model, captured)
 		if model.Secret.ValueString() != "p@ss" {
 			t.Errorf("secret not restored: got %q, want %q", model.Secret.ValueString(), "p@ss")
 		}
@@ -403,10 +404,10 @@ func TestPreserveKnownStringFields(t *testing.T) {
 
 	t.Run("keeps echo value when plan secret was unknown", func(t *testing.T) {
 		model := &secretModel{Name: types.StringValue("dest"), Secret: types.StringUnknown()}
-		captured := CaptureStringFields(model, []string{"secret"})
+		captured := CaptureFields(model, []string{"secret"})
 
 		ConfigMapToModel(ctx, map[string]any{"name": "dest", "secret.api.field": "backend-value"}, model, mappings, nil)
-		PreserveKnownStringFields(model, captured)
+		PreserveKnownFields(model, captured)
 		if model.Secret.ValueString() != "backend-value" {
 			t.Errorf("unknown plan should defer to echo: got %q, want %q", model.Secret.ValueString(), "backend-value")
 		}
@@ -414,10 +415,10 @@ func TestPreserveKnownStringFields(t *testing.T) {
 
 	t.Run("keeps echo value when plan secret was null", func(t *testing.T) {
 		model := &secretModel{Name: types.StringValue("dest"), Secret: types.StringNull()}
-		captured := CaptureStringFields(model, []string{"secret"})
+		captured := CaptureFields(model, []string{"secret"})
 
 		ConfigMapToModel(ctx, map[string]any{"name": "dest", "secret.api.field": "backend-value"}, model, mappings, nil)
-		PreserveKnownStringFields(model, captured)
+		PreserveKnownFields(model, captured)
 		if model.Secret.ValueString() != "backend-value" {
 			t.Errorf("null plan should defer to echo: got %q, want %q", model.Secret.ValueString(), "backend-value")
 		}
@@ -425,18 +426,18 @@ func TestPreserveKnownStringFields(t *testing.T) {
 
 	t.Run("capture tolerates missing fields", func(t *testing.T) {
 		model := &secretModel{Name: types.StringValue("dest"), Secret: types.StringValue("p@ss")}
-		captured := CaptureStringFields(model, []string{"secret", "does_not_exist"})
+		captured := CaptureFields(model, []string{"secret", "does_not_exist"})
 		if len(captured) != 1 {
 			t.Fatalf("expected 1 captured field, got %d", len(captured))
 		}
 		// Restoring into a model with no matching field must not panic.
-		PreserveKnownStringFields(&testModel{}, captured)
+		PreserveKnownFields(&testModel{}, captured)
 	})
 }
 
-// TestFillNullStringFields covers the refresh (Read) half of the null-echo
+// TestFillNullFields covers the refresh (Read) half of the null-echo
 // quirk: prior state is authoritative only where the API returned nothing.
-func TestFillNullStringFields(t *testing.T) {
+func TestFillNullFields(t *testing.T) {
 	ctx := context.Background()
 	mappings := map[string]string{
 		"name":   "name",
@@ -445,14 +446,14 @@ func TestFillNullStringFields(t *testing.T) {
 
 	t.Run("restores prior state secret when the API nulls it", func(t *testing.T) {
 		model := &secretModel{Name: types.StringValue("dest"), Secret: types.StringValue("p@ss")}
-		captured := CaptureStringFields(model, []string{"secret"})
+		captured := CaptureFields(model, []string{"secret"})
 
 		ConfigMapToModel(ctx, map[string]any{"name": "dest"}, model, mappings, nil)
 		if !model.Secret.IsNull() {
 			t.Fatalf("precondition: expected the API response to null the secret, got %#v", model.Secret)
 		}
 
-		FillNullStringFields(model, captured)
+		FillNullFields(model, captured)
 		if model.Secret.ValueString() != "p@ss" {
 			t.Errorf("secret not restored: got %q, want %q", model.Secret.ValueString(), "p@ss")
 		}
@@ -460,10 +461,10 @@ func TestFillNullStringFields(t *testing.T) {
 
 	t.Run("keeps the API value when it differs from prior state", func(t *testing.T) {
 		model := &secretModel{Name: types.StringValue("dest"), Secret: types.StringValue("p@ss")}
-		captured := CaptureStringFields(model, []string{"secret"})
+		captured := CaptureFields(model, []string{"secret"})
 
 		ConfigMapToModel(ctx, map[string]any{"name": "dest", "secret.api.field": "rotated"}, model, mappings, nil)
-		FillNullStringFields(model, captured)
+		FillNullFields(model, captured)
 		if model.Secret.ValueString() != "rotated" {
 			t.Errorf("out-of-band drift must survive refresh: got %q, want %q", model.Secret.ValueString(), "rotated")
 		}
@@ -471,17 +472,43 @@ func TestFillNullStringFields(t *testing.T) {
 
 	t.Run("keeps the API value on import when prior state is empty", func(t *testing.T) {
 		model := &secretModel{}
-		captured := CaptureStringFields(model, []string{"secret"})
+		captured := CaptureFields(model, []string{"secret"})
 
 		ConfigMapToModel(ctx, map[string]any{"name": "dest", "secret.api.field": "from-api"}, model, mappings, nil)
-		FillNullStringFields(model, captured)
+		FillNullFields(model, captured)
 		if model.Secret.ValueString() != "from-api" {
 			t.Errorf("import must take the API value: got %q, want %q", model.Secret.ValueString(), "from-api")
 		}
 	})
 
 	t.Run("tolerates missing fields", func(t *testing.T) {
-		captured := map[string]types.String{"does_not_exist": types.StringValue("x")}
-		FillNullStringFields(&secretModel{}, captured)
+		captured := map[string]attr.Value{"does_not_exist": types.StringValue("x")}
+		FillNullFields(&secretModel{}, captured)
+	})
+
+	t.Run("refills a null bool and int64 echo from the captured value", func(t *testing.T) {
+		model := &testModel{Enabled: types.BoolValue(false), Port: types.Int64Value(1521)}
+		captured := CaptureFields(model, []string{"enabled", "port"})
+
+		ConfigMapToModel(ctx, map[string]any{}, model, map[string]string{"enabled": "lob.enabled", "port": "port"}, nil)
+		if !model.Enabled.IsNull() || !model.Port.IsNull() {
+			t.Fatalf("precondition: expected the API response to null both fields, got %#v / %#v", model.Enabled, model.Port)
+		}
+
+		FillNullFields(model, captured)
+		if model.Enabled.IsNull() || model.Enabled.ValueBool() {
+			t.Errorf("bool default not refilled: got %#v, want false", model.Enabled)
+		}
+		if model.Port.ValueInt64() != 1521 {
+			t.Errorf("int64 default not refilled: got %#v, want 1521", model.Port)
+		}
+	})
+
+	t.Run("never writes a captured value into a field of another type", func(t *testing.T) {
+		model := &testModel{Port: types.Int64Null()}
+		FillNullFields(model, map[string]attr.Value{"port": types.StringValue("1521")})
+		if !model.Port.IsNull() {
+			t.Errorf("type-mismatched capture must be ignored: got %#v", model.Port)
+		}
 	})
 }

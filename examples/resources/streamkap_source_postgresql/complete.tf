@@ -5,8 +5,9 @@
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -48,9 +49,9 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   # Column filtering (optional, uses regex pattern: schema[.]table[.](col1|col2))
   column_include_list = "streamkap[.]customer[.](id|name)"
 
-  # Signal table for incremental snapshots (required)
+  # Signal table for incremental snapshots
   # This schema must contain a 'streamkap_signal' table for snapshot coordination
-  signal_data_collection_schema_or_database = "streamkap"
+  signal_data_collection_schema_or_database = "streamkap.streamkap_signal"
 
   # Heartbeat configuration (optional, for monitoring replication lag)
   heartbeat_enabled                            = false # Enable heartbeat messages
@@ -67,10 +68,8 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   binary_handling_mode = "bytes" # Options: bytes, base64, base64-url-safe, hex
 
   # TOAST column re-selection
-  # On by default: TOAST values the WAL cannot carry are re-fetched from the
-  # source at event time, one extra query per affected row. Set to false to
-  # skip the re-select and accept unavailable-value placeholders instead;
-  # REPLICA IDENTITY FULL on the affected tables avoids re-selects entirely.
+  # Enabled by default. Disable it to leave unavailable TOAST values as
+  # placeholders instead of querying the source for them.
   post_processors_reselect_enabled        = true
   reselector_reselect_error_handling_mode = "fail" # Options: fail, warn
 

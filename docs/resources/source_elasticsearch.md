@@ -18,6 +18,10 @@ This resource creates and manages an ElasticSearch source for Streamkap data pip
 
 ## Example Usage
 
+These examples describe this documentation version. Select the matching provider
+release in `required_providers`; beta releases require an exact prerelease version.
+Without a version constraint, Terraform selects a stable release.
+
 ### Basic
 
 ```terraform
@@ -29,7 +33,7 @@ resource "streamkap_source_elasticsearch" "example" {
 
   # Connection details
   es_host            = "elasticsearch.example.com"
-  es_port            = "443"
+  es_port            = 443
   http_auth_user     = "elastic"
   http_auth_password = var.es_password
 
@@ -57,8 +61,9 @@ variable "es_password" {
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -84,7 +89,7 @@ resource "streamkap_source_elasticsearch" "example-source-elasticsearch" {
   # Connection settings
   es_host   = var.source_es_host # Can use semicolon for multiple hosts
   es_scheme = "https"            # Options: http, https
-  es_port   = "443"              # Default: 443 for HTTPS, 9200 for HTTP
+  es_port   = 443                # Default: 443 for HTTPS, 9200 for HTTP
 
   # Authentication
   http_auth          = "Basic" # Options: None, Basic

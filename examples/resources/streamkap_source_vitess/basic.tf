@@ -6,14 +6,16 @@ resource "streamkap_source_vitess" "example" {
 
   # VTGate connection details
   database_hostname = "vtgate.example.com"
-  database_port     = "15991"
+  database_port     = 15991
+  database_user     = "vt_user"
+  database_password = var.vtgate_password
 
   # Vitess keyspace
   vitess_keyspace = "ecommerce"
 
   # VTCtld connection (required for schema discovery)
   vitess_vtctld_host     = "vtctld.example.com"
-  vitess_vtctld_port     = "15999"
+  vitess_vtctld_port     = 15999
   vitess_vtctld_user     = "admin"
   vitess_vtctld_password = var.vtctld_password
 
@@ -23,6 +25,12 @@ resource "streamkap_source_vitess" "example" {
 
 variable "vtctld_password" {
   description = "VTCtld password"
+  type        = string
+  sensitive   = true
+}
+
+variable "vtgate_password" {
+  description = "VTGate password"
   type        = string
   sensitive   = true
 }

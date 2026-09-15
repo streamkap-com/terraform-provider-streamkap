@@ -18,6 +18,10 @@ This resource creates and manages a Starburst destination for Streamkap data pip
 
 ## Example Usage
 
+These examples describe this documentation version. Select the matching provider
+release in `required_providers`; beta releases require an exact prerelease version.
+Without a version constraint, Terraform selects a stable release.
+
 ### Basic
 
 ```terraform
@@ -32,6 +36,7 @@ resource "streamkap_destination_starburst" "example" {
 }
 
 variable "aws_access_key_id" {
+  sensitive   = true
   description = "AWS access key ID"
   type        = string
 }
@@ -59,14 +64,21 @@ variable "aws_s3_bucket_name" {
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
 }
 
 provider "streamkap" {}
+
+variable "destination_starburst_aws_access_key_id" {
+  type        = string
+  sensitive   = true
+  description = "AWS access key ID for Starburst S3 access"
+}
 
 variable "destination_starburst_secret_access_key" {
   type        = string
@@ -79,7 +91,7 @@ resource "streamkap_destination_starburst" "example" {
   name = "example-destination-starburst"
 
   # AWS S3 settings
-  aws_access_key_id     = "your-access-key-id"
+  aws_access_key_id     = var.destination_starburst_aws_access_key_id
   aws_secret_access_key = var.destination_starburst_secret_access_key
   aws_s3_region         = "us-west-2" # Default: us-west-2
   # Valid values: ap-south-1, eu-west-2, eu-west-1, ap-northeast-2, ap-northeast-1,

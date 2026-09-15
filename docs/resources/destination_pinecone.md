@@ -18,6 +18,10 @@ This resource creates and manages a Pinecone destination for Streamkap data pipe
 
 ## Example Usage
 
+These examples describe this documentation version. Select the matching provider
+release in `required_providers`; beta releases require an exact prerelease version.
+Without a version constraint, Terraform selects a stable release.
+
 ### Basic
 
 ```terraform

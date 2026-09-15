@@ -19,8 +19,8 @@ resource "streamkap_source_postgresql" "example" {
   slot_name        = "streamkap_slot"
   publication_name = "streamkap_pub"
 
-  # Signal table for incremental snapshots (required)
-  signal_data_collection_schema_or_database = "streamkap"
+  # Signal table for incremental snapshots
+  signal_data_collection_schema_or_database = "streamkap.streamkap_signal"
 }
 
 variable "db_password" {

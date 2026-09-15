@@ -19,9 +19,7 @@ type GetAccessTokenRequest struct {
 	Secret   string `json:"secret"`
 }
 
-func (s *streamkapAPI) GetAccessToken(clientID, secret string) (*Token, error) {
-	ctx := context.Background()
-
+func (s *streamkapAPI) GetAccessToken(ctx context.Context, clientID, secret string) (*Token, error) {
 	token, err := s.authenticate(ctx, clientID, secret)
 	if err != nil {
 		return nil, err

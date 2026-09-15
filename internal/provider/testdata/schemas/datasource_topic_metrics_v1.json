@@ -13,7 +13,7 @@
       "optional": false,
       "computed": true,
       "sensitive": false,
-      "type": "types.ListType[types.ObjectType[\"avg_latency_ms\":basetypes.Float64Type, \"bytes_in\":basetypes.Int64Type, \"bytes_out\":basetypes.Int64Type, \"entity_id\":basetypes.StringType, \"lag\":basetypes.Int64Type, \"messages_in\":basetypes.Int64Type, \"messages_out\":basetypes.Int64Type, \"topic_id\":basetypes.StringType]]"
+      "type": "types.ListType[types.ObjectType[\"avg_latency_ms\":basetypes.Float64Type, \"bytes_in\":basetypes.Int64Type, \"bytes_out\":basetypes.Int64Type, \"entity_id\":basetypes.StringType, \"id\":basetypes.StringType, \"lag\":basetypes.Int64Type, \"last_message_timestamp\":basetypes.Int64Type, \"messages_in\":basetypes.Int64Type, \"messages_out\":basetypes.Int64Type, \"partition_count\":basetypes.Int64Type, \"record_error_total\":basetypes.Int64Type, \"replication_factor\":basetypes.Int64Type, \"retention_ms\":basetypes.Int64Type, \"snapshot_status_json\":basetypes.StringType, \"topic_id\":basetypes.StringType]]"
     },
     "time_interval": {
       "required": false,
@@ -26,6 +26,148 @@
       "required": false,
       "optional": true,
       "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    }
+  },
+  "nested_attributes": {
+    "entities.connector": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "entities.entity_type": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "entities.id": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "entities.topic_db_ids": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ListType[basetypes.StringType]"
+    },
+    "entities.topic_ids": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ListType[basetypes.StringType]"
+    },
+    "results.avg_latency_ms": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Float64Type"
+    },
+    "results.bytes_in": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "results.bytes_out": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "results.entity_id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "results.id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "results.lag": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "results.last_message_timestamp": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "results.messages_in": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "results.messages_out": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "results.partition_count": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "results.record_error_total": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "results.replication_factor": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "results.retention_ms": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "results.snapshot_status_json": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "results.topic_id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
     }

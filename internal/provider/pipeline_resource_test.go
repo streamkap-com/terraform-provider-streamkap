@@ -7,15 +7,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 )
 
-// Fixture names are per-run (acctestName) rather than literals: these configs
-// used to hardcode the same "test-source-postgresql" / "test-destination-*"
-// names as the standalone connector tests, so two tests — or two concurrent
-// runs — fought over one {tenant, name}. The backend 422s on the duplicate and
-// the provider's adopt-by-name path resolves that by adopting the other run's
-// resource.
-
 // Test PostgreSQL -> Snowflake ----------------------------------------------------------
 func pipelineSrcPostgreSQLResourceDef(name string) string {
+	slotName, publicationName := acctestReplicationNames(name)
 	return fmt.Sprintf(`
 variable "source_postgresql_hostname" {
 	type        = string
@@ -42,12 +36,12 @@ resource "streamkap_source_postgresql" "test" {
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = null
 	include_source_db_name_in_table_name         = false
-	slot_name                                    = "terraform_timeout_test_slot"
-	publication_name                             = "terraform_timeout_test_pub"
+	slot_name                                    = %q
+	publication_name                             = %q
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
-`, name)
+`, name, slotName, publicationName)
 }
 
 func pipelineDestSnowflakeResourceDef(name string) string {
@@ -275,9 +269,9 @@ resource "streamkap_destination_clickhouse" "test" {
 	hostname            = var.destination_clickhouse_hostname
 	connection_username = var.destination_clickhouse_connection_username
 	connection_password = var.destination_clickhouse_connection_password
-	port                = 8443
-	database            = "demo"
-	ssl                 = true
+	port                = 8123
+	database            = "default"
+	ssl                 = false
 }
 `, name)
 }

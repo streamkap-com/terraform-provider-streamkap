@@ -5,10 +5,6 @@
 # behavior.
 version: 2
 
-before:
-  hooks:
-    # this is just an example and not a requirement for provider building/publishing
-    - go mod tidy
 builds:
   - env:
       # goreleaser does not work with CGO, it could also complicate
@@ -58,6 +54,10 @@ signs:
       - "--detach-sign"
       - "${artifact}"
 release:
+  # Deliberately NOT `prerelease: auto`. The Terraform Registry did not ingest
+  # v3.0.0-beta.31, the first beta published as a GitHub prerelease, while
+  # beta.26-30 all shipped as full releases and are served. Betas must publish
+  # as full GitHub releases to reach the registry.
   extra_files:
     - glob: "terraform-registry-manifest.json"
       name_template: "{{ .ProjectName }}_{{ .Version }}_manifest.json"

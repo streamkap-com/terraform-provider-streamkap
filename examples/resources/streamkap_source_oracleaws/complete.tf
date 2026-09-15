@@ -5,8 +5,9 @@
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -31,7 +32,7 @@ resource "streamkap_source_oracleaws" "example-source-oracleaws" {
 
   # Connection settings
   database_hostname = var.source_oracle_rds_hostname
-  database_port     = "1521"
+  database_port     = 1521
   database_user     = "admin"
   database_password = var.source_oracle_rds_password
   database_dbname   = "ORCL"
@@ -41,7 +42,7 @@ resource "streamkap_source_oracleaws" "example-source-oracleaws" {
   table_include_list  = "HR.EMPLOYEES,HR.DEPARTMENTS,SALES.ORDERS"
 
   # Signal table for incremental snapshots
-  signal_data_collection_schema_or_database = "STREAMKAP"
+  signal_data_collection_schema_or_database = "STREAMKAP.STREAMKAP_SIGNAL"
 
   # Heartbeat configuration
   heartbeat_enabled                            = true
@@ -55,9 +56,7 @@ resource "streamkap_source_oracleaws" "example-source-oracleaws" {
   binary_handling_mode = "bytes" # Options: bytes, base64, base64-url-safe, hex
 
   # LogMiner strategy and LOB capture
-  # CLOB/NCLOB/BLOB capture needs all three of these together: the redo log
-  # catalog strategy, LOB capture, and the re-select post processor to fetch
-  # the values the redo log cannot carry. "hybrid" cannot capture LOBs.
+  # Example settings for LOB capture with redo log catalog and re-selection.
   log_mining_strategy              = "redo_log_catalog" # Options: online_catalog (default), redo_log_catalog, hybrid
   lob_enabled                      = true
   post_processors_reselect_enabled = true
@@ -71,7 +70,7 @@ resource "streamkap_source_oracleaws" "example-source-oracleaws" {
   ssh_enabled = false
   # When ssh_enabled = true, also configure:
   # ssh_host = "bastion.example.com"
-  # ssh_port = "22"
+  # ssh_port = 22
   # ssh_user = "streamkap"
 }
 

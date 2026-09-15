@@ -36,5 +36,21 @@
       "sensitive": false,
       "type": "types.ListType[types.ObjectType[\"id\":basetypes.StringType, \"name\":basetypes.StringType]]"
     }
+  },
+  "nested_attributes": {
+    "topic_map.id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "topic_map.name": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    }
   }
 }

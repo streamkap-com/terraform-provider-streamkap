@@ -76,7 +76,9 @@ func (s *streamkapAPI) CreateClientCredential(ctx context.Context, reqPayload Cr
 		redactSensitiveJSON(payload),
 	))
 	var resp ClientCredential
-	err = s.doRequestWithRetry(ctx, req, &resp)
+	// This endpoint has no idempotency key. A failed response does not prove
+	// creation failed, so replaying it can issue an unmanaged credential.
+	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
 		return nil, err
 	}

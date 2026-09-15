@@ -239,7 +239,7 @@ func newSweepClient() (api.StreamkapAPI, error) {
 	}
 
 	client := api.NewClient(&api.Config{BaseURL: host})
-	token, err := client.GetAccessToken(clientID, secret)
+	token, err := client.GetAccessToken(context.Background(), clientID, secret)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get access token: %w", err)
 	}

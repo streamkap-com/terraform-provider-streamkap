@@ -6,7 +6,7 @@ resource "streamkap_source_supabase" "example" {
 
   # Connection details
   database_hostname = "db.xxxx.supabase.co"
-  database_port     = "5432"
+  database_port     = 5432
   database_user     = "postgres"
   database_password = var.db_password
   database_dbname   = "postgres"
@@ -16,7 +16,7 @@ resource "streamkap_source_supabase" "example" {
   table_include_list  = "public.orders,public.customers"
 
   # Signal and heartbeat tables (required)
-  signal_data_collection_schema_or_database    = "streamkap"
+  signal_data_collection_schema_or_database    = "streamkap.streamkap_signal"
   heartbeat_data_collection_schema_or_database = "streamkap"
 }
 

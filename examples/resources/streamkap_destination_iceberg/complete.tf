@@ -1,8 +1,9 @@
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
@@ -11,6 +12,7 @@ terraform {
 provider "streamkap" {}
 
 variable "iceberg_catalog_s3_access_key_id" {
+  sensitive   = true
   type        = string
   description = "The AWS Access Key ID used to connect to S3 for Iceberg catalog"
 }
@@ -30,9 +32,10 @@ resource "streamkap_destination_iceberg" "example" {
   iceberg_catalog_name = "my_catalog"
   iceberg_catalog_uri  = "https://catalog.example.com"
 
-  # AWS credentials for S3 access (required for rest and hive catalog types)
-  iceberg_catalog_s3_access_key_id     = var.iceberg_catalog_s3_access_key_id
-  iceberg_catalog_s3_secret_access_key = var.iceberg_catalog_s3_secret_access_key
+  # Use explicit S3 credentials instead of catalog-vended credentials
+  iceberg_catalog_s3_credentials_enabled = true
+  iceberg_catalog_s3_access_key_id       = var.iceberg_catalog_s3_access_key_id
+  iceberg_catalog_s3_secret_access_key   = var.iceberg_catalog_s3_secret_access_key
 
   # AWS region - valid values: ap-south-1, eu-west-2, eu-west-1, ap-northeast-2,
   #              ap-northeast-1, ca-central-1, sa-east-1, cn-north-1, us-gov-west-1,

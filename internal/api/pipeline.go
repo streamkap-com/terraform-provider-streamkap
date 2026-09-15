@@ -20,6 +20,21 @@ type Pipeline struct {
 	Transforms                   []*PipelineTransform                  `json:"transforms"`
 	TopicAutoDiscoveryTransforms []PipelineTopicAutoDiscoveryTransform `json:"topic_auto_discovery_transforms"`
 	Tags                         []string                              `json:"tags"`
+
+	// PeriodicAudit is configured outside Terraform (the UI), but it has to be
+	// round-tripped on update: the backend lists periodic_audit in
+	// _CONDITIONAL_ENTITY_FIELDS, so a PUT that omits the key $unsets it and the
+	// audit config is lost. Read returns topics as pretty names and update
+	// expects the same, so the value echoes back unchanged.
+	PeriodicAudit *PipelinePeriodicAudit `json:"periodic_audit,omitempty"`
+}
+
+// PipelinePeriodicAudit mirrors the backend's periodic row-level audit config.
+type PipelinePeriodicAudit struct {
+	Topics          []string `json:"topics"`
+	TimestampColumn string   `json:"timestamp_column"`
+	IntervalMinutes int64    `json:"interval_minutes"`
+	FixDeletesOnly  *bool    `json:"fix_deletes_only,omitempty"`
 }
 
 // PipelineTopicAutoDiscoveryTransform lets a pipeline auto-discover a

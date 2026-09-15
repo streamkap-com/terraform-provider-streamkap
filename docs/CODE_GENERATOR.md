@@ -1,6 +1,6 @@
 # Code Generator (tfgen)
 
-This document provides comprehensive documentation for the `tfgen` code generator tool that generates Terraform provider schemas from backend configuration files.
+`tfgen` generates Terraform schemas, models and field mappings from backend plugin configurations.
 
 ## Table of Contents
 
@@ -68,14 +68,6 @@ against its plugin config alone. tfgen mirrors this: the merge is skipped for
 their plugin fields. This is the only connector exempted from the merge. If you
 add another proxy-style connector that the backend excludes from the global
 config, extend the same guard in `Generate()`.
-
-### Key Benefits
-
-1. **Consistency**: All connectors follow the same pattern
-2. **Maintainability**: Changes to backend configs automatically propagate
-3. **Type Safety**: Generates proper Go types with compile-time checks
-4. **AI-Agent Compatibility**: Generates rich descriptions for AI tooling
-5. **Backward Compatibility**: Supports deprecated field aliases
 
 ### Source Files
 
@@ -181,6 +173,13 @@ Generation complete! Generated 56 schema files.
 
 The generator maps backend control types to Terraform attribute types:
 
+Unsupported controls stop generation. `code-editor` is explicitly mapped to a
+string. Backend `readonly` alone does not make an attribute computed-only:
+some read-only UI fields accept configuration through the API. Read-only fields with a
+derive function remain optional and computed, without `UseStateForUnknown`,
+so updates can recompute them. Other read-only fields retain their existing
+optional/computed behavior and state preservation.
+
 ### Control Type → Terraform Type
 
 | Backend Control | Terraform Type | Go Type | Notes |
@@ -188,7 +187,8 @@ The generator maps backend control types to Terraform attribute types:
 | `string` | `schema.StringAttribute` | `types.String` | Basic string input |
 | `password` | `schema.StringAttribute` | `types.String` | Marked `Sensitive: true` |
 | `textarea` | `schema.StringAttribute` | `types.String` | Multi-line text |
-| `json` | `schema.StringAttribute` | `types.String` | JSON as string |
+| `json` | `schema.StringAttribute` | `jsontypes.Normalized` | JSON string with semantic equality |
+| `code-editor` | `schema.StringAttribute` | `types.String` | Implementation text |
 | `datetime` | `schema.StringAttribute` | `types.String` | ISO datetime string |
 | `number` | `schema.Int64Attribute` | `types.Int64` | Integer values |
 | `boolean` | `schema.BoolAttribute` | `types.Bool` | True/false toggle |
@@ -206,7 +206,7 @@ template path as `IsListType`, just with set semantics.
 
 ### Automatic Type Conversions
 
-The generator applies smart conversions:
+The generator applies these conversions:
 
 1. **Port fields**: Fields named `port` or ending with `_port` are converted to `Int64` even if stored as strings in the backend
 2. **Sensitive fields**: Fields with `encrypt: true` or `control: "password"` are marked `Sensitive: true`
@@ -455,8 +455,7 @@ because it duplicated the wrapper declarations (producing duplicate `tfsdk` tags
 and only covered a stale subset of the connectors that actually have aliases.
 
 To add or change a deprecated alias, edit the wrapper file directly — see the
-"Deprecated attribute pattern (v2 → v3 aliases)" section of `CLAUDE.md` for the
-five-step recipe.
+[deprecated attribute pattern](../AGENTS.md#deprecated-attribute-pattern-v2--v3-aliases) in `AGENTS.md`.
 
 ## Adding a New Connector
 
@@ -568,7 +567,7 @@ resource "streamkap_source_mynewconnector" "example" {
   hostname = "db.example.com"
   port     = 5432
   username = "user"
-  password = "secret"
+  password = var.database_password
   database = "mydb"
 }
 ```
@@ -580,7 +579,7 @@ resource "streamkap_source_mynewconnector" "example" {
   hostname = "db.example.com"
   port     = 5432
   username = "user"
-  password = "secret"
+  password = var.database_password
   database = "mydb"
 
   # All optional fields with comments
@@ -660,8 +659,9 @@ TF_ACC=1 go test -v -run 'TestAccSourceMynewconnector' ./internal/provider/...
 
 ### Step 7: Update Documentation
 
-1. Add to README.md feature list
-2. Run `make generate` to update schemas and docs
+1. Update the resource catalog in `AGENTS.md` and counts in `docs/ARCHITECTURE.md`.
+2. Add the user-visible change to `CHANGELOG.md` and migration guidance if needed.
+3. Run `make generate` to update schemas and registry docs.
 
 ## Generated Code Structure
 
@@ -709,9 +709,6 @@ type SourcePostgresqlModel struct {
     Connector       types.String `tfsdk:"connector"`
     DatabaseHostname types.String `tfsdk:"database_hostname"`
     // ... all fields ...
-
-    // Deprecated fields - kept for backward compatibility
-    InsertStaticKeyField1 types.String `tfsdk:"insert_static_key_field_1"`
 
     Timeouts timeouts.Value `tfsdk:"timeouts"`
 }
@@ -803,9 +800,8 @@ Error: unknown entity type: source (valid: sources, destinations, transforms, al
 When backend configs change significantly:
 
 ```bash
-# Clean and regenerate
-rm internal/generated/*.go
-make generate
+# Regenerate in place; doc.go contains the generation directive.
+STREAMKAP_BACKEND_PATH=/path/to/backend-main make generate
 
 # Verify
 go build ./...

@@ -1,14 +1,21 @@
 terraform {
   required_providers {
     streamkap = {
-      source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
     }
   }
   required_version = ">= 1.5.0"
 }
 
 provider "streamkap" {}
+
+variable "destination_r2_aws_access_key_id" {
+  type        = string
+  sensitive   = true
+  description = "Cloudflare R2 access key ID"
+}
 
 variable "destination_r2_secret_access_key" {
   type        = string
@@ -22,7 +29,7 @@ resource "streamkap_destination_r2" "example" {
 
   # Connection settings (required)
   r2_account            = "your-cloudflare-account-id"
-  aws_access_key_id     = "your-r2-access-key-id"
+  aws_access_key_id     = var.destination_r2_aws_access_key_id
   aws_secret_access_key = var.destination_r2_secret_access_key
   aws_s3_bucket_name    = "my-r2-bucket"
 

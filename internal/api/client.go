@@ -16,7 +16,7 @@ import (
 )
 
 type StreamkapAPI interface {
-	GetAccessToken(clientID, secret string) (*Token, error)
+	GetAccessToken(ctx context.Context, clientID, secret string) (*Token, error)
 	SetToken(token *Token)
 
 	//Source APIs
@@ -173,7 +173,7 @@ func adoptRefusedError(c adoptConflict, err error) error {
 	return fmt.Errorf(
 		"streamkap %[1]s %[2]q already exists on the backend, and auto-adoption is unsafe (it would risk destroying the live %[1]s under create_before_destroy). Recovery options:\n"+
 			"  • If this is a `lifecycle { create_before_destroy = true }` replace: remove that directive — Streamkap enforces unique %[1]s names per %[3]s, so a new and an old %[1]s cannot coexist by name. Use the default destroy-then-create, or rename so the two can briefly coexist.\n"+
-			"  • If you have deposed entries from earlier failed applies (shown in `terraform plan` as `<address> (destroy deposed <key>)`), they point at the same backend record and must leave state before any retry can succeed: `terraform state rm '<resource_address>'`. See docs/MIGRATION.md → \"Known limitations\".\n"+
+			"  • If you have deposed entries from earlier failed applies (shown in `terraform plan` as `<address> (destroy deposed <key>)`), back up state and compare their backend IDs before applying. If a deposed and current instance share an ID, resolve the state collision before Terraform destroys the live record. See docs/MIGRATION.md → \"Known limitations\".\n"+
 			"  • If this is recovering from an apply that lost its response: run `terraform import %[4]s`.%[5]s Find the id in the Streamkap UI or via `GET %[6]s?partial_name=%[2]s`, then re-run apply.\n"+
 			"Original backend error: %[7]w",
 		c.Kind, c.Name, c.UniqueScope, c.ImportAddr, importNote, c.ListPath, err,
@@ -375,6 +375,10 @@ func (s *streamkapAPI) do(ctx context.Context, req *http.Request, result any, al
 }
 
 func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, bearer string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
@@ -412,9 +416,12 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 		// auth redirect) and arrive as HTML. Returning only the bare JSON parse
 		// error ("invalid character '<' looking for beginning of value") strips
 		// every actionable hint, which has been a recurring debugging dead-end.
-		var apiErr APIErrorResponse
-		if jsonErr := json.Unmarshal(body, &apiErr); jsonErr == nil && apiErr.Detail != "" {
-			return &APIError{StatusCode: resp.StatusCode, Detail: apiErr.Detail, RequestID: requestID}
+		if detail, ok := parseAPIErrorDetail(body); ok {
+			return &APIError{StatusCode: resp.StatusCode, Detail: detail, RequestID: requestID}
+		}
+		if json.Valid(body) {
+			detail := fmt.Sprintf("%s %s: JSON error response: %s", req.Method, req.URL, snippet([]byte(redactSensitiveErrorJSON(body))))
+			return &APIError{StatusCode: resp.StatusCode, Detail: detail, RequestID: requestID}
 		}
 		tflog.Debug(ctx,
 			fmt.Sprintf("%s %s → %d: response body not JSON: %s",
@@ -439,6 +446,22 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 		return fmt.Errorf("%s %s → %d: failed to decode response body: %w", req.Method, req.URL, resp.StatusCode, err)
 	}
 	return nil
+}
+
+func parseAPIErrorDetail(body []byte) (string, bool) {
+	var envelope struct {
+		Detail json.RawMessage `json:"detail"`
+	}
+	if err := json.Unmarshal(body, &envelope); err != nil || len(envelope.Detail) == 0 {
+		return "", false
+	}
+
+	var detail string
+	if err := json.Unmarshal(envelope.Detail, &detail); err == nil {
+		return detail, strings.TrimSpace(detail) != ""
+	}
+
+	return snippet([]byte(redactSensitiveErrorJSON(envelope.Detail))), true
 }
 
 func isUnauthorized(err error) bool {

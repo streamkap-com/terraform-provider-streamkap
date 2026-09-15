@@ -4,6 +4,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -127,7 +128,11 @@ func RetryWithBackoff(ctx context.Context, cfg RetryConfig, operation func() err
 		}
 
 		if !IsRetryableError(lastErr) {
-			return lastErr // Non-retryable, fail immediately
+			// Non-retryable, fail immediately. If we already replayed, say so:
+			// a create that reached the backend before a transient gateway error
+			// comes back as 422 "already exists" on the replay, and the caller's
+			// recovery guidance otherwise describes the wrong situation.
+			return annotateReplay(lastErr, attempt)
 		}
 
 		if attempt == cfg.MaxRetries {
@@ -151,5 +156,18 @@ func RetryWithBackoff(ctx context.Context, cfg RetryConfig, operation func() err
 		delay = min(delay*2, cfg.MaxDelay)
 	}
 
-	return lastErr
+	return annotateReplay(lastErr, cfg.MaxRetries)
+}
+
+// annotateReplay records that the request was sent more than once, so an error
+// produced by a replay is not read as the outcome of a single attempt.
+func annotateReplay(err error, replays int) error {
+	if err == nil || replays < 1 {
+		return err
+	}
+	return fmt.Errorf(
+		"%w (the provider replayed this request %d more time(s) after a transient failure; "+
+			"if this was a create, an earlier attempt may already have created the record)",
+		err, replays,
+	)
 }

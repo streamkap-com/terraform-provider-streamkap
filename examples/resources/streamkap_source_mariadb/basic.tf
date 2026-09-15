@@ -6,7 +6,7 @@ resource "streamkap_source_mariadb" "example" {
 
   # Connection details
   database_hostname = "mariadb.example.com"
-  database_port     = "3306"
+  database_port     = 3306
   database_user     = "streamkap_user"
   database_password = var.db_password
 

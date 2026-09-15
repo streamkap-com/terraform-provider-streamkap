@@ -188,13 +188,10 @@ func TestIssue82_MapOverridesAreOptionalOnly(t *testing.T) {
 	}
 }
 
-// TestIssue80_OptionalComputedFieldsHaveUseStateForUnknown ensures the
-// companion plan modifier is present. Without it, every Optional+Computed field
-// the user hasn't set shows "(known after apply)" on every refresh, creating
-// noisy plans. See cmd/tfgen/generator.go for the generator rule that pairs
-// these.
+// Optional/computed values preserve state unless the backend recomputes them
+// from other inputs. Derived values must remain unknown when their inputs change.
 func TestIssue80_OptionalComputedFieldsHaveUseStateForUnknown(t *testing.T) {
-	// Spot-check on four representative schemas — the full matrix is exercised
+	// Spot-check representative schemas — the full matrix is exercised
 	// indirectly via `go test ./cmd/tfgen/...` which verifies NeedsPlanMod for
 	// any Optional+Computed-without-default entry the generator produces.
 	factories := []struct {
@@ -205,6 +202,7 @@ func TestIssue80_OptionalComputedFieldsHaveUseStateForUnknown(t *testing.T) {
 		{"destination_snowflake", destination.NewSnowflakeResource},
 		{"source_postgresql", source.NewPostgreSQLResource},
 		{"source_mongodb", source.NewMongoDBResource},
+		{"source_mongodbhosted", source.NewMongoDBHostedResource},
 	}
 
 	for _, f := range factories {
@@ -224,6 +222,12 @@ func TestIssue80_OptionalComputedFieldsHaveUseStateForUnknown(t *testing.T) {
 					continue
 				}
 				if hasDefault(attr) {
+					continue
+				}
+				if (f.name == "source_mongodb" || f.name == "source_mongodbhosted") && name == "mongodb_connection_hostname" {
+					if hasUseStateForUnknown(attr) {
+						t.Errorf("%s.%s must be recomputed after connection-string changes", f.name, name)
+					}
 					continue
 				}
 				if !hasUseStateForUnknown(attr) {

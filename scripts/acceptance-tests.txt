@@ -15,8 +15,8 @@ TestAccSourceSupabaseResource
 TestAccSourcePostgreSQLResource
 TestAccSourceMySQLResource
 TestAccSourceDynamoDBResource
-TestAccSourceMongoDBResource
-TestAccSourceMongoDBHostedResource
+# TestAccSourceMongoDBResource — quarantined, see the list below.
+# TestAccSourceMongoDBHostedResource — quarantined, see the list below.
 TestAccSourceMariaDBResource
 TestAccSourceS3Resource
 TestAccSourceWebhookResource
@@ -34,14 +34,12 @@ TestAccSourceInformixResource
 # --- Destinations ---
 TestAccDestinationAzblobResource
 TestAccDestinationBigqueryResource
-TestAccDestinationCockroachdbResource
+# TestAccDestinationCockroachdbResource — quarantined, see the list below.
 TestAccDestinationDatabricksResource
-TestAccDestinationDb2Resource
+# TestAccDestinationDb2Resource — quarantined, see the list below.
 TestAccDestinationGcsResource
 TestAccDestinationHttpsinkResource
-# TestAccDestinationIcebergResource — re-add once the staging ClickHouse instance
-# is reachable again. Its config stands up a ClickHouse destination, which today
-# fails Kafka Connect validation with "Cannot connect to: Clickhouse".
+TestAccDestinationIcebergResource
 TestAccDestinationKafkaResource_basic
 TestAccDestinationKafkadirectResource
 TestAccDestinationMotherduckResource
@@ -53,7 +51,8 @@ TestAccDestinationRedisResource
 TestAccDestinationRedshiftResource
 TestAccDestinationS3Resource
 TestAccDestinationSnowflakeResource
-TestAccDestinationSqlserverResource
+TestAccDestinationClickHouseResource
+# TestAccDestinationSqlserverResource — quarantined, see the list below.
 TestAccDestinationStarburstResource
 TestAccDestinationWeaviateResource
 
@@ -69,9 +68,9 @@ TestAccDataSourceTopics
 TestAccDataSourceTransform
 
 # --- Pipelines ---
-TestAccPostgreSQLSnowflakePipelineResource
-# TestAccDynamoDBClickHousePipelineResource — re-add once the staging ClickHouse
-# instance is reachable again; its destination half cannot pass until then.
+# TestAccPostgreSQLSnowflakePipelineResource — quarantined, see the list below.
+TestAccPipeline_PeriodicAuditSurvivesUpdate
+TestAccDynamoDBClickHousePipelineResource
 
 # --- Provider / drift / tags / topics ---
 # TestAccTopicResource is deliberately absent: it is permanently skipped
@@ -81,6 +80,7 @@ TestAccPostgreSQLSnowflakePipelineResource
 TestProviderConfig_MissingClientID
 TestDriftDetection_SourceModifiedExternally
 TestAccTagsLifecycle_TransformAttachAndClear
+TestAccTagResource_descriptionShapes
 
 # --- Transforms ---
 TestAccTransformEnrichAsyncResource
@@ -98,11 +98,6 @@ TestAccTransformSqlJoinResource
 # develop, and why it stopped being read. They still run under `make testacc`.
 # Re-add each one the moment its cause below is fixed.
 #
-#   TestAccDestinationClickHouseResource
-#       Kafka Connect: "Cannot connect to: Clickhouse". The staging ClickHouse
-#       instance is unreachable. (Also blocks Iceberg and the DynamoDB→ClickHouse
-#       pipeline, which stand up a ClickHouse destination.)
-#
 #   TestAccSourceOracleResource
 #   TestAccSourceOracleAWSResource
 #       Kafka Connect: "Unable to connect: Failed to resolve Oracle database
@@ -116,3 +111,28 @@ TestAccTransformSqlJoinResource
 #       connector (Limited-Privilege-Stream-Only-Test)". That connector was
 #       created outside Terraform, so the sweeper does not match it. Delete it,
 #       or give the test its own signal table, and re-add.
+#
+#   TestAccSourceMongoDBResource
+#   TestAccSourceMongoDBHostedResource
+#       Kafka Connect: "mongodb.connection.string: Unable to connect: Exception
+#       authenticating MongoCredential{...}". The MongoDB test user's credentials
+#       in the env.json blob no longer authenticate. Rotate them and re-add.
+#
+#   TestAccDestinationDb2Resource
+#   TestAccDestinationSqlserverResource
+#       Kafka Connect: "connection.url: Cannot connect to:". Those target
+#       databases are unreachable from staging.
+#
+#   TestAccDestinationCockroachdbResource
+#       Kafka Connect API returned 500 on the Step 3 update. Reproduce against
+#       staging before attributing it to the provider.
+#
+#   TestAccPostgreSQLSnowflakePipelineResource
+#       Backend: "Replication Slot Name already exists on this database". A slot
+#       from an earlier aborted run was left behind; the sweeper does not drop
+#       database-side slots. Drop it on the test database and re-add.
+
+# --- Access control ---
+TestAccKafkaUserResource
+TestAccClientCredentialResource
+TestAccDataSourceRoles

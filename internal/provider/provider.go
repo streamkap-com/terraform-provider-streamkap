@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	// "fmt"
 	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -11,8 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-
-	// "github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	ds "github.com/streamkap-com/terraform-provider-streamkap/internal/datasource"
@@ -69,8 +66,9 @@ func (p *streamkapProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 		Description: "Terraform provider for Streamkap data streaming platform.",
 		MarkdownDescription: "Terraform provider for **Streamkap** data streaming platform.\n\n" +
 			"Manages sources, destinations, pipelines, transforms, and topics.\n\n" +
-			"**Version guidance:** The latest stable release is **v2.1.19**. " +
-			"v3.x is currently in **beta** — pin `version = \"~> 2.1\"` for production use.\n\n" +
+			"**Version guidance:** The stable release line is **v3.x**. " +
+			"Pin `version = \"3.0.0\"` and review the migration guide before upgrading from v2. " +
+			"The legacy v2 line receives bug and security fixes only through 15 October 2026.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
@@ -143,6 +141,24 @@ func (p *streamkapProvider) Configure(ctx context.Context, req provider.Configur
 		)
 	}
 
+	if config.AdminTenantID.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("admin_tenant_id"),
+			"Unknown Streamkap Admin Tenant ID",
+			"The provider cannot create the Streamkap API client with an unknown admin tenant ID. "+
+				"Set the value statically, apply its source first, or use the STREAMKAP_ADMIN_TENANT_ID environment variable.",
+		)
+	}
+
+	if config.AdminServiceID.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("admin_service_id"),
+			"Unknown Streamkap Admin Service ID",
+			"The provider cannot create the Streamkap API client with an unknown admin service ID. "+
+				"Set the value statically, apply its source first, or use the STREAMKAP_ADMIN_SERVICE_ID environment variable.",
+		)
+	}
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -174,6 +190,21 @@ func (p *streamkapProvider) Configure(ctx context.Context, req provider.Configur
 
 	if !config.AdminServiceID.IsNull() {
 		adminServiceID = config.AdminServiceID.ValueString()
+	}
+
+	// The backend only enters its admin path when X-Admin-Tenant-Id is present;
+	// a service id on its own is dropped and the request silently runs against
+	// the credential's own tenant. A tenant id alone IS valid — the backend
+	// resolves a single-service tenant and returns a clear 400 for a
+	// multi-service one — so only this direction is rejected.
+	if adminServiceID != "" && adminTenantID == "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("admin_service_id"),
+			"Admin Service ID Without Admin Tenant ID",
+			"admin_service_id only takes effect alongside admin_tenant_id. On its own it is ignored and every request "+
+				"runs against the tenant that owns the client credentials, which is unlikely to be what you meant. "+
+				"Set admin_tenant_id (or STREAMKAP_ADMIN_TENANT_ID), or remove admin_service_id.",
+		)
 	}
 
 	// If any of the expected configurations are missing, return
@@ -212,7 +243,7 @@ func (p *streamkapProvider) Configure(ctx context.Context, req provider.Configur
 		AdminServiceID: adminServiceID,
 	})
 	// Create a new Streamkap client using the configuration values
-	token, err := p.client.GetAccessToken(clientID, secret)
+	token, err := p.client.GetAccessToken(ctx, clientID, secret)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Create Streamkap API Client",

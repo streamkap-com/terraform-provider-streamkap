@@ -6,7 +6,8 @@ resource "streamkap_source_redis" "example" {
 
   # Connection details
   redis_host     = "redis.example.com"
-  redis_port     = "6379"
+  redis_port     = 6379
+  redis_username = "default"
   redis_password = var.redis_password
 
   # Stream to capture

@@ -50,5 +50,41 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     }
+  },
+  "blocks": {
+    "kafka_acls": {
+      "nesting_mode": "list",
+      "type": "types.ListType[types.ObjectType[\"operation\":basetypes.StringType, \"resource\":basetypes.StringType, \"resource_pattern_type\":basetypes.StringType, \"topic_name\":basetypes.StringType]]"
+    }
+  },
+  "block_attributes": {
+    "kafka_acls.operation": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "kafka_acls.resource": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "kafka_acls.resource_pattern_type": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "kafka_acls.topic_name": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    }
   }
 }

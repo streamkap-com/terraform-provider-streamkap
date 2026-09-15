@@ -71,5 +71,42 @@
       "sensitive": false,
       "type": "types.ObjectType[\"key_converter\":basetypes.StringType, \"key_format\":basetypes.StringType, \"schema_registry_enabled\":basetypes.BoolType, \"value_converter\":basetypes.StringType, \"value_format\":basetypes.StringType]"
     }
+  },
+  "nested_attributes": {
+    "serialization.key_converter": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "serialization.key_format": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "serialization.schema_registry_enabled": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "serialization.value_converter": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "serialization.value_format": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    }
   }
 }
