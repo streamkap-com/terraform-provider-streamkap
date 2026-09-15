@@ -2,6 +2,10 @@
 
 Terraform provider for [Streamkap](https://streamkap.com) - a real-time data streaming platform.
 
+`main` contains v3, which remains in beta. The stable v2 maintenance line lives
+on `v2`. Use v2 in production until v3.0.0 is published; the branch change does
+not change installed provider versions.
+
 ## Features
 
 ### Source Connectors
