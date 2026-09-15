@@ -13,6 +13,7 @@ var sourcePostgreSQLPassword = os.Getenv("TF_VAR_source_postgresql_password")
 
 func TestAccSourcePostgreSQLResource(t *testing.T) {
 	name := acctestName(t, "main")
+	slotName, publicationName := acctestReplicationNames(name)
 	nameUpdated := acctestName(t, "updated")
 	nameExclude := acctestName(t, "exclude")
 
@@ -48,14 +49,14 @@ resource "streamkap_source_postgresql" "test" {
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = null
 	include_source_db_name_in_table_name         = false
-	slot_name                                    = "terraform_pgoutput_slot_test"
-	publication_name                             = "terraform_pub_test"
+	slot_name                                    = %q
+	publication_name                             = %q
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 	post_processors_reselect_enabled             = true
 	reselector_reselect_error_handling_mode      = "warn"
 }
-`, name),
+`, name, slotName, publicationName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "name", name),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_hostname", sourcePostgreSQLHostname),
@@ -72,8 +73,8 @@ resource "streamkap_source_postgresql" "test" {
 					// Check defaults for unset attributes
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "heartbeat_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "include_source_db_name_in_table_name", "false"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", "terraform_pgoutput_slot_test"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", "terraform_pub_test"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", slotName),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", publicationName),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "binary_handling_mode", "bytes"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "ssh_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "post_processors_reselect_enabled", "true"),
@@ -115,14 +116,14 @@ resource "streamkap_source_postgresql" "test" {
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = null
 	include_source_db_name_in_table_name         = false
-	slot_name                                    = "terraform_pgoutput_slot_test"
-	publication_name                             = "terraform_pub_test"
+	slot_name                                    = %q
+	publication_name                             = %q
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 	post_processors_reselect_enabled             = true
 	reselector_reselect_error_handling_mode      = "fail"
 }
-`, nameUpdated),
+`, nameUpdated, slotName, publicationName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "name", nameUpdated),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_hostname", sourcePostgreSQLHostname),
@@ -138,8 +139,8 @@ resource "streamkap_source_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "column_include_list", "streamkap[.]customer[.](id|name)"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "heartbeat_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "include_source_db_name_in_table_name", "false"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", "terraform_pgoutput_slot_test"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", "terraform_pub_test"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", slotName),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", publicationName),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "binary_handling_mode", "bytes"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "ssh_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "post_processors_reselect_enabled", "true"),
@@ -179,12 +180,12 @@ resource "streamkap_source_postgresql" "test" {
 	heartbeat_enabled                            = false
 	heartbeat_data_collection_schema_or_database = null
 	include_source_db_name_in_table_name         = false
-	slot_name                                    = "terraform_pgoutput_slot_test"
-	publication_name                             = "terraform_pub_test"
+	slot_name                                    = %q
+	publication_name                             = %q
 	binary_handling_mode                         = "bytes"
 	ssh_enabled                                  = false
 }
-`, nameExclude),
+`, nameExclude, slotName, publicationName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "name", nameExclude),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "database_hostname", sourcePostgreSQLHostname),
@@ -204,8 +205,8 @@ resource "streamkap_source_postgresql" "test" {
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "column_include_list", "streamkap[.]customer[.](id|name)"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "heartbeat_enabled", "false"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "include_source_db_name_in_table_name", "false"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", "terraform_pgoutput_slot_test"),
-					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", "terraform_pub_test"),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "slot_name", slotName),
+					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "publication_name", publicationName),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "binary_handling_mode", "bytes"),
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test", "ssh_enabled", "false"),
 				),
@@ -282,6 +283,7 @@ resource "streamkap_source_postgresql" "test" {
 
 func TestAccSourcePostgreSQLResource_WithTimeout(t *testing.T) {
 	name := acctestName(t, "timeout")
+	slotName, publicationName := acctestReplicationNames(name)
 
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -307,8 +309,8 @@ resource "streamkap_source_postgresql" "test_timeout" {
 	schema_include_list = "streamkap"
 	table_include_list  = "streamkap.customer"
 	signal_data_collection_schema_or_database = "streamkap.test_signal"
-	slot_name         = "terraform_timeout_test_slot"
-	publication_name  = "terraform_timeout_test_pub"
+	slot_name         = %q
+	publication_name  = %q
 	ssh_enabled       = false
 
 	timeouts {
@@ -317,7 +319,7 @@ resource "streamkap_source_postgresql" "test_timeout" {
 		delete = "15m"
 	}
 }
-`, name),
+`, name, slotName, publicationName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_postgresql.test_timeout", "name", name),
 				),

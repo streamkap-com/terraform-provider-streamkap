@@ -95,7 +95,7 @@ resource "streamkap_destination_snowflake" "my_dest" {
   name                    = "analytics-snowflake"
   snowflake_url_name      = "account.snowflakecomputing.com"
   snowflake_user_name     = "streamkap"
-  snowflake_private_key   = file("~/.ssh/snowflake_key.pem")
+  snowflake_private_key   = file(pathexpand("~/.ssh/snowflake_key.pem"))
   snowflake_database_name = "STREAMKAP_DB"
   snowflake_schema_name   = "PUBLIC"
 }

@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"strings"
 	"testing"
@@ -34,6 +35,13 @@ func uniqSuffix(t *testing.T) string {
 func acctestName(t *testing.T, role string) string {
 	t.Helper()
 	return fmt.Sprintf("tf-acc-test-%s-%s", uniqSuffix(t), role)
+}
+
+func acctestReplicationNames(name string) (string, string) {
+	// Hash the unique fixture name to fit PostgreSQL identifier limits.
+	digest := sha256.Sum256([]byte(name))
+	slot := fmt.Sprintf("tf_acc_%x", digest[:16])
+	return slot, slot + "_pub"
 }
 
 // TestAccDataSourceTags_filterName creates two custom tags and asserts the
