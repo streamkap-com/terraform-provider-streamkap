@@ -4,12 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Branches
 
-- **`main`** — v2.x stable (this branch). Bug fixes and back-compatible changes only. Default target for hotfix branches that need to ship to current released users.
-- **`develop`** — v3.x beta. New architecture and additional resources/datasources. Default target for new feature work. Details deliberately omitted here so this file stays a faithful description of the v2 line.
+- **`v2`** — v2.x stable maintenance line (this branch). Bug and security fixes only. Target this branch for fixes that must reach v2 users.
+- **`main`** — v3.x, currently beta. Default target for new feature work. Details deliberately omitted here so this file describes the v2 line.
 
-**Do not merge `develop` into `main`** until v3 is promoted from beta to stable. Until then, treat the two lines as independent: a fix that needs to ship to v2 users goes to `main` directly (and may need a separate cherry-pick to `develop`); v3-only work stays on `develop`. Cut feature branches from the line you're targeting.
+Keep the histories independent. A fix for v2 users belongs on `v2`; a shared
+fix needs a separate commit on each line. Do not merge `main` and `v2`.
+Cut feature branches from the line you are targeting.
 
-If you're reading this file you're on `main` — assume v2.x semantics: hand-written resource schemas in `internal/resource/{source,destination}/`, no code generation step.
+This file describes v2.x semantics: hand-written resource schemas in
+`internal/resource/{source,destination}/`, with no code generation step.
 
 ## Public repository — content hygiene
 
