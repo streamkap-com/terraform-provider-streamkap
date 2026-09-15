@@ -2,6 +2,8 @@
 
 ## v2 maintenance
 
+This maintenance line lives on `v2`; `main` contains v3, which remains in beta.
+
 When v3 becomes stable, v2 becomes the legacy maintenance line. Bug fixes and
 security patches continue through **15 October 2026**; new features and
 connectors are v3-only. From **16 October 2026**, v2 receives no further fixes
@@ -10,7 +12,7 @@ until you are ready to upgrade.
 
 ## Releasing v2 patches
 
-Use `main` before branch promotion and `v2` afterwards. Prepare a new bracketed
+Use `v2`. Prepare a new bracketed
 changelog heading such as `## [2.2.1] - <date>`, preserving older release entries.
 Fetch remote refs and run `bash scripts/release-preflight.sh <tag>`. The tagged
 commit must already be on the release branch. Branch and tag pushes require

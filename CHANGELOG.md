@@ -15,6 +15,8 @@
 
 ### Maintenance
 
+- Preserve this release line on `v2`; v3 development now lives on `main`.
+
 - From v3 stable, v2 receives bug and security fixes only through 15 October
   2026. Support ends on 16 October 2026.
 
