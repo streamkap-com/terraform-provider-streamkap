@@ -67,6 +67,12 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   # Binary data handling
   binary_handling_mode = "bytes" # Options: bytes, base64, base64-url-safe, hex
 
+  # TOAST column re-selection
+  # Enabled by default. Disable it to leave unavailable TOAST values as
+  # placeholders instead of querying the source for them.
+  post_processors_reselect_enabled        = true
+  reselector_reselect_error_handling_mode = "fail" # Options: fail, warn
+
   # SSH tunnel settings (optional, for secure connections)
   ssh_enabled = false
   # When ssh_enabled = true, also configure:

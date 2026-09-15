@@ -117,6 +117,14 @@ resource "streamkap_source_oracle" "example-source-oracle" {
   # Binary data handling
   binary_handling_mode = "bytes" # Options: bytes, base64, base64-url-safe, hex
 
+  # LogMiner strategy and LOB capture
+  # Example settings for LOB capture with redo log catalog and re-selection.
+  log_mining_strategy              = "redo_log_catalog" # Options: online_catalog (default), redo_log_catalog, hybrid
+  lob_enabled                      = true
+  post_processors_reselect_enabled = true
+  # Re-select failures stop the connector by default; "warn" logs and continues.
+  reselector_reselect_error_handling_mode = "fail" # Options: fail, warn
+
   # Column filtering (optional)
   column_exclude_list = "HR.EMPLOYEES.SSN,HR.EMPLOYEES.SALARY"
 

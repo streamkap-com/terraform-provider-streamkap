@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Back up state and review the [migration guide](docs/MIGRATION.md) and Terraform
   plan before applying. Deprecated v2 aliases remain supported through v3.x.
 
+### Documentation
+- Explain how users of beta.22–26 replace `post_processors` with
+  `post_processors_reselect_enabled`; v2 users never had the removed attribute.
+  Complete examples now show Oracle LOB capture and PostgreSQL-family
+  re-selection settings.
+
 ### Fixed
 - Give PostgreSQL, Supabase, AlloyDB and pipeline acceptance fixtures unique
   replication slots and
