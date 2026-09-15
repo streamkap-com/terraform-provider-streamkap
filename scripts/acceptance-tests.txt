@@ -39,9 +39,7 @@ TestAccDestinationDatabricksResource
 # TestAccDestinationDb2Resource — quarantined, see the list below.
 TestAccDestinationGcsResource
 TestAccDestinationHttpsinkResource
-# TestAccDestinationIcebergResource — re-add once the staging ClickHouse instance
-# is reachable again. Its config stands up a ClickHouse destination, which today
-# fails Kafka Connect validation with "Cannot connect to: Clickhouse".
+TestAccDestinationIcebergResource
 TestAccDestinationKafkaResource_basic
 TestAccDestinationKafkadirectResource
 TestAccDestinationMotherduckResource
@@ -53,9 +51,7 @@ TestAccDestinationRedisResource
 TestAccDestinationRedshiftResource
 TestAccDestinationS3Resource
 TestAccDestinationSnowflakeResource
-# Only the config round-trip of the ClickHouse destination; it does not need the
-# staging ClickHouse instance to be reachable (see the quarantine list below).
-TestAccDestinationClickHouseResource_topicsConfigMapRoundTrip
+TestAccDestinationClickHouseResource
 # TestAccDestinationSqlserverResource — quarantined, see the list below.
 TestAccDestinationStarburstResource
 TestAccDestinationWeaviateResource
@@ -74,8 +70,7 @@ TestAccDataSourceTransform
 # --- Pipelines ---
 # TestAccPostgreSQLSnowflakePipelineResource — quarantined, see the list below.
 TestAccPipeline_PeriodicAuditSurvivesUpdate
-# TestAccDynamoDBClickHousePipelineResource — re-add once the staging ClickHouse
-# instance is reachable again; its destination half cannot pass until then.
+TestAccDynamoDBClickHousePipelineResource
 
 # --- Provider / drift / tags / topics ---
 # TestAccTopicResource is deliberately absent: it is permanently skipped
@@ -102,11 +97,6 @@ TestAccTransformSqlJoinResource
 # in the merge gate keeps it permanently red — which is how it has been on
 # develop, and why it stopped being read. They still run under `make testacc`.
 # Re-add each one the moment its cause below is fixed.
-#
-#   TestAccDestinationClickHouseResource
-#       Kafka Connect: "Cannot connect to: Clickhouse". The staging ClickHouse
-#       instance is unreachable. (Also blocks Iceberg and the DynamoDB→ClickHouse
-#       pipeline, which stand up a ClickHouse destination.)
 #
 #   TestAccSourceOracleResource
 #   TestAccSourceOracleAWSResource

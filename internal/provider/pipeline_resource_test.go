@@ -275,9 +275,9 @@ resource "streamkap_destination_clickhouse" "test" {
 	hostname            = var.destination_clickhouse_hostname
 	connection_username = var.destination_clickhouse_connection_username
 	connection_password = var.destination_clickhouse_connection_password
-	port                = 8443
-	database            = "demo"
-	ssl                 = true
+	port                = 8123
+	database            = "default"
+	ssl                 = false
 }
 `, name)
 }

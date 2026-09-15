@@ -40,6 +40,7 @@ variable "iceberg_aws_secret_key" {
 resource "streamkap_destination_iceberg" "test" {
   name                                 = %q
   iceberg_catalog_type                 = "rest"
+  iceberg_catalog_s3_credentials_enabled = true
   iceberg_catalog_name                 = "iceberg_catalog_name"
   iceberg_catalog_uri                  = "iceberg_catalog_uri"
   iceberg_catalog_s3_access_key_id     = var.iceberg_aws_access_key
@@ -78,10 +79,14 @@ resource "streamkap_destination_iceberg" "test" {
 			},
 			// Step 2: ImportState Testing
 			{
-				ResourceName:            "streamkap_destination_iceberg.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"connector_status"},
+				ResourceName:      "streamkap_destination_iceberg.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				// iceberg_catalog_scope only applies when iceberg_catalog_auth_mode is
+				// oauth2; the backend drops it otherwise, so an import has nothing to
+				// read back and the client-side default is not in state until the
+				// first apply.
+				ImportStateVerifyIgnore: []string{"connector_status", "iceberg_catalog_scope"},
 			},
 			// Step 3: Update and Read Testing
 			{
@@ -99,6 +104,7 @@ variable "iceberg_aws_secret_key" {
 resource "streamkap_destination_iceberg" "test" {
   name                                 = %q
   iceberg_catalog_type                 = "hive"
+  iceberg_catalog_s3_credentials_enabled = true
   iceberg_catalog_name                 = "iceberg_catalog_name_updated"
   iceberg_catalog_uri                  = "iceberg_catalog_uri_updated"
   iceberg_catalog_s3_access_key_id     = var.iceberg_aws_access_key
