@@ -481,7 +481,7 @@ TF_ACC=1 go test -v ./internal/provider -run TestAccSourcePostgreSQL_basic
 
 ### ci.yml - Continuous Integration
 
-The core gate. Runs on every PR and push to `develop` / `main`, needs no
+The core gate. Runs on every PR and push to `main`, needs no
 credentials (so it also covers fork PRs):
 1. Build - `go build ./...`
 2. Vet - `go vet ./...`
@@ -494,25 +494,24 @@ credential-free tiers into a live-API run.
 
 ### docs-drift.yml - Docs match committed schemas
 
-On PRs touching `internal/`, `docs/`, `templates/`, `examples/`,
-`main.go` or `go.mod`: re-renders the docs from the *committed* schemas with
+On every PR to `main`: re-renders the docs from the *committed* schemas with
 `tfplugindocs` (no backend needed) and fails if `docs/` changes. This structurally
 prevents the beta.18 bug where `go generate ./...` rendered docs one regen behind.
 
 ### acceptance.yml / pr-acceptance.yml / migration.yml - Acceptance suites
 
-`acceptance.yml` runs the full `TestAcc` suite on a schedule, pushes to `main` and `develop`,
-and manual dispatch, using Terraform 1.0.11, the existing 1.8–1.11 lines, and 1.16.1. Scheduled runs use the
+`acceptance.yml` runs the full `TestAcc` suite on a schedule, pushes to `main`,
+and manual dispatch. Pushes use Terraform 1.16.1; scheduled and manual runs
+also cover Terraform 1.0.11 and the existing 1.8–1.11 lines. Scheduled runs use the
 repository default branch. `pr-acceptance.yml` runs a curated subset
 (`scripts/acceptance-tests.txt`) on same-repository PRs. `migration.yml` runs
-the v2 → v3 `TestAcc.*Migration` suite on same-repository PRs to `main` and
-`develop`, and on manual dispatch.
+the v2 → v3 `TestAcc.*Migration` suite on same-repository PRs to `main`
+and on manual dispatch.
 
-All three share the `streamkap-staging-fixtures` concurrency group and do not
-cancel active runs. `queue: max` retains up to 100 waiting jobs, because their fixtures and sweepers share a tenant. PR
-acceptance loads credentials from 1Password; nightly acceptance and migration
-use environment secrets. Tests may skip when connector credentials are absent;
-a green job is not proof that every connector ran.
+All three serialize access to shared fixtures with the
+`streamkap-staging-fixtures` concurrency group and load credentials from the
+shared 1Password JSON configuration. Tests may skip when connector credentials
+are absent; a green job is not proof that every connector ran.
 
 ### security.yml - Security Scanning
 
@@ -531,11 +530,12 @@ repository. Locally the equivalent is
 ### release.yml - Release Automation
 
 Triggered on version tags (`v*`):
-1. Verify stable tags belong to `main` and beta tags to `develop`; require a matching
-   changelog heading, unchanged module metadata, a successful build and
+1. Verify v3 beta and stable tags belong to `main` (v2 patches release from
+   `v2`); require a matching changelog heading, unchanged module metadata, a successful build and
    credential-free tests.
 2. Require the reusable security scans to pass.
 3. Build and sign release archives with GoReleaser, then publish GitHub release assets for the Terraform Registry.
 
-Prerelease tags are marked as prereleases in GitHub. Pushing a tag publishes
+Beta tags retain their prerelease version suffix but publish as full GitHub
+releases so the Terraform Registry can ingest them. Pushing a tag publishes
 public artifacts; it still requires explicit release approval.

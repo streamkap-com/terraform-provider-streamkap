@@ -37,7 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Maintenance
 - Preserve the v2 history on `v2` and move v3 development to the default `main`
-  branch. v3 remains in beta until the stable release is published.
+  branch. Retarget dependency updates and CI to the new branch layout. v3
+  remains in beta until the stable release is published.
 - From v3 stable, v2 receives bug and security fixes only through 15 October
   2026. Support ends on 16 October 2026.
 
