@@ -244,8 +244,9 @@ assume the working tree is current.
 
 Two preflight gates reject a tag before goreleaser runs, so check both *before* tagging:
 
-- Run `bash scripts/release-preflight.sh <tag>` after fetching remote refs. It
-  checks the tag syntax, branch ancestry and matching changelog heading. v2
+- Run `git fetch --prune origin`, then `bash scripts/release-preflight.sh <tag>`.
+  Pruning removes stale pre-promotion refs. Preflight checks tag syntax, branch
+  ancestry and the matching changelog heading. v2
   patches use `v2`; v3 beta and stable releases use `main`.
 - Prepare a matching `## [<version>] - <date>` changelog section for **every**
   release, including a trial beta. Preserve previous release sections. Update

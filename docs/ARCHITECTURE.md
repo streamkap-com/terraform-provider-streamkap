@@ -530,11 +530,15 @@ repository. Locally the equivalent is
 ### release.yml - Release Automation
 
 Triggered on version tags (`v*`):
-1. Verify v3 beta and stable tags belong to `main` (v2 patches release from
-   `v2`); require a matching changelog heading, unchanged module metadata, a successful build and
+1. Verify v3 beta and stable tags belong to `main`; require a matching
+   changelog heading, unchanged module metadata, a successful build and
    credential-free tests.
-2. Require the reusable security scans to pass.
+2. Require the reusable v3 security scans to pass.
 3. Build and sign release archives with GoReleaser, then publish GitHub release assets for the Terraform Registry.
+
+The `v2` branch has a separate release workflow for v2 patch tags. Its preflight
+checks branch ancestry and changelog entries, builds, runs vet and offline tests,
+and runs `govulncheck` before publishing.
 
 Beta tags retain their prerelease version suffix but publish as full GitHub
 releases so the Terraform Registry can ingest them. Pushing a tag publishes
