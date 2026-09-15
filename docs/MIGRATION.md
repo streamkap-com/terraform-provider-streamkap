@@ -6,14 +6,13 @@ This guide helps existing users migrate their Terraform configurations between m
 
 ## v2.x to v3.0
 
-> **v3.0 is in beta.** These examples target `3.0.0-beta.32`; confirm it is
-> listed on the Terraform Registry before installing. Do not use beta releases
-> in production. If your v2 setup is working, wait for the stable v3.0.0 release.
-> The beta may introduce further breaking changes before the final release.
+> These examples target **3.0.0 stable**. Back up your state, review the breaking
+> changes and defaults below, and inspect the Terraform plan before applying
+> the upgrade. Validate your configuration in a non-production environment first.
 
 ### v2 maintenance policy
 
-When v3.0.0 becomes stable, v2 becomes the legacy maintenance line. It receives
+v2 is the legacy maintenance line. It receives
 bug fixes and security patches only, through **15 October 2026**. New features
 and connectors are v3-only. From **16 October 2026**, v2 receives no further
 fixes or support. Published v2 versions remain available, but availability does
@@ -145,31 +144,28 @@ at your own pace during v3.x.
 
 See [the alias tables](#deprecated-attributes-still-work-but-migrate-soon) for replacements.
 
-### Trying the Beta
+### Installing v3.0.0
 
-If you want to test the beta in a non-production environment:
+After reviewing the migration changes, update your provider constraint:
 
 ```hcl
 terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = "3.0.0-beta.32"
+      version = "3.0.0"
     }
   }
 }
 ```
 
-> **Important:** Pin the **exact** beta version you tested, not a range like
-> `">= 3.0.0"` or `"~> 3.0.0-beta"`. Each beta may introduce further breaking
-> changes; an exact pin stops Terraform pulling a newer beta — or the stable
-> release — before you're ready. Check the
-> [Terraform Registry](https://registry.terraform.io/providers/streamkap-com/streamkap/latest)
-> for the latest `3.0.0-beta.x`.
+Run `terraform init -upgrade`, then `terraform plan`. An exact version pin keeps
+subsequent upgrades explicit. Investigate unexpected replacements and changed
+defaults before applying.
 
 ### Reporting Issues
 
-If you encounter problems with the beta, please report them:
+If you encounter problems upgrading, please report them:
 1. [GitHub Issues](https://github.com/streamkap-com/terraform-provider-streamkap/issues)
 2. Include your provider version, Terraform version, and relevant config (redact secrets)
 
