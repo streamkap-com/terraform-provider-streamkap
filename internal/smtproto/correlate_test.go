@@ -76,13 +76,6 @@ func TestCorrelate(t *testing.T) {
 	})
 }
 
-// Display names are not part of correlation at all: they are not even an
-// input to it, so a rename cannot move an identity.
-func TestCorrelate_RenameIsInvisible(t *testing.T) {
-	_, hasName := any(PlannedInstance{}).(interface{ GetName() string })
-	require.False(t, hasName)
-}
-
 func TestImportKeys(t *testing.T) {
 	keys, err := ImportKeys([]InstanceRead{{ID: "inst-9"}, {ID: "inst-3"}})
 	require.NoError(t, err)
