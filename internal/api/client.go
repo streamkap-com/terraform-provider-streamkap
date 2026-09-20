@@ -99,6 +99,10 @@ type APIError struct {
 	StatusCode int
 	Detail     string
 	RequestID  string
+	// DetailJSON is the redacted `detail` object of a structured error body,
+	// for callers that map its issues to attributes. Empty when the detail
+	// was a plain string.
+	DetailJSON json.RawMessage
 }
 
 func (e *APIError) Error() string {
@@ -416,8 +420,8 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 		// auth redirect) and arrive as HTML. Returning only the bare JSON parse
 		// error ("invalid character '<' looking for beginning of value") strips
 		// every actionable hint, which has been a recurring debugging dead-end.
-		if detail, ok := parseAPIErrorDetail(body); ok {
-			return &APIError{StatusCode: resp.StatusCode, Detail: detail, RequestID: requestID}
+		if detail, detailJSON, ok := parseAPIErrorDetail(body); ok {
+			return &APIError{StatusCode: resp.StatusCode, Detail: detail, RequestID: requestID, DetailJSON: detailJSON}
 		}
 		if json.Valid(body) {
 			detail := fmt.Sprintf("%s %s: JSON error response: %s", req.Method, req.URL, snippet([]byte(redactSensitiveErrorJSON(body))))
@@ -448,20 +452,24 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 	return nil
 }
 
-func parseAPIErrorDetail(body []byte) (string, bool) {
+// parseAPIErrorDetail returns the detail as a message and, for a structured
+// detail, its redacted JSON in full: the message is capped for readability,
+// the JSON is what a caller decodes.
+func parseAPIErrorDetail(body []byte) (string, json.RawMessage, bool) {
 	var envelope struct {
 		Detail json.RawMessage `json:"detail"`
 	}
 	if err := json.Unmarshal(body, &envelope); err != nil || len(envelope.Detail) == 0 {
-		return "", false
+		return "", nil, false
 	}
 
 	var detail string
 	if err := json.Unmarshal(envelope.Detail, &detail); err == nil {
-		return detail, strings.TrimSpace(detail) != ""
+		return detail, nil, strings.TrimSpace(detail) != ""
 	}
 
-	return snippet([]byte(redactSensitiveErrorJSON(envelope.Detail))), true
+	redacted := redactSensitiveErrorJSON(envelope.Detail)
+	return snippet([]byte(redacted)), json.RawMessage(redacted), true
 }
 
 func isUnauthorized(err error) bool {

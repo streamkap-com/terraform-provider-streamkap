@@ -1,0 +1,1355 @@
+{
+  "wire_version": 1,
+  "producer": "app.services.smt.wire_fixtures",
+  "routes": {
+    "catalog_list": "GET /destinations/smt-catalog?connector={connector}",
+    "catalog_type": "GET /destinations/smt-catalog/{type_id}?connector={connector}",
+    "chain_read": "GET /destinations/{destination_id}/smt-chain",
+    "chain_write": "PUT /destinations/{destination_id}/smt-chain"
+  },
+  "create_request": {
+    "transforms": [
+      {
+        "type": "regex_router",
+        "name": "Route orders",
+        "config": {
+          "regex": "(.*)_orders",
+          "replacement": "$1"
+        }
+      },
+      {
+        "type": "mask_field",
+        "name": "Mask email",
+        "enabled": true,
+        "config": {
+          "fields_include": [
+            "orders.email"
+          ]
+        },
+        "secret_operations": [
+          {
+            "pointer": "/mask_salt",
+            "operation": "replace",
+            "value": "fixture-salt"
+          }
+        ]
+      }
+    ]
+  },
+  "update_request": {
+    "expected_revision": "5b0b0774753288985bc61f593b27ee09",
+    "transforms": [
+      {
+        "id": "instance-b",
+        "type": "mask_field",
+        "name": "Mask email (renamed)",
+        "enabled": false,
+        "config": {
+          "fields_include": [
+            "orders.email",
+            "orders.phone"
+          ]
+        }
+      },
+      {
+        "id": "instance-a",
+        "type": "regex_router",
+        "name": "Route orders",
+        "config": {
+          "regex": "(.*)_orders",
+          "replacement": "$1"
+        }
+      },
+      {
+        "type": "regex_router",
+        "name": "Route refunds",
+        "config": {
+          "regex": "(.*)_refunds",
+          "replacement": "$1_returns"
+        }
+      }
+    ]
+  },
+  "secret_operations_request": {
+    "expected_revision": "5b0b0774753288985bc61f593b27ee09",
+    "transforms": [
+      {
+        "id": "instance-c",
+        "type": "contract_fixture_nested",
+        "name": "Routes",
+        "config": {
+          "enabled": true,
+          "routes": [
+            {
+              "key": "row-east",
+              "label": "east",
+              "endpoint": "example.invalid"
+            },
+            {
+              "key": "row~west/1",
+              "label": "west",
+              "endpoint": "other.invalid"
+            }
+          ]
+        },
+        "secret_operations": [
+          {
+            "pointer": "/routes/row-east/token",
+            "operation": "replace",
+            "value": "fixture-token"
+          },
+          {
+            "pointer": "/routes/row~0west~11/token",
+            "operation": "clear"
+          }
+        ]
+      }
+    ]
+  },
+  "read_response": {
+    "desired": {
+      "chain_revision": "a5ffa5b833e6db552f77d5781779e8f7",
+      "deployment_generation": 21,
+      "transforms": [
+        {
+          "kind": "typed",
+          "id": "instance-b",
+          "alias": "MaskField1",
+          "type": "mask_field",
+          "schema_version": 1,
+          "codec_version": 1,
+          "name": "Mask email (renamed)",
+          "enabled": false,
+          "config": {
+            "fields_include": [
+              "orders.email"
+            ],
+            "fields_exclude": [],
+            "mask_function": "SHA256_TRUNCATE",
+            "mask_char": "*",
+            "mask_fixed_value": "***",
+            "replace_null_with_default": true
+          },
+          "configured_secret_paths": [
+            "/mask_salt"
+          ],
+          "predicate": null
+        },
+        {
+          "kind": "typed",
+          "id": "instance-a",
+          "alias": "RegexRouter1",
+          "type": "regex_router",
+          "schema_version": 1,
+          "codec_version": 1,
+          "name": "Route orders",
+          "enabled": true,
+          "config": {
+            "regex": "(.*)_orders",
+            "replacement": "$1"
+          },
+          "configured_secret_paths": [],
+          "predicate": null
+        }
+      ],
+      "managed": [],
+      "managed_overrides": {},
+      "order": [
+        {
+          "origin": "user",
+          "reference": "instance-b"
+        },
+        {
+          "origin": "user",
+          "reference": "instance-a"
+        }
+      ]
+    },
+    "last_applied": null,
+    "application_status": "pending"
+  },
+  "conflict_response": {
+    "detail": {
+      "code": "smt_revision_conflict",
+      "message": "The chain changed since it was read; read it again before saving",
+      "issues": [
+        {
+          "code": "smt_revision_conflict",
+          "message": "expected revision is stale",
+          "instance_id": null,
+          "request_key": null,
+          "pointer": "/expected_revision"
+        }
+      ]
+    }
+  },
+  "validation_response": {
+    "detail": {
+      "code": "smt_validation_failed",
+      "message": "The chain was not saved; fix the issues and send it again",
+      "issues": [
+        {
+          "code": "smt_config_missing",
+          "message": "Field required",
+          "instance_id": "instance-c",
+          "request_key": null,
+          "pointer": "/transforms/1/config/routes/1/endpoint"
+        },
+        {
+          "code": "smt_config_string_pattern_mismatch",
+          "message": "String should match pattern '^[^,]+$'",
+          "instance_id": null,
+          "request_key": "2",
+          "pointer": "/transforms/2/config/fields_include/0"
+        },
+        {
+          "code": "smt_unknown_secret_row",
+          "message": "Pointer addresses a row key that is not present",
+          "instance_id": "instance-c",
+          "request_key": null,
+          "pointer": "/transforms/1/secret_operations/0/pointer"
+        }
+      ]
+    }
+  },
+  "openapi": {
+    "openapi": "3.1.0",
+    "paths": {
+      "/destinations/smt-catalog": {
+        "get": {
+          "tags": [
+            "Destinations"
+          ],
+          "summary": "List Smt Catalog",
+          "operationId": "listDestinationSmtCatalog",
+          "security": [
+            {
+              "FronteggHTTPAuthentication": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "connector",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "description": "Destination connector the chain will run on",
+                "title": "Connector"
+              },
+              "description": "Destination connector the chain will run on"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtCatalogListRead"
+                  }
+                }
+              }
+            },
+            "404": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Not Found"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Unprocessable Content"
+            }
+          }
+        }
+      },
+      "/destinations/smt-catalog/{type_id}": {
+        "get": {
+          "tags": [
+            "Destinations"
+          ],
+          "summary": "Get Smt Catalog Type",
+          "operationId": "getDestinationSmtCatalogType",
+          "security": [
+            {
+              "FronteggHTTPAuthentication": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "type_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Type Id"
+              }
+            },
+            {
+              "name": "connector",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "description": "Destination connector the chain will run on",
+                "title": "Connector"
+              },
+              "description": "Destination connector the chain will run on"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtCatalogTypeRead"
+                  }
+                }
+              }
+            },
+            "404": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Not Found"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Unprocessable Content"
+            }
+          }
+        }
+      },
+      "/destinations/{destination_id}/smt-chain": {
+        "get": {
+          "tags": [
+            "Destinations"
+          ],
+          "summary": "Get Smt Chain",
+          "operationId": "getDestinationSmtChain",
+          "security": [
+            {
+              "FronteggHTTPAuthentication": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "destination_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Destination Id"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtChainRead"
+                  }
+                }
+              }
+            },
+            "404": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Not Found"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Unprocessable Content"
+            }
+          }
+        },
+        "put": {
+          "tags": [
+            "Destinations"
+          ],
+          "summary": "Put Smt Chain",
+          "description": "Create the chain when none exists (no expected_revision), otherwise replace it under CAS.",
+          "operationId": "putDestinationSmtChain",
+          "security": [
+            {
+              "FronteggHTTPAuthentication": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "destination_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "title": "Destination Id"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmtChainWriteRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtChainRead"
+                  }
+                }
+              }
+            },
+            "404": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Not Found"
+            },
+            "422": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Unprocessable Content"
+            },
+            "409": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Conflict"
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "schemas": {
+        "JsonValue": {},
+        "SmtCatalogListRead": {
+          "properties": {
+            "types": {
+              "items": {
+                "$ref": "#/components/schemas/SmtCatalogTypeRead"
+              },
+              "type": "array",
+              "title": "Types"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "types"
+          ],
+          "title": "SmtCatalogListRead"
+        },
+        "SmtCatalogTypeRead": {
+          "properties": {
+            "type_id": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Type Id"
+            },
+            "schema_version": {
+              "type": "integer",
+              "title": "Schema Version"
+            },
+            "codec_version": {
+              "type": "integer",
+              "title": "Codec Version"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Label"
+            },
+            "publishable": {
+              "type": "boolean",
+              "const": true,
+              "title": "Publishable"
+            },
+            "data_schema": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object",
+              "title": "Data Schema"
+            },
+            "ui_schema": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object",
+              "title": "Ui Schema"
+            },
+            "secret_paths": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "title": "Secret Paths"
+            },
+            "row_keys": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object",
+              "title": "Row Keys"
+            },
+            "examples": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object",
+              "title": "Examples"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "type_id",
+            "schema_version",
+            "codec_version",
+            "label",
+            "publishable",
+            "data_schema",
+            "ui_schema",
+            "secret_paths",
+            "row_keys",
+            "examples"
+          ],
+          "title": "SmtCatalogTypeRead",
+          "description": "The corpus type entry plus a label. ``publishable`` is always true: unpublishable types are never served."
+        },
+        "SmtChainRead": {
+          "properties": {
+            "desired": {
+              "$ref": "#/components/schemas/SmtChainSnapshotRead"
+            },
+            "last_applied": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SmtChainSnapshotRead"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "application_status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "applying",
+                "applied",
+                "failed"
+              ],
+              "title": "Application Status"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "desired",
+            "last_applied",
+            "application_status"
+          ],
+          "title": "SmtChainRead",
+          "description": "Saved intent and recorded application; neither is a live worker observation."
+        },
+        "SmtChainSnapshotRead": {
+          "properties": {
+            "chain_revision": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Chain Revision",
+              "description": "Opaque; send it back as expected_revision"
+            },
+            "deployment_generation": {
+              "type": "integer",
+              "title": "Deployment Generation"
+            },
+            "transforms": {
+              "items": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/SmtInstanceRead"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SmtOpaqueInstanceRead"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "kind",
+                  "mapping": {
+                    "opaque": "#/components/schemas/SmtOpaqueInstanceRead",
+                    "typed": "#/components/schemas/SmtInstanceRead"
+                  }
+                }
+              },
+              "type": "array",
+              "title": "Transforms"
+            },
+            "managed": {
+              "items": {
+                "$ref": "#/components/schemas/SmtManagedTransformRead"
+              },
+              "type": "array",
+              "title": "Managed"
+            },
+            "managed_overrides": {
+              "patternProperties": {
+                "\\S": {
+                  "type": "boolean"
+                }
+              },
+              "propertyNames": {
+                "minLength": 1
+              },
+              "type": "object",
+              "title": "Managed Overrides"
+            },
+            "order": {
+              "items": {
+                "$ref": "#/components/schemas/SmtOrderEntryRead"
+              },
+              "type": "array",
+              "title": "Order"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "chain_revision",
+            "deployment_generation",
+            "transforms",
+            "managed",
+            "managed_overrides",
+            "order"
+          ],
+          "title": "SmtChainSnapshotRead"
+        },
+        "SmtChainWriteRequest": {
+          "properties": {
+            "expected_revision": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Expected Revision"
+            },
+            "transforms": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/SmtInstanceWrite"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Transforms",
+              "description": "Omitted: unchanged. []: remove every user instance. Array: replace the user chain."
+            },
+            "managed_overrides": {
+              "anyOf": [
+                {
+                  "patternProperties": {
+                    "\\S": {
+                      "type": "boolean"
+                    }
+                  },
+                  "propertyNames": {
+                    "minLength": 1
+                  },
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Managed Overrides",
+              "description": "Omitted: unchanged. {}: restore automatic behaviour. Map: replace explicit choices."
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "title": "SmtChainWriteRequest",
+          "description": "``PUT .../smt-chain``. Create needs no ``expected_revision``; update requires it."
+        },
+        "SmtErrorEnvelope": {
+          "properties": {
+            "code": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Code"
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Message"
+            },
+            "issues": {
+              "items": {
+                "$ref": "#/components/schemas/SmtValidationIssue"
+              },
+              "type": "array",
+              "title": "Issues"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "title": "SmtErrorEnvelope",
+          "description": "The ``detail`` of every 4xx these routes raise themselves; 403 and 401 come from the platform."
+        },
+        "SmtErrorResponse": {
+          "properties": {
+            "detail": {
+              "$ref": "#/components/schemas/SmtErrorEnvelope"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "detail"
+          ],
+          "title": "SmtErrorResponse",
+          "description": "The body of a 404, 409 or 422 from these routes, as the platform's ``detail`` envelope carries it."
+        },
+        "SmtInstanceRead": {
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "typed",
+              "title": "Kind",
+              "default": "typed"
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Id"
+            },
+            "alias": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Alias"
+            },
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Type"
+            },
+            "schema_version": {
+              "type": "integer",
+              "title": "Schema Version"
+            },
+            "codec_version": {
+              "type": "integer",
+              "title": "Codec Version"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Name"
+            },
+            "enabled": {
+              "type": "boolean",
+              "title": "Enabled"
+            },
+            "config": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object",
+              "title": "Config",
+              "description": "Declared defaults materialized, secret leaves absent"
+            },
+            "configured_secret_paths": {
+              "items": {
+                "type": "string",
+                "pattern": "^/(?:[^~]|~[01])*$"
+              },
+              "type": "array",
+              "title": "Configured Secret Paths",
+              "description": "Presence only; a value is never returned"
+            },
+            "predicate": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SmtPredicateRead"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "id",
+            "alias",
+            "type",
+            "schema_version",
+            "codec_version",
+            "name",
+            "enabled",
+            "config",
+            "configured_secret_paths",
+            "predicate"
+          ],
+          "title": "SmtInstanceRead"
+        },
+        "SmtInstanceWrite": {
+          "properties": {
+            "id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Id"
+            },
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Type"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Name"
+            },
+            "enabled": {
+              "type": "boolean",
+              "title": "Enabled",
+              "default": true
+            },
+            "config": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object",
+              "title": "Config",
+              "description": "Ordinary config; secret leaves are never carried here"
+            },
+            "secret_operations": {
+              "items": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/SmtSecretReplaceWire"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SmtSecretClearWire"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "operation",
+                  "mapping": {
+                    "clear": "#/components/schemas/SmtSecretClearWire",
+                    "replace": "#/components/schemas/SmtSecretReplaceWire"
+                  }
+                }
+              },
+              "type": "array",
+              "title": "Secret Operations"
+            },
+            "predicate": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SmtPredicateWrite"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "type",
+            "name",
+            "config"
+          ],
+          "title": "SmtInstanceWrite",
+          "description": "One user instance in a full replacement. ``id`` omitted creates; ``null`` is rejected."
+        },
+        "SmtManagedTransformRead": {
+          "properties": {
+            "slot_id": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Slot Id"
+            },
+            "alias": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Alias"
+            },
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Type"
+            },
+            "schema_version": {
+              "type": "integer",
+              "title": "Schema Version"
+            },
+            "codec_version": {
+              "type": "integer",
+              "title": "Codec Version"
+            },
+            "config": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object",
+              "title": "Config"
+            },
+            "configured_secret_paths": {
+              "items": {
+                "type": "string",
+                "pattern": "^/(?:[^~]|~[01])*$"
+              },
+              "type": "array",
+              "title": "Configured Secret Paths"
+            },
+            "predicate": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SmtPredicateRead"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "policy": {
+              "type": "string",
+              "enum": [
+                "required",
+                "optional"
+              ],
+              "title": "Policy"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Reason"
+            },
+            "enabled": {
+              "type": "boolean",
+              "title": "Enabled"
+            },
+            "override": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Override"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "slot_id",
+            "alias",
+            "type",
+            "schema_version",
+            "codec_version",
+            "config",
+            "configured_secret_paths",
+            "predicate",
+            "policy",
+            "reason",
+            "enabled",
+            "override"
+          ],
+          "title": "SmtManagedTransformRead"
+        },
+        "SmtOpaqueInstanceRead": {
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "opaque",
+              "title": "Kind",
+              "default": "opaque"
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Id"
+            },
+            "alias": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Alias"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Name"
+            },
+            "enabled": {
+              "type": "boolean",
+              "title": "Enabled"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Reason"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "id",
+            "alias",
+            "name",
+            "enabled",
+            "reason"
+          ],
+          "title": "SmtOpaqueInstanceRead"
+        },
+        "SmtOrderEntryRead": {
+          "properties": {
+            "origin": {
+              "type": "string",
+              "enum": [
+                "user",
+                "managed"
+              ],
+              "title": "Origin"
+            },
+            "reference": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Reference"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "origin",
+            "reference"
+          ],
+          "title": "SmtOrderEntryRead"
+        },
+        "SmtPredicateRead": {
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Id"
+            },
+            "alias": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Alias"
+            },
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Type"
+            },
+            "schema_version": {
+              "type": "integer",
+              "title": "Schema Version"
+            },
+            "codec_version": {
+              "type": "integer",
+              "title": "Codec Version"
+            },
+            "config": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object",
+              "title": "Config"
+            },
+            "configured_secret_paths": {
+              "items": {
+                "type": "string",
+                "pattern": "^/(?:[^~]|~[01])*$"
+              },
+              "type": "array",
+              "title": "Configured Secret Paths"
+            },
+            "negate": {
+              "type": "boolean",
+              "title": "Negate"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "id",
+            "alias",
+            "type",
+            "schema_version",
+            "codec_version",
+            "config",
+            "configured_secret_paths",
+            "negate"
+          ],
+          "title": "SmtPredicateRead"
+        },
+        "SmtPredicateWrite": {
+          "properties": {
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Type"
+            },
+            "config": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object",
+              "title": "Config"
+            },
+            "secret_operations": {
+              "items": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/SmtSecretReplaceWire"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SmtSecretClearWire"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "operation",
+                  "mapping": {
+                    "clear": "#/components/schemas/SmtSecretClearWire",
+                    "replace": "#/components/schemas/SmtSecretReplaceWire"
+                  }
+                }
+              },
+              "type": "array",
+              "title": "Secret Operations"
+            },
+            "negate": {
+              "type": "boolean",
+              "title": "Negate",
+              "default": false
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "type",
+            "config"
+          ],
+          "title": "SmtPredicateWrite"
+        },
+        "SmtSecretClearWire": {
+          "properties": {
+            "pointer": {
+              "type": "string",
+              "pattern": "^/(?:[^~]|~[01])*$",
+              "title": "Pointer"
+            },
+            "operation": {
+              "type": "string",
+              "const": "clear",
+              "title": "Operation"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "pointer",
+            "operation"
+          ],
+          "title": "SmtSecretClearWire"
+        },
+        "SmtSecretReplaceWire": {
+          "properties": {
+            "pointer": {
+              "type": "string",
+              "pattern": "^/(?:[^~]|~[01])*$",
+              "title": "Pointer",
+              "description": "Canonical keyed pointer; list rows are addressed by row key"
+            },
+            "operation": {
+              "type": "string",
+              "const": "replace",
+              "title": "Operation"
+            },
+            "value": {
+              "type": "string",
+              "minLength": 1,
+              "format": "password",
+              "title": "Value",
+              "writeOnly": true
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "pointer",
+            "operation",
+            "value"
+          ],
+          "title": "SmtSecretReplaceWire"
+        },
+        "SmtValidationIssue": {
+          "properties": {
+            "code": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Code"
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "\\S",
+              "title": "Message"
+            },
+            "instance_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Instance Id"
+            },
+            "request_key": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Request Key"
+            },
+            "pointer": {
+              "type": "string",
+              "pattern": "^(?:/(?:[^~]|~[01])*)?$",
+              "title": "Pointer",
+              "default": ""
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "title": "SmtValidationIssue",
+          "description": "Populate from safe messages and locators, never raw Pydantic errors or submitted values."
+        }
+      }
+    }
+  }
+}
