@@ -27,6 +27,7 @@ const (
 	attrID            = "id"
 	attrAlias         = "alias"
 	attrSchemaVersion = "schema_version"
+	attrSecretVersion = "secret_version"
 	attrVersion       = "version"
 	attrValues        = "values"
 	attrPointer       = "pointer"
@@ -67,6 +68,7 @@ func BuildChain(cat Catalog) (*ChainSchema, error) {
 		attrID:            schema.StringAttribute{Computed: true, Description: "Server-owned instance id."},
 		attrAlias:         schema.StringAttribute{Computed: true, Description: "Server-owned Kafka Connect alias."},
 		attrSchemaVersion: schema.Int64Attribute{Computed: true, Description: "Catalog schema version the instance was persisted with."},
+		attrSecretVersion: schema.Int64Attribute{Computed: true, Description: "Last rotation version applied to this instance; 0 before any rotation. Follows the key, so a removed and re-added secret entry cannot restart below it."},
 	}
 	for _, id := range cat.TypeIDs() {
 		child, err := BuildConfigChild(cat[id])
@@ -148,6 +150,7 @@ func PriorFromList(list types.List) []PriorInstance {
 			ID:            str(obj[attrID]),
 			Alias:         str(obj[attrAlias]),
 			SchemaVersion: i64(obj[attrSchemaVersion]),
+			SecretVersion: i64(obj[attrSecretVersion]),
 		})
 	}
 	return out
@@ -254,8 +257,9 @@ func (cs *ChainSchema) Project(planned types.List, correlated []Correlated) ([]I
 }
 
 // EntryValue builds the state entry for one server instance under the
-// provider key it correlates to.
-func (cs *ChainSchema) EntryValue(ctx context.Context, key string, read InstanceRead) (types.Object, diag.Diagnostics) {
+// provider key it correlates to. secretVersion is provider-owned state the
+// server never sees.
+func (cs *ChainSchema) EntryValue(ctx context.Context, key string, read InstanceRead, secretVersion int64) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	attrTypes := cs.EntryType.AttributeTypes()
 	values := map[string]attr.Value{
@@ -265,6 +269,7 @@ func (cs *ChainSchema) EntryValue(ctx context.Context, key string, read Instance
 		attrID:            types.StringValue(read.ID),
 		attrAlias:         types.StringValue(read.Alias),
 		attrSchemaVersion: types.Int64Value(read.SchemaVersion),
+		attrSecretVersion: types.Int64Value(secretVersion),
 	}
 	for _, id := range cs.Catalog.TypeIDs() {
 		if id != read.Type {
@@ -281,8 +286,9 @@ func (cs *ChainSchema) EntryValue(ctx context.Context, key string, read Instance
 }
 
 // ChainValue builds the whole state list from server reads, in server order,
-// under the given keys. Keys and reads pair by position.
-func (cs *ChainSchema) ChainValue(ctx context.Context, keys []string, reads []InstanceRead) (types.List, diag.Diagnostics) {
+// under the given keys. Keys and reads pair by position; versions holds the
+// last applied rotation version per key, absent meaning never rotated.
+func (cs *ChainSchema) ChainValue(ctx context.Context, keys []string, reads []InstanceRead, versions map[string]int64) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if len(keys) != len(reads) {
 		diags.AddError("Chain length mismatch", fmt.Sprintf("%d keys for %d server instances", len(keys), len(reads)))
@@ -290,7 +296,7 @@ func (cs *ChainSchema) ChainValue(ctx context.Context, keys []string, reads []In
 	}
 	elems := make([]attr.Value, 0, len(reads))
 	for i, r := range reads {
-		obj, d := cs.EntryValue(ctx, keys[i], r)
+		obj, d := cs.EntryValue(ctx, keys[i], r, versions[keys[i]])
 		diags.Append(d...)
 		elems = append(elems, obj)
 	}

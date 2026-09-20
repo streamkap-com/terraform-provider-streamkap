@@ -265,7 +265,7 @@
       "optional": true,
       "computed": false,
       "sensitive": false,
-      "type": "types.ListType[types.ObjectType[\"alias\":basetypes.StringType, \"contract_fixture_deep\":types.ObjectType[\"services\":types.ListType[types.ObjectType[\"auth\":types.ObjectType[\"username\":basetypes.StringType], \"endpoints\":types.ListType[types.ObjectType[\"id\":basetypes.StringType, \"url\":basetypes.StringType]], \"key\":basetypes.StringType]]], \"contract_fixture_nested\":types.ObjectType[\"enabled\":basetypes.BoolType, \"fallback\":basetypes.StringType, \"labels\":types.ListType[basetypes.StringType], \"max_records\":basetypes.Int64Type, \"output\":types.ObjectType[\"label\":basetypes.StringType, \"prefix\":basetypes.StringType, \"retry_limit\":basetypes.Int64Type], \"retries\":basetypes.Int64Type, \"routes\":types.ListType[types.ObjectType[\"endpoint\":basetypes.StringType, \"key\":basetypes.StringType, \"label\":basetypes.StringType]]], \"id\":basetypes.StringType, \"key\":basetypes.StringType, \"name\":basetypes.StringType, \"schema_version\":basetypes.Int64Type, \"type\":basetypes.StringType]]"
+      "type": "types.ListType[types.ObjectType[\"alias\":basetypes.StringType, \"contract_fixture_deep\":types.ObjectType[\"services\":types.ListType[types.ObjectType[\"auth\":types.ObjectType[\"username\":basetypes.StringType], \"endpoints\":types.ListType[types.ObjectType[\"id\":basetypes.StringType, \"url\":basetypes.StringType]], \"key\":basetypes.StringType]]], \"contract_fixture_nested\":types.ObjectType[\"enabled\":basetypes.BoolType, \"fallback\":basetypes.StringType, \"labels\":types.ListType[basetypes.StringType], \"max_records\":basetypes.Int64Type, \"output\":types.ObjectType[\"label\":basetypes.StringType, \"prefix\":basetypes.StringType, \"retry_limit\":basetypes.Int64Type], \"retries\":basetypes.Int64Type, \"routes\":types.ListType[types.ObjectType[\"endpoint\":basetypes.StringType, \"key\":basetypes.StringType, \"label\":basetypes.StringType]]], \"id\":basetypes.StringType, \"key\":basetypes.StringType, \"name\":basetypes.StringType, \"schema_version\":basetypes.Int64Type, \"secret_version\":basetypes.Int64Type, \"type\":basetypes.StringType]]"
     },
     "smt_secrets": {
       "required": false,
@@ -697,6 +697,13 @@
       "type": "basetypes.StringType"
     },
     "smt_chain.schema_version": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "smt_chain.secret_version": {
       "required": false,
       "optional": false,
       "computed": true,

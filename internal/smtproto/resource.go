@@ -158,15 +158,21 @@ func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanReques
 		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, at.AtName(attrSchemaVersion), types.Int64Value(c.SchemaVersion))...)
 	}
 
-	entries, priorVersions, d := r.secretInputs(ctx, req.Config, &req.State)
+	entries, d := r.secretInputs(ctx, req.Config)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	ops, d := PlanSecretOps(priorVersions, entries, chainTypes(correlated), r.chain.Catalog)
+	ops, next, d := PlanSecretOps(secretVersions(correlated), entries, chainTypes(correlated), r.chain.Catalog)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+	// The rotation version an apply will record is known now: the prior one
+	// unless this plan rotates the key, and 0 for a key never rotated.
+	for i, c := range correlated {
+		at := path.Root(AttrChain).AtListIndex(i)
+		resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, at.AtName(attrSecretVersion), types.Int64Value(next[c.Key]))...)
 	}
 	// A pointer must name a row the planned config actually has. Skipped
 	// while the child is still unknown; the apply repeats the check.
@@ -205,9 +211,9 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	resp.Diagnostics.Append(d...)
 	writes, d := r.chain.Project(planned, correlated)
 	resp.Diagnostics.Append(d...)
-	entries, _, d := r.secretInputs(ctx, req.Config, nil)
+	entries, d := r.secretInputs(ctx, req.Config)
 	resp.Diagnostics.Append(d...)
-	ops, d := PlanSecretOps(nil, entries, chainTypes(correlated), r.chain.Catalog)
+	ops, versions, d := PlanSecretOps(nil, entries, chainTypes(correlated), r.chain.Catalog)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -227,7 +233,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), types.StringValue(id))...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("connector"), types.StringValue("postgresql"))...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("connector_status"), types.StringValue("Active"))...)
-	resp.Diagnostics.Append(r.writeChain(ctx, &resp.State, planned, keysOf(correlated), reads)...)
+	resp.Diagnostics.Append(r.writeChain(ctx, &resp.State, planned, keysOf(correlated), reads, versions)...)
 }
 
 // Read refreshes the chain under the keys state already holds. A null chain
@@ -254,8 +260,13 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	if prior.IsNull() {
 		return
 	}
-	keys := keysForReads(PriorFromList(prior), reads)
-	resp.Diagnostics.Append(r.writeChain(ctx, &resp.State, prior, keys, reads)...)
+	priorInstances := PriorFromList(prior)
+	keys := keysForReads(priorInstances, reads)
+	versions := map[string]int64{}
+	for _, p := range priorInstances {
+		versions[p.Key] = p.SecretVersion
+	}
+	resp.Diagnostics.Append(r.writeChain(ctx, &resp.State, prior, keys, reads, versions)...)
 }
 
 // Update correlates by key so a reorder or rename keeps every server id.
@@ -272,9 +283,9 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	resp.Diagnostics.Append(d...)
 	writes, d := r.chain.Project(planned, correlated)
 	resp.Diagnostics.Append(d...)
-	entries, priorVersions, d := r.secretInputs(ctx, req.Config, &req.State)
+	entries, d := r.secretInputs(ctx, req.Config)
 	resp.Diagnostics.Append(d...)
-	ops, d := PlanSecretOps(priorVersions, entries, chainTypes(correlated), r.chain.Catalog)
+	ops, versions, d := PlanSecretOps(secretVersions(correlated), entries, chainTypes(correlated), r.chain.Catalog)
 	resp.Diagnostics.Append(d...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -297,7 +308,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	}
 
 	resp.State.Raw = knownOrNull(req.Plan.Raw)
-	resp.Diagnostics.Append(r.writeChain(ctx, &resp.State, planned, keysOf(correlated), reads)...)
+	resp.Diagnostics.Append(r.writeChain(ctx, &resp.State, planned, keysOf(correlated), reads, versions)...)
 }
 
 // Delete removes the connector.
@@ -324,32 +335,36 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 // transform attributes are left as planned: most of them carry a client-side
 // Default, so they are present in every plan whether or not the user wrote
 // them, and nulling them here would make the apply inconsistent.
-func (r *Resource) writeChain(ctx context.Context, state *tfsdk.State, planned types.List, keys []string, reads []InstanceRead) diag.Diagnostics {
+func (r *Resource) writeChain(ctx context.Context, state *tfsdk.State, planned types.List, keys []string, reads []InstanceRead, versions map[string]int64) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if planned.IsNull() {
 		return nil
 	}
-	list, d := r.chain.ChainValue(ctx, keys, reads)
+	list, d := r.chain.ChainValue(ctx, keys, reads, versions)
 	diags.Append(d...)
 	diags.Append(state.SetAttribute(ctx, path.Root(AttrChain), list)...)
 	return diags
 }
 
-// secretInputs reads the write-only entries from the configuration and the
-// rotation versions from prior state, nil on create. Values are never read
-// from plan or state, where the framework has already nulled them.
-func (r *Resource) secretInputs(ctx context.Context, config tfsdk.Config, state *tfsdk.State) ([]SecretEntry, map[string]int64, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var configured, prior types.List
-	diags.Append(config.GetAttribute(ctx, path.Root(AttrSecrets), &configured)...)
-	if state != nil && !state.Raw.IsNull() {
-		diags.Append(state.GetAttribute(ctx, path.Root(AttrSecrets), &prior)...)
+// secretInputs reads the write-only entries from the configuration, the
+// only place the values exist: plan and state hold them nulled.
+func (r *Resource) secretInputs(ctx context.Context, config tfsdk.Config) ([]SecretEntry, diag.Diagnostics) {
+	var configured types.List
+	diags := config.GetAttribute(ctx, path.Root(AttrSecrets), &configured)
+	return SecretEntriesFromList(configured), diags
+}
+
+// secretVersions is the last rotation version applied per key, as the chain
+// entries in prior state record it. A new key starts from zero because it is
+// a new instance.
+func secretVersions(correlated []Correlated) map[string]int64 {
+	out := make(map[string]int64, len(correlated))
+	for _, c := range correlated {
+		if c.Matched {
+			out[c.Key] = c.SecretVersion
+		}
 	}
-	versions := map[string]int64{}
-	for _, e := range SecretEntriesFromList(prior) {
-		versions[e.Key] = e.Version
-	}
-	return SecretEntriesFromList(configured), versions, diags
+	return out
 }
 
 // applySecrets resolves each operation's provider key to the server id the

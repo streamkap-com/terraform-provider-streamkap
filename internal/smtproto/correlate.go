@@ -14,6 +14,7 @@ type PriorInstance struct {
 	ID            string
 	Alias         string
 	SchemaVersion int64
+	SecretVersion int64
 }
 
 // PlannedInstance is one chain entry as configured.
@@ -29,6 +30,7 @@ type Correlated struct {
 	ID            string
 	Alias         string
 	SchemaVersion int64
+	SecretVersion int64
 	Matched       bool
 }
 
@@ -63,7 +65,7 @@ func Correlate(prior []PriorInstance, planned []PlannedInstance) ([]Correlated, 
 					fmt.Sprintf("instance %q is %s on the server (id %s) and cannot become %s. Remove the entry in one apply, then add the %s instance under a new key.", p.Key, old.Type, old.ID, p.Type, p.Type))
 				continue
 			}
-			c.ID, c.Alias, c.SchemaVersion, c.Matched = old.ID, old.Alias, old.SchemaVersion, true
+			c.ID, c.Alias, c.SchemaVersion, c.SecretVersion, c.Matched = old.ID, old.Alias, old.SchemaVersion, old.SecretVersion, true
 		}
 		out = append(out, c)
 	}

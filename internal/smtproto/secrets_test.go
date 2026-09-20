@@ -69,10 +69,11 @@ func TestPlanSecretOps(t *testing.T) {
 	clearWest := SecretValue{Pointer: "/routes/row~0west~11/token", Clear: true}
 
 	cases := map[string]struct {
-		prior   map[string]int64
-		entries []SecretEntry
-		wantOps []SecretOp
-		wantErr string
+		prior    map[string]int64
+		entries  []SecretEntry
+		wantOps  []SecretOp
+		wantNext map[string]int64
+		wantErr  string
 	}{
 		"initial rotation needs a version": {
 			entries: []SecretEntry{{Key: "a", Version: 0, Values: []SecretValue{replaceEast}}},
@@ -84,24 +85,45 @@ func TestPlanSecretOps(t *testing.T) {
 				{Key: "a", Pointer: "/routes/row-east/token", Value: "s1"},
 				{Key: "a", Pointer: "/routes/row~0west~11/token", Clear: true},
 			},
+			wantNext: map[string]int64{"a": 1},
 		},
 		"increased version executes once": {
-			prior:   map[string]int64{"a": 1},
-			entries: []SecretEntry{{Key: "a", Version: 2, Values: []SecretValue{replaceEast}}},
-			wantOps: []SecretOp{{Key: "a", Pointer: "/routes/row-east/token", Value: "s1"}},
+			prior:    map[string]int64{"a": 1},
+			entries:  []SecretEntry{{Key: "a", Version: 2, Values: []SecretValue{replaceEast}}},
+			wantOps:  []SecretOp{{Key: "a", Pointer: "/routes/row-east/token", Value: "s1"}},
+			wantNext: map[string]int64{"a": 2},
 		},
 		"unchanged version with values still configured sends nothing": {
-			prior:   map[string]int64{"a": 2},
-			entries: []SecretEntry{{Key: "a", Version: 2, Values: []SecretValue{replaceEast}}},
+			prior:    map[string]int64{"a": 2},
+			entries:  []SecretEntry{{Key: "a", Version: 2, Values: []SecretValue{replaceEast}}},
+			wantNext: map[string]int64{"a": 2},
+		},
+		"unchanged version without values is fine": {
+			prior:    map[string]int64{"a": 2},
+			entries:  []SecretEntry{{Key: "a", Version: 2}},
+			wantNext: map[string]int64{"a": 2},
 		},
 		"edited value without a version bump is not detected": {
-			prior:   map[string]int64{"a": 2},
-			entries: []SecretEntry{{Key: "a", Version: 2, Values: []SecretValue{{Pointer: "/routes/row-east/token", Value: v("edited")}}}},
+			prior:    map[string]int64{"a": 2},
+			entries:  []SecretEntry{{Key: "a", Version: 2, Values: []SecretValue{{Pointer: "/routes/row-east/token", Value: v("edited")}}}},
+			wantNext: map[string]int64{"a": 2},
 		},
 		"decreased version is rejected": {
 			prior:   map[string]int64{"a": 3},
 			entries: []SecretEntry{{Key: "a", Version: 2, Values: []SecretValue{replaceEast}}},
 			wantErr: "Rotation version decreased",
+		},
+		"removed then re-added entry cannot restart below the chain's version": {
+			// The chain entry still says 5 although no smt_secrets entry was
+			// in state at all, so this is a decrease, not a fresh rotation.
+			prior:   map[string]int64{"a": 5},
+			entries: []SecretEntry{{Key: "a", Version: 1, Values: []SecretValue{replaceEast}}},
+			wantErr: "Rotation version decreased",
+		},
+		"removed entry leaves the chain's version alone": {
+			prior:    map[string]int64{"a": 5, "d": 2},
+			entries:  nil,
+			wantNext: map[string]int64{"a": 5, "d": 2},
 		},
 		"increased version with no operation is rejected": {
 			prior:   map[string]int64{"a": 1},
@@ -129,13 +151,14 @@ func TestPlanSecretOps(t *testing.T) {
 			wantErr: "Ambiguous secret operation",
 		},
 		"two-level keyed pointer": {
-			entries: []SecretEntry{{Key: "d", Version: 1, Values: []SecretValue{{Pointer: "/services/svc-a/endpoints/ep~11/secret", Value: v("x")}}}},
-			wantOps: []SecretOp{{Key: "d", Pointer: "/services/svc-a/endpoints/ep~11/secret", Value: "x"}},
+			entries:  []SecretEntry{{Key: "d", Version: 1, Values: []SecretValue{{Pointer: "/services/svc-a/endpoints/ep~11/secret", Value: v("x")}}}},
+			wantOps:  []SecretOp{{Key: "d", Pointer: "/services/svc-a/endpoints/ep~11/secret", Value: "x"}},
+			wantNext: map[string]int64{"d": 1},
 		},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			ops, diags := PlanSecretOps(tc.prior, tc.entries, chain, cat)
+			ops, next, diags := PlanSecretOps(tc.prior, tc.entries, chain, cat)
 			if tc.wantErr != "" {
 				require.True(t, diags.HasError())
 				require.Equal(t, tc.wantErr, diags.Errors()[0].Summary())
@@ -143,6 +166,10 @@ func TestPlanSecretOps(t *testing.T) {
 			}
 			require.False(t, diags.HasError(), "%v", diags)
 			require.Equal(t, tc.wantOps, ops)
+			if tc.wantNext == nil {
+				tc.wantNext = map[string]int64{}
+			}
+			require.Equal(t, tc.wantNext, next)
 		})
 	}
 }

@@ -151,13 +151,19 @@ type SecretOp struct {
 }
 
 // PlanSecretOps decides which operations an apply executes. prior holds the
-// rotation version each instance key had in state (absent for a new key or
-// on create). An increased version executes every configured row exactly
+// last rotation version applied to each instance key, as the chain entry
+// records it (0 or absent for a key never rotated, which is also every key on
+// create). It is not the version of the smt_secrets entry currently in
+// state: that entry can be removed and re-added while the server instance
+// lives on. An increased version executes every configured row exactly
 // once; an unchanged version executes nothing even when values are still
-// configured; everything else is rejected before any request is sent.
-func PlanSecretOps(prior map[string]int64, entries []SecretEntry, chain map[string]string, cat Catalog) ([]SecretOp, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var ops []SecretOp
+// configured; everything else is rejected before any request is sent. next
+// is prior with every executed rotation applied, for the chain to record.
+func PlanSecretOps(prior map[string]int64, entries []SecretEntry, chain map[string]string, cat Catalog) (ops []SecretOp, next map[string]int64, diags diag.Diagnostics) {
+	next = make(map[string]int64, len(prior))
+	for k, v := range prior {
+		next[k] = v
+	}
 	seen := map[string]bool{}
 	for i, e := range entries {
 		p := path.Root(AttrSecrets).AtListIndex(i)
@@ -180,12 +186,12 @@ func PlanSecretOps(prior map[string]int64, entries []SecretEntry, chain map[stri
 			diags.AddAttributeError(p.AtName("version"), "Invalid rotation version", "version must be a positive integer")
 			continue
 		}
-		before, had := prior[e.Key]
+		before := prior[e.Key]
 		switch {
-		case had && e.Version < before:
-			diags.AddAttributeError(p.AtName("version"), "Rotation version decreased", fmt.Sprintf("version %d is below the %d recorded in state; versions only increase", e.Version, before))
+		case e.Version < before:
+			diags.AddAttributeError(p.AtName("version"), "Rotation version decreased", fmt.Sprintf("version %d is below the %d last applied to %q; versions only increase", e.Version, before, e.Key))
 			continue
-		case had && e.Version == before:
+		case e.Version == before:
 			// Unchanged: no operation, whatever values are configured. A value
 			// edited without a version bump is invisible here by design.
 			continue
@@ -194,6 +200,7 @@ func PlanSecretOps(prior map[string]int64, entries []SecretEntry, chain map[stri
 			diags.AddAttributeError(p.AtName("version"), "Rotation without operations", fmt.Sprintf("version %d is new for %q but no values are configured", e.Version, e.Key))
 			continue
 		}
+		next[e.Key] = e.Version
 		rowSeen := map[string]bool{}
 		for j, v := range e.Values {
 			vp := p.AtName("values").AtListIndex(j)
@@ -223,5 +230,5 @@ func PlanSecretOps(prior map[string]int64, entries []SecretEntry, chain map[stri
 		}
 		return ops[a].Pointer < ops[b].Pointer
 	})
-	return ops, diags
+	return ops, next, diags
 }

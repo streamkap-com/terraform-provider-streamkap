@@ -151,6 +151,8 @@ func TestResource_ChainLifecycle(t *testing.T) {
 					resource.TestCheckResourceAttr(addr, "smt_chain.1.contract_fixture_deep.services.0.endpoints.0.id", "ep/1"),
 					resource.TestCheckResourceAttr(addr, "smt_secrets.0.version", "1"),
 					resource.TestCheckNoResourceAttr(addr, "smt_secrets.0.values.#"),
+					resource.TestCheckResourceAttr(addr, "smt_chain.0.secret_version", "1"),
+					resource.TestCheckResourceAttr(addr, "smt_chain.1.secret_version", "1"),
 					func(s *terraform.State) error {
 						ids["a"], ids["b"] = attrOf(s, "smt_chain.0.id"), attrOf(s, "smt_chain.1.id")
 						ids["alias-a"] = attrOf(s, "smt_chain.0.alias")
@@ -206,6 +208,8 @@ func TestResource_ChainLifecycle(t *testing.T) {
 					resource.TestCheckResourceAttr(addr, "smt_chain.0.key", "b"),
 					resource.TestCheckResourceAttr(addr, "smt_chain.1.key", "a"),
 					resource.TestCheckResourceAttr(addr, "smt_chain.1.name", "East renamed"),
+					resource.TestCheckResourceAttr(addr, "smt_chain.1.secret_version", "2"),
+					resource.TestCheckResourceAttr(addr, "smt_chain.0.secret_version", "1"),
 					func(s *terraform.State) error {
 						if attrOf(s, "smt_chain.1.id") != ids["a"] || attrOf(s, "smt_chain.0.id") != ids["b"] {
 							return fmt.Errorf("ids did not follow their keys: a=%s b=%s", attrOf(s, "smt_chain.1.id"), attrOf(s, "smt_chain.0.id"))
@@ -227,6 +231,7 @@ func TestResource_ChainLifecycle(t *testing.T) {
 				Config: hcl(strings.ReplaceAll(chainBA, `key  = "a"`, `key  = "a2"`) + strings.ReplaceAll(secrets(1, "east-3", "west-3", 1, "ep-1"), `key = "a"`, `key = "a2"`)),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(addr, "smt_chain.1.key", "a2"),
+					resource.TestCheckResourceAttr(addr, "smt_chain.1.secret_version", "1"),
 					func(s *terraform.State) error {
 						if attrOf(s, "smt_chain.1.id") == ids["a"] {
 							return fmt.Errorf("a changed key inherited the old server id")
@@ -451,6 +456,80 @@ func TestResource_ImportAdoption(t *testing.T) {
 			{
 				Config:   hcl(adopted),
 				PlanOnly: true,
+			},
+		},
+	})
+}
+
+// The last applied rotation version lives on the chain entry, not on the
+// smt_secrets entry: removing the secret entry and adding it back cannot
+// restart a live instance below the version it already reached.
+func TestResource_RotationVersionFollowsTheKey(t *testing.T) {
+	res, fake := newProto(t)
+	aOnly := func(version int, value string) string {
+		return fmt.Sprintf(`
+  smt_secrets = [{ key = "a", version = %d, values = [{ pointer = "/routes/row-east/token", value = %q }] }]`, version, value)
+	}
+
+	resource.UnitTest(t, resource.TestCase{
+		TerraformVersionChecks:   []tfversion.TerraformVersionCheck{tfversion.SkipBelow(tfversion.Version1_11_0)},
+		ProtoV6ProviderFactories: providerFactories(res),
+		Steps: []resource.TestStep{
+			{
+				Config: hcl(chainAB + aOnly(5, "v5")),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "smt_chain.0.secret_version", "5"),
+					resource.TestCheckResourceAttr(addr, "smt_chain.1.secret_version", "0"),
+					func(s *terraform.State) error {
+						if got := fake.opsSince(0); len(got) != 1 || got[0].Value != "v5" {
+							return fmt.Errorf("want one op at version 5, got %v", got)
+						}
+						return nil
+					},
+				),
+			},
+			{
+				// The secret entry goes away; the instance and its version stay.
+				Config: hcl(chainAB),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(addr, "smt_secrets.#"),
+					resource.TestCheckResourceAttr(addr, "smt_chain.0.secret_version", "5"),
+					func(s *terraform.State) error {
+						if got := fake.opsSince(1); len(got) != 0 {
+							return fmt.Errorf("removing the entry must not rotate, got %v", got)
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config:      hcl(chainAB + aOnly(1, "v1")),
+				ExpectError: regexp.MustCompile(`Rotation version decreased[\s\S]*below the 5 last applied to "a"`),
+			},
+			{
+				// Re-adding at the recorded version is a no-op, not a rotation.
+				Config: hcl(chainAB + aOnly(5, "v5-again")),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "smt_chain.0.secret_version", "5"),
+					func(s *terraform.State) error {
+						if got := fake.opsSince(1); len(got) != 0 {
+							return fmt.Errorf("re-adding at the recorded version must not rotate, got %v", got)
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config: hcl(chainAB + aOnly(6, "v6")),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "smt_chain.0.secret_version", "6"),
+					func(s *terraform.State) error {
+						if got := fake.opsSince(1); len(got) != 1 || got[0].Value != "v6" {
+							return fmt.Errorf("want exactly one op at version 6, got %v", got)
+						}
+						return nil
+					},
+				),
 			},
 		},
 	})
