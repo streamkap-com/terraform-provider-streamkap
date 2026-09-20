@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "producer": "app.services.smt.contract_corpus",
-  "digest": "sha256:5aef46bc313a0a425013357a4a64d5185a11031ae86040208bc29a9f1cbfedb5",
+  "digest": "sha256:50ba3ac5ef381a480cb608a5f5b2c00bacc5c868948337335078ef6d36ca04f7",
   "types": [
     {
       "type_id": "contract_fixture_nested",
@@ -45,7 +45,7 @@
           },
           "max_records": {
             "default": 0,
-            "maximum": 9007199254740993,
+            "maximum": 9007199254740991,
             "minimum": 0,
             "title": "Max Records",
             "type": "integer"

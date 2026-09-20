@@ -7,7 +7,7 @@ A prototype under `internal/smtproto/` tests whether the selected nested SMT rep
 - `github.com/hashicorp/terraform-plugin-framework v1.19.0` (from `go.mod`). Write-only attributes exist since v1.14; `IsWriteOnly()` is on the attribute interface, and the server nulls write-only values in `PlanResourceChange`, `Create` and `Update` (`internal/fwserver/write_only_nullification.go`).
 - `github.com/hashicorp/terraform-plugin-go v0.31.0`, `github.com/hashicorp/terraform-plugin-testing v1.16.0`, Go 1.27.1.
 - Terraform CLI: v1.16.3 locally (the `resource.UnitTest` cases shell out to it); CI pins 1.16.1. Write-only attributes need Terraform 1.11 or later, so those cases carry `tfversion.SkipBelow(1.11.0)`.
-- Contract corpus copy: `internal/smtproto/testdata/contract_corpus.json`, byte-identical to `cmp/backend/app/services/smt/fixtures/contract_corpus.json` at backend revision `def7f5021`, digest `sha256:5aef46bc313a0a425013357a4a64d5185a11031ae86040208bc29a9f1cbfedb5`, two types (`contract_fixture_nested`, `contract_fixture_deep`). Never hand-edited.
+- Contract corpus copy: `internal/smtproto/testdata/contract_corpus.json`, byte-identical to `cmp/backend/app/services/smt/fixtures/contract_corpus.json` at backend revision `05ee1dd2e`, digest `sha256:50ba3ac5ef381a480cb608a5f5b2c00bacc5c868948337335078ef6d36ca04f7`, two types (`contract_fixture_nested`, `contract_fixture_deep`). Never hand-edited.
 
 ## What the prototype is
 
