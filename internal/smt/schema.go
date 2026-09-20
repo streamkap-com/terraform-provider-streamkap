@@ -1,4 +1,4 @@
-package smtproto
+package smt
 
 import (
 	"context"
@@ -314,7 +314,7 @@ func objectDefault(attrs map[string]schema.Attribute) (types.Object, bool) {
 	values := map[string]attr.Value{}
 	for name, a := range attrs {
 		attrTypes[name] = a.GetType()
-		v, ok := defaultValue(a)
+		v, ok := DefaultValue(a)
 		if !ok {
 			return types.Object{}, false
 		}
@@ -323,9 +323,9 @@ func objectDefault(attrs map[string]schema.Attribute) (types.Object, bool) {
 	return types.ObjectValueMust(attrTypes, values), true
 }
 
-// defaultValue evaluates an attribute's static default outside a plan. Every
+// DefaultValue evaluates an attribute's static default outside a plan. Every
 // default the builder emits is a Static* value, so the request is irrelevant.
-func defaultValue(a schema.Attribute) (attr.Value, bool) {
+func DefaultValue(a schema.Attribute) (attr.Value, bool) {
 	ctx := context.Background()
 	switch t := a.(type) {
 	case schema.StringAttribute:

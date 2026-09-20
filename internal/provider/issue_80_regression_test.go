@@ -127,12 +127,25 @@ func TestIssue80_OptionalFieldsArePlanStable(t *testing.T) {
 				if issue82MapOverrideFields[f.name+"."+name] {
 					continue
 				}
+				if smtOwnedFields[name] {
+					continue
+				}
 				t.Errorf("%s.%s is Optional but not Computed — exposes issue-#80 "+
 					"inconsistent-result-after-apply when the backend dynamically backfills this field",
 					f.name, name)
 			}
 		})
 	}
+}
+
+// smtOwnedFields are the nested SMT surface, which is Optional-only on
+// purpose: a null smt_chain is the marker that the connector stays on the
+// released flat surface, and Read never populates it, so there is no backend
+// backfill for the plan to be inconsistent with. smt_secrets is a write-only
+// input whose values never reach state at all.
+var smtOwnedFields = map[string]bool{
+	"smt_chain":   true,
+	"smt_secrets": true,
 }
 
 // issue82MapOverrideFields lists the `map_string` / `map_nested` override

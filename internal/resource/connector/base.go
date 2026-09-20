@@ -50,6 +50,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -57,12 +59,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/defaults"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/shared"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/smt"
 )
 
 // ConnectorType represents the type of connector (source or destination).
@@ -112,12 +116,22 @@ type ConnectorConfigWithJSONStringFields interface {
 	GetJSONStringFields() []string
 }
 
+// ConnectorConfigWithSMTChain is the opt-in for the nested SMT chain. A
+// generated connector whose model carries the smt_chain, smt_secrets and
+// smt_chain_revision fields implements it by returning the chain schema built
+// from the pinned catalog; the base resource then adds the attributes and
+// drives the chain lifecycle.
+type ConnectorConfigWithSMTChain interface {
+	GetSMTChain() *smt.ChainSchema
+}
+
 // Ensure BaseConnectorResource satisfies framework interfaces.
 var (
-	_ resource.Resource                = &BaseConnectorResource{}
-	_ resource.ResourceWithConfigure   = &BaseConnectorResource{}
-	_ resource.ResourceWithImportState = &BaseConnectorResource{}
-	_ resource.ResourceWithModifyPlan  = &BaseConnectorResource{}
+	_ resource.Resource                   = &BaseConnectorResource{}
+	_ resource.ResourceWithConfigure      = &BaseConnectorResource{}
+	_ resource.ResourceWithImportState    = &BaseConnectorResource{}
+	_ resource.ResourceWithModifyPlan     = &BaseConnectorResource{}
+	_ resource.ResourceWithValidateConfig = &BaseConnectorResource{}
 )
 
 // BaseConnectorResource is a generic resource implementation for connectors.
@@ -126,13 +140,19 @@ var (
 type BaseConnectorResource struct {
 	client api.StreamkapAPI
 	config ConnectorConfig
+	// smt is nil unless the config opts into the nested chain.
+	smt *smt.Surface
 }
 
 // NewBaseConnectorResource creates a new BaseConnectorResource with the given config.
 func NewBaseConnectorResource(config ConnectorConfig) resource.Resource {
-	return &BaseConnectorResource{
+	r := &BaseConnectorResource{
 		config: config,
 	}
+	if c, ok := config.(ConnectorConfigWithSMTChain); ok {
+		r.smt = smt.NewSurface(c.GetSMTChain(), config.GetFieldMappings())
+	}
+	return r
 }
 
 // Metadata returns the resource type name.
@@ -177,6 +197,10 @@ func (r *BaseConnectorResource) Schema(ctx context.Context, req resource.SchemaR
 		}
 	}
 
+	if r.smt != nil {
+		r.smt.AddAttributes(baseSchema.Attributes)
+	}
+
 	// Add timeouts block to the schema
 	baseSchema.Blocks = map[string]schema.Block{
 		"timeouts": timeouts.Block(ctx, timeouts.Opts{
@@ -190,12 +214,28 @@ func (r *BaseConnectorResource) Schema(ctx context.Context, req resource.SchemaR
 	resp.Schema = baseSchema
 }
 
+// ValidateConfig rejects a configuration that mixes the released flat SMT
+// attributes with the nested chain. Connectors without the chain have
+// nothing to validate here.
+func (r *BaseConnectorResource) ValidateConfig(ctx context.Context, req resource.ValidateConfigRequest, resp *resource.ValidateConfigResponse) {
+	if r.smt == nil {
+		return
+	}
+	resp.Diagnostics.Append(r.smt.ValidateConfig(ctx, req.Config)...)
+}
+
 // ModifyPlan aligns aliases before marshaling: schema defaults can otherwise
-// give two attributes different planned values for the same API field.
+// give two attributes different planned values for the same API field. With
+// the chain enabled it then correlates chain entries to prior state by key.
 func (r *BaseConnectorResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	if req.Plan.Raw.IsNull() {
 		return
 	}
+	defer func() {
+		if r.smt != nil && !resp.Diagnostics.HasError() {
+			resp.Diagnostics.Append(r.smt.ModifyPlan(ctx, req.Config, req.State, &resp.Plan)...)
+		}
+	}()
 	model := r.config.NewModelInstance()
 	resp.Diagnostics.Append(req.Config.Get(ctx, model)...)
 	if resp.Diagnostics.HasError() {
@@ -345,6 +385,17 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	// Nothing precedes a create: no chain and no revision.
+	var priorChain types.List
+	priorRevision := types.StringNull()
+	if r.smt != nil {
+		priorChain = types.ListNull(r.smt.Chain.EntryType)
+	}
+	chain, plannedFlat, ok := r.planChain(ctx, req.Plan, priorChain, req.Config, configMap, &resp.Diagnostics)
+	if !ok {
+		return
+	}
+
 	// Never log configMap: it holds decrypted credentials keyed by API field name
 	// and bypasses the redaction applied to the request body in internal/api.
 	tflog.Debug(ctx, fmt.Sprintf("Creating %s %s", r.config.GetConnectorType(), r.config.GetConnectorCode()))
@@ -415,9 +466,14 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	r.configMapToModel(ctx, responseConfig, model)
 	shared.PreserveKnownFields(model, plannedSecrets)
 	shared.FillNullFields(model, plannedDefaults)
+	shared.PinFields(model, plannedFlat)
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	// The connector exists from here on. A failed chain write still records
+	// it, so Terraform taints the resource instead of losing the record and
+	// colliding on the name at the next apply.
+	r.applyChain(ctx, id, chain, priorChain, priorRevision, &resp.State, &resp.Diagnostics)
 }
 
 // Read reads the connector resource.
@@ -540,6 +596,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	r.refreshChain(ctx, id, req.State, &resp.State, &resp.Diagnostics)
 }
 
 // Update updates the connector resource.
@@ -601,6 +658,20 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 			fmt.Sprintf("Error updating %s %s", r.config.GetConnectorType(), r.config.GetConnectorCode()),
 			fmt.Sprintf("Unable to marshal configuration: %s", err),
 		)
+		return
+	}
+
+	var priorChain types.List
+	var priorRevision types.String
+	if r.smt != nil {
+		resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root(smt.AttrChain), &priorChain)...)
+		resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root(smt.AttrRevision), &priorRevision)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+	chain, plannedFlat, ok := r.planChain(ctx, req.Plan, priorChain, req.Config, configMap, &resp.Diagnostics)
+	if !ok {
 		return
 	}
 
@@ -667,6 +738,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 	r.configMapToModel(ctx, responseConfig, model)
 	shared.PreserveKnownFields(model, plannedSecrets)
 	shared.FillNullFields(model, plannedDefaults)
+	shared.PinFields(model, plannedFlat)
 
 	// connector_status handling on Update.
 	//
@@ -695,6 +767,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	r.applyChain(ctx, id, chain, priorChain, priorRevision, &resp.State, &resp.Diagnostics)
 }
 
 // Delete deletes the connector resource.
@@ -769,9 +842,110 @@ func (r *BaseConnectorResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 }
 
-// ImportState imports an existing resource by ID.
+// ImportState imports an existing resource by ID. With the chain enabled it
+// also writes the empty chain that marks the surface as managed, so the Read
+// that follows adopts the server instances under keys derived from their ids.
 func (r *BaseConnectorResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	if r.smt != nil {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(smt.AttrChain), r.smt.ImportMarker())...)
+	}
+}
+
+// chainKind is the API path segment for this connector type.
+func (r *BaseConnectorResource) chainKind() string {
+	return string(r.config.GetConnectorType()) + "s"
+}
+
+// chainClient is the API client's chain surface, or an error diagnostic when
+// the configured client cannot drive the chain.
+func (r *BaseConnectorResource) chainClient(diags *diag.Diagnostics) (api.SMTChainAPI, bool) {
+	client, ok := r.client.(api.SMTChainAPI)
+	if !ok {
+		diags.AddError("Unconfigured Resource", fmt.Sprintf("Expected an API client that manages transform chains, got %T. Please report this issue to the provider developers.", r.client))
+	}
+	return client, ok
+}
+
+// planChain projects the planned chain and secret operations before the
+// connector request is sent, and drops every flat SMT key from the wire
+// config when the chain owns the surface. It returns the planned values of
+// the flat SMT attributes so the API echo cannot move them. Without the chain
+// everything is a no-op.
+func (r *BaseConnectorResource) planChain(ctx context.Context, plan tfsdk.Plan, prior types.List, config tfsdk.Config, configMap map[string]any, diags *diag.Diagnostics) (*smt.Write, map[string]attr.Value, bool) {
+	if r.smt == nil {
+		return nil, nil, true
+	}
+	write, d := r.smt.PlanWrite(ctx, plan, prior, config)
+	diags.Append(d...)
+	if diags.HasError() {
+		return nil, nil, false
+	}
+	if !write.Configured {
+		return write, nil, true
+	}
+	r.smt.StripFlat(configMap)
+	model := r.config.NewModelInstance()
+	diags.Append(plan.Get(ctx, model)...)
+	if diags.HasError() {
+		return nil, nil, false
+	}
+	return write, shared.CaptureFields(model, r.smt.FlatSMT), true
+}
+
+// applyChain writes the chain and the secret operations after the connector
+// request succeeded, and records the result in state. A failed write keeps
+// the prior chain and revision: the server chain did not move, and state
+// must hold no unknown from the plan.
+func (r *BaseConnectorResource) applyChain(ctx context.Context, id string, write *smt.Write, priorChain types.List, priorRevision types.String, state *tfsdk.State, diags *diag.Diagnostics) {
+	if r.smt == nil || diags.HasError() {
+		return
+	}
+	chain, revision := priorChain, priorRevision
+	if client, ok := r.chainClient(diags); ok {
+		applied, appliedRevision, d := r.smt.Apply(ctx, client, r.chainKind(), id, write, priorRevision)
+		diags.Append(d...)
+		if !d.HasError() {
+			chain, revision = applied, appliedRevision
+		}
+	}
+	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrChain), chain)...)
+	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrRevision), revision)...)
+}
+
+// refreshChain reads the chain back under the keys prior state holds. The
+// flat SMT attributes are pinned to prior state whenever the chain owns the
+// surface, so whatever the backend projects into the legacy keys never
+// becomes state.
+func (r *BaseConnectorResource) refreshChain(ctx context.Context, id string, priorState tfsdk.State, state *tfsdk.State, diags *diag.Diagnostics) {
+	if r.smt == nil || diags.HasError() {
+		return
+	}
+	var prior types.List
+	diags.Append(priorState.GetAttribute(ctx, path.Root(smt.AttrChain), &prior)...)
+	if diags.HasError() {
+		return
+	}
+	if prior.IsNull() {
+		diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrRevision), types.StringNull())...)
+		return
+	}
+	client, ok := r.chainClient(diags)
+	if !ok {
+		return
+	}
+	chain, revision, d := r.smt.Refresh(ctx, client, r.chainKind(), id, prior)
+	diags.Append(d...)
+	if diags.HasError() {
+		return
+	}
+	for _, name := range r.smt.FlatSMT {
+		var v attr.Value
+		diags.Append(priorState.GetAttribute(ctx, path.Root(name), &v)...)
+		diags.Append(state.SetAttribute(ctx, path.Root(name), v)...)
+	}
+	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrChain), chain)...)
+	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrRevision), revision)...)
 }
 
 // modelToConfigMap converts a model struct to a config map using the field mappings.

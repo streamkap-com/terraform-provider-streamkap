@@ -1,4 +1,4 @@
-package smtproto
+package smt
 
 import (
 	"encoding/json"
@@ -14,11 +14,10 @@ func entry(t *testing.T, cs *ChainSchema, key, typeID, name string, child map[st
 	set := map[string]attr.Value{
 		attrKey:           types.StringValue(key),
 		attrType:          types.StringValue(typeID),
+		attrName:          types.StringValue(name),
+		attrEnabled:       types.BoolValue(true),
 		attrAlias:         types.StringValue("server-alias"),
 		attrSchemaVersion: types.Int64Value(1),
-	}
-	if name != "" {
-		set[attrName] = types.StringValue(name)
 	}
 	if child != nil {
 		set[typeID] = objectWith(t, cs.EntryType.AttributeTypes()[typeID].(types.ObjectType), child)
@@ -29,9 +28,9 @@ func entry(t *testing.T, cs *ChainSchema, key, typeID, name string, child map[st
 	return objectWith(t, cs.EntryType, set)
 }
 
-// The DTO carries type, optional name, the echoed id of a matched instance
-// and the unwrapped config child. Key, alias and schema version never leave
-// the provider.
+// The DTO carries type, name, the enabled flag, the echoed id of a matched
+// instance, the unwrapped config child and the key's secret operations. Key,
+// alias and schema version never leave the provider.
 func TestProject(t *testing.T) {
 	cs := buildChain(t)
 	nested := nestedChildType(t, cs)
@@ -50,13 +49,17 @@ func TestProject(t *testing.T) {
 	}
 	planned := types.ListValueMust(cs.EntryType, []attr.Value{
 		entry(t, cs, "matched", "contract_fixture_nested", "East", child, map[string]attr.Value{attrID: types.StringValue("inst-1")}),
-		entry(t, cs, "new", "contract_fixture_nested", "", child, map[string]attr.Value{attrID: types.StringUnknown()}),
+		entry(t, cs, "new", "contract_fixture_nested", "West", child, map[string]attr.Value{attrID: types.StringUnknown(), attrEnabled: types.BoolValue(false)}),
 	})
 	correlated := []Correlated{
 		{Key: "matched", Type: "contract_fixture_nested", ID: "inst-1", Alias: "server-alias", SchemaVersion: 1, Matched: true},
 		{Key: "new", Type: "contract_fixture_nested"},
 	}
-	writes, diags := cs.Project(planned, correlated)
+	ops := []SecretOp{
+		{Key: "new", Pointer: "/routes/row-east/token", Value: "v"},
+		{Key: "new", Pointer: "/routes/row~0west~11/token", Clear: true},
+	}
+	writes, diags := cs.Project(planned, correlated, ops)
 	require.False(t, diags.HasError(), "%v", diags)
 	require.Len(t, writes, 2)
 
@@ -67,13 +70,20 @@ func TestProject(t *testing.T) {
 
 	require.Equal(t, "inst-1", wire[0]["id"])
 	require.Equal(t, "East", wire[0]["name"])
+	require.Equal(t, true, wire[0]["enabled"])
+	_, hasOps := wire[0]["secret_operations"]
+	require.False(t, hasOps, "an instance without operations sends none")
 	_, hasID := wire[1]["id"]
 	require.False(t, hasID, "a new key sends no id")
-	_, hasName := wire[1]["name"]
-	require.False(t, hasName)
+	require.Equal(t, "West", wire[1]["name"])
+	require.Equal(t, false, wire[1]["enabled"])
+	require.Equal(t, []any{
+		map[string]any{"pointer": "/routes/row-east/token", "operation": "replace", "value": "v"},
+		map[string]any{"pointer": "/routes/row~0west~11/token", "operation": "clear"},
+	}, wire[1]["secret_operations"], "operations ride with their instance")
 	for _, w := range wire {
 		require.Equal(t, "contract_fixture_nested", w["type"])
-		for _, forbidden := range []string{"key", "alias", "schema_version", "contract_fixture_nested", "contract_fixture_deep"} {
+		for _, forbidden := range []string{"key", "alias", "schema_version", "secret_version", "predicate", "contract_fixture_nested", "contract_fixture_deep"} {
 			_, has := w[forbidden]
 			require.False(t, has, "%s must not be on the wire", forbidden)
 		}
@@ -87,14 +97,14 @@ func TestProject_RejectsWrongOrMissingChild(t *testing.T) {
 	deep := cs.EntryType.AttributeTypes()["contract_fixture_deep"].(types.ObjectType)
 
 	missing := types.ListValueMust(cs.EntryType, []attr.Value{entry(t, cs, "a", "contract_fixture_nested", "", nil, nil)})
-	_, diags := cs.Project(missing, []Correlated{{Key: "a", Type: "contract_fixture_nested"}})
+	_, diags := cs.Project(missing, []Correlated{{Key: "a", Type: "contract_fixture_nested"}}, nil)
 	require.True(t, diags.HasError())
 	require.Equal(t, "Missing config child", diags.Errors()[0].Summary())
 
 	wrong := types.ListValueMust(cs.EntryType, []attr.Value{entry(t, cs, "a", "contract_fixture_nested", "", nil, map[string]attr.Value{
 		"contract_fixture_deep": objectWith(t, deep, nil),
 	})})
-	_, diags = cs.Project(wrong, []Correlated{{Key: "a", Type: "contract_fixture_nested"}})
+	_, diags = cs.Project(wrong, []Correlated{{Key: "a", Type: "contract_fixture_nested"}}, nil)
 	require.True(t, diags.HasError())
 	summaries := []string{}
 	for _, d := range diags.Errors() {

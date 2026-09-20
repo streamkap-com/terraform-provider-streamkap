@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -25,7 +26,7 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/tag"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/topic"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/transform"
-	"github.com/streamkap-com/terraform-provider-streamkap/internal/smtproto"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/smt"
 )
 
 // SchemaSnapshot represents a saved schema for backwards compatibility testing.
@@ -349,41 +350,78 @@ func compareAgainstSnapshot(t *testing.T, snapshotFile string, currentSnapshot S
 
 func checkAttributeCompatibility(t *testing.T, kind string, baseline, current map[string]AttributeInfo) int {
 	t.Helper()
-	breakingChanges := 0
+	changes := breakingChanges(kind, baseline, current)
+	for _, msg := range changes {
+		t.Error(msg)
+	}
+	for name, before := range baseline {
+		if _, exists := current[name]; !exists && before.Computed && !isSMTChild(name) {
+			t.Logf("WARNING: Computed %s %q was removed - may break user references", kind, name)
+		}
+	}
+	return len(changes)
+}
+
+// isSMTChild reports whether a nested attribute path is inside an SMT chain
+// entry: the typed config children and the entry's own fields.
+func isSMTChild(path string) bool {
+	return strings.HasPrefix(path, smt.AttrChain+".")
+}
+
+// breakingChanges lists the incompatibilities between a baseline snapshot and
+// the current schema. Every entry is a failure; the messages that say so must
+// not be resolved by regenerating the snapshot.
+//
+// Under smt_chain the rules are stricter than for the released flat surface.
+// The typed config child of a catalog type is the provider's copy of a
+// contract: an attribute that disappears, a Required leaf that becomes
+// Optional or a typed leaf that becomes Dynamic is the contract being
+// weakened rather than the schema evolving, and the compat gate must fail on
+// it even though none of those is a breaking change for a practitioner.
+func breakingChanges(kind string, baseline, current map[string]AttributeInfo) []string {
+	var out []string
 	for name, before := range baseline {
 		after, exists := current[name]
 		if !exists && before.Required {
-			t.Errorf("BREAKING CHANGE: Required %s %q was removed", kind, name)
-			breakingChanges++
+			out = append(out, fmt.Sprintf("BREAKING CHANGE: Required %s %q was removed", kind, name))
 			continue
 		}
-		if exists && before.Optional && !before.Required && after.Required {
-			t.Errorf("BREAKING CHANGE: %s %q changed from optional to required", kind, name)
-			breakingChanges++
+		if !exists && isSMTChild(name) {
+			out = append(out, fmt.Sprintf("BREAKING CHANGE (SMT CONTRACT): %s %q was removed from the typed chain schema; the catalog type lost a constraint", kind, name))
+			continue
+		}
+		if !exists {
+			continue
+		}
+		if before.Optional && !before.Required && after.Required {
+			out = append(out, fmt.Sprintf("BREAKING CHANGE: %s %q changed from optional to required", kind, name))
+		}
+		if isSMTChild(name) && before.Required && !after.Required {
+			out = append(out, fmt.Sprintf("BREAKING CHANGE (SMT CONTRACT): %s %q is no longer Required; the catalog type lost a constraint", kind, name))
 		}
 		// A credential losing Sensitive is caught by the generic drift check too,
 		// but that reports it as a stale snapshot whose stated remedy is
 		// `make snapshots` — which would silently bless the downgrade. Call it
 		// out separately so it cannot be resolved by regenerating.
-		if exists && before.Sensitive && !after.Sensitive {
-			t.Errorf("BREAKING CHANGE (SECURITY): %s %q is no longer Sensitive; its value would now appear in plan output and state as plaintext. "+
-				"Do NOT resolve this with `make snapshots` — restore the flag at its source (tfgen isSecretField, or the backend field's encrypt/control).", kind, name)
-			breakingChanges++
+		if before.Sensitive && !after.Sensitive {
+			out = append(out, fmt.Sprintf("BREAKING CHANGE (SECURITY): %s %q is no longer Sensitive; its value would now appear in plan output and state as plaintext. "+
+				"Do NOT resolve this with `make snapshots` — restore the flag at its source (tfgen isSecretField, or the backend field's encrypt/control).", kind, name))
 		}
-		if exists && before.WriteOnly && !after.WriteOnly {
-			t.Errorf("BREAKING CHANGE (SECURITY): %s %q is no longer WriteOnly; its value would now be stored in plan and state. "+
-				"Do NOT resolve this with `make snapshots` — restore the flag at its source.", kind, name)
-			breakingChanges++
+		if before.WriteOnly && !after.WriteOnly {
+			out = append(out, fmt.Sprintf("BREAKING CHANGE (SECURITY): %s %q is no longer WriteOnly; its value would now be stored in plan and state. "+
+				"Do NOT resolve this with `make snapshots` — restore the flag at its source.", kind, name))
 		}
-		if exists && before.Type != "" && before.Type != after.Type {
-			t.Errorf("BREAKING CHANGE: %s %q changed type from %s to %s", kind, name, before.Type, after.Type)
-			breakingChanges++
-		}
-		if !exists && before.Computed {
-			t.Logf("WARNING: Computed %s %q was removed - may break user references", kind, name)
+		if before.Type != "" && before.Type != after.Type {
+			out = append(out, fmt.Sprintf("BREAKING CHANGE: %s %q changed type from %s to %s", kind, name, before.Type, after.Type))
 		}
 	}
-	return breakingChanges
+	for name, after := range current {
+		if isSMTChild(name) && strings.Contains(after.Type, "Dynamic") {
+			out = append(out, fmt.Sprintf("BREAKING CHANGE (SMT CONTRACT): %s %q is Dynamic; the typed chain schema never falls back to a dynamic type", kind, name))
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 func collectDrift[T comparable](kind string, baseline, current map[string]T, added, removed, changed *[]string) {
@@ -1013,40 +1051,95 @@ func TestSchemaBackwardsCompatibility_KafkaUser(t *testing.T) {
 	})
 }
 
-// The SMT prototype is not registered in the provider; its snapshot exists so
-// the secret input is pinned as WriteOnly the same way credentials are pinned
-// as Sensitive. Every value row of smt_secrets must stay out of state.
-func TestSchemaBackwardsCompatibility_SMTPrototype(t *testing.T) {
-	cat := smtprotoCatalog(t)
-	factory := func() resource.Resource {
-		res, err := smtproto.NewResource(nil, cat)
-		require.NoError(t, err)
-		return res
-	}
-	runSchemaCompatTest(t, schemaCompatTestCase{
-		name:            "smtproto_source_postgresql",
-		snapshotFile:    "smtproto_source_postgresql_v0.json",
-		resourceFactory: factory,
-	})
+// The two connectors that opt into the SMT chain pin the secret input as
+// WriteOnly the same way credentials are pinned as Sensitive: every value row
+// of smt_secrets must stay out of state, and the snapshot records it.
+func TestSchemaBackwardsCompatibility_SMTChainResources(t *testing.T) {
+	for _, tc := range []schemaCompatTestCase{
+		{name: "source_postgresql", snapshotFile: "source_postgresql_v1.json", resourceFactory: source.NewPostgreSQLResource},
+		{name: "destination_snowflake", snapshotFile: "destination_snowflake_v1.json", resourceFactory: destination.NewSnowflakeResource},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			schemaResp := &resource.SchemaResponse{}
+			tc.resourceFactory().Schema(context.Background(), resource.SchemaRequest{}, schemaResp)
+			require.False(t, schemaResp.Diagnostics.HasError())
+			snapshot := extractSchemaSnapshot(schemaResp.Schema)
+			require.Contains(t, snapshot.Attributes, smt.AttrChain)
+			require.Contains(t, snapshot.Attributes, smt.AttrRevision)
+			for _, p := range []string{"smt_secrets.values", "smt_secrets.values.pointer", "smt_secrets.values.value", "smt_secrets.values.clear"} {
+				info, ok := snapshot.NestedAttributes[p]
+				require.True(t, ok, "%s missing from schema", p)
+				require.True(t, info.WriteOnly, "%s must be WriteOnly", p)
+				require.False(t, info.Computed, "%s must not be Computed", p)
+			}
+			require.False(t, snapshot.NestedAttributes["smt_secrets.version"].WriteOnly, "the rotation version is the one stateful part")
+			require.True(t, snapshot.NestedAttributes["smt_secrets.values.value"].Sensitive)
 
-	schemaResp := &resource.SchemaResponse{}
-	factory().Schema(context.Background(), resource.SchemaRequest{}, schemaResp)
-	snapshot := extractSchemaSnapshot(schemaResp.Schema)
-	for _, p := range []string{"smt_secrets.values", "smt_secrets.values.pointer", "smt_secrets.values.value", "smt_secrets.values.clear"} {
-		info, ok := snapshot.NestedAttributes[p]
-		require.True(t, ok, "%s missing from schema", p)
-		require.True(t, info.WriteOnly, "%s must be WriteOnly", p)
-		require.False(t, info.Computed, "%s must not be Computed", p)
+			baselineRaw, err := os.ReadFile(filepath.Join("testdata", "schemas", tc.snapshotFile))
+			require.NoError(t, err)
+			var baseline SchemaSnapshot
+			require.NoError(t, json.Unmarshal(baselineRaw, &baseline))
+			for _, p := range []string{"smt_secrets.values", "smt_secrets.values.pointer", "smt_secrets.values.value", "smt_secrets.values.clear"} {
+				require.True(t, baseline.NestedAttributes[p].WriteOnly, "the committed snapshot must record %s as write_only", p)
+			}
+		})
 	}
-	require.False(t, snapshot.NestedAttributes["smt_secrets.version"].WriteOnly, "the rotation version is the one stateful part")
-	require.True(t, snapshot.NestedAttributes["smt_secrets.values.value"].Sensitive)
 }
 
-func smtprotoCatalog(t *testing.T) smtproto.Catalog {
-	t.Helper()
-	corpus, err := smtproto.LoadCorpus(filepath.Join("..", "smtproto", "testdata", "contract_corpus.json"))
-	require.NoError(t, err)
-	return smtproto.NewCatalog(corpus)
+// The compat gate itself: a secret input that becomes stateful and a typed
+// chain child that loses a constraint or weakens to Dynamic are failures no
+// snapshot refresh can bless.
+func TestBreakingChanges_SMTGates(t *testing.T) {
+	str := AttributeInfo{Required: true, Type: "basetypes.StringType"}
+	secret := AttributeInfo{Optional: true, WriteOnly: true, Sensitive: true, Type: "basetypes.StringType"}
+	cases := []struct {
+		name     string
+		baseline map[string]AttributeInfo
+		current  map[string]AttributeInfo
+		want     string
+	}{
+		{
+			name:     "write-only becomes stateful",
+			baseline: map[string]AttributeInfo{"smt_secrets.values.value": secret},
+			current:  map[string]AttributeInfo{"smt_secrets.values.value": {Optional: true, Sensitive: true, Type: "basetypes.StringType"}},
+			want:     "is no longer WriteOnly",
+		},
+		{
+			name:     "optional chain child removed",
+			baseline: map[string]AttributeInfo{"smt_chain.some_type.routes.label": {Optional: true, Type: "basetypes.StringType"}},
+			current:  map[string]AttributeInfo{},
+			want:     "was removed from the typed chain schema",
+		},
+		{
+			name:     "chain child loses required",
+			baseline: map[string]AttributeInfo{"smt_chain.some_type.routes.key": str},
+			current:  map[string]AttributeInfo{"smt_chain.some_type.routes.key": {Optional: true, Type: "basetypes.StringType"}},
+			want:     "is no longer Required",
+		},
+		{
+			name:     "chain child weakens to dynamic",
+			baseline: map[string]AttributeInfo{"smt_chain.some_type.routes": {Optional: true, Type: "types.ListType[...]"}},
+			current:  map[string]AttributeInfo{"smt_chain.some_type.routes": {Optional: true, Type: "basetypes.DynamicType"}},
+			want:     "is Dynamic",
+		},
+		{
+			name:     "flat optional computed removal stays a warning",
+			baseline: map[string]AttributeInfo{"transforms_value_to_key_fields_include_list": {Optional: true, Computed: true, Type: "basetypes.StringType"}},
+			current:  map[string]AttributeInfo{},
+			want:     "",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := breakingChanges("nested attribute", tc.baseline, tc.current)
+			if tc.want == "" {
+				require.Empty(t, got)
+				return
+			}
+			require.NotEmpty(t, got)
+			require.Contains(t, strings.Join(got, "\n"), tc.want)
+		})
+	}
 }
 
 func TestSchemaBackwardsCompatibility_ClientCredential(t *testing.T) {

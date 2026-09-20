@@ -65,12 +65,15 @@ var transformReflectiveFields = []reflectiveField{
 // by hand (they are top-level API fields, not entries of the connector's flat
 // config map), so they legitimately have no fieldMappings row.
 var connectorBaseAttrs = map[string]bool{
-	"id":               true,
-	"name":             true,
-	"connector":        true,
-	"connector_status": true,
-	"kc_cluster_id":    true,
-	"tags":             true,
+	"id":                 true,
+	"name":               true,
+	"connector":          true,
+	"connector_status":   true,
+	"kc_cluster_id":      true,
+	"tags":               true,
+	"smt_chain":          true,
+	"smt_secrets":        true,
+	"smt_chain_revision": true,
 }
 
 // transformBaseAttrs are the transform equivalents. implementation_json, deploy
@@ -214,6 +217,31 @@ func TestModelHasReflectiveFields(t *testing.T) {
 				}
 				assert.Equalf(t, f.typ, field.Type(),
 					"model %T field %q has type %s, want %s", r.model, f.name, field.Type(), f.typ)
+			}
+		})
+	}
+}
+
+// TestSMTChainOptInIsConsistent asserts the two halves of the chain opt-in
+// agree: a model that carries the smt_chain fields belongs to a config that
+// returns the chain schema, and the other way round. A mismatch would only
+// surface at runtime, when req.Plan.Get fails to fit the schema into the
+// model.
+func TestSMTChainOptInIsConsistent(t *testing.T) {
+	for _, r := range mappedResources(t) {
+		if r.baseAttrs["implementation_json"] {
+			continue
+		}
+		t.Run(r.typeName, func(t *testing.T) {
+			_, tfsdkToField := shared.BuildTfsdkFieldIndex(r.model)
+			_, modelHasChain := tfsdkToField["smt_chain"]
+			_, schemaHasChain := r.schema.Attributes["smt_chain"]
+			assert.Equal(t, schemaHasChain, modelHasChain, "model field smt_chain=%v but schema attribute smt_chain=%v", modelHasChain, schemaHasChain)
+			if modelHasChain {
+				for _, name := range []string{"smt_secrets", "smt_chain_revision"} {
+					assert.Contains(t, tfsdkToField, name)
+					assert.Contains(t, r.schema.Attributes, name)
+				}
 			}
 		})
 	}

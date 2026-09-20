@@ -1,7 +1,9 @@
-// Package smtproto is a feasibility prototype for the nested SMT chain
-// representation on connector resources. It is not registered in the
-// provider; its tests are the evidence.
-package smtproto
+// Package smt is the nested SMT chain representation on connector resources:
+// the typed schema derived from a pinned catalog artifact, the value codec
+// between framework values and the wire, key correlation, the write-only
+// secret input and the plan/apply logic the connector base resource drives
+// when a generated connector opts in.
+package smt
 
 import (
 	"encoding/json"
@@ -59,9 +61,22 @@ func LoadCorpus(path string) (*Corpus, error) {
 	if err != nil {
 		return nil, fmt.Errorf("LoadCorpus: %w", err)
 	}
+	c, err := ParseCorpus(raw)
+	if err != nil {
+		return nil, fmt.Errorf("LoadCorpus %s: %w", path, err)
+	}
+	return c, nil
+}
+
+// ParseCorpus decodes the artifact bytes and returns its types in a stable
+// order.
+func ParseCorpus(raw []byte) (*Corpus, error) {
 	var c Corpus
 	if err := json.Unmarshal(raw, &c); err != nil {
-		return nil, fmt.Errorf("LoadCorpus %s: %w", path, err)
+		return nil, fmt.Errorf("ParseCorpus: %w", err)
+	}
+	if c.ContractVersion == 0 {
+		return nil, fmt.Errorf("ParseCorpus: contract_version is missing, this is not a catalog artifact")
 	}
 	sort.Slice(c.Types, func(i, j int) bool { return c.Types[i].TypeID < c.Types[j].TypeID })
 	return &c, nil
@@ -77,6 +92,19 @@ func NewCatalog(c *Corpus) Catalog {
 		cat[c.Types[i].TypeID] = &c.Types[i]
 	}
 	return cat
+}
+
+// Publishable returns the catalog without its publishable: false entries. A
+// non-publishable type is a contract fixture and must never be offered by the
+// generated schema, so both generation and the runtime build from this view.
+func (c Catalog) Publishable() Catalog {
+	out := make(Catalog, len(c))
+	for id, spec := range c {
+		if spec.Publishable {
+			out[id] = spec
+		}
+	}
+	return out
 }
 
 // TypeIDs returns the catalog's type ids sorted, the order schema attributes

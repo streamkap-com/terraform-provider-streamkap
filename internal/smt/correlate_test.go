@@ -1,9 +1,11 @@
-package smtproto
+package smt
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 )
 
 // Identity follows the provider key and nothing else: not position, not
@@ -77,16 +79,16 @@ func TestCorrelate(t *testing.T) {
 }
 
 func TestImportKeys(t *testing.T) {
-	keys, err := ImportKeys([]InstanceRead{{ID: "inst-9"}, {ID: "inst-3"}})
+	keys, err := ImportKeys([]api.SMTInstanceRead{{ID: "inst-9"}, {ID: "inst-3"}})
 	require.NoError(t, err)
 	require.Equal(t, []string{"inst-9", "inst-3"}, keys)
 
-	again, err := ImportKeys([]InstanceRead{{ID: "inst-9"}, {ID: "inst-3"}})
+	again, err := ImportKeys([]api.SMTInstanceRead{{ID: "inst-9"}, {ID: "inst-3"}})
 	require.NoError(t, err)
 	require.Equal(t, keys, again, "derivation is deterministic")
 
-	_, err = ImportKeys([]InstanceRead{{ID: "inst-9"}, {ID: "inst-9"}})
+	_, err = ImportKeys([]api.SMTInstanceRead{{ID: "inst-9"}, {ID: "inst-9"}})
 	require.Error(t, err)
-	_, err = ImportKeys([]InstanceRead{{ID: ""}})
+	_, err = ImportKeys([]api.SMTInstanceRead{{ID: ""}})
 	require.Error(t, err)
 }

@@ -1,4 +1,4 @@
-package smtproto
+package smt
 
 import (
 	"context"
@@ -12,8 +12,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 )
 
 // Attribute names of the nested SMT surface on a connector resource.
@@ -24,6 +27,7 @@ const (
 	attrKey           = "key"
 	attrType          = "type"
 	attrName          = "name"
+	attrEnabled       = "enabled"
 	attrID            = "id"
 	attrAlias         = "alias"
 	attrSchemaVersion = "schema_version"
@@ -45,9 +49,10 @@ type ChainSchema struct {
 }
 
 // BuildChain derives smt_chain from the catalog. Each entry carries an
-// immutable provider key, the type, a mutable display name, the computed
-// server identity, and one config child per catalog type, of which exactly
-// the one named by `type` may be set.
+// immutable provider key, the type, a mutable display name the wire
+// requires, the enabled flag, the computed server identity, and one config
+// child per catalog type, of which exactly the one named by `type` may be
+// set.
 func BuildChain(cat Catalog) (*ChainSchema, error) {
 	cs := &ChainSchema{Catalog: cat, Children: map[string]*ConfigChild{}}
 	attrs := map[string]schema.Attribute{
@@ -58,12 +63,19 @@ func BuildChain(cat Catalog) (*ChainSchema, error) {
 		},
 		attrType: schema.StringAttribute{
 			Required:    true,
-			Description: "Catalog type id. Cannot change under an existing key.",
+			Description: typeDescription(cat.TypeIDs()),
 			Validators:  []validator.String{stringvalidator.OneOf(cat.TypeIDs()...)},
 		},
 		attrName: schema.StringAttribute{
-			Optional:    true,
+			Required:    true,
 			Description: "Mutable display name.",
+			Validators:  []validator.String{stringvalidator.LengthAtLeast(1)},
+		},
+		attrEnabled: schema.BoolAttribute{
+			Optional:    true,
+			Computed:    true,
+			Default:     booldefault.StaticBool(true),
+			Description: "Whether the instance runs. Defaults to true.",
 		},
 		attrID:            schema.StringAttribute{Computed: true, Description: "Server-owned instance id."},
 		attrAlias:         schema.StringAttribute{Computed: true, Description: "Server-owned Kafka Connect alias."},
@@ -88,6 +100,19 @@ func BuildChain(cat Catalog) (*ChainSchema, error) {
 	return cs, nil
 }
 
+// typeDescription lists the admissible types the way the generated enum
+// attributes do, and says so when the pinned catalog publishes none.
+func typeDescription(ids []string) string {
+	if len(ids) == 0 {
+		return "Catalog type id. Cannot change under an existing key. The pinned catalog publishes no type yet, so no value is accepted."
+	}
+	quoted := make([]string, len(ids))
+	for i, id := range ids {
+		quoted[i] = "`" + id + "`"
+	}
+	return "Catalog type id. Cannot change under an existing key. Valid values: " + strings.Join(quoted, ", ") + "."
+}
+
 // SecretsAttribute is the write-only secret input: per instance key, a
 // stateful rotation version and a write-only list of pointer operations.
 // Only the version ever reaches plan or state.
@@ -110,8 +135,8 @@ func SecretsAttribute() schema.ListNestedAttribute {
 					NestedObject: schema.NestedAttributeObject{
 						Attributes: map[string]schema.Attribute{
 							attrPointer: schema.StringAttribute{Required: true, WriteOnly: true, Description: "Canonical secret pointer, for example /routes/row-east/token."},
-							attrValue:   schema.StringAttribute{Optional: true, WriteOnly: true, Sensitive: true},
-							attrClear:   schema.BoolAttribute{Optional: true, WriteOnly: true},
+							attrValue:   schema.StringAttribute{Optional: true, WriteOnly: true, Sensitive: true, Description: "New secret value. Exactly one of value and clear is set."},
+							attrClear:   schema.BoolAttribute{Optional: true, WriteOnly: true, Description: "Clear the secret instead of replacing it."},
 						},
 					},
 				},
@@ -186,30 +211,11 @@ func SecretEntriesFromList(list types.List) []SecretEntry {
 	return out
 }
 
-// InstanceWrite is the instance DTO the API receives: the provider key and
-// the computed alias and schema version are gone, the id is echoed only for a
-// matched instance, and the config is the selected child, unwrapped.
-type InstanceWrite struct {
-	ID     string         `json:"id,omitempty"`
-	Type   string         `json:"type"`
-	Name   *string        `json:"name,omitempty"`
-	Config map[string]any `json:"config"`
-}
-
-// InstanceRead is what the API returns for one persisted instance.
-type InstanceRead struct {
-	ID            string         `json:"id"`
-	Alias         string         `json:"alias"`
-	Type          string         `json:"type"`
-	SchemaVersion int64          `json:"schema_version"`
-	Name          *string        `json:"name,omitempty"`
-	Config        map[string]any `json:"config"`
-}
-
 // Project turns the planned chain into instance DTOs, joined to the prior
-// identities. The entry's config child must be the one its type names and
-// no other child may be set.
-func (cs *ChainSchema) Project(planned types.List, correlated []Correlated) ([]InstanceWrite, diag.Diagnostics) {
+// identities, with each key's secret operations carried by its instance. The
+// entry's config child must be the one its type names and no other child
+// may be set.
+func (cs *ChainSchema) Project(planned types.List, correlated []Correlated, ops []SecretOp) ([]api.SMTInstanceWrite, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if planned.IsNull() || planned.IsUnknown() {
 		return nil, nil
@@ -219,18 +225,27 @@ func (cs *ChainSchema) Project(planned types.List, correlated []Correlated) ([]I
 		diags.AddError("Chain correlation mismatch", fmt.Sprintf("%d planned entries, %d correlated", len(elems), len(correlated)))
 		return nil, diags
 	}
-	out := make([]InstanceWrite, 0, len(elems))
+	out := make([]api.SMTInstanceWrite, 0, len(elems))
 	for i, e := range elems {
 		at := path.Root(AttrChain).AtListIndex(i)
 		obj := e.(types.Object).Attributes()
 		c := correlated[i]
-		w := InstanceWrite{Type: c.Type}
+		w := api.SMTInstanceWrite{Type: c.Type, Name: str(obj[attrName]), Enabled: true}
 		if c.Matched {
 			w.ID = c.ID
 		}
-		if n, ok := obj[attrName].(types.String); ok && !n.IsNull() && !n.IsUnknown() {
-			name := n.ValueString()
-			w.Name = &name
+		if b, ok := obj[attrEnabled].(types.Bool); ok && !b.IsNull() && !b.IsUnknown() {
+			w.Enabled = b.ValueBool()
+		}
+		for _, op := range ops {
+			if op.Key != c.Key {
+				continue
+			}
+			wire := api.SMTSecretOperation{Pointer: op.Pointer, Operation: api.SMTSecretReplace, Value: op.Value}
+			if op.Clear {
+				wire = api.SMTSecretOperation{Pointer: op.Pointer, Operation: api.SMTSecretClear}
+			}
+			w.SecretOperations = append(w.SecretOperations, wire)
 		}
 		for _, id := range cs.Catalog.TypeIDs() {
 			child := obj[id]
@@ -259,13 +274,14 @@ func (cs *ChainSchema) Project(planned types.List, correlated []Correlated) ([]I
 // EntryValue builds the state entry for one server instance under the
 // provider key it correlates to. secretVersion is provider-owned state the
 // server never sees.
-func (cs *ChainSchema) EntryValue(ctx context.Context, key string, read InstanceRead, secretVersion int64) (types.Object, diag.Diagnostics) {
+func (cs *ChainSchema) EntryValue(ctx context.Context, key string, read api.SMTInstanceRead, secretVersion int64) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	attrTypes := cs.EntryType.AttributeTypes()
 	values := map[string]attr.Value{
 		attrKey:           types.StringValue(key),
 		attrType:          types.StringValue(read.Type),
-		attrName:          types.StringPointerValue(read.Name),
+		attrName:          types.StringValue(read.Name),
+		attrEnabled:       types.BoolValue(read.Enabled),
 		attrID:            types.StringValue(read.ID),
 		attrAlias:         types.StringValue(read.Alias),
 		attrSchemaVersion: types.Int64Value(read.SchemaVersion),
@@ -288,7 +304,7 @@ func (cs *ChainSchema) EntryValue(ctx context.Context, key string, read Instance
 // ChainValue builds the whole state list from server reads, in server order,
 // under the given keys. Keys and reads pair by position; versions holds the
 // last applied rotation version per key, absent meaning never rotated.
-func (cs *ChainSchema) ChainValue(ctx context.Context, keys []string, reads []InstanceRead, versions map[string]int64) (types.List, diag.Diagnostics) {
+func (cs *ChainSchema) ChainValue(ctx context.Context, keys []string, reads []api.SMTInstanceRead, versions map[string]int64) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if len(keys) != len(reads) {
 		diags.AddError("Chain length mismatch", fmt.Sprintf("%d keys for %d server instances", len(keys), len(reads)))
@@ -308,7 +324,7 @@ func (cs *ChainSchema) ChainValue(ctx context.Context, keys []string, reads []In
 // ImportKeys derives a provider key for each server instance from its exact
 // id. Ids are unique per connector, so the keys cannot collide, and the same
 // ids always derive the same keys.
-func ImportKeys(reads []InstanceRead) ([]string, error) {
+func ImportKeys(reads []api.SMTInstanceRead) ([]string, error) {
 	keys := make([]string, 0, len(reads))
 	seen := map[string]bool{}
 	for _, r := range reads {
