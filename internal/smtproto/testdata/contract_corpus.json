@@ -1,0 +1,464 @@
+{
+  "contract_version": 1,
+  "producer": "app.services.smt.contract_corpus",
+  "digest": "sha256:5aef46bc313a0a425013357a4a64d5185a11031ae86040208bc29a9f1cbfedb5",
+  "types": [
+    {
+      "type_id": "contract_fixture_nested",
+      "schema_version": 1,
+      "codec_version": 1,
+      "publishable": false,
+      "data_schema": {
+        "additionalProperties": false,
+        "description": "The whole test-only config tree. Values below match the spec's #smt-recursive-form-data example.",
+        "properties": {
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "retries": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Retries",
+            "type": "integer"
+          },
+          "fallback": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Fallback"
+          },
+          "labels": {
+            "items": {
+              "pattern": "^[^,]+$",
+              "type": "string"
+            },
+            "title": "Labels",
+            "type": "array"
+          },
+          "max_records": {
+            "default": 0,
+            "maximum": 9007199254740993,
+            "minimum": 0,
+            "title": "Max Records",
+            "type": "integer"
+          },
+          "output": {
+            "additionalProperties": false,
+            "description": "A nested object carrying a second ``label`` so duplicate descendant names are covered.",
+            "properties": {
+              "prefix": {
+                "default": "",
+                "title": "Prefix",
+                "type": "string"
+              },
+              "label": {
+                "default": "",
+                "title": "Label",
+                "type": "string"
+              },
+              "retry_limit": {
+                "default": 0,
+                "maximum": 100,
+                "minimum": 0,
+                "title": "Retry Limit",
+                "type": "integer"
+              }
+            },
+            "type": "object",
+            "title": "Output"
+          },
+          "routes": {
+            "items": {
+              "additionalProperties": false,
+              "description": "One secret-bearing row. ``key`` owns retention; ``label`` is a mutable domain label.",
+              "properties": {
+                "key": {
+                  "pattern": "^[^,]{1,64}$",
+                  "title": "Key",
+                  "type": "string"
+                },
+                "label": {
+                  "default": "",
+                  "title": "Label",
+                  "type": "string"
+                },
+                "endpoint": {
+                  "title": "Endpoint",
+                  "type": "string"
+                },
+                "token": {
+                  "default": "",
+                  "format": "password",
+                  "title": "Token",
+                  "type": "string",
+                  "writeOnly": true
+                }
+              },
+              "required": [
+                "key",
+                "endpoint"
+              ],
+              "type": "object"
+            },
+            "title": "Routes",
+            "type": "array"
+          }
+        },
+        "title": "ContractFixtureConfig",
+        "type": "object"
+      },
+      "ui_schema": {
+        "type": "Category",
+        "label": "Contract fixture",
+        "elements": [
+          {
+            "type": "Control",
+            "scope": "#/properties/enabled",
+            "options": {
+              "control": "toggle"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/retries",
+            "options": {
+              "control": "number"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/fallback",
+            "options": {
+              "control": "string"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/labels",
+            "options": {
+              "control": "multi-select"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/max_records",
+            "options": {
+              "control": "number"
+            }
+          },
+          {
+            "type": "Group",
+            "label": "Output",
+            "scope": "#/properties/output",
+            "elements": [
+              {
+                "type": "Control",
+                "scope": "#/properties/output/properties/prefix",
+                "options": {
+                  "control": "string"
+                }
+              },
+              {
+                "type": "Control",
+                "scope": "#/properties/output/properties/label",
+                "options": {
+                  "control": "string"
+                }
+              },
+              {
+                "type": "Control",
+                "scope": "#/properties/output/properties/retry_limit",
+                "options": {
+                  "control": "number"
+                },
+                "rule": {
+                  "condition": {
+                    "schema": {
+                      "const": true
+                    },
+                    "scope": "#/properties/enabled"
+                  },
+                  "effect": "SHOW"
+                }
+              }
+            ]
+          },
+          {
+            "type": "Group",
+            "label": "Routes",
+            "scope": "#/properties/routes",
+            "options": {
+              "control": "object-list"
+            },
+            "elements": [
+              {
+                "type": "Control",
+                "scope": "#/properties/routes/items/properties/key",
+                "options": {
+                  "control": "string"
+                }
+              },
+              {
+                "type": "Control",
+                "scope": "#/properties/routes/items/properties/label",
+                "options": {
+                  "control": "string"
+                }
+              },
+              {
+                "type": "Control",
+                "scope": "#/properties/routes/items/properties/endpoint",
+                "options": {
+                  "control": "string"
+                }
+              },
+              {
+                "type": "Control",
+                "scope": "#/properties/routes/items/properties/token",
+                "options": {
+                  "control": "password"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "secret_paths": [
+        "/routes/*/token"
+      ],
+      "row_keys": {
+        "/routes": "key"
+      },
+      "examples": {
+        "read_projection": {
+          "enabled": false,
+          "retries": 0,
+          "fallback": null,
+          "labels": [],
+          "max_records": 0,
+          "output": {
+            "prefix": "",
+            "label": "",
+            "retry_limit": 0
+          },
+          "routes": [
+            {
+              "key": "row-east",
+              "label": "east",
+              "endpoint": "example.invalid"
+            },
+            {
+              "key": "row~west/1",
+              "label": "west",
+              "endpoint": "other.invalid"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type_id": "contract_fixture_deep",
+      "schema_version": 1,
+      "codec_version": 1,
+      "publishable": false,
+      "data_schema": {
+        "additionalProperties": false,
+        "description": "The two-level config tree: rows inside rows, secrets at both depths.",
+        "properties": {
+          "services": {
+            "items": {
+              "additionalProperties": false,
+              "description": "One outer row: keyed, with a secret-bearing nested object and a secret-bearing nested list.",
+              "properties": {
+                "key": {
+                  "pattern": "^[^,]{1,64}$",
+                  "title": "Key",
+                  "type": "string"
+                },
+                "auth": {
+                  "additionalProperties": false,
+                  "description": "A nested object inside a row, carrying a secret one level below the row itself.",
+                  "properties": {
+                    "username": {
+                      "default": "",
+                      "title": "Username",
+                      "type": "string"
+                    },
+                    "token": {
+                      "default": "",
+                      "format": "password",
+                      "title": "Token",
+                      "type": "string",
+                      "writeOnly": true
+                    }
+                  },
+                  "type": "object",
+                  "title": "Auth"
+                },
+                "endpoints": {
+                  "items": {
+                    "additionalProperties": false,
+                    "description": "A keyed row nested inside another keyed row. ``id`` is the key, proving the key name is declared, not assumed.",
+                    "properties": {
+                      "id": {
+                        "pattern": "^[^,]{1,64}$",
+                        "title": "Id",
+                        "type": "string"
+                      },
+                      "url": {
+                        "default": "",
+                        "title": "Url",
+                        "type": "string"
+                      },
+                      "secret": {
+                        "default": "",
+                        "format": "password",
+                        "title": "Secret",
+                        "type": "string",
+                        "writeOnly": true
+                      }
+                    },
+                    "required": [
+                      "id"
+                    ],
+                    "type": "object"
+                  },
+                  "title": "Endpoints",
+                  "type": "array"
+                }
+              },
+              "required": [
+                "key"
+              ],
+              "type": "object"
+            },
+            "title": "Services",
+            "type": "array"
+          }
+        },
+        "title": "ContractFixtureDeepConfig",
+        "type": "object"
+      },
+      "ui_schema": {
+        "type": "Category",
+        "label": "Contract fixture (nested rows)",
+        "elements": [
+          {
+            "type": "Group",
+            "label": "Services",
+            "scope": "#/properties/services",
+            "options": {
+              "control": "object-list"
+            },
+            "elements": [
+              {
+                "type": "Control",
+                "scope": "#/properties/services/items/properties/key",
+                "options": {
+                  "control": "string"
+                }
+              },
+              {
+                "type": "Group",
+                "label": "Auth",
+                "scope": "#/properties/services/items/properties/auth",
+                "elements": [
+                  {
+                    "type": "Control",
+                    "scope": "#/properties/services/items/properties/auth/properties/username",
+                    "options": {
+                      "control": "string"
+                    }
+                  },
+                  {
+                    "type": "Control",
+                    "scope": "#/properties/services/items/properties/auth/properties/token",
+                    "options": {
+                      "control": "password"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "Group",
+                "label": "Endpoints",
+                "scope": "#/properties/services/items/properties/endpoints",
+                "options": {
+                  "control": "object-list"
+                },
+                "elements": [
+                  {
+                    "type": "Control",
+                    "scope": "#/properties/services/items/properties/endpoints/items/properties/id",
+                    "options": {
+                      "control": "string"
+                    }
+                  },
+                  {
+                    "type": "Control",
+                    "scope": "#/properties/services/items/properties/endpoints/items/properties/url",
+                    "options": {
+                      "control": "string"
+                    }
+                  },
+                  {
+                    "type": "Control",
+                    "scope": "#/properties/services/items/properties/endpoints/items/properties/secret",
+                    "options": {
+                      "control": "password"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "secret_paths": [
+        "/services/*/auth/token",
+        "/services/*/endpoints/*/secret"
+      ],
+      "row_keys": {
+        "/services": "key",
+        "/services/*/endpoints": "id"
+      },
+      "examples": {
+        "read_projection": {
+          "services": [
+            {
+              "key": "svc-a",
+              "auth": {
+                "username": "reader"
+              },
+              "endpoints": [
+                {
+                  "id": "ep/1",
+                  "url": "a.invalid"
+                },
+                {
+                  "id": "ep~2",
+                  "url": "b.invalid"
+                }
+              ]
+            },
+            {
+              "key": "svc-b",
+              "auth": {
+                "username": ""
+              },
+              "endpoints": []
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
