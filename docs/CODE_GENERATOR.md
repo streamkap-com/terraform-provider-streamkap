@@ -114,6 +114,8 @@ tfgen generate --backend-path=/path/to/backend --output=internal/generated
 | `--output` | No | `internal/generated` | Output directory for generated code |
 | `--entity-type` | No | `all` | Entity type: `sources`, `destinations`, `transforms`, or `all` |
 | `--connector` | No | - | Specific connector to generate (e.g., `postgresql`) |
+| `--smt-catalog` | When a connector opts into `smt_chain` | - | Pinned SMT catalog artifact; copied byte-identical to `internal/generated/smt_catalog.json` |
+| `--backend-revision` | With `--smt-catalog` | - | Backend commit the artifact was copied from; recorded in `internal/generated/smt_catalog.go` |
 
 ### Using make generate
 
@@ -122,6 +124,9 @@ The recommended way to run tfgen is via `make generate`:
 ```bash
 # Set the backend path
 export STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap
+# The SMT catalog artifact and the backend commit it was copied from
+export STREAMKAP_SMT_CATALOG=$STREAMKAP_BACKEND_PATH/app/services/smt/fixtures/contract_corpus.json
+export STREAMKAP_BACKEND_REVISION=$(git -C "$STREAMKAP_BACKEND_PATH" rev-parse HEAD)
 
 # Run generation (schemas first, then docs)
 make generate
@@ -139,7 +144,7 @@ The two directives that `make generate` sequences are:
 
 ```go
 // internal/generated/doc.go — schemas/models/mappings (runs first)
-//go:generate go run ../../cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH
+//go:generate go run ../../cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH --output=. --smt-catalog=$STREAMKAP_SMT_CATALOG --backend-revision=$STREAMKAP_BACKEND_REVISION
 
 // main.go — registry docs, introspected from the built provider (runs second)
 //go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
@@ -439,6 +444,21 @@ TopicsConfigMap map[string]clickHouseTopicsConfigMapItemModel `tfsdk:"topics_con
 
 Supported validator types:
 - `int64_at_least`: Minimum value validator
+
+## SMT chain opt-in
+
+`smt_chain_connectors` in `overrides.json` lists the connectors whose generated model carries the nested SMT chain fields (`smt_chain`, `smt_secrets`, `smt_chain_revision`):
+
+```json
+{
+  "smt_chain_connectors": [
+    { "connector": "postgresql", "entity_type": "sources" },
+    { "connector": "snowflake", "entity_type": "destinations" }
+  ]
+}
+```
+
+The chain attributes are not emitted into the connector file. `internal/smt` builds them at runtime from the pinned catalog that `--smt-catalog` embeds into `internal/generated/smt_catalog.{json,go}`, and the connector wrapper opts in by implementing `connector.ConnectorConfigWithSMTChain` (returning `generated.SMTChain()`); the base resource then adds the attributes and drives the chain lifecycle. tfgen runs the same builder over the artifact before writing anything, so a `data_schema` construct the typed representation cannot carry (a polymorphic union, a tuple, a surviving `$ref`, a homogeneous map) fails the run with the type id and the schema path. `publishable: false` types are excluded from the `type` validator and from generation. `kafkadirect` cannot opt in: it carries no `transforms.*` surface. See `docs/smt-provider-feasibility.md` for the representation.
 
 ## Deprecated attribute aliases
 

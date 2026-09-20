@@ -140,6 +140,8 @@ output "example-destination-snowflake" {
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
 - `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `sfwarehouse` (String) The name of the snowflake warehouse. Defaults to `STREAMKAP_WH`.
+- `smt_chain` (Attributes List) Ordered transform chain. Entries are correlated to server instances by key. (see [below for nested schema](#nestedatt--smt_chain))
+- `smt_secrets` (Attributes List) Secret values for chain instances, addressed by canonical pointer. Values are write-only; bump version to rotate. (see [below for nested schema](#nestedatt--smt_secrets))
 - `snowflake_private_key_passphrase` (String, Sensitive) The passphrase is used to decrypt the private key.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
@@ -201,6 +203,54 @@ Example:
 - `connector` (String) Connector type
 - `connector_status` (String) Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
 - `id` (String) Unique identifier for the destination
+- `smt_chain_revision` (String) Chain revision returned by the last read. An update supplies it as the expected revision, so an edit made elsewhere since the last refresh is rejected instead of overwritten.
+
+<a id="nestedatt--smt_chain"></a>
+### Nested Schema for `smt_chain`
+
+Required:
+
+- `key` (String) Immutable provider-side key of this instance. Changing it creates a new instance; it never changes the server id it was matched to.
+- `name` (String) Mutable display name.
+- `type` (String) Catalog type id. Cannot change under an existing key. The pinned catalog publishes no type yet, so no value is accepted.
+
+Optional:
+
+- `enabled` (Boolean) Whether the instance runs. Defaults to true.
+
+Read-Only:
+
+- `alias` (String) Server-owned Kafka Connect alias.
+- `id` (String) Server-owned instance id.
+- `schema_version` (Number) Catalog schema version the instance was persisted with.
+- `secret_version` (Number) Last rotation version applied to this instance; 0 before any rotation. Follows the key, so a removed and re-added secret entry cannot restart below it.
+
+
+<a id="nestedatt--smt_secrets"></a>
+### Nested Schema for `smt_secrets`
+
+Required:
+
+- `key` (String) Instance key in smt_chain.
+- `version` (Number) Positive, monotonic rotation version. Increase it to apply the configured values once.
+
+Optional:
+
+- `values` (Attributes List, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only operations. Each row replaces or clears the secret at one canonical pointer. (see [below for nested schema](#nestedatt--smt_secrets--values))
+
+<a id="nestedatt--smt_secrets--values"></a>
+### Nested Schema for `smt_secrets.values`
+
+Required:
+
+- `pointer` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Canonical secret pointer, for example /routes/row-east/token.
+
+Optional:
+
+- `clear` (Boolean, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Clear the secret instead of replacing it.
+- `value` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) New secret value. Exactly one of value and clear is set.
+
+
 
 <a id="nestedblock--timeouts"></a>
 ### Nested Schema for `timeouts`

@@ -13,6 +13,11 @@
 // Or run tfgen directly (schemas only, no docs):
 //
 //	go run cmd/tfgen/main.go generate --backend-path=/path/to/python-be-streamkap
+//
+// Connectors listed under smt_chain_connectors in cmd/tfgen/overrides.json
+// also need the pinned SMT catalog artifact and the backend revision it was
+// copied from (STREAMKAP_SMT_CATALOG, STREAMKAP_BACKEND_REVISION); the run
+// refuses to consume a catalog it cannot attribute.
 package generated
 
-//go:generate go run ../../cmd/tfgen generate --backend-path=${STREAMKAP_BACKEND_PATH} --output=.
+//go:generate go run ../../cmd/tfgen generate --backend-path=${STREAMKAP_BACKEND_PATH} --output=. --smt-catalog=${STREAMKAP_SMT_CATALOG} --backend-revision=${STREAMKAP_BACKEND_REVISION}

@@ -83,12 +83,16 @@ type Generator struct {
 	outputDir  string
 	entityType string // "source", "destination", "transform"
 	overrides  *OverrideConfig
+	// smtCatalog is true when the run validated a pinned catalog artifact,
+	// which a connector opting into smt_chain requires.
+	smtCatalog bool
 }
 
 // OverrideConfig holds all field overrides for map types and other special cases.
 type OverrideConfig struct {
-	FieldOverrides   []FieldOverride   `json:"field_overrides"`
-	AdditionalFields []AdditionalField `json:"additional_fields"`
+	FieldOverrides     []FieldOverride     `json:"field_overrides"`
+	AdditionalFields   []AdditionalField   `json:"additional_fields"`
+	SMTChainConnectors []SMTChainConnector `json:"smt_chain_connectors"`
 }
 
 // AdditionalField represents an additional field to be added to a connector schema.
@@ -294,6 +298,9 @@ type TemplateData struct {
 	MapFields         []MapFieldData    // Map type fields from overrides
 	NestedModels      []NestedModelData // Nested model definitions for map fields
 	Imports           []string
+	// SMTChain adds the nested chain fields to the model. The attributes
+	// themselves come from the base resource, built from the pinned catalog.
+	SMTChain bool
 }
 
 // MapFieldData holds data for map type fields.
@@ -421,6 +428,15 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 		SchemaFuncName:    entityTypeCap + connectorCodeCap + "Schema",
 		FieldMappingsName: entityTypeCap + connectorCodeCap + "FieldMappings",
 		Fields:            []FieldData{},
+		SMTChain:          g.overrides.hasSMTChain(g.entityType, connectorCode),
+	}
+	// kafkadirect resolves against its plugin config alone and carries no
+	// transforms.* fields, so it has no SMT surface to manage.
+	if data.SMTChain && (connectorCode == "kafkadirect" || g.entityType == "transform") {
+		return nil, fmt.Errorf("overrides.json: smt_chain_connectors lists %s/%s, which has no SMT chain surface", g.entityType, connectorCode)
+	}
+	if data.SMTChain && !g.smtCatalog {
+		return nil, fmt.Errorf("%s/%s opts into smt_chain but no pinned catalog was given; pass --smt-catalog and --backend-revision", g.entityType, connectorCode)
 	}
 
 	// Track which imports we need
@@ -1514,6 +1530,11 @@ type {{ .ModelName }} struct {
 	Deploy             types.Bool           ` + "`" + `tfsdk:"deploy"` + "`" + `
 	ReplayWindow       types.String         ` + "`" + `tfsdk:"replay_window"` + "`" + `
 	ConnectorStatus    types.String         ` + "`" + `tfsdk:"connector_status"` + "`" + `
+{{- end }}
+{{- if .SMTChain }}
+	SMTChain         types.List   ` + "`" + `tfsdk:"smt_chain"` + "`" + `
+	SMTSecrets       types.List   ` + "`" + `tfsdk:"smt_secrets"` + "`" + `
+	SMTChainRevision types.String ` + "`" + `tfsdk:"smt_chain_revision"` + "`" + `
 {{- end }}
 	Timeouts timeouts.Value ` + "`" + `tfsdk:"timeouts"` + "`" + `
 }

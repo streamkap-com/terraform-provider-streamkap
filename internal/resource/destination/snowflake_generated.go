@@ -11,6 +11,7 @@ import (
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/generated"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/connector"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/smt"
 )
 
 // destinationSnowflakeModelWithDeprecated embeds the generated model and adds
@@ -36,8 +37,17 @@ var snowflakeFieldMappings = func() map[string]string {
 // SnowflakeConfig implements the ConnectorConfig interface for Snowflake destinations.
 type SnowflakeConfig struct{}
 
-// Ensure SnowflakeConfig implements ConnectorConfig.
-var _ connector.ConnectorConfig = (*SnowflakeConfig)(nil)
+// Ensure SnowflakeConfig implements ConnectorConfig and opts into the SMT chain.
+var (
+	_ connector.ConnectorConfig             = (*SnowflakeConfig)(nil)
+	_ connector.ConnectorConfigWithSMTChain = (*SnowflakeConfig)(nil)
+)
+
+// GetSMTChain returns the chain schema built from the pinned catalog; the
+// generated model carries the matching fields.
+func (c *SnowflakeConfig) GetSMTChain() *smt.ChainSchema {
+	return generated.SMTChain()
+}
 
 // GetSchema returns the Terraform schema for Snowflake destination.
 func (c *SnowflakeConfig) GetSchema() schema.Schema {

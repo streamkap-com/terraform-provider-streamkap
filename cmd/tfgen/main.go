@@ -28,6 +28,7 @@ var knownEntities = []EntityConfig{
 
 func main() {
 	var backendPath, output, entityType, connector string
+	var smtOpts smtOptions
 
 	generateCmd := &cobra.Command{
 		Use:   "generate",
@@ -38,7 +39,7 @@ configuration.latest.json files from the Streamkap Python backend repository.
 This command reads the configuration schemas for sources, destinations,
 and transforms, then generates the corresponding Terraform provider code.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runGenerate(backendPath, output, entityType, connector)
+			return runGenerate(backendPath, output, entityType, connector, smtOpts)
 		},
 	}
 
@@ -46,6 +47,8 @@ and transforms, then generates the corresponding Terraform provider code.`,
 	generateCmd.Flags().StringVar(&output, "output", "internal/generated", "Output directory for generated code")
 	generateCmd.Flags().StringVar(&entityType, "entity-type", "all", "Entity type to generate: sources, destinations, transforms, or all")
 	generateCmd.Flags().StringVar(&connector, "connector", "", "Specific connector to generate (e.g., postgresql). If empty, generates all connectors.")
+	generateCmd.Flags().StringVar(&smtOpts.CatalogPath, "smt-catalog", "", "Pinned SMT catalog artifact. Required when a connector in overrides.json opts into smt_chain.")
+	generateCmd.Flags().StringVar(&smtOpts.BackendRevision, "backend-revision", "", "Backend commit the SMT catalog artifact was copied from; recorded in the generated provenance.")
 	if err := generateCmd.MarkFlagRequired("backend-path"); err != nil {
 		fmt.Fprintf(os.Stderr, "Error marking flag required: %v\n", err)
 		os.Exit(1)
@@ -69,12 +72,15 @@ ensuring consistency with the backend API.`,
 }
 
 // runGenerate executes the generation process.
-func runGenerate(backendPath, output, entityType, connector string) error {
+func runGenerate(backendPath, output, entityType, connector string, smtOpts smtOptions) error {
 	fmt.Printf("Backend path: %s\n", backendPath)
 	fmt.Printf("Output: %s\n", output)
 	fmt.Printf("Entity type: %s\n", entityType)
 	if connector != "" {
 		fmt.Printf("Connector: %s\n", connector)
+	}
+	if smtOpts.CatalogPath != "" {
+		fmt.Printf("SMT catalog: %s @ backend %s\n", smtOpts.CatalogPath, smtOpts.BackendRevision)
 	}
 	fmt.Println()
 
@@ -103,14 +109,34 @@ func runGenerate(backendPath, output, entityType, connector string) error {
 		}
 	}
 
+	// The catalog is validated before any connector is written, so an
+	// unsupported construct fails the whole run with its type and path rather
+	// than leaving half the fleet regenerated. A connector that opts into the
+	// chain refuses to generate without it.
+	var catalogRaw []byte
+	var catalogProv *smtCatalogProvenance
+	if smtOpts.CatalogPath != "" {
+		catalogRaw, catalogProv, err = loadSMTCatalog(smtOpts)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Process each entity type
 	var totalGenerated int
 	for _, entity := range entitiesToProcess {
-		count, err := processEntity(backendPath, output, entity, connector, overrides)
+		count, err := processEntity(backendPath, output, entity, connector, overrides, catalogProv != nil)
 		if err != nil {
 			return fmt.Errorf("failed to process %s: %w", entity.Type, err)
 		}
 		totalGenerated += count
+	}
+
+	if catalogProv != nil {
+		if err := writeSMTCatalog(output, catalogRaw, catalogProv); err != nil {
+			return err
+		}
+		fmt.Printf("Wrote %s (%d publishable types, backend %s)\n", smtCatalogGoName, catalogProv.PublishableTypes, catalogProv.BackendRevision)
 	}
 
 	fmt.Printf("\nGeneration complete! Generated %d schema files.\n", totalGenerated)
@@ -181,7 +207,7 @@ func filterEntities(entityType string) []EntityConfig {
 }
 
 // processEntity processes all connectors for a given entity type.
-func processEntity(backendPath, output string, entity EntityConfig, specificConnector string, overrides *OverrideConfig) (int, error) {
+func processEntity(backendPath, output string, entity EntityConfig, specificConnector string, overrides *OverrideConfig, smtCatalog bool) (int, error) {
 	pluginDir := filepath.Join(backendPath, entity.PluginDir)
 
 	// Check if plugin directory exists
@@ -197,6 +223,7 @@ func processEntity(backendPath, output string, entity EntityConfig, specificConn
 	}
 
 	generator := NewGeneratorWithOverrides(output, entity.Type, overrides)
+	generator.smtCatalog = smtCatalog
 	var (
 		count    int
 		problems []error

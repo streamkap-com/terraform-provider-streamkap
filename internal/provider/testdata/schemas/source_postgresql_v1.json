@@ -260,6 +260,27 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "smt_chain": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ListType[types.ObjectType[\"alias\":basetypes.StringType, \"enabled\":basetypes.BoolType, \"id\":basetypes.StringType, \"key\":basetypes.StringType, \"name\":basetypes.StringType, \"schema_version\":basetypes.Int64Type, \"secret_version\":basetypes.Int64Type, \"type\":basetypes.StringType]]"
+    },
+    "smt_chain_revision": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_secrets": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ListType[types.ObjectType[\"key\":basetypes.StringType, \"values\":types.ListType[types.ObjectType[\"clear\":basetypes.BoolType, \"pointer\":basetypes.StringType, \"value\":basetypes.StringType]], \"version\":basetypes.Int64Type]]"
+    },
     "snapshot_read_only": {
       "required": false,
       "optional": true,
@@ -497,6 +518,110 @@
       "computed": true,
       "sensitive": false,
       "type": "basetypes.BoolType"
+    }
+  },
+  "nested_attributes": {
+    "smt_chain.alias": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "smt_chain.id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.key": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.name": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.schema_version": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "smt_chain.secret_version": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "smt_chain.type": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_secrets.key": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_secrets.values": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "write_only": true,
+      "type": "types.ListType[types.ObjectType[\"clear\":basetypes.BoolType, \"pointer\":basetypes.StringType, \"value\":basetypes.StringType]]"
+    },
+    "smt_secrets.values.clear": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "write_only": true,
+      "type": "basetypes.BoolType"
+    },
+    "smt_secrets.values.pointer": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "write_only": true,
+      "type": "basetypes.StringType"
+    },
+    "smt_secrets.values.value": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": true,
+      "write_only": true,
+      "type": "basetypes.StringType"
+    },
+    "smt_secrets.version": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     }
   },
   "blocks": {

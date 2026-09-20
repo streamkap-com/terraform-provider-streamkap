@@ -28,5 +28,15 @@
       ]
     }
   ],
-  "additional_fields": []
+  "additional_fields": [],
+  "smt_chain_connectors": [
+    {
+      "connector": "postgresql",
+      "entity_type": "sources"
+    },
+    {
+      "connector": "snowflake",
+      "entity_type": "destinations"
+    }
+  ]
 }

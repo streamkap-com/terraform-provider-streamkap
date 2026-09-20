@@ -81,6 +81,9 @@ type SourcePostgresqlModel struct {
 	TransformsOversizedRecordsSemanticTypesExclude   types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
 	TransformsOversizedRecordsReplaceNullWithDefault types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
 	InsertTopicNameEnabled                           types.Bool     `tfsdk:"insert_topic_name_enabled"`
+	SMTChain                                         types.List     `tfsdk:"smt_chain"`
+	SMTSecrets                                       types.List     `tfsdk:"smt_secrets"`
+	SMTChainRevision                                 types.String   `tfsdk:"smt_chain_revision"`
 	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
 }
 

@@ -16,6 +16,12 @@
 # tfplugindocs first, rendering docs against the *previous* schema — that shipped a real
 # bug in beta.18. The ordering is load-bearing.
 #
+# Both generator inputs are pinned and recorded: the backend checkout is resolved to
+# an exact commit before tfgen runs, and the SMT catalog artifact is read from that
+# same commit, so the provenance header in internal/generated/smt_catalog.go names the
+# revision and digest the schemas were built from. A mutable branch name is never the
+# schema authority; the run tells you which commit it consumed.
+#
 # PREREQUISITES:
 #   BACKEND_REPO_URL — https URL of the backend repository
 #   BACKEND_TOKEN    — token with read access to it (if private)
@@ -32,6 +38,16 @@ on:
         options:
           - pr
           - detect
+      backend_ref:
+        description: 'Backend ref to generate from (branch, tag or commit). Resolved to an exact commit and recorded.'
+        required: false
+        default: main
+        type: string
+      smt_catalog:
+        description: 'Path of the SMT catalog artifact inside the backend checkout.'
+        required: false
+        default: app/services/smt/fixtures/contract_corpus.json
+        type: string
   schedule:
     - cron: '0 6 * * 1' # Weekly on Monday at 06:00 UTC (detect-only)
 
@@ -44,6 +60,8 @@ env:
   TF_ACC: ""
   # Cron runs are always detect-only; dispatch honours the chosen mode.
   MODE: ${{ github.event_name == 'schedule' && 'detect' || github.event.inputs.mode || 'pr' }}
+  BACKEND_REF: ${{ github.event.inputs.backend_ref || 'main' }}
+  SMT_CATALOG: ${{ github.event.inputs.smt_catalog || 'app/services/smt/fixtures/contract_corpus.json' }}
 
 jobs:
   regenerate:
@@ -64,7 +82,7 @@ jobs:
           terraform_version: '1.16.1'
           terraform_wrapper: false
 
-      - name: Clone backend repository (main)
+      - name: Clone backend repository at the pinned ref
         env:
           BACKEND_REPO_URL: ${{ secrets.BACKEND_REPO_URL }}
           BACKEND_TOKEN: ${{ secrets.BACKEND_TOKEN }}
@@ -93,19 +111,38 @@ jobs:
           fi
 
           # Clone outside the workspace: an in-tree clone would be swept up as untracked
-          # content by the PR step. --branch main because production runs older plugin
-          # configs than feature branches, and regenerating against the wrong branch has
-          # shipped schemas with fields silently stripped.
+          # content by the PR step. The ref defaults to main because production runs
+          # older plugin configs than feature branches, and regenerating against the
+          # wrong branch has shipped schemas with fields silently stripped. Whatever the
+          # ref, the checkout is resolved to one commit and that commit is what tfgen
+          # records as the provenance of the schemas and the SMT catalog.
           GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 \
-            git clone --depth 1 --branch main "$url" "$RUNNER_TEMP/backend"
+            git clone --no-checkout --filter=blob:none "$url" "$RUNNER_TEMP/backend"
+          GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 \
+            git -C "$RUNNER_TEMP/backend" checkout --detach "$BACKEND_REF"
           rm -f "$askpass"
 
+          sha="$(git -C "$RUNNER_TEMP/backend" rev-parse HEAD)"
+          catalog="$RUNNER_TEMP/backend/$SMT_CATALOG"
+          if [ ! -f "$catalog" ]; then
+            echo "::error::SMT catalog artifact $SMT_CATALOG is not in backend @ $sha."
+            exit 1
+          fi
+
           echo "STREAMKAP_BACKEND_PATH=$RUNNER_TEMP/backend" >> "$GITHUB_ENV"
+          echo "STREAMKAP_BACKEND_REVISION=$sha" >> "$GITHUB_ENV"
+          echo "STREAMKAP_SMT_CATALOG=$catalog" >> "$GITHUB_ENV"
           echo "BACKEND_SHA=$(git -C "$RUNNER_TEMP/backend" rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "SMT_CATALOG_SHA256=$(sha256sum "$catalog" | cut -d' ' -f1)" >> "$GITHUB_ENV"
+          echo "Backend $BACKEND_REF resolved to $sha; SMT catalog $SMT_CATALOG sha256 $(sha256sum "$catalog" | cut -d' ' -f1)"
 
       # Covers sources, destinations AND transforms: tfgen's --entity-type defaults to
       # "all" and internal/generated/doc.go's go:generate directive passes no filter.
       - name: Regenerate schemas and docs
+        # The pinned inputs come from the clone step; a ref other than main is
+        # deliberate here and recorded, so the preflight branch check is waived.
+        env:
+          ALLOW_NONMAIN: "1"
         run: make generate
 
       # Snapshots are the schema of record read by humans and tooling; a PR carrying
@@ -122,7 +159,7 @@ jobs:
           set -euo pipefail
           if [ -z "$(git status --porcelain --untracked-files=all -- internal/generated)" ]; then
             echo "drift=false" >> "$GITHUB_OUTPUT"
-            echo "No schema drift against backend main @ ${BACKEND_SHA}."
+            echo "No schema drift against backend ${BACKEND_REF} @ ${BACKEND_SHA}."
           else
             echo "drift=true" >> "$GITHUB_OUTPUT"
           fi
@@ -131,7 +168,8 @@ jobs:
           # changelog; added/removed connector files mean the run saw a different plugin
           # set; a flipped Sensitive flag is a security regression until proven otherwise.
           {
-            printf 'Backend: main @ %s\n\n' "${BACKEND_SHA}"
+            printf 'Backend: %s @ %s (%s)\n' "${BACKEND_REF}" "${BACKEND_SHA}" "${STREAMKAP_BACKEND_REVISION}"
+            printf 'SMT catalog: %s sha256 %s\n\n' "${SMT_CATALOG}" "${SMT_CATALOG_SHA256}"
             echo '### Changed files'
             echo '```'
             git status --porcelain
