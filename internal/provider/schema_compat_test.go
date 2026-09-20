@@ -25,6 +25,7 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/tag"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/topic"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/transform"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/smtproto"
 )
 
 // SchemaSnapshot represents a saved schema for backwards compatibility testing.
@@ -49,11 +50,16 @@ type BlockInfo struct {
 // Type is the framework type name (e.g. "basetypes.StringType"). Without it a
 // String→Int64 flip — a hard breaking change, and one CLAUDE.md lists as *not*
 // aliasable — passes every snapshot check silently.
+//
+// WriteOnly is omitted when false so the released snapshots stay byte-stable;
+// a secret input that loses the flag would start being stored in state, which
+// the compatibility check treats as a security break.
 type AttributeInfo struct {
 	Required  bool   `json:"required"`
 	Optional  bool   `json:"optional"`
 	Computed  bool   `json:"computed"`
 	Sensitive bool   `json:"sensitive"`
+	WriteOnly bool   `json:"write_only,omitempty"`
 	Type      string `json:"type"`
 }
 
@@ -65,6 +71,7 @@ type snapshotAttribute interface {
 	IsOptional() bool
 	IsComputed() bool
 	IsSensitive() bool
+	IsWriteOnly() bool
 	GetType() attr.Type
 }
 
@@ -74,6 +81,7 @@ func attributeInfo(a snapshotAttribute) AttributeInfo {
 		Optional:  a.IsOptional(),
 		Computed:  a.IsComputed(),
 		Sensitive: a.IsSensitive(),
+		WriteOnly: a.IsWriteOnly(),
 		Type:      a.GetType().String(),
 	}
 }
@@ -360,6 +368,11 @@ func checkAttributeCompatibility(t *testing.T, kind string, baseline, current ma
 		if exists && before.Sensitive && !after.Sensitive {
 			t.Errorf("BREAKING CHANGE (SECURITY): %s %q is no longer Sensitive; its value would now appear in plan output and state as plaintext. "+
 				"Do NOT resolve this with `make snapshots` — restore the flag at its source (tfgen isSecretField, or the backend field's encrypt/control).", kind, name)
+			breakingChanges++
+		}
+		if exists && before.WriteOnly && !after.WriteOnly {
+			t.Errorf("BREAKING CHANGE (SECURITY): %s %q is no longer WriteOnly; its value would now be stored in plan and state. "+
+				"Do NOT resolve this with `make snapshots` — restore the flag at its source.", kind, name)
 			breakingChanges++
 		}
 		if exists && before.Type != "" && before.Type != after.Type {
@@ -998,6 +1011,42 @@ func TestSchemaBackwardsCompatibility_KafkaUser(t *testing.T) {
 		snapshotFile:    "kafka_user_v1.json",
 		resourceFactory: kafka_user.NewKafkaUserResource,
 	})
+}
+
+// The SMT prototype is not registered in the provider; its snapshot exists so
+// the secret input is pinned as WriteOnly the same way credentials are pinned
+// as Sensitive. Every value row of smt_secrets must stay out of state.
+func TestSchemaBackwardsCompatibility_SMTPrototype(t *testing.T) {
+	cat := smtprotoCatalog(t)
+	factory := func() resource.Resource {
+		res, err := smtproto.NewResource(nil, cat)
+		require.NoError(t, err)
+		return res
+	}
+	runSchemaCompatTest(t, schemaCompatTestCase{
+		name:            "smtproto_source_postgresql",
+		snapshotFile:    "smtproto_source_postgresql_v0.json",
+		resourceFactory: factory,
+	})
+
+	schemaResp := &resource.SchemaResponse{}
+	factory().Schema(context.Background(), resource.SchemaRequest{}, schemaResp)
+	snapshot := extractSchemaSnapshot(schemaResp.Schema)
+	for _, p := range []string{"smt_secrets.values", "smt_secrets.values.pointer", "smt_secrets.values.value", "smt_secrets.values.clear"} {
+		info, ok := snapshot.NestedAttributes[p]
+		require.True(t, ok, "%s missing from schema", p)
+		require.True(t, info.WriteOnly, "%s must be WriteOnly", p)
+		require.False(t, info.Computed, "%s must not be Computed", p)
+	}
+	require.False(t, snapshot.NestedAttributes["smt_secrets.version"].WriteOnly, "the rotation version is the one stateful part")
+	require.True(t, snapshot.NestedAttributes["smt_secrets.values.value"].Sensitive)
+}
+
+func smtprotoCatalog(t *testing.T) smtproto.Catalog {
+	t.Helper()
+	corpus, err := smtproto.LoadCorpus(filepath.Join("..", "smtproto", "testdata", "contract_corpus.json"))
+	require.NoError(t, err)
+	return smtproto.NewCatalog(corpus)
 }
 
 func TestSchemaBackwardsCompatibility_ClientCredential(t *testing.T) {
