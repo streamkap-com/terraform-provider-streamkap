@@ -152,9 +152,190 @@
           "predicate": null
         }
       ],
-      "managed": [],
+      "managed": [
+        {
+          "slot_id": "stage_a:changeTopicName",
+          "alias": "changeTopicName",
+          "type": "custom_topic_name",
+          "schema_version": 1,
+          "codec_version": 1,
+          "config": {},
+          "configured_secret_paths": [],
+          "predicate": null,
+          "policy": "required",
+          "reason": "The connector plugin's mapping lists it in transforms; it runs whether or not a pipeline feeds the destination",
+          "enabled": true,
+          "override": null
+        },
+        {
+          "slot_id": "base:InsertField",
+          "alias": "InsertField",
+          "type": "insert_field",
+          "schema_version": 1,
+          "codec_version": 1,
+          "config": {},
+          "configured_secret_paths": [],
+          "predicate": null,
+          "policy": "required",
+          "reason": "Adds the _streamkap_* metadata columns every sink relies on; added for every feeding pipeline, dropped only when a feeding kafkadirect source already carries them (records.carry.streamkap.metadata)",
+          "enabled": true,
+          "override": null
+        },
+        {
+          "slot_id": "stage_a:RenameAmbigiousFields",
+          "alias": "RenameAmbigiousFields",
+          "type": "replace_field",
+          "schema_version": 1,
+          "codec_version": 1,
+          "config": {},
+          "configured_secret_paths": [],
+          "predicate": null,
+          "policy": "required",
+          "reason": "Renames fields that clash with Snowflake's reserved names; listed for upsert ingestion only",
+          "enabled": true,
+          "override": null
+        },
+        {
+          "slot_id": "stage_a:DateConv",
+          "alias": "DateConv",
+          "type": "auto_time_converter",
+          "schema_version": 1,
+          "codec_version": 1,
+          "config": {},
+          "configured_secret_paths": [],
+          "predicate": null,
+          "policy": "required",
+          "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "enabled": true,
+          "override": null
+        },
+        {
+          "slot_id": "stage_a:TimeConv",
+          "alias": "TimeConv",
+          "type": "auto_time_converter",
+          "schema_version": 1,
+          "codec_version": 1,
+          "config": {},
+          "configured_secret_paths": [],
+          "predicate": null,
+          "policy": "required",
+          "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "enabled": true,
+          "override": null
+        },
+        {
+          "slot_id": "stage_a:MicroTimeConv",
+          "alias": "MicroTimeConv",
+          "type": "auto_time_converter",
+          "schema_version": 1,
+          "codec_version": 1,
+          "config": {},
+          "configured_secret_paths": [],
+          "predicate": null,
+          "policy": "required",
+          "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "enabled": true,
+          "override": null
+        },
+        {
+          "slot_id": "stage_a:MicroTimestampConv",
+          "alias": "MicroTimestampConv",
+          "type": "auto_time_converter",
+          "schema_version": 1,
+          "codec_version": 1,
+          "config": {},
+          "configured_secret_paths": [],
+          "predicate": null,
+          "policy": "required",
+          "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "enabled": true,
+          "override": null
+        },
+        {
+          "slot_id": "stage_a:TimestampConv",
+          "alias": "TimestampConv",
+          "type": "auto_time_converter",
+          "schema_version": 1,
+          "codec_version": 1,
+          "config": {},
+          "configured_secret_paths": [],
+          "predicate": null,
+          "policy": "required",
+          "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "enabled": true,
+          "override": null
+        },
+        {
+          "slot_id": "base:ToDecimalJ",
+          "alias": "ToDecimalJ",
+          "type": "to_decimal",
+          "schema_version": 1,
+          "codec_version": 1,
+          "config": {},
+          "configured_secret_paths": [],
+          "predicate": null,
+          "policy": "required",
+          "reason": "Coerces decimal values for the sink; added for every feeding pipeline",
+          "enabled": true,
+          "override": null
+        },
+        {
+          "slot_id": "user_defined:MaskField",
+          "alias": "MaskField",
+          "type": "mask_field",
+          "schema_version": 1,
+          "codec_version": 1,
+          "config": {},
+          "configured_secret_paths": [],
+          "predicate": null,
+          "policy": "optional",
+          "reason": "Present while its destination setting is configured; clearing the setting removes it",
+          "enabled": true,
+          "override": null
+        }
+      ],
       "managed_overrides": {},
       "order": [
+        {
+          "origin": "managed",
+          "reference": "stage_a:changeTopicName"
+        },
+        {
+          "origin": "managed",
+          "reference": "base:InsertField"
+        },
+        {
+          "origin": "managed",
+          "reference": "stage_a:RenameAmbigiousFields"
+        },
+        {
+          "origin": "managed",
+          "reference": "stage_a:DateConv"
+        },
+        {
+          "origin": "managed",
+          "reference": "stage_a:TimeConv"
+        },
+        {
+          "origin": "managed",
+          "reference": "stage_a:MicroTimeConv"
+        },
+        {
+          "origin": "managed",
+          "reference": "stage_a:MicroTimestampConv"
+        },
+        {
+          "origin": "managed",
+          "reference": "stage_a:TimestampConv"
+        },
+        {
+          "origin": "managed",
+          "reference": "base:ToDecimalJ"
+        },
+        {
+          "origin": "managed",
+          "reference": "user_defined:MaskField"
+        },
         {
           "origin": "user",
           "reference": "instance-b"

@@ -13,9 +13,9 @@ import (
 
 // The SMT chain wire contract, as the backend's
 // app/services/smt/fixtures/wire_fixtures.json spells it (wire_version 1,
-// backend revision 3bd029995a1e23931db0859fbb22f491abaa38c6). A copy of that
-// fixture lives in testdata and the decode test pins these types to it.
-// Resource code depends on SMTChainAPI only.
+// backend revision 580de048f89e925d53689873c3d6fe64009c1e6e). A copy of
+// that fixture lives in testdata and the decode test pins these types to
+// it. Resource code depends on SMTChainAPI only.
 //
 // The fixture publishes the routes for destinations. kind is the path segment
 // ("sources" or "destinations"); a kind the backend has not wired answers a

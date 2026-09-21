@@ -157,7 +157,20 @@ func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 	require.Equal(t, "SHA256_TRUNCATE", first.Config["mask_function"], "declared defaults are materialised on read")
 	require.Equal(t, []string{"/mask_salt"}, first.ConfiguredSecretPaths)
 	require.False(t, first.HasPredicate())
-	require.Equal(t, []SMTOrderEntry{{Origin: "user", Reference: "instance-b"}, {Origin: "user", Reference: "instance-a"}}, read.Desired.Order)
+	// The effective order interleaves the managed slots with the user
+	// instances; the provider manages only the user ones and keeps the
+	// managed rows opaque.
+	var userOrder []SMTOrderEntry
+	for _, entry := range read.Desired.Order {
+		if entry.Origin == "user" {
+			userOrder = append(userOrder, entry)
+		}
+	}
+	require.Equal(t, []SMTOrderEntry{{Origin: "user", Reference: "instance-b"}, {Origin: "user", Reference: "instance-a"}}, userOrder)
+	var managed []map[string]any
+	require.NoError(t, json.Unmarshal(read.Desired.Managed, &managed))
+	require.Len(t, managed, 10, "the managed rows are decoded raw, never dropped")
+	require.Equal(t, "required", managed[0]["policy"])
 
 	envelope := func(code, message string) json.RawMessage {
 		raw, err := json.Marshal(map[string]any{"detail": map[string]any{"code": code, "message": message}})
