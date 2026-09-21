@@ -1,19 +1,19 @@
 # SMT chain on connector resources
 
-The nested SMT chain representation was first proved by a prototype under `internal/smtproto/`. That prototype has moved into the real generator and the real base resource: `internal/smt` is the representation, `cmd/tfgen` pins the catalog it is built from, and `internal/resource/connector` drives it for any generated connector that opts in. Two representative resources are regenerated with the chain enabled, `streamkap_source_postgresql` and `streamkap_destination_snowflake`; the rest of the fleet is untouched. This page records what is integrated, what the tests prove, the decisions the representation and the wire contract force, and what remains.
+The nested SMT chain representation was first proved by a prototype under `internal/smtproto/`. That prototype has moved into the real generator and the real base resource: `internal/smt` is the representation, `cmd/tfgen` pins the catalog it is built from, and `internal/resource/connector` drives it for any generated connector that opts in. Three resources are regenerated with the chain enabled, `streamkap_source_postgresql`, `streamkap_destination_snowflake` and `streamkap_destination_postgresql`; the rest of the fleet is untouched. The chain is generated from the backend's published catalog, so `regex_router` and `mask_field` are the types it admits, and the postgresql destination has driven a chain end to end against a live backend. This page records what is integrated, what the tests prove, the decisions the representation and the wire contract force, and what remains.
 
 ## Versions and inputs
 
 - `github.com/hashicorp/terraform-plugin-framework v1.19.0`, `terraform-plugin-go v0.31.0`, `terraform-plugin-testing v1.16.0`, Go 1.27.1. Terraform CLI v1.16.3 locally (the `resource.UnitTest` cases shell out to it); CI pins 1.16.1. Write-only attributes need Terraform 1.11 or later, so the cases that configure `smt_secrets[*].values` carry `tfversion.SkipBelow(1.11.0)`; a chain without secrets and every flat configuration work on any version.
-- Catalog artifact: `internal/generated/smt_catalog.json`, byte-identical to `cmp/backend/app/services/smt/fixtures/contract_corpus.json` at backend revision `05ee1dd2e26d753c12715805daf4cc63981cfb2a`, file sha256 `5d3528b46923f371ac8d3bb089f117cec53e5bcd96ce93a1f573874e89807ad0`, envelope digest `sha256:50ba3ac5ef381a480cb608a5f5b2c00bacc5c868948337335078ef6d36ca04f7`. Both types in it are `publishable: false`, so the generated chain admits no type until the backend publishes one; the tests build the chain from the same artifact with the exclusion lifted (`internal/smt/testdata/contract_corpus.json`, the same bytes).
-- Connector plugin configs: backend `main` at `85b3218fb59fdf6b5e5b4c98dd19eb5da806588b`, which reproduces the released generated files byte for byte; the two regenerated files differ from the released ones only by the three model fields.
-- Wire contract: `internal/api/testdata/smt_wire_fixtures.json`, byte-identical to `cmp/backend/app/services/smt/fixtures/wire_fixtures.json` at backend revision `3bd029995a1e23931db0859fbb22f491abaa38c6` (last changed in `d435615bd`), sha256 `3d90dce763b44ae1841e35ee63bada7efd433c1e12e2ec73ee8061f9c8f2f442`, `wire_version` 1.
+- Catalog artifact: `internal/generated/smt_catalog.json`, byte-identical to `cmp/backend/app/services/smt/fixtures/catalog.json` at backend revision `0769c70e77d093f3bca91ba445d67689dbad64d1`, file sha256 `53fb62493a2820f80ae99798e6263668244d09e147a002c75b4f2c471e283f26`, envelope digest `sha256:d480e9429775b68f93bdb6a243873c4e5313834e25aa71d5941c2d060a4acbae`. Both types are publishable: `regex_router` derives the config child `{regex (Required), replacement (Optional + Computed, default "$0")}` and has no secret; `mask_field` derives `{fields_include (Required list), fields_exclude (default []), mask_function (default SHA256_TRUNCATE), mask_char (default "*"), mask_fixed_value (default "***"), replace_null_with_default (default true)}` with its writeOnly `mask_salt` stripped into `smt_secrets` under the pointer `/mask_salt`. The enum on `mask_function` and the item pattern on the field lists are not represented; the backend validates them at apply. The contract corpus with the nested fixture types stays the input of the unit tests (`internal/smt/testdata/contract_corpus.json`), since it exercises rows, escapes and nested defaults the published types do not.
+- Connector plugin configs: backend `main` at `9d834aa3f109d6a4db92b0313e157a0ffdaa3ec3`, whose plugin configs are identical to the `85b3218fb` the released files were generated from; the three regenerated files differ from the released ones only by the three model fields.
+- Wire contract: `internal/api/testdata/smt_wire_fixtures.json`, byte-identical to `cmp/backend/app/services/smt/fixtures/wire_fixtures.json` at backend revision `0769c70e77d093f3bca91ba445d67689dbad64d1` (last changed in `d435615bd`), sha256 `3d90dce763b44ae1841e35ee63bada7efd433c1e12e2ec73ee8061f9c8f2f442`, `wire_version` 1. The 409 code `smt_connector_deleting`, which the routes raise for a write against a destination whose deletion is pending, is classified from the route source (`app/api/smt_chains_api.py`); the fixture does not carry it yet.
 
 ## What moved where
 
 - `internal/smt`: `corpus.go` parses the artifact and filters `publishable`; `schema.go` derives one typed config child per type (recursive objects, homogeneous lists, nullable scalars, load-bearing defaults) and rejects every unsupported construct with the type and schema path; `chain.go` builds `smt_chain` and `smt_secrets`; `convert.go` is the typed value codec; `correlate.go` joins plan to state by key; `secrets.go` handles canonical pointers and rotation; `surface.go` is what the base resource composes: `ValidateConfig`, `ModifyPlan`, `PlanWrite`, `Apply`, `Refresh`, the flat-projection strip and the error mapping.
-- `cmd/tfgen`: `--smt-catalog` and `--backend-revision` pin the input; `smt_chain_connectors` in `overrides.json` names the connectors whose model carries `smt_chain`, `smt_secrets` and `smt_chain_revision`; `smt.go` validates the artifact with the same `smt.BuildChain` the runtime uses before anything is written, refuses `kafkadirect` and transforms, and writes `internal/generated/smt_catalog.{json,go}` with the provenance header. `go generate` and `scripts/codegen-preflight.sh` require both inputs; `.github/workflows/regenerate.yml` resolves the backend ref to one commit, reads the artifact from that commit and passes both through, so the schema authority is never a mutable branch.
-- `internal/resource/connector/base.go`: a config implementing `ConnectorConfigWithSMTChain` gets the three attributes added in `Schema`, `ValidateConfig` for the mixed-surface rejection, the chain step of `ModifyPlan`, and Create/Read/Update/Import composing `smt.Surface`. The wrappers `source/postgresql_generated.go` and `destination/snowflake_generated.go` opt in by returning `generated.SMTChain()`.
+- `cmd/tfgen`: `--smt-catalog` and `--backend-revision` pin the input; `smt_chain_connectors` in `overrides.json` names the connectors whose model carries `smt_chain`, `smt_secrets` and `smt_chain_revision` (`source_postgresql`, `destination_snowflake`, `destination_postgresql`); `smt.go` validates the artifact with the same `smt.BuildChain` the runtime uses before anything is written, refuses `kafkadirect` and transforms, and writes `internal/generated/smt_catalog.{json,go}` with the provenance header. `go generate` and `scripts/codegen-preflight.sh` require both inputs; `.github/workflows/regenerate.yml` resolves the backend ref to one commit, reads the artifact from that commit and passes both through, so the schema authority is never a mutable branch.
+- `internal/resource/connector/base.go`: a config implementing `ConnectorConfigWithSMTChain` gets the three attributes added in `Schema`, `ValidateConfig` for the mixed-surface rejection, the chain step of `ModifyPlan`, and Create/Read/Update/Import composing `smt.Surface`. The wrappers `source/postgresql_generated.go`, `destination/snowflake_generated.go` and `destination/postgresql_generated.go` opt in by returning `generated.SMTChain()`.
 - `internal/api/smt_chain.go`: the DTOs and `SMTChainAPI`, aligned to the wire fixture, with `DetailJSON` kept on `APIError` so the structured envelope reaches the resource.
 - `internal/provider/schema_compat_test.go`: snapshots record `write_only`; `breakingChanges` fails a WriteOnly attribute that becomes stateful and, under `smt_chain.`, a removed child, a Required child that becomes Optional, or a Dynamic type. `TestBreakingChanges_SMTGates` exercises each rule; `TestSMTChainOptInIsConsistent` fails a model and schema that disagree on the opt-in.
 
@@ -25,7 +25,7 @@ The fixture settled the spellings the prototype had left as placeholders, and th
 - `name` is required on the wire (`minLength: 1`), so `smt_chain[*].name` is Required in the schema rather than Optional.
 - `enabled` exists on the instance (default true) and is echoed on read, so `smt_chain[*].enabled` is Optional + Computed + Default(true); without it a UI toggle would be invisible drift.
 - The read projection is `desired`/`last_applied`/`application_status`; the provider manages `desired.transforms` and stores `desired.chain_revision` in the computed `smt_chain_revision`. An update sends it as `expected_revision`; a create sends none.
-- Error envelopes are `{"detail": {code, message, issues}}`. `smt_revision_conflict` and `smt_chain_exists` are "changed outside Terraform, plan again"; `smt_expected_revision_required` is "the connector already has a chain this resource does not manage, import it"; `smt_chain_absent` on read is an empty managed chain with no revision. Every 422 issue is attached to the attribute its runtime pointer locates (`/transforms/1/config/routes/1/endpoint` becomes `smt_chain[1].<type>.routes[1].endpoint`; secret-operation issues land on `smt_secrets`).
+- Error envelopes are `{"detail": {code, message, issues}}`. `smt_revision_conflict` and `smt_chain_exists` are "changed outside Terraform, plan again"; `smt_expected_revision_required` is "the connector already has a chain this resource does not manage, import it"; `smt_connector_deleting` is "the connector is being deleted, plan again once it is gone"; `smt_chain_absent` on read is an empty managed chain with no revision. Every 422 issue is attached to the attribute its runtime pointer locates (`/transforms/1/config/routes/1/endpoint` becomes `smt_chain[1].<type>.routes[1].endpoint`; secret-operation issues land on `smt_secrets`).
 - The routes are published for destinations only; `kind` is a path segment and sources answer a plain 404 until the backend wires them. Predicates are accepted by the wire but not represented here: an instance that carries one, or an opaque instance, fails Read with a diagnostic instead of being dropped by the next write.
 - `alias`, `schema_version`, `codec_version` and `configured_secret_paths` are server-owned and never sent; `TestSMTWire_RequestsMatchFixture` checks every key the provider emits against the OpenAPI components, which are `additionalProperties: false`.
 
@@ -42,7 +42,20 @@ Every case below runs the real `BaseConnectorResource` over the real `PostgreSQL
 - Revision guard (`TestSMT_StaleRevisionIsRejected`): a write that lands after an edit elsewhere fails with the stale-revision diagnostic, state keeps the prior chain, the next plan refreshes the revision and the apply goes through.
 - Failure containment (`TestSMT_FailedChainWriteAfterCreateIsTainted`, `TestSMT_UnrepresentableAndRejectedWrites`): a chain write that fails after the connector was created leaves the connector recorded and tainted so the next apply replaces it instead of colliding on the name; a 422 is attached to the located attribute and leaves state and server alone; a predicate on a server instance fails refresh.
 - Destination kind (`TestSMT_DestinationChain`): the same chain through `streamkap_destination_snowflake` under `destinations`.
+- Published types (`TestSMT_CatalogTypesOnDestinationPostgresql`): the real `streamkap_destination_postgresql`, chain built from the pinned catalog rather than the corpus, over the same fake: two `regex_router` instances and a `mask_field` whose salt is rotated through `smt_secrets` at `/mask_salt`; `replacement` and the mask defaults materialised in state and in the stored config with no `mask_salt` leaf; an empty re-plan; reorder plus rename keeping ids and aliases; a stale revision refused and the retry going through; a key change minting a new instance and dropping the old one; a rotation at version 2 executing one replace and recorded on the entry; a decreased version and an unknown pointer rejected at plan; import deriving the keys from the ids with `secret_version` 0 and no secret entries.
 - Package-level (`internal/smt`, 18 tests, 52 subtests): value fidelity through the codec and through a plan, correlation, projection with inline operations, pointer escaping and resolution, row existence by declared key, rotation planning, unsupported-construct diagnostics, the map gate, issue-pointer mapping.
+
+## Live acceptance
+
+`TestAccDestinationPostgresqlSMTChain` (`internal/provider/destination_postgresql_smt_test.go`) is gated on `TF_ACC` like the rest of the acceptance tier and runs against whatever `STREAMKAP_HOST` names. It ran against the local stack (`STREAMKAP_HOST=http://127.0.0.1:3011`, credentials `local`/`local`, auth bypassed) with the backend on `ENG-2557/smt-foundation` at `0769c70e7`, `SMT_CHAIN_MANAGEMENT_ENABLED` on:
+
+- Create: the postgresql destination from `specs/55_SMT_Transforms/30_Destination/postgresql.json` with a two-instance `regex_router` chain. The backend answered `POST /destinations` 202 then `PUT /destinations/{id}/smt-chain` 200; state holds two distinct server ids and aliases, `schema_version` 1, `enabled` true and a `smt_chain_revision`.
+- Re-plan: empty.
+- Reorder plus rename: one `PUT .../smt-chain` 200 under the expected revision; the ids and aliases stayed with their keys and the revision advanced.
+- `smt_chain = []`: one `PUT .../smt-chain` 200 with `transforms: []`; state holds an empty chain with a revision and the next plan is empty.
+- Destroy: `DELETE /destinations/{id}` 202, then the read answered 404 and `CheckDestroy` passed.
+
+`go test ./internal/provider/ -run TestAccDestinationPostgresqlSMTChain -v -count=1` with `TF_ACC=1`: `--- PASS: TestAccDestinationPostgresqlSMTChain (47.32s)`. The connector update between plan and chain write is the base resource's own `PUT /destinations/{id}`, sent on every update as released. Not exercised live: `mask_field` with a secret rotation, import, and a stale revision; those are covered by the fake-backend cases above.
 
 ## Decisions the representation forces
 
@@ -61,41 +74,34 @@ The keys are the ids the import returned; everything else is the server's curren
 
 ```hcl
 import {
-  to = streamkap_source_postgresql.orders
+  to = streamkap_destination_postgresql.orders
   id = "conn-1"
 }
 
-resource "streamkap_source_postgresql" "orders" {
+resource "streamkap_destination_postgresql" "orders" {
   # released attributes unchanged
 
   smt_chain = [
     {
       key  = "inst-2"
-      type = "contract_fixture_nested"
-      name = "East"
-      contract_fixture_nested = {
-        routes = [
-          { key = "row-east",   endpoint = "example.invalid", label = "east" },
-          { key = "row~west/1", endpoint = "other.invalid",   label = "west" },
-        ]
-      }
+      type = "regex_router"
+      name = "Orders"
+      regex_router = { regex = "^public\\.orders$", replacement = "orders" }
     },
     {
       key  = "inst-3"
-      type = "contract_fixture_deep"
-      name = "Deep"
-      contract_fixture_deep = {
-        services = [{ key = "svc-a", endpoints = [{ id = "ep/1" }] }]
-      }
+      type = "mask_field"
+      name = "Mask email"
+      mask_field = { fields_include = ["email"], mask_function = "REDACT" }
     },
   ]
 
-  # Optional: take the secrets under provider control. Executes one rotation.
+  # Optional: take the salt under provider control. Executes one rotation.
   smt_secrets = [
     {
-      key     = "inst-2"
+      key     = "inst-3"
       version = 1
-      values  = [{ pointer = "/routes/row-east/token", value = var.east_token }]
+      values  = [{ pointer = "/mask_salt", value = var.mask_salt }]
     },
   ]
 }
@@ -103,16 +109,16 @@ resource "streamkap_source_postgresql" "orders" {
 
 ## What remains
 
-- The fleet: only `source_postgresql` and `destination_snowflake` opt in. Regenerating the rest is a change to `smt_chain_connectors` plus one method per wrapper, gated on the snapshot review of each resource.
-- A published catalog: the pinned artifact publishes no type, so the generated chain admits none. The first backend catalog artifact with `publishable: true` types is what makes the attribute usable; regeneration then records its digest and revision.
-- Live API and acceptance: no request has been made against a backend. The routes exist for destinations only and behind `SMT_CHAIN_MANAGEMENT_ENABLED`; sources, predicates, managed overrides and the legacy alias adapter are not represented here. Focused acceptance on the CLI matrix (1.10.5 rejecting configured write-only values, 1.11.4 and 1.16.1 running the secret lifecycle) waits on a permitted environment and a published type.
+- The fleet: `source_postgresql`, `destination_snowflake` and `destination_postgresql` opt in. Regenerating the rest is a change to `smt_chain_connectors` plus one method per wrapper, gated on the snapshot review of each resource.
+- Live coverage: the routes exist for destinations only and behind `SMT_CHAIN_MANAGEMENT_ENABLED`; sources, predicates, the `managed`/`order` rows and `managed_overrides` the backend is adding to the read and write models, and the legacy alias adapter are not represented here (the DTOs ignore the fields they do not decode, so a populated `managed` row does not break a read). The `mask_field` secret lifecycle, import and the stale-revision path have run against the fake backend only. Acceptance on the CLI matrix (1.10.5 rejecting configured write-only values, 1.11.4 and 1.16.1 running the secret lifecycle) has not run.
 - The applied projection: `last_applied` and `application_status` are decoded and ignored; the provider manages the desired chain only.
 - `golangci-lint` did not run: the installed binary was built with Go 1.26 and refuses the module's Go 1.27.1. `go vet ./...` and `gofmt -l internal cmd` are clean.
 
 ## Commands
 
 - `go test ./internal/smt/... -count=1`: 18 tests, 52 subtests, 0 failures.
-- `go test ./internal/resource/connector/ -run TestSMT_ -count=1`: 12 tests, 0 failures, about 16s (ten cases drive terraform).
+- `go test ./internal/resource/connector/ -run TestSMT_ -count=1`: 13 tests, 0 failures, about 22s (eleven cases drive terraform).
 - `go test ./internal/api/ -run TestSMTWire -count=1` and `go test ./cmd/tfgen/ -run SMT -count=1`: 2 and 3 tests, 0 failures.
-- `make test-schema`: 71 passed, 0 failed.
-- `make test-all`: every package ok, 1806 passed, 0 failed, 109 skipped (the `TestAcc` tier, gated on `TF_ACC`, plus the pre-existing `-short` skips).
+- `TF_ACC=1 STREAMKAP_HOST=http://127.0.0.1:3011 STREAMKAP_CLIENT_ID=local STREAMKAP_SECRET=local go test ./internal/provider/ -run TestAccDestinationPostgresqlSMTChain -v -count=1`: 1 test, 0 failures, 47s against the local stack.
+- `make test-schema`: 72 passed, 0 failed.
+- `make test-all`: every package ok, 1809 passed, 0 failed, 110 skipped (the `TestAcc` tier, gated on `TF_ACC`, plus the pre-existing `-short` skips).
