@@ -265,7 +265,7 @@
       "optional": true,
       "computed": false,
       "sensitive": false,
-      "type": "types.ListType[types.ObjectType[\"alias\":basetypes.StringType, \"enabled\":basetypes.BoolType, \"id\":basetypes.StringType, \"key\":basetypes.StringType, \"name\":basetypes.StringType, \"schema_version\":basetypes.Int64Type, \"secret_version\":basetypes.Int64Type, \"type\":basetypes.StringType]]"
+      "type": "types.ListType[types.ObjectType[\"alias\":basetypes.StringType, \"enabled\":basetypes.BoolType, \"id\":basetypes.StringType, \"key\":basetypes.StringType, \"mask_field\":types.ObjectType[\"fields_exclude\":types.ListType[basetypes.StringType], \"fields_include\":types.ListType[basetypes.StringType], \"mask_char\":basetypes.StringType, \"mask_fixed_value\":basetypes.StringType, \"mask_function\":basetypes.StringType, \"replace_null_with_default\":basetypes.BoolType], \"name\":basetypes.StringType, \"regex_router\":types.ObjectType[\"regex\":basetypes.StringType, \"replacement\":basetypes.StringType], \"schema_version\":basetypes.Int64Type, \"secret_version\":basetypes.Int64Type, \"type\":basetypes.StringType]]"
     },
     "smt_chain_revision": {
       "required": false,
@@ -549,10 +549,80 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "smt_chain.mask_field": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ObjectType[\"fields_exclude\":types.ListType[basetypes.StringType], \"fields_include\":types.ListType[basetypes.StringType], \"mask_char\":basetypes.StringType, \"mask_fixed_value\":basetypes.StringType, \"mask_function\":basetypes.StringType, \"replace_null_with_default\":basetypes.BoolType]"
+    },
+    "smt_chain.mask_field.fields_exclude": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.ListType[basetypes.StringType]"
+    },
+    "smt_chain.mask_field.fields_include": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ListType[basetypes.StringType]"
+    },
+    "smt_chain.mask_field.mask_char": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.mask_field.mask_fixed_value": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.mask_field.mask_function": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.mask_field.replace_null_with_default": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
     "smt_chain.name": {
       "required": true,
       "optional": false,
       "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.regex_router": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ObjectType[\"regex\":basetypes.StringType, \"replacement\":basetypes.StringType]"
+    },
+    "smt_chain.regex_router.regex": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.regex_router.replacement": {
+      "required": false,
+      "optional": true,
+      "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
     },

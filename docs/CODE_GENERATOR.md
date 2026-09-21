@@ -125,7 +125,7 @@ The recommended way to run tfgen is via `make generate`:
 # Set the backend path
 export STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap
 # The SMT catalog artifact and the backend commit it was copied from
-export STREAMKAP_SMT_CATALOG=$STREAMKAP_BACKEND_PATH/app/services/smt/fixtures/contract_corpus.json
+export STREAMKAP_SMT_CATALOG=$STREAMKAP_BACKEND_PATH/app/services/smt/fixtures/catalog.json
 export STREAMKAP_BACKEND_REVISION=$(git -C "$STREAMKAP_BACKEND_PATH" rev-parse HEAD)
 
 # Run generation (schemas first, then docs)

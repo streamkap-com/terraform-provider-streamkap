@@ -46,7 +46,7 @@ on:
       smt_catalog:
         description: 'Path of the SMT catalog artifact inside the backend checkout.'
         required: false
-        default: app/services/smt/fixtures/contract_corpus.json
+        default: app/services/smt/fixtures/catalog.json
         type: string
   schedule:
     - cron: '0 6 * * 1' # Weekly on Monday at 06:00 UTC (detect-only)
@@ -61,7 +61,7 @@ env:
   # Cron runs are always detect-only; dispatch honours the chosen mode.
   MODE: ${{ github.event_name == 'schedule' && 'detect' || github.event.inputs.mode || 'pr' }}
   BACKEND_REF: ${{ github.event.inputs.backend_ref || 'main' }}
-  SMT_CATALOG: ${{ github.event.inputs.smt_catalog || 'app/services/smt/fixtures/contract_corpus.json' }}
+  SMT_CATALOG: ${{ github.event.inputs.smt_catalog || 'app/services/smt/fixtures/catalog.json' }}
 
 jobs:
   regenerate:

@@ -1,464 +1,213 @@
 {
   "contract_version": 1,
-  "producer": "app.services.smt.contract_corpus",
-  "digest": "sha256:50ba3ac5ef381a480cb608a5f5b2c00bacc5c868948337335078ef6d36ca04f7",
+  "producer": "app.services.smt.catalog_artifact",
+  "digest": "sha256:d480e9429775b68f93bdb6a243873c4e5313834e25aa71d5941c2d060a4acbae",
   "types": [
     {
-      "type_id": "contract_fixture_nested",
+      "label": "Regex router",
+      "type_id": "regex_router",
       "schema_version": 1,
       "codec_version": 1,
-      "publishable": false,
+      "publishable": true,
       "data_schema": {
         "additionalProperties": false,
-        "description": "The whole test-only config tree. Values below match the spec's #smt-recursive-form-data example.",
         "properties": {
-          "enabled": {
-            "default": false,
-            "title": "Enabled",
-            "type": "boolean"
+          "regex": {
+            "title": "Regex",
+            "type": "string"
           },
-          "retries": {
-            "default": 0,
-            "minimum": 0,
-            "title": "Retries",
-            "type": "integer"
-          },
-          "fallback": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Fallback"
-          },
-          "labels": {
-            "items": {
-              "pattern": "^[^,]+$",
-              "type": "string"
-            },
-            "title": "Labels",
-            "type": "array"
-          },
-          "max_records": {
-            "default": 0,
-            "maximum": 9007199254740991,
-            "minimum": 0,
-            "title": "Max Records",
-            "type": "integer"
-          },
-          "output": {
-            "additionalProperties": false,
-            "description": "A nested object carrying a second ``label`` so duplicate descendant names are covered.",
-            "properties": {
-              "prefix": {
-                "default": "",
-                "title": "Prefix",
-                "type": "string"
-              },
-              "label": {
-                "default": "",
-                "title": "Label",
-                "type": "string"
-              },
-              "retry_limit": {
-                "default": 0,
-                "maximum": 100,
-                "minimum": 0,
-                "title": "Retry Limit",
-                "type": "integer"
-              }
-            },
-            "type": "object",
-            "title": "Output"
-          },
-          "routes": {
-            "items": {
-              "additionalProperties": false,
-              "description": "One secret-bearing row. ``key`` owns retention; ``label`` is a mutable domain label.",
-              "properties": {
-                "key": {
-                  "pattern": "^[^,]{1,64}$",
-                  "title": "Key",
-                  "type": "string"
-                },
-                "label": {
-                  "default": "",
-                  "title": "Label",
-                  "type": "string"
-                },
-                "endpoint": {
-                  "title": "Endpoint",
-                  "type": "string"
-                },
-                "token": {
-                  "default": "",
-                  "format": "password",
-                  "title": "Token",
-                  "type": "string",
-                  "writeOnly": true
-                }
-              },
-              "required": [
-                "key",
-                "endpoint"
-              ],
-              "type": "object"
-            },
-            "title": "Routes",
-            "type": "array"
+          "replacement": {
+            "default": "$0",
+            "title": "Replacement",
+            "type": "string"
           }
         },
-        "title": "ContractFixtureConfig",
+        "required": [
+          "regex"
+        ],
+        "title": "RegexRouterConfig",
         "type": "object"
       },
       "ui_schema": {
         "type": "Category",
-        "label": "Contract fixture",
+        "label": "Regex router",
         "elements": [
           {
             "type": "Control",
-            "scope": "#/properties/enabled",
-            "options": {
-              "control": "toggle"
-            }
-          },
-          {
-            "type": "Control",
-            "scope": "#/properties/retries",
-            "options": {
-              "control": "number"
-            }
-          },
-          {
-            "type": "Control",
-            "scope": "#/properties/fallback",
+            "scope": "#/properties/regex",
             "options": {
               "control": "string"
             }
           },
           {
             "type": "Control",
-            "scope": "#/properties/labels",
+            "scope": "#/properties/replacement",
+            "options": {
+              "control": "string"
+            }
+          }
+        ]
+      },
+      "secret_paths": [],
+      "row_keys": {},
+      "examples": {
+        "read_projection": {
+          "regex": "(.*)",
+          "replacement": "$1"
+        }
+      },
+      "alias_base": "RegexRouter",
+      "hosts": [
+        "destinations"
+      ],
+      "kc_class": "org.apache.kafka.connect.transforms.RegexRouter",
+      "package": "kafka-connect"
+    },
+    {
+      "label": "Mask field",
+      "type_id": "mask_field",
+      "schema_version": 1,
+      "codec_version": 1,
+      "publishable": true,
+      "data_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "fields_include": {
+            "items": {
+              "pattern": "^[^,]+$",
+              "type": "string"
+            },
+            "title": "Fields Include",
+            "type": "array"
+          },
+          "fields_exclude": {
+            "items": {
+              "pattern": "^[^,]+$",
+              "type": "string"
+            },
+            "title": "Fields Exclude",
+            "type": "array"
+          },
+          "mask_function": {
+            "default": "SHA256_TRUNCATE",
+            "enum": [
+              "SHA256_TRUNCATE",
+              "MD5_TRUNCATE",
+              "SHA256",
+              "MD5",
+              "REDACT",
+              "FIXED",
+              "NULLIFY"
+            ],
+            "title": "Mask Function",
+            "type": "string"
+          },
+          "mask_salt": {
+            "default": "",
+            "format": "password",
+            "title": "Mask Salt",
+            "type": "string",
+            "writeOnly": true
+          },
+          "mask_char": {
+            "default": "*",
+            "title": "Mask Char",
+            "type": "string"
+          },
+          "mask_fixed_value": {
+            "default": "***",
+            "title": "Mask Fixed Value",
+            "type": "string"
+          },
+          "replace_null_with_default": {
+            "default": true,
+            "title": "Replace Null With Default",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fields_include"
+        ],
+        "title": "MaskFieldConfig",
+        "type": "object"
+      },
+      "ui_schema": {
+        "type": "Category",
+        "label": "Mask field",
+        "elements": [
+          {
+            "type": "Control",
+            "scope": "#/properties/fields_include",
             "options": {
               "control": "multi-select"
             }
           },
           {
             "type": "Control",
-            "scope": "#/properties/max_records",
+            "scope": "#/properties/fields_exclude",
             "options": {
-              "control": "number"
+              "control": "multi-select"
             }
           },
           {
-            "type": "Group",
-            "label": "Output",
-            "scope": "#/properties/output",
-            "elements": [
-              {
-                "type": "Control",
-                "scope": "#/properties/output/properties/prefix",
-                "options": {
-                  "control": "string"
-                }
-              },
-              {
-                "type": "Control",
-                "scope": "#/properties/output/properties/label",
-                "options": {
-                  "control": "string"
-                }
-              },
-              {
-                "type": "Control",
-                "scope": "#/properties/output/properties/retry_limit",
-                "options": {
-                  "control": "number"
-                },
-                "rule": {
-                  "condition": {
-                    "schema": {
-                      "const": true
-                    },
-                    "scope": "#/properties/enabled"
-                  },
-                  "effect": "SHOW"
-                }
-              }
-            ]
+            "type": "Control",
+            "scope": "#/properties/mask_function",
+            "options": {
+              "control": "one-select"
+            }
           },
           {
-            "type": "Group",
-            "label": "Routes",
-            "scope": "#/properties/routes",
+            "type": "Control",
+            "scope": "#/properties/mask_salt",
             "options": {
-              "control": "object-list"
-            },
-            "elements": [
-              {
-                "type": "Control",
-                "scope": "#/properties/routes/items/properties/key",
-                "options": {
-                  "control": "string"
-                }
-              },
-              {
-                "type": "Control",
-                "scope": "#/properties/routes/items/properties/label",
-                "options": {
-                  "control": "string"
-                }
-              },
-              {
-                "type": "Control",
-                "scope": "#/properties/routes/items/properties/endpoint",
-                "options": {
-                  "control": "string"
-                }
-              },
-              {
-                "type": "Control",
-                "scope": "#/properties/routes/items/properties/token",
-                "options": {
-                  "control": "password"
-                }
-              }
-            ]
+              "control": "password"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/mask_char",
+            "options": {
+              "control": "string"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/mask_fixed_value",
+            "options": {
+              "control": "string"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/replace_null_with_default",
+            "options": {
+              "control": "toggle"
+            }
           }
         ]
       },
       "secret_paths": [
-        "/routes/*/token"
+        "/mask_salt"
       ],
-      "row_keys": {
-        "/routes": "key"
-      },
+      "row_keys": {},
       "examples": {
         "read_projection": {
-          "enabled": false,
-          "retries": 0,
-          "fallback": null,
-          "labels": [],
-          "max_records": 0,
-          "output": {
-            "prefix": "",
-            "label": "",
-            "retry_limit": 0
-          },
-          "routes": [
-            {
-              "key": "row-east",
-              "label": "east",
-              "endpoint": "example.invalid"
-            },
-            {
-              "key": "row~west/1",
-              "label": "west",
-              "endpoint": "other.invalid"
-            }
-          ]
+          "fields_include": [
+            "email"
+          ],
+          "fields_exclude": [],
+          "mask_function": "SHA256_TRUNCATE",
+          "mask_char": "*",
+          "mask_fixed_value": "***",
+          "replace_null_with_default": true
         }
-      }
-    },
-    {
-      "type_id": "contract_fixture_deep",
-      "schema_version": 1,
-      "codec_version": 1,
-      "publishable": false,
-      "data_schema": {
-        "additionalProperties": false,
-        "description": "The two-level config tree: rows inside rows, secrets at both depths.",
-        "properties": {
-          "services": {
-            "items": {
-              "additionalProperties": false,
-              "description": "One outer row: keyed, with a secret-bearing nested object and a secret-bearing nested list.",
-              "properties": {
-                "key": {
-                  "pattern": "^[^,]{1,64}$",
-                  "title": "Key",
-                  "type": "string"
-                },
-                "auth": {
-                  "additionalProperties": false,
-                  "description": "A nested object inside a row, carrying a secret one level below the row itself.",
-                  "properties": {
-                    "username": {
-                      "default": "",
-                      "title": "Username",
-                      "type": "string"
-                    },
-                    "token": {
-                      "default": "",
-                      "format": "password",
-                      "title": "Token",
-                      "type": "string",
-                      "writeOnly": true
-                    }
-                  },
-                  "type": "object",
-                  "title": "Auth"
-                },
-                "endpoints": {
-                  "items": {
-                    "additionalProperties": false,
-                    "description": "A keyed row nested inside another keyed row. ``id`` is the key, proving the key name is declared, not assumed.",
-                    "properties": {
-                      "id": {
-                        "pattern": "^[^,]{1,64}$",
-                        "title": "Id",
-                        "type": "string"
-                      },
-                      "url": {
-                        "default": "",
-                        "title": "Url",
-                        "type": "string"
-                      },
-                      "secret": {
-                        "default": "",
-                        "format": "password",
-                        "title": "Secret",
-                        "type": "string",
-                        "writeOnly": true
-                      }
-                    },
-                    "required": [
-                      "id"
-                    ],
-                    "type": "object"
-                  },
-                  "title": "Endpoints",
-                  "type": "array"
-                }
-              },
-              "required": [
-                "key"
-              ],
-              "type": "object"
-            },
-            "title": "Services",
-            "type": "array"
-          }
-        },
-        "title": "ContractFixtureDeepConfig",
-        "type": "object"
       },
-      "ui_schema": {
-        "type": "Category",
-        "label": "Contract fixture (nested rows)",
-        "elements": [
-          {
-            "type": "Group",
-            "label": "Services",
-            "scope": "#/properties/services",
-            "options": {
-              "control": "object-list"
-            },
-            "elements": [
-              {
-                "type": "Control",
-                "scope": "#/properties/services/items/properties/key",
-                "options": {
-                  "control": "string"
-                }
-              },
-              {
-                "type": "Group",
-                "label": "Auth",
-                "scope": "#/properties/services/items/properties/auth",
-                "elements": [
-                  {
-                    "type": "Control",
-                    "scope": "#/properties/services/items/properties/auth/properties/username",
-                    "options": {
-                      "control": "string"
-                    }
-                  },
-                  {
-                    "type": "Control",
-                    "scope": "#/properties/services/items/properties/auth/properties/token",
-                    "options": {
-                      "control": "password"
-                    }
-                  }
-                ]
-              },
-              {
-                "type": "Group",
-                "label": "Endpoints",
-                "scope": "#/properties/services/items/properties/endpoints",
-                "options": {
-                  "control": "object-list"
-                },
-                "elements": [
-                  {
-                    "type": "Control",
-                    "scope": "#/properties/services/items/properties/endpoints/items/properties/id",
-                    "options": {
-                      "control": "string"
-                    }
-                  },
-                  {
-                    "type": "Control",
-                    "scope": "#/properties/services/items/properties/endpoints/items/properties/url",
-                    "options": {
-                      "control": "string"
-                    }
-                  },
-                  {
-                    "type": "Control",
-                    "scope": "#/properties/services/items/properties/endpoints/items/properties/secret",
-                    "options": {
-                      "control": "password"
-                    }
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      "secret_paths": [
-        "/services/*/auth/token",
-        "/services/*/endpoints/*/secret"
+      "alias_base": "MaskField",
+      "hosts": [
+        "destinations"
       ],
-      "row_keys": {
-        "/services": "key",
-        "/services/*/endpoints": "id"
-      },
-      "examples": {
-        "read_projection": {
-          "services": [
-            {
-              "key": "svc-a",
-              "auth": {
-                "username": "reader"
-              },
-              "endpoints": [
-                {
-                  "id": "ep/1",
-                  "url": "a.invalid"
-                },
-                {
-                  "id": "ep~2",
-                  "url": "b.invalid"
-                }
-              ]
-            },
-            {
-              "key": "svc-b",
-              "auth": {
-                "username": ""
-              },
-              "endpoints": []
-            }
-          ]
-        }
-      }
+      "kc_class": "com.streamkap.kafka.connect.transforms.MaskField$Value",
+      "package": "streamkap-transforms-multi-converter"
     }
   ]
 }

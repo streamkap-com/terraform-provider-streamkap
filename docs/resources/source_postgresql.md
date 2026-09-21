@@ -256,11 +256,13 @@ Required:
 
 - `key` (String) Immutable provider-side key of this instance. Changing it creates a new instance; it never changes the server id it was matched to.
 - `name` (String) Mutable display name.
-- `type` (String) Catalog type id. Cannot change under an existing key. The pinned catalog publishes no type yet, so no value is accepted.
+- `type` (String) Catalog type id. Cannot change under an existing key. Valid values: `mask_field`, `regex_router`.
 
 Optional:
 
 - `enabled` (Boolean) Whether the instance runs. Defaults to true.
+- `mask_field` (Attributes) Configuration when type is mask_field. (see [below for nested schema](#nestedatt--smt_chain--mask_field))
+- `regex_router` (Attributes) Configuration when type is regex_router. (see [below for nested schema](#nestedatt--smt_chain--regex_router))
 
 Read-Only:
 
@@ -268,6 +270,34 @@ Read-Only:
 - `id` (String) Server-owned instance id.
 - `schema_version` (Number) Catalog schema version the instance was persisted with.
 - `secret_version` (Number) Last rotation version applied to this instance; 0 before any rotation. Follows the key, so a removed and re-added secret entry cannot restart below it.
+
+<a id="nestedatt--smt_chain--mask_field"></a>
+### Nested Schema for `smt_chain.mask_field`
+
+Required:
+
+- `fields_include` (List of String)
+
+Optional:
+
+- `fields_exclude` (List of String)
+- `mask_char` (String)
+- `mask_fixed_value` (String)
+- `mask_function` (String)
+- `replace_null_with_default` (Boolean)
+
+
+<a id="nestedatt--smt_chain--regex_router"></a>
+### Nested Schema for `smt_chain.regex_router`
+
+Required:
+
+- `regex` (String)
+
+Optional:
+
+- `replacement` (String)
+
 
 
 <a id="nestedatt--smt_secrets"></a>

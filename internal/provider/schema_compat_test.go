@@ -1051,13 +1051,14 @@ func TestSchemaBackwardsCompatibility_KafkaUser(t *testing.T) {
 	})
 }
 
-// The two connectors that opt into the SMT chain pin the secret input as
+// The connectors that opt into the SMT chain pin the secret input as
 // WriteOnly the same way credentials are pinned as Sensitive: every value row
 // of smt_secrets must stay out of state, and the snapshot records it.
 func TestSchemaBackwardsCompatibility_SMTChainResources(t *testing.T) {
 	for _, tc := range []schemaCompatTestCase{
 		{name: "source_postgresql", snapshotFile: "source_postgresql_v1.json", resourceFactory: source.NewPostgreSQLResource},
 		{name: "destination_snowflake", snapshotFile: "destination_snowflake_v1.json", resourceFactory: destination.NewSnowflakeResource},
+		{name: "destination_postgresql", snapshotFile: "destination_postgresql_v1.json", resourceFactory: destination.NewPostgreSQLResource},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			schemaResp := &resource.SchemaResponse{}

@@ -37,6 +37,10 @@
     {
       "connector": "snowflake",
       "entity_type": "destinations"
+    },
+    {
+      "connector": "postgresql",
+      "entity_type": "destinations"
     }
   ]
 }

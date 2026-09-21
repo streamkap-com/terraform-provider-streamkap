@@ -7,13 +7,23 @@ import (
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/generated"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/connector"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/smt"
 )
 
 // PostgreSQLConfig implements the ConnectorConfig interface for PostgreSQL destinations.
 type PostgreSQLConfig struct{}
 
-// Ensure PostgreSQLConfig implements ConnectorConfig.
-var _ connector.ConnectorConfig = (*PostgreSQLConfig)(nil)
+// Ensure PostgreSQLConfig implements ConnectorConfig and opts into the SMT chain.
+var (
+	_ connector.ConnectorConfig             = (*PostgreSQLConfig)(nil)
+	_ connector.ConnectorConfigWithSMTChain = (*PostgreSQLConfig)(nil)
+)
+
+// GetSMTChain returns the chain schema built from the pinned catalog; the
+// generated model carries the matching fields.
+func (c *PostgreSQLConfig) GetSMTChain() *smt.ChainSchema {
+	return generated.SMTChain()
+}
 
 // GetSchema returns the Terraform schema for PostgreSQL destination.
 func (c *PostgreSQLConfig) GetSchema() schema.Schema {

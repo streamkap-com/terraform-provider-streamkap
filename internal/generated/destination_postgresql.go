@@ -88,6 +88,9 @@ type DestinationPostgresqlModel struct {
 	TransformsMarkColumnsAsOptionalFieldsIncludeList types.String   `tfsdk:"transforms_mark_columns_as_optional_fields_include_list"`
 	TransformsCopyFieldCopyFieldMapping              types.String   `tfsdk:"transforms_copy_field_copy_field_mapping"`
 	TransformsHeaderToFieldCustomHeaderMappings      types.String   `tfsdk:"transforms_header_to_field_custom_header_mappings"`
+	SMTChain                                         types.List     `tfsdk:"smt_chain"`
+	SMTSecrets                                       types.List     `tfsdk:"smt_secrets"`
+	SMTChainRevision                                 types.String   `tfsdk:"smt_chain_revision"`
 	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
 }
 
