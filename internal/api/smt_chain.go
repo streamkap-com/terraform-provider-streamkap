@@ -127,15 +127,17 @@ type SMTValidationIssue struct {
 	Pointer    string  `json:"pointer"`
 }
 
-// Error codes the provider reacts to. The three 409 codes are distinct
+// Error codes the provider reacts to. The four 409 codes are distinct
 // situations: a stale expected revision, a create that lost a race to
-// another creator, and a write without an expected revision against a chain
-// that already exists.
+// another creator, a write without an expected revision against a chain
+// that already exists, and a write against a connector whose deletion is
+// pending.
 const (
-	smtRevisionConflictCode = "smt_revision_conflict"
-	smtChainExistsCode      = "smt_chain_exists"
-	smtRevisionRequiredCode = "smt_expected_revision_required"
-	smtChainAbsentCode      = "smt_chain_absent"
+	smtRevisionConflictCode  = "smt_revision_conflict"
+	smtChainExistsCode       = "smt_chain_exists"
+	smtRevisionRequiredCode  = "smt_expected_revision_required"
+	smtConnectorDeletingCode = "smt_connector_deleting"
+	smtChainAbsentCode       = "smt_chain_absent"
 )
 
 // SMTChainAPI is the server surface the connector resources drive the chain
@@ -178,6 +180,13 @@ func IsSMTRevisionConflict(err error) bool {
 // revision was refused because the connector already has a chain.
 func IsSMTRevisionRequired(err error) bool {
 	return smtErrorCode(err) == smtRevisionRequiredCode
+}
+
+// IsSMTConnectorDeleting reports whether a chain write was refused because
+// the connector's deletion is pending: the deletion drops the chain document,
+// so nothing written now would survive it.
+func IsSMTConnectorDeleting(err error) bool {
+	return smtErrorCode(err) == smtConnectorDeletingCode
 }
 
 // IsSMTChainAbsent reports whether a chain read answered that the connector

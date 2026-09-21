@@ -175,6 +175,7 @@ func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 		{"conflict", http.StatusConflict, w.ConflictResponse, true, "smt_revision_conflict", 1},
 		{"lost create race", http.StatusConflict, envelope("smt_chain_exists", "A chain was created concurrently"), true, "smt_chain_exists", 0},
 		{"revision required", http.StatusConflict, envelope("smt_expected_revision_required", "The chain exists; send expected_revision"), false, "smt_expected_revision_required", 0},
+		{"connector deleting", http.StatusConflict, envelope("smt_connector_deleting", "Destination dest-1 is being deleted; its SMT chain can no longer be written"), false, "smt_connector_deleting", 0},
 		{"validation", http.StatusUnprocessableEntity, w.ValidationResponse, false, "smt_validation_failed", 3},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -193,6 +194,7 @@ func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 			require.Equal(t, tc.code, env.Code)
 			require.Len(t, env.Issues, tc.issues)
 			require.Equal(t, tc.code == "smt_expected_revision_required", IsSMTRevisionRequired(err))
+			require.Equal(t, tc.code == "smt_connector_deleting", IsSMTConnectorDeleting(err))
 			require.False(t, IsSMTChainAbsent(err))
 		})
 	}

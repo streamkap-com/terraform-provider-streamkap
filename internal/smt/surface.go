@@ -305,6 +305,11 @@ func (s *Surface) writeError(err error, expectedRevision types.String, w *Write)
 			fmt.Sprintf("The chain revision %q this plan was built from is no longer current. Run terraform plan again to refresh it and review the drift before applying: %s", expectedRevision.ValueString(), err))
 		return diags
 	}
+	if api.IsSMTConnectorDeleting(err) {
+		diags.AddAttributeError(path.Root(AttrChain), "Connector is being deleted",
+			fmt.Sprintf("The connector's deletion is pending, so its transform chain can no longer be written. Run terraform plan again once the deletion completes: %s", err))
+		return diags
+	}
 	if api.IsSMTRevisionRequired(err) {
 		diags.AddAttributeError(path.Root(AttrChain), "Transform chain already exists outside Terraform",
 			fmt.Sprintf("The connector already has a transform chain this resource does not manage. Import the resource to adopt it (its instances become %s entries keyed by their server ids), then apply: %s", AttrChain, err))
