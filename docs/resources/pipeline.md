@@ -28,20 +28,22 @@ Without a version constraint, Terraform selects a stable release.
 ### Basic
 
 ```terraform
-# Use IDs and names from existing Streamkap connectors.
+# Use values from existing Streamkap connectors.
 variable "source_connector" {
   type = object({
-    id     = string
-    name   = string
-    topics = set(string)
+    id        = string
+    name      = string
+    connector = string
+    topics    = set(string)
   })
   description = "Existing PostgreSQL source and selected topics, such as public.orders."
 }
 
 variable "destination" {
   type = object({
-    id   = string
-    name = string
+    id        = string
+    name      = string
+    connector = string
   })
   description = "Existing Snowflake destination."
 }
@@ -52,14 +54,14 @@ resource "streamkap_pipeline" "example" {
   source = {
     id        = var.source_connector.id
     name      = var.source_connector.name
-    connector = "postgresql"
+    connector = var.source_connector.connector
     topics    = var.source_connector.topics
   }
 
   destination = {
     id        = var.destination.id
     name      = var.destination.name
-    connector = "snowflake"
+    connector = var.destination.connector
   }
 }
 ```
