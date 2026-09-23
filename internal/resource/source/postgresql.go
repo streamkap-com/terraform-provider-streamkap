@@ -175,22 +175,22 @@ func (r *SourcePostgreSQLResource) Schema(ctx context.Context, req res.SchemaReq
 				Optional: true,
 				Description: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns " +
 					"that should be included in change event record values. Fully-qualified names for columns " +
-					"are of the form `schemaName[.]tableName[.](columnName1|columnName2)`. " +
+					"are of the form 'schemaName[.]tableName[.](columnName1|columnName2)'. " +
 					"You can only specify either `column_include_list` or `column_exclude_list`, not both.",
 				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns " +
 					"that should be included in change event record values. Fully-qualified names for columns " +
-					"are of the form `schemaName[.]tableName[.](columnName1|columnName2)`" +
+					"are of the form `schemaName[.]tableName[.](columnName1|columnName2)`. " +
 					"You can only specify either `column_include_list` or `column_exclude_list`, not both.",
 			},
 			"column_exclude_list": schema.StringAttribute{
 				Optional: true,
 				Description: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns " +
 					"that should be excluded from change event record values. " +
-					"Fully-qualified names for columns are of the form schemaName.tableName.columnName." +
+					"Fully-qualified names for columns are of the form schemaName.tableName.columnName. " +
 					"You can only specify either `column_include_list` or `column_exclude_list`, not both.",
 				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns " +
 					"that should be excluded from change event record values. " +
-					"Fully-qualified names for columns are of the form schemaName.tableName.columnName." +
+					"Fully-qualified names for columns are of the form `schemaName.tableName.columnName`. " +
 					"You can only specify either `column_include_list` or `column_exclude_list`, not both.",
 			},
 			"heartbeat_enabled": schema.BoolAttribute{

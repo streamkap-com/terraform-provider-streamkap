@@ -82,8 +82,8 @@ output "example-source-postgresql" {
 ### Optional
 
 - `binary_handling_mode` (String) Representation of binary data for binary columns
-- `column_exclude_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.You can only specify either `column_include_list` or `column_exclude_list`, not both.
-- `column_include_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form `schemaName[.]tableName[.](columnName1|columnName2)`You can only specify either `column_include_list` or `column_exclude_list`, not both.
+- `column_exclude_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form `schemaName.tableName.columnName`. You can only specify either `column_include_list` or `column_exclude_list`, not both.
+- `column_include_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form `schemaName[.]tableName[.](columnName1|columnName2)`. You can only specify either `column_include_list` or `column_exclude_list`, not both.
 - `database_port` (Number) PostgreSQL Port. For example, 5432
 - `database_sslmode` (String) Whether to use an encrypted connection to the PostgreSQL server
 - `heartbeat_data_collection_schema_or_database` (String) Optional. Only takes effect when `heartbeat_enabled` is `true`. Schema containing a `streamkap_heartbeat` table — providing this enables source-table heartbeat mode, which writes to the table on each beat to keep the source transaction log active. Leave `null` for Kafka-only heartbeat (no table or write grant required).
