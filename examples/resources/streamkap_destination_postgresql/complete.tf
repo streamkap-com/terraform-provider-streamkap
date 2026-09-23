@@ -21,7 +21,7 @@ variable "destination_postgresql_password" {
   description = "The password for the PostgreSQL database"
 }
 
-# Complete PostgreSQL destination configuration with all options
+# Complete PostgreSQL destination configuration
 resource "streamkap_destination_postgresql" "example" {
   name = "example-destination-postgresql"
 

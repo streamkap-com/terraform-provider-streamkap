@@ -53,8 +53,7 @@ variable "mongodb_connection_string" {
 
 ```terraform
 # Complete MongoDB Atlas CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from MongoDB collections using change streams
+# Capturing changes from MongoDB collections using change streams
 
 terraform {
   required_providers {
@@ -164,7 +163,7 @@ output "example-source-mongodb" {
 - `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
 - `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
-- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.
 - `transforms_unwrap_array_encoding` (String) How to encode arrays. 'Array' encodes them as Array objects but requires all values in the array to be of the same type. 'Array_String' encodes them as JSON Strings and should be used if arrays have mixed types. 'String' is deprecated, use 'Array_String' instead. Defaults to `array_string`. Valid values: `array`, `array_string`, `string`.
 - `transforms_unwrap_document_encoding` (String) How to encode nested documents. 'Document' encodes them as JSON Objects, 'String' encodes them as JSON Strings. Defaults to `document`. Valid values: `document`, `string`.
 - `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'

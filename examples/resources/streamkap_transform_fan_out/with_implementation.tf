@@ -32,9 +32,9 @@ resource "streamkap_transform_fan_out" "example" {
       }
     JS
     topic_transform = <<-JS
-      function _streamkap_topic_transform(inputObj, inputTopic) {
+      function _streamkap_transform_topic(valueObject, keyObject, topic, timestamp) {
         // Route to different topics based on region
-        var region = inputObj.region || 'unknown';
+        var region = valueObject.region || 'unknown';
 
         // Return an array of topics to fan out to multiple destinations
         switch(region) {

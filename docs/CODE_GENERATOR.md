@@ -15,7 +15,9 @@
 
 ## Overview
 
-The `tfgen` tool automates Terraform provider schema generation by parsing backend `configuration.latest.json` files. This eliminates manual boilerplate and ensures consistency between the backend API and Terraform provider.
+The `tfgen` tool reads backend `configuration.latest.json` files. The generated
+schemas must still be checked against the released backend and compatibility
+snapshots before publishing.
 
 ### Architecture
 
@@ -133,41 +135,10 @@ make generate
 > lag one regeneration behind. A newly added attribute then lands in
 > `internal/generated/*.go` but is silently missing from its
 > `docs/resources/*.md` page. `make generate` runs `tfgen` first and
-> `tfplugindocs` second, guaranteeing docs match the freshly generated schemas.
+> `tfplugindocs` second so docs use the freshly generated schemas.
 
-The two directives that `make generate` sequences are:
-
-```go
-// internal/generated/doc.go — schemas/models/mappings (runs first)
-//go:generate go run ../../cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH
-
-// main.go — registry docs, introspected from the built provider (runs second)
-//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
-```
-
-### Example Output
-
-```
-$ tfgen generate --backend-path=/Users/dev/python-be-streamkap
-Backend path: /Users/dev/python-be-streamkap
-Output: internal/generated
-Entity type: all
-
-Loaded 3 field overrides from cmd/tfgen/overrides.json
-
-Generating source_alloydb.go...
-Generating source_db2.go...
-Generating source_documentdb.go...
-...
-Generating destination_snowflake.go...
-Generating destination_clickhouse.go...
-...
-Generating transform_map_filter.go...
-Generating transform_enrich.go...
-...
-
-Generation complete! Generated 56 schema files.
-```
+`make generate` runs the schema directive in `internal/generated/doc.go`, then
+formats the examples and renders the registry documentation through `main.go`.
 
 ## Type Mapping
 
@@ -210,7 +181,7 @@ The generator applies these conversions:
 
 1. **Port fields**: Fields named `port` or ending with `_port` are converted to `Int64` even if stored as strings in the backend
 2. **Sensitive fields**: Fields with `encrypt: true` or `control: "password"` are marked `Sensitive: true`
-3. **Credentials by name**: Fields named (or `_`-suffixed) `api_key` or `authorization` are forced `Sensitive: true` regardless of the spec. The webhook plugins declare `api.key`, and the http-sink declares `http.headers.authorization` (the literal `Bearer <token>` header value), with neither `encrypt` nor `control: "password"`. This has regressed in the backend more than once; hand-patching the generated file loses the fix on the next regen, so the rule lives in `isSecretField` (`cmd/tfgen/generator.go`). Matching is deliberately narrow — `api_key_enabled` is a flag, `http_authorization_type` is an enum, and `oauth2_access_token_url` is an endpoint.
+3. **Credentials by name**: `isSecretField` forces fields named or suffixed `api_key`, `authorization`, `access_key_id`, `secret_access_key`, or `secret_key` to `Sensitive: true`, even when the backend omits sensitivity flags. Names such as `api_key_enabled` and `http_authorization_type` do not match.
 4. **Set-once fields**: Fields with `set_once: true` get `RequiresReplace()` plan modifier
 
 ### Go Field Naming (acronyms)
@@ -323,6 +294,8 @@ Use overrides for:
 | `type` | Yes | `map_string` or `map_nested` |
 | `optional` | Yes | Whether the field is optional |
 | `description` | Yes | Field description |
+| `nested_model_name` | For `map_nested` | Go type name for each map value |
+| `nested_fields` | For `map_nested` | Attributes inside each map value |
 
 **Precedence:** when an override's `api_field_name` matches a field in the
 backend config, the override wins and the auto-parsed field is dropped, so the
@@ -449,11 +422,6 @@ the generated model and add — for each alias — the wrapper struct field, the
 schema attribute (with `DeprecationMessage` and a `ConflictsWith` validator), and
 the field mapping to the same backend field as the new name.
 
-There was previously a parallel `cmd/tfgen/deprecations.json` mechanism that
-emitted deprecated *model fields* into `internal/generated/`. It was removed
-because it duplicated the wrapper declarations (producing duplicate `tfsdk` tags)
-and only covered a stale subset of the connectors that actually have aliases.
-
 To add or change a deprecated alias, edit the wrapper file directly — see the
 [deprecated attribute pattern](../AGENTS.md#deprecated-attribute-pattern-v2--v3-aliases) in `AGENTS.md`.
 
@@ -475,8 +443,9 @@ tfgen generate \
   --entity-type=sources \
   --connector=mynewconnector
 
-# Or regenerate all (schemas + docs, in the correct order)
-make generate
+# After adding the wrapper, registration and examples below, run the full
+# generation workflow against the backend main checkout.
+STREAMKAP_BACKEND_PATH=/path/to/backend-main make generate
 ```
 
 ### Step 2: Create the Wrapper File
@@ -540,7 +509,7 @@ func NewMyNewConnectorResource() resource.Resource {
 
 If the connector needs deprecated v2 attribute aliases, the wrapper is also where
 they live — embed the generated model in a `…ModelWithDeprecated` struct and
-extend the field mappings. See `docs/MIGRATION.md` and
+extend the field mappings. See `docs/guides/migration.md` and
 `internal/resource/source/postgresql_generated.go` for a worked example.
 
 ### Step 3: Register the Resource
@@ -583,7 +552,7 @@ resource "streamkap_source_mynewconnector" "example" {
   database = "mydb"
 
   # All optional fields with comments
-  ssl_mode = "require"  # Valid values: disable, require, verify-ca, verify-full
+  ssl_mode = "require" # Valid values: disable, require, verify-ca, verify-full
 }
 ```
 
@@ -640,6 +609,11 @@ resource "streamkap_source_mynewconnector" "test" {
 }
 ```
 
+Add a matching `TestSchemaBackwardsCompatibility_*` case in
+`internal/provider/schema_compat_test.go`, using the new resource factory and
+a unique snapshot filename. `make snapshots` only writes snapshots for resources
+covered by those cases.
+
 ### Step 6: Build and Verify
 
 ```bash
@@ -650,8 +624,8 @@ go build ./...
 # one — TestEveryResourceHasSchemaSnapshot fails without it. Read the diff.
 make snapshots
 
-# Run schema compatibility tests
-make test-schema
+# Run offline tests, including the snapshot-completeness check
+make test-all
 
 # Run your new tests (if credentials available)
 TF_ACC=1 go test -v -run 'TestAccSourceMynewconnector' ./internal/provider/...
@@ -744,10 +718,9 @@ Generated files include the header:
 // Code generated by tfgen. DO NOT EDIT.
 ```
 
-**Never manually edit generated files.** Instead:
-- Fix the backend `configuration.latest.json`
-- Add entries to `overrides.json`
-- Re-run the generator
+**Never manually edit generated files.** Fix the relevant source: backend
+`configuration.latest.json`, `overrides.json`, or the parser, generator or
+template in `cmd/tfgen/`. Then run `make generate`.
 
 (Deprecated v2 aliases are the exception — they live in the hand-maintained
 wrapper files, not in generated code. See "Deprecated attribute aliases" above.)
@@ -805,5 +778,5 @@ STREAMKAP_BACKEND_PATH=/path/to/backend-main make generate
 
 # Verify
 go build ./...
-go test -v -short ./...
+make test-all
 ```

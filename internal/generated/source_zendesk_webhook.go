@@ -162,7 +162,7 @@ func SourceZendeskWebhookSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "Comma-separated list of domain-scoped fields to fan out into separate topics (e.g. ticket.tags, ticket.custom_fields, organization.tags). When empty, arrays stay inline. Defaults to \"\".",
-				MarkdownDescription: "Comma-separated list of domain-scoped fields to fan out into separate topics (e.g. ticket.tags, ticket.custom_fields, organization.tags). When empty, arrays stay inline. Defaults to ``.",
+				MarkdownDescription: "Comma-separated list of domain-scoped fields to fan out into separate topics (e.g. ticket.tags, ticket.custom_fields, organization.tags). When empty, arrays stay inline. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"camel_source_dlq_enabled": schema.BoolAttribute{
@@ -237,7 +237,7 @@ func SourceZendeskWebhookSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to \"\".",
-				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.",
+				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"transforms_oversized_records_max_record_size_bytes": schema.Int64Attribute{

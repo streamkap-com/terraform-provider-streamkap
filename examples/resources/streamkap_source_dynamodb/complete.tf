@@ -1,6 +1,5 @@
 # Complete DynamoDB CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from DynamoDB tables using DynamoDB Streams
+# Capturing changes from DynamoDB tables using DynamoDB Streams
 
 terraform {
   required_providers {

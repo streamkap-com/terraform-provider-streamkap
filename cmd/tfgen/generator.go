@@ -1211,7 +1211,11 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 				case TerraformTypeString:
 					defaultVal := entry.GetDefaultString()
 					field.Description = field.Description + fmt.Sprintf(" Defaults to %q.", defaultVal)
-					field.MarkdownDescription = field.MarkdownDescription + fmt.Sprintf(" Defaults to `%s`.", defaultVal)
+					if defaultVal == "" {
+						field.MarkdownDescription += " Defaults to an empty string."
+					} else {
+						field.MarkdownDescription += fmt.Sprintf(" Defaults to `%s`.", defaultVal)
+					}
 				case TerraformTypeInt64:
 					defaultVal := entry.GetDefaultInt64()
 					field.Description = field.Description + fmt.Sprintf(" Defaults to %d.", defaultVal)

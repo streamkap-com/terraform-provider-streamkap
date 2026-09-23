@@ -1,6 +1,5 @@
 # Complete MySQL CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from MySQL tables using binary log replication
+# Capturing changes from MySQL tables using binary log replication
 
 terraform {
   required_providers {

@@ -1,6 +1,5 @@
 # Complete Redis source configuration
-# This example shows all available configuration options for capturing data
-# from Redis streams or key patterns
+# Capturing data from Redis streams or key patterns
 
 terraform {
   required_providers {

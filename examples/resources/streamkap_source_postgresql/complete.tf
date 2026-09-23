@@ -1,6 +1,5 @@
 # Complete PostgreSQL CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from PostgreSQL tables using logical replication (pgoutput plugin)
+# Capturing changes from PostgreSQL tables using logical replication (pgoutput plugin)
 
 terraform {
   required_providers {
@@ -34,7 +33,7 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   database_port     = 5432                           # PostgreSQL port (default: 5432)
   database_user     = "streamkap"                    # User with replication privileges
   database_password = var.source_postgresql_password # Password (use variables for secrets)
-  database_dbname   = "postgres"                     # Database name to connect to
+  database_dbname   = "commerce"                     # Database name to connect to
 
   # SSL configuration
   database_sslmode = "require" # Options: disable, allow, prefer, require, verify-ca, verify-full
@@ -43,15 +42,12 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   snapshot_read_only = "No" # "Yes" to prevent DDL during snapshots
 
   # Table selection (comma-separated, supports regex patterns)
-  schema_include_list = "streamkap"                              # Schemas to include
-  table_include_list  = "streamkap.customer,streamkap.customer2" # Tables to capture (schema.table format)
-
-  # Column filtering (optional, uses regex pattern: schema[.]table[.](col1|col2))
-  column_include_list = "streamkap[.]customer[.](id|name)"
+  schema_include_list = "public"                         # Schemas to include
+  table_include_list  = "public.orders,public.customers" # Tables to capture (schema.table format)
 
   # Signal table for incremental snapshots
   # This schema must contain a 'streamkap_signal' table for snapshot coordination
-  signal_data_collection_schema_or_database = "streamkap.streamkap_signal"
+  signal_data_collection_schema_or_database = "public.streamkap_signal"
 
   # Heartbeat configuration (optional, for monitoring replication lag)
   heartbeat_enabled                            = false # Enable heartbeat messages
@@ -60,9 +56,9 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   # Output configuration
   include_source_db_name_in_table_name = false # Prefix table names with database name
 
-  # Replication slot and publication (must be pre-created in PostgreSQL)
-  slot_name        = "terraform_pgoutput_slot_1" # Logical replication slot name
-  publication_name = "terraform_pub_1"           # Publication name for the tables
+  # The publication must be pre-created in PostgreSQL.
+  slot_name        = "streamkap_slot"        # Logical replication slot name
+  publication_name = "streamkap_publication" # Publication name for the tables
 
   # Binary data handling
   binary_handling_mode = "bytes" # Options: bytes, base64, base64-url-safe, hex

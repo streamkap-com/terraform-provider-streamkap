@@ -67,7 +67,7 @@ variable "destination_azblob_connection_string" {
   description = "The Azure Blob Storage connection string or SAS URL"
 }
 
-# Complete Azure Blob Storage destination configuration with all options
+# Complete Azure Blob Storage destination configuration
 resource "streamkap_destination_azblob" "example" {
   name = "example-destination-azblob"
 
@@ -139,7 +139,7 @@ output "example_destination_azblob" {
 - `transforms_mask_field_mask_char` (String) Fill character used by the REDACT function (length is preserved). Defaults to `*`.
 - `transforms_mask_field_mask_fixed_value` (String) Constant replacement used by the FIXED function. Defaults to `***`.
 - `transforms_mask_field_mask_function` (String) Masking algorithm. Hash functions are deterministic (same input -> same token) and length-preserving. Defaults to `SHA256_TRUNCATE`. Valid values: `SHA256_TRUNCATE`, `MD5_TRUNCATE`, `SHA256`, `MD5`, `REDACT`, `FIXED`, `NULLIFY`.
-- `transforms_mask_field_mask_salt` (String) Secret salt prepended before hashing (used by the SHA256/MD5 functions). Strongly recommended: without it, low-cardinality values (phone, SSN, email) are reversible via a precomputed rainbow table. Defaults to ``.
+- `transforms_mask_field_mask_salt` (String) Secret salt prepended before hashing (used by the SHA256/MD5 functions). Strongly recommended: without it, low-cardinality values (phone, SSN, email) are reversible via a precomputed rainbow table. Defaults to an empty string.
 - `transforms_mask_field_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
 - `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
@@ -148,7 +148,7 @@ output "example_destination_azblob" {
 - `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
 - `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
-- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.
 - `transforms_rename_fields_renames` (String) JSON mapping of source to target column names. Keys should be schema.table.column, table.column or just column. Values must be valid column names (no dots or spaces).
 
 Example:

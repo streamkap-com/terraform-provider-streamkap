@@ -42,7 +42,7 @@ resource "streamkap_transform_map_filter" "example" {
 ### Complete
 
 ```terraform
-# Complete Map/Filter transform configuration with all options
+# Complete Map/Filter transform configuration
 # Transform/Filter Records allows filtering and transforming data in real-time
 
 terraform {

@@ -17,7 +17,7 @@ variable "destination_redis_password" {
   description = "Password to access the Redis database"
 }
 
-# Complete Redis destination configuration with all options
+# Complete Redis destination configuration
 resource "streamkap_destination_redis" "example" {
   name = "example-destination-redis"
 

@@ -2,7 +2,7 @@
 
 Audience: AI agents (or humans) **using** the Streamkap Terraform provider in customer configs. For provider-development guidance, see [Provider development](#provider-development) in the second half of this file.
 
-Provider address: `github.com/streamkap-com/streamkap` · Registry: `streamkap-com/streamkap`
+Terraform source address: `streamkap-com/streamkap` (`registry.terraform.io/streamkap-com/streamkap`).
 
 ## Versions and branches
 
@@ -33,7 +33,7 @@ export STREAMKAP_SECRET=...
 ```
 
 ```hcl
-provider "streamkap" {}  # picks up env vars
+provider "streamkap" {} # picks up env vars
 ```
 
 ## Minimal example
@@ -45,13 +45,25 @@ terraform {
   }
 }
 
+variable "db_password" {
+  type      = string
+  sensitive = true
+}
+
+variable "snowflake_key" {
+  type        = string
+  sensitive   = true
+  description = "Snowflake private key without PEM headers, footers, or line breaks."
+}
+
 resource "streamkap_source_postgresql" "main" {
-  name               = "my-postgres"
-  database_hostname  = "db.example.com"
-  database_user      = "streamkap"
-  database_password  = var.db_password
-  database_dbname    = "mydb"
-  table_include_list = "public.customers"
+  name                = "my-postgres"
+  database_hostname   = "db.example.com"
+  database_user       = "streamkap"
+  database_password   = var.db_password
+  database_dbname     = "mydb"
+  schema_include_list = "public"
+  table_include_list  = "public.customers"
 }
 
 resource "streamkap_destination_snowflake" "main" {
@@ -128,8 +140,8 @@ resource "streamkap_source_postgresql" "orders" {
 ```
 
 Look up existing tag IDs (instead of hardcoding) via the `streamkap_tags`
-data source: `data.streamkap_tags.by_name.tags[0].id` filtered by `filter_name`,
-`filter_type`, or `filter_ids`.
+data source, filtered by `filter_name`, `filter_type`, or `filter_ids`. Check
+that the results match the intended tags before referencing their IDs.
 
 **Sensitive values** — declare `variable { sensitive = true }`; never inline secrets.
 
@@ -162,8 +174,8 @@ names server-side and adds them automatically.
 **Transform implementation code** — most transform resources accept `implementation_json`:
 ```hcl
 implementation_json = jsonencode({
-  language        = "JavaScript"
-  value_transform = "return record;"
+  language        = "JAVASCRIPT"
+  value_transform = "function _streamkap_transform(inputObj) { return inputObj; }"
 })
 ```
 Omit it to manage code outside Terraform; Terraform won't overwrite existing implementation.
@@ -194,7 +206,7 @@ The provider retries eligible operations on HTTP 429, 502/503/504, network timeo
 - User docs: <https://docs.streamkap.com/streamkap-provider-for-terraform>
 - Streamkap API: <https://api.streamkap.com> · OpenAPI: <https://api.streamkap.com/openapi.json>
 - Registry: <https://registry.terraform.io/providers/streamkap-com/streamkap>
-- Migration (v2 → v3): `docs/MIGRATION.md`
+- Migration (v2 → v3): `docs/guides/migration.md`
 - Architecture / internals (provider development): [Provider development](#provider-development) below, `docs/ARCHITECTURE.md`, `docs/CODE_GENERATOR.md`
 
 ---
@@ -214,7 +226,7 @@ Everything above is for *consuming* the provider. What follows is for *changing*
 | `docs/resources/`, `docs/data-sources/` | Auto-generated per-resource pages (regen via `make generate`). |
 | `docs/ARCHITECTURE.md` | Layered diagram + CRUD flow + design rationale. |
 | `docs/CODE_GENERATOR.md` | tfgen internals: parser, generator, overrides.json, "adding a new connector" walkthrough. |
-| `docs/MIGRATION.md` | v2 → v3 deprecations, removed attributes, action items for users. |
+| `templates/guides/migration.md` | Source for the v2 → v3 upgrade guide. `go generate main.go` copies it to `docs/guides/migration.md` for Registry publication. `docs/MIGRATION.md` preserves the old GitHub entry point. |
 | `docs/audits/<date>/`, `docs/plans/<date>-*.md` | Point-in-time audit reports and execution plans. Append new files; do not rewrite history. **Both directories are gitignored** (`.gitignore`), so everything you write there is local-only and invisible to anyone who clones the repo. Treat them as a working scratchpad, not shared history, and never assume a reader can see them. Whether that gitignore is intentional is an open question — don't "fix" it by committing audits or by editing `.gitignore` on your own. |
 | `CHANGELOG.md` | User-visible changes per release. Update before tagging. |
 
@@ -222,7 +234,7 @@ Everything above is for *consuming* the provider. What follows is for *changing*
 
 ### Keep docs in sync
 
-Changing something in the map above means updating its doc in the same PR. Specifically: a new/removed resource → `AGENTS.md` tables + `docs/ARCHITECTURE.md` counts + `make generate`; a deprecated alias → a `TestAcc<Connector>_MigrationFromLegacy` row in `internal/provider/migration_test.go` + `docs/MIGRATION.md`; a tfgen type-mapping change → `docs/CODE_GENERATOR.md`; a CRUD/retry/pagination change → `docs/ARCHITECTURE.md` + the API-quirks list below; any user-visible change → `CHANGELOG.md`. If a doc is wrong, fix it — don't write a parallel one. New doc files belong only in `docs/audits/` and `docs/plans/`.
+Changing something in the map above means updating its doc in the same PR. Specifically: a new/removed resource → `AGENTS.md` tables + `docs/ARCHITECTURE.md` counts + `make generate`; a deprecated alias → a `TestAcc<Connector>_MigrationFromLegacy` row in `internal/provider/migration_test.go` + `templates/guides/migration.md`; a tfgen type-mapping change → `docs/CODE_GENERATOR.md`; a CRUD/retry/pagination change → `docs/ARCHITECTURE.md` + the API-quirks list below; any user-visible change → `CHANGELOG.md`. If a doc is wrong, fix it — don't write a parallel one. Customer guides published on the Registry belong in `docs/guides/`. Use `docs/audits/` and `docs/plans/` only for local working notes.
 
 A new resource also needs `examples/resources/streamkap_<name>/{basic,complete}.tf` — `templates/resources.md.tmpl` embeds both into the registry page, so `tfplugindocs` (and therefore `make generate`) fails if either is missing.
 
@@ -281,11 +293,11 @@ through 15 October 2026, with support ending 16 October 2026. Existing v2
 artifacts remain available. Verify registry availability and installability;
 a GitHub release alone does not prove registry ingestion.
 
-**Publishing v3 is also gated on the security workflow, and trivy fails on any HIGH or CRITICAL advisory.** That gate is severity-only — it does not ask whether the code path is reachable — so a CVE disclosed against a transitive dependency makes an already-tagged release unpublishable with no code change. It happened on v3.0.0-beta.31: gRPC v1.83.1, which this line had bumped *to* for CVE-2026-84304, was itself hit by CVE-2026-84445.
+**Publishing v3 is gated on the security workflow.** Trivy fails on any HIGH or CRITICAL advisory, including transitive dependencies, regardless of code-path reachability.
 
 When that happens, `goreleaser` shows as `skipped` and **nothing is published** — no GitHub release, no registry artifacts. Confirm with `gh release view <tag>` returning "release not found". Then bump the dependency, push the approved release branch, and re-point the tag (`git push origin :refs/tags/<tag>` then re-tag and push). Re-pointing is safe *only* because the tag published nothing; once a release exists, burn the number and cut the next one instead.
 
-**Bump the version pins in the same commit that cuts the CHANGELOG, before tagging.** The registry renders each version's pages from that version's own tag, so a pin updated after the tag ships a page telling users to install the *previous* release. The pin lives in `examples/provider/provider.tf` (`docs/index.md` is generated from it — edit the example and re-render with `go generate main.go`, never hand-edit the doc), plus `README.md` and `docs/MIGRATION.md`.
+**Bump the version pins in the same commit that cuts the CHANGELOG, before tagging.** The registry renders each version's pages from that version's own tag, so a pin updated after the tag ships a page telling users to install the *previous* release. The pin lives in `examples/provider/provider.tf` (`docs/index.md` is generated from it — edit the example and re-render with `go generate main.go`, never hand-edit the doc), plus `README.md` and `templates/guides/migration.md`.
 
 ## Public repository — content hygiene
 
@@ -295,9 +307,9 @@ This repo is public. Do not commit internal ticket IDs/URLs, customer or tenant 
 
 The provider is built against the Streamkap Python FastAPI backend. Set `STREAMKAP_BACKEND_PATH` to your local clone — `cmd/tfgen` reads `configuration.latest.json` plugin specs from there. OpenAPI: `https://api.streamkap.com/openapi.json`.
 
-Path differs per developer — keep it in shell env or `.env`, never hardcode it here; confirm with `ls` before running codegen. Cross-check schema against the backend's `origin/main` (production runs older configs than feature branches), not whatever branch is checked out. If you switch the backend repo's branch to regenerate, restore the original branch before finishing — never leave it on a changed branch.
+Path differs per developer — keep it in shell env or `.env`, never hardcode it here; confirm with `ls` before running codegen. Cross-check schema against the backend's `origin/main` (the release baseline), not whatever branch is checked out. If you switch the backend repo's branch to regenerate, restore the original branch before finishing — never leave it on a changed branch.
 
-**Before any codegen, assert the backend branch.** Run `git -C "$STREAMKAP_BACKEND_PATH" rev-parse --abbrev-ref HEAD` and confirm it is `main` (or a branch you were explicitly told to use) — never regenerate against whatever happens to be checked out; that has shipped schemas with fields silently stripped. Restore the original backend branch when done, then `git status` the *provider* tree to catch stray generated connector files before committing.
+**Before any codegen, assert the backend branch.** Run `git -C "$STREAMKAP_BACKEND_PATH" rev-parse --abbrev-ref HEAD` and confirm it is `main` (or a branch you were explicitly told to use) — never regenerate against whatever happens to be checked out. Restore the original backend branch when done, then `git status` the *provider* tree to catch stray generated connector files before committing.
 
 When handed a reported issue (GitHub, Slack, a customer error), confirm it's real and not already fixed by pending work, and report that verdict, before changing code.
 
@@ -321,23 +333,23 @@ Use `make help` for the full list. Common ones:
 
 Schema regeneration: `STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap make generate` (or run `cmd/tfgen` directly per-connector with `--entity-type sources --connector postgresql`).
 
-**Regenerate ONLY with `STREAMKAP_BACKEND_PATH=<path> make generate` — never `go generate ./...`.** `go generate ./...` runs `tfplugindocs` (root `main.go`) *before* `tfgen` (`internal/generated/doc.go`), so docs render against the previous schema: a new field lands in `internal/generated/*.go` but ships missing from `docs/resources/*.md` (this shipped in beta.18). `make generate` runs `tfgen` first, then `tfplugindocs`. Abort codegen if `STREAMKAP_BACKEND_PATH` is unset or `ls "$STREAMKAP_BACKEND_PATH"` fails — `go generate` with it unset silently emits wrong output. After regenerating, verify each newly added attribute appears in **both** the `.go` schema and its `docs/resources/*.md` page, and report which backend branch+commit the run used.
+**Regenerate ONLY with `STREAMKAP_BACKEND_PATH=<path> make generate` — never `go generate ./...`.** `go generate ./...` runs `tfplugindocs` (root `main.go`) *before* `tfgen` (`internal/generated/doc.go`), so docs render against the previous schema: a new field lands in `internal/generated/*.go` but ships missing from `docs/resources/*.md`. `make generate` runs `tfgen` first, then `tfplugindocs`. Abort codegen if `STREAMKAP_BACKEND_PATH` is unset or `ls "$STREAMKAP_BACKEND_PATH"` fails — `go generate` with it unset silently emits wrong output. After regenerating, verify each newly added attribute appears in **both** the `.go` schema and its `docs/resources/*.md` page, and report which backend branch+commit the run used.
 
 #### Post-regen checklist
 
 `make generate` rewrites every connector, so a backend change you didn't ask for rides along. Work this list before committing:
 
 1. `make snapshots`, then **read the diff**. It is the regen's changelog. `added=` are new backend fields; `removed=` means the backend dropped a field — check by hand whether a deprecated alias in `internal/resource/{source,destination}/*_generated.go` still points at it. `TestDeprecatedAliasTargetsExist` does **not** cover this: it only checks that the replacement attribute named in a `DeprecationMessage` exists in the Terraform schema and that `ConflictsWith` paths resolve. It never reads the backend spec, so an alias mapped to a dropped API field stays green.
-2. **`changed=` on a `Sensitive` flag is a security regression until proven otherwise.** The backend repeatedly ships `api.key` and `http.headers.authorization` with no `encrypt`/`control`. `isSecretField` (`cmd/tfgen/generator.go`) forces those; if a *different* credential shows up unmarked, add it there — never to `internal/generated/`. It is not consulted for fields supplied by `overrides.json`, so a credential added that way needs its own `Sensitive` handling.
+2. **`changed=` on a `Sensitive` flag is a security regression until proven otherwise.** Some backend credential fields omit `encrypt`/`control`. `isSecretField` (`cmd/tfgen/generator.go`) handles known credential names; if a *different* credential shows up unmarked, add it there — never to `internal/generated/`. It is not consulted for fields supplied by `overrides.json`, so a credential added that way needs its own `Sensitive` handling.
 3. `git status` the provider tree for stray connector files (a wrong-branch run adds/removes plugins).
 4. Confirm the backend repo is back on its original branch. Regenerating leaves it on `main` otherwise.
 5. Every registered resource needs a snapshot or it silently skips drift checks — `TestEveryResourceHasSchemaSnapshot` enforces this.
 
-Never hand-edit `internal/generated/` to restore a `Sensitive` flag. That fix is invisible in review and dies on the next regen; it already happened twice with the webhook `api_key`.
+Fix missing `Sensitive` flags in the generator or override, then regenerate.
 
 `.env` is auto-loaded by tests via godotenv. For Snowflake PEM keys (multiline), `source scripts/load-pem-keys.sh`.
 
-Local dev override: add a `dev_overrides` block in `~/.terraformrc` mapping `github.com/streamkap-com/streamkap` → your `$GOPATH/bin` (where `make install` lands the binary), plus an empty `direct {}`.
+Local dev override: add a `dev_overrides` block in `~/.terraformrc` mapping `streamkap-com/streamkap` → your `$GOPATH/bin` (where `make install` lands the binary), plus an empty `direct {}`.
 
 ## Architecture
 
@@ -354,12 +366,12 @@ Local dev override: add a `dev_overrides` block in `~/.terraformrc` mapping `git
 ### Connector resources (BaseConnectorResource)
 Each connector has a `connector_code` and a flat `Config map[string]any`. CRUD flow:
 
-1. **Create**: plan → `ModelToAPIConfig` → POST → response → `APIConfigToModel` → state.
-2. **Read**: GET → `APIConfigToModel` → state. 404 → `resp.State.RemoveResource`.
-3. **Update**: plan → `ModelToAPIConfig` → PUT → response → `APIConfigToModel` → state.
+1. **Create**: plan → `ModelToConfigMap` → POST → response → `ConfigMapToModel` → state.
+2. **Read**: GET → `ConfigMapToModel` → state. 404 → `resp.State.RemoveResource`.
+3. **Update**: plan → `ModelToConfigMap` → PUT → response → `ConfigMapToModel` → state.
 4. **Delete**: DELETE → `RemoveResource`.
 
-`ModelToAPIConfig` walks the model by reflection, reads `tfsdk:"..."` tags, and maps to API fields via the per-connector `fieldMappings` map. `BuildTfsdkFieldIndex` recurses into embedded structs — that is what makes the deprecated-alias wrapper pattern work.
+`ModelToConfigMap` walks the model by reflection, reads `tfsdk:"..."` tags, and maps to API fields via the per-connector `fieldMappings` map. `BuildTfsdkFieldIndex` recurses into embedded structs — that is what makes the deprecated-alias wrapper pattern work.
 
 Non-connector resources (pipeline, topic, tag, kafka_user, client_credential) implement CRUD directly without the reflection layer.
 
@@ -373,7 +385,7 @@ Control→TF-type mapping table lives in `docs/CODE_GENERATOR.md` (kept in sync 
 - Unsupported backend controls stop generation; `code-editor` maps to String.
 - Backend `readonly` is sometimes a UI hint. Preserve configurable fields such as SSH public keys and S3 topic selection; omit `UseStateForUnknown` for derived fields so updates can recompute them.
 - `control: "password"` OR `encrypt: true` → `Sensitive: true`.
-- Fields named/suffixed `api_key` or `authorization` → forced `Sensitive: true` (`isSecretField`, in `cmd/tfgen/generator.go`), because the webhook plugins ship `api.key` and the http-sink ships `http.headers.authorization` with neither flag, and the backend keeps regressing it. Never re-fix this by editing `internal/generated/`.
+- Fields named or suffixed `api_key`, `authorization`, `access_key_id`, `secret_access_key`, or `secret_key` are forced `Sensitive: true` by `isSecretField` in `cmd/tfgen/generator.go`.
 - Every connector merges the entity-wide `configurations_for_all.json` common fields **except `kafkadirect`**, which the backend (`_load_global_configuration`) resolves from its plugin config alone. tfgen mirrors this skip in `Generate()`; the Kafka Direct source/destination expose only their plugin fields.
 - Go field naming preserves: `ID SSH SSL SQL DB URL API AWS ARN QA` uppercase. So `ssh_port` → `SSHPort`, `role_arn` → `RoleARN`.
 
@@ -381,7 +393,7 @@ Control→TF-type mapping table lives in `docs/CODE_GENERATOR.md` (kept in sync 
 - `map_string` — `map[string]types.String` (e.g. snowflake `auto_qa_dedupe_table_mapping`).
 - `map_nested` — map of nested objects (e.g. clickhouse `topics_config_map`).
 
-An override's `api_field_name` must resolve to a field the backend actually declares — tfgen fails the build otherwise, for both `field_overrides` and `additional_fields`. Nothing else validates overrides, so one can outlive its backend field and keep generating an attribute Terraform accepts and the backend silently drops; `sqlserveraws.snapshot_custom_table_config` did exactly that for several releases.
+An override's `api_field_name` must resolve to a field the backend actually declares — tfgen fails the build otherwise, for both `field_overrides` and `additional_fields`. Review overrides when backend fields change so Terraform does not accept attributes that the API ignores.
 When an override's `api_field_name` matches a backend field, the override wins and the auto-parsed version is dropped.
 
 ### Fix the generator, not the generated output
@@ -435,9 +447,14 @@ Not aliasable (document in MIGRATION.md + exceptions map):
 
 Schema-compat detects: required attribute removed (breaking), optional→required (breaking), computed removed (warning). It also fails on *any* drift between a snapshot and the current schema — an added attribute, a removed one, or a flipped `Required`/`Optional`/`Computed`/`Sensitive` flag, including nested attributes and block fields. Snapshots are the schema of record read by humans and tooling, so they must never lag. After an intentional schema change run `make snapshots` and review the diff.
 
-If `TestAcc.*Migration` produces a non-empty plan, the new provider diverges from v2.2.0 — inspect the plan to see which attribute differs; that signals a potential breaking change.
+Migration tests start from v2.2.0, accept an initial no-op or in-place update,
+verify that resource IDs survive, and require a converged plan after applying.
+Inspect changed defaults even for in-place updates; skipped cases provide no
+upgrade evidence.
 
-**Offline API coverage is httpmock, not VCR.** A VCR/cassette tier was scaffolded and never implemented; it was removed rather than left to imply coverage it did not have. Offline tests that need a fake backend belong in `internal/api/client_test.go` or `internal/provider/state_conflict_test.go`, which use `httpmock`. If a cassette tier is ever revived, redact bodies as well as header keys — the old hook matched key names only, so hostnames and tenant IDs would have landed in committed cassettes.
+Offline API tests use `httpmock`; see `internal/api/client_test.go` and
+`internal/provider/state_conflict_test.go`. Any recorded fixtures must redact
+request and response bodies as well as headers.
 
 Required env vars for acceptance: `TF_ACC=1`, `STREAMKAP_CLIENT_ID`, `STREAMKAP_SECRET`. Optional: `STREAMKAP_HOST` (defaults to `https://api.streamkap.com`), `UPDATE_SNAPSHOTS`, `TF_LOG`.
 
@@ -445,7 +462,7 @@ Required env vars for acceptance: `TF_ACC=1`, `STREAMKAP_CLIENT_ID`, `STREAMKAP_
 
 - AI-agent-friendly schema descriptions: every resource/data source needs both `Description` and `MarkdownDescription`. tfgen emits these automatically; if you add an attribute by hand, document enums (list valid values), defaults, and `**Security:**` notes for sensitive fields.
 - Each resource needs `examples/resources/streamkap_<name>/{basic,complete}.tf`.
-- Provider address: `github.com/streamkap-com/streamkap` (differs from the module path).
+- Use `streamkap-com/streamkap` in Terraform configurations and local development overrides; the Go module path is `github.com/streamkap-com/terraform-provider-streamkap`.
 - Connector status values (read-only): `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
 - **Never log a connector `Config`/`configMap`.** It is keyed by API field name and holds decrypted credentials. Request bodies are logged through `redactSensitiveJSON` (`internal/api/redact.go`); anything logged outside `internal/api` bypasses it. Secrets travel under dotted Kafka-Connect names (`api.key`, `snowflake.private.key`), so any new redaction pattern must treat `.` as a separator.
 

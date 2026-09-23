@@ -25,11 +25,7 @@ Without a version constraint, Terraform selects a stable release.
 ### Basic
 
 ```terraform
-# Shopify webhook source. All fields are Optional in the generated schema (the
-# backend ships them as `required: true` + `default: ""`, which the Terraform
-# Plugin Framework requires us to demote to Optional+Computed+Default), but the
-# store URL, an access credential, and the HMAC signing secret are needed for a
-# working connector, so set them here.
+# Shopify webhook source. Supply the store URL, access token, and webhook signing secret.
 resource "streamkap_source_shopify_webhook" "example" {
   name = "my-shopify-webhook"
 
@@ -129,22 +125,22 @@ output "example-source-shopify-webhook" {
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `camel_source_dlq_enabled` (Boolean) Enable dead letter queue for failed records. Defaults to `true`.
-- `camel_source_payload_router_fanout_fields` (String) Comma-separated list of nested arrays to fan out into their own topics (e.g. orders.line_items, products.variants, customers.addresses). When empty, arrays stay inline. Defaults to ``.
+- `camel_source_payload_router_fanout_fields` (String) Comma-separated list of nested arrays to fan out into their own topics (e.g. orders.line_items, products.variants, customers.addresses). When empty, arrays stay inline. Defaults to an empty string.
 - `camel_source_payload_router_include_event` (Boolean) Include Shopify webhook metadata (_shop_domain, _event_id, _triggered_at, _api_version, _webhook_id) in output records. Disable for upsert / state-table use cases. Defaults to `false`.
-- `camel_source_payload_router_shopify_hmac_secret` (String, Sensitive) Shopify app client secret used to verify the X-Shopify-Hmac-Sha256 header. Leave empty to skip verification. Defaults to ``.
+- `camel_source_payload_router_shopify_hmac_secret` (String, Sensitive) Shopify app client secret used to verify the X-Shopify-Hmac-Sha256 header. Leave empty to skip verification. Defaults to an empty string.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `camel_source_payload_router_unknown_type_behavior` (String) How to handle events for resources not in the Shopify Resources list. Defaults to `DEFAULT_TOPIC`. Valid values: `DEFAULT_TOPIC`, `SKIP`, `FAIL`.
 - `camel_source_payload_router_unknown_type_default_topic` (String) Topic for events from unselected resources (used when Unselected Resource Behavior is DEFAULT_TOPIC). Defaults to `unknown`.
-- `camel_source_snapshot_shopify_access_token` (String, Sensitive) Static access token (legacy custom apps only). Provide either Client ID + Client Secret OR this Access Token. Defaults to ``.
+- `camel_source_snapshot_shopify_access_token` (String, Sensitive) Static access token (legacy custom apps only). Provide either Client ID + Client Secret OR this Access Token. Defaults to an empty string.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `camel_source_snapshot_shopify_api_version` (String) Shopify Admin API version used by snapshots. Defaults to `2024-10`.
-- `camel_source_snapshot_shopify_client_id` (String) Client ID from your Shopify Dev Dashboard app (recommended). Tokens auto-refresh every 24 hours. Defaults to ``.
-- `camel_source_snapshot_shopify_client_secret` (String, Sensitive) Client Secret from your Shopify Dev Dashboard app (recommended). Encrypted at rest. Defaults to ``.
+- `camel_source_snapshot_shopify_client_id` (String) Client ID from your Shopify Dev Dashboard app (recommended). Tokens auto-refresh every 24 hours. Defaults to an empty string.
+- `camel_source_snapshot_shopify_client_secret` (String, Sensitive) Client Secret from your Shopify Dev Dashboard app (recommended). Encrypted at rest. Defaults to an empty string.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `camel_source_snapshot_shopify_store_url` (String) Shopify store URL (e.g., https://yourstore.myshopify.com). Required for snapshots. Defaults to ``.
+- `camel_source_snapshot_shopify_store_url` (String) Shopify store URL (e.g., https://yourstore.myshopify.com). Required for snapshots. Defaults to an empty string.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
@@ -158,7 +154,7 @@ output "example-source-shopify-webhook" {
 - `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
 - `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
-- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.
 - `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `webhook_url` (String) Webhook URL to register in Shopify. Generated after source is created. Pass the API key as a query parameter, e.g. ?api_key=<API_KEY>.

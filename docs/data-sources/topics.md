@@ -27,10 +27,15 @@ data "streamkap_topics" "source_topics" {
   entity_type = "sources"
 }
 
+variable "source_ids" {
+  type        = list(string)
+  description = "Streamkap source IDs to filter by."
+}
+
 # List topics from specific entities
 data "streamkap_topics" "filtered" {
   entity_type = "sources"
-  entity_ids  = ["source-id-1", "source-id-2"]
+  entity_ids  = var.source_ids
 }
 
 # Output topic count

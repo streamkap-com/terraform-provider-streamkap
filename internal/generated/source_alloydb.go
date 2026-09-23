@@ -184,8 +184,8 @@ func SourceAlloydbSchema() schema.Schema {
 			"column_include_list": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form schemaName[.]tableName[.](columnName1|columnName2)",
-				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form schemaName[.]tableName[.](columnName1|columnName2)",
+				Description:         "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form `schemaName[.]tableName[.](columnName1|columnName2)`",
+				MarkdownDescription: "An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form `schemaName[.]tableName[.](columnName1|columnName2)`",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -466,7 +466,7 @@ func SourceAlloydbSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to \"\".",
-				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.",
+				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"transforms_oversized_records_max_record_size_bytes": schema.Int64Attribute{

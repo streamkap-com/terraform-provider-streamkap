@@ -61,8 +61,7 @@ variable "db_password" {
 
 ```terraform
 # Complete PostgreSQL CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from PostgreSQL tables using logical replication (pgoutput plugin)
+# Capturing changes from PostgreSQL tables using logical replication (pgoutput plugin)
 
 terraform {
   required_providers {
@@ -96,7 +95,7 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   database_port     = 5432                           # PostgreSQL port (default: 5432)
   database_user     = "streamkap"                    # User with replication privileges
   database_password = var.source_postgresql_password # Password (use variables for secrets)
-  database_dbname   = "postgres"                     # Database name to connect to
+  database_dbname   = "commerce"                     # Database name to connect to
 
   # SSL configuration
   database_sslmode = "require" # Options: disable, allow, prefer, require, verify-ca, verify-full
@@ -105,15 +104,12 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   snapshot_read_only = "No" # "Yes" to prevent DDL during snapshots
 
   # Table selection (comma-separated, supports regex patterns)
-  schema_include_list = "streamkap"                              # Schemas to include
-  table_include_list  = "streamkap.customer,streamkap.customer2" # Tables to capture (schema.table format)
-
-  # Column filtering (optional, uses regex pattern: schema[.]table[.](col1|col2))
-  column_include_list = "streamkap[.]customer[.](id|name)"
+  schema_include_list = "public"                         # Schemas to include
+  table_include_list  = "public.orders,public.customers" # Tables to capture (schema.table format)
 
   # Signal table for incremental snapshots
   # This schema must contain a 'streamkap_signal' table for snapshot coordination
-  signal_data_collection_schema_or_database = "streamkap.streamkap_signal"
+  signal_data_collection_schema_or_database = "public.streamkap_signal"
 
   # Heartbeat configuration (optional, for monitoring replication lag)
   heartbeat_enabled                            = false # Enable heartbeat messages
@@ -122,9 +118,9 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   # Output configuration
   include_source_db_name_in_table_name = false # Prefix table names with database name
 
-  # Replication slot and publication (must be pre-created in PostgreSQL)
-  slot_name        = "terraform_pgoutput_slot_1" # Logical replication slot name
-  publication_name = "terraform_pub_1"           # Publication name for the tables
+  # The publication must be pre-created in PostgreSQL.
+  slot_name        = "streamkap_slot"        # Logical replication slot name
+  publication_name = "streamkap_publication" # Publication name for the tables
 
   # Binary data handling
   binary_handling_mode = "bytes" # Options: bytes, base64, base64-url-safe, hex
@@ -179,7 +175,7 @@ output "example-source-postgresql" {
 
 - `binary_handling_mode` (String) Specifies how the data for binary columns e.g. blob, binary, varbinary should be represented. This setting depends on what the destination is. See the documentation for more details. Defaults to `bytes`. Valid values: `bytes`, `base64`, `base64-url-safe`, `hex`.
 - `column_exclude_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.
-- `column_include_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form schemaName[.]tableName[.](columnName1|columnName2)
+- `column_include_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form `schemaName[.]tableName[.](columnName1|columnName2)`
 - `column_include_list_toggled` (Boolean) Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to `true`.
 - `database_port` (Number) PostgreSQL Port. For example, 5432. Defaults to `5432`.
 - `database_sslmode` (String) Whether to use an encrypted connection to the PostgreSQL server. Defaults to `require`. Valid values: `require`, `disable`.
@@ -233,7 +229,7 @@ output "example-source-postgresql" {
 - `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
 - `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
-- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.
 - `transforms_source_regex_support_key_field_template` (String) Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId. Defaults to `{{database}}.{{table}}`.
 - `transforms_source_regex_support_metadata_field_name` (String) Name of the extra metadata field to store source information and ensure uniqueness across all tables when regex support is enabled. Defaults to `_streamkap_source_metadata`.
 - `transforms_source_regex_support_regex_replacement` (String) Replacement string for matching regex snippets. Defaults to `_REGEX_`.

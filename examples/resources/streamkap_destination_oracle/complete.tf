@@ -17,7 +17,7 @@ variable "destination_oracle_password" {
   description = "The password to access the Oracle database"
 }
 
-# Complete Oracle destination configuration with all options
+# Complete Oracle destination configuration
 resource "streamkap_destination_oracle" "example" {
   name = "example-destination-oracle"
 

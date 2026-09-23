@@ -55,8 +55,7 @@ variable "db_password" {
 
 ```terraform
 # Complete PlanetScale CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from PlanetScale (Vitess) tables
+# Capturing changes from PlanetScale (Vitess) tables
 
 terraform {
   required_providers {
@@ -167,7 +166,7 @@ output "example-source-planetscale" {
 - `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
 - `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
-- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.
 - `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `vitess_set_basic_authentication_header` (Boolean) Send an HTTP-style `authorization: Basic` header on VTGate gRPC calls. Keep on for PlanetScale Cloud (its gateway requires it); turn off for a self-hosted vtgate started with `--grpc_auth_mode static`, which instead expects vitess-native StaticAuthCredentials. Defaults to `true`.

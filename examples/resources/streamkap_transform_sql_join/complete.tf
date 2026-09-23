@@ -1,4 +1,4 @@
-# Complete SQL Join transform configuration with all options
+# Complete SQL Join transform configuration
 # Joins multiple streaming topics using SQL with configurable state TTL
 
 terraform {

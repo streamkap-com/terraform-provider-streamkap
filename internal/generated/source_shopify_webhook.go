@@ -129,14 +129,14 @@ func SourceShopifyWebhookSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "Shopify store URL (e.g., https://yourstore.myshopify.com). Required for snapshots. Defaults to \"\".",
-				MarkdownDescription: "Shopify store URL (e.g., https://yourstore.myshopify.com). Required for snapshots. Defaults to ``.",
+				MarkdownDescription: "Shopify store URL (e.g., https://yourstore.myshopify.com). Required for snapshots. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"camel_source_snapshot_shopify_client_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Description:         "Client ID from your Shopify Dev Dashboard app (recommended). Tokens auto-refresh every 24 hours. Defaults to \"\".",
-				MarkdownDescription: "Client ID from your Shopify Dev Dashboard app (recommended). Tokens auto-refresh every 24 hours. Defaults to ``.",
+				MarkdownDescription: "Client ID from your Shopify Dev Dashboard app (recommended). Tokens auto-refresh every 24 hours. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"camel_source_snapshot_shopify_client_secret": schema.StringAttribute{
@@ -144,7 +144,7 @@ func SourceShopifyWebhookSchema() schema.Schema {
 				Computed:            true,
 				Sensitive:           true,
 				Description:         "Client Secret from your Shopify Dev Dashboard app (recommended). Encrypted at rest. Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Client Secret from your Shopify Dev Dashboard app (recommended). Encrypted at rest. Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				MarkdownDescription: "Client Secret from your Shopify Dev Dashboard app (recommended). Encrypted at rest. Defaults to an empty string.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"camel_source_snapshot_shopify_access_token": schema.StringAttribute{
@@ -152,7 +152,7 @@ func SourceShopifyWebhookSchema() schema.Schema {
 				Computed:            true,
 				Sensitive:           true,
 				Description:         "Static access token (legacy custom apps only). Provide either Client ID + Client Secret OR this Access Token. Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Static access token (legacy custom apps only). Provide either Client ID + Client Secret OR this Access Token. Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				MarkdownDescription: "Static access token (legacy custom apps only). Provide either Client ID + Client Secret OR this Access Token. Defaults to an empty string.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"camel_source_snapshot_shopify_api_version": schema.StringAttribute{
@@ -167,7 +167,7 @@ func SourceShopifyWebhookSchema() schema.Schema {
 				Computed:            true,
 				Sensitive:           true,
 				Description:         "Shopify app client secret used to verify the X-Shopify-Hmac-Sha256 header. Leave empty to skip verification. Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Shopify app client secret used to verify the X-Shopify-Hmac-Sha256 header. Leave empty to skip verification. Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				MarkdownDescription: "Shopify app client secret used to verify the X-Shopify-Hmac-Sha256 header. Leave empty to skip verification. Defaults to an empty string.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"topic_include_list": schema.StringAttribute{
@@ -205,7 +205,7 @@ func SourceShopifyWebhookSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "Comma-separated list of nested arrays to fan out into their own topics (e.g. orders.line_items, products.variants, customers.addresses). When empty, arrays stay inline. Defaults to \"\".",
-				MarkdownDescription: "Comma-separated list of nested arrays to fan out into their own topics (e.g. orders.line_items, products.variants, customers.addresses). When empty, arrays stay inline. Defaults to ``.",
+				MarkdownDescription: "Comma-separated list of nested arrays to fan out into their own topics (e.g. orders.line_items, products.variants, customers.addresses). When empty, arrays stay inline. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"camel_source_dlq_enabled": schema.BoolAttribute{
@@ -280,7 +280,7 @@ func SourceShopifyWebhookSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to \"\".",
-				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.",
+				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"transforms_oversized_records_max_record_size_bytes": schema.Int64Attribute{

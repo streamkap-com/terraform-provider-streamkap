@@ -11,9 +11,13 @@ terraform {
 
 provider "streamkap" {}
 
+variable "tag_id" {
+  type        = string
+  description = "ID of an existing Streamkap tag, from the UI or API."
+}
+
 data "streamkap_tag" "example-tag" {
-  # id = "670e5ca40afe1d3983ce0c22" # Development tag
-  id = "670e5bab0d119c0d1f8cda9d" # Production tag
+  id = var.tag_id
 }
 
 output "example-tag" {

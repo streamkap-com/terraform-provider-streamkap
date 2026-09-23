@@ -1,6 +1,5 @@
 # Complete Oracle RDS CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from AWS Oracle RDS tables
+# Capturing changes from AWS Oracle RDS tables
 
 terraform {
   required_providers {

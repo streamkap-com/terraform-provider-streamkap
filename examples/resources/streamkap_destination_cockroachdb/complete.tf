@@ -17,7 +17,7 @@ variable "destination_cockroachdb_password" {
   description = "The password to access the CockroachDB database"
 }
 
-# Complete CockroachDB destination configuration with all options
+# Complete CockroachDB destination configuration
 resource "streamkap_destination_cockroachdb" "example" {
   name = "example-destination-cockroachdb"
 

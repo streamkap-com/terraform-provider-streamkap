@@ -292,6 +292,21 @@ func TestSensitiveFieldHandling(t *testing.T) {
 	}
 }
 
+func TestEmptyStringDefaultDescription(t *testing.T) {
+	g := NewGenerator(t.TempDir(), "sources")
+	field := g.entryToFieldData(&ConfigEntry{
+		Name: "table.exclude.list", UserDefined: true,
+		Description: "Tables to exclude",
+		Value:       ValueObject{Control: "string", Default: ""},
+	})
+	if !strings.Contains(field.MarkdownDescription, "Defaults to an empty string.") {
+		t.Errorf("empty default must be readable in Markdown: %q", field.MarkdownDescription)
+	}
+	if field.DefaultFunc != `stringdefault.StaticString("")` {
+		t.Errorf("description change must preserve default: %q", field.DefaultFunc)
+	}
+}
+
 // TestDefaultValueHandling verifies default value generation for different types.
 func TestDefaultValueHandling(t *testing.T) {
 	tests := []struct {

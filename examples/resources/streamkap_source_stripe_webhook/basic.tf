@@ -1,8 +1,4 @@
-# Stripe webhook source. All fields are Optional in the generated schema (the
-# backend ships them as `required: true` + `default: ""`, which the Terraform
-# Plugin Framework requires us to demote to Optional+Computed+Default), but the
-# Stripe API key and the webhook signing secret are needed for a working
-# connector, so set them here.
+# Stripe webhook source. Supply the API key and webhook signing secret.
 resource "streamkap_source_stripe_webhook" "example" {
   name = "my-stripe-webhook"
 

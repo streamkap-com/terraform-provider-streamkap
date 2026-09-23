@@ -1,6 +1,5 @@
 # Complete Oracle CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from Oracle database tables using LogMiner
+# Capturing changes from Oracle database tables using LogMiner
 
 terraform {
   required_providers {

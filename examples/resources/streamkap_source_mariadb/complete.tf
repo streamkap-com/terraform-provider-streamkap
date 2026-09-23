@@ -1,6 +1,5 @@
 # Complete MariaDB CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from MariaDB tables using binary log replication
+# Capturing changes from MariaDB tables using binary log replication
 
 terraform {
   required_providers {

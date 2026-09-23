@@ -126,7 +126,7 @@ func SourceStripeWebhookSchema() schema.Schema {
 				Computed:            true,
 				Sensitive:           true,
 				Description:         "Stripe webhook signing secret (whsec_xxx). When set, every webhook is verified against the Stripe-Signature header. Leave empty to disable verification. Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Stripe webhook signing secret (whsec_xxx). When set, every webhook is verified against the Stripe-Signature header. Leave empty to disable verification. Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				MarkdownDescription: "Stripe webhook signing secret (whsec_xxx). When set, every webhook is verified against the Stripe-Signature header. Leave empty to disable verification. Defaults to an empty string.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"camel_source_snapshot_stripe_api_key": schema.StringAttribute{
@@ -134,7 +134,7 @@ func SourceStripeWebhookSchema() schema.Schema {
 				Computed:            true,
 				Sensitive:           true,
 				Description:         "Stripe secret API key (sk_live_xxx or sk_test_xxx). Required for snapshots. Encrypted at rest. Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Stripe secret API key (sk_live_xxx or sk_test_xxx). Required for snapshots. Encrypted at rest. Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				MarkdownDescription: "Stripe secret API key (sk_live_xxx or sk_test_xxx). Required for snapshots. Encrypted at rest. Defaults to an empty string.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"topic_include_list": schema.StringAttribute{
@@ -172,7 +172,7 @@ func SourceStripeWebhookSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "Comma-separated list of nested lists to fan out into their own topics. Allowed: invoice.lines, charge.refunds, subscription.items. Defaults to \"\".",
-				MarkdownDescription: "Comma-separated list of nested lists to fan out into their own topics. Allowed: invoice.lines, charge.refunds, subscription.items. Defaults to ``.",
+				MarkdownDescription: "Comma-separated list of nested lists to fan out into their own topics. Allowed: invoice.lines, charge.refunds, subscription.items. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"camel_source_dlq_enabled": schema.BoolAttribute{
@@ -247,7 +247,7 @@ func SourceStripeWebhookSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to \"\".",
-				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.",
+				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"transforms_oversized_records_max_record_size_bytes": schema.Int64Attribute{

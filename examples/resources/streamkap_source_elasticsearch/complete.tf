@@ -1,6 +1,5 @@
 # Complete Elasticsearch source configuration
-# This example shows all available configuration options for capturing data
-# from Elasticsearch indices
+# Capturing data from Elasticsearch indices
 
 terraform {
   required_providers {

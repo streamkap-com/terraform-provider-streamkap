@@ -180,8 +180,8 @@ func DestinationDatabricksSchema() schema.Schema {
 			"schema_evolution": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to \"basic\". Valid values: basic, none.",
-				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.",
+				Description:         "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `none`. Defaults to \"basic\". Valid values: basic, none.",
+				MarkdownDescription: "Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `none`. Defaults to `basic`. Valid values: `basic`, `none`.",
 				Default:             stringdefault.StaticString("basic"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("basic", "none"),
@@ -411,7 +411,7 @@ func DestinationDatabricksSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to \"\".",
-				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.",
+				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"transforms_oversized_records_max_record_size_bytes": schema.Int64Attribute{
@@ -470,7 +470,7 @@ func DestinationDatabricksSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "Secret salt prepended before hashing (used by the SHA256/MD5 functions). Strongly recommended: without it, low-cardinality values (phone, SSN, email) are reversible via a precomputed rainbow table. Defaults to \"\".",
-				MarkdownDescription: "Secret salt prepended before hashing (used by the SHA256/MD5 functions). Strongly recommended: without it, low-cardinality values (phone, SSN, email) are reversible via a precomputed rainbow table. Defaults to ``.",
+				MarkdownDescription: "Secret salt prepended before hashing (used by the SHA256/MD5 functions). Strongly recommended: without it, low-cardinality values (phone, SSN, email) are reversible via a precomputed rainbow table. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"transforms_mask_field_mask_char": schema.StringAttribute{

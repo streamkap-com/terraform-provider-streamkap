@@ -1,6 +1,5 @@
 # Complete DB2 CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from IBM DB2 tables
+# Capturing changes from IBM DB2 tables
 
 terraform {
   required_providers {

@@ -23,7 +23,7 @@ variable "destination_httpsink_oauth2_client_secret" {
   description = "OAuth2 client secret for HTTP authentication"
 }
 
-# Complete HTTP Sink destination configuration with all options
+# Complete HTTP Sink destination configuration
 resource "streamkap_destination_httpsink" "example" {
   name = "example-destination-httpsink"
 

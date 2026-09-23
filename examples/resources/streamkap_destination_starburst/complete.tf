@@ -23,7 +23,7 @@ variable "destination_starburst_secret_access_key" {
   description = "AWS Secret Access Key for Starburst S3 access"
 }
 
-# Complete Starburst destination configuration with all options
+# Complete Starburst destination configuration
 resource "streamkap_destination_starburst" "example" {
   name = "example-destination-starburst"
 

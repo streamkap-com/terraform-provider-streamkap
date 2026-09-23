@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+- Publish the migration guide under the Registry guides route and fix landing-page
+  links. Preserve the old GitHub guide path for existing links.
+- Put the v2-to-v3 upgrade steps first, clarify required edits and optional
+  aliases, and document plan review, rollback limits, and v2.1.21 test coverage.
+- Document missing MySQL, Databricks, and SSH-port type/default changes.
+- Correct examples and development instructions, and render empty string
+  defaults clearly in resource documentation.
+
 ## [3.0.0] - 2026-09-15
 
 ### Stable release
@@ -40,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Oracle source using the `hybrid` log mining strategy. The planned value is
   kept in state, as already done for sensitive attributes; a non-null echo that
   differs from the plan still fails.
-- Load the shared staging credentials for scheduled, push and manual acceptance
+- Load the acceptance-test credentials for scheduled, push and manual acceptance
   runs so they can exercise the provider instead of failing on missing inputs.
 - Run the docs drift check on every pull request so it can be required without
   leaving filtered changes waiting for a check that never starts.
@@ -307,9 +316,8 @@ Remediation of the 2026-07-11 provider audit. Grouped by what a user actually no
 
 ### Breaking
 - **`streamkap_source_sqlserver`: `snapshot_custom_table_config` is removed.**
-  It mapped to a backend field (`streamkap.snapshot.custom.table.config.user.defined`)
-  that **does not exist**, so every value ever set was accepted by Terraform and
-  silently discarded — the per-table chunk counts never reached the connector.
+  Its backend field (`streamkap.snapshot.custom.table.config.user.defined`)
+  is no longer supported.
   Remove it from your configuration; use `snapshot_parallelism` (and
   `streamkap_snapshot_chunk_size_bytes`) to tune snapshot throughput. See
   `docs/MIGRATION.md`.
@@ -319,7 +327,7 @@ Remediation of the 2026-07-11 provider audit. Grouped by what a user actually no
   replace whose deposed instance still holds the name — and in that case the new
   state entry inherits the deposed entry's backend id, so Terraform's next step
   deletes the resource it just created. Pipelines and transforms already refused
-  to adopt for this reason (it destroyed a customer's pipelines). Tags still
+  to adopt for this reason. Tags still
   adopt deliberately. Recovery for a genuinely lost create response is
   `terraform import`, which the error message spells out.
 - **`file_name_template` no longer carries a client-side default** on
@@ -690,47 +698,15 @@ Remediation of the 2026-07-11 provider audit. Grouped by what a user actually no
 
 ### Changed
 - **`streamkap_pipeline` and `streamkap_transform_*` no longer auto-adopt on
-  duplicate-name conflicts (409 / 422 "already exists").** The previous
-  adopt-on-conflict path was unsafe under
-  `lifecycle { create_before_destroy = true }`: Terraform creates the new
-  instance first while the deposed instance still occupies the
-  `{tenant_id, service_id, name}` slot, the provider would adopt the
-  deposed's backend record (returning the same backend id from Create), and
-  Terraform's subsequent destroy of the deposed entry would DELETE the same
-  backend record the live state had just been pointed at — silently
-  destroying the customer's live pipeline / transform. A customer hit this on
-  pipelines and had deposed transforms in the same state that would have
-  triggered the same issue once the pipeline path was unblocked
-  (trace in `0_Terraform Apply.txt`). The provider now refuses to auto-adopt
-  on these two resources and surfaces a clear error with two recovery paths:
-    1. Remove `create_before_destroy = true` from the resource's
-       `lifecycle` (Streamkap enforces unique pipeline / transform names per
-       tenant + service, so that lifecycle does not work).
-    2. `terraform import streamkap_pipeline.<name> <pipeline_id>` or
-       `terraform import streamkap_transform_<type>.<name> <transform_id>`
-       when recovering from a previous apply whose response was lost.
-  The original adopt-on-conflict still applies to `streamkap_source_*`,
-  `streamkap_destination_*`, and `streamkap_tag`. The **same data-loss path
-  exists in principle** for those resources — adopt-on-conflict under
-  `create_before_destroy` is unsafe for any backend that enforces
-  name-uniqueness, regardless of resource type. We are holding their adopt
-  path back from this PR because (a) the reported customer wasn't hitting
-  it on those resources, (b) existing acceptance tests rely on adopt-on-422
-  behavior there, and (c) tightening them would break legitimate
-  timed-out-create recovery workflows. This is **not** a statement that
-  they are safe; track removing their adopt path in a follow-up before any
-  customer relies on `lifecycle { create_before_destroy = true }` against
-  those resources.
-- **`streamkap_transform_*` — `deploy = true` with `replay_window = "0"`
-  failed with "Replay window must be a valid duration like 3d, 10m, 2h, 30s".**
-  The provider's schema documents `"0"` as "continue from last position"
-  (semantically identical to leaving the field unset → backend's
-  `start_time = None` → use the latest offset). But the backend's preview-
-  deploy parser uses a strict `(\d+)([smhd])` regex
-  (`python-be-streamkap/app/utils/api/v2/api_transforms_utils.py:352`) that
-  rejects a bare `"0"`. The deploy client now treats `"0"` and `""` as
-  equivalent and omits the query parameter in both cases, restoring the
-  documented behavior without requiring a backend change.
+  duplicate-name conflicts (409 / 422 "already exists").** During a
+  `create_before_destroy` replacement, adoption could assign the same backend
+  ID to both instances, allowing deletion of the old instance to delete the
+  live resource. Create now fails with recovery guidance. For a lost create
+  response, import the existing resource only after checking its ID and state.
+  Sources and destinations received the same protection in beta.26.
+- **Transform deployment accepts `replay_window = "0"`.** The provider omits
+  the replay-window query parameter for `"0"` and `""`, so deployment continues
+  from the last position instead of failing duration validation.
 - **Non-JSON error responses surface a useful message.** When an upstream
   layer (nginx, load balancer, ingress) returned HTML or another non-JSON
   body for a 5xx, the client previously bubbled up a bare

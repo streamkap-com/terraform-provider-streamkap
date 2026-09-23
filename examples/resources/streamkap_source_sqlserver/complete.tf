@@ -1,6 +1,5 @@
 # Complete SQL Server CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from SQL Server tables using Change Data Capture (CDC)
+# Capturing changes from SQL Server tables using Change Data Capture (CDC)
 
 terraform {
   required_providers {

@@ -1,6 +1,5 @@
 # Complete Webhook source configuration
-# This example shows all available configuration options for receiving data
-# via webhook endpoints
+# Receiving data via webhook endpoints
 
 terraform {
   required_providers {

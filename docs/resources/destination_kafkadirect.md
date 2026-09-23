@@ -67,7 +67,7 @@ variable "destination_kafkadirect_password" {
   description = "Password for Kafka proxy authentication"
 }
 
-# Complete Kafka Direct destination configuration with all options
+# Complete Kafka Direct destination configuration
 resource "streamkap_destination_kafkadirect" "example" {
   name = "example-destination-kafkadirect"
 

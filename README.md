@@ -4,7 +4,7 @@ Terraform provider for [Streamkap](https://streamkap.com) - a real-time data str
 
 v3 is the stable release line and lives on `main`. The legacy v2 maintenance
 line lives on `v2` and receives bug and security fixes only through
-15 October 2026. Review the [migration guide](docs/MIGRATION.md) before upgrading
+15 October 2026. Review the [migration guide](docs/guides/migration.md) before upgrading
 from v2.
 
 ## Features
@@ -50,7 +50,8 @@ resources in the Streamkap UI (v3+).
 
 ## Quick Start
 
-Get up and running with Streamkap in 3 steps:
+Configure a source, destination, and pipeline. The database and Snowflake account
+must already be configured for Streamkap access.
 
 ### 1. Configure Provider
 
@@ -79,12 +80,19 @@ export STREAMKAP_SECRET="your-secret"
 
 ```hcl
 resource "streamkap_source_postgresql" "my_source" {
-  name              = "production-postgres"
-  database_hostname = "db.example.com"
-  database_port     = 5432
-  database_user     = "streamkap"
-  database_password = var.db_password
-  database_dbname   = "mydb"
+  name                = "production-postgres"
+  database_hostname   = "db.example.com"
+  database_port       = 5432
+  database_user       = "streamkap"
+  database_password   = var.db_password
+  database_dbname     = "mydb"
+  schema_include_list = "public"
+  table_include_list  = "public.orders,public.customers"
+}
+
+variable "db_password" {
+  type      = string
+  sensitive = true
 }
 ```
 
@@ -95,9 +103,15 @@ resource "streamkap_destination_snowflake" "my_dest" {
   name                    = "analytics-snowflake"
   snowflake_url_name      = "account.snowflakecomputing.com"
   snowflake_user_name     = "streamkap"
-  snowflake_private_key   = file(pathexpand("~/.ssh/snowflake_key.pem"))
+  snowflake_private_key   = var.snowflake_private_key
   snowflake_database_name = "STREAMKAP_DB"
   snowflake_schema_name   = "PUBLIC"
+}
+
+variable "snowflake_private_key" {
+  type        = string
+  sensitive   = true
+  description = "Snowflake private key without PEM headers, footers, or line breaks."
 }
 
 # Connect them with a pipeline
@@ -119,9 +133,18 @@ resource "streamkap_pipeline" "my_pipeline" {
 }
 ```
 
-Run `terraform apply` and your data pipeline is ready.
+Set `TF_VAR_db_password` and `TF_VAR_snowflake_private_key`, then initialize
+and review the plan:
 
-See [examples/](./examples/) for complete configurations covering every supported connector.
+```bash
+terraform init
+terraform plan -out=streamkap.tfplan
+terraform apply streamkap.tfplan
+```
+
+After applying, check connector health and data delivery in Streamkap.
+
+See [examples/](./examples/) for connector examples to adapt to your environment.
 
 ---
 
@@ -179,7 +202,7 @@ Configure `~/.terraformrc`:
 ```hcl
 provider_installation {
   dev_overrides {
-    "github.com/streamkap-com/streamkap" = "/path/to/go/bin"
+    "streamkap-com/streamkap" = "/path/to/go/bin"
   }
   direct {}
 }
@@ -249,32 +272,11 @@ and descriptions. Resource examples live under `examples/resources/`; the
 
 ## Upgrading
 
-See [MIGRATION.md](docs/MIGRATION.md) for guidance on upgrading between major versions, including breaking changes and deprecated attributes.
+Follow the [v2 → v3 migration guide](docs/guides/migration.md) for the upgrade procedure,
+required configuration edits, changed defaults, and supported aliases. Pin the
+release you have validated and review the plan before applying.
 
-v2 is the legacy maintenance line, receiving bug
-fixes and security patches only through **15 October 2026**. New features and
-connectors are v3-only. From **16 October 2026**, v2 receives no further fixes
-or support. Existing releases remain available; pin `~> 2.2` until you are ready
-to migrate. See the [migration guide](docs/MIGRATION.md) for required edits and
-behavior-changing defaults.
-
-### v3.0
-
-The v3.0 line adds:
-- **Tags on every entity** — every source, destination, transform, topic, and pipeline accepts an optional `tags = [...]` attribute (Set of tag IDs).
-- **`streamkap_tags` data source** — list/filter tags by name, type, or IDs (alternative to single-tag lookup).
-- **New connectors** — `streamkap_source_informix`, `streamkap_source_salesforce_webhook`, `streamkap_source_shopify_webhook`, `streamkap_source_stripe_webhook`, `streamkap_source_zendesk_webhook`, `streamkap_destination_pinecone`, `streamkap_destination_weaviate`, `streamkap_transform_topic_router`.
-- **New non-connector resources** — `streamkap_kafka_user` (ACL-based Kafka access), `streamkap_client_credential` (API tokens).
-- **New data sources** — `streamkap_roles`, `streamkap_tags`.
-
-See [docs/MIGRATION.md](docs/MIGRATION.md) for the full v2 → v3 changelog and any breaking changes.
-
-Pin the release you have validated and review the Terraform plan before applying
-the upgrade:
-
-```hcl
-version = "3.0.0"
-```
+For release history, see the [changelog](CHANGELOG.md).
 
 ## License
 

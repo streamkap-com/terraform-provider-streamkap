@@ -1,4 +1,4 @@
-# Complete Fan Out transform configuration with all options
+# Complete Fan Out transform configuration
 # Splits single records into multiple output records using JavaScript
 
 terraform {

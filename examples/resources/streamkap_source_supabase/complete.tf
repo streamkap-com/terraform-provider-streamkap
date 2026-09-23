@@ -1,6 +1,5 @@
 # Complete Supabase CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from Supabase (PostgreSQL) tables
+# Capturing changes from Supabase (PostgreSQL) tables
 
 terraform {
   required_providers {

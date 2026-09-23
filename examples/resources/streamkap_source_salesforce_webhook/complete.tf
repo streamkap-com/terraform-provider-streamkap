@@ -23,9 +23,6 @@ resource "streamkap_source_salesforce_webhook" "example" {
   # are exposed as computed attributes (see the outputs below).
 
   # Salesforce Connected App credentials, used for the initial snapshot.
-  # The generated schema marks these Optional (the backend ships them as
-  # required-with-default, which Terraform demotes to Optional+Computed), but a
-  # connector without them is unusable at runtime — always set them.
   camel_source_snapshot_salesforce_instance_url       = "https://your-org.my.salesforce.com"
   camel_source_snapshot_salesforce_auth_client_id     = var.salesforce_client_id
   camel_source_snapshot_salesforce_auth_client_secret = var.salesforce_client_secret

@@ -25,11 +25,7 @@ Without a version constraint, Terraform selects a stable release.
 ### Basic
 
 ```terraform
-# Salesforce webhook source. The OAuth fields are technically Optional in the
-# generated schema (the backend ships them as `required: true` + `default: ""`,
-# which the Terraform Plugin Framework requires us to demote to Optional+
-# Computed+Default("") since Required attributes can't carry defaults). Leaving
-# them blank produces an unusable connector at runtime, so set them here.
+# Salesforce webhook source. Supply the Connected App credentials for the initial snapshot.
 resource "streamkap_source_salesforce_webhook" "example" {
   name = "my-salesforce-webhook"
 
@@ -78,9 +74,6 @@ resource "streamkap_source_salesforce_webhook" "example" {
   # are exposed as computed attributes (see the outputs below).
 
   # Salesforce Connected App credentials, used for the initial snapshot.
-  # The generated schema marks these Optional (the backend ships them as
-  # required-with-default, which Terraform demotes to Optional+Computed), but a
-  # connector without them is unusable at runtime — always set them.
   camel_source_snapshot_salesforce_instance_url       = "https://your-org.my.salesforce.com"
   camel_source_snapshot_salesforce_auth_client_id     = var.salesforce_client_id
   camel_source_snapshot_salesforce_auth_client_secret = var.salesforce_client_secret
@@ -181,19 +174,19 @@ output "example-source-salesforce-webhook-api-key" {
 - `camel_source_cdc_enabled` (Boolean) Enable native Salesforce CDC subscription. When enabled, the connector subscribes directly to Salesforce change events without needing Apex triggers. Defaults to `true`.
 - `camel_source_dlq_enabled` (Boolean) Enable dead letter queue for failed records. Defaults to `true`.
 - `camel_source_payload_router_flatten_detail` (Boolean) Flatten nested record fields to top-level. Recommended for most destinations. Defaults to `true`.
-- `camel_source_payload_router_flatten_detail_prefix` (String) Prefix for flattened fields (empty = no prefix, Salesforce field names like 'Name', 'BillingCity' are used directly). Defaults to ``.
+- `camel_source_payload_router_flatten_detail_prefix` (String) Prefix for flattened fields (empty = no prefix, Salesforce field names like 'Name', 'BillingCity' are used directly). Defaults to an empty string.
 - `camel_source_payload_router_include_event` (Boolean) Include change metadata (ChangeEventHeader) in output. Disable for upsert/state-table use cases. Defaults to `false`.
 - `camel_source_payload_router_unknown_type_behavior` (String) How to handle events for unselected objects. Defaults to `DEFAULT_TOPIC`. Valid values: `DEFAULT_TOPIC`, `SKIP`, `FAIL`.
 - `camel_source_payload_router_unknown_type_default_topic` (String) Topic for events from unselected objects. Defaults to `unknown`.
-- `camel_source_snapshot_salesforce_auth_client_id` (String) OAuth2 Consumer Key from your Salesforce Connected App / External Client App. Defaults to ``.
-- `camel_source_snapshot_salesforce_auth_client_secret` (String, Sensitive) OAuth2 Consumer Secret from your Salesforce Connected App / External Client App. Defaults to ``.
+- `camel_source_snapshot_salesforce_auth_client_id` (String) OAuth2 Consumer Key from your Salesforce Connected App / External Client App. Defaults to an empty string.
+- `camel_source_snapshot_salesforce_auth_client_secret` (String, Sensitive) OAuth2 Consumer Secret from your Salesforce Connected App / External Client App. Defaults to an empty string.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `camel_source_snapshot_salesforce_auth_password` (String, Sensitive) Salesforce password + security token (optional, needed only if client_credentials flow is not enabled). Defaults to ``.
+- `camel_source_snapshot_salesforce_auth_password` (String, Sensitive) Salesforce password + security token (optional, needed only if client_credentials flow is not enabled). Defaults to an empty string.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `camel_source_snapshot_salesforce_auth_username` (String) Salesforce username (optional, needed only if client_credentials flow is not enabled). Defaults to ``.
-- `camel_source_snapshot_salesforce_instance_url` (String) Salesforce instance URL (e.g., https://myorg.my.salesforce.com or https://myorg.lightning.force.com). Defaults to ``.
+- `camel_source_snapshot_salesforce_auth_username` (String) Salesforce username (optional, needed only if client_credentials flow is not enabled). Defaults to an empty string.
+- `camel_source_snapshot_salesforce_instance_url` (String) Salesforce instance URL (e.g., https://myorg.my.salesforce.com or https://myorg.lightning.force.com). Defaults to an empty string.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
@@ -207,7 +200,7 @@ output "example-source-salesforce-webhook-api-key" {
 - `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
 - `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
-- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.
 - `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `webhook_url` (String) Webhook URL for Apex triggers. Generated after source is created.

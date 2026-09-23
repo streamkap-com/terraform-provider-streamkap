@@ -1,6 +1,5 @@
 # Complete DocumentDB CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from AWS DocumentDB collections
+# Capturing changes from AWS DocumentDB collections
 
 terraform {
   required_providers {

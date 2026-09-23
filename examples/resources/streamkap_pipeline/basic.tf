@@ -1,21 +1,34 @@
-# Minimal pipeline configuration
-# Connects a source to a destination without transforms
+# Use IDs and names from existing Streamkap connectors.
+variable "source_connector" {
+  type = object({
+    id     = string
+    name   = string
+    topics = set(string)
+  })
+  description = "Existing PostgreSQL source and selected topics, such as public.orders."
+}
+
+variable "destination" {
+  type = object({
+    id   = string
+    name = string
+  })
+  description = "Existing Snowflake destination."
+}
 
 resource "streamkap_pipeline" "example" {
-  name = "my-pipeline"
+  name = "orders-to-snowflake"
 
-  # Source connector (must be created first)
   source = {
-    id        = streamkap_source_postgresql.example.id
-    name      = streamkap_source_postgresql.example.name
-    connector = streamkap_source_postgresql.example.connector
-    topics    = ["public.orders", "public.customers"]
+    id        = var.source_connector.id
+    name      = var.source_connector.name
+    connector = "postgresql"
+    topics    = var.source_connector.topics
   }
 
-  # Destination connector (must be created first)
   destination = {
-    id        = streamkap_destination_snowflake.example.id
-    name      = streamkap_destination_snowflake.example.name
-    connector = streamkap_destination_snowflake.example.connector
+    id        = var.destination.id
+    name      = var.destination.name
+    connector = "snowflake"
   }
 }

@@ -150,7 +150,7 @@ func SourceS3Schema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "ScEL expression for building the topic suffix. When set, overrides Folder Skip and Folder Levels. The connector ID is always prepended. See the S3 Source documentation for available functions and examples. Defaults to \"\".",
-				MarkdownDescription: "ScEL expression for building the topic suffix. When set, overrides Folder Skip and Folder Levels. The connector ID is always prepended. See the S3 Source documentation for available functions and examples. Defaults to ``.",
+				MarkdownDescription: "ScEL expression for building the topic suffix. When set, overrides Folder Skip and Folder Levels. The connector ID is always prepended. See the S3 Source documentation for available functions and examples. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"topic_postfix": schema.StringAttribute{
@@ -174,7 +174,7 @@ func SourceS3Schema() schema.Schema {
 				Computed:            true,
 				Sensitive:           true,
 				Description:         "The AWS Access Key ID used to connect to S3. Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "The AWS Access Key ID used to connect to S3. Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				MarkdownDescription: "The AWS Access Key ID used to connect to S3. Defaults to an empty string.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"aws_secret_access_key": schema.StringAttribute{
@@ -182,7 +182,7 @@ func SourceS3Schema() schema.Schema {
 				Computed:            true,
 				Sensitive:           true,
 				Description:         "The AWS Secret Access Key used to connect to S3. Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "The AWS Secret Access Key used to connect to S3. Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				MarkdownDescription: "The AWS Secret Access Key used to connect to S3. Defaults to an empty string.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"aws_s3_region": schema.StringAttribute{
@@ -199,7 +199,7 @@ func SourceS3Schema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "The S3 Bucket to use. Defaults to \"\".",
-				MarkdownDescription: "The S3 Bucket to use. Defaults to ``.",
+				MarkdownDescription: "The S3 Bucket to use. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"aws_s3_bucket_prefix": schema.StringAttribute{
@@ -304,7 +304,7 @@ func SourceS3Schema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to \"\".",
-				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.",
+				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"transforms_oversized_records_max_record_size_bytes": schema.Int64Attribute{
