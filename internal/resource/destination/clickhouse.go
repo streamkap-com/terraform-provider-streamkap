@@ -246,7 +246,10 @@ func (r *DestinationClickHouseResource) Create(ctx context.Context, req res.Crea
 	plan.ID = types.StringValue(destination.ID)
 	plan.Name = types.StringValue(destination.Name)
 	plan.Connector = types.StringValue(destination.Connector)
-	r.configMap2Model(destination.Config, &plan)
+	if err := r.configMap2Model(destination.Config, &plan); err != nil {
+		resp.Diagnostics.AddError("Error mapping ClickHouse destination response", err.Error())
+		return
+	}
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -281,7 +284,10 @@ func (r *DestinationClickHouseResource) Read(ctx context.Context, req res.ReadRe
 
 	state.Name = types.StringValue(destination.Name)
 	state.Connector = types.StringValue(destination.Connector)
-	r.configMap2Model(destination.Config, &state)
+	if err := r.configMap2Model(destination.Config, &state); err != nil {
+		resp.Diagnostics.AddError("Error mapping ClickHouse destination response", err.Error())
+		return
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -324,7 +330,10 @@ func (r *DestinationClickHouseResource) Update(ctx context.Context, req res.Upda
 	// Update resource state with updated items
 	plan.Name = types.StringValue(destination.Name)
 	plan.Connector = types.StringValue(destination.Connector)
-	r.configMap2Model(destination.Config, &plan)
+	if err := r.configMap2Model(destination.Config, &plan); err != nil {
+		resp.Diagnostics.AddError("Error mapping ClickHouse destination response", err.Error())
+		return
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)

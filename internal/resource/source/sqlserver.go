@@ -145,8 +145,8 @@ func (r *SourceSQLServerResource) Schema(ctx context.Context, req res.SchemaRequ
 			},
 			"column_exclude_list": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Comma separated list of columns blacklist regular expressions, format schema[.]table[.](column1|column2|etc)",
-				MarkdownDescription: "Comma separated list of columns blacklist regular expressions, format schema[.]table[.](column1|column2|etc)",
+				Description:         "Comma separated list of columns blacklist regular expressions, format `schema[.]table[.](column1|column2|etc)`",
+				MarkdownDescription: "Comma separated list of columns blacklist regular expressions, format `schema[.]table[.](column1|column2|etc)`",
 			},
 			"heartbeat_enabled": schema.BoolAttribute{
 				Computed:            true,

@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+## [2.2.2] - 2026-09-23
+
+### Fixed
+
+- Report pipeline and ClickHouse `topics_config_map` response-mapping errors
+  instead of silently saving incomplete Terraform state.
+
+### Documentation
+
+- Correct v2 installation examples and stable-v3 guidance, and link to the
+  migration guide. Keep example version constraints on v2 and replace test
+  fixture IDs with explicit inputs.
+
 ## [2.2.1] - 2026-09-15
 
 ### Fixed
@@ -34,7 +47,7 @@
 
 ### Added
 
-* **PostgreSQL source**: New optional `heartbeat_use_logical_message` (bool, default `false`). When `heartbeat_enabled = true` and this is set, the connector runs `SELECT pg_logical_emit_message(true, ...)` on each beat to advance the replication slot — works on PG14+ primaries with a SELECT-only role and is compatible with read-only mode. No `streamkap_heartbeat` table or write grant required on the source. Resolves ENG-2398.
+* **PostgreSQL source**: New optional `heartbeat_use_logical_message` (bool, default `false`). When `heartbeat_enabled = true` and this is set, the connector runs `SELECT pg_logical_emit_message(true, ...)` on each beat to advance the replication slot — works on PG14+ primaries with a SELECT-only role and is compatible with read-only mode. No `streamkap_heartbeat` table or write grant required on the source.
 
 ### Changed
 
@@ -44,6 +57,6 @@
 
 ### Fixed
 
-* **Provider error handling**: API errors that return a non-JSON body (gateway HTML pages, WAF blocks, proxy 5xx) now surface as `unexpected <status> <status text> from <method> <url>: <body snippet>` instead of the cryptic `invalid character '<' looking for beginning of value`. The HTTP status, URL, and a truncated body snippet are included directly in the Terraform error, so failures like 504 gateway timeouts on long-running operations are diagnosable without re-running with `TF_LOG=DEBUG`. Resolves ENG-2460.
+* **Provider error handling**: API errors that return a non-JSON body (gateway HTML pages, WAF blocks, proxy 5xx) now surface as `unexpected <status> <status text> from <method> <url>: <body snippet>` instead of the cryptic `invalid character '<' looking for beginning of value`. The HTTP status, URL, and a truncated body snippet are included directly in the Terraform error, so failures like 504 gateway timeouts on long-running operations are diagnosable without re-running with `TF_LOG=DEBUG`.
 
-* **Resource read**: When a resource (source, destination, pipeline) is deleted out-of-band — for example via the Streamkap UI, ops cleanup, or a prior failed `terraform destroy` — the `Read` handler now removes it from Terraform state instead of returning `... does not exist`. `terraform refresh` / `terraform plan` recover automatically and propose recreating the resource; previously the only workaround was `terraform state rm`. Resolves ENG-2461.
+* **Resource read**: When a resource (source, destination, pipeline) is deleted out-of-band — for example via the Streamkap UI, ops cleanup, or a prior failed `terraform destroy` — the `Read` handler now removes it from Terraform state instead of returning `... does not exist`. `terraform refresh` / `terraform plan` recover automatically and propose recreating the resource; previously the only workaround was `terraform state rm`.

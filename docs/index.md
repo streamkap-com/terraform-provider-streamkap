@@ -3,12 +3,12 @@
 page_title: "streamkap Provider"
 subcategory: ""
 description: |-
-  
+  Streamkap Terraform provider v2. This legacy line receives bug and security fixes through 15 October 2026. See the v2 to v3 migration guide https://registry.terraform.io/providers/streamkap-com/streamkap/latest/docs/guides/migration before upgrading.
 ---
 
 # streamkap Provider
 
-
+Streamkap Terraform provider v2. This legacy line receives bug and security fixes through **15 October 2026**. See the [v2 to v3 migration guide](https://registry.terraform.io/providers/streamkap-com/streamkap/latest/docs/guides/migration) before upgrading.
 
 ## Example Usage
 
@@ -16,7 +16,8 @@ description: |-
 terraform {
   required_providers {
     streamkap = {
-      source = "github.com/streamkap-com/streamkap"
+      source  = "streamkap-com/streamkap"
+      version = "2.2.2"
     }
   }
 }

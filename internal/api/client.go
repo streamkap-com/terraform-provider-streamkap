@@ -84,7 +84,8 @@ func (s *streamkapAPI) doRequest(ctx context.Context, req *http.Request, result 
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	// The body is fully read below; a close error cannot change the result.
+	defer func() { _ = resp.Body.Close() }()
 
 	requestID := resp.Header.Get("X-Request-Id")
 	if requestID != "" {

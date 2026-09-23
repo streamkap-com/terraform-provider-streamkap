@@ -2,7 +2,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "~> 2.2"
     }
   }
   required_version = ">= 1.0.0"
@@ -10,8 +10,13 @@ terraform {
 
 provider "streamkap" {}
 
+variable "transform_id" {
+  type        = string
+  description = "ID of an existing Streamkap transform, from the UI or API."
+}
+
 data "streamkap_transform" "example-transform" {
-  id = "660ab64aeb8783e6b76abee3"
+  id = var.transform_id
 }
 
 output "example-transform" {
