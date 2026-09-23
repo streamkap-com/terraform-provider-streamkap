@@ -4,7 +4,7 @@ page_title: "streamkap Provider"
 description: |-
   Terraform provider for Streamkap data streaming platform.
   Manages sources, destinations, pipelines, transforms, and topics.
-  Version guidance: The stable release line is v3.x. Pin version = "3.0.0" and review the migration guide before upgrading from v2. The legacy v2 line receives bug and security fixes only through 15 October 2026.
+  Version guidance: The stable release line is v3.x. Pin version = "3.0.1" and review the migration guide before upgrading from v2. The legacy v2 line receives bug and security fixes only through 15 October 2026.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
@@ -14,7 +14,7 @@ Terraform provider for **Streamkap** data streaming platform.
 
 Manages sources, destinations, pipelines, transforms, and topics.
 
-**Version guidance:** The stable release line is **v3.x**. Pin `version = "3.0.0"` and review the [migration guide](https://registry.terraform.io/providers/streamkap-com/streamkap/latest/docs/guides/migration) before upgrading from v2. The legacy v2 line receives bug and security fixes only through 15 October 2026.
+**Version guidance:** The stable release line is **v3.x**. Pin `version = "3.0.1"` and review the [migration guide](https://registry.terraform.io/providers/streamkap-com/streamkap/latest/docs/guides/migration) before upgrading from v2. The legacy v2 line receives bug and security fixes only through 15 October 2026.
 
 [User documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -25,7 +25,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = "3.0.0"
+      version = "3.0.1"
     }
   }
 }

@@ -7,7 +7,7 @@ description: |-
 
 # Migrate from v2 to v3
 
-This guide covers **v2.1.21 and later v2 releases (2.1.x and 2.2.x) → v3.0.0**.
+This guide covers **v2.1.21 and later v2 releases (2.1.x and 2.2.x) → v3.0.1**.
 Keep your existing Terraform state, resource addresses, and Streamkap resource
 IDs. Schema and state inspection indicates no intermediate v2.2.x upgrade is
 needed, but the direct 2.1.x path has not been exercised in the migration
@@ -62,7 +62,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = "3.0.0"
+      version = "3.0.1"
     }
   }
 }
@@ -329,7 +329,7 @@ For example, `insert_static_value_1` becomes
 
 **Unsupported argument or missing required argument:** use the tables above and
 check your modules as well as the root configuration. For exact types and valid
-values, consult the [v3.0.0 resource reference](https://registry.terraform.io/providers/streamkap-com/streamkap/3.0.0/docs)
+values, consult the [v3.0.1 resource reference](https://registry.terraform.io/providers/streamkap-com/streamkap/3.0.1/docs)
 or run `terraform providers schema -json` after initialization.
 
 **SQL Server or S3 v2 errors:** older v2 releases can report an unexpected null
@@ -380,6 +380,6 @@ Skip this section when upgrading from v2.
   and ClickHouse `topics_config_map`, not JSON strings.
 - `streamkap_topic_metrics` legacy throughput, lag, and latency fields are now
   deprecated null values; `time_interval` and `time_unit` are ignored. Use the
-  [topic metrics reference](https://registry.terraform.io/providers/streamkap-com/streamkap/3.0.0/docs/data-sources/topic_metrics)
+  [topic metrics reference](https://registry.terraform.io/providers/streamkap-com/streamkap/3.0.1/docs/data-sources/topic_metrics)
   for the replacement fields and required topic database IDs. The `streamkap_topics`
   fields `messages_7d` and `messages_30d` are also deprecated and always null.

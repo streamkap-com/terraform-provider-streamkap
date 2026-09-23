@@ -7,7 +7,7 @@ Terraform source address: `streamkap-com/streamkap` (`registry.terraform.io/stre
 ## Versions and branches
 
 - **v2.x (legacy)** — bug and security fixes only through 15 October 2026. Pin `version = "~> 2.2"` until ready to migrate. Lives on the `v2` branch.
-- **v3.x (stable)** — new resources (`streamkap_destination_weaviate`, `streamkap_kafka_user`, `streamkap_client_credential`, `streamkap_roles` data source) plus schema and API changes. Deprecated v2 aliases remain supported through v3.x. Lives on the `main` branch. Pin `version = "3.0.0"` and review the migration guide before upgrading from v2.
+- **v3.x (stable)** — new resources (`streamkap_destination_weaviate`, `streamkap_kafka_user`, `streamkap_client_credential`, `streamkap_roles` data source) plus schema and API changes. Deprecated v2 aliases remain supported through v3.x. Lives on the `main` branch. Pin `version = "3.0.1"` and review the migration guide before upgrading from v2.
 
 `main` contains v3; `v2` retains the independent v2 history. For contribution targets, see [Branches](#branches) below.
 
@@ -41,7 +41,7 @@ provider "streamkap" {} # picks up env vars
 ```hcl
 terraform {
   required_providers {
-    streamkap = { source = "streamkap-com/streamkap", version = "3.0.0" }
+    streamkap = { source = "streamkap-com/streamkap", version = "3.0.1" }
   }
 }
 
