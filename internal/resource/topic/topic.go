@@ -26,13 +26,13 @@ func NewTopicResource() res.Resource {
 
 // TopicResource defines the resource implementation.
 type TopicResource struct {
-	client         api.StreamkapAPI
+	client api.StreamkapAPI
 }
 
 // TopicResourceModel describes the resource data model.
 type TopicResourceModel struct {
-	TopicID            types.String  `tfsdk:"topic_id"`
-	PartitionCount     types.Int64   `tfsdk:"partition_count"`
+	TopicID        types.String `tfsdk:"topic_id"`
+	PartitionCount types.Int64  `tfsdk:"partition_count"`
 }
 
 func (r *TopicResource) Metadata(ctx context.Context, req res.MetadataRequest, resp *res.MetadataResponse) {
@@ -89,7 +89,7 @@ func (r *TopicResource) Create(ctx context.Context, req res.CreateRequest, resp 
 	tflog.Debug(ctx, "Pre CREATE ===> plan: "+fmt.Sprintf("%+v", plan))
 
 	topic, err := r.client.UpdateTopic(ctx, plan.TopicID.ValueString(), api.Topic{
-		TopicID: plan.TopicID.ValueString(),
+		TopicID:        plan.TopicID.ValueString(),
 		PartitionCount: int(plan.PartitionCount.ValueInt64()),
 	})
 	if err != nil {
@@ -157,7 +157,7 @@ func (r *TopicResource) Update(ctx context.Context, req res.UpdateRequest, resp 
 	}
 
 	topic, err := r.client.UpdateTopic(ctx, plan.TopicID.ValueString(), api.Topic{
-		TopicID: plan.TopicID.ValueString(),
+		TopicID:        plan.TopicID.ValueString(),
 		PartitionCount: int(plan.PartitionCount.ValueInt64()),
 	})
 	if err != nil {

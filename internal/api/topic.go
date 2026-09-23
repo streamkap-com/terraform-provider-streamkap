@@ -11,10 +11,9 @@ import (
 )
 
 type Topic struct {
-	TopicID               string      `json:"topic_id"`
-	PartitionCount        int         `json:"partition_count"`
+	TopicID        string `json:"topic_id"`
+	PartitionCount int    `json:"partition_count"`
 }
-
 
 func (s *streamkapAPI) UpdateTopic(ctx context.Context, topicID string, reqPayload Topic) (*Topic, error) {
 	expectedPayload := map[string]map[string]int{
@@ -49,7 +48,7 @@ func (s *streamkapAPI) UpdateTopic(ctx context.Context, topicID string, reqPaylo
 }
 
 func (s *streamkapAPI) GetTopic(ctx context.Context, topicID string) (*Topic, error) {
-	
+
 	req, err := http.NewRequestWithContext(
 		ctx, http.MethodGet, s.cfg.BaseURL+"/topics/"+topicID, http.NoBody)
 	if err != nil {
@@ -62,7 +61,7 @@ func (s *streamkapAPI) GetTopic(ctx context.Context, topicID string) (*Topic, er
 		req.Method,
 		req.URL.String(),
 	))
-	
+
 	var resp Topic
 	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
