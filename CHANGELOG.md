@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Report pipeline and ClickHouse `topics_config_map` response-mapping errors
+  instead of silently saving incomplete Terraform state.
+
 ### Documentation
 
 - Correct v2 installation examples and stable-v3 guidance, and link to the

@@ -10,7 +10,6 @@ import (
 var destinationSnowflakeURLName = os.Getenv("TF_VAR_destination_snowflake_url_name")
 var destinationSnowflakePrivateKey = os.Getenv("TF_VAR_destination_snowflake_private_key")
 var destinationSnowflakeKeyPassphrase = os.Getenv("TF_VAR_destination_snowflake_key_passphrase")
-var destinationSnowflakePrivateKeyNoCrypt = os.Getenv("TF_VAR_destination_snowflake_private_key_nocrypt")
 
 func TestAccDestinationSnowflakeResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{

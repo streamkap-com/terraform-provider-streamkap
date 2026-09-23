@@ -192,10 +192,8 @@ func (r *TopicResource) ImportState(ctx context.Context, req res.ImportStateRequ
 	res.ImportStatePassthroughID(ctx, path.Root("topic_id"), req, resp)
 }
 
-func (r *TopicResource) configMap2Model(cfg api.Topic, model *TopicResourceModel) (err error) {
+func (r *TopicResource) configMap2Model(cfg api.Topic, model *TopicResourceModel) {
 	// Copy the config map to the model
 	model.TopicID = types.StringValue(cfg.TopicID)
 	model.PartitionCount = types.Int64Value(int64(cfg.PartitionCount))
-
-	return
 }

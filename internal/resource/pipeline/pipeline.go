@@ -230,9 +230,10 @@ func (r *PipelineResource) Create(ctx context.Context, req res.CreateRequest, re
 		return
 	}
 
-	// For the purposes of this example code, hardcoding a response value to
-	// save into the Terraform state.
-	r.api2Model(ctx, *pipeline, &plan)
+	if err := r.api2Model(ctx, *pipeline, &plan); err != nil {
+		resp.Diagnostics.AddError("Error mapping pipeline response", err.Error())
+		return
+	}
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -265,7 +266,10 @@ func (r *PipelineResource) Read(ctx context.Context, req res.ReadRequest, resp *
 		return
 	}
 
-	r.api2Model(ctx, *pipeline, &state)
+	if err := r.api2Model(ctx, *pipeline, &state); err != nil {
+		resp.Diagnostics.AddError("Error mapping pipeline response", err.Error())
+		return
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -302,9 +306,10 @@ func (r *PipelineResource) Update(ctx context.Context, req res.UpdateRequest, re
 		return
 	}
 
-	// For the purposes of this example code, hardcoding a response value to
-	// save into the Terraform state.
-	r.api2Model(ctx, *pipeline, &plan)
+	if err := r.api2Model(ctx, *pipeline, &plan); err != nil {
+		resp.Diagnostics.AddError("Error mapping pipeline response", err.Error())
+		return
+	}
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
