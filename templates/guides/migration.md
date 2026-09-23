@@ -7,11 +7,11 @@ description: |-
 
 # Migrate from v2 to v3
 
-This guide covers **v2.1.21 and v2.2.x → v3.0.0**. Keep your existing
-Terraform state, resource addresses, and Streamkap resource IDs. Schema and
-state inspection indicates no intermediate v2.2.x upgrade is needed, but the
-direct 2.1.21 path has not been exercised in the migration suite. Follow the
-configuration changes and plan checks below before applying.
+This guide covers **v2.1.21 and later v2 releases (2.1.x and 2.2.x) → v3.0.0**.
+Keep your existing Terraform state, resource addresses, and Streamkap resource
+IDs. Schema and state inspection indicates no intermediate v2.2.x upgrade is
+needed, but the direct 2.1.x path has not been exercised in the migration
+suite. Follow the configuration changes and plan checks below before applying.
 
 v3 adds connectors and access-management resources, and generates connector
 schemas from the Streamkap API configuration. Some v2 attributes have compatibility
