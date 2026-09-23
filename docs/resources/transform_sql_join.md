@@ -42,7 +42,7 @@ resource "streamkap_transform_sql_join" "example" {
 ### Complete
 
 ```terraform
-# Complete SQL Join transform configuration with all options
+# Complete SQL Join transform configuration
 # Joins multiple streaming topics using SQL with configurable state TTL
 
 terraform {
@@ -117,7 +117,7 @@ Valid values: `7d`, `3d`, `24h`, `10m`, `0` (continue from last position). Only 
 - `transforms_language` (String) Language of the transform. Defaults to `SQL`. Valid values: `SQL`.
 - `transforms_output_serialization_format` (String) Format of the output topics. Defaults to `Any`. Valid values: `Any`, `Avro`, `Json`.
 - `transforms_output_topic_pattern` (String) String pattern to save the output topics. Defaults to `placeholder-output-replacement-pattern-to-be-revised-during-implementation`.
-- `transforms_topic_ttl` (String) State TTL must be a valid duration like 3d, 10m, 2h, 30s. Defaults to ``.
+- `transforms_topic_ttl` (String) State TTL must be a valid duration like 3d, 10m, 2h, 30s. Defaults to an empty string.
 
 ### Read-Only
 

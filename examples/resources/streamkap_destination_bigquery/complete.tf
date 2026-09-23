@@ -17,7 +17,7 @@ variable "destination_bigquery_keyfile" {
   description = "BigQuery service-account JSON key file contents"
 }
 
-# Complete BigQuery destination configuration with all options
+# Complete BigQuery destination configuration
 resource "streamkap_destination_bigquery" "example" {
   name = "example-destination-bigquery"
 

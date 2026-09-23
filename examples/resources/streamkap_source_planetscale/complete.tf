@@ -1,6 +1,5 @@
 # Complete PlanetScale CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from PlanetScale (Vitess) tables
+# Capturing changes from PlanetScale (Vitess) tables
 
 terraform {
   required_providers {

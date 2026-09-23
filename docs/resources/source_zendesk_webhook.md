@@ -124,7 +124,7 @@ output "example-source-zendesk-webhook-api-key" {
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `camel_source_dlq_enabled` (Boolean) Enable dead letter queue. Failed records are written to a DLQ topic instead of crashing the connector. Defaults to `false`.
-- `camel_source_payload_router_fanout_fields` (String) Comma-separated list of domain-scoped fields to fan out into separate topics (e.g. ticket.tags, ticket.custom_fields, organization.tags). When empty, arrays stay inline. Defaults to ``.
+- `camel_source_payload_router_fanout_fields` (String) Comma-separated list of domain-scoped fields to fan out into separate topics (e.g. ticket.tags, ticket.custom_fields, organization.tags). When empty, arrays stay inline. Defaults to an empty string.
 - `camel_source_payload_router_flatten_detail` (Boolean) Flatten nested detail fields to top-level with a prefix. Recommended for destinations that do not support nested objects. Defaults to `false`.
 - `camel_source_payload_router_flatten_detail_prefix` (String) Prefix for flattened detail fields to avoid name collisions (e.g. detail.id becomes detail_id). Defaults to `detail_`.
 - `camel_source_payload_router_include_event` (Boolean) Include the event field in output records. Enable for audit-log use cases (append mode). Disable for state-table use cases (upsert mode) where only the entity state matters. Defaults to `true`.
@@ -142,7 +142,7 @@ output "example-source-zendesk-webhook-api-key" {
 - `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
 - `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
-- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.
 - `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `webhook_url` (String) Webhook URL. This URL will be generated after the source is created

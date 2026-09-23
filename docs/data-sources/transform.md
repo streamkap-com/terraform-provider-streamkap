@@ -32,8 +32,13 @@ terraform {
 
 provider "streamkap" {}
 
+variable "transform_id" {
+  type        = string
+  description = "ID of an existing Streamkap transform, from the UI or API."
+}
+
 data "streamkap_transform" "example-transform" {
-  id = "660ab64aeb8783e6b76abee3"
+  id = var.transform_id
 }
 
 output "example-transform" {

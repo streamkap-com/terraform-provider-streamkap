@@ -77,7 +77,7 @@ variable "destination_snowflake_url_name" {
 variable "destination_snowflake_private_key" {
   type        = string
   sensitive   = true
-  description = "The private key of the Snowflake database"
+  description = "Snowflake private key without PEM headers, footers, or line breaks."
 }
 variable "destination_snowflake_key_passphrase" {
   type        = string
@@ -87,22 +87,19 @@ variable "destination_snowflake_key_passphrase" {
 resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   name                             = "example-destination-snowflake"
   snowflake_url_name               = var.destination_snowflake_url_name
-  snowflake_user_name              = "STREAMKAP_USER_JUNIT"
+  snowflake_user_name              = "STREAMKAP_USER"
   snowflake_private_key            = var.destination_snowflake_private_key
   snowflake_private_key_passphrase = var.destination_snowflake_key_passphrase
   sfwarehouse                      = "STREAMKAP_WH"
-  snowflake_database_name          = "JUNIT"
-  snowflake_schema_name            = "JUNIT"
-  snowflake_role_name              = "STREAMKAP_ROLE_JUNIT"
+  snowflake_database_name          = "STREAMKAP"
+  snowflake_schema_name            = "PUBLIC"
+  snowflake_role_name              = "STREAMKAP_ROLE"
   ingestion_mode                   = "upsert"
   hard_delete                      = true
   use_hybrid_tables                = false
   apply_dynamic_table_script       = false
   snowflake_topic2table_map        = "REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5"
-  auto_qa_dedupe_table_mapping = {
-    users                   = "JUNIT.USERS",
-    itst_scen20240528103635 = "ITST_SCEN20240528103635"
-  }
+
 }
 
 output "example-destination-snowflake" {
@@ -138,7 +135,7 @@ output "example-destination-snowflake" {
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
-- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `NONE`. Defaults to `basic`. Valid values: `basic`, `none`.
+- `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `none`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `sfwarehouse` (String) The name of the snowflake warehouse. Defaults to `STREAMKAP_WH`.
 - `snowflake_private_key_passphrase` (String, Sensitive) The passphrase is used to decrypt the private key.
 
@@ -163,7 +160,7 @@ output "example-destination-snowflake" {
 - `transforms_mask_field_mask_char` (String) Fill character used by the REDACT function (length is preserved). Defaults to `*`.
 - `transforms_mask_field_mask_fixed_value` (String) Constant replacement used by the FIXED function. Defaults to `***`.
 - `transforms_mask_field_mask_function` (String) Masking algorithm. Hash functions are deterministic (same input -> same token) and length-preserving. Defaults to `SHA256_TRUNCATE`. Valid values: `SHA256_TRUNCATE`, `MD5_TRUNCATE`, `SHA256`, `MD5`, `REDACT`, `FIXED`, `NULLIFY`.
-- `transforms_mask_field_mask_salt` (String) Secret salt prepended before hashing (used by the SHA256/MD5 functions). Strongly recommended: without it, low-cardinality values (phone, SSN, email) are reversible via a precomputed rainbow table. Defaults to ``.
+- `transforms_mask_field_mask_salt` (String) Secret salt prepended before hashing (used by the SHA256/MD5 functions). Strongly recommended: without it, low-cardinality values (phone, SSN, email) are reversible via a precomputed rainbow table. Defaults to an empty string.
 - `transforms_mask_field_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
 - `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
@@ -172,7 +169,7 @@ output "example-destination-snowflake" {
 - `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
 - `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
-- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.
 - `transforms_rename_fields_renames` (String) JSON mapping of source to target column names. Keys should be schema.table.column, table.column or just column. Values must be valid column names (no dots or spaces).
 
 Example:

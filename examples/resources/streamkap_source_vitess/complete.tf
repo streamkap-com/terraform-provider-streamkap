@@ -1,6 +1,5 @@
 # Complete Vitess CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from self-hosted Vitess clusters
+# Capturing changes from self-hosted Vitess clusters
 
 terraform {
   required_providers {

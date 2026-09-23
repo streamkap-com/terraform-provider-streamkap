@@ -42,7 +42,7 @@ resource "streamkap_transform_enrich_async" "example" {
 ### Complete
 
 ```terraform
-# Complete Enrich Async transform configuration with all options
+# Complete Enrich Async transform configuration
 # Enriches records asynchronously by calling external APIs using JavaScript or Python
 
 terraform {

@@ -120,7 +120,7 @@ func TransformTopicRouterSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "KC cluster to deploy the connector to. Leave empty for default cluster. Defaults to \"\".",
-				MarkdownDescription: "KC cluster to deploy the connector to. Leave empty for default cluster. Defaults to ``.",
+				MarkdownDescription: "KC cluster to deploy the connector to. Leave empty for default cluster. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 		},

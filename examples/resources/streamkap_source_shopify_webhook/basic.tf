@@ -1,8 +1,4 @@
-# Shopify webhook source. All fields are Optional in the generated schema (the
-# backend ships them as `required: true` + `default: ""`, which the Terraform
-# Plugin Framework requires us to demote to Optional+Computed+Default), but the
-# store URL, an access credential, and the HMAC signing secret are needed for a
-# working connector, so set them here.
+# Shopify webhook source. Supply the store URL, access token, and webhook signing secret.
 resource "streamkap_source_shopify_webhook" "example" {
   name = "my-shopify-webhook"
 

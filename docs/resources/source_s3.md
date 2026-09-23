@@ -57,8 +57,7 @@ variable "aws_secret_access_key" {
 
 ```terraform
 # Complete S3 source configuration
-# This example shows all available configuration options for capturing data
-# from S3 bucket files
+# Capturing data from S3 bucket files
 
 terraform {
   required_providers {
@@ -107,11 +106,8 @@ resource "streamkap_source_s3" "example-source-s3" {
   # Scan settings
   fs_scan_interval_ms = 10000 # Interval in ms (100-100000)
 
-  # Cleanup policy after processing
-  fs_cleanup_policy_class = "io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy"
-  # Options:
-  # - io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy (log only)
-  # - io.streamthoughts.kafka.connect.filepulse.fs.clean.DeleteCleanupPolicy (delete after processing)
+  # Log processed files; use "Delete" only to remove them from S3 after ingestion.
+  fs_cleanup_policy_class = "Log"
 
   # Task parallelism
   tasks_max = 5 # Between 1-10
@@ -131,13 +127,13 @@ output "example-source-s3" {
 
 ### Optional
 
-- `aws_access_key_id` (String, Sensitive) The AWS Access Key ID used to connect to S3. Defaults to ``.
+- `aws_access_key_id` (String, Sensitive) The AWS Access Key ID used to connect to S3. Defaults to an empty string.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `aws_s3_bucket_name` (String) The S3 Bucket to use. Defaults to ``.
+- `aws_s3_bucket_name` (String) The S3 Bucket to use. Defaults to an empty string.
 - `aws_s3_bucket_prefix` (String) Prefix for S3 object keys to scan (e.g. "data/2024/"). Can be used to specify a directory. Defaults to `file-pulse/`.
 - `aws_s3_region` (String) The AWS region to be used. Defaults to `us-west-2`. Valid values: `eu-west-2`, `eu-west-1`, `eu-central-1`, `ap-south-1`, `ap-northeast-2`, `ap-northeast-1`, `ap-southeast-1`, `ap-southeast-2`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`.
-- `aws_secret_access_key` (String, Sensitive) The AWS Secret Access Key used to connect to S3. Defaults to ``.
+- `aws_secret_access_key` (String, Sensitive) The AWS Secret Access Key used to connect to S3. Defaults to an empty string.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `csv_has_headers` (Boolean) When enabled, treat the first row of each CSV file as column names. When disabled, columns are auto-generated as column1, column2, ... Defaults to `true`.
@@ -152,7 +148,7 @@ output "example-source-s3" {
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `topic_include_list` (String) Topics produced by this S3 source. Populated automatically as topics are discovered.
 - `topic_postfix` (String) The default topic name suffix. When Dynamic Topic Routing is disabled, all files are streamed to this single topic. When enabled, this is used as a fallback for files that do not match the routing rules. Defaults to `default`.
-- `topic_routing_advanced_expression` (String) ScEL expression for building the topic suffix. When set, overrides Folder Skip and Folder Levels. The connector ID is always prepended. See the S3 Source documentation for available functions and examples. Defaults to ``.
+- `topic_routing_advanced_expression` (String) ScEL expression for building the topic suffix. When set, overrides Folder Skip and Folder Levels. The connector ID is always prepended. See the S3 Source documentation for available functions and examples. Defaults to an empty string.
 - `topic_routing_enabled` (Boolean) When enabled, derive the Kafka topic name per file from the S3 key. When disabled, all files go to the single default topic. Defaults to `false`.
 - `topic_routing_folder_levels` (Number) Number of folder segments (after the skip) to include in the topic name, joined with dots. Set 0 to skip folder-based routing entirely. Defaults to `0`.
 - `topic_routing_folder_skip` (Number) Number of leading path segments to drop from the S3 key before using folders for the topic name. Example: with key 'archive/public/users/file.csv' set 2 to drop 'archive/public'. Defaults to `0`.
@@ -163,7 +159,7 @@ output "example-source-s3" {
 - `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
 - `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
-- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.
 - `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 

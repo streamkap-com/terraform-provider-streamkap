@@ -22,7 +22,7 @@ variable "s3_aws_secret_access_key" {
   description = "The AWS Secret Access Key used to connect to S3"
 }
 
-# Complete S3 destination configuration with all options
+# Complete S3 destination configuration
 resource "streamkap_destination_s3" "example" {
   name = "example-destination-s3"
 

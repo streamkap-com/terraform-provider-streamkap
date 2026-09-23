@@ -1,4 +1,4 @@
-# Complete topic configuration with all options
+# Complete topic configuration
 
 terraform {
   required_providers {

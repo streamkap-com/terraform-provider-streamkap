@@ -42,7 +42,7 @@ resource "streamkap_transform_rollup" "example" {
 ### Complete
 
 ```terraform
-# Complete Rollup transform configuration with all options
+# Complete Rollup transform configuration
 # Aggregates streaming records into summaries using SQL
 
 terraform {

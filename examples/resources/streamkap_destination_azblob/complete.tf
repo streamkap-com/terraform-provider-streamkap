@@ -17,7 +17,7 @@ variable "destination_azblob_connection_string" {
   description = "The Azure Blob Storage connection string or SAS URL"
 }
 
-# Complete Azure Blob Storage destination configuration with all options
+# Complete Azure Blob Storage destination configuration
 resource "streamkap_destination_azblob" "example" {
   name = "example-destination-azblob"
 

@@ -110,12 +110,7 @@ sweep:
 # Validate example files
 .PHONY: validate-examples
 validate-examples:
-	@for f in examples/resources/*/basic.tf examples/resources/*/complete.tf; do \
-		if [ -f "$$f" ]; then \
-			echo "Validating $$f"; \
-			terraform -chdir=$$(dirname $$f) validate || exit 1; \
-		fi \
-	done
+	bash scripts/validate-examples.sh
 
 # Show help
 .PHONY: help

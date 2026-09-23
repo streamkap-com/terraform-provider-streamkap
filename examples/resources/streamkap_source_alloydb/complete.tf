@@ -1,6 +1,5 @@
 # Complete AlloyDB CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from AlloyDB tables using PostgreSQL logical replication
+# Capturing changes from AlloyDB tables using PostgreSQL logical replication
 
 terraform {
   required_providers {

@@ -17,7 +17,7 @@ variable "destination_motherduck_token" {
   description = "Motherduck authentication token"
 }
 
-# Complete Motherduck destination configuration with all options
+# Complete Motherduck destination configuration
 resource "streamkap_destination_motherduck" "example" {
   name = "example-destination-motherduck"
 

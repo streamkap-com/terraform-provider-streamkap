@@ -14,8 +14,8 @@ resource "streamkap_source_mysql" "example" {
   database_include_list = "mydb"
   table_include_list    = "mydb.orders,mydb.customers"
 
-  # Heartbeat table for monitoring (required)
-  heartbeat_data_collection_schema_or_database = "streamkap"
+  # Kafka-only heartbeats require no heartbeat table in MySQL.
+  heartbeat_enabled = true
 }
 
 variable "db_password" {

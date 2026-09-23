@@ -23,7 +23,7 @@ variable "destination_r2_secret_access_key" {
   description = "Cloudflare R2 Secret Access Key"
 }
 
-# Complete R2 (Cloudflare) destination configuration with all options
+# Complete R2 (Cloudflare) destination configuration
 resource "streamkap_destination_r2" "example" {
   name = "example-destination-r2"
 

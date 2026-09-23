@@ -1,8 +1,4 @@
-# Salesforce webhook source. The OAuth fields are technically Optional in the
-# generated schema (the backend ships them as `required: true` + `default: ""`,
-# which the Terraform Plugin Framework requires us to demote to Optional+
-# Computed+Default("") since Required attributes can't carry defaults). Leaving
-# them blank produces an unusable connector at runtime, so set them here.
+# Salesforce webhook source. Supply the Connected App credentials for the initial snapshot.
 resource "streamkap_source_salesforce_webhook" "example" {
   name = "my-salesforce-webhook"
 

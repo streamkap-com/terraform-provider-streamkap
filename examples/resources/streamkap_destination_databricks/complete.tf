@@ -25,7 +25,7 @@ variable "destination_databricks_token" {
 resource "streamkap_destination_databricks" "example-destination-databricks" {
   name               = "example-destination-databricks"
   table_name_prefix  = "streamkap"
-  ingestion_mode     = "append"
+  ingestion_mode     = "upsert"
   partition_mode     = "by_topic"
   hard_delete        = true
   tasks_max          = 5

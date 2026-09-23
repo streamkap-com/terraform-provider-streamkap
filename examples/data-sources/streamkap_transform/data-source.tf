@@ -11,11 +11,15 @@ terraform {
 
 provider "streamkap" {}
 
-data "streamkap_tag" "example-tag" {
-  # id = "670e5ca40afe1d3983ce0c22" # Development tag
-  id = "670e5bab0d119c0d1f8cda9d" # Production tag
+variable "transform_id" {
+  type        = string
+  description = "ID of an existing Streamkap transform, from the UI or API."
 }
 
-output "example-tag" {
-  value = data.streamkap_tag.example-tag
+data "streamkap_transform" "example-transform" {
+  id = var.transform_id
+}
+
+output "example-transform" {
+  value = data.streamkap_transform.example-transform
 }

@@ -37,7 +37,7 @@ resource "streamkap_tag" "example" {
 ### Complete
 
 ```terraform
-# Complete tag configuration with all options
+# Complete tag configuration
 
 resource "streamkap_tag" "example" {
   name        = "production"
@@ -48,14 +48,8 @@ resource "streamkap_tag" "example" {
   type = ["sources", "destinations", "pipelines"]
 }
 
-# Example: Using tags with resources
-resource "streamkap_pipeline" "example" {
-  name = "my-pipeline"
-
-  # Apply the tag to this pipeline
-  tags = [streamkap_tag.example.id]
-
-  # ... other configuration
+output "tag_id" {
+  value = streamkap_tag.example.id
 }
 ```
 

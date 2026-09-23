@@ -41,8 +41,7 @@ resource "streamkap_source_kafkadirect" "example" {
 
 ```terraform
 # Complete Kafka Direct source configuration
-# This example shows all available configuration options for reading data
-# directly from external Kafka topics
+# Reading data directly from external Kafka topics
 
 terraform {
   required_providers {

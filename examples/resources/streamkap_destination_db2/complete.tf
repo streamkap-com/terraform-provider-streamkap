@@ -17,7 +17,7 @@ variable "destination_db2_password" {
   description = "The password to access the Db2 database"
 }
 
-# Complete Db2 destination configuration with all options
+# Complete Db2 destination configuration
 resource "streamkap_destination_db2" "example" {
   name = "example-destination-db2"
 

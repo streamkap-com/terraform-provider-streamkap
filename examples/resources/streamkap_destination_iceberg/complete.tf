@@ -22,7 +22,7 @@ variable "iceberg_catalog_s3_secret_access_key" {
   description = "The AWS Secret Access Key used to connect to S3 for Iceberg catalog"
 }
 
-# Complete Iceberg destination configuration with all options
+# Complete Iceberg destination configuration
 resource "streamkap_destination_iceberg" "example" {
   name = "example-destination-iceberg"
 

@@ -19,25 +19,27 @@ Use this data source to query broker metadata and recent status for topics.
 ## Example Usage
 
 ```terraform
-# Get metrics for specific topics
-# Note: Use streamkap_topics data source first to get topic_db_ids
+variable "source_id" {
+  type        = string
+  description = "ID of the PostgreSQL source to query."
+}
+
+variable "source_topics" {
+  type = list(object({
+    topic_id    = string
+    topic_db_id = string
+  }))
+  description = "Kafka topic names and matching topic database IDs from the Streamkap API."
+}
+
 data "streamkap_topic_metrics" "example" {
-  entities = [
-    {
-      id           = "source-123"
-      entity_type  = "sources"
-      connector    = "postgresql"
-      topic_ids    = ["source-123.public.users", "source-123.public.orders"]
-      topic_db_ids = ["64abc123def456789012345a", "64abc123def456789012345b"]
-    },
-    {
-      id           = "transform-456"
-      entity_type  = "transforms"
-      connector    = "map_filter"
-      topic_ids    = ["transform-456.filtered_users"]
-      topic_db_ids = ["64abc123def456789012345c"]
-    }
-  ]
+  entities = [{
+    id           = var.source_id
+    entity_type  = "sources"
+    connector    = "postgresql"
+    topic_ids    = [for topic in var.source_topics : topic.topic_id]
+    topic_db_ids = [for topic in var.source_topics : topic.topic_db_id]
+  }]
 }
 
 # Output metrics

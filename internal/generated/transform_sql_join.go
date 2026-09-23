@@ -105,7 +105,7 @@ func TransformSQLJoinSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "State TTL must be a valid duration like 3d, 10m, 2h, 30s. Defaults to \"\".",
-				MarkdownDescription: "State TTL must be a valid duration like 3d, 10m, 2h, 30s. Defaults to ``.",
+				MarkdownDescription: "State TTL must be a valid duration like 3d, 10m, 2h, 30s. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"transforms_input_serialization_format": schema.StringAttribute{

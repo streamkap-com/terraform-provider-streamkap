@@ -130,14 +130,14 @@ func SourceSalesforceWebhookSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "Salesforce instance URL (e.g., https://myorg.my.salesforce.com or https://myorg.lightning.force.com). Defaults to \"\".",
-				MarkdownDescription: "Salesforce instance URL (e.g., https://myorg.my.salesforce.com or https://myorg.lightning.force.com). Defaults to ``.",
+				MarkdownDescription: "Salesforce instance URL (e.g., https://myorg.my.salesforce.com or https://myorg.lightning.force.com). Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"camel_source_snapshot_salesforce_auth_client_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Description:         "OAuth2 Consumer Key from your Salesforce Connected App / External Client App. Defaults to \"\".",
-				MarkdownDescription: "OAuth2 Consumer Key from your Salesforce Connected App / External Client App. Defaults to ``.",
+				MarkdownDescription: "OAuth2 Consumer Key from your Salesforce Connected App / External Client App. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"camel_source_snapshot_salesforce_auth_client_secret": schema.StringAttribute{
@@ -145,14 +145,14 @@ func SourceSalesforceWebhookSchema() schema.Schema {
 				Computed:            true,
 				Sensitive:           true,
 				Description:         "OAuth2 Consumer Secret from your Salesforce Connected App / External Client App. Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "OAuth2 Consumer Secret from your Salesforce Connected App / External Client App. Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				MarkdownDescription: "OAuth2 Consumer Secret from your Salesforce Connected App / External Client App. Defaults to an empty string.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"camel_source_snapshot_salesforce_auth_username": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Description:         "Salesforce username (optional, needed only if client_credentials flow is not enabled). Defaults to \"\".",
-				MarkdownDescription: "Salesforce username (optional, needed only if client_credentials flow is not enabled). Defaults to ``.",
+				MarkdownDescription: "Salesforce username (optional, needed only if client_credentials flow is not enabled). Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"camel_source_snapshot_salesforce_auth_password": schema.StringAttribute{
@@ -160,7 +160,7 @@ func SourceSalesforceWebhookSchema() schema.Schema {
 				Computed:            true,
 				Sensitive:           true,
 				Description:         "Salesforce password + security token (optional, needed only if client_credentials flow is not enabled). Defaults to \"\". This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Salesforce password + security token (optional, needed only if client_credentials flow is not enabled). Defaults to ``.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				MarkdownDescription: "Salesforce password + security token (optional, needed only if client_credentials flow is not enabled). Defaults to an empty string.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"topic_include_list": schema.StringAttribute{
@@ -205,7 +205,7 @@ func SourceSalesforceWebhookSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "Prefix for flattened fields (empty = no prefix, Salesforce field names like 'Name', 'BillingCity' are used directly). Defaults to \"\".",
-				MarkdownDescription: "Prefix for flattened fields (empty = no prefix, Salesforce field names like 'Name', 'BillingCity' are used directly). Defaults to ``.",
+				MarkdownDescription: "Prefix for flattened fields (empty = no prefix, Salesforce field names like 'Name', 'BillingCity' are used directly). Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"camel_source_payload_router_include_event": schema.BoolAttribute{
@@ -287,7 +287,7 @@ func SourceSalesforceWebhookSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Description:         "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to \"\".",
-				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.",
+				MarkdownDescription: "Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.",
 				Default:             stringdefault.StaticString(""),
 			},
 			"transforms_oversized_records_max_record_size_bytes": schema.Int64Attribute{

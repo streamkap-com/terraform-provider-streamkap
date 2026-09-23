@@ -1,4 +1,4 @@
-# Complete Pinecone destination configuration with all options
+# Complete Pinecone destination configuration
 
 resource "streamkap_destination_pinecone" "example" {
   name = "my-pinecone-dest"

@@ -56,8 +56,7 @@ variable "db_password" {
 
 ```terraform
 # Complete MariaDB CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from MariaDB tables using binary log replication
+# Capturing changes from MariaDB tables using binary log replication
 
 terraform {
   required_providers {
@@ -186,7 +185,7 @@ output "example-source-mariadb" {
 - `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
 - `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
-- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.
 - `transforms_source_regex_support_key_field_template` (String) Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId. Defaults to `{{database}}.{{table}}`.
 - `transforms_source_regex_support_metadata_field_name` (String) Name of the extra metadata field to store source information and ensure uniqueness across all tables when regex support is enabled. Defaults to `_streamkap_source_metadata`.
 - `transforms_source_regex_support_regex_replacement` (String) Replacement string for matching regex snippets. Defaults to `REGEX`.

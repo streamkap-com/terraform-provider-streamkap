@@ -42,7 +42,7 @@ resource "streamkap_transform_enrich" "example" {
 ### Complete
 
 ```terraform
-# Complete Enrich transform configuration with all options
+# Complete Enrich transform configuration
 # Enriches streaming records by joining with reference data using SQL
 
 terraform {

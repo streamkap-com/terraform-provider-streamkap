@@ -1,6 +1,5 @@
 # Complete S3 source configuration
-# This example shows all available configuration options for capturing data
-# from S3 bucket files
+# Capturing data from S3 bucket files
 
 terraform {
   required_providers {
@@ -49,11 +48,8 @@ resource "streamkap_source_s3" "example-source-s3" {
   # Scan settings
   fs_scan_interval_ms = 10000 # Interval in ms (100-100000)
 
-  # Cleanup policy after processing
-  fs_cleanup_policy_class = "io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy"
-  # Options:
-  # - io.streamthoughts.kafka.connect.filepulse.fs.clean.LogCleanupPolicy (log only)
-  # - io.streamthoughts.kafka.connect.filepulse.fs.clean.DeleteCleanupPolicy (delete after processing)
+  # Log processed files; use "Delete" only to remove them from S3 after ingestion.
+  fs_cleanup_policy_class = "Log"
 
   # Task parallelism
   tasks_max = 5 # Between 1-10

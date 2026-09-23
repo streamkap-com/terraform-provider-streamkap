@@ -40,7 +40,7 @@ resource "streamkap_topic" "example" {
 ### Complete
 
 ```terraform
-# Complete topic configuration with all options
+# Complete topic configuration
 
 terraform {
   required_providers {

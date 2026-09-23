@@ -22,7 +22,7 @@
 │  SQLServer       │  PostgreSQL, S3  │  SQLJoin         │        │
 │  KafkaDirect     │  Iceberg, Kafka  │  Rollup, FanOut  │        │
 │  Oracle, Redis   │  BigQuery, GCS   │  TopicRouter     │        │
-│  + 17 more...    │  + 16 more...    │                  │        │
+│  + 17 more...    │  + 15 more...    │                  │        │
 └──────────────────┴──────────────────┴──────────────────┴────────┘
 
 61 resources in total (25 sources + 24 destinations + 7 transforms + pipeline,
@@ -74,16 +74,13 @@ All transforms support the `implementation_json` attribute for managing transfor
 
 ```hcl
 resource "streamkap_transform_map_filter" "example" {
-  name = "my-transform"
+  name                = "my-transform"
   transforms_language = "JavaScript"
 
   # Optional: Manage implementation via Terraform
   implementation_json = jsonencode({
-    language        = "JavaScript"
-    value_transform = "return record;"
-    key_transform   = ""
-    topic_transform = ""
-    common_transform = ""
+    language        = "JAVASCRIPT"
+    value_transform = "function _streamkap_transform(inputObj) { return inputObj; }"
   })
 }
 ```
@@ -97,11 +94,6 @@ status produces an error while preserving the saved transform in state.
 Resources that don't follow the connector pattern have their own implementations:
 `pipeline`, `topic`, `tag`, `kafka_user`, and `client_credential` implement CRUD
 directly against the API client.
-
-`kafka_user`, `client_credential`, and the `roles` data source were unregistered
-in `084d08f` and re-registered once their wire formats were reconciled with the
-backend (see the API-quirks list in `AGENTS.md` for the two mismatches that made
-them unusable).
 
 ### Kafka User (`internal/resource/kafka_user/`)
 - CRUD via `/kafka-access/kafka-users` endpoints
@@ -166,25 +158,27 @@ type ConnectorConfig interface {
 
 ```
 Create:
-1. Read TF config into model struct
-2. Capture planned Sensitive string values
+1. Read the Terraform plan into the model
+2. Capture planned sensitive strings and defaulted values
 3. Extract name from model
-4. Convert model to API config (ModelToAPIConfig)
+4. Convert model to API config (ModelToConfigMap)
 5. Call API CreateSource/CreateDestination
-6. Convert API response to model, then restore captured secrets
+6. Convert API response to model, then restore planned secrets and fill null defaults
 7. Store ID in state
 
 Read:
-1. Call API GetSource/GetDestination
-2. Convert API response to model (APIConfigToModel)
-3. Update state
+1. Capture prior sensitive strings and defaulted values
+2. Call API GetSource/GetDestination; remove from state on 404
+3. Convert API response to model (ConfigMapToModel)
+4. Fill null secrets and defaults from prior state; retain non-null API values
+5. Update state
 
 Update:
-1. Read TF config into model
-2. Capture planned Sensitive string values
+1. Read the Terraform plan into the model
+2. Capture planned sensitive strings and defaulted values
 3. Convert to API config
 4. Call API UpdateSource/UpdateDestination
-5. Convert API response to model, then restore captured secrets
+5. Convert API response to model, then restore planned secrets and fill null defaults
 6. Update state
 
 Delete:
@@ -202,7 +196,7 @@ Field mappings translate between Terraform attribute names and API field names.
 var SourcePostgresqlFieldMappings = map[string]string{
     "database_hostname": "database.hostname.user.defined",
     "database_port":     "database.port.user.defined",
-    "database_user":     "database.user.user.defined",
+    "database_user":     "database.user",
     "database_password": "database.password",
     "database_dbname":   "database.dbname",
 }
@@ -213,44 +207,24 @@ var SourcePostgresqlFieldMappings = map[string]string{
 | Terraform Attribute | API Field | Notes |
 |---------------------|-----------|-------|
 | `database_hostname` | `database.hostname.user.defined` | `.user.defined` suffix for user-editable |
-| `ssl_mode` | `database.sslmode` | Direct mapping |
-| `snapshot_mode` | `snapshot.mode` | Nested config |
+| `database_sslmode` | `database.sslmode` | Direct mapping |
 
 ## Reflection-Based Marshaling
 
-### ModelToAPIConfig
+The shared implementation is in
+[`internal/resource/shared/marshaling.go`](../internal/resource/shared/marshaling.go):
 
-Converts a typed Terraform model struct to `map[string]any` for API calls:
+- `ModelToConfigMap` converts Terraform values into API configuration and returns
+  an error for invalid or conflicting mappings.
+- `ConfigMapToModel` applies API values to the Terraform model.
+- `BuildTfsdkFieldIndex` follows embedded structs, including deprecated aliases.
+- `PreserveKnownFields` restores planned secrets after create/update;
+  `FillNullFields` fills missing defaults and preserves null-returned secrets on
+  read without hiding non-null credential changes.
 
-```go
-func ModelToAPIConfig(ctx context.Context, model any, fieldMappings map[string]string) map[string]any {
-    config := make(map[string]any)
-    v := reflect.ValueOf(model).Elem()
-    t := v.Type()
-
-    for i := 0; i < t.NumField(); i++ {
-        field := t.Field(i)
-        tfTag := field.Tag.Get("tfsdk")
-        if tfTag == "" || tfTag == "id" || tfTag == "name" || tfTag == "connector" {
-            continue
-        }
-
-        apiKey, exists := fieldMappings[tfTag]
-        if !exists {
-            continue
-        }
-
-        fieldValue := v.Field(i)
-        // Convert types.String, types.Int64, types.Bool to native Go types
-        config[apiKey] = convertTFTypeToNative(fieldValue)
-    }
-    return config
-}
-```
-
-### APIConfigToModel
-
-Converts API response `map[string]any` back to typed model struct.
+The connector and transform base resources supply conversion hooks for their
+complex field types. Null and empty maps remain distinct so an empty map can
+clear a mapping.
 
 ## Directory Structure
 
@@ -333,12 +307,12 @@ terraform-provider-streamkap/
 │   ├── resources/, data-sources/ # Generated
 │   ├── ARCHITECTURE.md           # This file
 │   ├── CODE_GENERATOR.md         # tfgen internals
-│   └── MIGRATION.md              # v2 → v3 migration guide
+│   └── guides/migration.md       # v2 → v3 migration guide
 │
 └── .github/workflows/            # CI/CD (see "CI/CD Workflows" below)
     ├── ci.yml                    # Build, vet, lint, credential-free tests
     ├── docs-drift.yml            # docs/ must match committed schemas
-    ├── acceptance.yml            # Nightly + push acceptance suite
+    ├── acceptance.yml            # Push + manual acceptance suite
     ├── pr-acceptance.yml         # Curated acceptance subset on PRs
     ├── migration.yml             # v2 → v3 migration acceptance tests
     ├── security.yml              # Security scans
@@ -361,7 +335,7 @@ When neither name is configured, normal default and computed behavior applies.
 ```
 1. Provider reads client_id + secret from config or env vars
 2. POST /auth/access-token with credentials
-3. Receive JWT access token + refresh token
+3. Receive access token; renew with client credentials before expiry or after a 401
 4. All subsequent requests include: Authorization: Bearer <token>
 ```
 
@@ -379,25 +353,14 @@ could issue an extra credential.
 Structured validation errors are reported without their input values, and
 transform implementation bodies are omitted from request logs.
 
-```go
-// API errors are returned in JSON format:
-{
-    "detail": "Error message here"
-}
-
-// Provider surfaces these as Terraform diagnostics:
-resp.Diagnostics.AddError(
-    "Unable to Create Source",
-    "Streamkap API Error: " + err.Error(),
-)
-```
+API error details are surfaced as Terraform diagnostics with the operation context.
 
 ## State Management
 
 - Empty connector maps clear mappings; null leaves them unset. Marshaling preserves this distinction.
 - ID is stored as `id` attribute (computed)
 - Sensitive fields use `Sensitive: true` in schema
-- Computed fields use `UseStateForUnknown()` plan modifier
+- Stable computed fields use `UseStateForUnknown()`; derived fields can recompute on update.
 - Set-once fields use `RequiresReplace()` plan modifier
 
 ## Testing Architecture
@@ -466,7 +429,7 @@ STREAMKAP_BACKEND_PATH=/path/to/backend go test -v ./cmd/tfgen/...
 make testacc
 
 # Single acceptance test
-TF_ACC=1 go test -v ./internal/provider -run TestAccSourcePostgreSQL_basic
+TF_ACC=1 go test -v ./internal/provider -run '^TestAccSourcePostgreSQLResource$'
 ```
 
 ### Test Best Practices
@@ -500,18 +463,15 @@ prevents the beta.18 bug where `go generate ./...` rendered docs one regen behin
 
 ### acceptance.yml / pr-acceptance.yml / migration.yml - Acceptance suites
 
-`acceptance.yml` runs the full `TestAcc` suite on a schedule, pushes to `main`,
-and manual dispatch. Pushes use Terraform 1.16.1; scheduled and manual runs
-also cover Terraform 1.0.11 and the existing 1.8–1.11 lines. Scheduled runs use the
-repository default branch. `pr-acceptance.yml` runs a curated subset
+`acceptance.yml` runs the full `TestAcc` suite on pushes to `main` and manual
+dispatch. Pushes use Terraform 1.16.1; manual runs also cover Terraform 1.0.11
+and the existing 1.8–1.11 lines. `pr-acceptance.yml` runs a curated subset
 (`scripts/acceptance-tests.txt`) on same-repository PRs. `migration.yml` runs
 the v2 → v3 `TestAcc.*Migration` suite on same-repository PRs to `main`
 and on manual dispatch.
 
-All three serialize access to shared fixtures with the
-`streamkap-staging-fixtures` concurrency group and load credentials from the
-shared 1Password JSON configuration. Tests may skip when connector credentials
-are absent; a green job is not proof that every connector ran.
+Acceptance runs share a concurrency group. Tests may skip when connector
+credentials are absent; a green job is not proof that every connector ran.
 
 ### security.yml - Security Scanning
 

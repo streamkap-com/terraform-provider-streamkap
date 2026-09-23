@@ -25,11 +25,7 @@ Without a version constraint, Terraform selects a stable release.
 ### Basic
 
 ```terraform
-# Stripe webhook source. All fields are Optional in the generated schema (the
-# backend ships them as `required: true` + `default: ""`, which the Terraform
-# Plugin Framework requires us to demote to Optional+Computed+Default), but the
-# Stripe API key and the webhook signing secret are needed for a working
-# connector, so set them here.
+# Stripe webhook source. Supply the API key and webhook signing secret.
 resource "streamkap_source_stripe_webhook" "example" {
   name = "my-stripe-webhook"
 
@@ -116,14 +112,14 @@ output "example-source-stripe-webhook" {
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `camel_source_dlq_enabled` (Boolean) Enable dead letter queue for failed records. Defaults to `true`.
-- `camel_source_payload_router_fanout_fields` (String) Comma-separated list of nested lists to fan out into their own topics. Allowed: invoice.lines, charge.refunds, subscription.items. Defaults to ``.
+- `camel_source_payload_router_fanout_fields` (String) Comma-separated list of nested lists to fan out into their own topics. Allowed: invoice.lines, charge.refunds, subscription.items. Defaults to an empty string.
 - `camel_source_payload_router_include_event` (Boolean) Include Stripe event metadata (_event_id, _event_type, _event_created, _api_version, _livemode, _previous_attributes) on the output record. Disable for upsert / state-table use cases. Defaults to `true`.
-- `camel_source_payload_router_stripe_signing_secret` (String, Sensitive) Stripe webhook signing secret (whsec_xxx). When set, every webhook is verified against the Stripe-Signature header. Leave empty to disable verification. Defaults to ``.
+- `camel_source_payload_router_stripe_signing_secret` (String, Sensitive) Stripe webhook signing secret (whsec_xxx). When set, every webhook is verified against the Stripe-Signature header. Leave empty to disable verification. Defaults to an empty string.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `camel_source_payload_router_unknown_type_behavior` (String) How to handle events for resources not in the Stripe Resources list. Defaults to `DEFAULT_TOPIC`. Valid values: `DEFAULT_TOPIC`, `SKIP`, `FAIL`.
 - `camel_source_payload_router_unknown_type_default_topic` (String) Topic for events from unselected resources (used when Unselected Resource Behavior is DEFAULT_TOPIC). Defaults to `unknown`.
-- `camel_source_snapshot_stripe_api_key` (String, Sensitive) Stripe secret API key (sk_live_xxx or sk_test_xxx). Required for snapshots. Encrypted at rest. Defaults to ``.
+- `camel_source_snapshot_stripe_api_key` (String, Sensitive) Stripe secret API key (sk_live_xxx or sk_test_xxx). Required for snapshots. Encrypted at rest. Defaults to an empty string.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
@@ -139,7 +135,7 @@ output "example-source-stripe-webhook" {
 - `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
 - `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
-- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.
 - `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `webhook_url` (String) Webhook URL to register in Stripe. Generated after source is created. Pass the API key as a query parameter, e.g. ?api_key=<API_KEY>.

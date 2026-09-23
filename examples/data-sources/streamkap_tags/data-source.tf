@@ -26,31 +26,20 @@ data "streamkap_tags" "for_sources" {
   filter_type = ["sources", "destinations"]
 }
 
+variable "tag_ids" {
+  type        = list(string)
+  description = "Existing Streamkap tag IDs to look up."
+}
+
 # Resolve a known set of tag IDs to their full records in one call.
 data "streamkap_tags" "by_ids" {
-  filter_ids = ["00000000000000000000000000", "11111111111111111111111111"]
-}
-
-# Reference a looked-up tag from a resource instead of hardcoding its ID.
-resource "streamkap_source_postgresql" "orders" {
-  name              = "orders-postgres"
-  database_hostname = "db.example.com"
-  database_user     = "streamkap"
-  database_password = var.database_password
-  database_dbname   = "mydb"
-
-  tags = [data.streamkap_tags.by_name.tags[0].id]
-}
-
-variable "database_password" {
-  type      = string
-  sensitive = true
+  filter_ids = var.tag_ids
 }
 
 output "all_tag_names" {
   value = [for t in data.streamkap_tags.all.tags : t.name]
 }
 
-output "production_tag_id" {
-  value = data.streamkap_tags.by_name.tags[0].id
+output "matching_tag_ids" {
+  value = [for tag in data.streamkap_tags.by_name.tags : tag.id]
 }

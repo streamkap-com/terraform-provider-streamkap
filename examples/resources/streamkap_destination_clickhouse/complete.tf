@@ -29,7 +29,7 @@ variable "destination_clickhouse_connection_password" {
 
 resource "streamkap_destination_clickhouse" "example-destination-clickhouse" {
   name                = "example-destination-clickhouse"
-  ingestion_mode      = "append"
+  ingestion_mode      = "upsert"
   hard_delete         = true
   tasks_max           = 5
   hostname            = var.destination_clickhouse_hostname

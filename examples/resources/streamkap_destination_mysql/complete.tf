@@ -17,7 +17,7 @@ variable "destination_mysql_password" {
   description = "The password to access the MySQL database"
 }
 
-# Complete MySQL destination configuration with all options
+# Complete MySQL destination configuration
 resource "streamkap_destination_mysql" "example" {
   name = "example-destination-mysql"
 

@@ -1,6 +1,11 @@
+variable "topic_id" {
+  type        = string
+  description = "ID of an existing Streamkap topic."
+}
+
 # Look up a specific topic by ID
 data "streamkap_topic" "example" {
-  id = "my-source-id.public.users"
+  id = var.topic_id
 }
 
 # Use topic information

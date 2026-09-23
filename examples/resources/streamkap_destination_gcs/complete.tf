@@ -17,7 +17,7 @@ variable "destination_gcs_credentials_json" {
   description = "GCP service account credentials JSON"
 }
 
-# Complete GCS destination configuration with all options
+# Complete GCS destination configuration
 resource "streamkap_destination_gcs" "example" {
   name = "example-destination-gcs"
 

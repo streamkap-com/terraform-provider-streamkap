@@ -17,7 +17,7 @@ variable "destination_sqlserver_password" {
   description = "The password to access the SQL Server database"
 }
 
-# Complete SQL Server destination configuration with all options
+# Complete SQL Server destination configuration
 resource "streamkap_destination_sqlserver" "example" {
   name = "example-destination-sqlserver"
 

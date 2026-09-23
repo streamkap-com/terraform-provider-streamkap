@@ -41,8 +41,8 @@ resource "streamkap_source_mysql" "example" {
   database_include_list = "mydb"
   table_include_list    = "mydb.orders,mydb.customers"
 
-  # Heartbeat table for monitoring (required)
-  heartbeat_data_collection_schema_or_database = "streamkap"
+  # Kafka-only heartbeats require no heartbeat table in MySQL.
+  heartbeat_enabled = true
 }
 
 variable "db_password" {
@@ -56,8 +56,7 @@ variable "db_password" {
 
 ```terraform
 # Complete MySQL CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from MySQL tables using binary log replication
+# Capturing changes from MySQL tables using binary log replication
 
 terraform {
   required_providers {
@@ -151,7 +150,7 @@ output "example-source-mysql" {
 
 - `binary_handling_mode` (String) Specifies how the data for binary columns e.g. blob, binary, varbinary should be represented. This setting depends on what the destination is. See the documentation for more details. Defaults to `bytes`. Valid values: `bytes`, `base64`, `base64-url-safe`, `hex`.
 - `column_exclude_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be excluded from change event record values. Fully-qualified names for columns are of the form schemaName.tableName.columnName.
-- `column_include_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form schemaName[.]tableName[.](columnName1|columnName2)
+- `column_include_list` (String) An optional, comma-separated list of regular expressions that match the fully-qualified names of columns that should be included in change event record values. Fully-qualified names for columns are of the form `schemaName[.]tableName[.](columnName1|columnName2)`
 - `column_include_list_toggled` (Boolean) Toggle between Inclusion (include only selected columns) and Exclusion (exclude selected columns). Defaults to Inclusion (On). Defaults to `true`.
 - `database_connection_time_zone` (String) Set the connection timezone. If set to SERVER, the source will detect the connection time zone from the values configured on the MySQL server session variables 'time_zone' or 'system_time_zone'. Defaults to `SERVER`. Valid values: `SERVER`, `UTC`, `Africa/Cairo`, `Asia/Riyadh`, `Africa/Casablanca`, `Asia/Seoul`, `Africa/Harare`, `Asia/Shanghai`, `Africa/Monrovia`, `Asia/Singapore`, `Africa/Nairobi`, `Asia/Taipei`, `Africa/Tripoli`, `Asia/Tehran`, `Africa/Windhoek`, `Asia/Tokyo`, `America/Araguaina`, `Asia/Ulaanbaatar`, `America/Asuncion`, `Asia/Vladivostok`, `America/Bogota`, `Asia/Yakutsk`, `America/Buenos_Aires`, `Asia/Yerevan`, `America/Caracas`, `Atlantic/Azores`, `America/Chihuahua`, `Australia/Adelaide`, `America/Cuiaba`, `Australia/Brisbane`, `America/Denver`, `Australia/Darwin`, `America/Fortaleza`, `Australia/Hobart`, `America/Guatemala`, `Australia/Perth`, `America/Halifax`, `Australia/Sydney`, `America/Manaus`, `Brazil/East`, `America/Matamoros`, `Canada/Newfoundland`, `America/Monterrey`, `Canada/Saskatchewan`, `America/Montevideo`, `Canada/Yukon`, `America/Phoenix`, `Europe/Amsterdam`, `America/Santiago`, `Europe/Athens`, `America/Tijuana`, `Europe/Dublin`, `Asia/Amman`, `Europe/Helsinki`, `Asia/Ashgabat`, `Europe/Istanbul`, `Asia/Baghdad`, `Europe/Kaliningrad`, `Asia/Baku`, `Europe/Moscow`, `Asia/Bangkok`, `Europe/Paris`, `Asia/Beirut`, `Europe/Prague`, `Asia/Calcutta`, `Europe/Sarajevo`, `Asia/Damascus`, `Pacific/Auckland`, `Asia/Dhaka`, `Pacific/Fiji`, `Asia/Irkutsk`, `Pacific/Guam`, `Asia/Jerusalem`, `Pacific/Honolulu`, `Asia/Kabul`, `Pacific/Samoa`, `Asia/Karachi`, `US/Alaska`, `Asia/Kathmandu`, `US/Central`, `Asia/Krasnoyarsk`, `US/Eastern`, `Asia/Magadan`, `US/East-Indiana`, `Asia/Muscat`, `US/Pacific`, `Asia/Novosibirsk`.
 - `database_connection_timezone` (String, Deprecated) DEPRECATED: Use 'database_connection_time_zone' instead.
@@ -203,7 +202,7 @@ output "example-source-mysql" {
 - `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
 - `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 - `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
-- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to ``.
+- `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.
 - `transforms_source_regex_support_key_field_template` (String) Regex support key field template. An extra key field is needed to ensure unique data across all tables. Use this template with available variables: database, schema, table, sourceId. Defaults to `{{database}}.{{table}}`.
 - `transforms_source_regex_support_metadata_field_name` (String) Name of the extra metadata field to store source information and ensure uniqueness across all tables when regex support is enabled. Defaults to `_streamkap_source_metadata`.
 - `transforms_source_regex_support_regex_replacement` (String) Replacement string for matching regex snippets. Defaults to `_REGEX_`.

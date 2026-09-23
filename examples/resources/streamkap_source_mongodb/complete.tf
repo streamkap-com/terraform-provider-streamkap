@@ -1,6 +1,5 @@
 # Complete MongoDB Atlas CDC source configuration
-# This example shows all available configuration options for capturing changes
-# from MongoDB collections using change streams
+# Capturing changes from MongoDB collections using change streams
 
 terraform {
   required_providers {

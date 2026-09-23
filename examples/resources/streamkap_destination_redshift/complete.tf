@@ -17,7 +17,7 @@ variable "destination_redshift_password" {
   description = "Password to access the Redshift cluster"
 }
 
-# Complete Redshift destination configuration with all options
+# Complete Redshift destination configuration
 resource "streamkap_destination_redshift" "example" {
   name = "example-destination-redshift"
 

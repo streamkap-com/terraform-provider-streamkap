@@ -1,4 +1,4 @@
-# Complete Topic Router transform configuration with all options
+# Complete Topic Router transform configuration
 # Merges several source topics into one output topic via a RegexRouter.
 
 terraform {
@@ -35,9 +35,6 @@ resource "streamkap_transform_topic_router" "example" {
   # Optional: auto-deploy the transform after create/update
   deploy = true
 
-  # Optional: replay window applied on deploy
-  # Valid values: "7d", "3d", "24h", "10m", "0" (continue from last position)
-  replay_window = "0"
 }
 
 output "transform_topic_router_id" {

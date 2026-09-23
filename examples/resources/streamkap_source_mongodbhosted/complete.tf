@@ -1,6 +1,5 @@
 # Complete MongoDB Hosted source configuration
-# This example shows all available configuration options for capturing changes
-# from self-hosted MongoDB collections
+# Capturing changes from self-hosted MongoDB collections
 
 terraform {
   required_providers {
