@@ -30,6 +30,8 @@ convention:
   not one module. Copy one into a separate directory, add a provider version
   constraint and required variables, then run `terraform init` and
   `terraform validate`. Applying an example creates real resources.
+- Validate locally: `make validate-examples` validates each file on its own
+  against a locally built provider.
 - `make generate` runs `terraform fmt -recursive ./examples/` — keep files fmt-clean.
 - Use placeholder hosts and `var.*` references for anything credential-shaped. These
   files are published to the Terraform Registry.
