@@ -2,7 +2,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "~> 2.2"
     }
   }
   required_version = ">= 1.0.0"
@@ -39,11 +39,11 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   heartbeat_enabled                            = true
   heartbeat_data_collection_schema_or_database = null
   # heartbeat_use_logical_message              = true  # PG14+, SELECT-only role, read-only-compatible
-  include_source_db_name_in_table_name         = false
-  slot_name                                    = "terraform_pgoutput_slot"
-  publication_name                             = "terraform_pub"
-  binary_handling_mode                         = "bytes"
-  ssh_enabled                                  = false
+  include_source_db_name_in_table_name = false
+  slot_name                            = "terraform_pgoutput_slot"
+  publication_name                     = "terraform_pub"
+  binary_handling_mode                 = "bytes"
+  ssh_enabled                          = false
 }
 
 output "example-source-postgresql" {

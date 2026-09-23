@@ -60,6 +60,8 @@ func (p *streamkapProvider) Metadata(_ context.Context, _ provider.MetadataReque
 // Schema defines the provider-level schema for configuration data.
 func (p *streamkapProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description:         "Streamkap Terraform provider v2. This legacy line receives bug and security fixes through 15 October 2026. See https://github.com/streamkap-com/terraform-provider-streamkap/blob/main/docs/MIGRATION.md before upgrading to v3.",
+		MarkdownDescription: "Streamkap Terraform provider v2. This legacy line receives bug and security fixes through **15 October 2026**. See the [v2 to v3 migration guide](https://github.com/streamkap-com/terraform-provider-streamkap/blob/main/docs/MIGRATION.md) before upgrading.",
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
 				Description:         "The Streamkap API host. If not set, Streamkap will use environment variable `STREAMKAP_HOST`. Defaults to https://api.streamkap.com if both are not set.",

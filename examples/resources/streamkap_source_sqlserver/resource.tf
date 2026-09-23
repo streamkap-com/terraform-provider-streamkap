@@ -2,7 +2,7 @@ terraform {
   required_providers {
     streamkap = {
       source  = "streamkap-com/streamkap"
-      version = ">= 2.0.0"
+      version = "~> 2.2"
     }
   }
   required_version = ">= 1.0.0"
@@ -39,12 +39,7 @@ resource "streamkap_source_sqlserver" "example-source-sqlserver" {
   insert_static_value_field                    = "value_field"
   insert_static_value                          = "value_value"
   snapshot_parallelism                         = 2
-  snapshot_large_table_threshold               = 12000
-  snapshot_custom_table_config = {
-    "dbo.Orders" = {
-      chunks = 2
-    }
-  }
+
 
 }
 

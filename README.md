@@ -1,77 +1,73 @@
-# Terraform Provider
+# Streamkap Terraform Provider — v2
 
-## v2 maintenance
+This branch maintains v2. The stable v3 release line lives on `main`.
+v2 receives bug and security fixes through **15 October 2026**; support ends
+**16 October 2026**. Published v2 releases remain available.
 
-This maintenance line lives on `v2`; `main` contains v3, which remains in beta.
-
-When v3 becomes stable, v2 becomes the legacy maintenance line. Bug fixes and
-security patches continue through **15 October 2026**; new features and
-connectors are v3-only. From **16 October 2026**, v2 receives no further fixes
-or support. Published v2 releases remain available. Pin `version = "~> 2.2"`
-until you are ready to upgrade.
-
-## Releasing v2 patches
-
-Use `v2`. Prepare a new bracketed
-changelog heading such as `## [2.2.1] - <date>`, preserving older release entries.
-Fetch remote refs and run `bash scripts/release-preflight.sh <tag>`. The tagged
-commit must already be on the release branch. Branch and tag pushes require
-maintainer approval; verify the published download and registry installation
-before announcing a release.
-
-## High Level Design
-
-The Streamkap Terraform provider is a wrapper over the Streamkap API implemented in the [backend project](../backend/)
-Resources are streamkap sources, destinations, pipelines and transforms.
-
-* [postgresql source](./internal/provider/source_postgresql_resource_test.go) -> [postgresql source details from backend](../backend/app/sources/plugins/postgresql/configuration.latest.json)
-* [kafkadirect source] TODO -> [kafkadirect source details from backend](../backend/app/sources/plugins/kafkadirect/configuration.latest.jsons)
-* [databricks destination](./internal/provider/destination_databricks_resource_test.go) -> [databricks destination details from backend](../backend/app/destinations/plugins/databricks/configuration.latest.json)
-* [kafka destination] TODO -> [kafka destination details from backend](../backend/app/destinations/plugins/kafka/configuration.latest.json)
-
-
-## Requirements
-
-- [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.27.1 (building the provider)
+Before upgrading, follow the [v2 to v3 migration guide](https://github.com/streamkap-com/terraform-provider-streamkap/blob/main/docs/MIGRATION.md).
 
 ## Using the provider
 
-Fill this in for each provider
+Pin the v2 line until you are ready to migrate:
 
-## Developing the Provider
+```hcl
+terraform {
+  required_providers {
+    streamkap = {
+      source  = "streamkap-com/streamkap"
+      version = "~> 2.2"
+    }
+  }
+}
 
-If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (
-see [Requirements](#requirements) above).
-
-To compile the provider, run `go install`. This will build the provider and put the provider binary in the `$GOPATH/bin`
-directory.
-
-To generate or update documentation, run `go generate`.
-
-In order to run the full suite of Acceptance tests, run `make testacc`.
-
-*Note:* Acceptance tests create real resources, and often cost money to run.
-
-```shell
-make testacc
+provider "streamkap" {}
 ```
 
-### Testing with terraform
+Set `STREAMKAP_CLIENT_ID` and `STREAMKAP_SECRET` in your environment. Use the
+[Registry documentation for v2.2.1](https://registry.terraform.io/providers/streamkap-com/streamkap/2.2.1/docs)
+for resource schemas and examples. Adapt one example to your environment,
+then run `terraform init` and review `terraform plan` before applying.
 
-Configure `~/.terraformrc`, replace `$GOBIN_PATH` with your `$GOPATH/bin`
+For existing configurations, retain your provider source address until you
+have checked it against `terraform providers` and your state. The migration
+guide covers older examples that used a different address.
+
+## Development
+
+Requires Terraform >= 1.0 and Go as pinned in `go.mod`.
+
+```bash
+go install .
+```
+
+For local testing, configure `~/.terraformrc` with your absolute binary path:
+
 ```hcl
 provider_installation {
   dev_overrides {
-    "github.com/streamkap-com/streamkap" = "$GOBIN_PATH"
+    "streamkap-com/streamkap" = "/absolute/path/to/go/bin"
   }
   direct {}
 }
 ```
 
-Install provider with
-```shell
-go install .
-``````
+Render documentation:
 
-Write your module, can see the example in [examples/full](/examples/full/)
+```bash
+go generate main.go
+```
+
+Acceptance tests create and destroy real resources. Use a test tenant and the
+required connector credentials:
+
+```bash
+TF_ACC=1 go test ./internal/provider -v -run '^TestAccSourcePostgreSQLResource$' -timeout 120m
+```
+
+## Releasing v2 patches
+
+Keep `v2` and `main` histories independent. Add a matching bracketed release
+heading to `CHANGELOG.md`, fetch remote refs, and run
+`bash scripts/release-preflight.sh <tag>`. The tagged commit must already be on
+`v2`. Branch and tag pushes require maintainer approval. Verify the published
+download and Registry installation before announcing the release.
