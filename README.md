@@ -4,7 +4,7 @@ This branch maintains v2. The stable v3 release line lives on `main`.
 v2 receives bug and security fixes through **15 October 2026**; support ends
 **16 October 2026**. Published v2 releases remain available.
 
-Before upgrading, follow the [v2 to v3 migration guide](https://github.com/streamkap-com/terraform-provider-streamkap/blob/main/docs/MIGRATION.md).
+Before upgrading, follow the [v2 to v3 migration guide](https://registry.terraform.io/providers/streamkap-com/streamkap/latest/docs/guides/migration).
 
 ## Using the provider
 
@@ -24,7 +24,7 @@ provider "streamkap" {}
 ```
 
 Set `STREAMKAP_CLIENT_ID` and `STREAMKAP_SECRET` in your environment. Use the
-[Registry documentation for v2.2.1](https://registry.terraform.io/providers/streamkap-com/streamkap/2.2.1/docs)
+[Registry documentation for v2.2.2](https://registry.terraform.io/providers/streamkap-com/streamkap/2.2.2/docs)
 for resource schemas and examples. Adapt one example to your environment,
 then run `terraform init` and review `terraform plan` before applying.
 

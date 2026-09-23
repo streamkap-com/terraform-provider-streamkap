@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.2.2] - 2026-09-23
+
 ### Fixed
 
 - Report pipeline and ClickHouse `topics_config_map` response-mapping errors
