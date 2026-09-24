@@ -1,13 +1,22 @@
 {
   "contract_version": 1,
   "producer": "app.services.smt.contract_corpus",
-  "digest": "sha256:50ba3ac5ef381a480cb608a5f5b2c00bacc5c868948337335078ef6d36ca04f7",
+  "digest": "sha256:b485ae49a123a34a6b58bc94e7ac0a25cf203e45025b5522b1a54359fb531a81",
   "types": [
     {
       "type_id": "contract_fixture_nested",
       "schema_version": 1,
       "codec_version": 1,
       "publishable": false,
+      "kind": "kafka_connect_smt",
+      "categories": [
+        "modify_column"
+      ],
+      "description": "Test-only declaration; not a transform",
+      "disabled_reason": null,
+      "input_arity": "one",
+      "output_arity": "one",
+      "can_create_topics": false,
       "data_schema": {
         "additionalProperties": false,
         "description": "The whole test-only config tree. Values below match the spec's #smt-recursive-form-data example.",
@@ -269,6 +278,15 @@
       "schema_version": 1,
       "codec_version": 1,
       "publishable": false,
+      "kind": "kafka_connect_smt",
+      "categories": [
+        "modify_column"
+      ],
+      "description": "Test-only declaration; not a transform",
+      "disabled_reason": null,
+      "input_arity": "one",
+      "output_arity": "one",
+      "can_create_topics": false,
       "data_schema": {
         "additionalProperties": false,
         "description": "The two-level config tree: rows inside rows, secrets at both depths.",

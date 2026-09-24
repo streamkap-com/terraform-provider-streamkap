@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "producer": "app.services.smt.catalog_artifact",
-  "digest": "sha256:d480e9429775b68f93bdb6a243873c4e5313834e25aa71d5941c2d060a4acbae",
+  "digest": "sha256:8841477e6427a4548c2545405cb940fff1c310cbedfd8e2a0ff2d0665799585f",
   "types": [
     {
       "label": "Regex router",
@@ -9,6 +9,15 @@
       "schema_version": 1,
       "codec_version": 1,
       "publishable": true,
+      "kind": "kafka_connect_smt",
+      "categories": [
+        "route_record"
+      ],
+      "description": "Send each record to a topic derived from its own by a regular expression",
+      "disabled_reason": null,
+      "input_arity": "one",
+      "output_arity": "one",
+      "can_create_topics": false,
       "data_schema": {
         "additionalProperties": false,
         "properties": {
@@ -69,6 +78,15 @@
       "schema_version": 1,
       "codec_version": 1,
       "publishable": true,
+      "kind": "kafka_connect_smt",
+      "categories": [
+        "modify_column"
+      ],
+      "description": "Replace the values of chosen columns with a hash, a fixed value or null",
+      "disabled_reason": null,
+      "input_arity": "one",
+      "output_arity": "one",
+      "can_create_topics": false,
       "data_schema": {
         "additionalProperties": false,
         "properties": {
