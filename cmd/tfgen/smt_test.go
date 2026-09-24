@@ -62,7 +62,7 @@ func TestRunGenerate_SMTChainOptIn(t *testing.T) {
 	}
 	for _, want := range []string{
 		"//\tartifact sha256:   " + hex.EncodeToString(sum[:]),
-		"//\tenvelope digest:   sha256:b485ae49a123a34a6b58bc94e7ac0a25cf203e45025b5522b1a54359fb531a81",
+		"//\tenvelope digest:   sha256:04e1c2013f58fe2e331e2ab3622995bc7ac91db2d3884dd9770a37dfe64d50b3",
 		"//\tbackend revision:  test",
 		"//\tpublishable types: 0 of 2",
 		`const SMTCatalogSHA256 = "` + hex.EncodeToString(sum[:]) + `"`,

@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "producer": "app.services.smt.catalog_artifact",
-  "digest": "sha256:8841477e6427a4548c2545405cb940fff1c310cbedfd8e2a0ff2d0665799585f",
+  "digest": "sha256:107dd1b2f83ab3c768a483ab52aae254fc3f603fa93660b3f3b22a389c38b996",
   "types": [
     {
       "label": "Regex router",
@@ -10,6 +10,7 @@
       "codec_version": 1,
       "publishable": true,
       "kind": "kafka_connect_smt",
+      "role": "transform",
       "categories": [
         "route_record"
       ],
@@ -79,6 +80,7 @@
       "codec_version": 1,
       "publishable": true,
       "kind": "kafka_connect_smt",
+      "role": "transform",
       "categories": [
         "modify_column"
       ],

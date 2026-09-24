@@ -4,9 +4,9 @@
 // chain schema from this artifact copy, which is byte-identical to the input.
 //
 //	artifact:          catalog.json
-//	artifact sha256:   0f1dd2303cdd43ce1b1ac28a714c7b79dce4cc9aa7d7ceb3c30ac28a15ff692d
-//	envelope digest:   sha256:8841477e6427a4548c2545405cb940fff1c310cbedfd8e2a0ff2d0665799585f
-//	backend revision:  72d6fab87
+//	artifact sha256:   caee9e48a0c555334088885232fede3be3694c5180529d4cdecb79394e8c8b4b
+//	envelope digest:   sha256:107dd1b2f83ab3c768a483ab52aae254fc3f603fa93660b3f3b22a389c38b996
+//	backend revision:  d04dbdadd
 //	publishable types: 2 of 2
 //	  - mask_field
 //	  - regex_router
@@ -24,10 +24,10 @@ import (
 var smtCatalogJSON []byte
 
 // SMTCatalogSHA256 is the sha256 of the embedded artifact copy.
-const SMTCatalogSHA256 = "0f1dd2303cdd43ce1b1ac28a714c7b79dce4cc9aa7d7ceb3c30ac28a15ff692d"
+const SMTCatalogSHA256 = "caee9e48a0c555334088885232fede3be3694c5180529d4cdecb79394e8c8b4b"
 
 // SMTCatalogBackendRevision is the backend commit the artifact was copied from.
-const SMTCatalogBackendRevision = "72d6fab87"
+const SMTCatalogBackendRevision = "d04dbdadd"
 
 var smtChain = sync.OnceValues(func() (*smt.ChainSchema, error) {
 	corpus, err := smt.ParseCorpus(smtCatalogJSON)

@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "producer": "app.services.smt.contract_corpus",
-  "digest": "sha256:b485ae49a123a34a6b58bc94e7ac0a25cf203e45025b5522b1a54359fb531a81",
+  "digest": "sha256:04e1c2013f58fe2e331e2ab3622995bc7ac91db2d3884dd9770a37dfe64d50b3",
   "types": [
     {
       "type_id": "contract_fixture_nested",
@@ -9,10 +9,9 @@
       "codec_version": 1,
       "publishable": false,
       "kind": "kafka_connect_smt",
-      "categories": [
-        "modify_column"
-      ],
-      "description": "Test-only declaration; not a transform",
+      "role": "transform",
+      "categories": [],
+      "description": "Test-only declaration; exercises the contract shape and runs nowhere",
       "disabled_reason": null,
       "input_arity": "one",
       "output_arity": "one",
@@ -279,10 +278,9 @@
       "codec_version": 1,
       "publishable": false,
       "kind": "kafka_connect_smt",
-      "categories": [
-        "modify_column"
-      ],
-      "description": "Test-only declaration; not a transform",
+      "role": "transform",
+      "categories": [],
+      "description": "Test-only declaration; exercises the contract shape and runs nowhere",
       "disabled_reason": null,
       "input_arity": "one",
       "output_arity": "one",
