@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "producer": "app.services.smt.catalog_artifact",
-  "digest": "sha256:107dd1b2f83ab3c768a483ab52aae254fc3f603fa93660b3f3b22a389c38b996",
+  "digest": "sha256:14490b96403b4c36f0592777270fe8a6ee9abc75a59386f3d6de9c548cc7f2f9",
   "types": [
     {
       "label": "Regex router",
@@ -227,6 +227,99 @@
         "destinations"
       ],
       "kc_class": "com.streamkap.kafka.connect.transforms.MaskField$Value",
+      "package": "streamkap-transforms-multi-converter"
+    },
+    {
+      "label": "Drop fields",
+      "type_id": "drop_fields",
+      "schema_version": 1,
+      "codec_version": 1,
+      "publishable": true,
+      "kind": "kafka_connect_smt",
+      "role": "transform",
+      "categories": [
+        "delete_column"
+      ],
+      "description": "Remove the chosen columns from every record before the sink writes it",
+      "disabled_reason": null,
+      "input_arity": "one",
+      "output_arity": "one",
+      "can_create_topics": false,
+      "data_schema": {
+        "additionalProperties": false,
+        "description": "``DropFields`` extends ``FieldTransformBase`` and adds nothing: its config is the base's.",
+        "properties": {
+          "fields_include": {
+            "items": {
+              "pattern": "^[^,]+$",
+              "type": "string"
+            },
+            "title": "Fields Include",
+            "type": "array"
+          },
+          "fields_exclude": {
+            "items": {
+              "pattern": "^[^,]+$",
+              "type": "string"
+            },
+            "title": "Fields Exclude",
+            "type": "array"
+          },
+          "replace_null_with_default": {
+            "default": true,
+            "title": "Replace Null With Default",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fields_include"
+        ],
+        "title": "DropFieldsConfig",
+        "type": "object"
+      },
+      "ui_schema": {
+        "type": "Category",
+        "label": "Drop fields",
+        "elements": [
+          {
+            "type": "Control",
+            "scope": "#/properties/fields_include",
+            "options": {
+              "control": "multi-select"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/fields_exclude",
+            "options": {
+              "control": "multi-select"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/replace_null_with_default",
+            "options": {
+              "control": "toggle"
+            }
+          }
+        ]
+      },
+      "secret_paths": [],
+      "row_keys": {},
+      "examples": {
+        "read_projection": {
+          "fields_include": [
+            "orders.debug_blob"
+          ],
+          "fields_exclude": [],
+          "replace_null_with_default": true
+        }
+      },
+      "alias_base": "DropFields",
+      "hosts": [
+        "destinations"
+      ],
+      "kc_class": "com.streamkap.kafka.connect.transforms.DropFields$Value",
       "package": "streamkap-transforms-multi-converter"
     }
   ]
