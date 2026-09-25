@@ -394,6 +394,15 @@ func TestDelete_NotFoundIsIdempotent(t *testing.T) {
 			call:   func(c StreamkapAPI) error { return c.DeleteClientCredential(context.Background(), "gone") },
 		},
 		{
+			name:   "topic destination",
+			url:    baseURL + "/topics/source_1.hubspot.contacts/destinations/gone",
+			status: http.StatusNotFound,
+			detail: "No destination binding found for these topics and destination 'gone'.",
+			call: func(c StreamkapAPI) error {
+				return c.DetachTopicDestination(context.Background(), "source_1.hubspot.contacts", "gone")
+			},
+		},
+		{
 			// Some endpoints answer 400 rather than 404 for a missing record.
 			name:   "destination reported gone with a 400",
 			url:    baseURL + "/destinations/gone?secret_returned=true&wait=false",

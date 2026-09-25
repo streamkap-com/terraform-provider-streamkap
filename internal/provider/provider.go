@@ -20,6 +20,7 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/tag"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/topic"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/topic_destination"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/transform"
 )
 
@@ -302,6 +303,9 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		source.NewShopifyWebhookResource,
 		source.NewStripeWebhookResource,
 		source.NewInformixResource,
+		source.NewHubSpotResource,
+		source.NewSalesforceResource,
+		source.NewNetSuiteResource,
 		destination.NewSnowflakeResource,
 		destination.NewClickHouseResource,
 		destination.NewDatabricksResource,
@@ -328,6 +332,7 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		destination.NewPineconeDestResource,
 		pipeline.NewPipelineResource,
 		topic.NewTopicResource,
+		topic_destination.NewResource,
 		tag.NewTagResource,
 		transform.NewMapFilterResource,
 		transform.NewEnrichResource,

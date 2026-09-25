@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -96,9 +97,19 @@ func GetTfCfgFloat64(ctx context.Context, cfg map[string]any, key string) types.
 
 func GetTfCfgListString(ctx context.Context, cfg map[string]any, key string) types.List {
 	if val, ok := cfg[key]; ok && val != nil {
-		listVal, ok := val.([]interface{})
-		if !ok {
-			tflog.Warn(ctx, fmt.Sprintf("GetTfCfgListString: expected []interface{} for key %q, got %T", key, val))
+		var listVal []any
+		switch value := val.(type) {
+		case []interface{}:
+			listVal = value
+		case string:
+			listVal = []any{}
+			for _, item := range strings.Split(value, ",") {
+				if item = strings.TrimSpace(item); item != "" {
+					listVal = append(listVal, item)
+				}
+			}
+		default:
+			tflog.Warn(ctx, fmt.Sprintf("GetTfCfgListString: expected list or CSV string for key %q, got %T", key, val))
 			return types.ListNull(types.StringType)
 		}
 

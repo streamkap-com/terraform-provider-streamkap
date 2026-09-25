@@ -50,6 +50,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -97,6 +98,10 @@ type ConnectorConfig interface {
 	// NewModelInstance creates a new instance of the connector's model struct.
 	// This is needed for reflection-based operations.
 	NewModelInstance() any
+}
+
+type ConnectorConfigValidator interface {
+	ValidateConfiguration(model any, creating bool) diag.Diagnostics
 }
 
 // ConnectorConfigWithJSONStringFields is an optional interface that connectors
@@ -200,6 +205,12 @@ func (r *BaseConnectorResource) ModifyPlan(ctx context.Context, req resource.Mod
 	resp.Diagnostics.Append(req.Config.Get(ctx, model)...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+	if validator, ok := r.config.(ConnectorConfigValidator); ok {
+		resp.Diagnostics.Append(validator.ValidateConfiguration(model, req.State.Raw.IsNull())...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 	mappings := r.config.GetFieldMappings()
 	names := make([]string, 0, len(mappings))
@@ -354,6 +365,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	var connectorName string
 	var connectorCode string
 	var connectorStatus string
+	var responseClusterID string
 	var responseConfig map[string]any
 
 	kcClusterId := r.getStringField(model, "KcClusterId")
@@ -380,6 +392,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		connectorName = source.Name
 		connectorCode = source.Connector
 		connectorStatus = source.ConnectorStatus
+		responseClusterID = source.KcClusterId
 		responseConfig = source.Config
 		responseTags = source.Tags
 
@@ -402,6 +415,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		connectorName = destination.Name
 		connectorCode = destination.Connector
 		connectorStatus = destination.ConnectorStatus
+		responseClusterID = destination.KcClusterId
 		responseConfig = destination.Config
 		responseTags = destination.Tags
 	}
@@ -411,6 +425,9 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	r.setStringField(model, "Name", connectorName)
 	r.setStringField(model, "Connector", connectorCode)
 	r.setStringField(model, "ConnectorStatus", connectorStatus)
+	if r.config.GetSchema().Attributes["kc_cluster_id"].IsComputed() && !r.config.GetSchema().Attributes["kc_cluster_id"].IsOptional() {
+		r.setStringField(model, "KcClusterId", responseClusterID)
+	}
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, responseTags))
 	r.configMapToModel(ctx, responseConfig, model)
 	shared.PreserveKnownFields(model, plannedSecrets)

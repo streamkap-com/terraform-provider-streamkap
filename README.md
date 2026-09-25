@@ -14,6 +14,7 @@ from v2.
 - AlloyDB, DB2, DocumentDB, Elasticsearch, Informix, MariaDB, MongoDB Hosted
 - Oracle, Oracle AWS, PlanetScale, Redis, S3, Supabase, Vitess
 - Webhook, Salesforce Webhook, Shopify Webhook, Stripe Webhook, Zendesk Webhook
+- API sources: HubSpot, Salesforce, NetSuite
 
 ### Destination Connectors
 - Snowflake, ClickHouse, Databricks, PostgreSQL, S3, Iceberg, Kafka
@@ -33,6 +34,7 @@ from v2.
 ### Other Resources
 - Pipelines
 - Topics
+- Topic Destinations (`streamkap_topic_destination` — sends one API source topic to a destination)
 - Tags (`streamkap_tag` — manages individual tag definitions)
 - Kafka Users (ACL-based Kafka access control)
 - Client Credentials (API token management)
@@ -217,8 +219,7 @@ terraform plan
 
 ### Code Generation
 
-Connector schemas in `internal/generated/` are produced by `cmd/tfgen` from the
-backend's `configuration.latest.json` plugin specs. Regenerate **only** via:
+Connector schemas in `internal/generated/` are produced by `cmd/tfgen` from the backend's `configuration.latest.json` plugin specs. API-source schemas also use each connector's `form.schema.json` for conditional credentials and defaults. Regenerate via:
 
 ```bash
 STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap make generate
@@ -232,6 +233,8 @@ Never hand-edit `internal/generated/` — it is overwritten on every regen. Fix 
 generator instead. See [docs/CODE_GENERATOR.md](docs/CODE_GENERATOR.md) for the
 generator internals, the override system, and the walkthrough for adding a new
 connector.
+
+HubSpot, Salesforce and NetSuite API sources use `streamkap_source_hubspot`, `streamkap_source_salesforce` and `streamkap_source_netsuite`. Their topics reach destinations through `streamkap_topic_destination`, one resource per full topic ID and destination ID. API sources reconcile automatically; do not use `streamkap_pipeline` or a manual deploy step for them. Salesforce browser OAuth must be completed in the Streamkap UI, CLI or MCP before importing that source into Terraform. See the generated resource pages for fields and examples.
 
 ### Project Structure
 

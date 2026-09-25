@@ -83,6 +83,7 @@ type Generator struct {
 	outputDir  string
 	entityType string // "source", "destination", "transform"
 	overrides  *OverrideConfig
+	apiSource  bool
 }
 
 // OverrideConfig holds all field overrides for map types and other special cases.
@@ -228,6 +229,7 @@ func (g *Generator) loadCommonConfig(backendPath string) (*ConnectorConfig, erro
 // Generate creates Terraform schema files from a ConnectorConfig.
 // It merges common config fields from configurations_for_all.json for all entity types.
 func (g *Generator) Generate(config *ConnectorConfig, connectorCode string, backendPath string) error {
+	g.apiSource = config.APISource
 	// Ensure output directory exists
 	if err := os.MkdirAll(g.outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory %s: %w", g.outputDir, err)
@@ -242,7 +244,7 @@ func (g *Generator) Generate(config *ConnectorConfig, connectorCode string, back
 	// For every other connector the merge is mandatory: an unloadable common
 	// config would silently strip the shared fields (consumer.override.*,
 	// transforms.*, quote.identifiers, ...) from every schema in the run at once.
-	if backendPath != "" && connectorCode != "kafkadirect" {
+	if backendPath != "" && connectorCode != "kafkadirect" && !config.APISource {
 		commonConfig, err := g.loadCommonConfig(backendPath)
 		if err != nil {
 			return fmt.Errorf("failed to load common %s config (configurations_for_all.json) required by %s: %w", g.entityType, connectorCode, err)
@@ -287,6 +289,9 @@ type TemplateData struct {
 	DisplayName       string // e.g., "PostgreSQL"
 	Article           string // "a" or "an" depending on DisplayName
 	DocURL            string // connector-specific documentation URL
+	APISource         bool
+	APIRequirements   []APIRequirement
+	APIOAuth          bool
 	ModelName         string // e.g., "SourcePostgresqlModel"
 	SchemaFuncName    string // e.g., "SourcePostgresqlSchema"
 	FieldMappingsName string // e.g., "SourcePostgresqlFieldMappings"
@@ -417,6 +422,9 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 		DisplayName:       config.DisplayName,
 		Article:           articleFor(config.DisplayName),
 		DocURL:            docURL,
+		APISource:         config.APISource,
+		APIRequirements:   config.APIRequirements,
+		APIOAuth:          config.APIOAuth,
 		ModelName:         entityTypeCap + connectorCodeCap + "Model",
 		SchemaFuncName:    entityTypeCap + connectorCodeCap + "Schema",
 		FieldMappingsName: entityTypeCap + connectorCodeCap + "FieldMappings",
@@ -571,9 +579,10 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 				imports["github.com/hashicorp/terraform-plugin-framework-validators/int64validator"] = true
 				imports["github.com/hashicorp/terraform-plugin-framework/schema/validator"] = true
 			case TerraformTypeList:
-				// multi-select enums validate each element with OneOf.
 				imports["github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"] = true
-				imports["github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"] = true
+				if strings.Contains(field.Validators, "stringvalidator.") {
+					imports["github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"] = true
+				}
 				imports["github.com/hashicorp/terraform-plugin-framework/schema/validator"] = true
 			}
 		}
@@ -948,7 +957,7 @@ func (g *Generator) commonFields() []FieldData {
 			NeedsPlanMod:        true,
 			APIFieldName:        "", // Connector is handled separately
 		})
-		fields = append(fields, FieldData{
+		status := FieldData{
 			GoFieldName:         "ConnectorStatus",
 			GoType:              "types.String",
 			TfsdkTag:            "connector_status",
@@ -959,8 +968,13 @@ func (g *Generator) commonFields() []FieldData {
 			MarkdownDescription: "Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.",
 			NeedsPlanMod:        false, // Status is volatile — always read fresh from API
 			APIFieldName:        "",    // ConnectorStatus is handled separately
-		})
-		fields = append(fields, FieldData{
+		}
+		if g.apiSource {
+			status.Description = "Current API source status, including Pending, Active, Paused, Stopped and Broken. Refreshed on each plan/apply."
+			status.MarkdownDescription = status.Description
+		}
+		fields = append(fields, status)
+		cluster := FieldData{
 			GoFieldName:         "KcClusterId",
 			GoType:              "types.String",
 			TfsdkTag:            "kc_cluster_id",
@@ -973,7 +987,16 @@ func (g *Generator) commonFields() []FieldData {
 			Description:         "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
 			MarkdownDescription: "Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.",
 			APIFieldName:        "", // KcClusterId is handled separately by base connector
-		})
+		}
+		if g.apiSource {
+			cluster.Optional = false
+			cluster.HasDefault = false
+			cluster.DefaultFunc = ""
+			cluster.Description = "API source cluster selected by Streamkap."
+			cluster.MarkdownDescription = cluster.Description
+			cluster.NeedsPlanMod = true
+		}
+		fields = append(fields, cluster)
 		fields = append(fields, tagsCommonField(g.entityType))
 	}
 
@@ -1155,6 +1178,12 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 		// value when the configuration it is derived from changes.
 		field.Optional = true
 		field.Computed = true
+	} else if entry.APIFormShow {
+		// Shown only for one auth mode or toggle, so it is routinely unset.
+		// Without UseStateForUnknown every unrelated update replans it unknown.
+		field.Optional = true
+		field.Computed = true
+		field.NeedsPlanMod = true
 	} else if entry.IsReadOnly() {
 		// The backend also uses readonly as a UI hint for fields that its API
 		// accepts, such as an SSH public key or S3 topic selection. Preserve
@@ -1278,6 +1307,19 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 			mdValues = append(mdValues, fmt.Sprintf("`%s`", v))
 		}
 		field.MarkdownDescription = field.MarkdownDescription + " Valid values: " + strings.Join(mdValues, ", ") + "."
+	}
+	if field.IsListType && entry.APIFormMinItems > 0 {
+		if field.HasValidators {
+			field.Validators += ", "
+		}
+		field.HasValidators = true
+		field.Validators += fmt.Sprintf("listvalidator.SizeAtLeast(%d)", entry.APIFormMinItems)
+		minimum := fmt.Sprintf("%d items", entry.APIFormMinItems)
+		if entry.APIFormMinItems == 1 {
+			minimum = "one item"
+		}
+		field.Description = ensureTrailingPeriod(field.Description) + " Requires at least " + minimum + "."
+		field.MarkdownDescription = ensureTrailingPeriod(field.MarkdownDescription) + " Requires at least " + minimum + "."
 	}
 
 	// Handle slider validators (int64 bounds). Min and Max are independently
@@ -1525,11 +1567,18 @@ type {{ .ModelName }} struct {
 // {{ .SchemaFuncName }} returns the Terraform schema for the {{ .ConnectorCode }} {{ .EntityType }}.
 func {{ .SchemaFuncName }}() schema.Schema {
 	return schema.Schema{
+		{{- if .APISource }}
+		Description:         "Manages {{ .Article }} {{ .DisplayName }} API source connector. Send its topics to destinations with streamkap_topic_destination.",
+		MarkdownDescription: "Manages {{ .Article }} **{{ .DisplayName }} API source connector**.\n\n" +
+			"Send its topics to destinations with **streamkap_topic_destination**; API sources do not use streamkap_pipeline.\n\n" +
+			"[Documentation]({{ .DocURL }})",
+		{{- else }}
 		Description:         "Manages {{ .Article }} {{ .DisplayName }} {{ .EntityType }} connector. Use with streamkap_pipeline to build data pipelines.",
 		MarkdownDescription: "Manages {{ .Article }} **{{ .DisplayName }} {{ .EntityType }} connector**.\n\n" +
 			"This resource creates and manages {{ .Article }} {{ .DisplayName }} {{ .EntityType }} for Streamkap data pipelines. " +
 			"Use with **streamkap_pipeline** to connect sources to destinations.\n\n" +
 			"[Documentation]({{ .DocURL }})",
+		{{- end }}
 		Attributes: map[string]schema.Attribute{
 {{- range .Fields }}
 			"{{ .TfAttrName }}": {{ .SchemaAttrType }}{
@@ -1630,4 +1679,14 @@ var {{ .FieldMappingsName }} = map[string]string{
 {{- end }}
 {{- end }}
 }
+{{- if .APISource }}
+
+var {{ .EntityTypeCap }}{{ .ConnectorCodeCap }}APIRequirements = []APIRequirement{
+{{- range .APIRequirements }}
+	{Field: {{ printf "%q" .Field }}, ConditionField: {{ printf "%q" .ConditionField }}, ConditionValue: {{ printf "%q" .ConditionValue }}, ConditionDefault: {{ printf "%q" .ConditionDefault }}},
+{{- end }}
+}
+
+const {{ .EntityTypeCap }}{{ .ConnectorCodeCap }}APIOAuth = {{ .APIOAuth }}
+{{- end }}
 `

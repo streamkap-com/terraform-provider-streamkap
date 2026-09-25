@@ -232,6 +232,19 @@ func TestGetTfCfgListString(t *testing.T) {
 		}
 	})
 
+	t.Run("API source stored CSV", func(t *testing.T) {
+		cfg := map[string]any{"resources": "contacts, deals,companies"}
+		result := GetTfCfgListString(ctx, cfg, "resources")
+		if result.IsNull() || len(result.Elements()) != 3 {
+			t.Fatalf("stored CSV decoded as %#v", result)
+		}
+		for i, want := range []string{"contacts", "deals", "companies"} {
+			if got := result.Elements()[i].(types.String).ValueString(); got != want {
+				t.Errorf("element %d = %q, want %q", i, got, want)
+			}
+		}
+	})
+
 	t.Run("empty list", func(t *testing.T) {
 		cfg := map[string]any{"key": []any{}}
 		result := GetTfCfgListString(ctx, cfg, "key")

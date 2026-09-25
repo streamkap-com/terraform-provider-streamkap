@@ -1,0 +1,167 @@
+{
+  "version": "v3.0.0",
+  "attributes": {
+    "account_id": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "auth_mode": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "backfill_start": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "certificate_id": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "client_id": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "connector": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "connector_status": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "consumer_key": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "consumer_secret": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": true,
+      "type": "basetypes.StringType"
+    },
+    "id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "kc_cluster_id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "name": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "private_key": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": true,
+      "type": "basetypes.StringType"
+    },
+    "private_key_passphrase": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": true,
+      "type": "basetypes.StringType"
+    },
+    "resources": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ListType[basetypes.StringType]"
+    },
+    "tags": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.SetType[basetypes.StringType]"
+    },
+    "token_id": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "token_secret": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": true,
+      "type": "basetypes.StringType"
+    }
+  },
+  "blocks": {
+    "timeouts": {
+      "nesting_mode": "single",
+      "type": "timeouts.Type"
+    }
+  },
+  "block_attributes": {
+    "timeouts.create": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "timeouts.delete": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "timeouts.read": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "timeouts.update": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    }
+  }
+}

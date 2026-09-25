@@ -245,6 +245,13 @@ func processEntity(backendPath, output string, entity EntityConfig, specificConn
 			fmt.Printf("Skipping %s %s: marked coming_soon: true upstream.\n", entity.Type, connectorCode)
 			continue
 		}
+		if config.APISource {
+			formPath := filepath.Join(pluginDir, connectorCode, "form.schema.json")
+			if err := applyAPIFormContract(config, formPath); err != nil {
+				problems = append(problems, fmt.Errorf("failed to apply %s API source form: %w", connectorCode, err))
+				continue
+			}
+		}
 
 		// Generate the schema
 		fmt.Printf("Generating %s_%s.go...\n", entity.Type, connectorCode)
