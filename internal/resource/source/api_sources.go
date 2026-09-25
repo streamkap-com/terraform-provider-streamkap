@@ -44,7 +44,7 @@ func (c *apiSourceConfig) ValidateConfiguration(model any, creating bool) diag.D
 	}
 	values := shared.CaptureFields(model, names)
 	if c.oauth && creating && stringValue(values["auth_mode"]) == "oauth" {
-		diags.AddAttributeError(path.Root("auth_mode"), "OAuth setup is interactive", "Create the OAuth source with the CLI or MCP, then import it into Terraform.")
+		diags.AddAttributeError(path.Root("auth_mode"), "OAuth setup is interactive", "Create the OAuth source in the Streamkap UI, CLI or MCP, then import it into Terraform.")
 	}
 	for _, requirement := range c.requirements {
 		if condition := values[requirement.ConditionField]; condition != nil && condition.IsUnknown() {

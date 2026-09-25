@@ -104,7 +104,7 @@ Full per-resource examples: `examples/resources/streamkap_<name>/{basic,complete
 ### Sources
 `streamkap_source_postgresql`, `mysql`, `mongodb`, `mongodbhosted`, `dynamodb`, `sqlserver`, `oracle`, `oracleaws`, `db2`, `informix` (v3), `mariadb`, `alloydb`, `documentdb`, `elasticsearch`, `planetscale`, `redis`, `s3`, `supabase`, `vitess`, `webhook`, `salesforce_webhook` (v3), `zendesk_webhook` (v3), `shopify_webhook` (v3), `stripe_webhook` (v3), `kafkadirect`.
 
-API sources: `streamkap_source_hubspot`, `streamkap_source_salesforce`, `streamkap_source_netsuite`. Their schemas are generated from the backend plugin configuration and form schema. They reconcile automatically from Pending; route their topics with `streamkap_topic_destination` instead of `streamkap_pipeline`. Salesforce OAuth setup is interactive: complete it with the CLI or UI, then import the source.
+API sources: `streamkap_source_hubspot`, `streamkap_source_salesforce`, `streamkap_source_netsuite`. Their schemas are generated from the backend plugin configuration and form schema. They reconcile automatically from Pending; route their topics with `streamkap_topic_destination` instead of `streamkap_pipeline`. Salesforce OAuth setup is interactive: complete it in the Streamkap UI, CLI or MCP, then import the source.
 
 ### Destinations
 `streamkap_destination_snowflake`, `clickhouse`, `databricks`, `postgresql`, `mysql`, `sqlserver`, `oracle`, `db2`, `cockroachdb`, `bigquery`, `redshift`, `motherduck`, `starburst`, `s3`, `gcs`, `r2`, `azblob`, `iceberg`, `kafka`, `kafkadirect`, `httpsink`, `redis`, `weaviate` (v3), `pinecone` (v3).

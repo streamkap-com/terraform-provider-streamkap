@@ -234,7 +234,7 @@ generator instead. See [docs/CODE_GENERATOR.md](docs/CODE_GENERATOR.md) for the
 generator internals, the override system, and the walkthrough for adding a new
 connector.
 
-HubSpot, Salesforce and NetSuite API sources use `streamkap_source_hubspot`, `streamkap_source_salesforce` and `streamkap_source_netsuite`. Their topics reach destinations through `streamkap_topic_destination`, one resource per full topic ID and destination ID. API sources reconcile automatically; do not use `streamkap_pipeline` or a manual deploy step for them. Salesforce browser OAuth must be completed through the CLI or UI before importing that source into Terraform. See the generated resource pages for fields and examples.
+HubSpot, Salesforce and NetSuite API sources use `streamkap_source_hubspot`, `streamkap_source_salesforce` and `streamkap_source_netsuite`. Their topics reach destinations through `streamkap_topic_destination`, one resource per full topic ID and destination ID. API sources reconcile automatically; do not use `streamkap_pipeline` or a manual deploy step for them. Salesforce browser OAuth must be completed in the Streamkap UI, CLI or MCP before importing that source into Terraform. See the generated resource pages for fields and examples.
 
 ### Project Structure
 

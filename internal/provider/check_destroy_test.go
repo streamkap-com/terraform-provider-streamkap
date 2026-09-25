@@ -28,23 +28,33 @@ const (
 )
 
 // waitForDestroyed polls fetch until it reports the resource is gone or the
-// timeout elapses. fetch returns gone=true when the resource no longer exists;
-// an error from fetch (e.g. a 404 once deletion completes) is treated as gone,
-// matching the previous "err means not-still-exists" semantics. Returns a
-// dangling-resource error only if the resource is still present at the deadline.
+// timeout elapses. fetch reports a not-found response as gone (see
+// destroyedResult). Any other error is retried and returned at the deadline, so
+// an auth or server failure cannot pass as a completed destroy.
 func waitForDestroyed(label string, fetch func() (gone bool, err error)) error {
 	deadline := time.Now().Add(destroyPollTimeout)
 	for {
 		gone, err := fetch()
-		if err != nil || gone {
-			//nolint:nilerr // a fetch error (typically the 404 that lands once deletion completes) means the resource is gone, which is the success condition here
+		if err == nil && gone {
 			return nil
 		}
 		if time.Now().After(deadline) {
+			if err != nil {
+				return fmt.Errorf("%s: could not confirm deletion after %s: %w", label, destroyPollTimeout, err)
+			}
 			return fmt.Errorf("%s still exists after %s", label, destroyPollTimeout)
 		}
 		time.Sleep(destroyPollInterval)
 	}
+}
+
+// destroyedResult maps a Get call to waitForDestroyed's contract: a not-found
+// response or an empty result means gone; any other error is passed through.
+func destroyedResult(missing bool, err error) (bool, error) {
+	if api.IsNotFound(err) {
+		return true, nil
+	}
+	return missing && err == nil, err
 }
 
 // testAccCheckDestroyClient creates an API client for CheckDestroy verification.
@@ -90,7 +100,7 @@ func testAccCheckSourceDestroy(s *terraform.State) error {
 		id := rs.Primary.ID
 		if err := waitForDestroyed(fmt.Sprintf("%s %s", rs.Type, id), func() (bool, error) {
 			source, err := client.GetSource(ctx, id)
-			return source == nil, err
+			return destroyedResult(source == nil, err)
 		}); err != nil {
 			return err
 		}
@@ -117,7 +127,7 @@ func testAccCheckDestinationDestroy(s *terraform.State) error {
 		id := rs.Primary.ID
 		if err := waitForDestroyed(fmt.Sprintf("%s %s", rs.Type, id), func() (bool, error) {
 			destination, err := client.GetDestination(ctx, id)
-			return destination == nil, err
+			return destroyedResult(destination == nil, err)
 		}); err != nil {
 			return err
 		}
@@ -144,7 +154,7 @@ func testAccCheckTransformDestroy(s *terraform.State) error {
 		id := rs.Primary.ID
 		if err := waitForDestroyed(fmt.Sprintf("%s %s", rs.Type, id), func() (bool, error) {
 			transform, err := client.GetTransform(ctx, id)
-			return transform == nil, err
+			return destroyedResult(transform == nil, err)
 		}); err != nil {
 			return err
 		}
@@ -171,7 +181,7 @@ func testAccCheckPipelineDestroy(s *terraform.State) error {
 		id := rs.Primary.ID
 		if err := waitForDestroyed(fmt.Sprintf("pipeline %s", id), func() (bool, error) {
 			pipeline, err := client.GetPipeline(ctx, id)
-			return pipeline == nil, err
+			return destroyedResult(pipeline == nil, err)
 		}); err != nil {
 			return err
 		}
@@ -198,7 +208,7 @@ func testAccCheckTopicDestinationDestroy(s *terraform.State) error {
 		topicID, destinationID := rs.Primary.Attributes["topic_id"], rs.Primary.Attributes["destination_id"]
 		if err := waitForDestroyed(fmt.Sprintf("topic destination %s", rs.Primary.ID), func() (bool, error) {
 			_, err := client.GetTopicDestination(ctx, topicID, destinationID)
-			return api.IsNotFound(err), err
+			return destroyedResult(false, err)
 		}); err != nil {
 			return err
 		}
@@ -225,7 +235,7 @@ func testAccCheckTopicDestroy(s *terraform.State) error {
 		id := rs.Primary.ID
 		if err := waitForDestroyed(fmt.Sprintf("topic %s", id), func() (bool, error) {
 			topic, err := client.GetTopic(ctx, id)
-			return topic == nil, err
+			return destroyedResult(topic == nil, err)
 		}); err != nil {
 			return err
 		}
@@ -249,7 +259,11 @@ func testAccCheckKafkaUserDestroy(s *terraform.State) error {
 		}
 
 		user, err := client.GetKafkaUser(ctx, rs.Primary.ID)
-		if err == nil && user != nil {
+		gone, err := destroyedResult(user == nil, err)
+		if err != nil {
+			return fmt.Errorf("kafka user %s: could not confirm deletion: %w", rs.Primary.ID, err)
+		}
+		if !gone {
 			return fmt.Errorf("kafka user %s still exists", rs.Primary.ID)
 		}
 	}
@@ -272,7 +286,11 @@ func testAccCheckClientCredentialDestroy(s *terraform.State) error {
 		}
 
 		cred, err := client.GetClientCredential(ctx, rs.Primary.ID)
-		if err == nil && cred != nil {
+		gone, err := destroyedResult(cred == nil, err)
+		if err != nil {
+			return fmt.Errorf("client credential %s: could not confirm deletion: %w", rs.Primary.ID, err)
+		}
+		if !gone {
 			return fmt.Errorf("client credential %s still exists", rs.Primary.ID)
 		}
 	}
@@ -300,7 +318,7 @@ func testAccCheckTagDestroy(s *terraform.State) error {
 		id := rs.Primary.ID
 		if err := waitForDestroyed(fmt.Sprintf("tag %s", id), func() (bool, error) {
 			tag, err := client.GetTag(ctx, id)
-			return tag == nil, err
+			return destroyedResult(tag == nil, err)
 		}); err != nil {
 			return err
 		}
