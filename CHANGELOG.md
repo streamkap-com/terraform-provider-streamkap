@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Generate HubSpot, Salesforce and NetSuite API-source schemas from backend plugin and form contracts, including conditional credentials and custom resource names.
+- Manage API-source topic delivery with one `streamkap_topic_destination` resource per topic and destination link.
+
+### Documentation
+- Add API-source and topic-delivery examples and Registry resource pages.
+
 ## [3.0.1] - 2026-09-23
 
 ### Documentation

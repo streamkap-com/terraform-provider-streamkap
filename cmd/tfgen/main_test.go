@@ -139,3 +139,31 @@ func TestRunGenerate_KafkaDirectExemptFromCommonConfig(t *testing.T) {
 		t.Error("kafkadirect must not merge common config fields")
 	}
 }
+
+func TestRunGenerate_APISourceExemptFromCommonConfig(t *testing.T) {
+	backend := fixtureBackend(t, "sources", validCommonConfig, map[string]string{
+		"hubspot": `{"display_name":"HubSpot","api_source":true,"config":[{"name":"resources","user_defined":true,"required":true,"display_name":"Resources","value":{"control":"multi-select","default":["contacts"],"raw_values":["contacts"]}}]}`,
+	})
+	form := `{"json_schema":{"required":["resources"],"properties":{"resources":{"items":{"type":"string"},"type":"array"}}},"ui_schema":{"elements":[{"type":"Control","scope":"#/properties/resources"}]}}`
+	if err := os.WriteFile(filepath.Join(backend, "app/sources/plugins/hubspot/form.schema.json"), []byte(form), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	out := t.TempDir()
+	if err := runGenerate(backend, out, "sources", "hubspot"); err != nil {
+		t.Fatalf("API source must generate without CDC common config: %v", err)
+	}
+	content, err := os.ReadFile(filepath.Join(out, "source_hubspot.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(content), "sentinel_common_field") {
+		t.Fatal("API source must not merge CDC common config fields")
+	}
+	if !strings.Contains(string(content), "\"resources\": schema.ListAttribute{\n\t\t\t\tRequired:            true,") {
+		t.Fatal("API source resources must be required even when the UI has a prefill")
+	}
+	if strings.Contains(string(content), "listvalidator.ValueStringsAre") {
+		t.Fatal("UI choices must not reject custom API-source resources")
+	}
+}

@@ -66,6 +66,9 @@ type StreamkapAPI interface {
 	DeleteTopic(ctx context.Context, TopicID string) error
 	ListTopics(ctx context.Context, params *TopicListParams) (*TopicDetailsResponse, error)
 	GetTopicTableMetrics(ctx context.Context, req TopicTableMetricsRequest) (TopicTableMetricsResponse, error)
+	AttachTopicDestination(ctx context.Context, topicID, destinationID string) (*TopicDestinationLink, error)
+	GetTopicDestination(ctx context.Context, topicID, destinationID string) (*TopicDestinationLink, error)
+	DetachTopicDestination(ctx context.Context, topicID, destinationID string) error
 
 	// Kafka User APIs
 	CreateKafkaUser(ctx context.Context, reqPayload CreateKafkaUserRequest) (*KafkaUser, error)

@@ -66,10 +66,9 @@ fields — `consumer.override.*`, the `transforms.*` family, `quote.identifiers`
 **Exception — `kafkadirect`:** the backend's `_load_global_configuration()`
 (`app/utils/fetch_utils.py`) returns `{}` for `kafkadirect`, so it resolves
 against its plugin config alone. tfgen mirrors this: the merge is skipped for
-`kafkadirect`, so the source and destination Kafka Direct resources expose only
-their plugin fields. This is the only connector exempted from the merge. If you
-add another proxy-style connector that the backend excludes from the global
-config, extend the same guard in `Generate()`.
+`kafkadirect`, so the source and destination Kafka Direct resources expose only their plugin fields. API sources also skip the CDC common configuration when `api_source: true` is set in the plugin config. Keep that marker in the backend for every new API connector.
+
+For API sources, `tfgen` also reads `form.schema.json`. It uses the JSON schema for actual required fields, defaults and minimum list sizes, and the UI schema for conditional credential requirements and hidden system fields. Multi-select UI choices are suggestions unless the JSON schema declares an item enum; custom vendor objects remain valid. Generated requirement metadata drives the shared API-source validator. Adding another API connector follows the existing CDC convention: generate its schema and model, add a thin resource constructor and registration, then add examples and a schema snapshot. Do not hand-code connector-specific field lists or auth-mode validators.
 
 ### Source Files
 
