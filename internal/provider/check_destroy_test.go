@@ -180,6 +180,33 @@ func testAccCheckPipelineDestroy(s *terraform.State) error {
 	return nil
 }
 
+// testAccCheckTopicDestinationDestroy verifies that every managed topic link
+// has been removed. A link reads as not found once its topic leaves the binding.
+func testAccCheckTopicDestinationDestroy(s *terraform.State) error {
+	client, err := testAccCheckDestroyClient()
+	if err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "streamkap_topic_destination" {
+			continue
+		}
+
+		topicID, destinationID := rs.Primary.Attributes["topic_id"], rs.Primary.Attributes["destination_id"]
+		if err := waitForDestroyed(fmt.Sprintf("topic destination %s", rs.Primary.ID), func() (bool, error) {
+			_, err := client.GetTopicDestination(ctx, topicID, destinationID)
+			return api.IsNotFound(err), err
+		}); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // testAccCheckTopicDestroy verifies that all topic resources have been destroyed.
 // It checks the Streamkap API to confirm that topic resources no longer exist.
 func testAccCheckTopicDestroy(s *terraform.State) error {

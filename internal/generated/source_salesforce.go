@@ -110,6 +110,9 @@ func SourceSalesforceSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Your org's My Domain URL, e.g. https://acme.my.salesforce.com — find it under Setup > Company Settings > My Domain. Sandbox, developer and scratch orgs use their own host.",
 				MarkdownDescription: "Your org's My Domain URL, e.g. https://acme.my.salesforce.com — find it under Setup > Company Settings > My Domain. Sandbox, developer and scratch orgs use their own host.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"resources": schema.ListAttribute{
 				Required:            true,
@@ -125,6 +128,9 @@ func SourceSalesforceSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Consumer Key of the External Client App you created for Streamkap — Setup > External Client Apps Manager > your app > Settings > OAuth Settings > Consumer Key and Secret.",
 				MarkdownDescription: "Consumer Key of the External Client App you created for Streamkap — Setup > External Client Apps Manager > your app > Settings > OAuth Settings > Consumer Key and Secret.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"client_secret": schema.StringAttribute{
 				Optional:            true,
@@ -132,6 +138,9 @@ func SourceSalesforceSchema() schema.Schema {
 				Sensitive:           true,
 				Description:         "Consumer Secret shown beside the Consumer Key on the same External Client App screen. The app must enable the client-credentials flow and name a run-as user. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "Consumer Secret shown beside the Consumer Key on the same External Client App screen. The app must enable the client-credentials flow and name a run-as user.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"backfill_start": schema.StringAttribute{
 				Optional:            true,

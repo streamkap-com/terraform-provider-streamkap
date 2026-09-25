@@ -7,6 +7,10 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTopicDestinationRequestsArePerTopic(t *testing.T) {
@@ -72,4 +76,38 @@ func TestTopicDestinationRequestsArePerTopic(t *testing.T) {
 	if len(calls) != len(want) {
 		t.Fatalf("calls = %v, want %v", calls, want)
 	}
+}
+
+func TestTopicDestinationErrors(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	baseURL := "https://api.test.streamkap.com"
+	linkURL := baseURL + "/topics/source_1.hubspot.contacts/destinations/dest-1"
+	client := newTestClient(baseURL)
+	ctx := context.Background()
+
+	httpmock.RegisterResponder(http.MethodGet, linkURL,
+		httpmock.NewJsonResponderOrPanic(http.StatusNotFound, APIErrorResponse{Detail: "Topic 'source_1.hubspot.contacts' is not sent to destination 'dest-1'."}))
+	_, err := client.GetTopicDestination(ctx, "source_1.hubspot.contacts", "dest-1")
+	assert.True(t, IsNotFound(err), "an unlinked topic must read as not found so Terraform drops it from state: %v", err)
+
+	attempts := 0
+	httpmock.RegisterResponder(http.MethodPut, linkURL, func(*http.Request) (*http.Response, error) {
+		attempts++
+		if attempts == 1 {
+			return httpmock.NewJsonResponse(http.StatusServiceUnavailable, APIErrorResponse{Detail: "unavailable"})
+		}
+		return httpmock.NewJsonResponse(http.StatusOK, TopicDestinationLink{BindingID: "binding-1"})
+	})
+	link, err := client.AttachTopicDestination(ctx, "source_1.hubspot.contacts", "dest-1")
+	require.NoError(t, err)
+	assert.Equal(t, "binding-1", link.BindingID)
+	assert.Equal(t, 2, attempts, "attach is idempotent, so a transient 503 is retried")
+
+	httpmock.RegisterResponder(http.MethodPut, linkURL,
+		httpmock.NewJsonResponderOrPanic(http.StatusBadRequest, APIErrorResponse{Detail: "Send-to-destination is available for API sources only"}))
+	_, err = client.AttachTopicDestination(ctx, "source_1.hubspot.contacts", "dest-1")
+	require.Error(t, err)
+	assert.False(t, IsNotFound(err))
+	assert.Contains(t, err.Error(), "API sources only")
 }

@@ -14,6 +14,7 @@ from v2.
 - AlloyDB, DB2, DocumentDB, Elasticsearch, Informix, MariaDB, MongoDB Hosted
 - Oracle, Oracle AWS, PlanetScale, Redis, S3, Supabase, Vitess
 - Webhook, Salesforce Webhook, Shopify Webhook, Stripe Webhook, Zendesk Webhook
+- API sources: HubSpot, Salesforce, NetSuite
 
 ### Destination Connectors
 - Snowflake, ClickHouse, Databricks, PostgreSQL, S3, Iceberg, Kafka
@@ -33,6 +34,7 @@ from v2.
 ### Other Resources
 - Pipelines
 - Topics
+- Topic Destinations (`streamkap_topic_destination` — sends one API source topic to a destination)
 - Tags (`streamkap_tag` — manages individual tag definitions)
 - Kafka Users (ACL-based Kafka access control)
 - Client Credentials (API token management)

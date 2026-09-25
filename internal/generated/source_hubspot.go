@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -134,6 +135,9 @@ func SourceHubspotSchema() schema.Schema {
 				ElementType:         types.StringType,
 				Description:         "The exact properties to sync, used only when 'Sync all properties' is off. These are the portal's internal property names, not their labels — the source's available-properties endpoint lists both. A name only has to exist on one of the selected objects. Each object's cursor property and hs_object_id are always synced whatever you pick here.",
 				MarkdownDescription: "The exact properties to sync, used only when 'Sync all properties' is off. These are the portal's internal property names, not their labels — the source's available-properties endpoint lists both. A name only has to exist on one of the selected objects. Each object's cursor property and hs_object_id are always synced whatever you pick here.",
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}

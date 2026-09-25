@@ -3,12 +3,12 @@
 page_title: "streamkap_topic_destination Resource - terraform-provider-streamkap"
 subcategory: ""
 description: |-
-  Sends one API source topic to a destination.
+  Sends one API source topic to a destination. Topics from one source share a managed binding per destination, so the provider applies changes for the same destination one at a time.
 ---
 
 # streamkap_topic_destination (Resource)
 
-Sends one API source topic to a destination.
+Sends one API source topic to a destination. Topics from one source share a managed binding per destination, so the provider applies changes for the same destination one at a time.
 
 ## Example Usage
 

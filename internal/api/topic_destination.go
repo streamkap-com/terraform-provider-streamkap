@@ -14,9 +14,12 @@ type TopicDestinationLink struct {
 	TopicIDs      []string `json:"topic_ids"`
 }
 
+func (s *streamkapAPI) topicDestinationURL(topicID, destinationID string) string {
+	return fmt.Sprintf("%s/topics/%s/destinations/%s", s.cfg.BaseURL, url.PathEscape(topicID), url.PathEscape(destinationID))
+}
+
 func (s *streamkapAPI) topicDestinationRequest(ctx context.Context, method, topicID, destinationID string, result any) error {
-	endpoint := fmt.Sprintf("%s/topics/%s/destinations/%s", s.cfg.BaseURL, url.PathEscape(topicID), url.PathEscape(destinationID))
-	req, err := http.NewRequestWithContext(ctx, method, endpoint, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, method, s.topicDestinationURL(topicID, destinationID), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("build %s topic destination request: %w", method, err)
 	}
@@ -43,6 +46,5 @@ func (s *streamkapAPI) GetTopicDestination(ctx context.Context, topicID, destina
 }
 
 func (s *streamkapAPI) DetachTopicDestination(ctx context.Context, topicID, destinationID string) error {
-	var result any
-	return s.topicDestinationRequest(ctx, http.MethodDelete, topicID, destinationID, &result)
+	return s.deleteResource(ctx, "DetachTopicDestination", s.topicDestinationURL(topicID, destinationID))
 }

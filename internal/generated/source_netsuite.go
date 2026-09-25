@@ -119,12 +119,18 @@ func SourceNetsuiteSchema() schema.Schema {
 				Computed:            true,
 				Description:         "The Client ID (Consumer Key) NetSuite showed when you created the integration record — Setup > Integration > Manage Integrations.",
 				MarkdownDescription: "The Client ID (Consumer Key) NetSuite showed when you created the integration record — Setup > Integration > Manage Integrations.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"certificate_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Description:         "The Certificate ID NetSuite showed after you uploaded this integration's public certificate — Setup > Integration > OAuth 2.0 Client Credentials (M2M) Setup. It is not the Client ID and not the certificate's fingerprint.",
 				MarkdownDescription: "The Certificate ID NetSuite showed after you uploaded this integration's public certificate — Setup > Integration > OAuth 2.0 Client Credentials (M2M) Setup. It is not the Client ID and not the certificate's fingerprint.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"private_key": schema.StringAttribute{
 				Optional:            true,
@@ -132,6 +138,9 @@ func SourceNetsuiteSchema() schema.Schema {
 				Sensitive:           true,
 				Description:         "The PEM private key matching the certificate you uploaded to NetSuite, pasted whole including the BEGIN and END lines. RSA (signed PS256) and EC P-256 (ES256) keys are both accepted; NetSuite rejects RS256. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "The PEM private key matching the certificate you uploaded to NetSuite, pasted whole including the BEGIN and END lines. RSA (signed PS256) and EC P-256 (ES256) keys are both accepted; NetSuite rejects RS256.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"private_key_passphrase": schema.StringAttribute{
 				Optional:            true,
@@ -139,12 +148,18 @@ func SourceNetsuiteSchema() schema.Schema {
 				Sensitive:           true,
 				Description:         "Only if the private key above is encrypted. Leave empty for an unencrypted key. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "Only if the private key above is encrypted. Leave empty for an unencrypted key.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"consumer_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Description:         "Consumer Key of the integration record your access token belongs to — Setup > Integration > Manage Integrations.",
 				MarkdownDescription: "Consumer Key of the integration record your access token belongs to — Setup > Integration > Manage Integrations.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"consumer_secret": schema.StringAttribute{
 				Optional:            true,
@@ -152,12 +167,18 @@ func SourceNetsuiteSchema() schema.Schema {
 				Sensitive:           true,
 				Description:         "Consumer Secret shown beside the Consumer Key on the same integration record. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "Consumer Secret shown beside the Consumer Key on the same integration record.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"token_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Description:         "Token ID of the access token issued to that integration for the role Streamkap reads with — Setup > Users/Roles > Access Tokens.",
 				MarkdownDescription: "Token ID of the access token issued to that integration for the role Streamkap reads with — Setup > Users/Roles > Access Tokens.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"token_secret": schema.StringAttribute{
 				Optional:            true,
@@ -165,6 +186,9 @@ func SourceNetsuiteSchema() schema.Schema {
 				Sensitive:           true,
 				Description:         "Token Secret shown beside the Token ID when the access token was created. NetSuite shows it once — if it was not saved, create a new token. This value is sensitive and will not appear in logs or CLI output.",
 				MarkdownDescription: "Token Secret shown beside the Token ID when the access token was created. NetSuite shows it once — if it was not saved, create a new token.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"backfill_start": schema.StringAttribute{
 				Optional:            true,

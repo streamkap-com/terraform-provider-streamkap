@@ -39,6 +39,10 @@ func TestApplyAPIFormContract(t *testing.T) {
 	if clientID.IsRequired() {
 		t.Error("mode-dependent credential must not be unconditionally required")
 	}
+	credential := NewGenerator(t.TempDir(), "source").entryToFieldData(&clientID)
+	if credential.Required || !credential.Optional || !credential.Computed || !credential.NeedsPlanMod {
+		t.Errorf("mode-dependent credential must be Optional+Computed with UseStateForUnknown: %#v", credential)
+	}
 	if len(config.APIRequirements) != 1 || config.APIRequirements[0] != (APIRequirement{Field: "client_id", ConditionField: "auth_mode", ConditionValue: "service", ConditionDefault: "service"}) {
 		t.Errorf("conditional requirements = %#v", config.APIRequirements)
 	}

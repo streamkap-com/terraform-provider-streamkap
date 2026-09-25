@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -38,7 +39,7 @@ func (r *Resource) Metadata(_ context.Context, req resource.MetadataRequest, res
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Sends one API source topic to a destination.",
+		Description: "Sends one API source topic to a destination. Topics from one source share a managed binding per destination, so the provider applies changes for the same destination one at a time.",
 		Attributes: map[string]schema.Attribute{
 			"id":             schema.StringAttribute{Computed: true, Description: "Composite topic and destination identifier."},
 			"topic_id":       schema.StringAttribute{Required: true, Description: "Full API source topic identifier.", PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
@@ -66,6 +67,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	defer lockDestination(model.DestinationID.ValueString())()
 	link, err := r.client.AttachTopicDestination(ctx, model.TopicID.ValueString(), model.DestinationID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error attaching topic to destination", err.Error())
@@ -115,7 +117,8 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if err := r.client.DetachTopicDestination(ctx, model.TopicID.ValueString(), model.DestinationID.ValueString()); err != nil && !api.IsNotFound(err) {
+	defer lockDestination(model.DestinationID.ValueString())()
+	if err := r.client.DetachTopicDestination(ctx, model.TopicID.ValueString(), model.DestinationID.ValueString()); err != nil {
 		resp.Diagnostics.AddError("Error detaching topic from destination", err.Error())
 	}
 }
@@ -129,6 +132,18 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("topic_id"), topicID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("destination_id"), destinationID)...)
+}
+
+// The backend attaches and detaches by rewriting the binding's whole topic list
+// without a lock, so parallel changes for one destination (for_each applies them
+// concurrently) would drop each other's topics.
+var destinationLocks sync.Map
+
+func lockDestination(destinationID string) (unlock func()) {
+	value, _ := destinationLocks.LoadOrStore(destinationID, &sync.Mutex{})
+	mu := value.(*sync.Mutex)
+	mu.Lock()
+	return mu.Unlock
 }
 
 func compositeID(topicID, destinationID string) string { return topicID + "|" + destinationID }

@@ -1179,8 +1179,11 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 		field.Optional = true
 		field.Computed = true
 	} else if entry.APIFormShow {
+		// Shown only for one auth mode or toggle, so it is routinely unset.
+		// Without UseStateForUnknown every unrelated update replans it unknown.
 		field.Optional = true
 		field.Computed = true
+		field.NeedsPlanMod = true
 	} else if entry.IsReadOnly() {
 		// The backend also uses readonly as a UI hint for fields that its API
 		// accepts, such as an SSH public key or S3 topic selection. Preserve

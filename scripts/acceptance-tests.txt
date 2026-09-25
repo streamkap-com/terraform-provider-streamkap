@@ -30,6 +30,9 @@ TestAccSourceElasticsearchResource
 TestAccSourceRedisResource
 TestAccSourceVitessResource
 TestAccSourceInformixResource
+TestAccSourceHubSpotResource
+TestAccSourceSalesforceResource
+TestAccSourceNetSuiteResource
 
 # --- Destinations ---
 TestAccDestinationAzblobResource
@@ -81,6 +84,7 @@ TestProviderConfig_MissingClientID
 TestDriftDetection_SourceModifiedExternally
 TestAccTagsLifecycle_TransformAttachAndClear
 TestAccTagResource_descriptionShapes
+TestAccTopicDestinationResource
 
 # --- Transforms ---
 TestAccTransformEnrichAsyncResource
