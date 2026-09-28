@@ -104,7 +104,7 @@ Full per-resource examples: `examples/resources/streamkap_<name>/{basic,complete
 ### Sources
 `streamkap_source_postgresql`, `mysql`, `mongodb`, `mongodbhosted`, `dynamodb`, `sqlserver`, `oracle`, `oracleaws`, `db2`, `informix` (v3), `mariadb`, `alloydb`, `documentdb`, `elasticsearch`, `planetscale`, `redis`, `s3`, `supabase`, `vitess`, `webhook`, `salesforce_webhook` (v3), `zendesk_webhook` (v3), `shopify_webhook` (v3), `stripe_webhook` (v3), `kafkadirect`.
 
-API sources: `streamkap_source_hubspot`, `streamkap_source_salesforce`, `streamkap_source_netsuite`. Their schemas are generated from the backend plugin configuration and form schema. They reconcile automatically from Pending; route their topics with `streamkap_topic_destination` instead of `streamkap_pipeline`. Salesforce OAuth setup is interactive: complete it in the Streamkap UI, CLI or MCP, then import the source.
+API sources: `streamkap_source_hubspot`, `salesforce`, `netsuite`, `stripe`, `zendesk`, `google_analytics`, `facebook_ads`, `google_ads`. Their schemas are generated from the backend plugin configuration and form schema. They reconcile automatically from Pending; route their topics with `streamkap_topic_destination` instead of `streamkap_pipeline`. An OAuth mode (HubSpot, Salesforce, Google Ads `auth_mode = "oauth"`, and Zendesk always) needs `oauth_grant_id`: Terraform cannot click Connect, so run it in the Streamkap UI, or run `streamkap sources start-source-oauth-connect <vendor>`, open the `authorize_url`, then `streamkap sources poll-source-oauth-grant <vendor> --state <state>`. The grant is single-use and expires within minutes. Google Ads Connect runs on your own OAuth client, so pass its `client_id` and `client_secret` to `start-source-oauth-connect` in a `--body <file>` JSON file. Google Ads defaults to `oauth`; set `auth_mode` to `service_account` or `refresh_token` to paste credentials instead.
 
 ### Destinations
 `streamkap_destination_snowflake`, `clickhouse`, `databricks`, `postgresql`, `mysql`, `sqlserver`, `oracle`, `db2`, `cockroachdb`, `bigquery`, `redshift`, `motherduck`, `starburst`, `s3`, `gcs`, `r2`, `azblob`, `iceberg`, `kafka`, `kafkadirect`, `httpsink`, `redis`, `weaviate` (v3), `pinecone` (v3).
@@ -397,6 +397,32 @@ Control→TF-type mapping table lives in `docs/CODE_GENERATOR.md` (kept in sync 
 
 An override's `api_field_name` must resolve to a field the backend actually declares — tfgen fails the build otherwise, for both `field_overrides` and `additional_fields`. Review overrides when backend fields change so Terraform does not accept attributes that the API ignores.
 When an override's `api_field_name` matches a backend field, the override wins and the auto-parsed version is dropped.
+
+### API sources
+
+API-source schemas come from two backend artifacts per vendor, `app/sources/plugins/<vendor>/configuration.latest.json` and `form.schema.json`, which the backend generates from its vendor config models. How tfgen reads them is in `docs/CODE_GENERATOR.md`; the runtime hooks are in `docs/ARCHITECTURE.md`.
+
+Regenerate only the API sources when the backend branch is not `main`, so no unrelated CDC change rides along. `make generate` regenerates every connector and refuses a non-`main` backend unless `ALLOW_NONMAIN=1`:
+
+```bash
+git -C "$STREAMKAP_BACKEND_PATH" rev-parse --abbrev-ref HEAD   # the branch you were told to use
+for v in hubspot salesforce netsuite stripe zendesk google_analytics facebook_ads google_ads; do
+  go run ./cmd/tfgen generate --backend-path="$STREAMKAP_BACKEND_PATH" --output=internal/generated --entity-type sources --connector "$v"
+done
+go generate main.go   # docs, after the schemas
+make snapshots        # then read the diff
+```
+
+A new vendor also needs a constructor in `internal/resource/source/api_sources.go`, a `Resources()` entry, a `TestSchemaBackwardsCompatibility_APISources` row, `examples/resources/streamkap_source_<vendor>/{basic,complete}.tf` and `import.sh`, and a lifecycle case in `internal/provider/api_source_vendors_local_test.go` if it adds an auth pattern.
+
+Traps:
+- A form `HIDE` rule is "hidden for these values", not "hidden". Reading it as always-hidden silently dropped HubSpot `token` and Google Ads `client_id`/`client_secret`. Check that each vendor's credential attributes survive a regen.
+- The backend normalizes values it echoes: `backfill_start` becomes a UTC datetime, Google Ads customer IDs lose their dashes, Facebook Ads account IDs lose `act_`, Salesforce `domain` gains `https://` and Zendesk `subdomain` is lowercased. `ConnectorConfigKeepsConfiguredForm` absorbs that. A lifecycle test's fixture must normalize the same way, or it will not catch a regression.
+- An update replaces the whole config, except that an absent secret is kept and Salesforce `org_id`/`environment` are restored. Every non-secret field must be resent; a secret must be resent only when it changed.
+- In OAuth mode the grant fills fields the form hides (HubSpot `token`, Salesforce `domain`, Google Ads `refresh_token`), and the artifacts do not say which. Keep hidden fields while `oauth_grant_id` is unchanged; plan them unknown when a new grant is sent, so the previous mode's secrets are cleared and the grant refills its own.
+- An explicit `null` clears an optional secret, and the backend refuses it for a required one (HubSpot and Stripe `token`, GA4 `service_account_key`, Facebook Ads `access_token`).
+- The backend rejects unknown config keys (`extra="forbid"`), so a vendor without an OAuth flow must never be sent `oauth_grant_id`.
+- The artifacts do not carry every backend rule. HubSpot `properties` is required when `sync_all_properties` is false; Facebook Ads `app_id` and `app_secret` go together; and `custom_*` reports must match `custom_<name>` resources. The backend reports these as a 400 at apply time. Fix them in the backend artifacts, not with hand-written validators here.
 
 ### Fix the generator, not the generated output
 

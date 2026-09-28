@@ -93,8 +93,8 @@ func SourceNetsuiteSchema() schema.Schema {
 			"auth_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "How Streamkap authenticates to NetSuite. Defaults to \"certificate\". Valid values: certificate, tba.",
-				MarkdownDescription: "How Streamkap authenticates to NetSuite. Defaults to `certificate`. Valid values: `certificate`, `tba`.",
+				Description:         "How Streamkap signs in to NetSuite. Use Certificate for a new integration; token-based authentication is for an existing TBA integration. Defaults to \"certificate\". Valid values: certificate, tba.",
+				MarkdownDescription: "How Streamkap signs in to NetSuite. Use Certificate for a new integration; token-based authentication is for an existing TBA integration. Defaults to `certificate`. Valid values: `certificate`, `tba`.",
 				Default:             stringdefault.StaticString("certificate"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("certificate", "tba"),
@@ -102,14 +102,14 @@ func SourceNetsuiteSchema() schema.Schema {
 			},
 			"account_id": schema.StringAttribute{
 				Required:            true,
-				Description:         "Your NetSuite account id — Setup > Company > Company Information, e.g. TSTDRV1234567, or 1234567_SB1 for a sandbox. Streamkap builds your account's API host from it.",
-				MarkdownDescription: "Your NetSuite account id — Setup > Company > Company Information, e.g. TSTDRV1234567, or 1234567_SB1 for a sandbox. Streamkap builds your account's API host from it.",
+				Description:         "Your NetSuite account ID, shown in Setup → Company → Company Information, e.g. 1234567, or 1234567_SB1 for a sandbox.",
+				MarkdownDescription: "Your NetSuite account ID, shown in Setup → Company → Company Information, e.g. 1234567, or 1234567_SB1 for a sandbox.",
 			},
 			"resources": schema.ListAttribute{
 				Required:            true,
 				ElementType:         types.StringType,
-				Description:         "NetSuite record types to sync, as their SuiteQL table names. Pick standard records, or type a custom record's table name (it starts with customrecord). Each one must be readable by the integration's role. Requires at least one item.",
-				MarkdownDescription: "NetSuite record types to sync, as their SuiteQL table names. Pick standard records, or type a custom record's table name (it starts with customrecord). Each one must be readable by the integration's role. Requires at least one item.",
+				Description:         "NetSuite tables to sync, by their SuiteQL names; each becomes its own topic. Your custom records are listed too, or type one's table name (customrecord…); the integration's role must be able to read each. Requires at least one item.",
+				MarkdownDescription: "NetSuite tables to sync, by their SuiteQL names; each becomes its own topic. Your custom records are listed too, or type one's table name (customrecord…); the integration's role must be able to read each. Requires at least one item.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
@@ -117,8 +117,8 @@ func SourceNetsuiteSchema() schema.Schema {
 			"client_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The Client ID (Consumer Key) NetSuite showed when you created the integration record — Setup > Integration > Manage Integrations.",
-				MarkdownDescription: "The Client ID (Consumer Key) NetSuite showed when you created the integration record — Setup > Integration > Manage Integrations.",
+				Description:         "The Client ID NetSuite showed once, when you saved the integration record in Setup → Integration → Manage Integrations.",
+				MarkdownDescription: "The Client ID NetSuite showed once, when you saved the integration record in Setup → Integration → Manage Integrations.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -126,8 +126,8 @@ func SourceNetsuiteSchema() schema.Schema {
 			"certificate_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The Certificate ID NetSuite showed after you uploaded this integration's public certificate — Setup > Integration > OAuth 2.0 Client Credentials (M2M) Setup. It is not the Client ID and not the certificate's fingerprint.",
-				MarkdownDescription: "The Certificate ID NetSuite showed after you uploaded this integration's public certificate — Setup > Integration > OAuth 2.0 Client Credentials (M2M) Setup. It is not the Client ID and not the certificate's fingerprint.",
+				Description:         "The Certificate ID NetSuite gave the certificate you mapped to this integration in Setup → Integration → Manage Authentication → OAuth 2.0 Client Credentials (M2M) Setup; not its fingerprint.",
+				MarkdownDescription: "The Certificate ID NetSuite gave the certificate you mapped to this integration in Setup → Integration → Manage Authentication → OAuth 2.0 Client Credentials (M2M) Setup; not its fingerprint.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -136,8 +136,8 @@ func SourceNetsuiteSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "The PEM private key matching the certificate you uploaded to NetSuite, pasted whole including the BEGIN and END lines. RSA (signed PS256) and EC P-256 (ES256) keys are both accepted; NetSuite rejects RS256. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "The PEM private key matching the certificate you uploaded to NetSuite, pasted whole including the BEGIN and END lines. RSA (signed PS256) and EC P-256 (ES256) keys are both accepted; NetSuite rejects RS256.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "The private key of the certificate you uploaded to NetSuite, an RSA or EC P-256 key in PEM format, pasted whole with its BEGIN and END lines. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The private key of the certificate you uploaded to NetSuite, an RSA or EC P-256 key in PEM format, pasted whole with its BEGIN and END lines.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -146,8 +146,8 @@ func SourceNetsuiteSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "Only if the private key above is encrypted. Leave empty for an unencrypted key. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Only if the private key above is encrypted. Leave empty for an unencrypted key.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "The passphrase of the private key, only if it is encrypted. Leave empty for an unencrypted key. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The passphrase of the private key, only if it is encrypted. Leave empty for an unencrypted key.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -155,8 +155,8 @@ func SourceNetsuiteSchema() schema.Schema {
 			"consumer_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Consumer Key of the integration record your access token belongs to — Setup > Integration > Manage Integrations.",
-				MarkdownDescription: "Consumer Key of the integration record your access token belongs to — Setup > Integration > Manage Integrations.",
+				Description:         "The Consumer Key of the integration record your access token was issued for, shown once when the record was saved in Setup → Integration → Manage Integrations.",
+				MarkdownDescription: "The Consumer Key of the integration record your access token was issued for, shown once when the record was saved in Setup → Integration → Manage Integrations.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -165,8 +165,8 @@ func SourceNetsuiteSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "Consumer Secret shown beside the Consumer Key on the same integration record. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Consumer Secret shown beside the Consumer Key on the same integration record.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "The Consumer Secret shown beside the Consumer Key when the integration record was saved. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The Consumer Secret shown beside the Consumer Key when the integration record was saved.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -174,8 +174,8 @@ func SourceNetsuiteSchema() schema.Schema {
 			"token_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Token ID of the access token issued to that integration for the role Streamkap reads with — Setup > Users/Roles > Access Tokens.",
-				MarkdownDescription: "Token ID of the access token issued to that integration for the role Streamkap reads with — Setup > Users/Roles > Access Tokens.",
+				Description:         "The Token ID of the access token issued for that integration and the role Streamkap reads with, created in Setup → Users/Roles → Access Tokens.",
+				MarkdownDescription: "The Token ID of the access token issued for that integration and the role Streamkap reads with, created in Setup → Users/Roles → Access Tokens.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -184,20 +184,16 @@ func SourceNetsuiteSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "Token Secret shown beside the Token ID when the access token was created. NetSuite shows it once — if it was not saved, create a new token. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Token Secret shown beside the Token ID when the access token was created. NetSuite shows it once — if it was not saved, create a new token.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "The Token Secret shown beside the Token ID when the access token was created. NetSuite shows it only once; if it is lost, create a new token. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The Token Secret shown beside the Token ID when the access token was created. NetSuite shows it only once; if it is lost, create a new token.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"backfill_start": schema.StringAttribute{
 				Optional:            true,
-				Computed:            true,
-				Description:         "Earliest record modification time to sync, as an ISO-8601 date or datetime (e.g. 2026-01-01 or 2026-01-01T00:00:00Z; no timezone means UTC). Leave empty to sync all history. This bounds the FIRST sync of each object only — once an object has synced, the source resumes from where it left off and this value no longer applies.",
-				MarkdownDescription: "Earliest record modification time to sync, as an ISO-8601 date or datetime (e.g. 2026-01-01 or 2026-01-01T00:00:00Z; no timezone means UTC). Leave empty to sync all history. This bounds the FIRST sync of each object only — once an object has synced, the source resumes from where it left off and this value no longer applies.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Description:         "Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.",
+				MarkdownDescription: "Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.",
 			},
 		},
 	}
@@ -219,14 +215,15 @@ var SourceNetsuiteFieldMappings = map[string]string{
 	"backfill_start":         "backfill_start",
 }
 
-var SourceNetsuiteAPIRequirements = []APIRequirement{
-	{Field: "client_id", ConditionField: "auth_mode", ConditionValue: "certificate", ConditionDefault: "certificate"},
-	{Field: "certificate_id", ConditionField: "auth_mode", ConditionValue: "certificate", ConditionDefault: "certificate"},
-	{Field: "private_key", ConditionField: "auth_mode", ConditionValue: "certificate", ConditionDefault: "certificate"},
-	{Field: "consumer_key", ConditionField: "auth_mode", ConditionValue: "tba", ConditionDefault: "certificate"},
-	{Field: "consumer_secret", ConditionField: "auth_mode", ConditionValue: "tba", ConditionDefault: "certificate"},
-	{Field: "token_id", ConditionField: "auth_mode", ConditionValue: "tba", ConditionDefault: "certificate"},
-	{Field: "token_secret", ConditionField: "auth_mode", ConditionValue: "tba", ConditionDefault: "certificate"},
+var SourceNetsuiteAPIConditions = []APICondition{
+	{Field: "client_id", ConditionField: "auth_mode", ConditionValues: []string{"certificate"}, ConditionDefault: "certificate", Required: true},
+	{Field: "certificate_id", ConditionField: "auth_mode", ConditionValues: []string{"certificate"}, ConditionDefault: "certificate", Required: true},
+	{Field: "private_key", ConditionField: "auth_mode", ConditionValues: []string{"certificate"}, ConditionDefault: "certificate", Required: true},
+	{Field: "private_key_passphrase", ConditionField: "auth_mode", ConditionValues: []string{"certificate"}, ConditionDefault: "certificate", Required: false},
+	{Field: "consumer_key", ConditionField: "auth_mode", ConditionValues: []string{"tba"}, ConditionDefault: "certificate", Required: true},
+	{Field: "consumer_secret", ConditionField: "auth_mode", ConditionValues: []string{"tba"}, ConditionDefault: "certificate", Required: true},
+	{Field: "token_id", ConditionField: "auth_mode", ConditionValues: []string{"tba"}, ConditionDefault: "certificate", Required: true},
+	{Field: "token_secret", ConditionField: "auth_mode", ConditionValues: []string{"tba"}, ConditionDefault: "certificate", Required: true},
 }
 
-const SourceNetsuiteAPIOAuth = false
+var SourceNetsuiteAPIOAuth = APIOAuth{Enabled: false, AuthModeField: "", AuthModeValue: "", AuthModeDefault: "", ClientFields: []string{}}

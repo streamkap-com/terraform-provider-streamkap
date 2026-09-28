@@ -1,0 +1,1 @@
+terraform import streamkap_source_google_ads.example 00000000000000000000000000

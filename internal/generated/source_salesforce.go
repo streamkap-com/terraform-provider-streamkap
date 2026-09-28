@@ -24,12 +24,15 @@ type SourceSalesforceModel struct {
 	KcClusterId     types.String   `tfsdk:"kc_cluster_id"`
 	Tags            types.Set      `tfsdk:"tags"`
 	AuthMode        types.String   `tfsdk:"auth_mode"`
-	APIVersion      types.String   `tfsdk:"api_version"`
 	Domain          types.String   `tfsdk:"domain"`
 	Resources       types.List     `tfsdk:"resources"`
 	ClientID        types.String   `tfsdk:"client_id"`
 	ClientSecret    types.String   `tfsdk:"client_secret"`
+	Username        types.String   `tfsdk:"username"`
+	PrivateKey      types.String   `tfsdk:"private_key"`
+	APIVersion      types.String   `tfsdk:"api_version"`
 	BackfillStart   types.String   `tfsdk:"backfill_start"`
+	OauthGrantID    types.String   `tfsdk:"oauth_grant_id"`
 	Timeouts        timeouts.Value `tfsdk:"timeouts"`
 }
 
@@ -88,28 +91,18 @@ func SourceSalesforceSchema() schema.Schema {
 			"auth_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "How Streamkap authenticates to Salesforce. Defaults to \"service\". Valid values: service, oauth.",
-				MarkdownDescription: "How Streamkap authenticates to Salesforce. Defaults to `service`. Valid values: `service`, `oauth`.",
+				Description:         "How Streamkap signs in to Salesforce: with an External Client App you create in your org, by its client credentials or a JWT bearer certificate, or, where offered, Connect with Salesforce. Defaults to \"service\". Valid values: service, oauth, jwt.",
+				MarkdownDescription: "How Streamkap signs in to Salesforce: with an External Client App you create in your org, by its client credentials or a JWT bearer certificate, or, where offered, Connect with Salesforce. Defaults to `service`. Valid values: `service`, `oauth`, `jwt`.",
 				Default:             stringdefault.StaticString("service"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("service", "oauth"),
-				},
-			},
-			"api_version": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "Salesforce REST API version used by this source. Keep v67.0 unless compatibility requires v66.0. Defaults to \"v67.0\". Valid values: v66.0, v67.0.",
-				MarkdownDescription: "Salesforce REST API version used by this source. Keep v67.0 unless compatibility requires v66.0. Defaults to `v67.0`. Valid values: `v66.0`, `v67.0`.",
-				Default:             stringdefault.StaticString("v67.0"),
-				Validators: []validator.String{
-					stringvalidator.OneOf("v66.0", "v67.0"),
+					stringvalidator.OneOf("service", "oauth", "jwt"),
 				},
 			},
 			"domain": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Your org's My Domain URL, e.g. https://acme.my.salesforce.com — find it under Setup > Company Settings > My Domain. Sandbox, developer and scratch orgs use their own host.",
-				MarkdownDescription: "Your org's My Domain URL, e.g. https://acme.my.salesforce.com — find it under Setup > Company Settings > My Domain. Sandbox, developer and scratch orgs use their own host.",
+				Description:         "Your org's My Domain URL, e.g. https://acme.my.salesforce.com, shown in Setup under My Domain. A sandbox has its own, e.g. https://acme--dev.sandbox.my.salesforce.com.",
+				MarkdownDescription: "Your org's My Domain URL, e.g. https://acme.my.salesforce.com, shown in Setup under My Domain. A sandbox has its own, e.g. https://acme--dev.sandbox.my.salesforce.com.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -117,8 +110,8 @@ func SourceSalesforceSchema() schema.Schema {
 			"resources": schema.ListAttribute{
 				Required:            true,
 				ElementType:         types.StringType,
-				Description:         "Salesforce objects to sync. Pick standard objects, or type a custom object's API name (it ends in __c). The External Client App's run-as user must have read access to each one. Requires at least one item.",
-				MarkdownDescription: "Salesforce objects to sync. Pick standard objects, or type a custom object's API name (it ends in __c). The External Client App's run-as user must have read access to each one. Requires at least one item.",
+				Description:         "Salesforce objects to sync; each becomes its own topic. Pick a standard object or type any queryable object's API name (e.g. Warehouse__c, AccountHistory); the integration user needs read access to each. Requires at least one item.",
+				MarkdownDescription: "Salesforce objects to sync; each becomes its own topic. Pick a standard object or type any queryable object's API name (e.g. Warehouse__c, AccountHistory); the integration user needs read access to each. Requires at least one item.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
@@ -126,8 +119,8 @@ func SourceSalesforceSchema() schema.Schema {
 			"client_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Consumer Key of the External Client App you created for Streamkap — Setup > External Client Apps Manager > your app > Settings > OAuth Settings > Consumer Key and Secret.",
-				MarkdownDescription: "Consumer Key of the External Client App you created for Streamkap — Setup > External Client Apps Manager > your app > Settings > OAuth Settings > Consumer Key and Secret.",
+				Description:         "The Consumer Key of the app you created for Streamkap: in Setup → External Client Apps Manager, open the app's Settings → OAuth Settings → Consumer Key and Secret.",
+				MarkdownDescription: "The Consumer Key of the app you created for Streamkap: in Setup → External Client Apps Manager, open the app's Settings → OAuth Settings → Consumer Key and Secret.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -136,17 +129,52 @@ func SourceSalesforceSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "Consumer Secret shown beside the Consumer Key on the same External Client App screen. The app must enable the client-credentials flow and name a run-as user. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Consumer Secret shown beside the Consumer Key on the same External Client App screen. The app must enable the client-credentials flow and name a run-as user.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "The Consumer Secret shown beside the Consumer Key. The app must have Enable Client Credentials Flow on, with a run-as user who can read the objects you sync. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The Consumer Secret shown beside the Consumer Key. The app must have Enable Client Credentials Flow on, with a run-as user who can read the objects you sync.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"backfill_start": schema.StringAttribute{
+			"username": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Earliest record modification time to sync, as an ISO-8601 date or datetime (e.g. 2026-01-01 or 2026-01-01T00:00:00Z; no timezone means UTC). Leave empty to sync all history. This bounds the FIRST sync of each object only — once an object has synced, the source resumes from where it left off and this value no longer applies.",
-				MarkdownDescription: "Earliest record modification time to sync, as an ISO-8601 date or datetime (e.g. 2026-01-01 or 2026-01-01T00:00:00Z; no timezone means UTC). Leave empty to sync all history. This bounds the FIRST sync of each object only — once an object has synced, the source resumes from where it left off and this value no longer applies.",
+				Description:         "The username of the Salesforce user Streamkap signs in as, e.g. integration@acme.com. The user must be pre-authorized for the app and able to read the objects you sync.",
+				MarkdownDescription: "The username of the Salesforce user Streamkap signs in as, e.g. integration@acme.com. The user must be pre-authorized for the app and able to read the objects you sync.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"private_key": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Sensitive:           true,
+				Description:         "The unencrypted RSA private key, in PEM format with its BEGIN and END lines, whose certificate you uploaded to the app for the JWT bearer flow. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The unencrypted RSA private key, in PEM format with its BEGIN and END lines, whose certificate you uploaded to the app for the JWT bearer flow.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"api_version": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Salesforce REST API version this source calls. Keep v67.0 unless you need v66.0. Defaults to \"v67.0\". Valid values: v66.0, v67.0.",
+				MarkdownDescription: "Salesforce REST API version this source calls. Keep v67.0 unless you need v66.0. Defaults to `v67.0`. Valid values: `v66.0`, `v67.0`.",
+				Default:             stringdefault.StaticString("v67.0"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("v66.0", "v67.0"),
+				},
+			},
+			"backfill_start": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.",
+				MarkdownDescription: "Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.",
+			},
+			"oauth_grant_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Sensitive:           true,
+				Description:         "Single-use grant from the Connect with Salesforce flow, which Terraform cannot complete itself. Finish Connect in the Streamkap UI, or with the CLI (`streamkap sources start-source-oauth-connect`, open the returned authorize_url, then `streamkap sources poll-source-oauth-grant`), and set the returned grant here to create the source or to reconnect it. The grant expires within minutes and is spent when the source is saved. Leave it unset on an imported source. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Single-use grant from the Connect with Salesforce flow, which Terraform cannot complete itself. Finish Connect in the Streamkap UI, or with the CLI (`streamkap sources start-source-oauth-connect`, open the returned authorize_url, then `streamkap sources poll-source-oauth-grant`), and set the returned grant here to create the source or to reconnect it. The grant expires within minutes and is spent when the source is saved. Leave it unset on an imported source.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -158,18 +186,23 @@ func SourceSalesforceSchema() schema.Schema {
 // SourceSalesforceFieldMappings maps Terraform attribute names to API field names.
 var SourceSalesforceFieldMappings = map[string]string{
 	"auth_mode":      "auth_mode",
-	"api_version":    "api_version",
 	"domain":         "domain",
 	"resources":      "resources",
 	"client_id":      "client_id",
 	"client_secret":  "client_secret",
+	"username":       "username",
+	"private_key":    "private_key",
+	"api_version":    "api_version",
 	"backfill_start": "backfill_start",
+	"oauth_grant_id": "oauth_grant_id",
 }
 
-var SourceSalesforceAPIRequirements = []APIRequirement{
-	{Field: "domain", ConditionField: "auth_mode", ConditionValue: "service", ConditionDefault: "service"},
-	{Field: "client_id", ConditionField: "auth_mode", ConditionValue: "service", ConditionDefault: "service"},
-	{Field: "client_secret", ConditionField: "auth_mode", ConditionValue: "service", ConditionDefault: "service"},
+var SourceSalesforceAPIConditions = []APICondition{
+	{Field: "domain", ConditionField: "auth_mode", ConditionValues: []string{"service", "jwt"}, ConditionDefault: "service", Required: true},
+	{Field: "client_id", ConditionField: "auth_mode", ConditionValues: []string{"service", "jwt"}, ConditionDefault: "service", Required: true},
+	{Field: "client_secret", ConditionField: "auth_mode", ConditionValues: []string{"service"}, ConditionDefault: "service", Required: true},
+	{Field: "username", ConditionField: "auth_mode", ConditionValues: []string{"jwt"}, ConditionDefault: "service", Required: true},
+	{Field: "private_key", ConditionField: "auth_mode", ConditionValues: []string{"jwt"}, ConditionDefault: "service", Required: true},
 }
 
-const SourceSalesforceAPIOAuth = true
+var SourceSalesforceAPIOAuth = APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "service", ClientFields: []string{}}

@@ -72,16 +72,16 @@ import (
 
 // ConnectorConfig represents the top-level structure of a configuration.latest.json file.
 type ConnectorConfig struct {
-	DisplayName           string           `json:"display_name"`
-	Description           string           `json:"description,omitempty"`
-	SchemaLevels          []string         `json:"schema_levels,omitempty"`
-	DebeziumConnectorName string           `json:"debezium_connector_name,omitempty"`
-	Serialisation         string           `json:"serialisation,omitempty"`
-	Metrics               []Metric         `json:"metrics,omitempty"`
-	Config                []ConfigEntry    `json:"config"`
-	APISource             bool             `json:"api_source,omitempty"`
-	APIRequirements       []APIRequirement `json:"-"`
-	APIOAuth              bool             `json:"-"`
+	DisplayName           string         `json:"display_name"`
+	Description           string         `json:"description,omitempty"`
+	SchemaLevels          []string       `json:"schema_levels,omitempty"`
+	DebeziumConnectorName string         `json:"debezium_connector_name,omitempty"`
+	Serialisation         string         `json:"serialisation,omitempty"`
+	Metrics               []Metric       `json:"metrics,omitempty"`
+	Config                []ConfigEntry  `json:"config"`
+	APISource             bool           `json:"api_source,omitempty"`
+	APIConditions         []APICondition `json:"-"`
+	APIOAuth              APIOAuth       `json:"-"`
 	// ComingSoon, when true, marks this connector as not yet generally available
 	// on the backend. Such connectors are visible in the UI but not actually
 	// deployable; we skip generating Terraform resources for them so users
@@ -89,11 +89,27 @@ type ConnectorConfig struct {
 	ComingSoon bool `json:"coming_soon,omitempty"`
 }
 
-type APIRequirement struct {
+// APICondition is an API-source field the form shows only while its condition
+// field holds one of ConditionValues (ConditionDefault when unset). Required
+// fields must be set whenever they are shown.
+type APICondition struct {
 	Field            string
 	ConditionField   string
-	ConditionValue   string
+	ConditionValues  []string
 	ConditionDefault string
+	Required         bool
+}
+
+// APIOAuth describes a vendor's Connect (OAuth) flow. An enabled flow with no
+// AuthModeField is the vendor's only way to sign in.
+type APIOAuth struct {
+	Enabled         bool
+	AuthModeField   string
+	AuthModeValue   string
+	AuthModeDefault string
+	// ClientFields name the config fields holding the customer's own OAuth
+	// client, which the connect flow's start request must carry.
+	ClientFields []string
 }
 
 // Metric represents a metrics definition (primarily for sources).

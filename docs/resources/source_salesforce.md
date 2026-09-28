@@ -77,20 +77,27 @@ output "salesforce_source_id" {
 ### Required
 
 - `name` (String) Name of the source
-- `resources` (List of String) Salesforce objects to sync. Pick standard objects, or type a custom object's API name (it ends in __c). The External Client App's run-as user must have read access to each one. Requires at least one item.
+- `resources` (List of String) Salesforce objects to sync; each becomes its own topic. Pick a standard object or type any queryable object's API name (e.g. Warehouse__c, AccountHistory); the integration user needs read access to each. Requires at least one item.
 
 ### Optional
 
-- `api_version` (String) Salesforce REST API version used by this source. Keep v67.0 unless compatibility requires v66.0. Defaults to `v67.0`. Valid values: `v66.0`, `v67.0`.
-- `auth_mode` (String) How Streamkap authenticates to Salesforce. Defaults to `service`. Valid values: `service`, `oauth`.
-- `backfill_start` (String) Earliest record modification time to sync, as an ISO-8601 date or datetime (e.g. 2026-01-01 or 2026-01-01T00:00:00Z; no timezone means UTC). Leave empty to sync all history. This bounds the FIRST sync of each object only — once an object has synced, the source resumes from where it left off and this value no longer applies.
-- `client_id` (String) Consumer Key of the External Client App you created for Streamkap — Setup > External Client Apps Manager > your app > Settings > OAuth Settings > Consumer Key and Secret.
-- `client_secret` (String, Sensitive) Consumer Secret shown beside the Consumer Key on the same External Client App screen. The app must enable the client-credentials flow and name a run-as user.
+- `api_version` (String) Salesforce REST API version this source calls. Keep v67.0 unless you need v66.0. Defaults to `v67.0`. Valid values: `v66.0`, `v67.0`.
+- `auth_mode` (String) How Streamkap signs in to Salesforce: with an External Client App you create in your org, by its client credentials or a JWT bearer certificate, or, where offered, Connect with Salesforce. Defaults to `service`. Valid values: `service`, `oauth`, `jwt`.
+- `backfill_start` (String) Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.
+- `client_id` (String) The Consumer Key of the app you created for Streamkap: in Setup → External Client Apps Manager, open the app's Settings → OAuth Settings → Consumer Key and Secret.
+- `client_secret` (String, Sensitive) The Consumer Secret shown beside the Consumer Key. The app must have Enable Client Credentials Flow on, with a run-as user who can read the objects you sync.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `domain` (String) Your org's My Domain URL, e.g. https://acme.my.salesforce.com — find it under Setup > Company Settings > My Domain. Sandbox, developer and scratch orgs use their own host.
+- `domain` (String) Your org's My Domain URL, e.g. https://acme.my.salesforce.com, shown in Setup under My Domain. A sandbox has its own, e.g. https://acme--dev.sandbox.my.salesforce.com.
+- `oauth_grant_id` (String, Sensitive) Single-use grant from the Connect with Salesforce flow, which Terraform cannot complete itself. Finish Connect in the Streamkap UI, or with the CLI (`streamkap sources start-source-oauth-connect`, open the returned authorize_url, then `streamkap sources poll-source-oauth-grant`), and set the returned grant here to create the source or to reconnect it. The grant expires within minutes and is spent when the source is saved. Leave it unset on an imported source.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
+- `private_key` (String, Sensitive) The unencrypted RSA private key, in PEM format with its BEGIN and END lines, whose certificate you uploaded to the app for the JWT bearer flow.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `username` (String) The username of the Salesforce user Streamkap signs in as, e.g. integration@acme.com. The user must be pre-authorized for the app and able to read the objects you sync.
 
 ### Read-Only
 

@@ -18,7 +18,7 @@
     "backfill_start": {
       "required": false,
       "optional": true,
-      "computed": true,
+      "computed": false,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
@@ -78,6 +78,20 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "oauth_grant_id": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": true,
+      "type": "basetypes.StringType"
+    },
+    "private_key": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": true,
+      "type": "basetypes.StringType"
+    },
     "resources": {
       "required": true,
       "optional": false,
@@ -91,6 +105,13 @@
       "computed": true,
       "sensitive": false,
       "type": "types.SetType[basetypes.StringType]"
+    },
+    "username": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
     }
   },
   "blocks": {

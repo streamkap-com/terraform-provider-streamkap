@@ -1,10 +1,10 @@
 {
   "version": "v3.0.0",
   "attributes": {
-    "account_id": {
-      "required": true,
-      "optional": false,
-      "computed": false,
+    "api_version": {
+      "required": false,
+      "optional": true,
+      "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
@@ -22,18 +22,18 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "certificate_id": {
+    "client_id": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "client_id": {
+    "client_secret": {
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false,
+      "sensitive": true,
       "type": "basetypes.StringType"
     },
     "connector": {
@@ -50,19 +50,33 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "consumer_key": {
+    "conversion_window_days": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false,
-      "type": "basetypes.StringType"
+      "type": "basetypes.Int64Type"
     },
-    "consumer_secret": {
+    "custom_queries": {
       "required": false,
       "optional": true,
-      "computed": true,
-      "sensitive": true,
+      "computed": false,
+      "sensitive": false,
       "type": "basetypes.StringType"
+    },
+    "customer_id": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "customer_ids": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ListType[basetypes.StringType]"
     },
     "id": {
       "required": false,
@@ -71,10 +85,24 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "include_client_accounts": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
     "kc_cluster_id": {
       "required": false,
       "optional": false,
       "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "login_customer_id": {
+      "required": false,
+      "optional": true,
+      "computed": false,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
@@ -85,14 +113,14 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "private_key": {
+    "oauth_grant_id": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": true,
       "type": "basetypes.StringType"
     },
-    "private_key_passphrase": {
+    "refresh_token": {
       "required": false,
       "optional": true,
       "computed": true,
@@ -106,26 +134,19 @@
       "sensitive": false,
       "type": "types.ListType[basetypes.StringType]"
     },
+    "service_account_key": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": true,
+      "type": "basetypes.StringType"
+    },
     "tags": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false,
       "type": "types.SetType[basetypes.StringType]"
-    },
-    "token_id": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "token_secret": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": true,
-      "type": "basetypes.StringType"
     }
   },
   "blocks": {

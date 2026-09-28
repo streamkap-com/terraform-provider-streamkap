@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
@@ -25,12 +24,14 @@ type SourceHubspotModel struct {
 	ConnectorStatus   types.String   `tfsdk:"connector_status"`
 	KcClusterId       types.String   `tfsdk:"kc_cluster_id"`
 	Tags              types.Set      `tfsdk:"tags"`
-	APIVersion        types.String   `tfsdk:"api_version"`
 	Resources         types.List     `tfsdk:"resources"`
-	Token             types.String   `tfsdk:"token"`
-	BackfillStart     types.String   `tfsdk:"backfill_start"`
+	AuthMode          types.String   `tfsdk:"auth_mode"`
 	SyncAllProperties types.Bool     `tfsdk:"sync_all_properties"`
+	Token             types.String   `tfsdk:"token"`
 	Properties        types.List     `tfsdk:"properties"`
+	APIVersion        types.String   `tfsdk:"api_version"`
+	BackfillStart     types.String   `tfsdk:"backfill_start"`
+	OauthGrantID      types.String   `tfsdk:"oauth_grant_id"`
 	Timeouts          timeouts.Value `tfsdk:"timeouts"`
 }
 
@@ -86,57 +87,73 @@ func SourceHubspotSchema() schema.Schema {
 					setplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"api_version": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "HubSpot API version used by this source. Use 2026-03 for new sources; v3 remains available for compatibility. Defaults to \"2026-03\". Valid values: v3, 2026-03.",
-				MarkdownDescription: "HubSpot API version used by this source. Use 2026-03 for new sources; v3 remains available for compatibility. Defaults to `2026-03`. Valid values: `v3`, `2026-03`.",
-				Default:             stringdefault.StaticString("2026-03"),
-				Validators: []validator.String{
-					stringvalidator.OneOf("v3", "2026-03"),
-				},
-			},
 			"resources": schema.ListAttribute{
 				Required:            true,
 				ElementType:         types.StringType,
-				Description:         "HubSpot objects to sync. Requires at least one item.",
-				MarkdownDescription: "HubSpot objects to sync. Requires at least one item.",
+				Description:         "HubSpot objects to sync; each becomes its own topic. Your custom objects are listed too, and the token needs the read scope of each object you select. Requires at least one item.",
+				MarkdownDescription: "HubSpot objects to sync; each becomes its own topic. Your custom objects are listed too, and the token needs the read scope of each object you select. Requires at least one item.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
 			},
-			"token": schema.StringAttribute{
-				Required:            true,
-				Sensitive:           true,
-				Description:         "HubSpot access token — a service-account token, or a legacy Private App token, with CRM read scopes. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "HubSpot access token — a service-account token, or a legacy Private App token, with CRM read scopes.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
-			},
-			"backfill_start": schema.StringAttribute{
+			"auth_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Earliest record modification time to sync, as an ISO-8601 date or datetime (e.g. 2026-01-01 or 2026-01-01T00:00:00Z; no timezone means UTC). Leave empty to sync all history. This bounds the FIRST sync of each object only — once an object has synced, the source resumes from where it left off and this value no longer applies.",
-				MarkdownDescription: "Earliest record modification time to sync, as an ISO-8601 date or datetime (e.g. 2026-01-01 or 2026-01-01T00:00:00Z; no timezone means UTC). Leave empty to sync all history. This bounds the FIRST sync of each object only — once an object has synced, the source resumes from where it left off and this value no longer applies.",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+				Description:         "How Streamkap signs in to HubSpot: paste an access token, or click Connect with HubSpot to install Streamkap's HubSpot app. Defaults to \"token\". Valid values: token, oauth.",
+				MarkdownDescription: "How Streamkap signs in to HubSpot: paste an access token, or click Connect with HubSpot to install Streamkap's HubSpot app. Defaults to `token`. Valid values: `token`, `oauth`.",
+				Default:             stringdefault.StaticString("token"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("token", "oauth"),
 				},
 			},
 			"sync_all_properties": schema.BoolAttribute{
 				Optional:            true,
+				Description:         "On by default: every property of each object is synced, custom properties included, and new ones as they are added. Turn it off to sync only the properties you select below, e.g. to keep an existing topic's record width.",
+				MarkdownDescription: "On by default: every property of each object is synced, custom properties included, and new ones as they are added. Turn it off to sync only the properties you select below, e.g. to keep an existing topic's record width.",
+			},
+			"token": schema.StringAttribute{
+				Optional:            true,
 				Computed:            true,
-				Description:         "On (the default) syncs every property an object exposes — including custom properties, and new ones as they are added. Turn it off to sync only the properties you select below: the escape hatch for an existing topic whose consumers depend on its current record width.",
-				MarkdownDescription: "On (the default) syncs every property an object exposes — including custom properties, and new ones as they are added. Turn it off to sync only the properties you select below: the escape hatch for an existing topic whose consumers depend on its current record width.",
-				PlanModifiers: []planmodifier.Bool{
-					boolplanmodifier.UseStateForUnknown(),
+				Sensitive:           true,
+				Description:         "A service key from Development → Keys → Service keys in HubSpot, or the token of an existing legacy Private App (Development → Legacy apps → your app → Auth). Give it the read scope of each object you sync, e.g. crm.objects.contacts.read. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "A service key from Development → Keys → Service keys in HubSpot, or the token of an existing legacy Private App (Development → Legacy apps → your app → Auth). Give it the read scope of each object you sync, e.g. crm.objects.contacts.read.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"properties": schema.ListAttribute{
 				Optional:            true,
 				Computed:            true,
 				ElementType:         types.StringType,
-				Description:         "The exact properties to sync, used only when 'Sync all properties' is off. These are the portal's internal property names, not their labels — the source's available-properties endpoint lists both. A name only has to exist on one of the selected objects. Each object's cursor property and hs_object_id are always synced whatever you pick here.",
-				MarkdownDescription: "The exact properties to sync, used only when 'Sync all properties' is off. These are the portal's internal property names, not their labels — the source's available-properties endpoint lists both. A name only has to exist on one of the selected objects. Each object's cursor property and hs_object_id are always synced whatever you pick here.",
+				Description:         "The properties to sync while Sync all properties is off, by their internal property names, not their labels. Each object's hs_object_id and last-modified date are always synced.",
+				MarkdownDescription: "The properties to sync while Sync all properties is off, by their internal property names, not their labels. Each object's hs_object_id and last-modified date are always synced.",
 				PlanModifiers: []planmodifier.List{
 					listplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"api_version": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "HubSpot API version this source calls. Keep 2026-03; v3 (legacy) is there only for sources created on it. Defaults to \"2026-03\". Valid values: v3, 2026-03.",
+				MarkdownDescription: "HubSpot API version this source calls. Keep 2026-03; v3 (legacy) is there only for sources created on it. Defaults to `2026-03`. Valid values: `v3`, `2026-03`.",
+				Default:             stringdefault.StaticString("2026-03"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("v3", "2026-03"),
+				},
+			},
+			"backfill_start": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.",
+				MarkdownDescription: "Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.",
+			},
+			"oauth_grant_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Sensitive:           true,
+				Description:         "Single-use grant from the Connect with HubSpot flow, which Terraform cannot complete itself. Finish Connect in the Streamkap UI, or with the CLI (`streamkap sources start-source-oauth-connect`, open the returned authorize_url, then `streamkap sources poll-source-oauth-grant`), and set the returned grant here to create the source or to reconnect it. The grant expires within minutes and is spent when the source is saved. Leave it unset on an imported source. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Single-use grant from the Connect with HubSpot flow, which Terraform cannot complete itself. Finish Connect in the Streamkap UI, or with the CLI (`streamkap sources start-source-oauth-connect`, open the returned authorize_url, then `streamkap sources poll-source-oauth-grant`), and set the returned grant here to create the source or to reconnect it. The grant expires within minutes and is spent when the source is saved. Leave it unset on an imported source.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 		},
@@ -145,14 +162,19 @@ func SourceHubspotSchema() schema.Schema {
 
 // SourceHubspotFieldMappings maps Terraform attribute names to API field names.
 var SourceHubspotFieldMappings = map[string]string{
-	"api_version":         "api_version",
 	"resources":           "resources",
-	"token":               "token",
-	"backfill_start":      "backfill_start",
+	"auth_mode":           "auth_mode",
 	"sync_all_properties": "sync_all_properties",
+	"token":               "token",
 	"properties":          "properties",
+	"api_version":         "api_version",
+	"backfill_start":      "backfill_start",
+	"oauth_grant_id":      "oauth_grant_id",
 }
 
-var SourceHubspotAPIRequirements = []APIRequirement{}
+var SourceHubspotAPIConditions = []APICondition{
+	{Field: "token", ConditionField: "auth_mode", ConditionValues: []string{"token"}, ConditionDefault: "token", Required: true},
+	{Field: "properties", ConditionField: "sync_all_properties", ConditionValues: []string{"false"}, ConditionDefault: "", Required: false},
+}
 
-const SourceHubspotAPIOAuth = false
+var SourceHubspotAPIOAuth = APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "token", ClientFields: []string{}}

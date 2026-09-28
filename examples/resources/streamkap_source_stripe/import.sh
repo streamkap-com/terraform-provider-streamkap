@@ -1,0 +1,1 @@
+terraform import streamkap_source_stripe.example 00000000000000000000000000

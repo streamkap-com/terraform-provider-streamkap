@@ -507,6 +507,11 @@ func TestSchemaBackwardsCompatibility_APISources(t *testing.T) {
 		{name: "source_hubspot", snapshotFile: "source_hubspot_v1.json", resourceFactory: source.NewHubSpotResource},
 		{name: "source_salesforce", snapshotFile: "source_salesforce_v1.json", resourceFactory: source.NewSalesforceResource},
 		{name: "source_netsuite", snapshotFile: "source_netsuite_v1.json", resourceFactory: source.NewNetSuiteResource},
+		{name: "source_stripe", snapshotFile: "source_stripe_v1.json", resourceFactory: source.NewStripeResource},
+		{name: "source_zendesk", snapshotFile: "source_zendesk_v1.json", resourceFactory: source.NewZendeskResource},
+		{name: "source_google_analytics", snapshotFile: "source_google_analytics_v1.json", resourceFactory: source.NewGoogleAnalyticsResource},
+		{name: "source_facebook_ads", snapshotFile: "source_facebook_ads_v1.json", resourceFactory: source.NewFacebookAdsResource},
+		{name: "source_google_ads", snapshotFile: "source_google_ads_v1.json", resourceFactory: source.NewGoogleAdsResource},
 	} {
 		t.Run(tc.name, func(t *testing.T) { runSchemaCompatTest(t, tc) })
 	}

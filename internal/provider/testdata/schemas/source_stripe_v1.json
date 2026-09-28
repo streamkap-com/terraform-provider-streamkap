@@ -1,17 +1,10 @@
 {
   "version": "v3.0.0",
   "attributes": {
-    "account_id": {
-      "required": true,
-      "optional": false,
-      "computed": false,
-      "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "auth_mode": {
+    "api_version": {
       "required": false,
       "optional": true,
-      "computed": true,
+      "computed": false,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
@@ -19,20 +12,6 @@
       "required": false,
       "optional": true,
       "computed": false,
-      "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "certificate_id": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "client_id": {
-      "required": false,
-      "optional": true,
-      "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
@@ -48,20 +27,6 @@
       "optional": false,
       "computed": true,
       "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "consumer_key": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "consumer_secret": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": true,
       "type": "basetypes.StringType"
     },
     "id": {
@@ -85,20 +50,6 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "private_key": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": true,
-      "type": "basetypes.StringType"
-    },
-    "private_key_passphrase": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": true,
-      "type": "basetypes.StringType"
-    },
     "resources": {
       "required": true,
       "optional": false,
@@ -113,17 +64,10 @@
       "sensitive": false,
       "type": "types.SetType[basetypes.StringType]"
     },
-    "token_id": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "token_secret": {
-      "required": false,
-      "optional": true,
-      "computed": true,
+    "token": {
+      "required": true,
+      "optional": false,
+      "computed": false,
       "sensitive": true,
       "type": "basetypes.StringType"
     }

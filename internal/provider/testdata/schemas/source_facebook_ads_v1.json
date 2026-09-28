@@ -1,6 +1,13 @@
 {
   "version": "v3.0.0",
   "attributes": {
+    "access_token": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": true,
+      "type": "basetypes.StringType"
+    },
     "account_id": {
       "required": true,
       "optional": false,
@@ -8,31 +15,38 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "auth_mode": {
+    "account_ids": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ListType[basetypes.StringType]"
+    },
+    "api_version": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "backfill_start": {
+    "app_id": {
       "required": false,
       "optional": true,
       "computed": false,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "certificate_id": {
+    "app_secret": {
       "required": false,
       "optional": true,
-      "computed": true,
-      "sensitive": false,
+      "computed": false,
+      "sensitive": true,
       "type": "basetypes.StringType"
     },
-    "client_id": {
+    "backfill_start": {
       "required": false,
       "optional": true,
-      "computed": true,
+      "computed": false,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
@@ -50,19 +64,19 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "consumer_key": {
+    "custom_insights": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "fetch_thumbnail_images": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "consumer_secret": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": true,
-      "type": "basetypes.StringType"
+      "type": "basetypes.BoolType"
     },
     "id": {
       "required": false,
@@ -70,6 +84,13 @@
       "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
+    },
+    "include_deleted": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
     },
     "kc_cluster_id": {
       "required": false,
@@ -85,20 +106,6 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
-    "private_key": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": true,
-      "type": "basetypes.StringType"
-    },
-    "private_key_passphrase": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": true,
-      "type": "basetypes.StringType"
-    },
     "resources": {
       "required": true,
       "optional": false,
@@ -112,20 +119,6 @@
       "computed": true,
       "sensitive": false,
       "type": "types.SetType[basetypes.StringType]"
-    },
-    "token_id": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": false,
-      "type": "basetypes.StringType"
-    },
-    "token_secret": {
-      "required": false,
-      "optional": true,
-      "computed": true,
-      "sensitive": true,
-      "type": "basetypes.StringType"
     }
   },
   "blocks": {

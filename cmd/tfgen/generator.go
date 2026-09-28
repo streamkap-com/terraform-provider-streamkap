@@ -290,8 +290,8 @@ type TemplateData struct {
 	Article           string // "a" or "an" depending on DisplayName
 	DocURL            string // connector-specific documentation URL
 	APISource         bool
-	APIRequirements   []APIRequirement
-	APIOAuth          bool
+	APIConditions     []APICondition
+	APIOAuth          APIOAuth
 	ModelName         string // e.g., "SourcePostgresqlModel"
 	SchemaFuncName    string // e.g., "SourcePostgresqlSchema"
 	FieldMappingsName string // e.g., "SourcePostgresqlFieldMappings"
@@ -423,7 +423,7 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 		Article:           articleFor(config.DisplayName),
 		DocURL:            docURL,
 		APISource:         config.APISource,
-		APIRequirements:   config.APIRequirements,
+		APIConditions:     config.APIConditions,
 		APIOAuth:          config.APIOAuth,
 		ModelName:         entityTypeCap + connectorCodeCap + "Model",
 		SchemaFuncName:    entityTypeCap + connectorCodeCap + "Schema",
@@ -1256,6 +1256,11 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 				}
 			}
 		}
+	} else if g.apiSource {
+		// An API-source update replaces the whole config and the backend
+		// backfills nothing, so null means unset: a user can clear the field
+		// by removing it.
+		field.Optional = true
 	} else {
 		// required: false, no static default, no placeholder.
 		// These fields must still be Computed, because the Streamkap backend
@@ -1324,7 +1329,8 @@ func (g *Generator) entryToFieldData(entry *ConfigEntry) FieldData {
 
 	// Handle slider validators (int64 bounds). Min and Max are independently
 	// optional upstream, so a one-sided slider still gets the bound it declares.
-	if entry.Value.Control == "slider" {
+	// API-source forms carry the backend's minimum/maximum on plain number inputs.
+	if entry.Value.Control == "slider" || (g.apiSource && entry.TerraformType() == TerraformTypeInt64) {
 		if v := g.rangeValidator(entry); v != "" {
 			field.HasValidators = true
 			field.Validators = v
@@ -1681,12 +1687,12 @@ var {{ .FieldMappingsName }} = map[string]string{
 }
 {{- if .APISource }}
 
-var {{ .EntityTypeCap }}{{ .ConnectorCodeCap }}APIRequirements = []APIRequirement{
-{{- range .APIRequirements }}
-	{Field: {{ printf "%q" .Field }}, ConditionField: {{ printf "%q" .ConditionField }}, ConditionValue: {{ printf "%q" .ConditionValue }}, ConditionDefault: {{ printf "%q" .ConditionDefault }}},
+var {{ .EntityTypeCap }}{{ .ConnectorCodeCap }}APIConditions = []APICondition{
+{{- range .APIConditions }}
+	{Field: {{ printf "%q" .Field }}, ConditionField: {{ printf "%q" .ConditionField }}, ConditionValues: []string{ {{- range $i, $v := .ConditionValues }}{{ if $i }}, {{ end }}{{ printf "%q" $v }}{{ end -}} }, ConditionDefault: {{ printf "%q" .ConditionDefault }}, Required: {{ .Required }}},
 {{- end }}
 }
 
-const {{ .EntityTypeCap }}{{ .ConnectorCodeCap }}APIOAuth = {{ .APIOAuth }}
+var {{ .EntityTypeCap }}{{ .ConnectorCodeCap }}APIOAuth = APIOAuth{Enabled: {{ .APIOAuth.Enabled }}, AuthModeField: {{ printf "%q" .APIOAuth.AuthModeField }}, AuthModeValue: {{ printf "%q" .APIOAuth.AuthModeValue }}, AuthModeDefault: {{ printf "%q" .APIOAuth.AuthModeDefault }}, ClientFields: []string{ {{- range $i, $v := .APIOAuth.ClientFields }}{{ if $i }}, {{ end }}{{ printf "%q" $v }}{{ end -}} }}
 {{- end }}
 `

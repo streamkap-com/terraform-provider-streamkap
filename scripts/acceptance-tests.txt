@@ -33,6 +33,11 @@ TestAccSourceInformixResource
 TestAccSourceHubSpotResource
 TestAccSourceSalesforceResource
 TestAccSourceNetSuiteResource
+TestAccSourceStripeResource
+TestAccSourceGoogleAnalyticsResource
+TestAccSourceFacebookAdsResource
+TestAccSourceGoogleAdsResource
+# Zendesk has no acceptance test: it signs in only through a browser OAuth grant.
 
 # --- Destinations ---
 TestAccDestinationAzblobResource
