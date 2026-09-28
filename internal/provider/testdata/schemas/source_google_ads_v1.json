@@ -9,9 +9,9 @@
       "type": "basetypes.StringType"
     },
     "auth_mode": {
-      "required": false,
-      "optional": true,
-      "computed": true,
+      "required": true,
+      "optional": false,
+      "computed": false,
       "sensitive": false,
       "type": "basetypes.StringType"
     },

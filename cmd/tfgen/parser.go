@@ -72,16 +72,17 @@ import (
 
 // ConnectorConfig represents the top-level structure of a configuration.latest.json file.
 type ConnectorConfig struct {
-	DisplayName           string         `json:"display_name"`
-	Description           string         `json:"description,omitempty"`
-	SchemaLevels          []string       `json:"schema_levels,omitempty"`
-	DebeziumConnectorName string         `json:"debezium_connector_name,omitempty"`
-	Serialisation         string         `json:"serialisation,omitempty"`
-	Metrics               []Metric       `json:"metrics,omitempty"`
-	Config                []ConfigEntry  `json:"config"`
-	APISource             bool           `json:"api_source,omitempty"`
-	APIConditions         []APICondition `json:"-"`
-	APIOAuth              APIOAuth       `json:"-"`
+	DisplayName           string          `json:"display_name"`
+	Description           string          `json:"description,omitempty"`
+	SchemaLevels          []string        `json:"schema_levels,omitempty"`
+	DebeziumConnectorName string          `json:"debezium_connector_name,omitempty"`
+	Serialisation         string          `json:"serialisation,omitempty"`
+	Metrics               []Metric        `json:"metrics,omitempty"`
+	Config                []ConfigEntry   `json:"config"`
+	APISource             bool            `json:"api_source,omitempty"`
+	APIConditions         []APICondition  `json:"-"`
+	APIDependencies       []APIDependency `json:"-"`
+	APIOAuth              APIOAuth        `json:"-"`
 	// ComingSoon, when true, marks this connector as not yet generally available
 	// on the backend. Such connectors are visible in the UI but not actually
 	// deployable; we skip generating Terraform resources for them so users
@@ -98,6 +99,13 @@ type APICondition struct {
 	ConditionValues  []string
 	ConditionDefault string
 	Required         bool
+}
+
+// APIDependency is a field that, when set, needs every field in Requires set
+// too (JSON Schema dependentRequired).
+type APIDependency struct {
+	Field    string
+	Requires []string
 }
 
 // APIOAuth describes a vendor's Connect (OAuth) flow. An enabled flow with no

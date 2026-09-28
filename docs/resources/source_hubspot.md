@@ -75,7 +75,7 @@ output "hubspot_source_id" {
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `properties` (List of String) The properties to sync while Sync all properties is off, by their internal property names, not their labels. Each object's hs_object_id and last-modified date are always synced.
-- `sync_all_properties` (Boolean) On by default: every property of each object is synced, custom properties included, and new ones as they are added. Turn it off to sync only the properties you select below, e.g. to keep an existing topic's record width.
+- `sync_all_properties` (Boolean) On by default: every property of each object is synced, custom properties included, and new ones as they are added. Turn it off to sync only the properties you select below, e.g. to keep an existing topic's record width. Defaults to `true`.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `token` (String, Sensitive) A service key from Development → Keys → Service keys in HubSpot, or the token of an existing legacy Private App (Development → Legacy apps → your app → Auth). Give it the read scope of each object you sync, e.g. crm.objects.contacts.read.

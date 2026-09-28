@@ -109,8 +109,8 @@ func SourceGoogleAnalyticsSchema() schema.Schema {
 			},
 			"custom_reports": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Optional reports you define, as a JSON list of {name, dimensions, metrics} with GA4 API names, e.g. [{\"name\": \"landing_pages\", \"dimensions\": [\"landingPage\", \"deviceCategory\"], \"metrics\": [\"sessions\", \"engagedSessions\", \"keyEvents\"]}]. Select each as custom_<name> in Reports; a report cannot change once it has synced, so add a changed one under a new name.",
-				MarkdownDescription: "Optional reports you define, as a JSON list of {name, dimensions, metrics} with GA4 API names, e.g. [{\"name\": \"landing_pages\", \"dimensions\": [\"landingPage\", \"deviceCategory\"], \"metrics\": [\"sessions\", \"engagedSessions\", \"keyEvents\"]}]. Select each as custom_<name> in Reports; a report cannot change once it has synced, so add a changed one under a new name.",
+				Description:         "Optional reports you define, as a JSON list of {name, dimensions, metrics} with GA4 API names, e.g. [{\"name\": \"landing_pages\", \"dimensions\": [\"landingPage\", \"deviceCategory\"], \"metrics\": [\"sessions\", \"engagedSessions\", \"keyEvents\"]}]. Select each as custom_<name> in Reports, and define every custom_<name> you select; a report cannot change once it has synced, so add a changed one under a new name.",
+				MarkdownDescription: "Optional reports you define, as a JSON list of {name, dimensions, metrics} with GA4 API names, e.g. [{\"name\": \"landing_pages\", \"dimensions\": [\"landingPage\", \"deviceCategory\"], \"metrics\": [\"sessions\", \"engagedSessions\", \"keyEvents\"]}]. Select each as custom_<name> in Reports, and define every custom_<name> you select; a report cannot change once it has synced, so add a changed one under a new name.",
 			},
 			"property_ids": schema.ListAttribute{
 				Optional:            true,
@@ -157,5 +157,7 @@ var SourceGoogleAnalyticsFieldMappings = map[string]string{
 }
 
 var SourceGoogleAnalyticsAPIConditions = []APICondition{}
+
+var SourceGoogleAnalyticsAPIDependencies = []APIDependency{}
 
 var SourceGoogleAnalyticsAPIOAuth = APIOAuth{Enabled: false, AuthModeField: "", AuthModeValue: "", AuthModeDefault: "", ClientFields: []string{}}

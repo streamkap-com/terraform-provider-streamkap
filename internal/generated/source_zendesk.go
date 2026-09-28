@@ -123,4 +123,6 @@ var SourceZendeskFieldMappings = map[string]string{
 
 var SourceZendeskAPIConditions = []APICondition{}
 
+var SourceZendeskAPIDependencies = []APIDependency{}
+
 var SourceZendeskAPIOAuth = APIOAuth{Enabled: true, AuthModeField: "", AuthModeValue: "", AuthModeDefault: "", ClientFields: []string{}}

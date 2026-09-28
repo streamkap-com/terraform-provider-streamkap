@@ -226,4 +226,6 @@ var SourceNetsuiteAPIConditions = []APICondition{
 	{Field: "token_secret", ConditionField: "auth_mode", ConditionValues: []string{"tba"}, ConditionDefault: "certificate", Required: true},
 }
 
+var SourceNetsuiteAPIDependencies = []APIDependency{}
+
 var SourceNetsuiteAPIOAuth = APIOAuth{Enabled: false, AuthModeField: "", AuthModeValue: "", AuthModeDefault: "", ClientFields: []string{}}

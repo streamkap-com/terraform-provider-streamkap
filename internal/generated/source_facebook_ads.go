@@ -112,8 +112,8 @@ func SourceFacebookAdsSchema() schema.Schema {
 			},
 			"custom_insights": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Optional insights reports you define, as a JSON list of {name, level, …} with Marketing API names, e.g. [{\"name\": \"campaign_by_country\", \"level\": \"campaign\", \"breakdowns\": [\"country\"], \"fields\": [\"campaign_id\", \"spend\", \"impressions\", \"clicks\", \"actions\"]}]. Select each as custom_<name> in Resources; a report cannot change once it has synced, so add a changed one under a new name.",
-				MarkdownDescription: "Optional insights reports you define, as a JSON list of {name, level, …} with Marketing API names, e.g. [{\"name\": \"campaign_by_country\", \"level\": \"campaign\", \"breakdowns\": [\"country\"], \"fields\": [\"campaign_id\", \"spend\", \"impressions\", \"clicks\", \"actions\"]}]. Select each as custom_<name> in Resources; a report cannot change once it has synced, so add a changed one under a new name.",
+				Description:         "Optional insights reports you define, as a JSON list of {name, level, …} with Marketing API names, e.g. [{\"name\": \"campaign_by_country\", \"level\": \"campaign\", \"breakdowns\": [\"country\"], \"fields\": [\"campaign_id\", \"spend\", \"impressions\", \"clicks\", \"actions\"]}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; a report cannot change once it has synced, so add a changed one under a new name.",
+				MarkdownDescription: "Optional insights reports you define, as a JSON list of {name, level, …} with Marketing API names, e.g. [{\"name\": \"campaign_by_country\", \"level\": \"campaign\", \"breakdowns\": [\"country\"], \"fields\": [\"campaign_id\", \"spend\", \"impressions\", \"clicks\", \"actions\"]}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; a report cannot change once it has synced, so add a changed one under a new name.",
 			},
 			"app_secret": schema.StringAttribute{
 				Optional:            true,
@@ -181,5 +181,10 @@ var SourceFacebookAdsFieldMappings = map[string]string{
 }
 
 var SourceFacebookAdsAPIConditions = []APICondition{}
+
+var SourceFacebookAdsAPIDependencies = []APIDependency{
+	{Field: "app_id", Requires: []string{"app_secret"}},
+	{Field: "app_secret", Requires: []string{"app_id"}},
+}
 
 var SourceFacebookAdsAPIOAuth = APIOAuth{Enabled: false, AuthModeField: "", AuthModeValue: "", AuthModeDefault: "", ClientFields: []string{}}

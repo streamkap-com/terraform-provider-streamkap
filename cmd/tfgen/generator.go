@@ -291,6 +291,7 @@ type TemplateData struct {
 	DocURL            string // connector-specific documentation URL
 	APISource         bool
 	APIConditions     []APICondition
+	APIDependencies   []APIDependency
 	APIOAuth          APIOAuth
 	ModelName         string // e.g., "SourcePostgresqlModel"
 	SchemaFuncName    string // e.g., "SourcePostgresqlSchema"
@@ -424,6 +425,7 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 		DocURL:            docURL,
 		APISource:         config.APISource,
 		APIConditions:     config.APIConditions,
+		APIDependencies:   config.APIDependencies,
 		APIOAuth:          config.APIOAuth,
 		ModelName:         entityTypeCap + connectorCodeCap + "Model",
 		SchemaFuncName:    entityTypeCap + connectorCodeCap + "Schema",
@@ -1690,6 +1692,12 @@ var {{ .FieldMappingsName }} = map[string]string{
 var {{ .EntityTypeCap }}{{ .ConnectorCodeCap }}APIConditions = []APICondition{
 {{- range .APIConditions }}
 	{Field: {{ printf "%q" .Field }}, ConditionField: {{ printf "%q" .ConditionField }}, ConditionValues: []string{ {{- range $i, $v := .ConditionValues }}{{ if $i }}, {{ end }}{{ printf "%q" $v }}{{ end -}} }, ConditionDefault: {{ printf "%q" .ConditionDefault }}, Required: {{ .Required }}},
+{{- end }}
+}
+
+var {{ .EntityTypeCap }}{{ .ConnectorCodeCap }}APIDependencies = []APIDependency{
+{{- range .APIDependencies }}
+	{Field: {{ printf "%q" .Field }}, Requires: []string{ {{- range $i, $v := .Requires }}{{ if $i }}, {{ end }}{{ printf "%q" $v }}{{ end -}} }},
 {{- end }}
 }
 

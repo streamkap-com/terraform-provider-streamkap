@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"slices"
 	"strings"
@@ -23,8 +24,9 @@ type apiFormProperty struct {
 type apiFormContract struct {
 	OAuth      json.RawMessage `json:"oauth"`
 	JSONSchema struct {
-		Required   []string                   `json:"required"`
-		Properties map[string]apiFormProperty `json:"properties"`
+		Required          []string                   `json:"required"`
+		Properties        map[string]apiFormProperty `json:"properties"`
+		DependentRequired map[string][]string        `json:"dependentRequired"`
 	} `json:"json_schema"`
 	UISchema apiFormControl `json:"ui_schema"`
 }
@@ -194,6 +196,24 @@ func applyAPIFormContract(config *ConnectorConfig, path string) error {
 	}
 	if config.APIOAuth, err = form.oauthMode(); err != nil {
 		return fmt.Errorf("API source form %s %w", path, err)
+	}
+	if oauth := config.APIOAuth; oauth.AuthModeField != "" && oauth.AuthModeDefault == oauth.AuthModeValue {
+		// The artifacts describe a deployment that provisions Connect; one that
+		// does not serves another default. Terraform must not depend on which.
+		property := form.JSONSchema.Properties[oauth.AuthModeField]
+		property.Default = nil
+		form.JSONSchema.Properties[oauth.AuthModeField] = property
+		required[oauth.AuthModeField] = true
+		config.APIOAuth.AuthModeDefault = ""
+	}
+	for _, field := range slices.Sorted(maps.Keys(form.JSONSchema.DependentRequired)) {
+		requires := form.JSONSchema.DependentRequired[field]
+		for _, name := range append([]string{field}, requires...) {
+			if _, ok := form.JSONSchema.Properties[name]; !ok {
+				return fmt.Errorf("API source form %s: dependentRequired names unknown property %q", path, name)
+			}
+		}
+		config.APIDependencies = append(config.APIDependencies, APIDependency{Field: field, Requires: requires})
 	}
 	rules := form.UISchema.rules()
 	for i := range config.Config {

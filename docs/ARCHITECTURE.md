@@ -61,10 +61,15 @@ v2 attribute aliases.
 
 API sources use the same source CRUD base but their schema and conditional requirements also come from the backend form contract. `internal/resource/source/api_sources.go` plugs four optional `BaseConnectorResource` hooks into that base, because the API-source backend differs from the CDC path:
 
-- `ConnectorConfigValidator` checks each auth mode's required fields at plan time, and requires `oauth_grant_id` to create a source in an OAuth mode.
-- `ConnectorConfigPlanAdjuster` plans a removed form-gated field null. The field is Computed so that values the OAuth grant fills in survive, which would otherwise keep a removed value forever. In OAuth mode the form does not say which hidden fields the grant fills, so they are kept while the grant is unchanged, and planned unknown when a new grant is sent: the update sends null, the grant refills its own fields, and the previous mode's credentials are cleared.
+- `ConnectorConfigValidator` checks at plan time what the backend would refuse:
+  - each auth mode's required fields, and `dependentRequired` pairs;
+  - a secret typed for another pasted auth mode;
+  - `oauth_grant_id` on a create in an OAuth mode.
+- `ConnectorConfigPlanAdjuster` plans a removed form-gated field null. The field is Computed so that values the OAuth grant fills in survive; without the null, state would keep a removed value, because Read refills a secret the API echoes as null. In OAuth mode the form does not say which hidden fields the grant fills. They are kept while the grant is unchanged, and planned unknown when a new grant is sent, so state takes what the backend then holds.
 - `ConnectorConfigRequestFilter` omits unset fields on create, and on update omits every secret the plan did not change: the backend keeps an absent secret, and resending the prior value would overwrite a rotated token or replay a spent grant. An explicit null clears a secret.
-- `ConnectorConfigKeepsConfiguredForm` keeps the configured spelling of a value the backend normalizes. The normalized echo is recorded in private state at apply time; Read keeps the configured value while the backend still returns that echo, and treats any other value as drift. A separate topic-destination resource owns one topic link; PUT/GET/DELETE target that topic and destination, leaving other topics in the managed binding intact.
+- `ConnectorConfigKeepsConfiguredForm` keeps the configured spelling of a value the backend normalizes. The normalized echo is recorded in private state at apply time; Read keeps the configured value while the backend still returns that echo, and treats any other value as drift.
+
+A separate topic-destination resource owns one topic link; PUT/GET/DELETE target that topic and destination, leaving other topics in the managed binding intact.
 
 Use `STREAMKAP_BACKEND_PATH=<backend-main-checkout> make generate` to generate
 schemas before registry documentation. See [Code Generator](CODE_GENERATOR.md)

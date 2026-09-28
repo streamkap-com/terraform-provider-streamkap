@@ -119,4 +119,6 @@ var SourceStripeFieldMappings = map[string]string{
 
 var SourceStripeAPIConditions = []APICondition{}
 
+var SourceStripeAPIDependencies = []APIDependency{}
+
 var SourceStripeAPIOAuth = APIOAuth{Enabled: false, AuthModeField: "", AuthModeValue: "", AuthModeDefault: "", ClientFields: []string{}}

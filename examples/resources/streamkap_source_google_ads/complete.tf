@@ -1,5 +1,5 @@
-# auth_mode defaults to "oauth", which needs an oauth_grant_id from Connect
-# with Google (Streamkap UI, or the CLI's start-source-oauth-connect and
+# auth_mode "oauth" needs an oauth_grant_id from Connect with Google
+# (Streamkap UI, or the CLI's start-source-oauth-connect and
 # poll-source-oauth-grant) on top of your OAuth client. The refresh_token mode
 # below takes a refresh token you minted with that client instead.
 variable "google_ads_client_secret" {

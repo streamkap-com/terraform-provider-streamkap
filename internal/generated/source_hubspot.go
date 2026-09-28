@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
@@ -108,8 +109,10 @@ func SourceHubspotSchema() schema.Schema {
 			},
 			"sync_all_properties": schema.BoolAttribute{
 				Optional:            true,
-				Description:         "On by default: every property of each object is synced, custom properties included, and new ones as they are added. Turn it off to sync only the properties you select below, e.g. to keep an existing topic's record width.",
-				MarkdownDescription: "On by default: every property of each object is synced, custom properties included, and new ones as they are added. Turn it off to sync only the properties you select below, e.g. to keep an existing topic's record width.",
+				Computed:            true,
+				Description:         "On by default: every property of each object is synced, custom properties included, and new ones as they are added. Turn it off to sync only the properties you select below, e.g. to keep an existing topic's record width. Defaults to true.",
+				MarkdownDescription: "On by default: every property of each object is synced, custom properties included, and new ones as they are added. Turn it off to sync only the properties you select below, e.g. to keep an existing topic's record width. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
 			},
 			"token": schema.StringAttribute{
 				Optional:            true,
@@ -174,7 +177,9 @@ var SourceHubspotFieldMappings = map[string]string{
 
 var SourceHubspotAPIConditions = []APICondition{
 	{Field: "token", ConditionField: "auth_mode", ConditionValues: []string{"token"}, ConditionDefault: "token", Required: true},
-	{Field: "properties", ConditionField: "sync_all_properties", ConditionValues: []string{"false"}, ConditionDefault: "", Required: false},
+	{Field: "properties", ConditionField: "sync_all_properties", ConditionValues: []string{"false"}, ConditionDefault: "true", Required: true},
 }
+
+var SourceHubspotAPIDependencies = []APIDependency{}
 
 var SourceHubspotAPIOAuth = APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "token", ClientFields: []string{}}

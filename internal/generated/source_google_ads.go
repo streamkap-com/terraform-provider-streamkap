@@ -97,11 +97,9 @@ func SourceGoogleAdsSchema() schema.Schema {
 				},
 			},
 			"auth_mode": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Description:         "How Streamkap signs in to Google Ads: click Connect with Google to sign in through your own OAuth client, paste a service account's key, or paste a refresh token you minted with your OAuth client. Defaults to \"oauth\". Valid values: oauth, service_account, refresh_token.",
-				MarkdownDescription: "How Streamkap signs in to Google Ads: click Connect with Google to sign in through your own OAuth client, paste a service account's key, or paste a refresh token you minted with your OAuth client. Defaults to `oauth`. Valid values: `oauth`, `service_account`, `refresh_token`.",
-				Default:             stringdefault.StaticString("oauth"),
+				Required:            true,
+				Description:         "How Streamkap signs in to Google Ads: click Connect with Google to sign in through your own OAuth client, paste a service account's key, or paste a refresh token you minted with your OAuth client. Valid values: oauth, service_account, refresh_token.",
+				MarkdownDescription: "How Streamkap signs in to Google Ads: click Connect with Google to sign in through your own OAuth client, paste a service account's key, or paste a refresh token you minted with your OAuth client. Valid values: `oauth`, `service_account`, `refresh_token`.",
 				Validators: []validator.String{
 					stringvalidator.OneOf("oauth", "service_account", "refresh_token"),
 				},
@@ -118,8 +116,8 @@ func SourceGoogleAdsSchema() schema.Schema {
 			"resources": schema.ListAttribute{
 				Required:            true,
 				ElementType:         types.StringType,
-				Description:         "Google Ads objects and daily reports to sync; each becomes its own topic. Each resource spends Google Ads API operations from your Cloud project's daily limit: the default set uses about 360 a day per account. Requires at least one item.",
-				MarkdownDescription: "Google Ads objects and daily reports to sync; each becomes its own topic. Each resource spends Google Ads API operations from your Cloud project's daily limit: the default set uses about 360 a day per account. Requires at least one item.",
+				Description:         "Google Ads objects and daily reports to sync; each becomes its own topic. Each resource spends Google Ads API operations from your Cloud project's daily limit: the default set uses about 360 a day per account. Select custom_<name> for each query defined in Custom queries. Requires at least one item.",
+				MarkdownDescription: "Google Ads objects and daily reports to sync; each becomes its own topic. Each resource spends Google Ads API operations from your Cloud project's daily limit: the default set uses about 360 a day per account. Select custom_<name> for each query defined in Custom queries. Requires at least one item.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
@@ -136,8 +134,8 @@ func SourceGoogleAdsSchema() schema.Schema {
 			},
 			"custom_queries": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Optional GAQL queries you define, as a JSON list of {name, query} without ORDER BY, LIMIT or date filters, e.g. [{\"name\": \"campaign_devices\", \"query\": \"SELECT campaign.id, campaign.name, segments.device, metrics.clicks FROM campaign WHERE campaign.status = 'ENABLED'\"}]. Select each as custom_<name> in Resources; a query cannot change once it has synced, so add a changed one under a new name.",
-				MarkdownDescription: "Optional GAQL queries you define, as a JSON list of {name, query} without ORDER BY, LIMIT or date filters, e.g. [{\"name\": \"campaign_devices\", \"query\": \"SELECT campaign.id, campaign.name, segments.device, metrics.clicks FROM campaign WHERE campaign.status = 'ENABLED'\"}]. Select each as custom_<name> in Resources; a query cannot change once it has synced, so add a changed one under a new name.",
+				Description:         "Optional GAQL queries you define, as a JSON list of {name, query} without ORDER BY, LIMIT or date filters, e.g. [{\"name\": \"campaign_devices\", \"query\": \"SELECT campaign.id, campaign.name, segments.device, metrics.clicks FROM campaign WHERE campaign.status = 'ENABLED'\"}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; a query cannot change once it has synced, so add a changed one under a new name.",
+				MarkdownDescription: "Optional GAQL queries you define, as a JSON list of {name, query} without ORDER BY, LIMIT or date filters, e.g. [{\"name\": \"campaign_devices\", \"query\": \"SELECT campaign.id, campaign.name, segments.device, metrics.clicks FROM campaign WHERE campaign.status = 'ENABLED'\"}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; a query cannot change once it has synced, so add a changed one under a new name.",
 			},
 			"refresh_token": schema.StringAttribute{
 				Optional:            true,
@@ -241,10 +239,12 @@ var SourceGoogleAdsFieldMappings = map[string]string{
 }
 
 var SourceGoogleAdsAPIConditions = []APICondition{
-	{Field: "client_id", ConditionField: "auth_mode", ConditionValues: []string{"oauth", "refresh_token"}, ConditionDefault: "oauth", Required: true},
-	{Field: "client_secret", ConditionField: "auth_mode", ConditionValues: []string{"oauth", "refresh_token"}, ConditionDefault: "oauth", Required: true},
-	{Field: "refresh_token", ConditionField: "auth_mode", ConditionValues: []string{"refresh_token"}, ConditionDefault: "oauth", Required: true},
-	{Field: "service_account_key", ConditionField: "auth_mode", ConditionValues: []string{"service_account"}, ConditionDefault: "oauth", Required: true},
+	{Field: "client_id", ConditionField: "auth_mode", ConditionValues: []string{"oauth", "refresh_token"}, ConditionDefault: "", Required: true},
+	{Field: "client_secret", ConditionField: "auth_mode", ConditionValues: []string{"oauth", "refresh_token"}, ConditionDefault: "", Required: true},
+	{Field: "refresh_token", ConditionField: "auth_mode", ConditionValues: []string{"refresh_token"}, ConditionDefault: "", Required: true},
+	{Field: "service_account_key", ConditionField: "auth_mode", ConditionValues: []string{"service_account"}, ConditionDefault: "", Required: true},
 }
 
-var SourceGoogleAdsAPIOAuth = APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "oauth", ClientFields: []string{"client_id", "client_secret"}}
+var SourceGoogleAdsAPIDependencies = []APIDependency{}
+
+var SourceGoogleAdsAPIOAuth = APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "", ClientFields: []string{"client_id", "client_secret"}}

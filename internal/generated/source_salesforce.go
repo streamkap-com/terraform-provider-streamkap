@@ -205,4 +205,6 @@ var SourceSalesforceAPIConditions = []APICondition{
 	{Field: "private_key", ConditionField: "auth_mode", ConditionValues: []string{"jwt"}, ConditionDefault: "service", Required: true},
 }
 
+var SourceSalesforceAPIDependencies = []APIDependency{}
+
 var SourceSalesforceAPIOAuth = APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "service", ClientFields: []string{}}

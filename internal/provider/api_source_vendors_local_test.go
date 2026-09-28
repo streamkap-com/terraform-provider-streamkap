@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -30,6 +31,9 @@ type apiSourceFixture struct {
 	normalize func(config map[string]any)
 	// granted holds the credentials a submitted oauth_grant_id resolves to.
 	granted map[string]any
+	// modeSecrets binds a secret to the auth_mode values that use it; a stored
+	// one is dropped in any other mode, as the backend does on a mode switch.
+	modeSecrets map[string][]string
 	// refuse, when set, answers every create with this status and detail.
 	refuse  *api.APIError
 	warning string
@@ -126,6 +130,11 @@ func (f *apiSourceFixture) store(submitted, previous map[string]any) map[string]
 	if submitted["oauth_grant_id"] != nil {
 		for key, value := range f.granted {
 			config[key] = value
+		}
+	}
+	for secret, modes := range f.modeSecrets {
+		if !slices.Contains(modes, fmt.Sprint(config["auth_mode"])) {
+			delete(config, secret)
 		}
 	}
 	if f.normalize != nil {
@@ -294,7 +303,10 @@ func TestGoogleAdsSourceLifecycle(t *testing.T) {
 				config["customer_id"] = strings.ReplaceAll(id, "-", "")
 			}
 		},
-		granted: map[string]any{"auth_mode": "oauth", "refresh_token": "granted-refresh-token"}}
+		granted: map[string]any{"auth_mode": "oauth", "refresh_token": "granted-refresh-token"},
+		modeSecrets: map[string][]string{
+			"client_secret": {"oauth", "refresh_token"}, "refresh_token": {"oauth", "refresh_token"}, "service_account_key": {"service_account"},
+		}}
 	server := f.server()
 	defer server.Close()
 	config := func(auth string) string {
@@ -307,7 +319,7 @@ func TestGoogleAdsSourceLifecycle(t *testing.T) {
 	}
 	serviceAccount := "  auth_mode = \"service_account\"\n  service_account_key = \"{\\\"type\\\":\\\"service_account\\\"}\"\n"
 	refreshToken := "  auth_mode = \"refresh_token\"\n  client_id = \"client\"\n  client_secret = \"client-secret\"\n  refresh_token = \"pasted-refresh-token\"\n"
-	oauth := "  client_id = \"client\"\n  client_secret = \"client-secret\"\n  oauth_grant_id = \"grant-1\"\n"
+	oauth := "  auth_mode = \"oauth\"\n  client_id = \"client\"\n  client_secret = \"client-secret\"\n  oauth_grant_id = \"grant-1\"\n"
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
@@ -319,7 +331,17 @@ func TestGoogleAdsSourceLifecycle(t *testing.T) {
 			{
 				Config:      config(""),
 				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`The argument "auth_mode" is required`),
+			},
+			{
+				Config:      config("  auth_mode = \"oauth\"\n  client_id = \"client\"\n  client_secret = \"client-secret\"\n"),
+				PlanOnly:    true,
 				ExpectError: regexp.MustCompile(`(?s)Google Ads sign-in needs an OAuth grant.*start-source-oauth-connect`),
+			},
+			{
+				Config:      config(serviceAccount + "  refresh_token = \"stale\"\n"),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`refresh_token is not used when auth_mode is service_account`),
 			},
 			{
 				Config: config(serviceAccount),
@@ -343,9 +365,6 @@ func TestGoogleAdsSourceLifecycle(t *testing.T) {
 					f.checkRequest(&f.updates, 0, func(body map[string]any) error {
 						if body["oauth_grant_id"] != "grant-1" {
 							return fmt.Errorf("a new grant must be sent: %v", body)
-						}
-						if value, sent := body["service_account_key"]; !sent || value != nil {
-							return fmt.Errorf("switching to OAuth must clear the service account key")
 						}
 						return nil
 					}),

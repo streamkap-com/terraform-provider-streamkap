@@ -11,6 +11,13 @@ type APICondition struct {
 	Required         bool
 }
 
+// APIDependency is a field that, when set, needs every field in Requires set
+// too.
+type APIDependency struct {
+	Field    string
+	Requires []string
+}
+
 // APIOAuth describes an API source's Connect (OAuth) flow. An enabled flow
 // with an empty AuthModeField is the vendor's only way to sign in.
 type APIOAuth struct {

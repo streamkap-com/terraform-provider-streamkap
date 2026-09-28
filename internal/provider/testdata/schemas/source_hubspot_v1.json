@@ -81,7 +81,7 @@
     "sync_all_properties": {
       "required": false,
       "optional": true,
-      "computed": false,
+      "computed": true,
       "sensitive": false,
       "type": "basetypes.BoolType"
     },

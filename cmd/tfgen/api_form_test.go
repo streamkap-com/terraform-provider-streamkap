@@ -80,7 +80,7 @@ func TestApplyAPIFormContractInvertsConditionalHide(t *testing.T) {
 		{Name: "window", UserDefined: true, Value: ValueObject{Control: "number"}},
 	}}
 	path := writeForm(t, `{"oauth":{"environments":[],"client_fields":["client_id","refresh_token"]},"json_schema":{"required":["client_id","refresh_token","key"],"properties":{
-		"auth_mode":{"type":"string","enum":["oauth","key","refresh"],"default":"oauth"},
+		"auth_mode":{"type":"string","enum":["oauth","key","refresh"],"default":"key"},
 		"client_id":{"type":"string"},"refresh_token":{"type":"string"},"key":{"type":"string"},"system":{"type":"string"},
 		"window":{"type":"integer","minimum":1,"maximum":90,"default":30}}},
 		"ui_schema":{"elements":[
@@ -92,9 +92,9 @@ func TestApplyAPIFormContractInvertsConditionalHide(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []APICondition{
-		{Field: "client_id", ConditionField: "auth_mode", ConditionValues: []string{"oauth", "refresh"}, ConditionDefault: "oauth", Required: true},
-		{Field: "refresh_token", ConditionField: "auth_mode", ConditionValues: []string{"refresh"}, ConditionDefault: "oauth", Required: true},
-		{Field: "key", ConditionField: "auth_mode", ConditionValues: []string{"key"}, ConditionDefault: "oauth", Required: true},
+		{Field: "client_id", ConditionField: "auth_mode", ConditionValues: []string{"oauth", "refresh"}, ConditionDefault: "key", Required: true},
+		{Field: "refresh_token", ConditionField: "auth_mode", ConditionValues: []string{"refresh"}, ConditionDefault: "key", Required: true},
+		{Field: "key", ConditionField: "auth_mode", ConditionValues: []string{"key"}, ConditionDefault: "key", Required: true},
 	}
 	if !reflect.DeepEqual(config.APIConditions, want) {
 		t.Errorf("conditions = %#v, want %#v", config.APIConditions, want)
@@ -105,7 +105,7 @@ func TestApplyAPIFormContractInvertsConditionalHide(t *testing.T) {
 	if config.Config[4].UserDefined {
 		t.Error("a field hidden in every mode must not be configurable")
 	}
-	if !reflect.DeepEqual(config.APIOAuth, APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "oauth", ClientFields: []string{"client_id", "refresh_token"}}) {
+	if !reflect.DeepEqual(config.APIOAuth, APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "key", ClientFields: []string{"client_id", "refresh_token"}}) {
 		t.Errorf("oauth = %#v", config.APIOAuth)
 	}
 	grant := config.GetEntryByName(oauthGrantField)
@@ -145,5 +145,43 @@ func TestApplyAPIFormContractRejectsUnsupportedRules(t *testing.T) {
 				t.Fatal("generation must stop on a form rule it cannot express")
 			}
 		})
+	}
+}
+
+// The artifacts describe a deployment that provisions Connect. Where that is
+// the default mode, a deployment without Connect serves another default, so
+// the generated auth_mode has none and must be set.
+func TestApplyAPIFormContractRequiresAuthModeDefaultingToOAuth(t *testing.T) {
+	config := &ConnectorConfig{Config: []ConfigEntry{
+		{Name: "auth_mode", UserDefined: true, Value: ValueObject{Control: "one-select", Default: "oauth"}},
+		{Name: "key", UserDefined: true, Value: ValueObject{Control: "password"}},
+	}}
+	path := writeForm(t, `{"oauth":{},"json_schema":{"required":["key"],"properties":{"auth_mode":{"type":"string","enum":["oauth","key"],"default":"oauth"},"key":{"type":"string"}}},
+		"ui_schema":{"elements":[{"type":"Control","scope":"#/properties/key","rule":{"effect":"SHOW","condition":{"scope":"#/properties/auth_mode","schema":{"const":"key"}}}}]}}`)
+	if err := applyAPIFormContract(config, path); err != nil {
+		t.Fatal(err)
+	}
+	mode := config.Config[0]
+	if !mode.IsRequired() || mode.HasDefault() || config.APIOAuth.AuthModeDefault != "" || config.APIConditions[0].ConditionDefault != "" {
+		t.Errorf("auth_mode must be required with no default: %#v %#v %#v", mode, config.APIOAuth, config.APIConditions)
+	}
+}
+
+func TestApplyAPIFormContractDependentRequired(t *testing.T) {
+	config := &ConnectorConfig{Config: []ConfigEntry{
+		{Name: "app_id", UserDefined: true, Value: ValueObject{Control: "string"}},
+		{Name: "app_secret", UserDefined: true, Value: ValueObject{Control: "password"}},
+	}}
+	path := writeForm(t, `{"json_schema":{"properties":{"app_id":{"type":"string"},"app_secret":{"type":"string"}},"dependentRequired":{"app_secret":["app_id"],"app_id":["app_secret"]}},"ui_schema":{}}`)
+	if err := applyAPIFormContract(config, path); err != nil {
+		t.Fatal(err)
+	}
+	want := []APIDependency{{Field: "app_id", Requires: []string{"app_secret"}}, {Field: "app_secret", Requires: []string{"app_id"}}}
+	if !reflect.DeepEqual(config.APIDependencies, want) {
+		t.Errorf("dependencies = %#v", config.APIDependencies)
+	}
+	bad := writeForm(t, `{"json_schema":{"properties":{"app_id":{"type":"string"}},"dependentRequired":{"app_id":["app_secret"]}},"ui_schema":{}}`)
+	if err := applyAPIFormContract(&ConnectorConfig{}, bad); err == nil {
+		t.Error("a dependency on an undeclared property must stop generation")
 	}
 }

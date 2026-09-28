@@ -19,13 +19,14 @@ import (
 const oauthGrantAttr = "oauth_grant_id"
 
 type apiSourceConfig struct {
-	code        string
-	displayName string
-	schema      func() schema.Schema
-	mappings    map[string]string
-	model       func() any
-	conditions  []generated.APICondition
-	oauth       generated.APIOAuth
+	code         string
+	displayName  string
+	schema       func() schema.Schema
+	mappings     map[string]string
+	model        func() any
+	conditions   []generated.APICondition
+	dependencies []generated.APIDependency
+	oauth        generated.APIOAuth
 }
 
 var _ connector.ConnectorConfig = (*apiSourceConfig)(nil)
@@ -78,31 +79,63 @@ func (c *apiSourceConfig) ValidateConfiguration(model any, creating bool) diag.D
 			extra = append(extra, c.oauth.AuthModeField)
 		}
 	}
+	for _, dependency := range c.dependencies {
+		extra = append(extra, dependency.Field)
+		extra = append(extra, dependency.Requires...)
+	}
 	values := c.conditionValues(model, extra...)
 	if creating && c.oauth.Enabled {
 		diags.Append(c.validateOAuthCreate(values)...)
 	}
+	secrets := shared.SensitiveStringAttrNames(c.schema())
 	for _, condition := range c.conditions {
 		show, conditionValue, known := shown(condition, values)
-		if !condition.Required || !known || !show {
+		if !known {
 			continue
 		}
 		value := values[condition.Field]
-		if value != nil && !value.IsUnknown() && (value.IsNull() || emptyValue(value)) {
+		if show && condition.Required && isUnset(value) {
 			diags.AddAttributeError(path.Root(condition.Field), "Missing API source value", condition.Field+" is required when "+condition.ConditionField+" is "+conditionValue+".")
+		}
+		// The backend refuses a secret typed for another auth mode. In OAuth
+		// mode the grant may use secrets the form hides, so only the pasted
+		// modes, where the form shows exactly the secrets they sign in with,
+		// are checked.
+		if !show && slices.Contains(secrets, condition.Field) && condition.ConditionField == c.oauth.AuthModeField &&
+			conditionValue != "" && conditionValue != c.oauth.AuthModeValue && isSet(value) {
+			diags.AddAttributeError(path.Root(condition.Field), "API source value for another auth mode", condition.Field+" is not used when "+condition.ConditionField+" is "+conditionValue+"; remove it, or switch "+condition.ConditionField+".")
+		}
+	}
+	for _, dependency := range c.dependencies {
+		if !isSet(values[dependency.Field]) {
+			continue
+		}
+		for _, name := range dependency.Requires {
+			if isUnset(values[name]) {
+				diags.AddAttributeError(path.Root(name), "Missing API source value", name+" is required when "+dependency.Field+" is set.")
+			}
 		}
 	}
 	return diags
 }
 
+// isSet and isUnset are false for a value unknown at plan time.
+func isSet(value attr.Value) bool {
+	return value != nil && !value.IsUnknown() && !value.IsNull() && !emptyValue(value)
+}
+
+func isUnset(value attr.Value) bool {
+	return value != nil && !value.IsUnknown() && (value.IsNull() || emptyValue(value))
+}
+
 // PlanAdjustments plans form-gated fields the configuration leaves unset.
 // They are Computed so that values an OAuth grant filled in survive, but a
-// field the user removed must otherwise be cleared: HubSpot rejects properties
-// once sync_all_properties is back on, and a secret of the previous auth mode
-// would stay stored. In OAuth mode the form does not say which hidden fields
-// the grant fills, so they are kept while the grant is unchanged, and planned
-// unknown when a new grant is sent: the update then sends null, the grant
-// refills its own fields, and the previous mode's credentials are cleared.
+// field the user removed must otherwise be planned null. The backend drops a
+// previous auth mode's secrets itself; without the null, state would keep the
+// stale value, since Read refills a secret the API echoes as null. In OAuth
+// mode the form does not say which hidden fields the grant fills, so they are
+// kept while the grant is unchanged, and planned unknown when a new grant is
+// sent, so state takes whatever the backend then holds.
 func (c *apiSourceConfig) PlanAdjustments(config any, state any) (unset []string, unknown []string) {
 	values := c.conditionValues(config, oauthGrantAttr)
 	newGrant := false
@@ -224,79 +257,87 @@ func emptyValue(value attr.Value) bool {
 func NewHubSpotResource() resource.Resource {
 	return connector.NewBaseConnectorResource(&apiSourceConfig{
 		code: "hubspot", displayName: "HubSpot", schema: generated.SourceHubspotSchema,
-		mappings:   generated.SourceHubspotFieldMappings,
-		model:      func() any { return &generated.SourceHubspotModel{} },
-		conditions: generated.SourceHubspotAPIConditions,
-		oauth:      generated.SourceHubspotAPIOAuth,
+		mappings:     generated.SourceHubspotFieldMappings,
+		model:        func() any { return &generated.SourceHubspotModel{} },
+		conditions:   generated.SourceHubspotAPIConditions,
+		dependencies: generated.SourceHubspotAPIDependencies,
+		oauth:        generated.SourceHubspotAPIOAuth,
 	})
 }
 
 func NewSalesforceResource() resource.Resource {
 	return connector.NewBaseConnectorResource(&apiSourceConfig{
 		code: "salesforce", displayName: "Salesforce", schema: generated.SourceSalesforceSchema,
-		mappings:   generated.SourceSalesforceFieldMappings,
-		model:      func() any { return &generated.SourceSalesforceModel{} },
-		conditions: generated.SourceSalesforceAPIConditions,
-		oauth:      generated.SourceSalesforceAPIOAuth,
+		mappings:     generated.SourceSalesforceFieldMappings,
+		model:        func() any { return &generated.SourceSalesforceModel{} },
+		conditions:   generated.SourceSalesforceAPIConditions,
+		dependencies: generated.SourceSalesforceAPIDependencies,
+		oauth:        generated.SourceSalesforceAPIOAuth,
 	})
 }
 
 func NewNetSuiteResource() resource.Resource {
 	return connector.NewBaseConnectorResource(&apiSourceConfig{
 		code: "netsuite", displayName: "NetSuite", schema: generated.SourceNetsuiteSchema,
-		mappings:   generated.SourceNetsuiteFieldMappings,
-		model:      func() any { return &generated.SourceNetsuiteModel{} },
-		conditions: generated.SourceNetsuiteAPIConditions,
-		oauth:      generated.SourceNetsuiteAPIOAuth,
+		mappings:     generated.SourceNetsuiteFieldMappings,
+		model:        func() any { return &generated.SourceNetsuiteModel{} },
+		conditions:   generated.SourceNetsuiteAPIConditions,
+		dependencies: generated.SourceNetsuiteAPIDependencies,
+		oauth:        generated.SourceNetsuiteAPIOAuth,
 	})
 }
 
 func NewStripeResource() resource.Resource {
 	return connector.NewBaseConnectorResource(&apiSourceConfig{
 		code: "stripe", displayName: "Stripe", schema: generated.SourceStripeSchema,
-		mappings:   generated.SourceStripeFieldMappings,
-		model:      func() any { return &generated.SourceStripeModel{} },
-		conditions: generated.SourceStripeAPIConditions,
-		oauth:      generated.SourceStripeAPIOAuth,
+		mappings:     generated.SourceStripeFieldMappings,
+		model:        func() any { return &generated.SourceStripeModel{} },
+		conditions:   generated.SourceStripeAPIConditions,
+		dependencies: generated.SourceStripeAPIDependencies,
+		oauth:        generated.SourceStripeAPIOAuth,
 	})
 }
 
 func NewZendeskResource() resource.Resource {
 	return connector.NewBaseConnectorResource(&apiSourceConfig{
 		code: "zendesk", displayName: "Zendesk", schema: generated.SourceZendeskSchema,
-		mappings:   generated.SourceZendeskFieldMappings,
-		model:      func() any { return &generated.SourceZendeskModel{} },
-		conditions: generated.SourceZendeskAPIConditions,
-		oauth:      generated.SourceZendeskAPIOAuth,
+		mappings:     generated.SourceZendeskFieldMappings,
+		model:        func() any { return &generated.SourceZendeskModel{} },
+		conditions:   generated.SourceZendeskAPIConditions,
+		dependencies: generated.SourceZendeskAPIDependencies,
+		oauth:        generated.SourceZendeskAPIOAuth,
 	})
 }
 
 func NewGoogleAnalyticsResource() resource.Resource {
 	return connector.NewBaseConnectorResource(&apiSourceConfig{
 		code: "google_analytics", displayName: "Google Analytics 4", schema: generated.SourceGoogleAnalyticsSchema,
-		mappings:   generated.SourceGoogleAnalyticsFieldMappings,
-		model:      func() any { return &generated.SourceGoogleAnalyticsModel{} },
-		conditions: generated.SourceGoogleAnalyticsAPIConditions,
-		oauth:      generated.SourceGoogleAnalyticsAPIOAuth,
+		mappings:     generated.SourceGoogleAnalyticsFieldMappings,
+		model:        func() any { return &generated.SourceGoogleAnalyticsModel{} },
+		conditions:   generated.SourceGoogleAnalyticsAPIConditions,
+		dependencies: generated.SourceGoogleAnalyticsAPIDependencies,
+		oauth:        generated.SourceGoogleAnalyticsAPIOAuth,
 	})
 }
 
 func NewFacebookAdsResource() resource.Resource {
 	return connector.NewBaseConnectorResource(&apiSourceConfig{
 		code: "facebook_ads", displayName: "Facebook Ads", schema: generated.SourceFacebookAdsSchema,
-		mappings:   generated.SourceFacebookAdsFieldMappings,
-		model:      func() any { return &generated.SourceFacebookAdsModel{} },
-		conditions: generated.SourceFacebookAdsAPIConditions,
-		oauth:      generated.SourceFacebookAdsAPIOAuth,
+		mappings:     generated.SourceFacebookAdsFieldMappings,
+		model:        func() any { return &generated.SourceFacebookAdsModel{} },
+		conditions:   generated.SourceFacebookAdsAPIConditions,
+		dependencies: generated.SourceFacebookAdsAPIDependencies,
+		oauth:        generated.SourceFacebookAdsAPIOAuth,
 	})
 }
 
 func NewGoogleAdsResource() resource.Resource {
 	return connector.NewBaseConnectorResource(&apiSourceConfig{
 		code: "google_ads", displayName: "Google Ads", schema: generated.SourceGoogleAdsSchema,
-		mappings:   generated.SourceGoogleAdsFieldMappings,
-		model:      func() any { return &generated.SourceGoogleAdsModel{} },
-		conditions: generated.SourceGoogleAdsAPIConditions,
-		oauth:      generated.SourceGoogleAdsAPIOAuth,
+		mappings:     generated.SourceGoogleAdsFieldMappings,
+		model:        func() any { return &generated.SourceGoogleAdsModel{} },
+		conditions:   generated.SourceGoogleAdsAPIConditions,
+		dependencies: generated.SourceGoogleAdsAPIDependencies,
+		oauth:        generated.SourceGoogleAdsAPIOAuth,
 	})
 }

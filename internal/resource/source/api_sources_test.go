@@ -214,7 +214,7 @@ func TestAPISourceGoogleAdsModes(t *testing.T) {
 		model   generated.SourceGoogleAdsModel
 		missing []string
 	}{
-		{"default oauth", generated.SourceGoogleAdsModel{}, []string{"client_id", "client_secret", "oauth_grant_id"}},
+		{"oauth", generated.SourceGoogleAdsModel{AuthMode: types.StringValue("oauth")}, []string{"client_id", "client_secret", "oauth_grant_id"}},
 		{"oauth with client and grant", generated.SourceGoogleAdsModel{AuthMode: types.StringValue("oauth"), ClientID: types.StringValue("id"), ClientSecret: types.StringValue("secret"), OauthGrantID: types.StringValue("grant")}, nil},
 		{"refresh token", generated.SourceGoogleAdsModel{AuthMode: types.StringValue("refresh_token")}, []string{"client_id", "client_secret", "refresh_token"}},
 		{"service account", generated.SourceGoogleAdsModel{AuthMode: types.StringValue("service_account")}, []string{"service_account_key"}},
@@ -313,8 +313,81 @@ func TestAPISourceRequestConfig(t *testing.T) {
 }
 
 func TestAPISourceOAuthClientFieldsInHandoff(t *testing.T) {
-	diags := apiSource(t, NewGoogleAdsResource).ValidateConfiguration(&generated.SourceGoogleAdsModel{ClientID: types.StringValue("id"), ClientSecret: types.StringValue("secret")}, true)
+	diags := apiSource(t, NewGoogleAdsResource).ValidateConfiguration(&generated.SourceGoogleAdsModel{AuthMode: types.StringValue("oauth"), ClientID: types.StringValue("id"), ClientSecret: types.StringValue("secret")}, true)
 	if !diags.HasError() || !strings.Contains(diags[0].Detail(), "--body <file>` with your OAuth client's client_id and client_secret") {
 		t.Fatalf("a flow on the customer's own OAuth client must say how to pass it: %v", diags)
+	}
+}
+
+func diagPaths(diags diag.Diagnostics) []string {
+	var paths []string
+	for _, d := range diags {
+		if withPath, ok := d.(diag.DiagnosticWithPath); ok {
+			paths = append(paths, withPath.Path().String())
+		}
+	}
+	slices.Sort(paths)
+	return paths
+}
+
+func TestAPISourceFacebookAdsAppPair(t *testing.T) {
+	config := apiSource(t, NewFacebookAdsResource)
+	for _, test := range []struct {
+		name    string
+		model   generated.SourceFacebookAdsModel
+		missing []string
+	}{
+		{"neither", generated.SourceFacebookAdsModel{}, nil},
+		{"both", generated.SourceFacebookAdsModel{AppID: types.StringValue("42"), AppSecret: types.StringValue("secret")}, nil},
+		{"id only", generated.SourceFacebookAdsModel{AppID: types.StringValue("42")}, []string{"app_secret"}},
+		{"secret only", generated.SourceFacebookAdsModel{AppSecret: types.StringValue("secret")}, []string{"app_id"}},
+		{"secret unknown", generated.SourceFacebookAdsModel{AppID: types.StringValue("42"), AppSecret: types.StringUnknown()}, nil},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := diagPaths(config.ValidateConfiguration(&test.model, false)); !slices.Equal(got, test.missing) {
+				t.Errorf("missing = %v, want %v", got, test.missing)
+			}
+		})
+	}
+}
+
+func TestAPISourceHubSpotPropertiesRequiredWhenNotSyncingAll(t *testing.T) {
+	config := apiSource(t, NewHubSpotResource)
+	model := &generated.SourceHubspotModel{Token: types.StringValue("pat"), SyncAllProperties: types.BoolValue(false), Properties: types.ListNull(types.StringType)}
+	if got := diagPaths(config.ValidateConfiguration(model, true)); !slices.Equal(got, []string{"properties"}) {
+		t.Errorf("sync_all_properties=false without properties: %v", got)
+	}
+	model.SyncAllProperties = types.BoolNull()
+	if diags := config.ValidateConfiguration(model, true); diags.HasError() {
+		t.Errorf("sync_all_properties defaults to true: %v", diags)
+	}
+}
+
+func TestAPISourceRefusesAnotherModesSecret(t *testing.T) {
+	googleAds := apiSource(t, NewGoogleAdsResource)
+	model := &generated.SourceGoogleAdsModel{AuthMode: types.StringValue("service_account"), ServiceAccountKey: types.StringValue("{}"), RefreshToken: types.StringValue("stale")}
+	if got := diagPaths(googleAds.ValidateConfiguration(model, false)); !slices.Equal(got, []string{"refresh_token"}) {
+		t.Errorf("a refresh token typed in service_account mode: %v", got)
+	}
+	model = &generated.SourceGoogleAdsModel{AuthMode: types.StringValue("oauth"), ClientID: types.StringValue("id"), ClientSecret: types.StringValue("secret"), RefreshToken: types.StringValue("pasted")}
+	if diags := googleAds.ValidateConfiguration(model, false); diags.HasError() {
+		t.Errorf("OAuth mode must not guess which hidden secrets the grant uses: %v", diags)
+	}
+	salesforce := apiSource(t, NewSalesforceResource)
+	sf := &generated.SourceSalesforceModel{AuthMode: types.StringValue("jwt"), Domain: types.StringValue("https://acme.my.salesforce.com"), ClientID: types.StringValue("id"),
+		Username: types.StringValue("u"), PrivateKey: types.StringValue("key"), ClientSecret: types.StringValue("service-secret")}
+	if got := diagPaths(salesforce.ValidateConfiguration(sf, false)); !slices.Equal(got, []string{"client_secret"}) {
+		t.Errorf("a service-mode secret typed in jwt mode: %v", got)
+	}
+}
+
+func TestGoogleAdsAuthModeHasNoProviderDefault(t *testing.T) {
+	a := apiSource(t, NewGoogleAdsResource).GetSchema().Attributes["auth_mode"].(schema.StringAttribute)
+	if !a.Required || a.Default != nil {
+		t.Fatal("the served auth_mode default depends on whether the deployment provisions Connect, so Terraform must require it")
+	}
+	h := apiSource(t, NewHubSpotResource).GetSchema().Attributes["auth_mode"].(schema.StringAttribute)
+	if h.Required || h.Default == nil {
+		t.Fatal("a vendor whose default is a pasted mode keeps its default")
 	}
 }
