@@ -83,8 +83,8 @@ func SourceStripeSchema() schema.Schema {
 			"token": schema.StringAttribute{
 				Required:            true,
 				Sensitive:           true,
-				Description:         "A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events and on each resource you select, and None on everything else; Test connection names any permission that is still missing. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events and on each resource you select, and None on everything else; Test connection names any permission that is still missing.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events, on Accounts (under Connect) and on each resource you select, and None on everything else; Test connection names any permission that is still missing. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events, on Accounts (under Connect) and on each resource you select, and None on everything else; Test connection names any permission that is still missing.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"resources": schema.ListAttribute{
 				Required:            true,

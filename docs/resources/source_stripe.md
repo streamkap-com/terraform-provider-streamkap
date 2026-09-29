@@ -65,7 +65,7 @@ output "stripe_source_id" {
 
 - `name` (String) Name of the source
 - `resources` (List of String) Stripe objects to sync; each becomes its own topic, and the key needs Read on each. Select Connect resources, Issuing resources (issuing_…) and quotes only if your account uses Connect, Issuing, or Invoicing Plus or Billing. Requires at least one item.
-- `token` (String, Sensitive) A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events and on each resource you select, and None on everything else; Test connection names any permission that is still missing.
+- `token` (String, Sensitive) A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events, on Accounts (under Connect) and on each resource you select, and None on everything else; Test connection names any permission that is still missing.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 
