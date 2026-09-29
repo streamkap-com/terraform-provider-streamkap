@@ -15,18 +15,17 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Resources                                   │
 ├──────────────────┬──────────────────┬──────────────────┬────────┤
-│  Sources (25)    │  Destinations(24)│  Transforms (7)  │ Other  │
+│  Sources (28)    │  Destinations(24)│  Transforms (7)  │ Other  │
 │  PostgreSQL      │  Snowflake       │  MapFilter       │Pipeline│
 │  MySQL, MongoDB  │  ClickHouse      │  Enrich          │ Topic  │
 │  DynamoDB        │  Databricks      │  EnrichAsync     │  Tag   │
 │  SQLServer       │  PostgreSQL, S3  │  SQLJoin         │        │
 │  KafkaDirect     │  Iceberg, Kafka  │  Rollup, FanOut  │        │
 │  Oracle, Redis   │  BigQuery, GCS   │  TopicRouter     │        │
-│  + 17 more...    │  + 15 more...    │                  │        │
+│  + 20 more...    │  + 15 more...    │                  │        │
 └──────────────────┴──────────────────┴──────────────────┴────────┘
 
-61 resources in total (25 sources + 24 destinations + 7 transforms + pipeline,
-topic, tag, kafka_user, client_credential) and 7 data sources.
+70 resources in total (33 sources + 24 destinations + 7 transforms + pipeline, topic, topic_destination, tag, kafka_user, client_credential) and 7 data sources.
 `internal/provider/provider.go` is the register of record — `Resources()` /
 `DataSources()`.
               │
@@ -55,10 +54,22 @@ topic, tag, kafka_user, client_credential) and 7 data sources.
 
 ## Code generation
 
-`cmd/tfgen` reads backend plugin configurations, merges common fields, applies
+`cmd/tfgen` reads backend plugin configurations, merges CDC common fields, applies
 `overrides.json`, and emits schemas, models and field mappings under
 `internal/generated/`. The handwritten resource wrappers add CRUD wiring and
 v2 attribute aliases.
+
+API sources use the same source CRUD base but their schema and conditional requirements also come from the backend form contract. `internal/resource/source/api_sources.go` plugs four optional `BaseConnectorResource` hooks into that base, because the API-source backend differs from the CDC path:
+
+- `ConnectorConfigValidator` checks at plan time what the backend would refuse:
+  - each auth mode's required fields, and `dependentRequired` pairs;
+  - a secret typed for another pasted auth mode;
+  - `oauth_grant_id` on a create in an OAuth mode.
+- `ConnectorConfigPlanAdjuster` plans a removed form-gated field null. The field is Computed so that values the OAuth grant fills in survive; without the null, state would keep a removed value, because Read refills a secret the API echoes as null. In OAuth mode the form does not say which hidden fields the grant fills. They are kept while the grant is unchanged, and planned unknown when a new grant is sent, so state takes what the backend then holds.
+- `ConnectorConfigRequestFilter` omits unset fields on create, and on update omits every secret the plan did not change: the backend keeps an absent secret, and resending the prior value would overwrite a rotated token or replay a spent grant. An explicit null clears a secret.
+- `ConnectorConfigKeepsConfiguredForm` keeps the configured spelling of a value the backend normalizes. The normalized echo is recorded in private state at apply time; Read keeps the configured value while the backend still returns that echo, and treats any other value as drift.
+
+A separate topic-destination resource owns one topic link; PUT/GET/DELETE target that topic and destination, leaving other topics in the managed binding intact.
 
 Use `STREAMKAP_BACKEND_PATH=<backend-main-checkout> make generate` to generate
 schemas before registry documentation. See [Code Generator](CODE_GENERATOR.md)

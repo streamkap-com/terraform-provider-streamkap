@@ -33,6 +33,9 @@ type Source struct {
 	// making `tags = []` indistinguishable from "unset" on the wire and leaving
 	// the user unable to clear tags via Terraform.
 	Tags []string `json:"tags"`
+	// ConnectionWarning is set on an API source's create and update responses
+	// when the save succeeded but a credential or resource check warned.
+	ConnectionWarning string `json:"connection_warning,omitempty"`
 }
 
 func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*Source, error) {

@@ -14,6 +14,7 @@ from v2.
 - AlloyDB, DB2, DocumentDB, Elasticsearch, Informix, MariaDB, MongoDB Hosted
 - Oracle, Oracle AWS, PlanetScale, Redis, S3, Supabase, Vitess
 - Webhook, Salesforce Webhook, Shopify Webhook, Stripe Webhook, Zendesk Webhook
+- API sources: HubSpot, Salesforce, NetSuite, Stripe, Zendesk, Google Analytics 4, Facebook Ads, Google Ads
 
 ### Destination Connectors
 - Snowflake, ClickHouse, Databricks, PostgreSQL, S3, Iceberg, Kafka
@@ -33,6 +34,7 @@ from v2.
 ### Other Resources
 - Pipelines
 - Topics
+- Topic Destinations (`streamkap_topic_destination` — sends one API source topic to a destination)
 - Tags (`streamkap_tag` — manages individual tag definitions)
 - Kafka Users (ACL-based Kafka access control)
 - Client Credentials (API token management)
@@ -217,8 +219,7 @@ terraform plan
 
 ### Code Generation
 
-Connector schemas in `internal/generated/` are produced by `cmd/tfgen` from the
-backend's `configuration.latest.json` plugin specs. Regenerate **only** via:
+Connector schemas in `internal/generated/` are produced by `cmd/tfgen` from the backend's `configuration.latest.json` plugin specs. API-source schemas also use each connector's `form.schema.json` for conditional credentials and defaults. Regenerate via:
 
 ```bash
 STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap make generate
@@ -232,6 +233,8 @@ Never hand-edit `internal/generated/` — it is overwritten on every regen. Fix 
 generator instead. See [docs/CODE_GENERATOR.md](docs/CODE_GENERATOR.md) for the
 generator internals, the override system, and the walkthrough for adding a new
 connector.
+
+API sources use `streamkap_source_<vendor>` for HubSpot, Salesforce, NetSuite, Stripe, Zendesk, Google Analytics 4 (`google_analytics`), Facebook Ads (`facebook_ads`) and Google Ads (`google_ads`). Their topics reach destinations through `streamkap_topic_destination`, one resource per full topic ID and destination ID. API sources reconcile automatically; do not use `streamkap_pipeline` or a manual deploy step for them. Terraform cannot complete a browser OAuth consent: for an OAuth mode, run Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect <vendor>` and `streamkap sources poll-source-oauth-grant <vendor> --state <state>`, then set `oauth_grant_id` to the returned single-use grant. Zendesk signs in only this way. See the generated resource pages for fields and examples.
 
 ### Project Structure
 

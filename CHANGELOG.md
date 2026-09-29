@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Generate HubSpot, Salesforce, NetSuite, Stripe, Zendesk, Google Analytics 4, Facebook Ads and Google Ads API-source schemas from backend plugin and form contracts, including every auth mode with its conditional credentials, and custom resource names.
+- Create OAuth-mode API sources (HubSpot, Salesforce, Google Ads, Zendesk) from an `oauth_grant_id` obtained through Connect in the Streamkap UI or the CLI. Zendesk signs in only this way. A create without a grant fails at plan time and explains the handoff.
+- Surface an API source's save-time `connection_warning` as a Terraform warning.
+- Check at plan time what the API-source backend would refuse: a required field of the selected mode or toggle (HubSpot `properties` when `sync_all_properties` is false), a field pair (Facebook Ads `app_id` and `app_secret`), and a secret typed for another auth mode.
+- Google Ads `auth_mode` is required: its default depends on whether the deployment provisions Connect.
+
+### Fixed
+- HubSpot `token` and Google Ads `client_id`/`client_secret` were dropped from the generated schemas: a form rule that hides a field for one auth mode now shows it for the others instead of hiding it everywhere.
+- API-source values the backend normalizes, such as a date-only `backfill_start` or a Google Ads customer ID with dashes, no longer fail the apply with "inconsistent result". The configured spelling is kept while the backend echoes the same normalized value.
+- API-source updates no longer resend unchanged secrets, which could overwrite a token the backend rotated, or a spent OAuth grant. Removing an optional secret or an ungated optional field from the configuration now clears it, and switching auth mode clears the previous mode's fields.
+- Manage API-source topic delivery with one `streamkap_topic_destination` resource per topic and destination link. Links to the same destination are applied one at a time, so a parallel apply cannot drop another link's topic from the shared binding.
+
+### Documentation
+- Add API-source and topic-delivery examples and Registry resource pages.
+
 ## [3.0.1] - 2026-09-23
 
 ### Documentation
