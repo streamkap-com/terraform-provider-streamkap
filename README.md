@@ -262,13 +262,16 @@ connector.
 - [Streamkap Documentation](https://docs.streamkap.com)
 - [API Reference](https://api.streamkap.com/openapi.json)
 - [Changelog](CHANGELOG.md) - Version history and breaking changes
+- [Usage](docs/USAGE.md) - Resource catalog, configuration patterns, import, errors
 - [Architecture](docs/ARCHITECTURE.md) - Provider design and code structure
 
 ## Schema discovery
 
 Use `terraform providers schema -json` to inspect attributes, types, sensitivity
-and descriptions. Resource examples live under `examples/resources/`; the
-[agent guide](AGENTS.md) documents configuration patterns and provider development.
+and descriptions. Resource examples live under `examples/resources/`;
+[docs/USAGE.md](docs/USAGE.md) covers the resource catalog, configuration
+patterns, import and error recovery, and [AGENTS.md](AGENTS.md) the rules for
+provider development.
 
 ## Upgrading
 

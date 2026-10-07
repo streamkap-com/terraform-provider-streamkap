@@ -14,7 +14,7 @@ import (
 )
 
 // TestAccPipeline_PeriodicAuditSurvivesUpdate covers the backend trap recorded
-// in AGENTS.md: periodic_audit is a conditional entity field, so a PUT that
+// in docs/ARCHITECTURE.md: periodic_audit is a conditional entity field, so a PUT that
 // omits it deletes an audit configured outside Terraform. The audit is set
 // through the API between steps (standing in for the UI), then the pipeline is
 // updated three ways:

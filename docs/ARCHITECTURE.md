@@ -330,6 +330,14 @@ The configured name determines both planned values, including unknown values,
 so a canonical default cannot override an explicitly configured legacy alias.
 When neither name is configured, normal default and computed behavior applies.
 
+## API Client
+
+`internal/api/` holds the `StreamkapAPI` HTTP client. Every request funnels
+through `doRequest` (bearer token, error unwrapping from `detail`, retry with
+backoff in `retry.go`). Create operations inject `created_from: TERRAFORM`.
+Request bodies are logged through `redactSensitiveJSON` (`redact.go`); anything
+logged outside `internal/api` bypasses it.
+
 ## Authentication Flow
 
 ```
@@ -338,6 +346,140 @@ When neither name is configured, normal default and computed behavior applies.
 3. Receive access token; renew with client credentials before expiry or after a 401
 4. All subsequent requests include: Authorization: Bearer <token>
 ```
+
+## Backend contract quirks
+
+Behaviour of the Streamkap API that the provider compensates for. Each entry
+names the provider code that owns the workaround; change both together.
+
+### Wire conventions
+
+- Sources Read uses `?secret_returned=true` to get sensitive fields back.
+- POST/PUT/DELETE on `/sources`, `/destinations`, `/pipelines` must include
+  `&wait=false` — mock URLs need it too.
+- List endpoints default `page_size=10` (max 100). `ListSources`,
+  `ListDestinations` and `ListPipelines` paginate until `resp.Total`; anything
+  else silently truncates tenants with more than 10 resources (affects sweepers
+  and adopt-on-exists).
+- `/sources`, `/destinations`, `/pipelines` accept `partial_name` only — there
+  is no exact-name filter. Adopt-by-name uses `partial_name=<name>&page_size=100`
+  and matches client-side.
+- Empty connector maps (`{}`) clear mappings; null leaves them unset. Nil and
+  non-nil empty Go maps stay distinct in marshaling.
+- Unknown `admin_tenant_id` or `admin_service_id` in the provider Configure
+  context must produce diagnostics before authentication; treating unknown as
+  empty would target the credential's default tenant.
+- `streamkap_topics` exposes `messages_7d` and `messages_30d`, which the topic
+  details API has never returned — both are always null and are deprecated.
+
+### 422 "already exists" on create — no adoption
+
+Create returns 422 when a non-deleted record with the same `{tenant_id, name}`
+exists. **No connector resource auto-adopts on this.** Sources and destinations
+used to; pipelines and transforms also refuse. From inside the client, "a
+previous apply created the record but lost the response" and "a
+`create_before_destroy` replace whose deposed instance still holds the name" are
+the same 422 — adopting is right for the first but destroys live data in the
+second (the new state entry inherits the deposed entry's backend id, so
+Terraform's next step deletes it). Create fails with recovery guidance instead:
+`terraform import` for the lost-response case, state backup and collision
+recovery for deposed entries otherwise. Tags still adopt deliberately (leaked CI
+tags, different trade-off).
+
+### `periodic_audit` round-trip on pipeline update
+
+`UpdatePipelineReq.periodic_audit` defaults to `None`, the backend only copies
+it into the entity body when non-null, and the field is in
+`_CONDITIONAL_ENTITY_FIELDS` — so a PUT that omits the key `$unset`s it.
+Terraform does not manage the field, so Update reads the live pipeline and
+echoes the value back (`preservePeriodicAudit`, `internal/resource/pipeline/`);
+without that, every apply deleted an audit configured in the UI. The round-trip
+is symmetric: Update converts pretty topic names to ids via
+`get_topic_ids_from_pretty_name`, and Read converts them back via
+`get_pretty_topic_name_from_id` (`app/utils/entity_searches.py`), so what GET
+returns is exactly what PUT expects. The backend rejects an update whose audit
+topics are not a subset of the pipeline's topics, so topics dropped from the
+pipeline are dropped from the audit with a warning rather than failing the
+apply. Covered by `TestAccPipeline_PeriodicAuditSurvivesUpdate`.
+
+### `Optional+Computed` echo mismatch
+
+`"produced an unexpected new value: was cty.StringVal(\"\"), but now null"` is
+an `Optional+Computed` echo mismatch — the API echo differs from the default.
+It is not limited to `insert_static_*`/static-transform fields: it also hits
+deprecated aliases and placeholder `<...>` defaults (`HasPlaceholderDefault`,
+`cmd/tfgen/parser.go`). When you touch one, audit **all** siblings of that class
+across **every** connector — past fixes only patched a subset.
+
+Defaulted `Optional+Computed` string, bool and int64 attributes are refilled
+when the API echoes null — from the plan on Create/Update and from prior state on
+Read (`shared.DefaultedAttrNames` + `shared.FillNullFields`) — because the
+backend nulls the stored value of any field whose dynamic `kafka_config`
+function returns false (`app/utils/entity_changes.py`), i.e. a conditional field
+whose gate is unmet: `iceberg_catalog_scope` unless `iceberg_catalog_auth_mode`
+is `oauth2`, Oracle `lob_enabled` when `log_mining_strategy` is `hybrid`. The
+backend behaviour is type-agnostic, so a fix scoped to one Terraform type is
+incomplete. A non-null echo that differs from the plan is left alone so it still
+fails loudly.
+
+### Secrets are not faithfully echoed
+
+Even with `secret_returned=true`, the backend returns `null` for an
+`encrypt: true` field whose stored value is absent or decrypts to `"null"`
+(`app/utils/entity_searches.py`), e.g. Snowflake
+`snowflake_private_key_passphrase` on a non-passphrase-secured key. The
+sensitive variant of the echo mismatch is `inconsistent values for sensitive
+attribute`. Create/Update restore the planned value for every `Sensitive` string
+attribute after `configMapToModel` (`shared.CaptureFields` /
+`PreserveKnownFields`) — the configured credential is authoritative. Read
+restores from prior *state*, and only where the API echoed null
+(`shared.FillNullFields`): restoring unconditionally would blind refresh to a
+credential rotated outside Terraform; restoring nothing leaves the null echo in
+state and produces a diff on every plan. Both connector and transform base
+resources do this.
+
+### Kafka access
+
+- Kafka ACLs are asymmetric on the wire. The backend model declares the topic
+  field as `name` with `topic_name` only as an *input* alias, and serialises
+  responses by field name — requests may carry either, but every response comes
+  back as `name`. `api.KafkaACL` marshals `topic_name` and unmarshals both
+  (`UnmarshalJSON`); decoding `topic_name` alone silently blanked the value and
+  every apply failed with "produced an unexpected new value". Any Pydantic
+  `Field(alias=...)` on a response model has this shape — check the endpoint for
+  `by_alias=True` before trusting the alias.
+- Kafka usernames must satisfy *two* backend checks: the request model's
+  `min_length=3, max_length=64` and the service layer's
+  `^(?!-)[a-zA-Z0-9-]{1,24}(?<!-)$`. Only the intersection works — 3-24 chars,
+  alphanumeric and hyphen, no leading or trailing hyphen. Underscores pass the
+  model and fail the service.
+- Kafka users have no individual GET; Read filters from the list. Client
+  credential secrets are real only in the create response (the backend stores a
+  masked copy). Details under [Non-Connector Resources](#non-connector-resources).
+
+### Transforms
+
+- `deploy = true` must report terminal deployment failure as an error while
+  keeping the saved transform ID in state so the failed deployment can be recovered.
+- Transform implementation bodies and validation-error input values are redacted
+  before logging.
+
+## Related backend
+
+The provider is built against the Streamkap Python FastAPI backend
+(OpenAPI: `https://api.streamkap.com/openapi.json`). `cmd/tfgen` reads
+`configuration.latest.json` plugin specs from a local clone at
+`STREAMKAP_BACKEND_PATH`. The path differs per developer — keep it in shell env
+or `.env`. Cross-check schema against the backend's `origin/main` (the release
+baseline), which `scripts/codegen-preflight.sh` enforces (`ALLOW_NONMAIN=1`
+overrides deliberately).
+
+Backend areas worth knowing:
+
+- `app/api/{sources,destinations,kafka_access,auth}_api.py` — endpoint definitions
+- `app/models/api/{sources,destinations,kafka_access,app_auth}/` — Pydantic request/response models
+- `app/{sources,destinations}/plugins/<connector>/` — `configuration.latest.json` (schema source for tfgen) and `dynamic_utils.py`
+- `app/utils/entity_changes.py` — CRUD logic and `created_from` handling
 
 ## Error Handling
 
@@ -393,10 +535,37 @@ API error details are surfaced as Terraform diagnostics with the operation conte
 ```
 
 Generator tests cover parser inputs and emitted schemas. Offline API tests use
-`httpmock`; acceptance tests use the Terraform testing framework against a real
-backend. Schema snapshots track the public attribute contract. Read
-`internal/provider/schema_compat_test.go` for what is compared and
-`internal/provider/migration_test.go` for the v2 configurations exercised.
+`httpmock` (`internal/api/client_test.go`,
+`internal/provider/state_conflict_test.go`); recorded fixtures must redact
+request and response bodies as well as headers. Acceptance tests use the
+Terraform testing framework against a real backend.
+
+### Test Tiers
+
+| Tier | Pattern | API | Duration |
+|---|---|---|---|
+| Unit | `Test[^Acc]` (`-short`) | No | ~5s |
+| Schema compat | `TestSchemaBackwardsCompatibility` | No | ~2s |
+| Validators | `Test.*Validator` | No | ~2s |
+| Acceptance | `TestAcc` | Yes | ~15m |
+| Migration | `TestAcc.*Migration` | Yes | ~30m |
+
+**Schema compat** (`internal/provider/schema_compat_test.go`) classifies: required
+attribute removed (breaking), optional→required (breaking), computed removed
+(warning). It also fails on *any* drift between a snapshot and the current
+schema — an added attribute, a removed one, or a flipped
+`Required`/`Optional`/`Computed`/`Sensitive` flag, including nested attributes
+and block fields. Snapshots are the schema of record read by humans and tooling,
+so they must never lag: after an intentional schema change run `make snapshots`
+and review the diff. `TestEveryResourceHasSchemaSnapshot` fails for any
+registered resource without a snapshot; without one the resource silently skips
+drift checks.
+
+**Migration** (`internal/provider/migration_test.go`) starts from v2.2.0,
+accepts an initial no-op or in-place update, verifies that resource IDs survive,
+and requires a converged plan after applying. Inspect changed defaults even for
+in-place updates; skipped cases provide no upgrade evidence. Every deprecated
+alias needs a `TestAcc<Connector>_MigrationFromLegacy` case.
 
 ### Test Environment Variables
 
@@ -413,7 +582,8 @@ backend. Schema snapshots track the public attribute contract. Read
 
 Tests auto-load `.env` via godotenv, and a `TF_ACC=1` line there turns any
 unfiltered `go test` into a live-API acceptance run. Prefer the `make` targets —
-`make test` clears `TF_ACC` for exactly this reason.
+`make test` clears `TF_ACC` for exactly this reason. Multiline Snowflake PEM
+keys do not fit a `.env` line; `source scripts/load-pem-keys.sh` instead.
 
 ```bash
 # Unit + schema-compat + validators (fast, no API)
