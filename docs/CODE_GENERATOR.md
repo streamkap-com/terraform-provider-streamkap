@@ -181,8 +181,10 @@ The generator applies these conversions:
 
 1. **Port fields**: Fields named `port` or ending with `_port` are converted to `Int64` even if stored as strings in the backend
 2. **Sensitive fields**: Fields with `encrypt: true` or `control: "password"` are marked `Sensitive: true`
-3. **Credentials by name**: `isSecretField` forces fields named or suffixed `api_key`, `authorization`, `access_key_id`, `secret_access_key`, or `secret_key` to `Sensitive: true`, even when the backend omits sensitivity flags. Names such as `api_key_enabled` and `http_authorization_type` do not match.
+3. **Credentials by name**: `isSecretField` forces fields named or suffixed `api_key`, `authorization`, `access_key_id`, `secret_access_key`, or `secret_key` to `Sensitive: true`, even when the backend omits sensitivity flags. Names such as `api_key_enabled` and `http_authorization_type` do not match. It is not consulted for fields supplied by `overrides.json`, so a credential added that way needs its own `Sensitive` handling. When a differently named credential shows up unmarked, extend `isSecretField` — never `internal/generated/`.
 4. **Set-once fields**: Fields with `set_once: true` get `RequiresReplace()` plan modifier
+5. **Required with default**: a Terraform attribute cannot be both `Required` and defaulted, so these become `Optional: true, Computed: true`
+6. **`user_defined: false`**: the field is skipped entirely
 
 ### Go Field Naming (acronyms)
 
@@ -301,6 +303,11 @@ Use overrides for:
 backend config, the override wins and the auto-parsed field is dropped, so the
 attribute is not emitted twice. Map overrides are emitted `Optional` only (never
 `Computed`) — a Go map type cannot hold an unknown value (issue #82).
+
+**Validation:** an override's `api_field_name` must resolve to a field the
+backend actually declares — tfgen fails the build otherwise, for both
+`field_overrides` and `additional_fields`. Review overrides when backend fields
+change so Terraform does not accept attributes the API ignores.
 
 ### Map String Type
 
@@ -422,8 +429,28 @@ the generated model and add — for each alias — the wrapper struct field, the
 schema attribute (with `DeprecationMessage` and a `ConflictsWith` validator), and
 the field mapping to the same backend field as the new name.
 
-To add or change a deprecated alias, edit the wrapper file directly — see the
-[deprecated attribute pattern](../AGENTS.md#deprecated-attribute-pattern-v2--v3-aliases) in `AGENTS.md`.
+When the backend keeps a config field but the Terraform attribute name changes,
+add an alias in the wrapper file: a `…ModelWithDeprecated` struct embedding the
+generated model, an `Optional+Computed` schema attribute carrying
+`DeprecationMessage` and `ConflictsWith(<new name>)`, and a `fieldMappings` row
+pointing at the same API field as the new name. `BuildTfsdkFieldIndex`
+(`internal/resource/shared/marshaling.go`) recurses into embedded structs, which
+is what lets the wrapper and generated model share one `tfsdk` namespace.
+Worked example: `internal/resource/source/postgresql_generated.go`.
+
+Every new alias also needs a `TestAcc<Connector>_MigrationFromLegacy` case in
+`internal/provider/migration_test.go` and an entry in
+`templates/guides/migration.md`. `TestDeprecatedAliasTargetsExist` only checks
+that the replacement attribute named in the `DeprecationMessage` exists in the
+Terraform schema and that `ConflictsWith` paths resolve; it never reads the
+backend spec, so an alias mapped to a dropped API field stays green — check
+`removed=` lines in the snapshot diff by hand after a regen.
+
+Not aliasable (document in the migration guide and the exceptions map instead):
+
+- Required fields — an alias must be `Optional`, so a required-only rename is a breaking change.
+- API-field renames where old and new map to different backend fields.
+- Type changes (e.g. map-of-objects → JSON string).
 
 ## Adding a New Connector
 
@@ -633,7 +660,7 @@ TF_ACC=1 go test -v -run 'TestAccSourceMynewconnector' ./internal/provider/...
 
 ### Step 7: Update Documentation
 
-1. Update the resource catalog in `AGENTS.md` and counts in `docs/ARCHITECTURE.md`.
+1. Update the resource catalog in `docs/USAGE.md` and counts in `docs/ARCHITECTURE.md`.
 2. Add the user-visible change to `CHANGELOG.md` and migration guidance if needed.
 3. Run `make generate` to update schemas and registry docs.
 
@@ -780,3 +807,31 @@ STREAMKAP_BACKEND_PATH=/path/to/backend-main make generate
 go build ./...
 make test-all
 ```
+
+`scripts/codegen-preflight.sh` (run by `make generate`) aborts when
+`STREAMKAP_BACKEND_PATH` is unset or unreadable, or when the backend checkout is
+not on `main` (`ALLOW_NONMAIN=1` overrides deliberately). `go generate` with the
+path unset silently emits wrong output, which is why the preflight exists.
+
+### Post-regen checklist
+
+`make generate` rewrites every connector, so a backend change you did not ask
+for rides along. Work this list before committing:
+
+1. `make snapshots`, then **read the diff** — it is the regen's changelog.
+   `added=` are new backend fields; `removed=` means the backend dropped a field,
+   so check by hand whether a deprecated alias in
+   `internal/resource/{source,destination}/*_generated.go` still points at it
+   (`TestDeprecatedAliasTargetsExist` does not cover this; see
+   [Deprecated attribute aliases](#deprecated-attribute-aliases)).
+2. **`changed=` on a `Sensitive` flag is a security regression until proven
+   otherwise.** Some backend credential fields omit `encrypt`/`control`; fix the
+   flag in `isSecretField` or the override, then regenerate.
+3. Verify each newly added attribute appears in **both** the `.go` schema and
+   its `docs/resources/*.md` page.
+4. `git status` the provider tree for stray connector files — a wrong-branch run
+   adds or removes plugins.
+5. If you switched the backend repo's branch to regenerate, restore its original
+   branch.
+6. Every registered resource needs a snapshot (`TestEveryResourceHasSchemaSnapshot`).
+7. Report which backend branch and commit the run used.
