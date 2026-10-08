@@ -96,8 +96,8 @@ func SourceGoogleAnalyticsSchema() schema.Schema {
 			"resources": schema.ListAttribute{
 				Required:            true,
 				ElementType:         types.StringType,
-				Description:         "GA4 reports to sync, each to its own topic with one row per day (or week, month, year) and dimension combination; select custom_<name> for each report in Custom reports. admin_* resources also need the Google Analytics Admin API enabled in the service account's Google Cloud project. Requires at least one item.",
-				MarkdownDescription: "GA4 reports to sync, each to its own topic with one row per day (or week, month, year) and dimension combination; select custom_<name> for each report in Custom reports. admin_* resources also need the Google Analytics Admin API enabled in the service account's Google Cloud project. Requires at least one item.",
+				Description:         "GA4 reports to sync, each to its own topic with one row per day (or week, month, year) and dimension combination; select custom_<name> for each report in Custom reports (custom_reports). admin_* resources also need the Google Analytics Admin API enabled in the service account's Google Cloud project. Requires at least one item.",
+				MarkdownDescription: "GA4 reports to sync, each to its own topic with one row per day (or week, month, year) and dimension combination; select custom_<name> for each report in Custom reports (custom_reports). admin_* resources also need the Google Analytics Admin API enabled in the service account's Google Cloud project. Requires at least one item.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
@@ -109,8 +109,8 @@ func SourceGoogleAnalyticsSchema() schema.Schema {
 			},
 			"custom_reports": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Your own reports, as a JSON list of {name, dimensions, metrics} with GA4 API names, e.g. [{\"name\": \"landing_pages\", \"dimensions\": [\"landingPage\", \"deviceCategory\"], \"metrics\": [\"sessions\", \"engagedSessions\", \"keyEvents\"]}]. Select each as custom_<name> in Reports, and define every custom_<name> you select; to change a synced report, add it under a new name.",
-				MarkdownDescription: "Your own reports, as a JSON list of {name, dimensions, metrics} with GA4 API names, e.g. [{\"name\": \"landing_pages\", \"dimensions\": [\"landingPage\", \"deviceCategory\"], \"metrics\": [\"sessions\", \"engagedSessions\", \"keyEvents\"]}]. Select each as custom_<name> in Reports, and define every custom_<name> you select; to change a synced report, add it under a new name.",
+				Description:         "Your own reports, as a JSON list of {name, dimensions, metrics} with GA4 API names, e.g. [{\"name\": \"landing_pages\", \"dimensions\": [\"landingPage\", \"deviceCategory\"], \"metrics\": [\"sessions\", \"engagedSessions\", \"keyEvents\"]}]. Select each as custom_<name> in Reports (resources), and define every custom_<name> you select; to change a synced report, add it under a new name.",
+				MarkdownDescription: "Your own reports, as a JSON list of {name, dimensions, metrics} with GA4 API names, e.g. [{\"name\": \"landing_pages\", \"dimensions\": [\"landingPage\", \"deviceCategory\"], \"metrics\": [\"sessions\", \"engagedSessions\", \"keyEvents\"]}]. Select each as custom_<name> in Reports (resources), and define every custom_<name> you select; to change a synced report, add it under a new name.",
 			},
 			"property_ids": schema.ListAttribute{
 				Optional:            true,
@@ -137,8 +137,8 @@ func SourceGoogleAnalyticsSchema() schema.Schema {
 			},
 			"backfill_start": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Earliest report date to read when a report first syncs; GA4 has no data before 2015-08-14. Applies to reports added later too; changing it does not re-read reports already synced.",
-				MarkdownDescription: "Earliest report date to read when a report first syncs; GA4 has no data before 2015-08-14. Applies to reports added later too; changing it does not re-read reports already synced.",
+				Description:         "Earliest report date to read when a report first syncs; unset reads the last 90 days, and GA4 has no data before 2015-08-14. Applies to reports added later too; changing it does not re-read reports already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.",
+				MarkdownDescription: "Earliest report date to read when a report first syncs; unset reads the last 90 days, and GA4 has no data before 2015-08-14. Applies to reports added later too; changing it does not re-read reports already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.",
 			},
 		},
 	}

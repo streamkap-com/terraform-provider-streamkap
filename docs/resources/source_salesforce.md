@@ -83,7 +83,7 @@ output "salesforce_source_id" {
 
 - `api_version` (String) Salesforce REST API version this source calls. Keep v67.0 unless you need v66.0. Defaults to `v67.0`. Valid values: `v66.0`, `v67.0`.
 - `auth_mode` (String) How Streamkap signs in to Salesforce: an External Client App in your org, by client credentials or a JWT bearer certificate, or Connect with Salesforce. Defaults to `service`. Valid values: `service`, `oauth`, `jwt`.
-- `backfill_start` (String) Earliest modification date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.
+- `backfill_start` (String) Earliest modification date to read when a resource first syncs; unset reads all history. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.
 - `client_id` (String) The Consumer Key of your External Client App, from Setup → External Client Apps Manager → your app → Settings → OAuth Settings → Consumer Key and Secret.
 - `client_secret` (String, Sensitive) The Consumer Secret shown beside the Consumer Key. The app must have Enable Client Credentials Flow on, with a run-as user who can read the objects you sync.
 

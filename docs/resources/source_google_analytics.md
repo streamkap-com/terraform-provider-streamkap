@@ -73,7 +73,7 @@ output "ga4_source_id" {
 
 - `name` (String) Name of the source
 - `property_id` (String) The numeric ID of the GA4 property to sync, under Admin → Property details in Google Analytics. It is not the Measurement ID (G-…).
-- `resources` (List of String) GA4 reports to sync, each to its own topic with one row per day (or week, month, year) and dimension combination; select custom_<name> for each report in Custom reports. admin_* resources also need the Google Analytics Admin API enabled in the service account's Google Cloud project. Requires at least one item.
+- `resources` (List of String) GA4 reports to sync, each to its own topic with one row per day (or week, month, year) and dimension combination; select custom_<name> for each report in Custom reports (custom_reports). admin_* resources also need the Google Analytics Admin API enabled in the service account's Google Cloud project. Requires at least one item.
 - `service_account_key` (String, Sensitive) The whole JSON key file of a service account, from IAM & Admin → Service accounts → Keys → Add key in a Google Cloud project with the Google Analytics Data API enabled. In Google Analytics, add the service account's email as a Viewer under Admin → Property access management, without the No Cost Metrics or No Revenue Metrics restriction.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
@@ -81,8 +81,8 @@ output "ga4_source_id" {
 ### Optional
 
 - `api_version` (String) The GA4 Data API version; v1beta is the only one. Defaults to `v1beta`. Valid values: `v1beta`.
-- `backfill_start` (String) Earliest report date to read when a report first syncs; GA4 has no data before 2015-08-14. Applies to reports added later too; changing it does not re-read reports already synced.
-- `custom_reports` (String) Your own reports, as a JSON list of {name, dimensions, metrics} with GA4 API names, e.g. [{"name": "landing_pages", "dimensions": ["landingPage", "deviceCategory"], "metrics": ["sessions", "engagedSessions", "keyEvents"]}]. Select each as custom_<name> in Reports, and define every custom_<name> you select; to change a synced report, add it under a new name.
+- `backfill_start` (String) Earliest report date to read when a report first syncs; unset reads the last 90 days, and GA4 has no data before 2015-08-14. Applies to reports added later too; changing it does not re-read reports already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.
+- `custom_reports` (String) Your own reports, as a JSON list of {name, dimensions, metrics} with GA4 API names, e.g. [{"name": "landing_pages", "dimensions": ["landingPage", "deviceCategory"], "metrics": ["sessions", "engagedSessions", "keyEvents"]}]. Select each as custom_<name> in Reports (resources), and define every custom_<name> you select; to change a synced report, add it under a new name.
 - `keep_empty_rows` (Boolean) Keep a row for every dimension combination the property recorded, even when all its metrics are zero; GA4 leaves those rows out otherwise. Defaults to `false`.
 - `property_ids` (List of String) More GA4 properties to sync; add the service account as a Viewer on each. Their rows share each report's topic, keyed by property_id, and a property added later syncs from then on unless you reset the source.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.

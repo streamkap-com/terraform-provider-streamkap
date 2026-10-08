@@ -88,12 +88,12 @@ output "google_ads_source_id" {
 - `auth_mode` (String) How Streamkap signs in to Google Ads: Connect with Google through your own OAuth client, a service account key, or a refresh token minted with your OAuth client. Valid values: `oauth`, `service_account`, `refresh_token`.
 - `customer_id` (String) The Google Ads account to sync, shown at the top right of Google Ads, e.g. 123-456-7890. For a manager account, turn on Include client accounts.
 - `name` (String) Name of the source
-- `resources` (List of String) Google Ads objects and daily reports to sync, each to its own topic; select custom_<name> for each query in Custom queries. Each uses Google Ads API operations from your Cloud project's daily limit, about 360 a day per account for the default set. Requires at least one item.
+- `resources` (List of String) Google Ads objects and daily reports to sync, each to its own topic; select custom_<name> for each query in Custom queries (custom_queries). Each uses Google Ads API operations from your Cloud project's daily limit, about 360 a day per account for the default set. Requires at least one item.
 
 ### Optional
 
 - `api_version` (String) Google Ads API version this source calls; v25 is currently the only one. Defaults to `v25`. Valid values: `v25`.
-- `backfill_start` (String) Earliest report date to read when a resource first syncs; Google keeps 37 months of daily data. Change history never starts more than 29 days back, and clicks, calls, lead-form submissions and Local Services lead conversations never more than 90. Applies to resources added later too; changing it does not re-read resources already synced.
+- `backfill_start` (String) Earliest report date to read when a resource first syncs; unset reads the last two years, and Google keeps 37 months of daily data. Change history never starts more than 29 days back, and clicks, calls, lead-form submissions and Local Services lead conversations never more than 90. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.
 - `client_id` (String) The client ID of an OAuth client from APIs & Services → Credentials in your Google Cloud project, with the Google Ads API enabled and the OAuth consent screen In production. A new project has Test access, which reads test accounts only; apply for Explorer or Basic access on its Google Ads API Overview page.
 - `client_secret` (String, Sensitive) The client secret of the same OAuth client, from APIs & Services → Credentials.
 

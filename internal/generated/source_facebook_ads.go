@@ -99,8 +99,8 @@ func SourceFacebookAdsSchema() schema.Schema {
 			"resources": schema.ListAttribute{
 				Required:            true,
 				ElementType:         types.StringType,
-				Description:         "Ad objects and daily insights reports to sync, each to its own topic; select custom_<name> for each report in Custom insights. Breakdowns by demographics, geography, platform, device or hour multiply the rows. Requires at least one item.",
-				MarkdownDescription: "Ad objects and daily insights reports to sync, each to its own topic; select custom_<name> for each report in Custom insights. Breakdowns by demographics, geography, platform, device or hour multiply the rows. Requires at least one item.",
+				Description:         "Ad objects and daily insights reports to sync, each to its own topic; select custom_<name> for each report in Custom insights (custom_insights). Breakdowns by demographics, geography, platform, device or hour multiply the rows. Requires at least one item.",
+				MarkdownDescription: "Ad objects and daily insights reports to sync, each to its own topic; select custom_<name> for each report in Custom insights (custom_insights). Breakdowns by demographics, geography, platform, device or hour multiply the rows. Requires at least one item.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
@@ -118,8 +118,8 @@ func SourceFacebookAdsSchema() schema.Schema {
 			"app_secret": schema.StringAttribute{
 				Optional:            true,
 				Sensitive:           true,
-				Description:         "The app's secret from App Dashboard → App settings → Basic; set it together with App ID. Required if the app has Require App Secret on, and lets Test connection warn before the token expires or if it lacks ads_read. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "The app's secret from App Dashboard → App settings → Basic; set it together with App ID. Required if the app has Require App Secret on, and lets Test connection warn before the token expires or if it lacks ads_read.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "The app's secret from App Dashboard → App settings → Basic; set it together with App ID. Required if the app has Require App Secret on, and lets the connection test warn before the token expires or if it lacks ads_read. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The app's secret from App Dashboard → App settings → Basic; set it together with App ID. Required if the app has Require App Secret on, and lets the connection test warn before the token expires or if it lacks ads_read.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"include_deleted": schema.BoolAttribute{
 				Optional:            true,
@@ -158,8 +158,8 @@ func SourceFacebookAdsSchema() schema.Schema {
 			},
 			"backfill_start": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Earliest date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.",
-				MarkdownDescription: "Earliest date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.",
+				Description:         "Earliest date to read when a resource first syncs; unset reads insights from about 13 months back and full object history. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.",
+				MarkdownDescription: "Earliest date to read when a resource first syncs; unset reads insights from about 13 months back and full object history. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.",
 			},
 		},
 	}

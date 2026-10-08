@@ -116,8 +116,8 @@ func SourceGoogleAdsSchema() schema.Schema {
 			"resources": schema.ListAttribute{
 				Required:            true,
 				ElementType:         types.StringType,
-				Description:         "Google Ads objects and daily reports to sync, each to its own topic; select custom_<name> for each query in Custom queries. Each uses Google Ads API operations from your Cloud project's daily limit, about 360 a day per account for the default set. Requires at least one item.",
-				MarkdownDescription: "Google Ads objects and daily reports to sync, each to its own topic; select custom_<name> for each query in Custom queries. Each uses Google Ads API operations from your Cloud project's daily limit, about 360 a day per account for the default set. Requires at least one item.",
+				Description:         "Google Ads objects and daily reports to sync, each to its own topic; select custom_<name> for each query in Custom queries (custom_queries). Each uses Google Ads API operations from your Cloud project's daily limit, about 360 a day per account for the default set. Requires at least one item.",
+				MarkdownDescription: "Google Ads objects and daily reports to sync, each to its own topic; select custom_<name> for each query in Custom queries (custom_queries). Each uses Google Ads API operations from your Cloud project's daily limit, about 360 a day per account for the default set. Requires at least one item.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
@@ -202,8 +202,8 @@ func SourceGoogleAdsSchema() schema.Schema {
 			},
 			"backfill_start": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Earliest report date to read when a resource first syncs; Google keeps 37 months of daily data. Change history never starts more than 29 days back, and clicks, calls, lead-form submissions and Local Services lead conversations never more than 90. Applies to resources added later too; changing it does not re-read resources already synced.",
-				MarkdownDescription: "Earliest report date to read when a resource first syncs; Google keeps 37 months of daily data. Change history never starts more than 29 days back, and clicks, calls, lead-form submissions and Local Services lead conversations never more than 90. Applies to resources added later too; changing it does not re-read resources already synced.",
+				Description:         "Earliest report date to read when a resource first syncs; unset reads the last two years, and Google keeps 37 months of daily data. Change history never starts more than 29 days back, and clicks, calls, lead-form submissions and Local Services lead conversations never more than 90. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.",
+				MarkdownDescription: "Earliest report date to read when a resource first syncs; unset reads the last two years, and Google keeps 37 months of daily data. Change history never starts more than 29 days back, and clicks, calls, lead-form submissions and Local Services lead conversations never more than 90. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.",
 			},
 			"oauth_grant_id": schema.StringAttribute{
 				Optional:            true,

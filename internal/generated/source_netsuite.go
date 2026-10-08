@@ -192,8 +192,8 @@ func SourceNetsuiteSchema() schema.Schema {
 			},
 			"backfill_start": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Earliest modification date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.",
-				MarkdownDescription: "Earliest modification date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.",
+				Description:         "Earliest modification date to read when a resource first syncs; unset reads all history. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.",
+				MarkdownDescription: "Earliest modification date to read when a resource first syncs; unset reads all history. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.",
 			},
 		},
 	}

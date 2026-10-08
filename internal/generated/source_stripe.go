@@ -87,8 +87,8 @@ func SourceStripeSchema() schema.Schema {
 			"auth_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "How Streamkap signs in to Stripe: paste a restricted key, or click Connect with Stripe to install Streamkap's Stripe App. Defaults to \"restricted_key\". Valid values: restricted_key, oauth.",
-				MarkdownDescription: "How Streamkap signs in to Stripe: paste a restricted key, or click Connect with Stripe to install Streamkap's Stripe App. Defaults to `restricted_key`. Valid values: `restricted_key`, `oauth`.",
+				Description:         "How Streamkap signs in to Stripe: paste a restricted key, or install Streamkap's Stripe App with Connect with Stripe (through the API, the oauth_grant_id Connect returns). Defaults to \"restricted_key\". Valid values: restricted_key, oauth.",
+				MarkdownDescription: "How Streamkap signs in to Stripe: paste a restricted key, or install Streamkap's Stripe App with Connect with Stripe (through the API, the oauth_grant_id Connect returns). Defaults to `restricted_key`. Valid values: `restricted_key`, `oauth`.",
 				Default:             stringdefault.StaticString("restricted_key"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("restricted_key", "oauth"),
@@ -98,8 +98,8 @@ func SourceStripeSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events, on Accounts and on each resource you select, and None on everything else; Test connection names any permission still missing. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events, on Accounts and on each resource you select, and None on everything else; Test connection names any permission still missing.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events, on Accounts and on each resource you select, and None on everything else; the connection test names any permission still missing. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events, on Accounts and on each resource you select, and None on everything else; the connection test names any permission still missing.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -120,8 +120,8 @@ func SourceStripeSchema() schema.Schema {
 			},
 			"backfill_start": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Earliest creation date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced. Events and discounts reach back at most 30 days, the time Stripe keeps events.",
-				MarkdownDescription: "Earliest creation date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced. Events and discounts reach back at most 30 days, the time Stripe keeps events.",
+				Description:         "Earliest creation date to read when a resource first syncs; unset reads all history. Applies to resources added later too; changing it does not re-read resources already synced. Events and discounts reach back at most 30 days, the time Stripe keeps events. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.",
+				MarkdownDescription: "Earliest creation date to read when a resource first syncs; unset reads all history. Applies to resources added later too; changing it does not re-read resources already synced. Events and discounts reach back at most 30 days, the time Stripe keeps events. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.",
 			},
 			"oauth_grant_id": schema.StringAttribute{
 				Optional:            true,

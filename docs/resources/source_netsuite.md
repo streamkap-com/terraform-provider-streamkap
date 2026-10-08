@@ -93,7 +93,7 @@ output "netsuite_source_id" {
 ### Optional
 
 - `auth_mode` (String) How Streamkap signs in to NetSuite: Certificate for a new integration, token-based authentication only for an existing TBA integration. Defaults to `certificate`. Valid values: `certificate`, `tba`.
-- `backfill_start` (String) Earliest modification date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.
+- `backfill_start` (String) Earliest modification date to read when a resource first syncs; unset reads all history. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.
 - `certificate_id` (String) The Certificate ID (not the fingerprint) of the certificate mapped to this integration in Setup → Integration → Manage Authentication → OAuth 2.0 Client Credentials (M2M) Setup.
 - `client_id` (String) The Client ID NetSuite showed once, when you saved the integration record in Setup → Integration → Manage Integrations.
 - `consumer_key` (String) The Consumer Key of the integration record the access token belongs to, shown once when you save the record in Setup → Integration → Manage Integrations.

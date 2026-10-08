@@ -69,14 +69,14 @@ output "stripe_source_id" {
 ### Optional
 
 - `api_version` (String) The Stripe API version to pin, e.g. 2026-08-26.dahlia. Leave empty to use your account's default, shown in Workbench.
-- `auth_mode` (String) How Streamkap signs in to Stripe: paste a restricted key, or click Connect with Stripe to install Streamkap's Stripe App. Defaults to `restricted_key`. Valid values: `restricted_key`, `oauth`.
-- `backfill_start` (String) Earliest creation date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced. Events and discounts reach back at most 30 days, the time Stripe keeps events.
+- `auth_mode` (String) How Streamkap signs in to Stripe: paste a restricted key, or install Streamkap's Stripe App with Connect with Stripe (through the API, the oauth_grant_id Connect returns). Defaults to `restricted_key`. Valid values: `restricted_key`, `oauth`.
+- `backfill_start` (String) Earliest creation date to read when a resource first syncs; unset reads all history. Applies to resources added later too; changing it does not re-read resources already synced. Events and discounts reach back at most 30 days, the time Stripe keeps events. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.
 - `oauth_grant_id` (String, Sensitive) Single-use grant from Connect with Stripe, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect stripe`, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant stripe --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `token` (String, Sensitive) A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events, on Accounts and on each resource you select, and None on everything else; Test connection names any permission still missing.
+- `token` (String, Sensitive) A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events, on Accounts and on each resource you select, and None on everything else; the connection test names any permission still missing.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 

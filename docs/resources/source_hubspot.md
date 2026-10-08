@@ -69,8 +69,8 @@ output "hubspot_source_id" {
 ### Optional
 
 - `api_version` (String) HubSpot API version this source calls. Keep 2026-03; v3 (legacy) is only for sources created on it. Defaults to `2026-03`. Valid values: `v3`, `2026-03`.
-- `auth_mode` (String) How Streamkap signs in to HubSpot: paste an access token, or click Connect with HubSpot to install Streamkap's HubSpot app. Defaults to `token`. Valid values: `token`, `oauth`.
-- `backfill_start` (String) Earliest modification date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.
+- `auth_mode` (String) How Streamkap signs in to HubSpot: paste an access token, or install Streamkap's HubSpot app with Connect with HubSpot (through the API, the oauth_grant_id Connect returns). Defaults to `token`. Valid values: `token`, `oauth`.
+- `backfill_start` (String) Earliest modification date to read when a resource first syncs; unset reads all history. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.
 - `oauth_grant_id` (String, Sensitive) Single-use grant from Connect with HubSpot, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect hubspot`, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant hubspot --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
