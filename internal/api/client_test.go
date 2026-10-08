@@ -238,6 +238,21 @@ func TestCreateSource_ValidationError(t *testing.T) {
 	assert.Contains(t, err.Error(), "Validation error: name is required")
 }
 
+func TestCreateSource_RefusalNamesFields(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	baseURL := "https://api.test.streamkap.com"
+	httpmock.RegisterResponder(http.MethodPost, baseURL+"/sources?secret_returned=true&wait=false",
+		httpmock.NewStringResponder(http.StatusBadRequest, `{"detail":"Invalid stripe configuration: token: rejected","fields":[{"field":"token","message":"rejected"}]}`))
+
+	_, err := newTestClient(baseURL).CreateSource(context.Background(), Source{Name: "s", Connector: "stripe", Config: map[string]any{}})
+
+	var apiErr *APIError
+	require.ErrorAs(t, err, &apiErr)
+	assert.Equal(t, []APIFieldError{{Field: "token", Message: "rejected"}}, apiErr.Fields)
+}
+
 // TestCreateSource_Unauthorized tests handling of authentication errors
 func TestCreateSource_Unauthorized(t *testing.T) {
 	httpmock.Activate()
@@ -392,6 +407,15 @@ func TestDelete_NotFoundIsIdempotent(t *testing.T) {
 			status: http.StatusNotFound,
 			detail: "Client credential not found",
 			call:   func(c StreamkapAPI) error { return c.DeleteClientCredential(context.Background(), "gone") },
+		},
+		{
+			name:   "topic destination",
+			url:    baseURL + "/topics/source_1.hubspot.contacts/destinations/gone",
+			status: http.StatusNotFound,
+			detail: "No destination binding found for these topics and destination 'gone'.",
+			call: func(c StreamkapAPI) error {
+				return c.DetachTopicDestination(context.Background(), "source_1.hubspot.contacts", "gone")
+			},
 		},
 		{
 			// Some endpoints answer 400 rather than 404 for a missing record.
