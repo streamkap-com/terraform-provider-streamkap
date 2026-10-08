@@ -15,7 +15,7 @@ Terraform source address: `streamkap-com/streamkap` (`registry.terraform.io/stre
 
 ## What it manages
 
-- **Sources** — CDC, event and API connectors (databases, queues, webhooks, S3, HubSpot, Salesforce, NetSuite).
+- **Sources** — CDC, event and API connectors (databases, queues, webhooks, S3, SaaS APIs).
 - **Destinations** — warehouses, lakes, queues, vector DBs.
 - **Pipelines** — connect a source to a destination, optionally through transforms.
 - **Transforms** — in-flight data transformations (JS map/filter, enrich, SQL join, rollup, fan-out).
@@ -104,7 +104,7 @@ Full per-resource examples: `examples/resources/streamkap_<name>/{basic,complete
 ### Sources
 `streamkap_source_postgresql`, `mysql`, `mongodb`, `mongodbhosted`, `dynamodb`, `sqlserver`, `oracle`, `oracleaws`, `db2`, `informix` (v3), `mariadb`, `alloydb`, `documentdb`, `elasticsearch`, `planetscale`, `redis`, `s3`, `supabase`, `vitess`, `webhook`, `salesforce_webhook` (v3), `zendesk_webhook` (v3), `shopify_webhook` (v3), `stripe_webhook` (v3), `kafkadirect`.
 
-API sources: `streamkap_source_hubspot`, `salesforce`, `netsuite`, `stripe`, `zendesk`, `google_analytics`, `facebook_ads`, `google_ads`. Their schemas are generated from the backend plugin configuration and form schema. They reconcile automatically from Pending; route their topics with `streamkap_topic_destination` instead of `streamkap_pipeline`. An OAuth mode (HubSpot, Salesforce, Google Ads `auth_mode = "oauth"`, and Zendesk always) needs `oauth_grant_id`: Terraform cannot click Connect, so run it in the Streamkap UI, or run `streamkap sources start-source-oauth-connect <vendor>`, open the `authorize_url`, then `streamkap sources poll-source-oauth-grant <vendor> --state <state>`. The grant is single-use and expires within minutes. Google Ads Connect runs on your own OAuth client, so pass its `client_id` and `client_secret` to `start-source-oauth-connect` in a `--body <file>` JSON file. Google Ads requires `auth_mode`: `oauth`, or `service_account` or `refresh_token` to paste credentials. It has no provider default because the deployment's default depends on whether it provisions Connect. The plan fails when a secret belongs to another auth mode, or when only one of Facebook Ads `app_id` and `app_secret` is set.
+API sources: `streamkap_source_hubspot`, `salesforce`, `netsuite`, `stripe`, `zendesk`, `google_analytics`, `facebook_ads`, `google_ads`. They start by themselves; route their topics with `streamkap_topic_destination`, not `streamkap_pipeline`. An OAuth mode needs an `oauth_grant_id` from Connect, which Terraform cannot run: each resource page gives the CLI handoff.
 
 ### Destinations
 `streamkap_destination_snowflake`, `clickhouse`, `databricks`, `postgresql`, `mysql`, `sqlserver`, `oracle`, `db2`, `cockroachdb`, `bigquery`, `redshift`, `motherduck`, `starburst`, `s3`, `gcs`, `r2`, `azblob`, `iceberg`, `kafka`, `kafkadirect`, `httpsink`, `redis`, `weaviate` (v3), `pinecone` (v3).
@@ -413,17 +413,19 @@ go generate main.go   # docs, after the schemas
 make snapshots        # then read the diff
 ```
 
-A new vendor also needs a constructor in `internal/resource/source/api_sources.go`, a `Resources()` entry, a `TestSchemaBackwardsCompatibility_APISources` row, `examples/resources/streamkap_source_<vendor>/{basic,complete}.tf` and `import.sh`, and a lifecycle case in `internal/provider/api_source_vendors_local_test.go` if it adds an auth pattern.
+A new vendor also needs a one-line constructor over its generated `Source<Vendor>APISource` in `internal/resource/source/api_sources.go`, a `Resources()` entry, a `TestSchemaBackwardsCompatibility_APISources` row, `examples/resources/streamkap_source_<vendor>/{basic,complete}.tf` and `import.sh`, and a lifecycle case in `internal/provider/api_source_vendors_local_test.go` if it adds an auth pattern.
 
 Traps:
-- A form `HIDE` rule is "hidden for these values", not "hidden". Reading it as always-hidden silently dropped HubSpot `token` and Google Ads `client_id`/`client_secret`. Check that each vendor's credential attributes survive a regen.
-- The backend normalizes values it echoes: `backfill_start` becomes a UTC datetime, Google Ads customer IDs lose their dashes, Facebook Ads account IDs lose `act_`, Salesforce `domain` gains `https://` and Zendesk `subdomain` is lowercased. `ConnectorConfigKeepsConfiguredForm` absorbs that. A lifecycle test's fixture must normalize the same way, or it will not catch a regression.
-- An update replaces the whole config, except that an absent secret is kept, and the backend restores the fields the grant owns (Salesforce `org_id`, `environment`, and `domain` in oauth mode) and keeps tags that are not sent. Every non-secret field must be resent; a secret must be resent only when it changed.
-- Secrets are bound to auth modes. On a mode switch the backend drops the old mode's secrets, and it refuses a secret typed for another mode. The provider checks the second at plan time for the pasted modes, where the form shows exactly the secrets a mode signs in with. Removed gated fields must still be planned null: Read refills a secret the API echoes as null from prior state, so state would otherwise keep the dropped value.
-- In OAuth mode the grant fills fields the form hides (HubSpot `token`, Salesforce `domain`, Google Ads `refresh_token`), and the artifacts do not say which. Keep hidden fields while `oauth_grant_id` is unchanged, and plan them unknown when a new grant is sent, so state takes what the backend then holds.
-- An explicit `null` clears an optional secret, and the backend refuses it for a required one (HubSpot and Stripe `token`, GA4 `service_account_key`, Facebook Ads `access_token`).
-- The backend rejects unknown config keys (`extra="forbid"`), so a vendor without an OAuth flow must never be sent `oauth_grant_id`.
-- Conditional rules live in the artifacts: a required field with a SHOW rule is required only when shown (HubSpot `properties` when `sync_all_properties` is false), and `dependentRequired` pairs fields (Facebook Ads `app_id` and `app_secret`). That `custom_*` definitions match `custom_<name>` resources cannot be expressed, and the backend reports it as a 400 at apply time. Add a missing rule to the backend artifacts, not as a hand-written validator here.
+- A form `HIDE` rule hides a field only for the values it lists. Reading it as always-hidden once dropped HubSpot `token` and Google Ads `client_id`/`client_secret`; check each vendor's credentials survive a regen.
+- The backend normalizes echoed values: `backfill_start` to a UTC datetime, Google Ads IDs lose dashes, Facebook Ads IDs lose `act_`, Salesforce `domain` gains `https://`, Zendesk `subdomain` is lowercased. `ConnectorConfigKeepsConfiguredForm` keeps the configured spelling; lifecycle fixtures must normalize the same way.
+- An update replaces the whole config. The backend keeps an absent secret and restores the fields a grant owns (Salesforce `org_id`, `environment`, and `domain` in oauth mode). The provider resends every secret the current auth mode shows, so a new location (Salesforce `domain`, NetSuite `account_id`) never pairs with a kept secret, which the backend refuses. It omits an unchanged secret the form hides (grant-filled, and the backend may have rotated it) and an unchanged `oauth_grant_id` (spent).
+- A grant is authorized for one host (`oauth.host_field`, the Zendesk `subdomain`); changing it without a new grant fails at plan time.
+- On an auth-mode switch the backend drops the old mode's secrets, and it refuses a real secret typed for another mode; the provider checks the latter at plan time for pasted modes. Removed gated fields are planned null, because Read refills a null-echoed secret from state.
+- In OAuth mode the grant fills fields the form hides (HubSpot `token`, Salesforce `domain`, Stripe `token`, Google Ads `refresh_token`). They are kept while `oauth_grant_id` is unchanged and planned unknown when a new grant is sent.
+- `null` clears an optional secret; the backend refuses it for a required one. Config is `extra="forbid"`, so a vendor without OAuth must never be sent `oauth_grant_id`.
+- Conditional rules belong in the backend artifacts (SHOW rules, `dependentRequired`), never in hand-written validators here. Matching `custom_<name>` resources to `custom_*` definitions cannot be expressed; the backend reports it as a 400 at apply.
+- A refused save carries `fields: [{field, message}]` beside `detail`; the provider puts each message on its attribute.
+- A source update sends a new resource's topic to every destination the source already sends to, and stops a removed one, outside `streamkap_topic_destination`.
 
 ### Fix the generator, not the generated output
 

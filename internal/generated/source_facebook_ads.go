@@ -93,14 +93,14 @@ func SourceFacebookAdsSchema() schema.Schema {
 			"access_token": schema.StringAttribute{
 				Required:            true,
 				Sensitive:           true,
-				Description:         "A system-user token with the ads_read permission: in Business settings → Users → System users, assign the system user the ad account under Assign assets, then Generate token for your Business app with the Marketing API. A token that expires after 60 days must be replaced here before then; one that never expires need not be. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "A system-user token with the ads_read permission: in Business settings → Users → System users, assign the system user the ad account under Assign assets, then Generate token for your Business app with the Marketing API. A token that expires after 60 days must be replaced here before then; one that never expires need not be.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "A system-user access token with ads_read: in Business settings → Users → System users, assign the ad account under Assign assets, then Generate token for an app with the Marketing API. A token with a 60-day expiry must be replaced here before it expires. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "A system-user access token with ads_read: in Business settings → Users → System users, assign the ad account under Assign assets, then Generate token for an app with the Marketing API. A token with a 60-day expiry must be replaced here before it expires.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"resources": schema.ListAttribute{
 				Required:            true,
 				ElementType:         types.StringType,
-				Description:         "Ad objects and daily insights reports to sync; each becomes its own topic. Insights broken down by demographics, geography, platform, device or hour multiply the rows, so select those only if you need them, and select custom_<name> for each report defined in Custom insights. Requires at least one item.",
-				MarkdownDescription: "Ad objects and daily insights reports to sync; each becomes its own topic. Insights broken down by demographics, geography, platform, device or hour multiply the rows, so select those only if you need them, and select custom_<name> for each report defined in Custom insights. Requires at least one item.",
+				Description:         "Ad objects and daily insights reports to sync, each to its own topic; select custom_<name> for each report in Custom insights. Breakdowns by demographics, geography, platform, device or hour multiply the rows. Requires at least one item.",
+				MarkdownDescription: "Ad objects and daily insights reports to sync, each to its own topic; select custom_<name> for each report in Custom insights. Breakdowns by demographics, geography, platform, device or hour multiply the rows. Requires at least one item.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
@@ -112,39 +112,39 @@ func SourceFacebookAdsSchema() schema.Schema {
 			},
 			"custom_insights": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Optional insights reports you define, as a JSON list of {name, level, …} with Marketing API names, e.g. [{\"name\": \"campaign_by_country\", \"level\": \"campaign\", \"breakdowns\": [\"country\"], \"fields\": [\"campaign_id\", \"spend\", \"impressions\", \"clicks\", \"actions\"]}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; a report cannot change once it has synced, so add a changed one under a new name.",
-				MarkdownDescription: "Optional insights reports you define, as a JSON list of {name, level, …} with Marketing API names, e.g. [{\"name\": \"campaign_by_country\", \"level\": \"campaign\", \"breakdowns\": [\"country\"], \"fields\": [\"campaign_id\", \"spend\", \"impressions\", \"clicks\", \"actions\"]}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; a report cannot change once it has synced, so add a changed one under a new name.",
+				Description:         "Insights reports you define, as a JSON list of {name, level, …} using Marketing API names, e.g. [{\"name\": \"campaign_by_country\", \"level\": \"campaign\", \"breakdowns\": [\"country\"], \"fields\": [\"campaign_id\", \"spend\", \"impressions\", \"clicks\", \"actions\"]}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; to change a synced report, add it under a new name.",
+				MarkdownDescription: "Insights reports you define, as a JSON list of {name, level, …} using Marketing API names, e.g. [{\"name\": \"campaign_by_country\", \"level\": \"campaign\", \"breakdowns\": [\"country\"], \"fields\": [\"campaign_id\", \"spend\", \"impressions\", \"clicks\", \"actions\"]}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; to change a synced report, add it under a new name.",
 			},
 			"app_secret": schema.StringAttribute{
 				Optional:            true,
 				Sensitive:           true,
-				Description:         "Optional, set together with App ID: the app's secret from App Dashboard → App settings → Basic. Required when the app has Require App Secret on, and lets Test connection warn when the token is about to expire or lacks ads_read. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Optional, set together with App ID: the app's secret from App Dashboard → App settings → Basic. Required when the app has Require App Secret on, and lets Test connection warn when the token is about to expire or lacks ads_read.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "The app's secret from App Dashboard → App settings → Basic; set it together with App ID. Required if the app has Require App Secret on, and lets Test connection warn before the token expires or if it lacks ads_read. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The app's secret from App Dashboard → App settings → Basic; set it together with App ID. Required if the app has Require App Secret on, and lets Test connection warn before the token expires or if it lacks ads_read.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 			},
 			"include_deleted": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Off by default. Turn it on to also sync deleted campaigns, ad sets, ads and their creatives, with the status DELETED, as Meta still reports their spend; turned on later, it applies from then on. Defaults to false.",
-				MarkdownDescription: "Off by default. Turn it on to also sync deleted campaigns, ad sets, ads and their creatives, with the status DELETED, as Meta still reports their spend; turned on later, it applies from then on. Defaults to `false`.",
+				Description:         "Also sync deleted campaigns, ad sets, ads and creatives, with status DELETED, since Meta still reports their spend. Turned on later, it applies from then on. Defaults to false.",
+				MarkdownDescription: "Also sync deleted campaigns, ad sets, ads and creatives, with status DELETED, since Meta still reports their spend. Turned on later, it applies from then on. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"account_id": schema.StringAttribute{
 				Required:            true,
-				Description:         "The numeric ID of the ad account to sync, e.g. 123456789012345, shown after the account name in Ads Manager's account menu. An act_ prefix is fine.",
-				MarkdownDescription: "The numeric ID of the ad account to sync, e.g. 123456789012345, shown after the account name in Ads Manager's account menu. An act_ prefix is fine.",
+				Description:         "The ad account's number, shown after the account name in Ads Manager's account menu, e.g. 123456789012345; an act_ prefix is fine.",
+				MarkdownDescription: "The ad account's number, shown after the account name in Ads Manager's account menu, e.g. 123456789012345; an act_ prefix is fine.",
 			},
 			"fetch_thumbnail_images": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Off by default. Turn it on to store each creative's thumbnail image in thumbnail_data_url, because Meta's thumbnail_url link stops working after a few days; an image over 256 KB is left out. Defaults to false.",
-				MarkdownDescription: "Off by default. Turn it on to store each creative's thumbnail image in thumbnail_data_url, because Meta's thumbnail_url link stops working after a few days; an image over 256 KB is left out. Defaults to `false`.",
+				Description:         "Store each creative's thumbnail image in thumbnail_data_url, since Meta's thumbnail_url link expires after a few days. Images over 256 KB are skipped. Defaults to false.",
+				MarkdownDescription: "Store each creative's thumbnail image in thumbnail_data_url, since Meta's thumbnail_url link expires after a few days. Images over 256 KB are skipped. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"account_ids": schema.ListAttribute{
 				Optional:            true,
 				ElementType:         types.StringType,
-				Description:         "More ad account IDs to sync with the same access token; assign each to the token's system user. Every account shares one topic per resource, each row carrying its account_id; an account added later syncs from then on, so reset the source to backfill its history.",
-				MarkdownDescription: "More ad account IDs to sync with the same access token; assign each to the token's system user. Every account shares one topic per resource, each row carrying its account_id; an account added later syncs from then on, so reset the source to backfill its history.",
+				Description:         "More ad accounts to sync with the same access token; assign each to the token's system user. Their rows share each resource's topic, tagged with account_id, and an account added later syncs only from then on unless you reset the source.",
+				MarkdownDescription: "More ad accounts to sync with the same access token; assign each to the token's system user. Their rows share each resource's topic, tagged with account_id, and an account added later syncs only from then on unless you reset the source.",
 			},
 			"api_version": schema.StringAttribute{
 				Optional:            true,
@@ -158,8 +158,8 @@ func SourceFacebookAdsSchema() schema.Schema {
 			},
 			"backfill_start": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Earliest date to read on the first sync, as an ISO-8601 date, e.g. 2026-01-01. Leave empty to start insights about 13 months back and read objects' whole history; later syncs ignore it.",
-				MarkdownDescription: "Earliest date to read on the first sync, as an ISO-8601 date, e.g. 2026-01-01. Leave empty to start insights about 13 months back and read objects' whole history; later syncs ignore it.",
+				Description:         "Earliest date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.",
+				MarkdownDescription: "Earliest date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.",
 			},
 		},
 	}
@@ -180,11 +180,17 @@ var SourceFacebookAdsFieldMappings = map[string]string{
 	"backfill_start":         "backfill_start",
 }
 
-var SourceFacebookAdsAPIConditions = []APICondition{}
-
-var SourceFacebookAdsAPIDependencies = []APIDependency{
-	{Field: "app_id", Requires: []string{"app_secret"}},
-	{Field: "app_secret", Requires: []string{"app_id"}},
+// SourceFacebookAdsAPISource is the facebook_ads API source's generated contract.
+var SourceFacebookAdsAPISource = APISource{
+	Code:          "facebook_ads",
+	DisplayName:   "Facebook Ads",
+	Schema:        SourceFacebookAdsSchema,
+	FieldMappings: SourceFacebookAdsFieldMappings,
+	NewModel:      func() any { return &SourceFacebookAdsModel{} },
+	Conditions:    []APICondition{},
+	Dependencies: []APIDependency{
+		{Field: "app_id", Requires: []string{"app_secret"}},
+		{Field: "app_secret", Requires: []string{"app_id"}},
+	},
+	OAuth: APIOAuth{Enabled: false, AuthModeField: "", AuthModeValue: "", AuthModeDefault: "", ConnectCommand: "", HostField: ""},
 }
-
-var SourceFacebookAdsAPIOAuth = APIOAuth{Enabled: false, AuthModeField: "", AuthModeValue: "", AuthModeDefault: "", ClientFields: []string{}}

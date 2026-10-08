@@ -77,25 +77,25 @@ output "facebook_ads_source_id" {
 
 ### Required
 
-- `access_token` (String, Sensitive) A system-user token with the ads_read permission: in Business settings → Users → System users, assign the system user the ad account under Assign assets, then Generate token for your Business app with the Marketing API. A token that expires after 60 days must be replaced here before then; one that never expires need not be.
+- `access_token` (String, Sensitive) A system-user access token with ads_read: in Business settings → Users → System users, assign the ad account under Assign assets, then Generate token for an app with the Marketing API. A token with a 60-day expiry must be replaced here before it expires.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `account_id` (String) The numeric ID of the ad account to sync, e.g. 123456789012345, shown after the account name in Ads Manager's account menu. An act_ prefix is fine.
+- `account_id` (String) The ad account's number, shown after the account name in Ads Manager's account menu, e.g. 123456789012345; an act_ prefix is fine.
 - `name` (String) Name of the source
-- `resources` (List of String) Ad objects and daily insights reports to sync; each becomes its own topic. Insights broken down by demographics, geography, platform, device or hour multiply the rows, so select those only if you need them, and select custom_<name> for each report defined in Custom insights. Requires at least one item.
+- `resources` (List of String) Ad objects and daily insights reports to sync, each to its own topic; select custom_<name> for each report in Custom insights. Breakdowns by demographics, geography, platform, device or hour multiply the rows. Requires at least one item.
 
 ### Optional
 
-- `account_ids` (List of String) More ad account IDs to sync with the same access token; assign each to the token's system user. Every account shares one topic per resource, each row carrying its account_id; an account added later syncs from then on, so reset the source to backfill its history.
+- `account_ids` (List of String) More ad accounts to sync with the same access token; assign each to the token's system user. Their rows share each resource's topic, tagged with account_id, and an account added later syncs only from then on unless you reset the source.
 - `api_version` (String) Marketing API version this source calls. Keep v26.0 unless you need v25.0, which Meta will retire. Defaults to `v26.0`. Valid values: `v26.0`, `v25.0`.
 - `app_id` (String) Optional, set together with App secret: the ID of the Meta app the token was generated for, from App Dashboard → App settings → Basic.
-- `app_secret` (String, Sensitive) Optional, set together with App ID: the app's secret from App Dashboard → App settings → Basic. Required when the app has Require App Secret on, and lets Test connection warn when the token is about to expire or lacks ads_read.
+- `app_secret` (String, Sensitive) The app's secret from App Dashboard → App settings → Basic; set it together with App ID. Required if the app has Require App Secret on, and lets Test connection warn before the token expires or if it lacks ads_read.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `backfill_start` (String) Earliest date to read on the first sync, as an ISO-8601 date, e.g. 2026-01-01. Leave empty to start insights about 13 months back and read objects' whole history; later syncs ignore it.
-- `custom_insights` (String) Optional insights reports you define, as a JSON list of {name, level, …} with Marketing API names, e.g. [{"name": "campaign_by_country", "level": "campaign", "breakdowns": ["country"], "fields": ["campaign_id", "spend", "impressions", "clicks", "actions"]}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; a report cannot change once it has synced, so add a changed one under a new name.
-- `fetch_thumbnail_images` (Boolean) Off by default. Turn it on to store each creative's thumbnail image in thumbnail_data_url, because Meta's thumbnail_url link stops working after a few days; an image over 256 KB is left out. Defaults to `false`.
-- `include_deleted` (Boolean) Off by default. Turn it on to also sync deleted campaigns, ad sets, ads and their creatives, with the status DELETED, as Meta still reports their spend; turned on later, it applies from then on. Defaults to `false`.
+- `backfill_start` (String) Earliest date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.
+- `custom_insights` (String) Insights reports you define, as a JSON list of {name, level, …} using Marketing API names, e.g. [{"name": "campaign_by_country", "level": "campaign", "breakdowns": ["country"], "fields": ["campaign_id", "spend", "impressions", "clicks", "actions"]}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; to change a synced report, add it under a new name.
+- `fetch_thumbnail_images` (Boolean) Store each creative's thumbnail image in thumbnail_data_url, since Meta's thumbnail_url link expires after a few days. Images over 256 KB are skipped. Defaults to `false`.
+- `include_deleted` (Boolean) Also sync deleted campaigns, ad sets, ads and creatives, with status DELETED, since Meta still reports their spend. Turned on later, it applies from then on. Defaults to `false`.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 

@@ -115,9 +115,12 @@ type APIOAuth struct {
 	AuthModeField   string
 	AuthModeValue   string
 	AuthModeDefault string
-	// ClientFields name the config fields holding the customer's own OAuth
-	// client, which the connect flow's start request must carry.
-	ClientFields []string
+	// ConnectCommand is the CLI command that starts Connect, with the
+	// options this vendor's flow needs.
+	ConnectCommand string
+	// HostField names the config field the grant is authorized for (the
+	// Zendesk subdomain): changing it needs a new grant.
+	HostField string
 }
 
 // Metric represents a metrics definition (primarily for sources).

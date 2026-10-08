@@ -82,29 +82,29 @@ func SourceZendeskSchema() schema.Schema {
 			},
 			"subdomain": schema.StringAttribute{
 				Required:            true,
-				Description:         "Your Zendesk subdomain: the acme in acme.zendesk.com, shown in Admin Center → Account → Appearance → Branding. Then click Connect with Zendesk and approve as a Zendesk admin, because an agent's access leaves out the tickets that agent cannot see.",
-				MarkdownDescription: "Your Zendesk subdomain: the acme in acme.zendesk.com, shown in Admin Center → Account → Appearance → Branding. Then click Connect with Zendesk and approve as a Zendesk admin, because an agent's access leaves out the tickets that agent cannot see.",
+				Description:         "The acme in acme.zendesk.com, shown in Admin Center → Account → Appearance → Branding. Then click Connect with Zendesk and approve as a Zendesk admin; an agent's access misses the tickets that agent cannot see.",
+				MarkdownDescription: "The acme in acme.zendesk.com, shown in Admin Center → Account → Appearance → Branding. Then click Connect with Zendesk and approve as a Zendesk admin; an agent's access misses the tickets that agent cannot see.",
 			},
 			"resources": schema.ListAttribute{
 				Required:            true,
 				ElementType:         types.StringType,
-				Description:         "Zendesk objects to sync; each becomes its own topic. ticket_audits, ticket_comments, ticket_metric_events and side_conversations are read ticket by ticket, so their first sync of a large account can take days, and a resource your Zendesk plan lacks pauses while the others keep syncing. Requires at least one item.",
-				MarkdownDescription: "Zendesk objects to sync; each becomes its own topic. ticket_audits, ticket_comments, ticket_metric_events and side_conversations are read ticket by ticket, so their first sync of a large account can take days, and a resource your Zendesk plan lacks pauses while the others keep syncing. Requires at least one item.",
+				Description:         "Zendesk objects to sync, each into its own topic. ticket_audits, ticket_comments, ticket_metric_events and side_conversations are read ticket by ticket, so their first sync of a large account can take days. Requires at least one item.",
+				MarkdownDescription: "Zendesk objects to sync, each into its own topic. ticket_audits, ticket_comments, ticket_metric_events and side_conversations are read ticket by ticket, so their first sync of a large account can take days. Requires at least one item.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
 			},
 			"backfill_start": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.",
-				MarkdownDescription: "Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.",
+				Description:         "Earliest modification date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.",
+				MarkdownDescription: "Earliest modification date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.",
 			},
 			"oauth_grant_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "Single-use grant from the Connect with Zendesk flow, which Terraform cannot complete itself. Finish Connect in the Streamkap UI, or with the CLI (`streamkap sources start-source-oauth-connect`, open the returned authorize_url, then `streamkap sources poll-source-oauth-grant`), and set the returned grant here to create the source or to reconnect it. The grant expires within minutes and is spent when the source is saved. Leave it unset on an imported source. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Single-use grant from the Connect with Zendesk flow, which Terraform cannot complete itself. Finish Connect in the Streamkap UI, or with the CLI (`streamkap sources start-source-oauth-connect`, open the returned authorize_url, then `streamkap sources poll-source-oauth-grant`), and set the returned grant here to create the source or to reconnect it. The grant expires within minutes and is spent when the source is saved. Leave it unset on an imported source.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "Single-use grant from Connect with Zendesk, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect zendesk --environment <subdomain>`, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant zendesk --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Single-use grant from Connect with Zendesk, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect zendesk --environment <subdomain>`, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant zendesk --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -121,8 +121,14 @@ var SourceZendeskFieldMappings = map[string]string{
 	"oauth_grant_id": "oauth_grant_id",
 }
 
-var SourceZendeskAPIConditions = []APICondition{}
-
-var SourceZendeskAPIDependencies = []APIDependency{}
-
-var SourceZendeskAPIOAuth = APIOAuth{Enabled: true, AuthModeField: "", AuthModeValue: "", AuthModeDefault: "", ClientFields: []string{}}
+// SourceZendeskAPISource is the zendesk API source's generated contract.
+var SourceZendeskAPISource = APISource{
+	Code:          "zendesk",
+	DisplayName:   "Zendesk",
+	Schema:        SourceZendeskSchema,
+	FieldMappings: SourceZendeskFieldMappings,
+	NewModel:      func() any { return &SourceZendeskModel{} },
+	Conditions:    []APICondition{},
+	Dependencies:  []APIDependency{},
+	OAuth:         APIOAuth{Enabled: true, AuthModeField: "", AuthModeValue: "", AuthModeDefault: "", ConnectCommand: "`streamkap sources start-source-oauth-connect zendesk --environment <subdomain>`", HostField: "subdomain"},
+}

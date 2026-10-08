@@ -1689,18 +1689,24 @@ var {{ .FieldMappingsName }} = map[string]string{
 }
 {{- if .APISource }}
 
-var {{ .EntityTypeCap }}{{ .ConnectorCodeCap }}APIConditions = []APICondition{
+// {{ .EntityTypeCap }}{{ .ConnectorCodeCap }}APISource is the {{ .ConnectorCode }} API source's generated contract.
+var {{ .EntityTypeCap }}{{ .ConnectorCodeCap }}APISource = APISource{
+	Code:          {{ printf "%q" .ConnectorCode }},
+	DisplayName:   {{ printf "%q" .DisplayName }},
+	Schema:        {{ .SchemaFuncName }},
+	FieldMappings: {{ .FieldMappingsName }},
+	NewModel:      func() any { return &{{ .ModelName }}{} },
+	Conditions: []APICondition{
 {{- range .APIConditions }}
-	{Field: {{ printf "%q" .Field }}, ConditionField: {{ printf "%q" .ConditionField }}, ConditionValues: []string{ {{- range $i, $v := .ConditionValues }}{{ if $i }}, {{ end }}{{ printf "%q" $v }}{{ end -}} }, ConditionDefault: {{ printf "%q" .ConditionDefault }}, Required: {{ .Required }}},
+		{Field: {{ printf "%q" .Field }}, ConditionField: {{ printf "%q" .ConditionField }}, ConditionValues: []string{ {{- range $i, $v := .ConditionValues }}{{ if $i }}, {{ end }}{{ printf "%q" $v }}{{ end -}} }, ConditionDefault: {{ printf "%q" .ConditionDefault }}, Required: {{ .Required }}},
 {{- end }}
-}
-
-var {{ .EntityTypeCap }}{{ .ConnectorCodeCap }}APIDependencies = []APIDependency{
+	},
+	Dependencies: []APIDependency{
 {{- range .APIDependencies }}
-	{Field: {{ printf "%q" .Field }}, Requires: []string{ {{- range $i, $v := .Requires }}{{ if $i }}, {{ end }}{{ printf "%q" $v }}{{ end -}} }},
+		{Field: {{ printf "%q" .Field }}, Requires: []string{ {{- range $i, $v := .Requires }}{{ if $i }}, {{ end }}{{ printf "%q" $v }}{{ end -}} }},
 {{- end }}
+	},
+	OAuth: APIOAuth{Enabled: {{ .APIOAuth.Enabled }}, AuthModeField: {{ printf "%q" .APIOAuth.AuthModeField }}, AuthModeValue: {{ printf "%q" .APIOAuth.AuthModeValue }}, AuthModeDefault: {{ printf "%q" .APIOAuth.AuthModeDefault }}, ConnectCommand: {{ printf "%q" .APIOAuth.ConnectCommand }}, HostField: {{ printf "%q" .APIOAuth.HostField }}},
 }
-
-var {{ .EntityTypeCap }}{{ .ConnectorCodeCap }}APIOAuth = APIOAuth{Enabled: {{ .APIOAuth.Enabled }}, AuthModeField: {{ printf "%q" .APIOAuth.AuthModeField }}, AuthModeValue: {{ printf "%q" .APIOAuth.AuthModeValue }}, AuthModeDefault: {{ printf "%q" .APIOAuth.AuthModeDefault }}, ClientFields: []string{ {{- range $i, $v := .APIOAuth.ClientFields }}{{ if $i }}, {{ end }}{{ printf "%q" $v }}{{ end -}} }}
 {{- end }}
 `

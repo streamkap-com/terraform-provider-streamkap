@@ -88,28 +88,28 @@ output "netsuite_source_id" {
 
 - `account_id` (String) Your NetSuite account ID, shown in Setup → Company → Company Information, e.g. 1234567, or 1234567_SB1 for a sandbox.
 - `name` (String) Name of the source
-- `resources` (List of String) NetSuite tables to sync, by their SuiteQL names; each becomes its own topic. Your custom records are listed too, or type one's table name (customrecord…); the integration's role must be able to read each. Requires at least one item.
+- `resources` (List of String) NetSuite records to sync, each to its own topic; custom records are listed too, or type a table name starting with customrecord. The integration's role needs read access to each. Requires at least one item.
 
 ### Optional
 
-- `auth_mode` (String) How Streamkap signs in to NetSuite. Use Certificate for a new integration; token-based authentication is for an existing TBA integration. Defaults to `certificate`. Valid values: `certificate`, `tba`.
-- `backfill_start` (String) Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.
-- `certificate_id` (String) The Certificate ID NetSuite gave the certificate you mapped to this integration in Setup → Integration → Manage Authentication → OAuth 2.0 Client Credentials (M2M) Setup; not its fingerprint.
+- `auth_mode` (String) How Streamkap signs in to NetSuite: Certificate for a new integration, token-based authentication only for an existing TBA integration. Defaults to `certificate`. Valid values: `certificate`, `tba`.
+- `backfill_start` (String) Earliest modification date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.
+- `certificate_id` (String) The Certificate ID (not the fingerprint) of the certificate mapped to this integration in Setup → Integration → Manage Authentication → OAuth 2.0 Client Credentials (M2M) Setup.
 - `client_id` (String) The Client ID NetSuite showed once, when you saved the integration record in Setup → Integration → Manage Integrations.
-- `consumer_key` (String) The Consumer Key of the integration record your access token was issued for, shown once when the record was saved in Setup → Integration → Manage Integrations.
+- `consumer_key` (String) The Consumer Key of the integration record the access token belongs to, shown once when you save the record in Setup → Integration → Manage Integrations.
 - `consumer_secret` (String, Sensitive) The Consumer Secret shown beside the Consumer Key when the integration record was saved.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `private_key` (String, Sensitive) The private key of the certificate you uploaded to NetSuite, an RSA or EC P-256 key in PEM format, pasted whole with its BEGIN and END lines.
+- `private_key` (String, Sensitive) The PEM private key (RSA or EC P-256) of the certificate you uploaded to NetSuite, including its BEGIN and END lines.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `private_key_passphrase` (String, Sensitive) The passphrase of the private key, only if it is encrypted. Leave empty for an unencrypted key.
+- `private_key_passphrase` (String, Sensitive) The private key's passphrase, if the key is encrypted.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `token_id` (String) The Token ID of the access token issued for that integration and the role Streamkap reads with, created in Setup → Users/Roles → Access Tokens.
-- `token_secret` (String, Sensitive) The Token Secret shown beside the Token ID when the access token was created. NetSuite shows it only once; if it is lost, create a new token.
+- `token_id` (String) The Token ID of the access token for that integration and role, from Setup → Users/Roles → Access Tokens.
+- `token_secret` (String, Sensitive) The Token Secret NetSuite shows once beside the Token ID when the access token is created; if it is lost, create a new token.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 

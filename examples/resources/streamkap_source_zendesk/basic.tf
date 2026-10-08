@@ -1,9 +1,9 @@
-# Zendesk signs in only through Connect with Zendesk, which runs in a browser.
-# Finish Connect in the Streamkap UI, or run
-#   streamkap sources start-source-oauth-connect zendesk
+# Zendesk signs in only through Connect, which Terraform cannot run. Finish it
+# in the Streamkap UI, or run
+#   streamkap sources start-source-oauth-connect zendesk --environment acme
 # open the returned authorize_url, then run
 #   streamkap sources poll-source-oauth-grant zendesk --state <state>
-# and pass the returned grant before it expires.
+# and apply with the returned grant within 10 minutes.
 variable "zendesk_oauth_grant_id" {
   type      = string
   sensitive = true

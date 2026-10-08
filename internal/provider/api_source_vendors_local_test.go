@@ -227,8 +227,8 @@ func TestGoogleAnalyticsSourceLifecycle(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("streamkap_source_google_analytics.ga", "resources.#", "3"),
 					f.checkRequest(&f.updates, 0, func(body map[string]any) error {
-						if _, sent := body["service_account_key"]; sent {
-							return fmt.Errorf("update resent the unchanged service account key")
+						if body["service_account_key"] != `{"type":"service_account"}` {
+							return fmt.Errorf("an update must resend the configured service account key, got %v", body["service_account_key"])
 						}
 						if body["backfill_start"] != "2026-01-01" || body["property_id"] != "123456789" {
 							return fmt.Errorf("update must resend every non-secret field: %v", body)
@@ -282,8 +282,8 @@ func TestFacebookAdsSourceLifecycle(t *testing.T) {
 						if value, sent := body["app_secret"]; !sent || value != nil {
 							return fmt.Errorf("a removed optional secret must be cleared with an explicit null, got sent=%v value=%v", sent, value)
 						}
-						if _, sent := body["access_token"]; sent {
-							return fmt.Errorf("update resent the unchanged access token")
+						if body["access_token"] != "EAAB-local-token" {
+							return fmt.Errorf("an update must resend the configured access token, got %v", body["access_token"])
 						}
 						return nil
 					}),

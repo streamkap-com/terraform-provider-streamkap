@@ -2,7 +2,6 @@ package source
 
 import (
 	"slices"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -19,14 +18,7 @@ import (
 const oauthGrantAttr = "oauth_grant_id"
 
 type apiSourceConfig struct {
-	code         string
-	displayName  string
-	schema       func() schema.Schema
-	mappings     map[string]string
-	model        func() any
-	conditions   []generated.APICondition
-	dependencies []generated.APIDependency
-	oauth        generated.APIOAuth
+	generated.APISource
 }
 
 var _ connector.ConnectorConfig = (*apiSourceConfig)(nil)
@@ -35,14 +27,14 @@ var _ connector.ConnectorConfigRequestFilter = (*apiSourceConfig)(nil)
 var _ connector.ConnectorConfigPlanAdjuster = (*apiSourceConfig)(nil)
 var _ connector.ConnectorConfigKeepsConfiguredForm = (*apiSourceConfig)(nil)
 
-func (c *apiSourceConfig) GetSchema() schema.Schema            { return c.schema() }
-func (c *apiSourceConfig) GetFieldMappings() map[string]string { return c.mappings }
+func (c *apiSourceConfig) GetSchema() schema.Schema            { return c.Schema() }
+func (c *apiSourceConfig) GetFieldMappings() map[string]string { return c.FieldMappings }
 func (c *apiSourceConfig) GetConnectorType() connector.ConnectorType {
 	return connector.ConnectorTypeSource
 }
-func (c *apiSourceConfig) GetConnectorCode() string { return c.code }
-func (c *apiSourceConfig) GetResourceName() string  { return "source_" + c.code }
-func (c *apiSourceConfig) NewModelInstance() any    { return c.model() }
+func (c *apiSourceConfig) GetConnectorCode() string { return c.Code }
+func (c *apiSourceConfig) GetResourceName() string  { return "source_" + c.Code }
+func (c *apiSourceConfig) NewModelInstance() any    { return c.NewModel() }
 
 // KeepsConfiguredForm opts API sources into keeping the configured spelling of
 // a value the backend normalizes (see connector.ConnectorConfigKeepsConfiguredForm).
@@ -50,8 +42,8 @@ func (c *apiSourceConfig) KeepsConfiguredForm() {}
 
 // conditionValues captures every condition field, and the fields they gate.
 func (c *apiSourceConfig) conditionValues(model any, extra ...string) map[string]attr.Value {
-	names := make([]string, 0, len(c.conditions)*2+len(extra))
-	for _, condition := range c.conditions {
+	names := make([]string, 0, len(c.Conditions)*2+len(extra))
+	for _, condition := range c.Conditions {
 		names = append(names, condition.Field, condition.ConditionField)
 	}
 	return shared.CaptureFields(model, append(names, extra...))
@@ -70,25 +62,31 @@ func shown(condition generated.APICondition, values map[string]attr.Value) (show
 	return slices.Contains(condition.ConditionValues, value), value, true
 }
 
-func (c *apiSourceConfig) ValidateConfiguration(model any, creating bool) diag.Diagnostics {
+func (c *apiSourceConfig) ValidateConfiguration(model any, prior any) diag.Diagnostics {
 	var diags diag.Diagnostics
 	var extra []string
-	if c.oauth.Enabled {
+	if c.OAuth.Enabled {
 		extra = append(extra, oauthGrantAttr)
-		if c.oauth.AuthModeField != "" {
-			extra = append(extra, c.oauth.AuthModeField)
+		if c.OAuth.AuthModeField != "" {
+			extra = append(extra, c.OAuth.AuthModeField)
+		}
+		if c.OAuth.HostField != "" {
+			extra = append(extra, c.OAuth.HostField)
 		}
 	}
-	for _, dependency := range c.dependencies {
+	for _, dependency := range c.Dependencies {
 		extra = append(extra, dependency.Field)
 		extra = append(extra, dependency.Requires...)
 	}
 	values := c.conditionValues(model, extra...)
-	if creating && c.oauth.Enabled {
+	if prior == nil && c.OAuth.Enabled {
 		diags.Append(c.validateOAuthCreate(values)...)
 	}
-	secrets := shared.SensitiveStringAttrNames(c.schema())
-	for _, condition := range c.conditions {
+	if prior != nil && c.OAuth.HostField != "" {
+		diags.Append(c.validateHostChange(values, shared.CaptureFields(prior, []string{c.OAuth.HostField, oauthGrantAttr}))...)
+	}
+	secrets := shared.SensitiveStringAttrNames(c.Schema())
+	for _, condition := range c.Conditions {
 		show, conditionValue, known := shown(condition, values)
 		if !known {
 			continue
@@ -101,12 +99,12 @@ func (c *apiSourceConfig) ValidateConfiguration(model any, creating bool) diag.D
 		// mode the grant may use secrets the form hides, so only the pasted
 		// modes, where the form shows exactly the secrets they sign in with,
 		// are checked.
-		if !show && slices.Contains(secrets, condition.Field) && condition.ConditionField == c.oauth.AuthModeField &&
-			conditionValue != "" && conditionValue != c.oauth.AuthModeValue && isSet(value) {
+		if !show && slices.Contains(secrets, condition.Field) && condition.ConditionField == c.OAuth.AuthModeField &&
+			conditionValue != "" && conditionValue != c.OAuth.AuthModeValue && isSet(value) {
 			diags.AddAttributeError(path.Root(condition.Field), "API source value for another auth mode", condition.Field+" is not used when "+condition.ConditionField+" is "+conditionValue+"; remove it, or switch "+condition.ConditionField+".")
 		}
 	}
-	for _, dependency := range c.dependencies {
+	for _, dependency := range c.Dependencies {
 		if !isSet(values[dependency.Field]) {
 			continue
 		}
@@ -142,13 +140,13 @@ func (c *apiSourceConfig) PlanAdjustments(config any, state any) (unset []string
 	if grant := values[oauthGrantAttr]; grant != nil && !grant.IsNull() {
 		newGrant = state == nil || grant.IsUnknown() || !grant.Equal(shared.CaptureFields(state, []string{oauthGrantAttr})[oauthGrantAttr])
 	}
-	for _, condition := range c.conditions {
+	for _, condition := range c.Conditions {
 		_, value, known := shown(condition, values)
 		field := values[condition.Field]
 		if !known || field == nil || !field.IsNull() {
 			continue
 		}
-		if c.oauth.Enabled && condition.ConditionField == c.oauth.AuthModeField && value == c.oauth.AuthModeValue {
+		if c.OAuth.Enabled && condition.ConditionField == c.OAuth.AuthModeField && value == c.OAuth.AuthModeValue {
 			if newGrant {
 				unknown = append(unknown, condition.Field)
 			}
@@ -163,16 +161,16 @@ func (c *apiSourceConfig) PlanAdjustments(config any, state any) (unset []string
 // the consent step runs in a browser, which Terraform cannot drive.
 func (c *apiSourceConfig) validateOAuthCreate(values map[string]attr.Value) diag.Diagnostics {
 	var diags diag.Diagnostics
-	if c.oauth.AuthModeField != "" {
-		mode := values[c.oauth.AuthModeField]
+	if c.OAuth.AuthModeField != "" {
+		mode := values[c.OAuth.AuthModeField]
 		if mode != nil && mode.IsUnknown() {
 			return diags
 		}
 		value := conditionString(mode)
 		if value == "" {
-			value = c.oauth.AuthModeDefault
+			value = c.OAuth.AuthModeDefault
 		}
-		if value != c.oauth.AuthModeValue {
+		if value != c.OAuth.AuthModeValue {
 			return diags
 		}
 	}
@@ -180,29 +178,49 @@ func (c *apiSourceConfig) validateOAuthCreate(values map[string]attr.Value) diag
 	if grant != nil && (grant.IsUnknown() || (!grant.IsNull() && !emptyValue(grant))) {
 		return diags
 	}
-	summary := c.displayName + " sign-in needs an OAuth grant"
-	detail := "Terraform cannot complete the browser consent of Connect with " + c.displayName + ". "
-	if c.oauth.AuthModeField == "" {
-		detail = c.displayName + " has no pasted-credential mode: it signs in only through Connect with " + c.displayName + ", which Terraform cannot complete. "
+	summary := c.DisplayName + " sign-in needs an OAuth grant"
+	detail := "Terraform cannot complete the browser consent of Connect with " + c.DisplayName + ". "
+	if c.OAuth.AuthModeField == "" {
+		detail = c.DisplayName + " has no pasted-credential mode: it signs in only through Connect with " + c.DisplayName + ", which Terraform cannot complete. "
 	} else {
-		detail += "Choose another " + c.oauth.AuthModeField + ", or "
+		detail += "Choose another " + c.OAuth.AuthModeField + ", or "
 	}
-	start := "`streamkap sources start-source-oauth-connect " + c.code + "`"
-	if len(c.oauth.ClientFields) > 0 {
-		start = "`streamkap sources start-source-oauth-connect " + c.code + " --body <file>` with your OAuth client's " + strings.Join(c.oauth.ClientFields, " and ") + " in the JSON file"
-	}
-	detail += "Run Connect in the Streamkap UI, or run " + start + ", open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant " + c.code + " --state <state>`. " +
-		"Set oauth_grant_id to the returned grant and apply before it expires. Alternatively, create the source in the Streamkap UI and import it."
+	detail += "Run Connect in the Streamkap UI, or run " + c.connectSteps() + " " +
+		"Set oauth_grant_id to the returned grant and apply within 10 minutes. Alternatively, create the source in the Streamkap UI and import it."
 	diags.AddAttributeError(path.Root(oauthGrantAttr), summary, detail)
 	return diags
 }
 
+// validateHostChange refuses a new host (the Zendesk subdomain) without a new
+// grant: the stored grant was authorized for the old account, and the backend
+// rejects the update.
+func (c *apiSourceConfig) validateHostChange(values, prior map[string]attr.Value) diag.Diagnostics {
+	var diags diag.Diagnostics
+	host, before := values[c.OAuth.HostField], prior[c.OAuth.HostField]
+	if !isSet(host) || !isSet(before) || host.Equal(before) {
+		return diags
+	}
+	if grant := values[oauthGrantAttr]; grant != nil && (grant.IsUnknown() || (isSet(grant) && !grant.Equal(prior[oauthGrantAttr]))) {
+		return diags
+	}
+	diags.AddAttributeError(path.Root(c.OAuth.HostField), "Changing "+c.OAuth.HostField+" needs a new OAuth grant",
+		"The current grant was authorized for the previous "+c.OAuth.HostField+". Run Connect with "+c.DisplayName+" for the new one in the Streamkap UI, or run "+
+			c.connectSteps()+" Set oauth_grant_id to the new grant in the same apply.")
+	return diags
+}
+
+// connectSteps is the CLI handoff for an OAuth grant.
+func (c *apiSourceConfig) connectSteps() string {
+	return c.OAuth.ConnectCommand + ", open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant " + c.Code + " --state <state>`."
+}
+
 // FilterRequestConfig shapes the config body to the API-source contract. A
-// create omits unset fields. An update omits every secret the plan did not
-// change: the backend keeps a secret that is absent, while resending the prior
-// value would overwrite a token the backend has rotated since, and a spent
-// oauth_grant_id cannot be redeemed twice. An explicit null still clears a
-// secret the configuration removed.
+// create omits unset fields. An update resends every secret the current
+// auth mode shows, so a changed location (Salesforce domain, NetSuite
+// account_id) never pairs with a kept secret, which the backend refuses. It
+// omits an unchanged secret the form hides, which the grant filled and the
+// backend may have rotated since, and an unchanged oauth_grant_id, which is
+// spent. An explicit null still clears a secret the configuration removed.
 func (c *apiSourceConfig) FilterRequestConfig(configMap map[string]any, plan any, state any) {
 	if state == nil {
 		for key, value := range configMap {
@@ -212,19 +230,35 @@ func (c *apiSourceConfig) FilterRequestConfig(configMap map[string]any, plan any
 		}
 		return
 	}
-	secrets := shared.SensitiveStringAttrNames(c.schema())
+	secrets := shared.SensitiveStringAttrNames(c.Schema())
 	planned := shared.CaptureFields(plan, secrets)
 	prior := shared.CaptureFields(state, secrets)
+	values := c.conditionValues(plan)
 	for _, name := range secrets {
-		apiField, ok := c.mappings[name]
+		apiField, ok := c.FieldMappings[name]
 		if !ok {
 			continue
 		}
+		if name != oauthGrantAttr && c.showsField(name, values) {
+			continue
+		}
 		before, after := prior[name], planned[name]
-		if before == nil || after == nil || before.Equal(after) {
+		if before == nil || after == nil || before.Equal(after) || (name == oauthGrantAttr && !isSet(after)) {
 			delete(configMap, apiField)
 		}
 	}
+}
+
+// showsField reports whether the form shows a field for the planned values: a
+// field no condition gates is always shown.
+func (c *apiSourceConfig) showsField(name string, values map[string]attr.Value) bool {
+	for _, condition := range c.Conditions {
+		if condition.Field == name {
+			show, _, known := shown(condition, values)
+			return show && known
+		}
+	}
+	return true
 }
 
 func conditionString(value attr.Value) string {
@@ -254,90 +288,23 @@ func emptyValue(value attr.Value) bool {
 	return false
 }
 
-func NewHubSpotResource() resource.Resource {
-	return connector.NewBaseConnectorResource(&apiSourceConfig{
-		code: "hubspot", displayName: "HubSpot", schema: generated.SourceHubspotSchema,
-		mappings:     generated.SourceHubspotFieldMappings,
-		model:        func() any { return &generated.SourceHubspotModel{} },
-		conditions:   generated.SourceHubspotAPIConditions,
-		dependencies: generated.SourceHubspotAPIDependencies,
-		oauth:        generated.SourceHubspotAPIOAuth,
-	})
+func newAPISource(source generated.APISource) resource.Resource {
+	return connector.NewBaseConnectorResource(&apiSourceConfig{source})
 }
 
+func NewHubSpotResource() resource.Resource { return newAPISource(generated.SourceHubspotAPISource) }
 func NewSalesforceResource() resource.Resource {
-	return connector.NewBaseConnectorResource(&apiSourceConfig{
-		code: "salesforce", displayName: "Salesforce", schema: generated.SourceSalesforceSchema,
-		mappings:     generated.SourceSalesforceFieldMappings,
-		model:        func() any { return &generated.SourceSalesforceModel{} },
-		conditions:   generated.SourceSalesforceAPIConditions,
-		dependencies: generated.SourceSalesforceAPIDependencies,
-		oauth:        generated.SourceSalesforceAPIOAuth,
-	})
+	return newAPISource(generated.SourceSalesforceAPISource)
 }
-
-func NewNetSuiteResource() resource.Resource {
-	return connector.NewBaseConnectorResource(&apiSourceConfig{
-		code: "netsuite", displayName: "NetSuite", schema: generated.SourceNetsuiteSchema,
-		mappings:     generated.SourceNetsuiteFieldMappings,
-		model:        func() any { return &generated.SourceNetsuiteModel{} },
-		conditions:   generated.SourceNetsuiteAPIConditions,
-		dependencies: generated.SourceNetsuiteAPIDependencies,
-		oauth:        generated.SourceNetsuiteAPIOAuth,
-	})
-}
-
-func NewStripeResource() resource.Resource {
-	return connector.NewBaseConnectorResource(&apiSourceConfig{
-		code: "stripe", displayName: "Stripe", schema: generated.SourceStripeSchema,
-		mappings:     generated.SourceStripeFieldMappings,
-		model:        func() any { return &generated.SourceStripeModel{} },
-		conditions:   generated.SourceStripeAPIConditions,
-		dependencies: generated.SourceStripeAPIDependencies,
-		oauth:        generated.SourceStripeAPIOAuth,
-	})
-}
-
-func NewZendeskResource() resource.Resource {
-	return connector.NewBaseConnectorResource(&apiSourceConfig{
-		code: "zendesk", displayName: "Zendesk", schema: generated.SourceZendeskSchema,
-		mappings:     generated.SourceZendeskFieldMappings,
-		model:        func() any { return &generated.SourceZendeskModel{} },
-		conditions:   generated.SourceZendeskAPIConditions,
-		dependencies: generated.SourceZendeskAPIDependencies,
-		oauth:        generated.SourceZendeskAPIOAuth,
-	})
-}
-
+func NewNetSuiteResource() resource.Resource { return newAPISource(generated.SourceNetsuiteAPISource) }
+func NewStripeResource() resource.Resource   { return newAPISource(generated.SourceStripeAPISource) }
+func NewZendeskResource() resource.Resource  { return newAPISource(generated.SourceZendeskAPISource) }
 func NewGoogleAnalyticsResource() resource.Resource {
-	return connector.NewBaseConnectorResource(&apiSourceConfig{
-		code: "google_analytics", displayName: "Google Analytics 4", schema: generated.SourceGoogleAnalyticsSchema,
-		mappings:     generated.SourceGoogleAnalyticsFieldMappings,
-		model:        func() any { return &generated.SourceGoogleAnalyticsModel{} },
-		conditions:   generated.SourceGoogleAnalyticsAPIConditions,
-		dependencies: generated.SourceGoogleAnalyticsAPIDependencies,
-		oauth:        generated.SourceGoogleAnalyticsAPIOAuth,
-	})
+	return newAPISource(generated.SourceGoogleAnalyticsAPISource)
 }
-
 func NewFacebookAdsResource() resource.Resource {
-	return connector.NewBaseConnectorResource(&apiSourceConfig{
-		code: "facebook_ads", displayName: "Facebook Ads", schema: generated.SourceFacebookAdsSchema,
-		mappings:     generated.SourceFacebookAdsFieldMappings,
-		model:        func() any { return &generated.SourceFacebookAdsModel{} },
-		conditions:   generated.SourceFacebookAdsAPIConditions,
-		dependencies: generated.SourceFacebookAdsAPIDependencies,
-		oauth:        generated.SourceFacebookAdsAPIOAuth,
-	})
+	return newAPISource(generated.SourceFacebookAdsAPISource)
 }
-
 func NewGoogleAdsResource() resource.Resource {
-	return connector.NewBaseConnectorResource(&apiSourceConfig{
-		code: "google_ads", displayName: "Google Ads", schema: generated.SourceGoogleAdsSchema,
-		mappings:     generated.SourceGoogleAdsFieldMappings,
-		model:        func() any { return &generated.SourceGoogleAdsModel{} },
-		conditions:   generated.SourceGoogleAdsAPIConditions,
-		dependencies: generated.SourceGoogleAdsAPIDependencies,
-		oauth:        generated.SourceGoogleAdsAPIOAuth,
-	})
+	return newAPISource(generated.SourceGoogleAdsAPISource)
 }

@@ -1,6 +1,5 @@
-# The grant is spent when the source is created. Leave it in the
-# configuration afterwards, or remove it: either keeps the connection. Set a
-# new grant only to reconnect the source.
+# Saving the source spends the grant. Keep it in the configuration or remove
+# it; set a new one only to reconnect or to change subdomain.
 variable "zendesk_oauth_grant_id" {
   type      = string
   sensitive = true

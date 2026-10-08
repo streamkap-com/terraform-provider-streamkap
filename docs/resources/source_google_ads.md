@@ -85,31 +85,31 @@ output "google_ads_source_id" {
 
 ### Required
 
-- `auth_mode` (String) How Streamkap signs in to Google Ads: click Connect with Google to sign in through your own OAuth client, paste a service account's key, or paste a refresh token you minted with your OAuth client. Valid values: `oauth`, `service_account`, `refresh_token`.
-- `customer_id` (String) The Google Ads account to sync, shown at the top right of Google Ads, e.g. 123-456-7890. Use a client account, or a manager account with Include client accounts on.
+- `auth_mode` (String) How Streamkap signs in to Google Ads: Connect with Google through your own OAuth client, a service account key, or a refresh token minted with your OAuth client. Valid values: `oauth`, `service_account`, `refresh_token`.
+- `customer_id` (String) The Google Ads account to sync, shown at the top right of Google Ads, e.g. 123-456-7890. For a manager account, turn on Include client accounts.
 - `name` (String) Name of the source
-- `resources` (List of String) Google Ads objects and daily reports to sync; each becomes its own topic. Each resource spends Google Ads API operations from your Cloud project's daily limit: the default set uses about 360 a day per account. Select custom_<name> for each query defined in Custom queries. Requires at least one item.
+- `resources` (List of String) Google Ads objects and daily reports to sync, each to its own topic; select custom_<name> for each query in Custom queries. Each uses Google Ads API operations from your Cloud project's daily limit, about 360 a day per account for the default set. Requires at least one item.
 
 ### Optional
 
 - `api_version` (String) Google Ads API version this source calls; v25 is currently the only one. Defaults to `v25`. Valid values: `v25`.
-- `backfill_start` (String) Earliest report date to read on the first sync, as an ISO-8601 date, e.g. 2026-01-01. Leave empty to start two years back (Google keeps 37 months of daily data); later syncs ignore it.
-- `client_id` (String) The client ID of an OAuth client from APIs & Services → Credentials in your Google Cloud project, with the Google Ads API enabled and the consent screen In production (Testing makes tokens expire in 7 days). A new project has Test access, which reads test accounts only; apply for Explorer or Basic access on the project's Google Ads API Overview page.
+- `backfill_start` (String) Earliest report date to read when a resource first syncs; Google keeps 37 months of daily data. Change history never starts more than 29 days back, and clicks, calls, lead-form submissions and Local Services lead conversations never more than 90. Applies to resources added later too; changing it does not re-read resources already synced.
+- `client_id` (String) The client ID of an OAuth client from APIs & Services → Credentials in your Google Cloud project, with the Google Ads API enabled and the OAuth consent screen In production. A new project has Test access, which reads test accounts only; apply for Explorer or Basic access on its Google Ads API Overview page.
 - `client_secret` (String, Sensitive) The client secret of the same OAuth client, from APIs & Services → Credentials.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `conversion_window_days` (Number) How many days back reports are re-read to pick up late conversions. Default 30; set it to the longest click-through conversion window of your conversion actions, up to 90. Defaults to `30`.
-- `custom_queries` (String) Optional GAQL queries you define, as a JSON list of {name, query} without ORDER BY, LIMIT or date filters, e.g. [{"name": "campaign_devices", "query": "SELECT campaign.id, campaign.name, segments.device, metrics.clicks FROM campaign WHERE campaign.status = 'ENABLED'"}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; a query cannot change once it has synced, so add a changed one under a new name.
-- `customer_ids` (List of String) More customer IDs to sync with the same credentials. Every account shares one topic per resource, each row carrying its customer_id; an account added later syncs from then on, so reset the source to backfill its history.
-- `include_client_accounts` (Boolean) Off by default. Turn it on to treat Customer ID as a manager account and sync every enabled client account under it, including clients added later. Defaults to `false`.
-- `login_customer_id` (String) The customer ID of the manager account through which your Google user or service account reaches these accounts, e.g. 123-456-7890. Leave empty for direct access.
-- `oauth_grant_id` (String, Sensitive) Single-use grant from the Connect with Google Ads flow, which Terraform cannot complete itself. Finish Connect in the Streamkap UI, or with the CLI (`streamkap sources start-source-oauth-connect`, open the returned authorize_url, then `streamkap sources poll-source-oauth-grant`), and set the returned grant here to create the source or to reconnect it. The grant expires within minutes and is spent when the source is saved. Leave it unset on an imported source.
+- `conversion_window_days` (Number) How many days back reports are re-read to pick up late conversions. Set it to the longest click-through conversion window of your conversion actions, up to 90. Defaults to `30`.
+- `custom_queries` (String) GAQL queries to sync, as a JSON list of {name, query} without ORDER BY, LIMIT or date filters, e.g. [{"name": "campaign_devices", "query": "SELECT campaign.id, campaign.name, segments.device, metrics.clicks FROM campaign WHERE campaign.status = 'ENABLED'"}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; to change a synced query, add it under a new name.
+- `customer_ids` (List of String) More Google Ads accounts to sync with the same credentials, into the same topics; each row carries its customer_id. An account added later syncs from then on; reset the source to backfill its history.
+- `include_client_accounts` (Boolean) Sync every enabled client account under the manager account in Customer ID, including clients added later. Defaults to `false`.
+- `login_customer_id` (String) The manager account through which your Google user or service account reaches these accounts, e.g. 123-456-7890. Leave empty for direct access.
+- `oauth_grant_id` (String, Sensitive) Single-use grant from Connect with Google Ads, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect google_ads --body <file>`, the file holding your OAuth client's client_id and client_secret as JSON, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant google_ads --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `refresh_token` (String, Sensitive) A refresh token minted with this OAuth client for the https://www.googleapis.com/auth/adwords scope, by a Google user who can sign in to these accounts. Google keeps 100 per user and client, so minting more silently invalidates the oldest.
+- `refresh_token` (String, Sensitive) A refresh token for the https://www.googleapis.com/auth/adwords scope, minted with this OAuth client by a Google user with access to these accounts. Google keeps 100 per user and client; minting more invalidates the oldest.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `service_account_key` (String, Sensitive) The JSON key file of a service account in your Google Cloud project, pasted whole, from IAM & Admin → Service accounts → Keys → Add key; the project needs the Google Ads API enabled. In Google Ads, add the service account's email as a user under Admin → Access and security → Users; if you add it to a manager account, set Login customer ID to that manager.
+- `service_account_key` (String, Sensitive) The service account's JSON key file, pasted whole, from IAM & Admin → Service accounts → Keys → Add key in a Google Cloud project with the Google Ads API enabled. In Google Ads, add the service account's email under Admin → Access and security → Users; if you add it to a manager account, set Login customer ID to that manager.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.

@@ -102,6 +102,15 @@ type APIError struct {
 	StatusCode int
 	Detail     string
 	RequestID  string
+	// Fields is set when an API-source save is refused and every error names
+	// a config field.
+	Fields []APIFieldError
+}
+
+// APIFieldError is one entry of the `fields` list sent beside `detail`.
+type APIFieldError struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
 }
 
 func (e *APIError) Error() string {
@@ -175,6 +184,7 @@ func adoptRefusedError(c adoptConflict, err error) error {
 	}
 	return fmt.Errorf(
 		"streamkap %[1]s %[2]q already exists on the backend, and auto-adoption is unsafe (it would risk destroying the live %[1]s under create_before_destroy). Recovery options:\n"+
+			"  • If the old %[1]s was deleted moments ago (a replace, or a destroy and then an apply), the backend keeps its name until the teardown it runs in the background finishes. Wait a minute and re-run apply.\n"+
 			"  • If this is a `lifecycle { create_before_destroy = true }` replace: remove that directive — Streamkap enforces unique %[1]s names per %[3]s, so a new and an old %[1]s cannot coexist by name. Use the default destroy-then-create, or rename so the two can briefly coexist.\n"+
 			"  • If you have deposed entries from earlier failed applies (shown in `terraform plan` as `<address> (destroy deposed <key>)`), back up state and compare their backend IDs before applying. If a deposed and current instance share an ID, resolve the state collision before Terraform destroys the live record. See docs/MIGRATION.md → \"Known limitations\".\n"+
 			"  • If this is recovering from an apply that lost its response: run `terraform import %[4]s`.%[5]s Find the id in the Streamkap UI or via `GET %[6]s?partial_name=%[2]s`, then re-run apply.\n"+
@@ -420,7 +430,11 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 		// error ("invalid character '<' looking for beginning of value") strips
 		// every actionable hint, which has been a recurring debugging dead-end.
 		if detail, ok := parseAPIErrorDetail(body); ok {
-			return &APIError{StatusCode: resp.StatusCode, Detail: detail, RequestID: requestID}
+			var envelope struct {
+				Fields []APIFieldError `json:"fields"`
+			}
+			_ = json.Unmarshal(body, &envelope) // parseAPIErrorDetail already decoded this body
+			return &APIError{StatusCode: resp.StatusCode, Detail: detail, RequestID: requestID, Fields: envelope.Fields}
 		}
 		if json.Valid(body) {
 			detail := fmt.Sprintf("%s %s: JSON error response: %s", req.Method, req.URL, snippet([]byte(redactSensitiveErrorJSON(body))))

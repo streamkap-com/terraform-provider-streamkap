@@ -77,19 +77,19 @@ output "salesforce_source_id" {
 ### Required
 
 - `name` (String) Name of the source
-- `resources` (List of String) Salesforce objects to sync; each becomes its own topic. Pick a standard object or type any queryable object's API name (e.g. Warehouse__c, AccountHistory); the integration user needs read access to each. Requires at least one item.
+- `resources` (List of String) Salesforce objects to sync; each becomes its own topic. Pick a standard object or type any object's API name, e.g. Warehouse__c or AccountHistory; the integration user needs read access to each. Requires at least one item.
 
 ### Optional
 
 - `api_version` (String) Salesforce REST API version this source calls. Keep v67.0 unless you need v66.0. Defaults to `v67.0`. Valid values: `v66.0`, `v67.0`.
-- `auth_mode` (String) How Streamkap signs in to Salesforce: with an External Client App you create in your org, by its client credentials or a JWT bearer certificate, or, where offered, Connect with Salesforce. Defaults to `service`. Valid values: `service`, `oauth`, `jwt`.
-- `backfill_start` (String) Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.
-- `client_id` (String) The Consumer Key of the app you created for Streamkap: in Setup → External Client Apps Manager, open the app's Settings → OAuth Settings → Consumer Key and Secret.
+- `auth_mode` (String) How Streamkap signs in to Salesforce: an External Client App in your org, by client credentials or a JWT bearer certificate, or Connect with Salesforce. Defaults to `service`. Valid values: `service`, `oauth`, `jwt`.
+- `backfill_start` (String) Earliest modification date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.
+- `client_id` (String) The Consumer Key of your External Client App, from Setup → External Client Apps Manager → your app → Settings → OAuth Settings → Consumer Key and Secret.
 - `client_secret` (String, Sensitive) The Consumer Secret shown beside the Consumer Key. The app must have Enable Client Credentials Flow on, with a run-as user who can read the objects you sync.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `domain` (String) Your org's My Domain URL, e.g. https://acme.my.salesforce.com, shown in Setup under My Domain. A sandbox has its own, e.g. https://acme--dev.sandbox.my.salesforce.com.
-- `oauth_grant_id` (String, Sensitive) Single-use grant from the Connect with Salesforce flow, which Terraform cannot complete itself. Finish Connect in the Streamkap UI, or with the CLI (`streamkap sources start-source-oauth-connect`, open the returned authorize_url, then `streamkap sources poll-source-oauth-grant`), and set the returned grant here to create the source or to reconnect it. The grant expires within minutes and is spent when the source is saved. Leave it unset on an imported source.
+- `domain` (String) Your org's My Domain URL from Setup → My Domain, e.g. https://acme.my.salesforce.com. A sandbox has its own, e.g. https://acme--dev.sandbox.my.salesforce.com.
+- `oauth_grant_id` (String, Sensitive) Single-use grant from Connect with Salesforce, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect salesforce --environment <production|sandbox>`, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant salesforce --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `private_key` (String, Sensitive) The unencrypted RSA private key, in PEM format with its BEGIN and END lines, whose certificate you uploaded to the app for the JWT bearer flow.

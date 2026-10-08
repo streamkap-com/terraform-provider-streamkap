@@ -5,9 +5,11 @@ package generated
 import (
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -21,10 +23,12 @@ type SourceStripeModel struct {
 	ConnectorStatus types.String   `tfsdk:"connector_status"`
 	KcClusterId     types.String   `tfsdk:"kc_cluster_id"`
 	Tags            types.Set      `tfsdk:"tags"`
+	AuthMode        types.String   `tfsdk:"auth_mode"`
 	Token           types.String   `tfsdk:"token"`
 	Resources       types.List     `tfsdk:"resources"`
 	APIVersion      types.String   `tfsdk:"api_version"`
 	BackfillStart   types.String   `tfsdk:"backfill_start"`
+	OauthGrantID    types.String   `tfsdk:"oauth_grant_id"`
 	Timeouts        timeouts.Value `tfsdk:"timeouts"`
 }
 
@@ -80,30 +84,54 @@ func SourceStripeSchema() schema.Schema {
 					setplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"auth_mode": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How Streamkap signs in to Stripe: paste a restricted key, or click Connect with Stripe to install Streamkap's Stripe App. Defaults to \"restricted_key\". Valid values: restricted_key, oauth.",
+				MarkdownDescription: "How Streamkap signs in to Stripe: paste a restricted key, or click Connect with Stripe to install Streamkap's Stripe App. Defaults to `restricted_key`. Valid values: `restricted_key`, `oauth`.",
+				Default:             stringdefault.StaticString("restricted_key"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("restricted_key", "oauth"),
+				},
+			},
 			"token": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
+				Computed:            true,
 				Sensitive:           true,
-				Description:         "A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events, on Accounts (under Connect) and on each resource you select, and None on everything else; Test connection names any permission that is still missing. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events, on Accounts (under Connect) and on each resource you select, and None on everything else; Test connection names any permission that is still missing.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events, on Accounts and on each resource you select, and None on everything else; Test connection names any permission still missing. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events, on Accounts and on each resource you select, and None on everything else; Test connection names any permission still missing.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"resources": schema.ListAttribute{
 				Required:            true,
 				ElementType:         types.StringType,
-				Description:         "Stripe objects to sync; each becomes its own topic, and the key needs Read on each. Select Connect resources, Issuing resources (issuing_…) and quotes only if your account uses Connect, Issuing, or Invoicing Plus or Billing. Requires at least one item.",
-				MarkdownDescription: "Stripe objects to sync; each becomes its own topic, and the key needs Read on each. Select Connect resources, Issuing resources (issuing_…) and quotes only if your account uses Connect, Issuing, or Invoicing Plus or Billing. Requires at least one item.",
+				Description:         "Stripe objects to sync, each into its own topic. Select Connect, Issuing (issuing_…) and quotes resources only if your account uses Connect, Issuing, or Invoicing Plus or Billing. Requires at least one item.",
+				MarkdownDescription: "Stripe objects to sync, each into its own topic. Select Connect, Issuing (issuing_…) and quotes resources only if your account uses Connect, Issuing, or Invoicing Plus or Billing. Requires at least one item.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
 			},
 			"api_version": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Leave empty to use your account's default API version, shown in Workbench. Set it only to pin a different version, written the way Stripe names it, e.g. 2026-08-26.dahlia.",
-				MarkdownDescription: "Leave empty to use your account's default API version, shown in Workbench. Set it only to pin a different version, written the way Stripe names it, e.g. 2026-08-26.dahlia.",
+				Description:         "The Stripe API version to pin, e.g. 2026-08-26.dahlia. Leave empty to use your account's default, shown in Workbench.",
+				MarkdownDescription: "The Stripe API version to pin, e.g. 2026-08-26.dahlia. Leave empty to use your account's default, shown in Workbench.",
 			},
 			"backfill_start": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.",
-				MarkdownDescription: "Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.",
+				Description:         "Earliest creation date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced. Events and discounts reach back at most 30 days, the time Stripe keeps events.",
+				MarkdownDescription: "Earliest creation date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced. Events and discounts reach back at most 30 days, the time Stripe keeps events.",
+			},
+			"oauth_grant_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Sensitive:           true,
+				Description:         "Single-use grant from Connect with Stripe, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect stripe`, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant stripe --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Single-use grant from Connect with Stripe, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect stripe`, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant stripe --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 	}
@@ -111,14 +139,24 @@ func SourceStripeSchema() schema.Schema {
 
 // SourceStripeFieldMappings maps Terraform attribute names to API field names.
 var SourceStripeFieldMappings = map[string]string{
+	"auth_mode":      "auth_mode",
 	"token":          "token",
 	"resources":      "resources",
 	"api_version":    "api_version",
 	"backfill_start": "backfill_start",
+	"oauth_grant_id": "oauth_grant_id",
 }
 
-var SourceStripeAPIConditions = []APICondition{}
-
-var SourceStripeAPIDependencies = []APIDependency{}
-
-var SourceStripeAPIOAuth = APIOAuth{Enabled: false, AuthModeField: "", AuthModeValue: "", AuthModeDefault: "", ClientFields: []string{}}
+// SourceStripeAPISource is the stripe API source's generated contract.
+var SourceStripeAPISource = APISource{
+	Code:          "stripe",
+	DisplayName:   "Stripe",
+	Schema:        SourceStripeSchema,
+	FieldMappings: SourceStripeFieldMappings,
+	NewModel:      func() any { return &SourceStripeModel{} },
+	Conditions: []APICondition{
+		{Field: "token", ConditionField: "auth_mode", ConditionValues: []string{"restricted_key"}, ConditionDefault: "restricted_key", Required: true},
+	},
+	Dependencies: []APIDependency{},
+	OAuth:        APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "restricted_key", ConnectCommand: "`streamkap sources start-source-oauth-connect stripe`", HostField: ""},
+}

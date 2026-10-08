@@ -98,8 +98,8 @@ func SourceGoogleAdsSchema() schema.Schema {
 			},
 			"auth_mode": schema.StringAttribute{
 				Required:            true,
-				Description:         "How Streamkap signs in to Google Ads: click Connect with Google to sign in through your own OAuth client, paste a service account's key, or paste a refresh token you minted with your OAuth client. Valid values: oauth, service_account, refresh_token.",
-				MarkdownDescription: "How Streamkap signs in to Google Ads: click Connect with Google to sign in through your own OAuth client, paste a service account's key, or paste a refresh token you minted with your OAuth client. Valid values: `oauth`, `service_account`, `refresh_token`.",
+				Description:         "How Streamkap signs in to Google Ads: Connect with Google through your own OAuth client, a service account key, or a refresh token minted with your OAuth client. Valid values: oauth, service_account, refresh_token.",
+				MarkdownDescription: "How Streamkap signs in to Google Ads: Connect with Google through your own OAuth client, a service account key, or a refresh token minted with your OAuth client. Valid values: `oauth`, `service_account`, `refresh_token`.",
 				Validators: []validator.String{
 					stringvalidator.OneOf("oauth", "service_account", "refresh_token"),
 				},
@@ -107,8 +107,8 @@ func SourceGoogleAdsSchema() schema.Schema {
 			"client_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The client ID of an OAuth client from APIs & Services → Credentials in your Google Cloud project, with the Google Ads API enabled and the consent screen In production (Testing makes tokens expire in 7 days). A new project has Test access, which reads test accounts only; apply for Explorer or Basic access on the project's Google Ads API Overview page.",
-				MarkdownDescription: "The client ID of an OAuth client from APIs & Services → Credentials in your Google Cloud project, with the Google Ads API enabled and the consent screen In production (Testing makes tokens expire in 7 days). A new project has Test access, which reads test accounts only; apply for Explorer or Basic access on the project's Google Ads API Overview page.",
+				Description:         "The client ID of an OAuth client from APIs & Services → Credentials in your Google Cloud project, with the Google Ads API enabled and the OAuth consent screen In production. A new project has Test access, which reads test accounts only; apply for Explorer or Basic access on its Google Ads API Overview page.",
+				MarkdownDescription: "The client ID of an OAuth client from APIs & Services → Credentials in your Google Cloud project, with the Google Ads API enabled and the OAuth consent screen In production. A new project has Test access, which reads test accounts only; apply for Explorer or Basic access on its Google Ads API Overview page.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -116,8 +116,8 @@ func SourceGoogleAdsSchema() schema.Schema {
 			"resources": schema.ListAttribute{
 				Required:            true,
 				ElementType:         types.StringType,
-				Description:         "Google Ads objects and daily reports to sync; each becomes its own topic. Each resource spends Google Ads API operations from your Cloud project's daily limit: the default set uses about 360 a day per account. Select custom_<name> for each query defined in Custom queries. Requires at least one item.",
-				MarkdownDescription: "Google Ads objects and daily reports to sync; each becomes its own topic. Each resource spends Google Ads API operations from your Cloud project's daily limit: the default set uses about 360 a day per account. Select custom_<name> for each query defined in Custom queries. Requires at least one item.",
+				Description:         "Google Ads objects and daily reports to sync, each to its own topic; select custom_<name> for each query in Custom queries. Each uses Google Ads API operations from your Cloud project's daily limit, about 360 a day per account for the default set. Requires at least one item.",
+				MarkdownDescription: "Google Ads objects and daily reports to sync, each to its own topic; select custom_<name> for each query in Custom queries. Each uses Google Ads API operations from your Cloud project's daily limit, about 360 a day per account for the default set. Requires at least one item.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
@@ -134,15 +134,15 @@ func SourceGoogleAdsSchema() schema.Schema {
 			},
 			"custom_queries": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Optional GAQL queries you define, as a JSON list of {name, query} without ORDER BY, LIMIT or date filters, e.g. [{\"name\": \"campaign_devices\", \"query\": \"SELECT campaign.id, campaign.name, segments.device, metrics.clicks FROM campaign WHERE campaign.status = 'ENABLED'\"}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; a query cannot change once it has synced, so add a changed one under a new name.",
-				MarkdownDescription: "Optional GAQL queries you define, as a JSON list of {name, query} without ORDER BY, LIMIT or date filters, e.g. [{\"name\": \"campaign_devices\", \"query\": \"SELECT campaign.id, campaign.name, segments.device, metrics.clicks FROM campaign WHERE campaign.status = 'ENABLED'\"}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; a query cannot change once it has synced, so add a changed one under a new name.",
+				Description:         "GAQL queries to sync, as a JSON list of {name, query} without ORDER BY, LIMIT or date filters, e.g. [{\"name\": \"campaign_devices\", \"query\": \"SELECT campaign.id, campaign.name, segments.device, metrics.clicks FROM campaign WHERE campaign.status = 'ENABLED'\"}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; to change a synced query, add it under a new name.",
+				MarkdownDescription: "GAQL queries to sync, as a JSON list of {name, query} without ORDER BY, LIMIT or date filters, e.g. [{\"name\": \"campaign_devices\", \"query\": \"SELECT campaign.id, campaign.name, segments.device, metrics.clicks FROM campaign WHERE campaign.status = 'ENABLED'\"}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; to change a synced query, add it under a new name.",
 			},
 			"refresh_token": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "A refresh token minted with this OAuth client for the https://www.googleapis.com/auth/adwords scope, by a Google user who can sign in to these accounts. Google keeps 100 per user and client, so minting more silently invalidates the oldest. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "A refresh token minted with this OAuth client for the https://www.googleapis.com/auth/adwords scope, by a Google user who can sign in to these accounts. Google keeps 100 per user and client, so minting more silently invalidates the oldest.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "A refresh token for the https://www.googleapis.com/auth/adwords scope, minted with this OAuth client by a Google user with access to these accounts. Google keeps 100 per user and client; minting more invalidates the oldest. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "A refresh token for the https://www.googleapis.com/auth/adwords scope, minted with this OAuth client by a Google user with access to these accounts. Google keeps 100 per user and client; minting more invalidates the oldest.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -151,8 +151,8 @@ func SourceGoogleAdsSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "The JSON key file of a service account in your Google Cloud project, pasted whole, from IAM & Admin → Service accounts → Keys → Add key; the project needs the Google Ads API enabled. In Google Ads, add the service account's email as a user under Admin → Access and security → Users; if you add it to a manager account, set Login customer ID to that manager. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "The JSON key file of a service account in your Google Cloud project, pasted whole, from IAM & Admin → Service accounts → Keys → Add key; the project needs the Google Ads API enabled. In Google Ads, add the service account's email as a user under Admin → Access and security → Users; if you add it to a manager account, set Login customer ID to that manager.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "The service account's JSON key file, pasted whole, from IAM & Admin → Service accounts → Keys → Add key in a Google Cloud project with the Google Ads API enabled. In Google Ads, add the service account's email under Admin → Access and security → Users; if you add it to a manager account, set Login customer ID to that manager. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The service account's JSON key file, pasted whole, from IAM & Admin → Service accounts → Keys → Add key in a Google Cloud project with the Google Ads API enabled. In Google Ads, add the service account's email under Admin → Access and security → Users; if you add it to a manager account, set Login customer ID to that manager.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -160,8 +160,8 @@ func SourceGoogleAdsSchema() schema.Schema {
 			"conversion_window_days": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "How many days back reports are re-read to pick up late conversions. Default 30; set it to the longest click-through conversion window of your conversion actions, up to 90. Defaults to 30.",
-				MarkdownDescription: "How many days back reports are re-read to pick up late conversions. Default 30; set it to the longest click-through conversion window of your conversion actions, up to 90. Defaults to `30`.",
+				Description:         "How many days back reports are re-read to pick up late conversions. Set it to the longest click-through conversion window of your conversion actions, up to 90. Defaults to 30.",
+				MarkdownDescription: "How many days back reports are re-read to pick up late conversions. Set it to the longest click-through conversion window of your conversion actions, up to 90. Defaults to `30`.",
 				Default:             int64default.StaticInt64(30),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 90),
@@ -169,25 +169,25 @@ func SourceGoogleAdsSchema() schema.Schema {
 			},
 			"customer_id": schema.StringAttribute{
 				Required:            true,
-				Description:         "The Google Ads account to sync, shown at the top right of Google Ads, e.g. 123-456-7890. Use a client account, or a manager account with Include client accounts on.",
-				MarkdownDescription: "The Google Ads account to sync, shown at the top right of Google Ads, e.g. 123-456-7890. Use a client account, or a manager account with Include client accounts on.",
+				Description:         "The Google Ads account to sync, shown at the top right of Google Ads, e.g. 123-456-7890. For a manager account, turn on Include client accounts.",
+				MarkdownDescription: "The Google Ads account to sync, shown at the top right of Google Ads, e.g. 123-456-7890. For a manager account, turn on Include client accounts.",
 			},
 			"customer_ids": schema.ListAttribute{
 				Optional:            true,
 				ElementType:         types.StringType,
-				Description:         "More customer IDs to sync with the same credentials. Every account shares one topic per resource, each row carrying its customer_id; an account added later syncs from then on, so reset the source to backfill its history.",
-				MarkdownDescription: "More customer IDs to sync with the same credentials. Every account shares one topic per resource, each row carrying its customer_id; an account added later syncs from then on, so reset the source to backfill its history.",
+				Description:         "More Google Ads accounts to sync with the same credentials, into the same topics; each row carries its customer_id. An account added later syncs from then on; reset the source to backfill its history.",
+				MarkdownDescription: "More Google Ads accounts to sync with the same credentials, into the same topics; each row carries its customer_id. An account added later syncs from then on; reset the source to backfill its history.",
 			},
 			"login_customer_id": schema.StringAttribute{
 				Optional:            true,
-				Description:         "The customer ID of the manager account through which your Google user or service account reaches these accounts, e.g. 123-456-7890. Leave empty for direct access.",
-				MarkdownDescription: "The customer ID of the manager account through which your Google user or service account reaches these accounts, e.g. 123-456-7890. Leave empty for direct access.",
+				Description:         "The manager account through which your Google user or service account reaches these accounts, e.g. 123-456-7890. Leave empty for direct access.",
+				MarkdownDescription: "The manager account through which your Google user or service account reaches these accounts, e.g. 123-456-7890. Leave empty for direct access.",
 			},
 			"include_client_accounts": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Off by default. Turn it on to treat Customer ID as a manager account and sync every enabled client account under it, including clients added later. Defaults to false.",
-				MarkdownDescription: "Off by default. Turn it on to treat Customer ID as a manager account and sync every enabled client account under it, including clients added later. Defaults to `false`.",
+				Description:         "Sync every enabled client account under the manager account in Customer ID, including clients added later. Defaults to false.",
+				MarkdownDescription: "Sync every enabled client account under the manager account in Customer ID, including clients added later. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"api_version": schema.StringAttribute{
@@ -202,15 +202,15 @@ func SourceGoogleAdsSchema() schema.Schema {
 			},
 			"backfill_start": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Earliest report date to read on the first sync, as an ISO-8601 date, e.g. 2026-01-01. Leave empty to start two years back (Google keeps 37 months of daily data); later syncs ignore it.",
-				MarkdownDescription: "Earliest report date to read on the first sync, as an ISO-8601 date, e.g. 2026-01-01. Leave empty to start two years back (Google keeps 37 months of daily data); later syncs ignore it.",
+				Description:         "Earliest report date to read when a resource first syncs; Google keeps 37 months of daily data. Change history never starts more than 29 days back, and clicks, calls, lead-form submissions and Local Services lead conversations never more than 90. Applies to resources added later too; changing it does not re-read resources already synced.",
+				MarkdownDescription: "Earliest report date to read when a resource first syncs; Google keeps 37 months of daily data. Change history never starts more than 29 days back, and clicks, calls, lead-form submissions and Local Services lead conversations never more than 90. Applies to resources added later too; changing it does not re-read resources already synced.",
 			},
 			"oauth_grant_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "Single-use grant from the Connect with Google Ads flow, which Terraform cannot complete itself. Finish Connect in the Streamkap UI, or with the CLI (`streamkap sources start-source-oauth-connect`, open the returned authorize_url, then `streamkap sources poll-source-oauth-grant`), and set the returned grant here to create the source or to reconnect it. The grant expires within minutes and is spent when the source is saved. Leave it unset on an imported source. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Single-use grant from the Connect with Google Ads flow, which Terraform cannot complete itself. Finish Connect in the Streamkap UI, or with the CLI (`streamkap sources start-source-oauth-connect`, open the returned authorize_url, then `streamkap sources poll-source-oauth-grant`), and set the returned grant here to create the source or to reconnect it. The grant expires within minutes and is spent when the source is saved. Leave it unset on an imported source.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "Single-use grant from Connect with Google Ads, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect google_ads --body <file>`, the file holding your OAuth client's client_id and client_secret as JSON, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant google_ads --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Single-use grant from Connect with Google Ads, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect google_ads --body <file>`, the file holding your OAuth client's client_id and client_secret as JSON, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant google_ads --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -238,13 +238,19 @@ var SourceGoogleAdsFieldMappings = map[string]string{
 	"oauth_grant_id":          "oauth_grant_id",
 }
 
-var SourceGoogleAdsAPIConditions = []APICondition{
-	{Field: "client_id", ConditionField: "auth_mode", ConditionValues: []string{"oauth", "refresh_token"}, ConditionDefault: "", Required: true},
-	{Field: "client_secret", ConditionField: "auth_mode", ConditionValues: []string{"oauth", "refresh_token"}, ConditionDefault: "", Required: true},
-	{Field: "refresh_token", ConditionField: "auth_mode", ConditionValues: []string{"refresh_token"}, ConditionDefault: "", Required: true},
-	{Field: "service_account_key", ConditionField: "auth_mode", ConditionValues: []string{"service_account"}, ConditionDefault: "", Required: true},
+// SourceGoogleAdsAPISource is the google_ads API source's generated contract.
+var SourceGoogleAdsAPISource = APISource{
+	Code:          "google_ads",
+	DisplayName:   "Google Ads",
+	Schema:        SourceGoogleAdsSchema,
+	FieldMappings: SourceGoogleAdsFieldMappings,
+	NewModel:      func() any { return &SourceGoogleAdsModel{} },
+	Conditions: []APICondition{
+		{Field: "client_id", ConditionField: "auth_mode", ConditionValues: []string{"oauth", "refresh_token"}, ConditionDefault: "", Required: true},
+		{Field: "client_secret", ConditionField: "auth_mode", ConditionValues: []string{"oauth", "refresh_token"}, ConditionDefault: "", Required: true},
+		{Field: "refresh_token", ConditionField: "auth_mode", ConditionValues: []string{"refresh_token"}, ConditionDefault: "", Required: true},
+		{Field: "service_account_key", ConditionField: "auth_mode", ConditionValues: []string{"service_account"}, ConditionDefault: "", Required: true},
+	},
+	Dependencies: []APIDependency{},
+	OAuth:        APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "", ConnectCommand: "`streamkap sources start-source-oauth-connect google_ads --body <file>`, the file holding your OAuth client's client_id and client_secret as JSON", HostField: ""},
 }
-
-var SourceGoogleAdsAPIDependencies = []APIDependency{}
-
-var SourceGoogleAdsAPIOAuth = APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "", ClientFields: []string{"client_id", "client_secret"}}

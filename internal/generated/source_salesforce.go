@@ -91,8 +91,8 @@ func SourceSalesforceSchema() schema.Schema {
 			"auth_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "How Streamkap signs in to Salesforce: with an External Client App you create in your org, by its client credentials or a JWT bearer certificate, or, where offered, Connect with Salesforce. Defaults to \"service\". Valid values: service, oauth, jwt.",
-				MarkdownDescription: "How Streamkap signs in to Salesforce: with an External Client App you create in your org, by its client credentials or a JWT bearer certificate, or, where offered, Connect with Salesforce. Defaults to `service`. Valid values: `service`, `oauth`, `jwt`.",
+				Description:         "How Streamkap signs in to Salesforce: an External Client App in your org, by client credentials or a JWT bearer certificate, or Connect with Salesforce. Defaults to \"service\". Valid values: service, oauth, jwt.",
+				MarkdownDescription: "How Streamkap signs in to Salesforce: an External Client App in your org, by client credentials or a JWT bearer certificate, or Connect with Salesforce. Defaults to `service`. Valid values: `service`, `oauth`, `jwt`.",
 				Default:             stringdefault.StaticString("service"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("service", "oauth", "jwt"),
@@ -101,8 +101,8 @@ func SourceSalesforceSchema() schema.Schema {
 			"domain": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Your org's My Domain URL, e.g. https://acme.my.salesforce.com, shown in Setup under My Domain. A sandbox has its own, e.g. https://acme--dev.sandbox.my.salesforce.com.",
-				MarkdownDescription: "Your org's My Domain URL, e.g. https://acme.my.salesforce.com, shown in Setup under My Domain. A sandbox has its own, e.g. https://acme--dev.sandbox.my.salesforce.com.",
+				Description:         "Your org's My Domain URL from Setup → My Domain, e.g. https://acme.my.salesforce.com. A sandbox has its own, e.g. https://acme--dev.sandbox.my.salesforce.com.",
+				MarkdownDescription: "Your org's My Domain URL from Setup → My Domain, e.g. https://acme.my.salesforce.com. A sandbox has its own, e.g. https://acme--dev.sandbox.my.salesforce.com.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -110,8 +110,8 @@ func SourceSalesforceSchema() schema.Schema {
 			"resources": schema.ListAttribute{
 				Required:            true,
 				ElementType:         types.StringType,
-				Description:         "Salesforce objects to sync; each becomes its own topic. Pick a standard object or type any queryable object's API name (e.g. Warehouse__c, AccountHistory); the integration user needs read access to each. Requires at least one item.",
-				MarkdownDescription: "Salesforce objects to sync; each becomes its own topic. Pick a standard object or type any queryable object's API name (e.g. Warehouse__c, AccountHistory); the integration user needs read access to each. Requires at least one item.",
+				Description:         "Salesforce objects to sync; each becomes its own topic. Pick a standard object or type any object's API name, e.g. Warehouse__c or AccountHistory; the integration user needs read access to each. Requires at least one item.",
+				MarkdownDescription: "Salesforce objects to sync; each becomes its own topic. Pick a standard object or type any object's API name, e.g. Warehouse__c or AccountHistory; the integration user needs read access to each. Requires at least one item.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
@@ -119,8 +119,8 @@ func SourceSalesforceSchema() schema.Schema {
 			"client_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The Consumer Key of the app you created for Streamkap: in Setup → External Client Apps Manager, open the app's Settings → OAuth Settings → Consumer Key and Secret.",
-				MarkdownDescription: "The Consumer Key of the app you created for Streamkap: in Setup → External Client Apps Manager, open the app's Settings → OAuth Settings → Consumer Key and Secret.",
+				Description:         "The Consumer Key of your External Client App, from Setup → External Client Apps Manager → your app → Settings → OAuth Settings → Consumer Key and Secret.",
+				MarkdownDescription: "The Consumer Key of your External Client App, from Setup → External Client Apps Manager → your app → Settings → OAuth Settings → Consumer Key and Secret.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -166,15 +166,15 @@ func SourceSalesforceSchema() schema.Schema {
 			},
 			"backfill_start": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.",
-				MarkdownDescription: "Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.",
+				Description:         "Earliest modification date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.",
+				MarkdownDescription: "Earliest modification date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.",
 			},
 			"oauth_grant_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "Single-use grant from the Connect with Salesforce flow, which Terraform cannot complete itself. Finish Connect in the Streamkap UI, or with the CLI (`streamkap sources start-source-oauth-connect`, open the returned authorize_url, then `streamkap sources poll-source-oauth-grant`), and set the returned grant here to create the source or to reconnect it. The grant expires within minutes and is spent when the source is saved. Leave it unset on an imported source. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Single-use grant from the Connect with Salesforce flow, which Terraform cannot complete itself. Finish Connect in the Streamkap UI, or with the CLI (`streamkap sources start-source-oauth-connect`, open the returned authorize_url, then `streamkap sources poll-source-oauth-grant`), and set the returned grant here to create the source or to reconnect it. The grant expires within minutes and is spent when the source is saved. Leave it unset on an imported source.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "Single-use grant from Connect with Salesforce, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect salesforce --environment <production|sandbox>`, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant salesforce --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Single-use grant from Connect with Salesforce, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect salesforce --environment <production|sandbox>`, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant salesforce --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -197,14 +197,20 @@ var SourceSalesforceFieldMappings = map[string]string{
 	"oauth_grant_id": "oauth_grant_id",
 }
 
-var SourceSalesforceAPIConditions = []APICondition{
-	{Field: "domain", ConditionField: "auth_mode", ConditionValues: []string{"service", "jwt"}, ConditionDefault: "service", Required: true},
-	{Field: "client_id", ConditionField: "auth_mode", ConditionValues: []string{"service", "jwt"}, ConditionDefault: "service", Required: true},
-	{Field: "client_secret", ConditionField: "auth_mode", ConditionValues: []string{"service"}, ConditionDefault: "service", Required: true},
-	{Field: "username", ConditionField: "auth_mode", ConditionValues: []string{"jwt"}, ConditionDefault: "service", Required: true},
-	{Field: "private_key", ConditionField: "auth_mode", ConditionValues: []string{"jwt"}, ConditionDefault: "service", Required: true},
+// SourceSalesforceAPISource is the salesforce API source's generated contract.
+var SourceSalesforceAPISource = APISource{
+	Code:          "salesforce",
+	DisplayName:   "Salesforce",
+	Schema:        SourceSalesforceSchema,
+	FieldMappings: SourceSalesforceFieldMappings,
+	NewModel:      func() any { return &SourceSalesforceModel{} },
+	Conditions: []APICondition{
+		{Field: "domain", ConditionField: "auth_mode", ConditionValues: []string{"service", "jwt"}, ConditionDefault: "service", Required: true},
+		{Field: "client_id", ConditionField: "auth_mode", ConditionValues: []string{"service", "jwt"}, ConditionDefault: "service", Required: true},
+		{Field: "client_secret", ConditionField: "auth_mode", ConditionValues: []string{"service"}, ConditionDefault: "service", Required: true},
+		{Field: "username", ConditionField: "auth_mode", ConditionValues: []string{"jwt"}, ConditionDefault: "service", Required: true},
+		{Field: "private_key", ConditionField: "auth_mode", ConditionValues: []string{"jwt"}, ConditionDefault: "service", Required: true},
+	},
+	Dependencies: []APIDependency{},
+	OAuth:        APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "service", ConnectCommand: "`streamkap sources start-source-oauth-connect salesforce --environment <production|sandbox>`", HostField: ""},
 }
-
-var SourceSalesforceAPIDependencies = []APIDependency{}
-
-var SourceSalesforceAPIOAuth = APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "service", ClientFields: []string{}}

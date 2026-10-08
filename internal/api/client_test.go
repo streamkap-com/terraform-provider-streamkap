@@ -238,6 +238,21 @@ func TestCreateSource_ValidationError(t *testing.T) {
 	assert.Contains(t, err.Error(), "Validation error: name is required")
 }
 
+func TestCreateSource_RefusalNamesFields(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	baseURL := "https://api.test.streamkap.com"
+	httpmock.RegisterResponder(http.MethodPost, baseURL+"/sources?secret_returned=true&wait=false",
+		httpmock.NewStringResponder(http.StatusBadRequest, `{"detail":"Invalid stripe configuration: token: rejected","fields":[{"field":"token","message":"rejected"}]}`))
+
+	_, err := newTestClient(baseURL).CreateSource(context.Background(), Source{Name: "s", Connector: "stripe", Config: map[string]any{}})
+
+	var apiErr *APIError
+	require.ErrorAs(t, err, &apiErr)
+	assert.Equal(t, []APIFieldError{{Field: "token", Message: "rejected"}}, apiErr.Fields)
+}
+
 // TestCreateSource_Unauthorized tests handling of authentication errors
 func TestCreateSource_Unauthorized(t *testing.T) {
 	httpmock.Activate()

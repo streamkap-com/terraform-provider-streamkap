@@ -64,17 +64,21 @@ output "stripe_source_id" {
 ### Required
 
 - `name` (String) Name of the source
-- `resources` (List of String) Stripe objects to sync; each becomes its own topic, and the key needs Read on each. Select Connect resources, Issuing resources (issuing_…) and quotes only if your account uses Connect, Issuing, or Invoicing Plus or Billing. Requires at least one item.
-- `token` (String, Sensitive) A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events, on Accounts (under Connect) and on each resource you select, and None on everything else; Test connection names any permission that is still missing.
-
-**Security:** This value is marked sensitive and will not appear in CLI output or logs.
+- `resources` (List of String) Stripe objects to sync, each into its own topic. Select Connect, Issuing (issuing_…) and quotes resources only if your account uses Connect, Issuing, or Invoicing Plus or Billing. Requires at least one item.
 
 ### Optional
 
-- `api_version` (String) Leave empty to use your account's default API version, shown in Workbench. Set it only to pin a different version, written the way Stripe names it, e.g. 2026-08-26.dahlia.
-- `backfill_start` (String) Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.
+- `api_version` (String) The Stripe API version to pin, e.g. 2026-08-26.dahlia. Leave empty to use your account's default, shown in Workbench.
+- `auth_mode` (String) How Streamkap signs in to Stripe: paste a restricted key, or click Connect with Stripe to install Streamkap's Stripe App. Defaults to `restricted_key`. Valid values: `restricted_key`, `oauth`.
+- `backfill_start` (String) Earliest creation date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced. Events and discounts reach back at most 30 days, the time Stripe keeps events.
+- `oauth_grant_id` (String, Sensitive) Single-use grant from Connect with Stripe, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect stripe`, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant stripe --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+- `token` (String, Sensitive) A restricted key (rk_live_… or rk_test_…) from Developers → API keys → Create restricted key in your Stripe Dashboard. Set Read on Events, on Accounts and on each resource you select, and None on everything else; Test connection names any permission still missing.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 
 ### Read-Only
 

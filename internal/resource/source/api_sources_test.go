@@ -91,56 +91,56 @@ func TestAPISourceSchemas(t *testing.T) {
 func TestAPISourceCredentialModes(t *testing.T) {
 	salesforce := &generated.SourceSalesforceModel{AuthMode: types.StringValue("service")}
 	config := NewSalesforceResource().(*connector.BaseConnectorResource).Config().(*apiSourceConfig)
-	if diags := config.ValidateConfiguration(salesforce, true); !diags.HasError() {
+	if diags := config.ValidateConfiguration(salesforce, nil); !diags.HasError() {
 		t.Fatal("Salesforce service mode accepted missing credentials")
 	}
 	salesforce.AuthMode = types.StringNull()
-	if diags := config.ValidateConfiguration(salesforce, true); !diags.HasError() {
+	if diags := config.ValidateConfiguration(salesforce, nil); !diags.HasError() {
 		t.Fatal("Salesforce default service mode accepted missing credentials")
 	}
 	salesforce.AuthMode = types.StringValue("service")
 	salesforce.Domain = types.StringValue("https://example.my.salesforce.com")
 	salesforce.ClientID = types.StringValue("id")
 	salesforce.ClientSecret = types.StringValue("secret")
-	if diags := config.ValidateConfiguration(salesforce, true); diags.HasError() {
+	if diags := config.ValidateConfiguration(salesforce, nil); diags.HasError() {
 		t.Fatalf("Salesforce service mode rejected complete credentials: %v", diags)
 	}
 	salesforce.AuthMode = types.StringValue("oauth")
 	salesforce.Domain = types.StringNull()
 	salesforce.ClientID = types.StringNull()
 	salesforce.ClientSecret = types.StringNull()
-	if diags := config.ValidateConfiguration(salesforce, true); !diags.HasError() {
+	if diags := config.ValidateConfiguration(salesforce, nil); !diags.HasError() {
 		t.Fatal("Terraform create cannot complete interactive Salesforce OAuth without a grant")
 	}
-	if diags := config.ValidateConfiguration(salesforce, false); diags.HasError() {
+	if diags := config.ValidateConfiguration(salesforce, salesforce); diags.HasError() {
 		t.Fatalf("imported Salesforce OAuth source must remain manageable: %v", diags)
 	}
 	salesforce.OauthGrantID = types.StringValue("grant")
-	if diags := config.ValidateConfiguration(salesforce, true); diags.HasError() {
+	if diags := config.ValidateConfiguration(salesforce, nil); diags.HasError() {
 		t.Fatalf("Salesforce OAuth create with a grant must not need pasted credentials: %v", diags)
 	}
 	salesforce.AuthMode = types.StringValue("jwt")
 	salesforce.OauthGrantID = types.StringNull()
 	salesforce.Domain = types.StringValue("https://example.my.salesforce.com")
 	salesforce.ClientID = types.StringValue("id")
-	if diags := config.ValidateConfiguration(salesforce, true); !diags.HasError() {
+	if diags := config.ValidateConfiguration(salesforce, nil); !diags.HasError() {
 		t.Fatal("Salesforce JWT mode accepted a missing username and private key")
 	}
 	salesforce.Username = types.StringValue("integration@example.com")
 	salesforce.PrivateKey = types.StringValue("key")
-	if diags := config.ValidateConfiguration(salesforce, true); diags.HasError() {
+	if diags := config.ValidateConfiguration(salesforce, nil); diags.HasError() {
 		t.Fatalf("Salesforce JWT mode must not need the client secret: %v", diags)
 	}
 
 	netsuite := &generated.SourceNetsuiteModel{AuthMode: types.StringValue("certificate")}
 	config = NewNetSuiteResource().(*connector.BaseConnectorResource).Config().(*apiSourceConfig)
-	if diags := config.ValidateConfiguration(netsuite, true); !diags.HasError() {
+	if diags := config.ValidateConfiguration(netsuite, nil); !diags.HasError() {
 		t.Fatal("NetSuite certificate mode accepted missing credentials")
 	}
 	netsuite.ClientID = types.StringValue("id")
 	netsuite.CertificateID = types.StringValue("certificate")
 	netsuite.PrivateKey = types.StringValue("key")
-	if diags := config.ValidateConfiguration(netsuite, true); diags.HasError() {
+	if diags := config.ValidateConfiguration(netsuite, nil); diags.HasError() {
 		t.Fatalf("NetSuite certificate mode rejected complete credentials: %v", diags)
 	}
 	netsuite.AuthMode = types.StringValue("tba")
@@ -148,7 +148,7 @@ func TestAPISourceCredentialModes(t *testing.T) {
 	netsuite.ConsumerSecret = types.StringValue("secret")
 	netsuite.TokenID = types.StringValue("token")
 	netsuite.TokenSecret = types.StringValue("token-secret")
-	if diags := config.ValidateConfiguration(netsuite, true); diags.HasError() {
+	if diags := config.ValidateConfiguration(netsuite, nil); diags.HasError() {
 		t.Fatalf("NetSuite TBA mode required certificate credentials: %v", diags)
 	}
 }
@@ -173,20 +173,20 @@ func apiSource(t *testing.T, r func() resource.Resource) *apiSourceConfig {
 func TestAPISourceHubSpotModes(t *testing.T) {
 	config := apiSource(t, NewHubSpotResource)
 	hubspot := &generated.SourceHubspotModel{}
-	if diags := config.ValidateConfiguration(hubspot, true); !diags.HasError() {
+	if diags := config.ValidateConfiguration(hubspot, nil); !diags.HasError() {
 		t.Fatal("HubSpot default token mode accepted a missing token")
 	}
 	hubspot.Token = types.StringValue("pat-token")
-	if diags := config.ValidateConfiguration(hubspot, true); diags.HasError() {
+	if diags := config.ValidateConfiguration(hubspot, nil); diags.HasError() {
 		t.Fatalf("HubSpot token mode rejected a token: %v", diags)
 	}
 	hubspot = &generated.SourceHubspotModel{AuthMode: types.StringValue("oauth")}
-	diags := config.ValidateConfiguration(hubspot, true)
+	diags := config.ValidateConfiguration(hubspot, nil)
 	if !diags.HasError() || !strings.Contains(diags[0].Detail(), "start-source-oauth-connect hubspot") {
 		t.Fatalf("HubSpot OAuth create without a grant must explain the handoff: %v", diags)
 	}
 	hubspot.OauthGrantID = types.StringUnknown()
-	if diags := config.ValidateConfiguration(hubspot, true); diags.HasError() {
+	if diags := config.ValidateConfiguration(hubspot, nil); diags.HasError() {
 		t.Fatalf("an unknown grant must wait for apply: %v", diags)
 	}
 }
@@ -194,16 +194,33 @@ func TestAPISourceHubSpotModes(t *testing.T) {
 func TestAPISourceZendeskNeedsGrantOnCreate(t *testing.T) {
 	config := apiSource(t, NewZendeskResource)
 	zendesk := &generated.SourceZendeskModel{Subdomain: types.StringValue("acme")}
-	diags := config.ValidateConfiguration(zendesk, true)
+	diags := config.ValidateConfiguration(zendesk, nil)
 	if !diags.HasError() || !strings.Contains(diags[0].Detail(), "no pasted-credential mode") {
 		t.Fatalf("Zendesk create without a grant must say Connect is its only sign-in: %v", diags)
 	}
-	if diags := config.ValidateConfiguration(zendesk, false); diags.HasError() {
+	if diags := config.ValidateConfiguration(zendesk, zendesk); diags.HasError() {
 		t.Fatalf("an existing Zendesk source must update without a new grant: %v", diags)
 	}
 	zendesk.OauthGrantID = types.StringValue("grant")
-	if diags := config.ValidateConfiguration(zendesk, true); diags.HasError() {
+	if diags := config.ValidateConfiguration(zendesk, nil); diags.HasError() {
 		t.Fatalf("Zendesk create with a grant: %v", diags)
+	}
+}
+
+func TestAPISourceZendeskSubdomainChangeNeedsNewGrant(t *testing.T) {
+	config := apiSource(t, NewZendeskResource)
+	prior := &generated.SourceZendeskModel{Subdomain: types.StringValue("acme"), OauthGrantID: types.StringValue("spent")}
+	moved := &generated.SourceZendeskModel{Subdomain: types.StringValue("globex"), OauthGrantID: types.StringValue("spent")}
+	if got := diagPaths(config.ValidateConfiguration(moved, prior)); !slices.Equal(got, []string{"subdomain"}) {
+		t.Fatalf("a new subdomain with the spent grant must be refused on subdomain, got %v", got)
+	}
+	moved.OauthGrantID = types.StringValue("fresh")
+	if diags := config.ValidateConfiguration(moved, prior); diags.HasError() {
+		t.Fatalf("a new subdomain with a new grant must plan: %v", diags)
+	}
+	moved.OauthGrantID = types.StringUnknown()
+	if diags := config.ValidateConfiguration(moved, prior); diags.HasError() {
+		t.Fatalf("a grant unknown until apply must not be refused: %v", diags)
 	}
 }
 
@@ -222,7 +239,7 @@ func TestAPISourceGoogleAdsModes(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			var missing []string
-			for _, d := range config.ValidateConfiguration(&test.model, true) {
+			for _, d := range config.ValidateConfiguration(&test.model, nil) {
 				if withPath, ok := d.(diag.DiagnosticWithPath); ok {
 					missing = append(missing, withPath.Path().String())
 				}
@@ -310,12 +327,36 @@ func TestAPISourceRequestConfig(t *testing.T) {
 	if value, ok := update["login_customer_id"]; !ok || value != nil {
 		t.Error("an update replaces the whole config, so unset non-secret fields stay explicit")
 	}
+
+	// A pasted mode resends the secrets it shows even when unchanged, so a
+	// location change never pairs with a kept secret.
+	pasted := &generated.SourceGoogleAdsModel{AuthMode: types.StringValue("refresh_token"), ClientSecret: types.StringValue("secret"), RefreshToken: types.StringValue("token"), OauthGrantID: types.StringNull()}
+	update = map[string]any{"auth_mode": "refresh_token", "client_secret": "secret", "refresh_token": "token", "service_account_key": nil, "oauth_grant_id": nil}
+	config.FilterRequestConfig(update, pasted, pasted)
+	if update["client_secret"] != "secret" || update["refresh_token"] != "token" {
+		t.Errorf("secrets the current mode shows must be resent: %v", update)
+	}
+	if _, ok := update["oauth_grant_id"]; ok {
+		t.Errorf("an unset grant must not be sent: %v", update)
+	}
+
+	stripe := apiSource(t, NewStripeResource)
+	connected := &generated.SourceStripeModel{AuthMode: types.StringValue("oauth"), Token: types.StringValue("rotated-by-backend"), OauthGrantID: types.StringValue("spent")}
+	update = map[string]any{"auth_mode": "oauth", "token": "rotated-by-backend", "oauth_grant_id": "spent"}
+	stripe.FilterRequestConfig(update, connected, connected)
+	if _, ok := update["token"]; ok {
+		t.Errorf("a grant-filled secret the form hides must be omitted when unchanged: %v", update)
+	}
 }
 
 func TestAPISourceOAuthClientFieldsInHandoff(t *testing.T) {
-	diags := apiSource(t, NewGoogleAdsResource).ValidateConfiguration(&generated.SourceGoogleAdsModel{AuthMode: types.StringValue("oauth"), ClientID: types.StringValue("id"), ClientSecret: types.StringValue("secret")}, true)
-	if !diags.HasError() || !strings.Contains(diags[0].Detail(), "--body <file>` with your OAuth client's client_id and client_secret") {
+	diags := apiSource(t, NewGoogleAdsResource).ValidateConfiguration(&generated.SourceGoogleAdsModel{AuthMode: types.StringValue("oauth"), ClientID: types.StringValue("id"), ClientSecret: types.StringValue("secret")}, nil)
+	if !diags.HasError() || !strings.Contains(diags[0].Detail(), "google_ads --body <file>`, the file holding your OAuth client's client_id and client_secret") {
 		t.Fatalf("a flow on the customer's own OAuth client must say how to pass it: %v", diags)
+	}
+	diags = apiSource(t, NewZendeskResource).ValidateConfiguration(&generated.SourceZendeskModel{Subdomain: types.StringValue("acme")}, nil)
+	if !diags.HasError() || !strings.Contains(diags[0].Detail(), "zendesk --environment <subdomain>`") {
+		t.Fatalf("a flow authorized per host must say to pass the host: %v", diags)
 	}
 }
 
@@ -344,7 +385,7 @@ func TestAPISourceFacebookAdsAppPair(t *testing.T) {
 		{"secret unknown", generated.SourceFacebookAdsModel{AppID: types.StringValue("42"), AppSecret: types.StringUnknown()}, nil},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if got := diagPaths(config.ValidateConfiguration(&test.model, false)); !slices.Equal(got, test.missing) {
+			if got := diagPaths(config.ValidateConfiguration(&test.model, &test.model)); !slices.Equal(got, test.missing) {
 				t.Errorf("missing = %v, want %v", got, test.missing)
 			}
 		})
@@ -354,11 +395,11 @@ func TestAPISourceFacebookAdsAppPair(t *testing.T) {
 func TestAPISourceHubSpotPropertiesRequiredWhenNotSyncingAll(t *testing.T) {
 	config := apiSource(t, NewHubSpotResource)
 	model := &generated.SourceHubspotModel{Token: types.StringValue("pat"), SyncAllProperties: types.BoolValue(false), Properties: types.ListNull(types.StringType)}
-	if got := diagPaths(config.ValidateConfiguration(model, true)); !slices.Equal(got, []string{"properties"}) {
+	if got := diagPaths(config.ValidateConfiguration(model, nil)); !slices.Equal(got, []string{"properties"}) {
 		t.Errorf("sync_all_properties=false without properties: %v", got)
 	}
 	model.SyncAllProperties = types.BoolNull()
-	if diags := config.ValidateConfiguration(model, true); diags.HasError() {
+	if diags := config.ValidateConfiguration(model, nil); diags.HasError() {
 		t.Errorf("sync_all_properties defaults to true: %v", diags)
 	}
 }
@@ -366,17 +407,17 @@ func TestAPISourceHubSpotPropertiesRequiredWhenNotSyncingAll(t *testing.T) {
 func TestAPISourceRefusesAnotherModesSecret(t *testing.T) {
 	googleAds := apiSource(t, NewGoogleAdsResource)
 	model := &generated.SourceGoogleAdsModel{AuthMode: types.StringValue("service_account"), ServiceAccountKey: types.StringValue("{}"), RefreshToken: types.StringValue("stale")}
-	if got := diagPaths(googleAds.ValidateConfiguration(model, false)); !slices.Equal(got, []string{"refresh_token"}) {
+	if got := diagPaths(googleAds.ValidateConfiguration(model, model)); !slices.Equal(got, []string{"refresh_token"}) {
 		t.Errorf("a refresh token typed in service_account mode: %v", got)
 	}
 	model = &generated.SourceGoogleAdsModel{AuthMode: types.StringValue("oauth"), ClientID: types.StringValue("id"), ClientSecret: types.StringValue("secret"), RefreshToken: types.StringValue("pasted")}
-	if diags := googleAds.ValidateConfiguration(model, false); diags.HasError() {
+	if diags := googleAds.ValidateConfiguration(model, model); diags.HasError() {
 		t.Errorf("OAuth mode must not guess which hidden secrets the grant uses: %v", diags)
 	}
 	salesforce := apiSource(t, NewSalesforceResource)
 	sf := &generated.SourceSalesforceModel{AuthMode: types.StringValue("jwt"), Domain: types.StringValue("https://acme.my.salesforce.com"), ClientID: types.StringValue("id"),
 		Username: types.StringValue("u"), PrivateKey: types.StringValue("key"), ClientSecret: types.StringValue("service-secret")}
-	if got := diagPaths(salesforce.ValidateConfiguration(sf, false)); !slices.Equal(got, []string{"client_secret"}) {
+	if got := diagPaths(salesforce.ValidateConfiguration(sf, sf)); !slices.Equal(got, []string{"client_secret"}) {
 		t.Errorf("a service-mode secret typed in jwt mode: %v", got)
 	}
 }

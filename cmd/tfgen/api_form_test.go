@@ -20,7 +20,7 @@ func TestApplyAPIFormContract(t *testing.T) {
 	if err := os.WriteFile(path, []byte(form), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := applyAPIFormContract(config, path); err != nil {
+	if err := applyAPIFormContract(config, "vendor", path); err != nil {
 		t.Fatal(err)
 	}
 	resources, clientID, refreshToken := config.Config[0], config.Config[1], config.Config[2]
@@ -54,7 +54,7 @@ func TestApplyAPIFormContract(t *testing.T) {
 
 func TestApplyAPIFormContractRequiresForm(t *testing.T) {
 	config := &ConnectorConfig{Config: []ConfigEntry{{Name: "token", UserDefined: true}}}
-	if err := applyAPIFormContract(config, filepath.Join(t.TempDir(), "missing.json")); err == nil {
+	if err := applyAPIFormContract(config, "vendor", filepath.Join(t.TempDir(), "missing.json")); err == nil {
 		t.Fatal("missing API source form must fail generation")
 	}
 }
@@ -88,7 +88,7 @@ func TestApplyAPIFormContractInvertsConditionalHide(t *testing.T) {
 		{"type":"Control","scope":"#/properties/refresh_token","rule":{"effect":"SHOW","condition":{"scope":"#/properties/auth_mode","schema":{"enum":["refresh"]}}}},
 		{"type":"Control","scope":"#/properties/key","rule":{"effect":"HIDE","condition":{"scope":"#/properties/auth_mode","schema":{"enum":["oauth","refresh"]}}}},
 		{"type":"Control","scope":"#/properties/system","rule":{"effect":"HIDE","condition":{"scope":"#/properties/auth_mode","schema":{}}}}]}}`)
-	if err := applyAPIFormContract(config, path); err != nil {
+	if err := applyAPIFormContract(config, "vendor", path); err != nil {
 		t.Fatal(err)
 	}
 	want := []APICondition{
@@ -105,7 +105,7 @@ func TestApplyAPIFormContractInvertsConditionalHide(t *testing.T) {
 	if config.Config[4].UserDefined {
 		t.Error("a field hidden in every mode must not be configurable")
 	}
-	if !reflect.DeepEqual(config.APIOAuth, APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "key", ClientFields: []string{"client_id", "refresh_token"}}) {
+	if !reflect.DeepEqual(config.APIOAuth, APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "key", ConnectCommand: "`streamkap sources start-source-oauth-connect vendor --body <file>`, the file holding your OAuth client's client_id and refresh_token as JSON"}) {
 		t.Errorf("oauth = %#v", config.APIOAuth)
 	}
 	grant := config.GetEntryByName(oauthGrantField)
@@ -125,11 +125,12 @@ func TestApplyAPIFormContractOAuthOnlyVendor(t *testing.T) {
 		{Name: "subdomain", UserDefined: true, Value: ValueObject{Control: "string"}},
 	}}
 	path := writeForm(t, `{"oauth":{"host_field":"subdomain"},"json_schema":{"required":["subdomain"],"properties":{"subdomain":{"type":"string"}}},"ui_schema":{"elements":[]}}`)
-	if err := applyAPIFormContract(config, path); err != nil {
+	if err := applyAPIFormContract(config, "vendor", path); err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(config.APIOAuth, APIOAuth{Enabled: true}) {
-		t.Errorf("a vendor without auth_mode signs in only through OAuth: %#v", config.APIOAuth)
+	want := APIOAuth{Enabled: true, HostField: "subdomain", ConnectCommand: "`streamkap sources start-source-oauth-connect vendor --environment <subdomain>`"}
+	if !reflect.DeepEqual(config.APIOAuth, want) {
+		t.Errorf("a vendor without auth_mode signs in only through OAuth, on the host the grant is for: %#v", config.APIOAuth)
 	}
 }
 
@@ -141,7 +142,7 @@ func TestApplyAPIFormContractRejectsUnsupportedRules(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			config := &ConnectorConfig{Config: []ConfigEntry{{Name: "token", UserDefined: true, Value: ValueObject{Control: "password"}}}}
-			if err := applyAPIFormContract(config, writeForm(t, form)); err == nil {
+			if err := applyAPIFormContract(config, "vendor", writeForm(t, form)); err == nil {
 				t.Fatal("generation must stop on a form rule it cannot express")
 			}
 		})
@@ -158,7 +159,7 @@ func TestApplyAPIFormContractRequiresAuthModeDefaultingToOAuth(t *testing.T) {
 	}}
 	path := writeForm(t, `{"oauth":{},"json_schema":{"required":["key"],"properties":{"auth_mode":{"type":"string","enum":["oauth","key"],"default":"oauth"},"key":{"type":"string"}}},
 		"ui_schema":{"elements":[{"type":"Control","scope":"#/properties/key","rule":{"effect":"SHOW","condition":{"scope":"#/properties/auth_mode","schema":{"const":"key"}}}}]}}`)
-	if err := applyAPIFormContract(config, path); err != nil {
+	if err := applyAPIFormContract(config, "vendor", path); err != nil {
 		t.Fatal(err)
 	}
 	mode := config.Config[0]
@@ -173,7 +174,7 @@ func TestApplyAPIFormContractDependentRequired(t *testing.T) {
 		{Name: "app_secret", UserDefined: true, Value: ValueObject{Control: "password"}},
 	}}
 	path := writeForm(t, `{"json_schema":{"properties":{"app_id":{"type":"string"},"app_secret":{"type":"string"}},"dependentRequired":{"app_secret":["app_id"],"app_id":["app_secret"]}},"ui_schema":{}}`)
-	if err := applyAPIFormContract(config, path); err != nil {
+	if err := applyAPIFormContract(config, "vendor", path); err != nil {
 		t.Fatal(err)
 	}
 	want := []APIDependency{{Field: "app_id", Requires: []string{"app_secret"}}, {Field: "app_secret", Requires: []string{"app_id"}}}
@@ -181,7 +182,7 @@ func TestApplyAPIFormContractDependentRequired(t *testing.T) {
 		t.Errorf("dependencies = %#v", config.APIDependencies)
 	}
 	bad := writeForm(t, `{"json_schema":{"properties":{"app_id":{"type":"string"}},"dependentRequired":{"app_id":["app_secret"]}},"ui_schema":{}}`)
-	if err := applyAPIFormContract(&ConnectorConfig{}, bad); err == nil {
+	if err := applyAPIFormContract(&ConnectorConfig{}, "vendor", bad); err == nil {
 		t.Error("a dependency on an undeclared property must stop generation")
 	}
 }

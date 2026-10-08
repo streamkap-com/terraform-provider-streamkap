@@ -7,12 +7,15 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/shared"
 )
 
@@ -186,5 +189,29 @@ func TestConfiguredFormsFollowTheRecordedEcho(t *testing.T) {
 
 	if _, err := restoreConfiguredForms(&formModel{}, nil, []byte("not json")); err == nil {
 		t.Fatal("corrupt private state must be reported")
+	}
+}
+
+type mappedConfig struct{ fakeConfig }
+
+func (mappedConfig) GetFieldMappings() map[string]string {
+	return map[string]string{"token": "api.token", "region": "region"}
+}
+
+func TestSaveErrorNamesTheAttribute(t *testing.T) {
+	r := NewBaseConnectorResource(mappedConfig{}).(*BaseConnectorResource)
+	refused := &api.APIError{StatusCode: 400, Detail: "The key was rejected.", Fields: []api.APIFieldError{{Field: "api.token", Message: "The key was rejected."}}}
+
+	var diags diag.Diagnostics
+	r.addSaveError(&diags, "Error creating fake source", "Unable to create source", refused)
+	if len(diags) != 1 || !diags[0].(diag.DiagnosticWithPath).Path().Equal(path.Root("token")) {
+		t.Fatalf("a refused field must be reported on its attribute: %v", diags)
+	}
+
+	refused.Fields = append(refused.Fields, api.APIFieldError{Field: "unmapped", Message: "?"})
+	diags = nil
+	r.addSaveError(&diags, "Error creating fake source", "Unable to create source", refused)
+	if len(diags) != 1 || diags[0].Detail() != "Unable to create source: The key was rejected. (HTTP 400)" {
+		t.Fatalf("an unmapped field must fall back to the whole error: %v", diags)
 	}
 }

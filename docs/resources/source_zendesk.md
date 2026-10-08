@@ -25,12 +25,12 @@ Without a version constraint, Terraform selects a stable release.
 ### Basic
 
 ```terraform
-# Zendesk signs in only through Connect with Zendesk, which runs in a browser.
-# Finish Connect in the Streamkap UI, or run
-#   streamkap sources start-source-oauth-connect zendesk
+# Zendesk signs in only through Connect, which Terraform cannot run. Finish it
+# in the Streamkap UI, or run
+#   streamkap sources start-source-oauth-connect zendesk --environment acme
 # open the returned authorize_url, then run
 #   streamkap sources poll-source-oauth-grant zendesk --state <state>
-# and pass the returned grant before it expires.
+# and apply with the returned grant within 10 minutes.
 variable "zendesk_oauth_grant_id" {
   type      = string
   sensitive = true
@@ -47,9 +47,8 @@ resource "streamkap_source_zendesk" "example" {
 ### Complete
 
 ```terraform
-# The grant is spent when the source is created. Leave it in the
-# configuration afterwards, or remove it: either keeps the connection. Set a
-# new grant only to reconnect the source.
+# Saving the source spends the grant. Keep it in the configuration or remove
+# it; set a new one only to reconnect or to change subdomain.
 variable "zendesk_oauth_grant_id" {
   type      = string
   sensitive = true
@@ -74,13 +73,13 @@ output "zendesk_source_id" {
 ### Required
 
 - `name` (String) Name of the source
-- `resources` (List of String) Zendesk objects to sync; each becomes its own topic. ticket_audits, ticket_comments, ticket_metric_events and side_conversations are read ticket by ticket, so their first sync of a large account can take days, and a resource your Zendesk plan lacks pauses while the others keep syncing. Requires at least one item.
-- `subdomain` (String) Your Zendesk subdomain: the acme in acme.zendesk.com, shown in Admin Center → Account → Appearance → Branding. Then click Connect with Zendesk and approve as a Zendesk admin, because an agent's access leaves out the tickets that agent cannot see.
+- `resources` (List of String) Zendesk objects to sync, each into its own topic. ticket_audits, ticket_comments, ticket_metric_events and side_conversations are read ticket by ticket, so their first sync of a large account can take days. Requires at least one item.
+- `subdomain` (String) The acme in acme.zendesk.com, shown in Admin Center → Account → Appearance → Branding. Then click Connect with Zendesk and approve as a Zendesk admin; an agent's access misses the tickets that agent cannot see.
 
 ### Optional
 
-- `backfill_start` (String) Earliest modification date to read on the first sync, as an ISO-8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T00:00:00Z (UTC unless an offset is given). Leave empty to sync all history; later syncs ignore it.
-- `oauth_grant_id` (String, Sensitive) Single-use grant from the Connect with Zendesk flow, which Terraform cannot complete itself. Finish Connect in the Streamkap UI, or with the CLI (`streamkap sources start-source-oauth-connect`, open the returned authorize_url, then `streamkap sources poll-source-oauth-grant`), and set the returned grant here to create the source or to reconnect it. The grant expires within minutes and is spent when the source is saved. Leave it unset on an imported source.
+- `backfill_start` (String) Earliest modification date to read when a resource first syncs. Applies to resources added later too; changing it does not re-read resources already synced.
+- `oauth_grant_id` (String, Sensitive) Single-use grant from Connect with Zendesk, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect zendesk --environment <subdomain>`, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant zendesk --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.

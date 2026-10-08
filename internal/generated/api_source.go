@@ -1,5 +1,20 @@
 package generated
 
+import "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+
+// APISource is what tfgen generates for one API source: its schema, model
+// and the form rules the provider checks at plan time.
+type APISource struct {
+	Code          string
+	DisplayName   string
+	Schema        func() schema.Schema
+	FieldMappings map[string]string
+	NewModel      func() any
+	Conditions    []APICondition
+	Dependencies  []APIDependency
+	OAuth         APIOAuth
+}
+
 // APICondition is an API-source field the form shows only while
 // ConditionField holds one of ConditionValues; ConditionDefault applies when
 // it is unset. A Required field must be set whenever it is shown.
@@ -25,7 +40,10 @@ type APIOAuth struct {
 	AuthModeField   string
 	AuthModeValue   string
 	AuthModeDefault string
-	// ClientFields name the config fields holding the customer's own OAuth
-	// client, which the connect flow's start request must carry.
-	ClientFields []string
+	// ConnectCommand is the CLI command that starts Connect, with the
+	// options this vendor's flow needs.
+	ConnectCommand string
+	// HostField names the config field the grant is authorized for (the
+	// Zendesk subdomain): changing it needs a new grant.
+	HostField string
 }

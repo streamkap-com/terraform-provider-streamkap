@@ -247,7 +247,7 @@ func processEntity(backendPath, output string, entity EntityConfig, specificConn
 		}
 		if config.APISource {
 			formPath := filepath.Join(pluginDir, connectorCode, "form.schema.json")
-			if err := applyAPIFormContract(config, formPath); err != nil {
+			if err := applyAPIFormContract(config, connectorCode, formPath); err != nil {
 				problems = append(problems, fmt.Errorf("failed to apply %s API source form: %w", connectorCode, err))
 				continue
 			}

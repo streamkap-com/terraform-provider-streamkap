@@ -45,6 +45,7 @@ package connector
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"reflect"
@@ -103,8 +104,10 @@ type ConnectorConfig interface {
 	NewModelInstance() any
 }
 
+// ConnectorConfigValidator checks the planned model at plan time. prior is the
+// prior state model, nil on Create.
 type ConnectorConfigValidator interface {
-	ValidateConfiguration(model any, creating bool) diag.Diagnostics
+	ValidateConfiguration(model any, prior any) diag.Diagnostics
 }
 
 // ConnectorConfigRequestFilter lets a connector adjust the config it sends.
@@ -234,21 +237,23 @@ func (r *BaseConnectorResource) ModifyPlan(ctx context.Context, req resource.Mod
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if validator, ok := r.config.(ConnectorConfigValidator); ok {
-		resp.Diagnostics.Append(validator.ValidateConfiguration(model, req.State.Raw.IsNull())...)
+	validator, validates := r.config.(ConnectorConfigValidator)
+	adjuster, adjusts := r.config.(ConnectorConfigPlanAdjuster)
+	var prior any
+	if (validates || adjusts) && !req.State.Raw.IsNull() {
+		prior = r.config.NewModelInstance()
+		resp.Diagnostics.Append(req.State.Get(ctx, prior)...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 	}
-	if adjuster, ok := r.config.(ConnectorConfigPlanAdjuster); ok {
-		var prior any
-		if !req.State.Raw.IsNull() {
-			prior = r.config.NewModelInstance()
-			resp.Diagnostics.Append(req.State.Get(ctx, prior)...)
-			if resp.Diagnostics.HasError() {
-				return
-			}
+	if validates {
+		resp.Diagnostics.Append(validator.ValidateConfiguration(model, prior)...)
+		if resp.Diagnostics.HasError() {
+			return
 		}
+	}
+	if adjusts {
 		attributes := r.config.GetSchema().Attributes
 		unset, unknown := adjuster.PlanAdjustments(model, prior)
 		for _, name := range unset {
@@ -436,10 +441,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 			Tags:        tags,
 		})
 		if err != nil {
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Error creating %s source", r.config.GetConnectorCode()),
-				fmt.Sprintf("Unable to create source: %s", err),
-			)
+			r.addSaveError(&resp.Diagnostics, fmt.Sprintf("Error creating %s source", r.config.GetConnectorCode()), "Unable to create source", err)
 			return
 		}
 		id = source.ID
@@ -722,10 +724,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 			Tags:        tags,
 		})
 		if err != nil {
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Error updating %s source", r.config.GetConnectorCode()),
-				fmt.Sprintf("Unable to update source: %s", err),
-			)
+			r.addSaveError(&resp.Diagnostics, fmt.Sprintf("Error updating %s source", r.config.GetConnectorCode()), "Unable to update source", err)
 			return
 		}
 		connectorName = source.Name
@@ -1326,6 +1325,33 @@ func encodeConfiguredForms(recorded map[string]string) []byte {
 	}
 	data, _ := json.Marshal(recorded)
 	return data
+}
+
+// addSaveError puts each message of a refused save on the attribute it names,
+// when the backend names a mapped field for every one; otherwise it reports the
+// whole error.
+func (r *BaseConnectorResource) addSaveError(diags *diag.Diagnostics, summary, prefix string, err error) {
+	var apiErr *api.APIError
+	if errors.As(err, &apiErr) && len(apiErr.Fields) > 0 {
+		attributes := map[string]string{}
+		for name, apiField := range r.config.GetFieldMappings() {
+			attributes[apiField] = name
+		}
+		var attributed diag.Diagnostics
+		for _, field := range apiErr.Fields {
+			name, ok := attributes[field.Field]
+			if !ok {
+				attributed = nil
+				break
+			}
+			attributed.AddAttributeError(path.Root(name), summary, field.Message)
+		}
+		if attributed != nil {
+			diags.Append(attributed...)
+			return
+		}
+	}
+	diags.AddError(summary, fmt.Sprintf("%s: %s", prefix, err))
 }
 
 func addConnectionWarning(diags *diag.Diagnostics, source *api.Source) {
