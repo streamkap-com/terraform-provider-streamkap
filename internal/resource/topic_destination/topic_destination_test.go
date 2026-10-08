@@ -35,8 +35,9 @@ func TestTopicDestinationIdentity(t *testing.T) {
 	}
 }
 
-// bindingClient mimics the backend: attach and detach read the binding's topic
-// list, then write the whole list back, with no lock between the two.
+// bindingClient reads the binding's topic list and writes the whole list back
+// without a lock, so it loses topics unless the provider serializes one
+// source's changes.
 type bindingClient struct {
 	api.StreamkapAPI
 	mu     sync.Mutex
@@ -80,7 +81,7 @@ func (c *bindingClient) DetachTopicDestination(_ context.Context, topicID, desti
 	return nil
 }
 
-func TestTopicDestinationSerializesChangesPerDestination(t *testing.T) {
+func TestTopicDestinationSerializesChangesPerSource(t *testing.T) {
 	ctx := context.Background()
 	client := &bindingClient{topics: map[string][]string{}}
 	r := &Resource{client: client}

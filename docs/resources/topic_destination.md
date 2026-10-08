@@ -3,12 +3,12 @@
 page_title: "streamkap_topic_destination Resource - terraform-provider-streamkap"
 subcategory: ""
 description: |-
-  Sends one API source topic to a destination. Topics from one source share a managed binding per destination, so the provider applies changes for the same destination one at a time.
+  Sends one API source topic to a destination. API sources have no streamkap_pipeline; declare one of these per topic and destination, usually with for_each over the source's resources. When a source's resources change, the backend also sends a new resource's topic to every destination the source already sends to, and stops sending a removed one.
 ---
 
 # streamkap_topic_destination (Resource)
 
-Sends one API source topic to a destination. Topics from one source share a managed binding per destination, so the provider applies changes for the same destination one at a time.
+Sends one API source topic to a destination. API sources have no `streamkap_pipeline`; declare one of these per topic and destination, usually with `for_each` over the source's `resources`. When a source's resources change, the backend also sends a new resource's topic to every destination the source already sends to, and stops sending a removed one.
 
 ## Example Usage
 
@@ -19,7 +19,7 @@ Without a version constraint, Terraform selects a stable release.
 ### Basic
 
 ```terraform
-variable "api_source_topic_id" {
+variable "salesforce_source_id" {
   type = string
 }
 
@@ -27,8 +27,9 @@ variable "destination_id" {
   type = string
 }
 
-resource "streamkap_topic_destination" "example" {
-  topic_id       = var.api_source_topic_id
+# An API source's topic ID is source_<source id>.<connector>.<resource>.
+resource "streamkap_topic_destination" "accounts" {
+  topic_id       = "source_${var.salesforce_source_id}.salesforce.Account"
   destination_id = var.destination_id
 }
 ```
@@ -36,17 +37,15 @@ resource "streamkap_topic_destination" "example" {
 ### Complete
 
 ```terraform
-variable "api_source_topic_ids" {
-  type = set(string)
-}
-
 variable "destination_id" {
   type = string
 }
 
-resource "streamkap_topic_destination" "example" {
-  for_each       = var.api_source_topic_ids
-  topic_id       = each.value
+# One link per resource of the source. Referencing the source also makes
+# Terraform remove the links before it deletes the source.
+resource "streamkap_topic_destination" "salesforce" {
+  for_each       = toset(streamkap_source_salesforce.example.resources)
+  topic_id       = "source_${streamkap_source_salesforce.example.id}.salesforce.${each.value}"
   destination_id = var.destination_id
 }
 ```
@@ -56,18 +55,18 @@ resource "streamkap_topic_destination" "example" {
 
 ### Required
 
-- `destination_id` (String) Destination connector ID.
-- `topic_id` (String) Full API source topic identifier.
+- `destination_id` (String) Destination ID. Changing it replaces the resource.
+- `topic_id` (String) Full topic ID, `source_<source id>.<connector>.<resource>`. Changing it replaces the resource.
 
 ### Read-Only
 
-- `binding_id` (String) Managed binding ID shared by topics from the same source and destination.
-- `id` (String) Composite topic and destination identifier.
+- `binding_id` (String) ID of the managed binding that carries every topic of this source to this destination.
+- `id` (String) Composite identifier, `<topic_id>|<destination_id>`. Use it to import.
 
 ## Import
 
 Import is supported using the following syntax:
 
 ```shell
-terraform import streamkap_topic_destination.example 'source_123.Account|destination-id'
+terraform import streamkap_topic_destination.accounts 'source_<source id>.salesforce.Account|<destination id>'
 ```

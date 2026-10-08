@@ -39,12 +39,33 @@ func (r *Resource) Metadata(_ context.Context, req resource.MetadataRequest, res
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Sends one API source topic to a destination. Topics from one source share a managed binding per destination, so the provider applies changes for the same destination one at a time.",
+		Description:         "Sends one API source topic to a destination. API sources have no streamkap_pipeline; declare one of these per topic and destination, usually with for_each over the source's resources. When a source's resources change, the backend also sends a new resource's topic to every destination the source already sends to, and stops sending a removed one.",
+		MarkdownDescription: "Sends one API source topic to a destination. API sources have no `streamkap_pipeline`; declare one of these per topic and destination, usually with `for_each` over the source's `resources`. When a source's resources change, the backend also sends a new resource's topic to every destination the source already sends to, and stops sending a removed one.",
 		Attributes: map[string]schema.Attribute{
-			"id":             schema.StringAttribute{Computed: true, Description: "Composite topic and destination identifier."},
-			"topic_id":       schema.StringAttribute{Required: true, Description: "Full API source topic identifier.", PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
-			"destination_id": schema.StringAttribute{Required: true, Description: "Destination connector ID.", PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
-			"binding_id":     schema.StringAttribute{Computed: true, Description: "Managed binding ID shared by topics from the same source and destination."},
+			"id": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Composite identifier, <topic_id>|<destination_id>. Use it to import.",
+				MarkdownDescription: "Composite identifier, `<topic_id>|<destination_id>`. Use it to import.",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"topic_id": schema.StringAttribute{
+				Required:            true,
+				Description:         "Full topic ID, source_<source id>.<connector>.<resource>. Changing it replaces the resource.",
+				MarkdownDescription: "Full topic ID, `source_<source id>.<connector>.<resource>`. Changing it replaces the resource.",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
+			},
+			"destination_id": schema.StringAttribute{
+				Required:            true,
+				Description:         "Destination ID. Changing it replaces the resource.",
+				MarkdownDescription: "Destination ID. Changing it replaces the resource.",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
+			},
+			"binding_id": schema.StringAttribute{
+				Computed:            true,
+				Description:         "ID of the managed binding that carries every topic of this source to this destination.",
+				MarkdownDescription: "ID of the managed binding that carries every topic of this source to this destination.",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
 		},
 	}
 }
@@ -67,7 +88,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	defer lockDestination(model.DestinationID.ValueString())()
+	defer lockSource(model.TopicID.ValueString())()
 	link, err := r.client.AttachTopicDestination(ctx, model.TopicID.ValueString(), model.DestinationID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error attaching topic to destination", err.Error())
@@ -117,7 +138,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	defer lockDestination(model.DestinationID.ValueString())()
+	defer lockSource(model.TopicID.ValueString())()
 	if err := r.client.DetachTopicDestination(ctx, model.TopicID.ValueString(), model.DestinationID.ValueString()); err != nil {
 		resp.Diagnostics.AddError("Error detaching topic from destination", err.Error())
 	}
@@ -134,13 +155,15 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("destination_id"), destinationID)...)
 }
 
-// The backend attaches and detaches by rewriting the binding's whole topic list
-// without a lock, so parallel changes for one destination (for_each applies them
-// concurrently) would drop each other's topics.
-var destinationLocks sync.Map
+// The backend serializes changes to one source's bindings and answers 409 once
+// another change has held that lock for a minute, so for_each's parallel
+// applies over one source's topics take turns here instead.
+var sourceLocks sync.Map
 
-func lockDestination(destinationID string) (unlock func()) {
-	value, _ := destinationLocks.LoadOrStore(destinationID, &sync.Mutex{})
+// lockSource locks the source a topic ID names: source_<id>.<connector>.<resource>.
+func lockSource(topicID string) (unlock func()) {
+	source, _, _ := strings.Cut(topicID, ".")
+	value, _ := sourceLocks.LoadOrStore(source, &sync.Mutex{})
 	mu := value.(*sync.Mutex)
 	mu.Lock()
 	return mu.Unlock

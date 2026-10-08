@@ -1,4 +1,4 @@
-variable "api_source_topic_id" {
+variable "salesforce_source_id" {
   type = string
 }
 
@@ -6,7 +6,8 @@ variable "destination_id" {
   type = string
 }
 
-resource "streamkap_topic_destination" "example" {
-  topic_id       = var.api_source_topic_id
+# An API source's topic ID is source_<source id>.<connector>.<resource>.
+resource "streamkap_topic_destination" "accounts" {
+  topic_id       = "source_${var.salesforce_source_id}.salesforce.Account"
   destination_id = var.destination_id
 }
