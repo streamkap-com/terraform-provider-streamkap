@@ -432,3 +432,65 @@ func TestZendeskSourceRefusedOnDeployment(t *testing.T) {
 		},
 	})
 }
+
+// A Zendesk source connected in the Streamkap UI, then imported: the update
+// after import must neither send a grant nor touch the refresh token the
+// backend keeps, and a new subdomain still needs a new grant.
+func TestZendeskSourceImportThenUpdate(t *testing.T) {
+	f := &apiSourceFixture{t: t, connector: "zendesk", secrets: []string{"refresh_token"}}
+	f.stored = &api.Source{ID: fixtureSourceID, Name: "support", Connector: "zendesk", KcClusterId: "api-cluster", ConnectorStatus: "Active",
+		Config: map[string]any{"subdomain": "acme", "resources": "tickets", "refresh_token": "stored-refresh-token"}}
+	server := f.server()
+	defer server.Close()
+	config := func(subdomain, resources string) string {
+		return fixtureProvider(server.URL) + fmt.Sprintf(`resource "streamkap_source_zendesk" "support" {
+  name      = "support"
+  subdomain = %q
+  resources = %s
+}
+`, subdomain, resources)
+	}
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:             config("acme", `["tickets"]`),
+				ResourceName:       "streamkap_source_zendesk.support",
+				ImportState:        true,
+				ImportStateId:      fixtureSourceID,
+				ImportStatePersist: true,
+			},
+			{
+				Config: config("acme", `["tickets", "users"]`),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckNoResourceAttr("streamkap_source_zendesk.support", "oauth_grant_id"),
+					f.checkRequest(&f.updates, 0, func(body map[string]any) error {
+						if _, sent := body["oauth_grant_id"]; sent {
+							return fmt.Errorf("an imported source has no grant to send: %v", body)
+						}
+						if _, sent := body["refresh_token"]; sent {
+							return fmt.Errorf("the refresh token belongs to the backend: %v", body)
+						}
+						return nil
+					}),
+					func(*terraform.State) error {
+						f.mu.Lock()
+						defer f.mu.Unlock()
+						if f.stored.Config["refresh_token"] != "stored-refresh-token" {
+							return fmt.Errorf("the update dropped the stored refresh token: %v", f.stored.Config)
+						}
+						return nil
+					},
+				),
+			},
+			{
+				Config:      config("globex", `["tickets", "users"]`),
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`Changing subdomain needs a new OAuth grant`),
+			},
+		},
+	})
+	if n := len(f.updates); n != 1 {
+		t.Errorf("updates = %d, want 1 (the import and the update must converge)", n)
+	}
+}

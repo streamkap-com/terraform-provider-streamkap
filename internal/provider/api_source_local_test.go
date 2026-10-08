@@ -19,6 +19,10 @@ func TestAPISourceAndTopicDestinationLifecycle(t *testing.T) {
 	var mu sync.Mutex
 	var source *api.Source
 	links := map[string]bool{}
+	// The backend's attach checks that the topic's source is an API source of
+	// the tenant, not its status, so a link applies while the source is still
+	// Pending; the provider must not wait for Active first.
+	var attachedWhile []string
 	var updateResources []string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
@@ -92,6 +96,7 @@ func TestAPISourceAndTopicDestinationLifecycle(t *testing.T) {
 			switch r.Method {
 			case http.MethodPut:
 				links[topicID] = true
+				attachedWhile = append(attachedWhile, source.ConnectorStatus)
 			case http.MethodGet:
 				if !links[topicID] {
 					w.WriteHeader(http.StatusNotFound)
@@ -171,6 +176,9 @@ resource "streamkap_topic_destination" "companies" {
 	defer mu.Unlock()
 	if source != nil || len(links) != 0 {
 		t.Errorf("destroy left source=%v links=%v", source != nil, links)
+	}
+	if len(attachedWhile) < 2 || attachedWhile[0] != "Pending" || attachedWhile[1] != "Pending" {
+		t.Errorf("the first apply must attach both topics while the source is Pending, got statuses %v", attachedWhile)
 	}
 	if strings.Join(updateResources, ",") != "contacts,companies,deals" {
 		t.Errorf("source update resources = %v", updateResources)
