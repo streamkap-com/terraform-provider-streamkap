@@ -164,9 +164,10 @@ func secretsNullInPlanAndState() ([]plancheck.PlanCheck, []statecheck.StateCheck
 	return plans, states
 }
 
-// Real terraform drives the prototype end to end against the in-memory
-// backend: chain create, correlation across reorder and rename, key change,
-// write-only secret rotation, and import.
+// Real terraform drives BaseConnectorResource, with the chain built from the
+// contract corpus, end to end against the in-memory backend: chain create,
+// correlation across reorder and rename, key change, write-only secret
+// rotation, and import.
 func TestSMT_ChainLifecycle(t *testing.T) {
 	factories, fake := newFixture(t)
 	ids := map[string]string{}

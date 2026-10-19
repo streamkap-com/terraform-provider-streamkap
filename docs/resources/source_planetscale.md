@@ -150,9 +150,9 @@ output "example-source-planetscale" {
 - `schema_history_internal_store_only_captured_tables_ddl` (Boolean) Specifies whether the connector records schema structures from all logical tables in the captured schemas or databases, or only captured tables. Enabling this when you have many tables can improve performance and avoid timeouts. Defaults to `false`.
 - `smt_chain` (Attributes List) Ordered transform chain. Entries are correlated to server instances by key. (see [below for nested schema](#nestedatt--smt_chain))
 - `smt_managed_overrides` (Map of Boolean) Managed transform slots are destination-scoped, so a source chain accepts no override: leave this unset or set an empty map.
-- `smt_predicate_secrets` (Attributes List) Secret values for instances, addressed by canonical pointer. Values are write-only; bump version to rotate. (see [below for nested schema](#nestedatt--smt_predicate_secrets))
+- `smt_predicate_secrets` (Attributes List) Secret values for smt_predicates records, addressed by canonical pointer. Values are write-only and are applied when the predicate is created; a predicate record is immutable, so a new secret needs the predicate under a new key. (see [below for nested schema](#nestedatt--smt_predicate_secrets))
 - `smt_predicates` (Attributes List) Shared immutable predicate records referenced by transform attachments. (see [below for nested schema](#nestedatt--smt_predicates))
-- `smt_secrets` (Attributes List) Secret values for instances, addressed by canonical pointer. Values are write-only; bump version to rotate. (see [below for nested schema](#nestedatt--smt_secrets))
+- `smt_secrets` (Attributes List) Secret values for smt_chain instances, addressed by canonical pointer. Values are write-only; bump version to rotate. (see [below for nested schema](#nestedatt--smt_secrets))
 - `ssh_enabled` (Boolean) <span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
@@ -230,8 +230,8 @@ Optional:
 
 Required:
 
-- `key` (String) Instance key in smt_predicates.
-- `version` (Number) Positive, monotonic rotation version. Increase it to apply the configured values once.
+- `key` (String) Predicate key in smt_predicates.
+- `version` (Number) Positive version. The configured values are applied once, when the predicate is created; increasing it for an existing predicate is refused.
 
 Optional:
 
@@ -242,7 +242,7 @@ Optional:
 
 Required:
 
-- `pointer` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Canonical secret pointer, for example /routes/row-east/token.
+- `pointer` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Canonical secret pointer: one of the predicate type's secret paths, with a list row named by its escaped row key, never its index.
 
 Optional:
 
@@ -270,7 +270,7 @@ Read-Only:
 - `configured_secret_paths` (List of String) Canonical secret paths configured on the server; values are never returned.
 - `id` (String) Server-owned predicate id.
 - `schema_version` (Number) Catalog schema version the predicate was persisted with.
-- `secret_version` (Number) Last predicate secret rotation version applied under this key.
+- `secret_version` (Number) Secret version applied when this predicate was created; 0 when Terraform supplied no secret values.
 
 <a id="nestedatt--smt_predicates--topic_name_matches"></a>
 ### Nested Schema for `smt_predicates.topic_name_matches`
@@ -298,7 +298,7 @@ Optional:
 
 Required:
 
-- `pointer` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Canonical secret pointer, for example /routes/row-east/token.
+- `pointer` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Canonical secret pointer: one of the instance type's secret paths, with a list row named by its escaped row key, never its index. For example `/mask_salt` on a `mask_field` instance.
 
 Optional:
 

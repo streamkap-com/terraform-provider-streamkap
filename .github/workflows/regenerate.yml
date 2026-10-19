@@ -118,8 +118,23 @@ jobs:
           # records as the provenance of the schemas and the SMT catalog.
           GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 \
             git clone --no-checkout --filter=blob:none "$url" "$RUNNER_TEMP/backend"
-          GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 \
-            git -C "$RUNNER_TEMP/backend" checkout --detach "$BACKEND_REF"
+          # main stays checked out as the branch, so the codegen preflight's
+          # main-branch guard still checks it; any other ref is detached.
+          if [ "$BACKEND_REF" = main ]; then
+            GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 \
+              git -C "$RUNNER_TEMP/backend" checkout -B main origin/main
+          else
+            # A fresh clone has no local branch but main, and `checkout --detach`
+            # refuses to create one, so a branch resolves through its
+            # remote-tracking ref; a tag or commit resolves as given.
+            commit="$(git -C "$RUNNER_TEMP/backend" rev-parse --verify --quiet "origin/$BACKEND_REF^{commit}" \
+              || git -C "$RUNNER_TEMP/backend" rev-parse --verify --quiet "$BACKEND_REF^{commit}")" || {
+              echo "::error::Backend ref $BACKEND_REF is not a branch, tag or commit of the backend repository."
+              exit 1
+            }
+            GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0 \
+              git -C "$RUNNER_TEMP/backend" checkout --detach "$commit"
+          fi
           rm -f "$askpass"
 
           sha="$(git -C "$RUNNER_TEMP/backend" rev-parse HEAD)"
@@ -129,21 +144,27 @@ jobs:
             exit 1
           fi
 
-          echo "STREAMKAP_BACKEND_PATH=$RUNNER_TEMP/backend" >> "$GITHUB_ENV"
-          echo "STREAMKAP_BACKEND_REVISION=$sha" >> "$GITHUB_ENV"
-          echo "STREAMKAP_SMT_CATALOG=$catalog" >> "$GITHUB_ENV"
-          echo "BACKEND_SHA=$(git -C "$RUNNER_TEMP/backend" rev-parse --short HEAD)" >> "$GITHUB_ENV"
-          echo "SMT_CATALOG_SHA256=$(sha256sum "$catalog" | cut -d' ' -f1)" >> "$GITHUB_ENV"
+          {
+            echo "STREAMKAP_BACKEND_PATH=$RUNNER_TEMP/backend"
+            echo "STREAMKAP_BACKEND_REVISION=$sha"
+            echo "STREAMKAP_SMT_CATALOG=$catalog"
+            echo "BACKEND_SHA=$(git -C "$RUNNER_TEMP/backend" rev-parse --short HEAD)"
+            echo "SMT_CATALOG_SHA256=$(sha256sum "$catalog" | cut -d' ' -f1)"
+          } >> "$GITHUB_ENV"
           echo "Backend $BACKEND_REF resolved to $sha; SMT catalog $SMT_CATALOG sha256 $(sha256sum "$catalog" | cut -d' ' -f1)"
 
       # Covers sources, destinations AND transforms: tfgen's --entity-type defaults to
       # "all" and internal/generated/doc.go's go:generate directive passes no filter.
       - name: Regenerate schemas and docs
-        # The pinned inputs come from the clone step; a ref other than main is
-        # deliberate here and recorded, so the preflight branch check is waived.
-        env:
-          ALLOW_NONMAIN: "1"
-        run: make generate
+        # A ref other than main is a deliberate dispatch input and the clone step
+        # records the commit it resolved to, so only then is the preflight's
+        # main-branch guard waived. A main run keeps the guard.
+        run: |
+          set -euo pipefail
+          if [ "$BACKEND_REF" != main ]; then
+            export ALLOW_NONMAIN=1
+          fi
+          make generate
 
       # Snapshots are the schema of record read by humans and tooling; a PR carrying
       # regenerated schemas but stale snapshots would fail its own schema-compat gate.

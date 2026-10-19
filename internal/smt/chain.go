@@ -132,7 +132,7 @@ func BuildChain(cat Catalog) (*ChainSchema, error) {
 		attrAlias:                 schema.StringAttribute{Computed: true, Description: "Server-owned Kafka Connect predicate alias."},
 		attrSchemaVersion:         schema.Int64Attribute{Computed: true, Description: "Catalog schema version the predicate was persisted with."},
 		attrCodecVersion:          schema.Int64Attribute{Computed: true, Description: "Catalog codec version the predicate was persisted with."},
-		attrSecretVersion:         schema.Int64Attribute{Computed: true, Description: "Last predicate secret rotation version applied under this key."},
+		attrSecretVersion:         schema.Int64Attribute{Computed: true, Description: "Secret version applied when this predicate was created; 0 when Terraform supplied no secret values."},
 		attrConfiguredSecretPaths: schema.ListAttribute{Computed: true, ElementType: types.StringType, Description: "Canonical secret paths configured on the server; values are never returned."},
 	}
 	for _, id := range predicates.TypeIDs() {
@@ -175,23 +175,40 @@ func typeDescription(ids []string) string {
 // stateful rotation version and a write-only list of pointer operations.
 // Only the version ever reaches plan or state.
 func SecretsAttribute() schema.ListNestedAttribute {
-	return secretsAttribute(AttrChain)
+	return secretsAttribute(secretsDescriptions{
+		attribute: "Secret values for " + AttrChain + " instances, addressed by canonical pointer. Values are write-only; bump version to rotate.",
+		key:       "Instance key in " + AttrChain + ".",
+		version:   "Positive, monotonic rotation version. Increase it to apply the configured values once.",
+		pointer:   "Canonical secret pointer: one of the instance type's secret paths, with a list row named by its escaped row key, never its index. For example `/mask_salt` on a `mask_field` instance.",
+	})
 }
 
+// PredicateSecretsAttribute is the write-only secret input of predicates.
+// Predicate records are immutable, so their values are applied only when a
+// predicate key is created.
 func PredicateSecretsAttribute() schema.ListNestedAttribute {
-	return secretsAttribute(AttrPredicates)
+	return secretsAttribute(secretsDescriptions{
+		attribute: "Secret values for " + AttrPredicates + " records, addressed by canonical pointer. Values are write-only and are applied when the predicate is created; a predicate record is immutable, so a new secret needs the predicate under a new key.",
+		key:       "Predicate key in " + AttrPredicates + ".",
+		version:   "Positive version. The configured values are applied once, when the predicate is created; increasing it for an existing predicate is refused.",
+		pointer:   "Canonical secret pointer: one of the predicate type's secret paths, with a list row named by its escaped row key, never its index.",
+	})
 }
 
-func secretsAttribute(target string) schema.ListNestedAttribute {
+type secretsDescriptions struct {
+	attribute, key, version, pointer string
+}
+
+func secretsAttribute(d secretsDescriptions) schema.ListNestedAttribute {
 	return schema.ListNestedAttribute{
 		Optional:    true,
-		Description: "Secret values for instances, addressed by canonical pointer. Values are write-only; bump version to rotate.",
+		Description: d.attribute,
 		NestedObject: schema.NestedAttributeObject{
 			Attributes: map[string]schema.Attribute{
-				attrKey: schema.StringAttribute{Required: true, Description: "Instance key in " + target + "."},
+				attrKey: schema.StringAttribute{Required: true, Description: d.key},
 				attrVersion: schema.Int64Attribute{
 					Required:    true,
-					Description: "Positive, monotonic rotation version. Increase it to apply the configured values once.",
+					Description: d.version,
 					Validators:  []validator.Int64{int64validator.AtLeast(1)},
 				},
 				attrValues: schema.ListNestedAttribute{
@@ -200,7 +217,7 @@ func secretsAttribute(target string) schema.ListNestedAttribute {
 					Description: "Write-only operations. Each row replaces or clears the secret at one canonical pointer.",
 					NestedObject: schema.NestedAttributeObject{
 						Attributes: map[string]schema.Attribute{
-							attrPointer: schema.StringAttribute{Required: true, WriteOnly: true, Description: "Canonical secret pointer, for example /routes/row-east/token."},
+							attrPointer: schema.StringAttribute{Required: true, WriteOnly: true, Description: d.pointer},
 							attrValue:   schema.StringAttribute{Optional: true, WriteOnly: true, Sensitive: true, Description: "New secret value. Exactly one of value and clear is set."},
 							attrClear:   schema.BoolAttribute{Optional: true, WriteOnly: true, Description: "Clear the secret instead of replacing it."},
 						},
