@@ -1,0 +1,798 @@
+{
+  "contract_version": 1,
+  "producer": "app.services.smt.catalog_artifact",
+  "digest": "sha256:4a7f662dd246781611aac2df94be5f74cd4985465da062c549f29ddcca532914",
+  "types": [
+    {
+      "label": "Regex router",
+      "type_id": "regex_router",
+      "schema_version": 1,
+      "codec_version": 1,
+      "publishable": true,
+      "authorable": true,
+      "kind": "kafka_connect_smt",
+      "role": "transform",
+      "categories": [
+        "route_record"
+      ],
+      "description": "Send each record to a topic derived from its own by a regular expression",
+      "disabled_reason": null,
+      "input_arity": "one",
+      "output_arity": "one",
+      "can_create_topics": false,
+      "compatible_transform_types": [],
+      "supports_negate": false,
+      "data_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "regex": {
+            "format": "regex",
+            "title": "Regex",
+            "type": "string"
+          },
+          "replacement": {
+            "default": "$0",
+            "title": "Replacement",
+            "type": "string"
+          }
+        },
+        "required": [
+          "regex"
+        ],
+        "title": "RegexRouterConfig",
+        "type": "object"
+      },
+      "ui_schema": {
+        "type": "Category",
+        "label": "Regex router",
+        "elements": [
+          {
+            "type": "Control",
+            "scope": "#/properties/regex",
+            "options": {
+              "control": "string"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/replacement",
+            "options": {
+              "control": "string"
+            }
+          }
+        ]
+      },
+      "secret_paths": [],
+      "row_keys": {},
+      "consumer_requirements": {
+        "version": 1,
+        "schema_keywords": [
+          "additionalProperties",
+          "default",
+          "format",
+          "properties",
+          "required",
+          "title",
+          "type"
+        ],
+        "schema_types": [
+          "object",
+          "string"
+        ],
+        "schema_formats": [
+          "regex"
+        ],
+        "ui_elements": [
+          "Category",
+          "Control"
+        ],
+        "ui_controls": [
+          "string"
+        ],
+        "secret_addressing": []
+      },
+      "examples": {
+        "read_projection": {
+          "regex": "(.*)",
+          "replacement": "$1"
+        },
+        "encoded_factory_fingerprint": "sha256:ed9a850df20c8d6cb528cc9c65269c4d966a6826d0d9e13bb71e06b6057f2f8c",
+        "encoded_codec_vectors_fingerprint": "sha256:7ed990cbfb68c3fcabdcff882f0e8b27b5241c87d32c50b749c2d79c0002cc8e"
+      },
+      "alias_base": "RegexRouter",
+      "hosts": [
+        "destinations"
+      ],
+      "kc_class": "org.apache.kafka.connect.transforms.RegexRouter",
+      "package": "kafka-connect"
+    },
+    {
+      "label": "Mask field",
+      "type_id": "mask_field",
+      "schema_version": 1,
+      "codec_version": 1,
+      "publishable": true,
+      "authorable": false,
+      "kind": "kafka_connect_smt",
+      "role": "transform",
+      "categories": [
+        "modify_column"
+      ],
+      "description": "Replace the values of chosen columns with a hash, a fixed value or null",
+      "disabled_reason": null,
+      "input_arity": "one",
+      "output_arity": "one",
+      "can_create_topics": false,
+      "compatible_transform_types": [],
+      "supports_negate": false,
+      "data_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "fields_include": {
+            "items": {
+              "pattern": "^[^,]+$",
+              "type": "string"
+            },
+            "title": "Fields Include",
+            "type": "array"
+          },
+          "fields_exclude": {
+            "items": {
+              "pattern": "^[^,]+$",
+              "type": "string"
+            },
+            "title": "Fields Exclude",
+            "type": "array"
+          },
+          "mask_function": {
+            "default": "SHA256_TRUNCATE",
+            "enum": [
+              "SHA256_TRUNCATE",
+              "MD5_TRUNCATE",
+              "SHA256",
+              "MD5",
+              "REDACT",
+              "FIXED",
+              "NULLIFY"
+            ],
+            "title": "Mask Function",
+            "type": "string"
+          },
+          "mask_salt": {
+            "default": "",
+            "format": "password",
+            "title": "Mask Salt",
+            "type": "string",
+            "writeOnly": true
+          },
+          "mask_char": {
+            "default": "*",
+            "title": "Mask Char",
+            "type": "string"
+          },
+          "mask_fixed_value": {
+            "default": "***",
+            "title": "Mask Fixed Value",
+            "type": "string"
+          },
+          "replace_null_with_default": {
+            "default": true,
+            "title": "Replace Null With Default",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fields_include"
+        ],
+        "title": "MaskFieldConfig",
+        "type": "object"
+      },
+      "ui_schema": {
+        "type": "Category",
+        "label": "Mask field",
+        "elements": [
+          {
+            "type": "Control",
+            "scope": "#/properties/fields_include",
+            "options": {
+              "control": "multi-select"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/fields_exclude",
+            "options": {
+              "control": "multi-select"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/mask_function",
+            "options": {
+              "control": "one-select"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/mask_salt",
+            "options": {
+              "control": "password"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/mask_char",
+            "options": {
+              "control": "string"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/mask_fixed_value",
+            "options": {
+              "control": "string"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/replace_null_with_default",
+            "options": {
+              "control": "toggle"
+            }
+          }
+        ]
+      },
+      "secret_paths": [
+        "/mask_salt"
+      ],
+      "row_keys": {},
+      "consumer_requirements": {
+        "version": 1,
+        "schema_keywords": [
+          "additionalProperties",
+          "default",
+          "enum",
+          "format",
+          "items",
+          "pattern",
+          "properties",
+          "required",
+          "title",
+          "type",
+          "writeOnly"
+        ],
+        "schema_types": [
+          "array",
+          "boolean",
+          "object",
+          "string"
+        ],
+        "schema_formats": [
+          "password"
+        ],
+        "ui_elements": [
+          "Category",
+          "Control"
+        ],
+        "ui_controls": [
+          "multi-select",
+          "one-select",
+          "password",
+          "string",
+          "toggle"
+        ],
+        "secret_addressing": [
+          "json-pointer-v1"
+        ]
+      },
+      "examples": {
+        "read_projection": {
+          "fields_include": [
+            "email"
+          ],
+          "fields_exclude": [],
+          "mask_function": "SHA256_TRUNCATE",
+          "mask_char": "*",
+          "mask_fixed_value": "***",
+          "replace_null_with_default": true
+        },
+        "encoded_factory_fingerprint": "sha256:68f056715a6b93d7fe84e98c0fc8b59778b9322f766623cd2ef8781932a76b8b",
+        "encoded_codec_vectors_fingerprint": "sha256:9dfdd09c8907c70eaf71853aae167876310a7cb06dca7bd06ce9138174195178"
+      },
+      "alias_base": "MaskField",
+      "hosts": [
+        "destinations"
+      ],
+      "kc_class": "com.streamkap.kafka.connect.transforms.MaskField$Value",
+      "package": "streamkap-transforms-multi-converter"
+    },
+    {
+      "label": "Mask field",
+      "type_id": "mask_field",
+      "schema_version": 2,
+      "codec_version": 1,
+      "publishable": true,
+      "authorable": true,
+      "kind": "kafka_connect_smt",
+      "role": "transform",
+      "categories": [
+        "modify_column"
+      ],
+      "description": "Replace the values of chosen columns with a hash, a fixed value or null",
+      "disabled_reason": null,
+      "input_arity": "one",
+      "output_arity": "one",
+      "can_create_topics": false,
+      "compatible_transform_types": [],
+      "supports_negate": false,
+      "data_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "fields_include": {
+            "items": {
+              "pattern": "^[^,]+$",
+              "type": "string"
+            },
+            "title": "Fields Include",
+            "type": "array"
+          },
+          "fields_exclude": {
+            "items": {
+              "pattern": "^[^,]+$",
+              "type": "string"
+            },
+            "title": "Fields Exclude",
+            "type": "array"
+          },
+          "mask_function": {
+            "default": "SHA256_TRUNCATE",
+            "enum": [
+              "SHA256_TRUNCATE",
+              "MD5_TRUNCATE",
+              "SHA256",
+              "MD5",
+              "REDACT",
+              "FIXED",
+              "NULLIFY"
+            ],
+            "title": "Mask Function",
+            "type": "string"
+          },
+          "mask_salt": {
+            "default": "",
+            "format": "password",
+            "title": "Mask Salt",
+            "type": "string",
+            "writeOnly": true
+          },
+          "mask_char": {
+            "default": "*",
+            "maxLength": 1,
+            "minLength": 1,
+            "pattern": "^[^\\u0000-\\u0020]$",
+            "title": "Mask Char",
+            "type": "string"
+          },
+          "mask_fixed_value": {
+            "default": "***",
+            "title": "Mask Fixed Value",
+            "type": "string"
+          },
+          "replace_null_with_default": {
+            "default": true,
+            "title": "Replace Null With Default",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fields_include"
+        ],
+        "title": "MaskFieldConfig",
+        "type": "object"
+      },
+      "ui_schema": {
+        "type": "Category",
+        "label": "Mask field",
+        "elements": [
+          {
+            "type": "Control",
+            "scope": "#/properties/fields_include",
+            "options": {
+              "control": "multi-select"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/fields_exclude",
+            "options": {
+              "control": "multi-select"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/mask_function",
+            "options": {
+              "control": "one-select"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/mask_salt",
+            "options": {
+              "control": "password"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/mask_char",
+            "options": {
+              "control": "string"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/mask_fixed_value",
+            "options": {
+              "control": "string"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/replace_null_with_default",
+            "options": {
+              "control": "toggle"
+            }
+          }
+        ]
+      },
+      "secret_paths": [
+        "/mask_salt"
+      ],
+      "row_keys": {},
+      "consumer_requirements": {
+        "version": 1,
+        "schema_keywords": [
+          "additionalProperties",
+          "default",
+          "enum",
+          "format",
+          "items",
+          "maxLength",
+          "minLength",
+          "pattern",
+          "properties",
+          "required",
+          "title",
+          "type",
+          "writeOnly"
+        ],
+        "schema_types": [
+          "array",
+          "boolean",
+          "object",
+          "string"
+        ],
+        "schema_formats": [
+          "password"
+        ],
+        "ui_elements": [
+          "Category",
+          "Control"
+        ],
+        "ui_controls": [
+          "multi-select",
+          "one-select",
+          "password",
+          "string",
+          "toggle"
+        ],
+        "secret_addressing": [
+          "json-pointer-v1"
+        ]
+      },
+      "examples": {
+        "read_projection": {
+          "fields_include": [
+            "email"
+          ],
+          "fields_exclude": [],
+          "mask_function": "SHA256_TRUNCATE",
+          "mask_char": "*",
+          "mask_fixed_value": "***",
+          "replace_null_with_default": true
+        },
+        "encoded_factory_fingerprint": "sha256:68f056715a6b93d7fe84e98c0fc8b59778b9322f766623cd2ef8781932a76b8b",
+        "encoded_codec_vectors_fingerprint": "sha256:9dfdd09c8907c70eaf71853aae167876310a7cb06dca7bd06ce9138174195178"
+      },
+      "alias_base": "MaskField",
+      "hosts": [
+        "destinations"
+      ],
+      "kc_class": "com.streamkap.kafka.connect.transforms.MaskField$Value",
+      "package": "streamkap-transforms-multi-converter"
+    },
+    {
+      "label": "Drop fields",
+      "type_id": "drop_fields",
+      "schema_version": 1,
+      "codec_version": 1,
+      "publishable": true,
+      "authorable": true,
+      "kind": "kafka_connect_smt",
+      "role": "transform",
+      "categories": [
+        "delete_column"
+      ],
+      "description": "Remove the chosen columns from every record before the sink writes it",
+      "disabled_reason": null,
+      "input_arity": "one",
+      "output_arity": "one",
+      "can_create_topics": false,
+      "compatible_transform_types": [],
+      "supports_negate": false,
+      "data_schema": {
+        "additionalProperties": false,
+        "description": "``DropFields`` extends ``FieldTransformBase`` and adds nothing: its config is the base's.",
+        "properties": {
+          "fields_include": {
+            "items": {
+              "pattern": "^[^,]+$",
+              "type": "string"
+            },
+            "title": "Fields Include",
+            "type": "array"
+          },
+          "fields_exclude": {
+            "items": {
+              "pattern": "^[^,]+$",
+              "type": "string"
+            },
+            "title": "Fields Exclude",
+            "type": "array"
+          },
+          "replace_null_with_default": {
+            "default": true,
+            "title": "Replace Null With Default",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fields_include"
+        ],
+        "title": "DropFieldsConfig",
+        "type": "object"
+      },
+      "ui_schema": {
+        "type": "Category",
+        "label": "Drop fields",
+        "elements": [
+          {
+            "type": "Control",
+            "scope": "#/properties/fields_include",
+            "options": {
+              "control": "multi-select"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/fields_exclude",
+            "options": {
+              "control": "multi-select"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/replace_null_with_default",
+            "options": {
+              "control": "toggle"
+            }
+          }
+        ]
+      },
+      "secret_paths": [],
+      "row_keys": {},
+      "consumer_requirements": {
+        "version": 1,
+        "schema_keywords": [
+          "additionalProperties",
+          "default",
+          "description",
+          "items",
+          "pattern",
+          "properties",
+          "required",
+          "title",
+          "type"
+        ],
+        "schema_types": [
+          "array",
+          "boolean",
+          "object",
+          "string"
+        ],
+        "schema_formats": [],
+        "ui_elements": [
+          "Category",
+          "Control"
+        ],
+        "ui_controls": [
+          "multi-select",
+          "toggle"
+        ],
+        "secret_addressing": []
+      },
+      "examples": {
+        "read_projection": {
+          "fields_include": [
+            "orders.debug_blob"
+          ],
+          "fields_exclude": [],
+          "replace_null_with_default": true
+        },
+        "encoded_factory_fingerprint": "sha256:30bec3709614d7fbf070ac184e9ee04380ee5eb3261d06a3f74a010494803628",
+        "encoded_codec_vectors_fingerprint": "sha256:a1328de472f21c9a381ed901741d0f9ec7a223b362aa5a758edfc52504e7fe62"
+      },
+      "alias_base": "DropFields",
+      "hosts": [
+        "destinations"
+      ],
+      "kc_class": "com.streamkap.kafka.connect.transforms.DropFields$Value",
+      "package": "streamkap-transforms-multi-converter"
+    },
+    {
+      "label": "Filter records",
+      "type_id": "filter",
+      "schema_version": 1,
+      "codec_version": 1,
+      "publishable": true,
+      "authorable": true,
+      "kind": "kafka_connect_smt",
+      "role": "transform",
+      "categories": [
+        "filter_record"
+      ],
+      "description": "Keep or drop records according to an attached predicate",
+      "disabled_reason": null,
+      "input_arity": "one",
+      "output_arity": "zero_or_one",
+      "can_create_topics": false,
+      "compatible_transform_types": [],
+      "supports_negate": false,
+      "data_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "title": "FilterConfig",
+        "type": "object"
+      },
+      "ui_schema": {
+        "type": "Category",
+        "label": "Filter records",
+        "elements": []
+      },
+      "secret_paths": [],
+      "row_keys": {},
+      "consumer_requirements": {
+        "version": 1,
+        "schema_keywords": [
+          "additionalProperties",
+          "properties",
+          "title",
+          "type"
+        ],
+        "schema_types": [
+          "object"
+        ],
+        "schema_formats": [],
+        "ui_elements": [
+          "Category"
+        ],
+        "ui_controls": [],
+        "secret_addressing": []
+      },
+      "examples": {
+        "read_projection": {},
+        "encoded_factory_fingerprint": "sha256:5a6e6e43946e4691ab063a336d04d46698120addc753c76cd254b7060fce91ef",
+        "encoded_codec_vectors_fingerprint": "sha256:d6acbd84b881bbe415a41a00589920e7473fd83490a08bbf07f6f83027e4dde5"
+      },
+      "alias_base": "Filter",
+      "hosts": [
+        "sources"
+      ],
+      "kc_class": "org.apache.kafka.connect.transforms.Filter",
+      "package": "kafka-connect"
+    },
+    {
+      "label": "Topic name matches",
+      "type_id": "topic_name_matches",
+      "schema_version": 1,
+      "codec_version": 1,
+      "publishable": true,
+      "authorable": true,
+      "kind": "kafka_connect_smt",
+      "role": "predicate",
+      "categories": [],
+      "description": "Select records whose topic name matches a regular expression",
+      "disabled_reason": null,
+      "input_arity": "one",
+      "output_arity": "one",
+      "can_create_topics": false,
+      "compatible_transform_types": [
+        "drop_fields",
+        "filter",
+        "mask_field",
+        "regex_router"
+      ],
+      "supports_negate": true,
+      "data_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "pattern": {
+            "format": "regex",
+            "title": "Pattern",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pattern"
+        ],
+        "title": "TopicNameMatchesConfig",
+        "type": "object"
+      },
+      "ui_schema": {
+        "type": "Category",
+        "label": "Topic name matches",
+        "elements": [
+          {
+            "type": "Control",
+            "scope": "#/properties/pattern",
+            "options": {
+              "control": "string"
+            }
+          }
+        ]
+      },
+      "secret_paths": [],
+      "row_keys": {},
+      "consumer_requirements": {
+        "version": 1,
+        "schema_keywords": [
+          "additionalProperties",
+          "format",
+          "properties",
+          "required",
+          "title",
+          "type"
+        ],
+        "schema_types": [
+          "object",
+          "string"
+        ],
+        "schema_formats": [
+          "regex"
+        ],
+        "ui_elements": [
+          "Category",
+          "Control"
+        ],
+        "ui_controls": [
+          "string"
+        ],
+        "secret_addressing": []
+      },
+      "examples": {
+        "read_projection": {
+          "pattern": "^orders\\..*$"
+        },
+        "encoded_factory_fingerprint": "sha256:0535ddbb31080edbe85e9b09115dd9d90804c91483d3454871d41bbcf2aff785",
+        "encoded_codec_vectors_fingerprint": "sha256:09cb3dea3dc880845ba260e007e4e18f291bdd84e50a218c655cfa3e5ddf4209"
+      },
+      "alias_base": "TopicNameMatches",
+      "hosts": [
+        "destinations",
+        "sources"
+      ],
+      "kc_class": "org.apache.kafka.connect.transforms.predicates.TopicNameMatches",
+      "package": "kafka-connect"
+    }
+  ]
+}

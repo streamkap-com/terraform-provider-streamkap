@@ -78,8 +78,18 @@ type DestinationOracleModel struct {
 	TransformsMarkColumnsAsOptionalFieldsIncludeList types.String   `tfsdk:"transforms_mark_columns_as_optional_fields_include_list"`
 	TransformsCopyFieldCopyFieldMapping              types.String   `tfsdk:"transforms_copy_field_copy_field_mapping"`
 	TransformsHeaderToFieldCustomHeaderMappings      types.String   `tfsdk:"transforms_header_to_field_custom_header_mappings"`
+	SMTChain                                         types.List     `tfsdk:"smt_chain"`
+	SMTSecrets                                       types.List     `tfsdk:"smt_secrets"`
+	SMTPredicates                                    types.List     `tfsdk:"smt_predicates"`
+	SMTPredicateSecrets                              types.List     `tfsdk:"smt_predicate_secrets"`
+	SMTManagedOverrides                              types.Map      `tfsdk:"smt_managed_overrides"`
+	SMTChainRevision                                 types.String   `tfsdk:"smt_chain_revision"`
 	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
 }
+
+// SMTChainHost names the SMT catalog host whose chain this model carries. The
+// base connector resource builds the chain attributes from it.
+func (DestinationOracleModel) SMTChainHost() string { return "destinations" }
 
 // DestinationOracleSchema returns the Terraform schema for the oracle destination.
 func DestinationOracleSchema() schema.Schema {

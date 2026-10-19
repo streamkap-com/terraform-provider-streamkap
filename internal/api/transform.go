@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
@@ -34,25 +35,42 @@ type Transform struct {
 	UpdatedAt      string         `json:"updated_at"`
 	StartTime      *string        `json:"start_time"`
 	Tags           []string       `json:"tags"`
+	EditRevision   *string        `json:"edit_revision"`
 }
 
 // CreateTransformRequest represents the request payload for creating a transform.
 // See the comment on api.Source.Tags for why Tags is NOT omitempty.
 type CreateTransformRequest struct {
-	Transform   string         `json:"transform"`
-	Config      map[string]any `json:"config"`
-	CreatedFrom string         `json:"created_from,omitempty"`
-	Tags        []string       `json:"tags"`
+	Transform      string         `json:"transform"`
+	Config         map[string]any `json:"config"`
+	CreatedFrom    string         `json:"created_from,omitempty"`
+	Tags           []string       `json:"tags"`
+	Implementation map[string]any `json:"implementation,omitempty"`
 }
 
 // UpdateTransformRequest represents the request payload for updating a transform.
 // See the comment on api.Source.Tags for why Tags is NOT omitempty.
 type UpdateTransformRequest struct {
-	ID             string         `json:"id"`
-	Transform      string         `json:"transform"`
-	Config         map[string]any `json:"config"`
-	Implementation map[string]any `json:"implementation,omitempty"`
-	Tags           []string       `json:"tags"`
+	ID               string         `json:"id"`
+	Transform        string         `json:"transform"`
+	Config           map[string]any `json:"config"`
+	Tags             []string       `json:"tags"`
+	ExpectedRevision *string        `json:"expected_revision"`
+}
+
+var transformEditRevisionPattern = regexp.MustCompile(`^[0-9a-f]{32}$`)
+
+func ValidateTransformEditRevision(revision *string, nullable bool) error {
+	if revision == nil {
+		if nullable {
+			return nil
+		}
+		return fmt.Errorf("edit revision is missing")
+	}
+	if !transformEditRevisionPattern.MatchString(*revision) {
+		return fmt.Errorf("edit revision must be exactly 32 lowercase hexadecimal characters")
+	}
+	return nil
 }
 
 func (s *streamkapAPI) GetTransform(ctx context.Context, TransformID string) (*Transform, error) {
@@ -76,6 +94,9 @@ func (s *streamkapAPI) GetTransform(ctx context.Context, TransformID string) (*T
 	if len(resp.Result) == 0 {
 		return nil, nil
 	}
+	if err := ValidateTransformEditRevision(resp.Result[0].EditRevision, true); err != nil {
+		return nil, fmt.Errorf("GetTransform returned invalid edit revision: %w", err)
+	}
 
 	return &resp.Result[0], nil
 }
@@ -97,6 +118,11 @@ func (s *streamkapAPI) ListTransforms(ctx context.Context) ([]Transform, error) 
 		var resp GetTransformResponse
 		if err := s.doRequest(ctx, req, &resp); err != nil {
 			return nil, err
+		}
+		for i := range resp.Result {
+			if err := ValidateTransformEditRevision(resp.Result[i].EditRevision, true); err != nil {
+				return nil, fmt.Errorf("ListTransforms returned invalid edit revision for transform %q: %w", resp.Result[i].ID, err)
+			}
 		}
 		all = append(all, resp.Result...)
 		if len(resp.Result) < pageSize {
@@ -144,6 +170,9 @@ func (s *streamkapAPI) CreateTransform(ctx context.Context, reqPayload CreateTra
 		}
 		return nil, err
 	}
+	if err := ValidateTransformEditRevision(resp.EditRevision, false); err != nil {
+		return nil, fmt.Errorf("CreateTransform returned invalid edit revision: %w", err)
+	}
 
 	return &resp, nil
 }
@@ -151,6 +180,9 @@ func (s *streamkapAPI) CreateTransform(ctx context.Context, reqPayload CreateTra
 func (s *streamkapAPI) UpdateTransform(ctx context.Context, transformID string, reqPayload UpdateTransformRequest) (*Transform, error) {
 	// Ensure ID is set in the request body (transforms use ID in body, not URL path)
 	reqPayload.ID = transformID
+	if err := ValidateTransformEditRevision(reqPayload.ExpectedRevision, true); err != nil {
+		return nil, fmt.Errorf("UpdateTransform received invalid expected revision: %w", err)
+	}
 
 	payload, err := json.Marshal(reqPayload)
 	if err != nil {
@@ -172,9 +204,12 @@ func (s *streamkapAPI) UpdateTransform(ctx context.Context, transformID string, 
 		redactSensitiveJSON(payload),
 	))
 	var resp Transform
-	err = s.doRequestWithRetry(ctx, req, &resp)
+	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
 		return nil, err
+	}
+	if err := ValidateTransformEditRevision(resp.EditRevision, reqPayload.ExpectedRevision == nil); err != nil {
+		return nil, fmt.Errorf("UpdateTransform returned invalid edit revision: %w", err)
 	}
 
 	return &resp, nil
@@ -200,12 +235,31 @@ type TransformImplementationDetails struct {
 	Description    *string        `json:"description,omitempty"`
 	Implementation map[string]any `json:"implementation,omitempty"`
 	Config         map[string]any `json:"config,omitempty"`
+	EditRevision   *string        `json:"edit_revision,omitempty"`
+}
+
+type UpdateTransformImplementationRequest struct {
+	TransformID      string         `json:"transform_id"`
+	ExpectedRevision *string        `json:"expected_revision"`
+	Description      *string        `json:"description,omitempty"`
+	Implementation   map[string]any `json:"implementation,omitempty"`
+	Config           map[string]any `json:"config,omitempty"`
+}
+
+type TransformImplementationUpdateResponse struct {
+	TransformID    string         `json:"transform_id"`
+	VersionID      string         `json:"version_id"`
+	EditRevision   *string        `json:"edit_revision"`
+	Description    *string        `json:"description,omitempty"`
+	Implementation map[string]any `json:"implementation,omitempty"`
+	Config         map[string]any `json:"config,omitempty"`
 }
 
 // TransformImplementationDetailsResponse represents the response from GET implementation_details
 type TransformImplementationDetailsResponse struct {
 	TransformID  string                                    `json:"transform_id"`
 	ImplVersions map[string]TransformImplementationDetails `json:"impl_versions"`
+	EditRevision *string                                   `json:"edit_revision"`
 }
 
 // GetTransformImplementationDetails retrieves implementation details including version history
@@ -226,14 +280,27 @@ func (s *streamkapAPI) GetTransformImplementationDetails(ctx context.Context, tr
 	if err != nil {
 		return nil, err
 	}
+	if err := ValidateTransformEditRevision(resp.EditRevision, true); err != nil {
+		return nil, fmt.Errorf("GetTransformImplementationDetails returned invalid edit revision: %w", err)
+	}
+	for versionID, details := range resp.ImplVersions {
+		if details.EditRevision != nil {
+			if err := ValidateTransformEditRevision(details.EditRevision, false); err != nil {
+				return nil, fmt.Errorf("GetTransformImplementationDetails returned invalid edit revision for version %q: %w", versionID, err)
+			}
+		}
+	}
 
 	return &resp, nil
 }
 
 // UpdateTransformImplementationDetails updates the implementation details for a transform
-func (s *streamkapAPI) UpdateTransformImplementationDetails(ctx context.Context, transformID string, details TransformImplementationDetails) (*TransformImplementationDetails, error) {
+func (s *streamkapAPI) UpdateTransformImplementationDetails(ctx context.Context, transformID string, details UpdateTransformImplementationRequest) (*TransformImplementationUpdateResponse, error) {
 	// Ensure transform_id is set
 	details.TransformID = transformID
+	if err := ValidateTransformEditRevision(details.ExpectedRevision, true); err != nil {
+		return nil, fmt.Errorf("UpdateTransformImplementationDetails received invalid expected revision: %w", err)
+	}
 
 	payload, err := json.Marshal(details)
 	if err != nil {
@@ -253,10 +320,13 @@ func (s *streamkapAPI) UpdateTransformImplementationDetails(ctx context.Context,
 		req.URL.String(),
 		redactSensitiveJSON(payload),
 	))
-	var resp TransformImplementationDetails
-	err = s.doRequestWithRetry(ctx, req, &resp)
+	var resp TransformImplementationUpdateResponse
+	err = s.doRequest(ctx, req, &resp)
 	if err != nil {
 		return nil, err
+	}
+	if err := ValidateTransformEditRevision(resp.EditRevision, details.ExpectedRevision == nil); err != nil {
+		return nil, fmt.Errorf("UpdateTransformImplementationDetails returned invalid edit revision: %w", err)
 	}
 
 	return &resp, nil

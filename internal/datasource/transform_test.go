@@ -72,3 +72,16 @@ func TestModelFromAPIObject_MismatchedTopicsAndIDs(t *testing.T) {
 		assert.Equal(t, "topic-b", model.TopicMap[1].Name.ValueString())
 	})
 }
+
+func TestTransformDataSourcePreservesEditRevision(t *testing.T) {
+	revision := "11111111111111111111111111111111"
+	model := &TransformDataSourceModel{}
+
+	(&TransformDataSource{}).modelFromAPIObject(api.Transform{EditRevision: &revision}, model)
+
+	require.Equal(t, revision, model.EditRevision.ValueString())
+
+	(&TransformDataSource{}).modelFromAPIObject(api.Transform{EditRevision: nil}, model)
+
+	require.True(t, model.EditRevision.IsNull())
+}

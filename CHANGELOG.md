@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Expose the nested SMT chain (`smt_chain`, `smt_predicates`, their write-only secret inputs and `smt_chain_revision`) on every source and destination resource except Kafka Direct, the set the API can manage chains on. A source saves its chain in the same request as the source itself; `smt_managed_overrides` applies to destinations only. The released flat `transforms_*` and `predicates_*` attributes keep working but cannot be combined with the chain, and a state written by v3.0.x plans no change.
+
+### Fixed
+- Refuse to manage transform instances with selectors or predicates until the provider can preserve those rules, preventing a later apply from dropping dynamic selection.
+- Audit an existing destination before creating its first nested SMT chain, refuse authored legacy transforms until they are explicitly adopted, and prevent the connector update from racing or overwriting the audited transform state.
+
 ## [3.0.1] - 2026-09-23
 
 ### Documentation

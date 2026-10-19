@@ -84,6 +84,9 @@ type ConnectorConfig struct {
 	// deployable; we skip generating Terraform resources for them so users
 	// don't get a schema that always errors at apply time.
 	ComingSoon bool `json:"coming_soon,omitempty"`
+	// APISource marks a connector served by the API-source runner rather than
+	// Kafka Connect. The backend refuses SMT chains on it.
+	APISource bool `json:"api_source,omitempty"`
 }
 
 // Metric represents a metrics definition (primarily for sources).
@@ -367,6 +370,11 @@ func (e *ConfigEntry) TerraformType() TerraformType {
 		return TerraformTypeList
 	case "slider":
 		return TerraformTypeInt64
+	case "input":
+		if e.Value.Type == "number" {
+			return TerraformTypeInt64
+		}
+		return TerraformTypeString
 	default:
 		// Generation rejects unsupported controls through HasSupportedControl.
 		return TerraformTypeString
@@ -381,6 +389,8 @@ func (e *ConfigEntry) HasSupportedControl() bool {
 	case "string", "password", "textarea", "datetime", "code-editor", "json",
 		"number", "boolean", "toggle", "one-select", "multi-select", "slider":
 		return true
+	case "input":
+		return e.Value.Type == "number"
 	default:
 		return false
 	}

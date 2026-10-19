@@ -61,6 +61,7 @@ var (
 	_ resource.Resource                = &BaseTransformResource{}
 	_ resource.ResourceWithConfigure   = &BaseTransformResource{}
 	_ resource.ResourceWithImportState = &BaseTransformResource{}
+	_ resource.ResourceWithModifyPlan  = &BaseTransformResource{}
 )
 
 // BaseTransformResource is a generic resource implementation for transforms.
@@ -147,6 +148,17 @@ func (r *BaseTransformResource) Schema(ctx context.Context, req resource.SchemaR
 	}
 
 	resp.Schema = baseSchema
+}
+
+// ModifyPlan marks edit_revision unknown whenever the apply edits the
+// transform. The backend rotates it on every edit, so the prior value that
+// UseStateForUnknown copies into the plan would differ from the applied one.
+// A plan equal to prior state keeps the known value and shows no diff.
+func (r *BaseTransformResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() || req.Plan.Raw.Equal(req.State.Raw) {
+		return
+	}
+	resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("edit_revision"), types.StringUnknown())...)
 }
 
 // Config exposes the transform's TransformConfig. Provider-level tests use it to
@@ -246,6 +258,22 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 	configMap["transforms.name"] = name
 
 	tags := r.getStringSliceField(ctx, model, "Tags")
+	var implementationJSON jsontypes.Normalized
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("implementation_json"), &implementationJSON)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var implementation map[string]any
+	if !implementationJSON.IsNull() && !implementationJSON.IsUnknown() {
+		if err := json.Unmarshal([]byte(implementationJSON.ValueString()), &implementation); err != nil || len(implementation) == 0 {
+			resp.Diagnostics.AddError(
+				"Invalid Implementation JSON",
+				"implementation_json must be a non-empty JSON object",
+			)
+			return
+		}
+	}
 
 	// Never log configMap: it holds decrypted credentials keyed by API field name
 	// and bypasses the redaction applied to the request body in internal/api.
@@ -253,9 +281,10 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 
 	// Call the Transform API
 	transform, err := r.client.CreateTransform(ctx, api.CreateTransformRequest{
-		Transform: r.config.GetTransformType(),
-		Config:    configMap,
-		Tags:      tags,
+		Transform:      r.config.GetTransformType(),
+		Config:         configMap,
+		Tags:           tags,
+		Implementation: implementation,
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -279,6 +308,10 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("edit_revision"), types.StringPointerValue(transform.EditRevision))...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// replay_window is Optional+Computed with no Default, and the backend
 	// never echoes it back. On Create there's no prior state, so
@@ -298,36 +331,7 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	// Handle implementation_json if provided in the plan
-	var implementationJSON jsontypes.Normalized
-	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("implementation_json"), &implementationJSON)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	if !implementationJSON.IsNull() && !implementationJSON.IsUnknown() {
-		// User provided implementation - update it via the implementation_details API
-		var implMap map[string]any
-		if err := json.Unmarshal([]byte(implementationJSON.ValueString()), &implMap); err != nil {
-			resp.Diagnostics.AddError(
-				"Invalid Implementation JSON",
-				fmt.Sprintf("Unable to parse implementation_json: %s", err),
-			)
-			return
-		}
-
-		_, err := r.client.UpdateTransformImplementationDetails(ctx, transform.ID, api.TransformImplementationDetails{
-			TransformID:    transform.ID,
-			Implementation: implMap,
-		})
-		if err != nil {
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Error setting %s transform implementation", r.config.GetTransformType()),
-				fmt.Sprintf("Unable to update implementation: %s", err),
-			)
-			return
-		}
-
 		// Set the user's implementation_json in state
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), implementationJSON)...)
 	} else {
@@ -424,6 +428,10 @@ func (r *BaseTransformResource) Read(ctx context.Context, req resource.ReadReque
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("edit_revision"), types.StringPointerValue(transform.EditRevision))...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -585,24 +593,6 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 	}
 	name := r.getStringField(model, "Name")
 
-	// Fetch existing transform to get implementation data
-	// This is required because the backend overwrites implementation on update
-	existingTransform, err := r.client.GetTransform(ctx, id)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Error reading %s transform for update", r.config.GetTransformType()),
-			fmt.Sprintf("Unable to read existing transform: %s", err),
-		)
-		return
-	}
-	if existingTransform == nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Error reading %s transform for update", r.config.GetTransformType()),
-			fmt.Sprintf("Transform %s does not exist", id),
-		)
-		return
-	}
-
 	// Convert model to config map using field mappings
 	configMap, err := r.modelToConfigMap(ctx, model)
 	if err != nil {
@@ -618,14 +608,28 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 
 	tags := r.getStringSliceField(ctx, model, "Tags")
 
+	var stateEditRevision types.String
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("edit_revision"), &stateEditRevision)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	expectedRevision, err := expectedEditRevision(stateEditRevision)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unknown Transform Edit Revision",
+			fmt.Sprintf("Cannot update the transform because its observed edit revision is invalid: %s. Refresh the Terraform state and retry.", err),
+		)
+		return
+	}
+
 	tflog.Debug(ctx, fmt.Sprintf("Updating %s transform with ID: %s", r.config.GetTransformType(), id))
 
-	// Call the Transform API with existing implementation to prevent it from being overwritten
+	// Update configuration through the generic transform endpoint. Implementation changes use the dedicated implementation_details endpoint below.
 	transform, err := r.client.UpdateTransform(ctx, id, api.UpdateTransformRequest{
-		Transform:      r.config.GetTransformType(),
-		Config:         configMap,
-		Implementation: existingTransform.Implementation,
-		Tags:           tags,
+		Transform:        r.config.GetTransformType(),
+		Config:           configMap,
+		Tags:             tags,
+		ExpectedRevision: expectedRevision,
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -653,6 +657,10 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("edit_revision"), types.StringPointerValue(transform.EditRevision))...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	// Handle implementation_json update
 	var planImplementationJSON jsontypes.Normalized
@@ -663,6 +671,10 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 
 	var stateImplementationJSON jsontypes.Normalized
 	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("implementation_json"), &stateImplementationJSON)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), stateImplementationJSON)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -677,24 +689,29 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 		if implementationChanged {
 			// Parse the new implementation JSON
 			var implMap map[string]any
-			if err := json.Unmarshal([]byte(planImplementationJSON.ValueString()), &implMap); err != nil {
+			if err := json.Unmarshal([]byte(planImplementationJSON.ValueString()), &implMap); err != nil || len(implMap) == 0 {
 				resp.Diagnostics.AddError(
 					"Invalid Implementation JSON",
-					fmt.Sprintf("Unable to parse implementation_json: %s", err),
+					"implementation_json must be a non-empty JSON object",
 				)
 				return
 			}
 
 			// Update implementation via the implementation_details API
-			_, err := r.client.UpdateTransformImplementationDetails(ctx, id, api.TransformImplementationDetails{
-				TransformID:    id,
-				Implementation: implMap,
+			implementationDetails, err := r.client.UpdateTransformImplementationDetails(ctx, id, api.UpdateTransformImplementationRequest{
+				TransformID:      id,
+				Implementation:   implMap,
+				ExpectedRevision: transform.EditRevision,
 			})
 			if err != nil {
 				resp.Diagnostics.AddError(
 					fmt.Sprintf("Error updating %s transform implementation", r.config.GetTransformType()),
 					fmt.Sprintf("Unable to update implementation: %s", err),
 				)
+				return
+			}
+			resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("edit_revision"), types.StringPointerValue(implementationDetails.EditRevision))...)
+			if resp.Diagnostics.HasError() {
 				return
 			}
 		}
@@ -1025,6 +1042,20 @@ func (r *BaseTransformResource) getStringField(model any, fieldName string) stri
 
 func (r *BaseTransformResource) setStringField(model any, fieldName string, value string) {
 	shared.SetStringField(model, fieldName, value)
+}
+
+func expectedEditRevision(revision types.String) (*string, error) {
+	if revision.IsUnknown() {
+		return nil, fmt.Errorf("edit revision is unknown")
+	}
+	if revision.IsNull() {
+		return nil, nil
+	}
+	value := revision.ValueString()
+	if err := api.ValidateTransformEditRevision(&value, false); err != nil {
+		return nil, err
+	}
+	return &value, nil
 }
 
 func (r *BaseTransformResource) getStringSliceField(ctx context.Context, model any, fieldName string) []string {

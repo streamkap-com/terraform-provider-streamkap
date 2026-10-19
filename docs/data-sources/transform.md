@@ -55,6 +55,7 @@ output "example-transform" {
 
 ### Read-Only
 
+- `edit_revision` (String) Opaque revision of the current transform edit state. This value is managed by Streamkap and is separate from the transform implementation version.
 - `name` (String) Display name of the transform.
 - `start_time` (String) The start time of the transform.
 - `topic_ids` (List of String) List of topic identifiers associated with this transform.

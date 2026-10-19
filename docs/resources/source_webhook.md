@@ -113,6 +113,11 @@ output "example-source-webhook-api-key" {
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
+- `smt_chain` (Attributes List) Ordered transform chain. Entries are correlated to server instances by key. (see [below for nested schema](#nestedatt--smt_chain))
+- `smt_managed_overrides` (Map of Boolean) Managed transform slots are destination-scoped, so a source chain accepts no override: leave this unset or set an empty map.
+- `smt_predicate_secrets` (Attributes List) Secret values for instances, addressed by canonical pointer. Values are write-only; bump version to rotate. (see [below for nested schema](#nestedatt--smt_predicate_secrets))
+- `smt_predicates` (Attributes List) Shared immutable predicate records referenced by transform attachments. (see [below for nested schema](#nestedatt--smt_predicates))
+- `smt_secrets` (Attributes List) Secret values for instances, addressed by canonical pointer. Values are write-only; bump version to rotate. (see [below for nested schema](#nestedatt--smt_secrets))
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `topic_include_list` (String) Topic names to use as output. Defaults to `default_topic`.
@@ -134,6 +139,129 @@ output "example-source-webhook-api-key" {
 - `connector` (String) Connector type
 - `connector_status` (String) Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
 - `id` (String) Unique identifier for the source
+- `smt_chain_revision` (String) Chain revision returned by the last read. An update supplies it as the expected revision, so an edit made elsewhere since the last refresh is rejected instead of overwritten.
+
+<a id="nestedatt--smt_chain"></a>
+### Nested Schema for `smt_chain`
+
+Required:
+
+- `key` (String) Immutable provider-side key of this instance. Changing it creates a new instance; it never changes the server id it was matched to.
+- `name` (String) Mutable display name.
+- `type` (String) Catalog type id. Cannot change under an existing key. Valid values: `filter`.
+
+Optional:
+
+- `enabled` (Boolean) Whether the instance runs. Defaults to true.
+- `filter` (Attributes) Configuration when type is filter. (see [below for nested schema](#nestedatt--smt_chain--filter))
+- `predicate` (Attributes) Reference to one shared predicate by provider key. Negate changes only this attachment. (see [below for nested schema](#nestedatt--smt_chain--predicate))
+
+Read-Only:
+
+- `alias` (String) Server-owned Kafka Connect alias.
+- `codec_version` (Number) Catalog codec version the instance was persisted with.
+- `id` (String) Server-owned instance id.
+- `schema_version` (Number) Catalog schema version the instance was persisted with.
+- `secret_version` (Number) Last rotation version applied to this instance; 0 before any rotation. Follows the key, so a removed and re-added secret entry cannot restart below it.
+
+<a id="nestedatt--smt_chain--filter"></a>
+### Nested Schema for `smt_chain.filter`
+
+
+<a id="nestedatt--smt_chain--predicate"></a>
+### Nested Schema for `smt_chain.predicate`
+
+Required:
+
+- `key` (String) Predicate key in smt_predicates.
+
+Optional:
+
+- `negate` (Boolean) Invert the predicate result for this transform. Defaults to false.
+
+
+
+<a id="nestedatt--smt_predicate_secrets"></a>
+### Nested Schema for `smt_predicate_secrets`
+
+Required:
+
+- `key` (String) Instance key in smt_predicates.
+- `version` (Number) Positive, monotonic rotation version. Increase it to apply the configured values once.
+
+Optional:
+
+- `values` (Attributes List, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only operations. Each row replaces or clears the secret at one canonical pointer. (see [below for nested schema](#nestedatt--smt_predicate_secrets--values))
+
+<a id="nestedatt--smt_predicate_secrets--values"></a>
+### Nested Schema for `smt_predicate_secrets.values`
+
+Required:
+
+- `pointer` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Canonical secret pointer, for example /routes/row-east/token.
+
+Optional:
+
+- `clear` (Boolean, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Clear the secret instead of replacing it.
+- `value` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) New secret value. Exactly one of value and clear is set.
+
+
+
+<a id="nestedatt--smt_predicates"></a>
+### Nested Schema for `smt_predicates`
+
+Required:
+
+- `key` (String) Immutable provider-side predicate key.
+- `type` (String) Catalog type id. Cannot change under an existing key. Valid values: `topic_name_matches`.
+
+Optional:
+
+- `topic_name_matches` (Attributes) Configuration when predicate type is topic_name_matches. (see [below for nested schema](#nestedatt--smt_predicates--topic_name_matches))
+
+Read-Only:
+
+- `alias` (String) Server-owned Kafka Connect predicate alias.
+- `codec_version` (Number) Catalog codec version the predicate was persisted with.
+- `configured_secret_paths` (List of String) Canonical secret paths configured on the server; values are never returned.
+- `id` (String) Server-owned predicate id.
+- `schema_version` (Number) Catalog schema version the predicate was persisted with.
+- `secret_version` (Number) Last predicate secret rotation version applied under this key.
+
+<a id="nestedatt--smt_predicates--topic_name_matches"></a>
+### Nested Schema for `smt_predicates.topic_name_matches`
+
+Required:
+
+- `pattern` (String)
+
+
+
+<a id="nestedatt--smt_secrets"></a>
+### Nested Schema for `smt_secrets`
+
+Required:
+
+- `key` (String) Instance key in smt_chain.
+- `version` (Number) Positive, monotonic rotation version. Increase it to apply the configured values once.
+
+Optional:
+
+- `values` (Attributes List, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only operations. Each row replaces or clears the secret at one canonical pointer. (see [below for nested schema](#nestedatt--smt_secrets--values))
+
+<a id="nestedatt--smt_secrets--values"></a>
+### Nested Schema for `smt_secrets.values`
+
+Required:
+
+- `pointer` (String, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Canonical secret pointer, for example /routes/row-east/token.
+
+Optional:
+
+- `clear` (Boolean, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Clear the secret instead of replacing it.
+- `value` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) New secret value. Exactly one of value and clear is set.
+
+
 
 <a id="nestedblock--timeouts"></a>
 ### Nested Schema for `timeouts`

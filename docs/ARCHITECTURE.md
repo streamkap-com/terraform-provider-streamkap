@@ -89,6 +89,8 @@ If `implementation_json` is omitted, updates preserve the implementation managed
 outside Terraform. With `deploy = true`, terminal failed or stopped deployment
 status produces an error while preserving the saved transform in state.
 
+Every transform resource retains the backend's nullable opaque `edit_revision` as computed state. Update sends the revision already observed by Terraform with the configuration request, then sends the fresh accepted revision with a changed implementation request. Each accepted response replaces the state token. The provider does not refresh immediately before an update because doing so would silently accept an edit made outside the current Terraform state.
+
 ## Non-Connector Resources
 
 Resources that don't follow the connector pattern have their own implementations:
@@ -162,7 +164,7 @@ Create:
 2. Capture planned sensitive strings and defaulted values
 3. Extract name from model
 4. Convert model to API config (ModelToConfigMap)
-5. Call API CreateSource/CreateDestination
+5. Call API CreateSource/CreateDestination; a source embeds its SMT chain in the same request, a destination writes it afterwards
 6. Convert API response to model, then restore planned secrets and fill null defaults
 7. Store ID in state
 
@@ -177,9 +179,10 @@ Update:
 1. Read the Terraform plan into the model
 2. Capture planned sensitive strings and defaulted values
 3. Convert to API config
-4. Call API UpdateSource/UpdateDestination
-5. Convert API response to model, then restore planned secrets and fill null defaults
-6. Update state
+4. For an existing destination's first configured SMT chain, require unchanged ordinary connector settings, audit legacy transform ownership, create the chain under backend authority, and skip the generic connector update
+5. Otherwise call API UpdateSource/UpdateDestination; a source embeds a changed SMT chain in the same request (`smt_chain`), a destination writes it afterwards with `PUT .../smt-chain`
+6. Convert API response to model, then restore planned secrets and fill null defaults
+7. Update state, reading a source's chain back under the revision its response accepted
 
 Delete:
 1. Call API DeleteSource/DeleteDestination

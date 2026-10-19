@@ -71,6 +71,8 @@ their plugin fields. This is the only connector exempted from the merge. If you
 add another proxy-style connector that the backend excludes from the global
 config, extend the same guard in `Generate()`.
 
+Transform resources also receive an `edit_revision` computed common field. The base transform resource maps this opaque backend token explicitly and chains it through authored updates; it is not a plugin configuration field or an implementation version.
+
 ### Source Files
 
 | File | Purpose |
@@ -116,6 +118,8 @@ tfgen generate --backend-path=/path/to/backend --output=internal/generated
 | `--output` | No | `internal/generated` | Output directory for generated code |
 | `--entity-type` | No | `all` | Entity type: `sources`, `destinations`, `transforms`, or `all` |
 | `--connector` | No | - | Specific connector to generate (e.g., `postgresql`) |
+| `--smt-catalog` | When a connector opts into `smt_chain` | - | Pinned SMT catalog artifact; copied byte-identical to `internal/generated/smt_catalog.json` |
+| `--backend-revision` | With `--smt-catalog` | - | Backend commit the artifact was copied from; recorded in `internal/generated/smt_catalog.go` |
 
 ### Using make generate
 
@@ -124,6 +128,9 @@ The recommended way to run tfgen is via `make generate`:
 ```bash
 # Set the backend path
 export STREAMKAP_BACKEND_PATH=/path/to/python-be-streamkap
+# The SMT catalog artifact and the backend commit it was copied from
+export STREAMKAP_SMT_CATALOG=$STREAMKAP_BACKEND_PATH/app/services/smt/fixtures/catalog.json
+export STREAMKAP_BACKEND_REVISION=$(git -C "$STREAMKAP_BACKEND_PATH" rev-parse HEAD)
 
 # Run generation (schemas first, then docs)
 make generate
@@ -137,8 +144,16 @@ make generate
 > `docs/resources/*.md` page. `make generate` runs `tfgen` first and
 > `tfplugindocs` second so docs use the freshly generated schemas.
 
-`make generate` runs the schema directive in `internal/generated/doc.go`, then
-formats the examples and renders the registry documentation through `main.go`.
+`make generate` runs the schema directive in `internal/generated/doc.go`, formats the examples, then renders the registry documentation through `main.go`:
+
+```go
+// internal/generated/doc.go — schemas/models/mappings (runs first)
+//go:generate go run ../../cmd/tfgen generate --backend-path=$STREAMKAP_BACKEND_PATH --output=. --smt-catalog=$STREAMKAP_SMT_CATALOG --backend-revision=$STREAMKAP_BACKEND_REVISION
+
+// main.go — registry docs, introspected from the built provider (runs second)
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+```
+
 
 ## Type Mapping
 
@@ -181,7 +196,7 @@ The generator applies these conversions:
 
 1. **Port fields**: Fields named `port` or ending with `_port` are converted to `Int64` even if stored as strings in the backend
 2. **Sensitive fields**: Fields with `encrypt: true` or `control: "password"` are marked `Sensitive: true`
-3. **Credentials by name**: `isSecretField` forces fields named or suffixed `api_key`, `authorization`, `access_key_id`, `secret_access_key`, or `secret_key` to `Sensitive: true`, even when the backend omits sensitivity flags. Names such as `api_key_enabled` and `http_authorization_type` do not match.
+3. **Credentials by name**: `isSecretField` forces fields named or suffixed `api_key`, `authorization`, `access_key_id`, `secret_access_key`, or `secret_key` to `Sensitive: true`, even when the backend omits sensitivity flags. This protects webhook and AWS credentials through regeneration. Names such as `api_key_enabled`, `http_authorization_type`, and `oauth2_access_token_url` do not match.
 4. **Set-once fields**: Fields with `set_once: true` get `RequiresReplace()` plan modifier
 
 ### Go Field Naming (acronyms)
@@ -412,6 +427,19 @@ TopicsConfigMap map[string]clickHouseTopicsConfigMapItemModel `tfsdk:"topics_con
 
 Supported validator types:
 - `int64_at_least`: Minimum value validator
+
+## SMT chain opt-in
+
+The opt-in is derived, not listed. A source or destination model carries the nested chain fields (`smt_chain`, `smt_secrets`, `smt_predicates`, `smt_predicate_secrets`, `smt_managed_overrides`, `smt_chain_revision`) and an `SMTChainHost()` method naming its catalog host when:
+
+- the connector is not `kafkadirect` and not an API source (`api_source: true` in its plugin config), and
+- the pinned catalog (`--smt-catalog`) publishes at least one type, authorable or withdrawn, for that host (`destinations` or `sources`).
+
+This mirrors the backend's `potential_support` rule, which gates its chain routes (`composition_context.potentially_supported`: every published connector except Kafka Direct and API sources, when the catalog admits a type for the host). Transforms never carry a chain. Because the opt-in comes from the catalog, `generate` refuses to run for sources or destinations without `--smt-catalog` and `--backend-revision`; a run that silently dropped the chain would ship a breaking schema.
+
+The chain attributes are not emitted into the connector file. `internal/smt` builds them at runtime from the pinned catalog that `--smt-catalog` embeds into `internal/generated/smt_catalog.{json,go}`: `generated.SMTChain(host)` builds each host's chain from that host's authorable types, so a source chain offers `filter` and a destination chain `regex_router`, `mask_field` and `drop_fields`. The base resource reads the host from the model and adds the attributes; a hand-maintained wrapper embedding the generated model inherits the method and needs no change. tfgen runs the same builder over the artifact before writing anything, so a `data_schema` construct the typed representation cannot carry (a polymorphic union, a tuple, a surviving `$ref`, a homogeneous map) fails the run with the type id and the schema path. A closed object without properties is a type with no settings (Filter) and becomes an empty object. `publishable: false` types are excluded from the `type` validator and from generation. The provider refuses to manage selector-bearing instances until their full wire shape is represented in Terraform, so a later write cannot silently drop those dynamic rules.
+
+Destinations write their chain through `PUT /destinations/{id}/smt-chain`; sources have no chain route, so a source embeds the chain write in the `smt_chain` field of its create or update body and reads it back under the revision in `smt_chain_receipt`. See `docs/smt-provider-feasibility.md` for the representation.
 
 ## Deprecated attribute aliases
 
