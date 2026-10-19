@@ -304,6 +304,23 @@ func TestTerraformType(t *testing.T) {
 	}
 }
 
+func TestInputControlRequiresAnExplicitNumberType(t *testing.T) {
+	numberInput := ConfigEntry{Value: ValueObject{Control: "input", Type: "number"}}
+	if !numberInput.HasSupportedControl() {
+		t.Fatal("HasSupportedControl() = false for input/number")
+	}
+	if got := numberInput.TerraformType(); got != TerraformTypeInt64 {
+		t.Fatalf("TerraformType() = %q, want %q", got, TerraformTypeInt64)
+	}
+
+	for _, valueType := range []string{"", "string", "future-type"} {
+		entry := ConfigEntry{Value: ValueObject{Control: "input", Type: valueType}}
+		if entry.HasSupportedControl() {
+			t.Errorf("HasSupportedControl() = true for input/%q", valueType)
+		}
+	}
+}
+
 func TestHasSupportedControl(t *testing.T) {
 	for _, control := range []string{
 		"string", "password", "textarea", "datetime", "code-editor", "json",

@@ -151,7 +151,7 @@ See [examples/](./examples/) for connector examples to adapt to your environment
 ## Requirements
 
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.27.1 (for development — see the `go` directive in `go.mod`)
+- [Go](https://golang.org/doc/install) >= 1.27.2 (for development — see the `go` directive in `go.mod`)
 
 ## Authentication
 

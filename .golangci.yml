@@ -75,6 +75,13 @@ linters:
         text: G703
         linters:
           - gosec
+      # gosec G101 matches the word "secret" in the SMT surface's attribute-name
+      # constants (smt_predicate_secrets, configured_secret_paths); they name schema
+      # attributes and hold no credential.
+      - path: internal/smt/chain\.go
+        text: G101
+        linters:
+          - gosec
 
 formatters:
   enable:

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Expose the nested SMT chain (`smt_chain`, `smt_predicates`, their write-only secret inputs and `smt_chain_revision`) on every source and destination resource except Kafka Direct, the set the API can manage chains on. A source saves its chain in the same request as the source itself; `smt_managed_overrides` applies to destinations only. The released flat `transforms_*` and `predicates_*` attributes keep working but cannot be combined with the chain, and a state written by v3.0.x plans no change.
+- A chain that holds an instance Terraform cannot represent, such as one with a selector or one outside the provider's catalog, fails refresh with a diagnostic instead of being dropped by the next apply.
+- Before creating an existing destination's first chain, the provider checks it for legacy transforms and refuses to replace authored ones until they are adopted explicitly. That first chain must be applied while the destination's other settings are unchanged, so the connector update cannot overwrite the checked transforms.
+- Transform resources and the `streamkap_transform` data source expose a computed `edit_revision`. An update sends the revision Terraform last read, so a transform edited outside Terraform since the last refresh is refused rather than overwritten; refresh and review the plan, then apply again.
+
+### Changed
+- A transform resource with `implementation_json` is now created with its implementation in the same request, instead of being created first and having the implementation written afterwards. `implementation_json` must be a non-empty JSON object. Configuration updates no longer resend the implementation, and transform updates are not retried, so an uncertain outcome surfaces as an error instead of being replayed.
+
 ## [3.0.1] - 2026-09-23
 
 ### Documentation

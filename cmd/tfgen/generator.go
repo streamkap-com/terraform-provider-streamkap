@@ -83,6 +83,10 @@ type Generator struct {
 	outputDir  string
 	entityType string // "source", "destination", "transform"
 	overrides  *OverrideConfig
+	// smtHosts are the catalog hosts the run's pinned catalog builds a chain
+	// for; nil without a catalog. A source or destination carries the chain
+	// when its host is in the set (see smtChainHost).
+	smtHosts map[string]bool
 }
 
 // OverrideConfig holds all field overrides for map types and other special cases.
@@ -294,6 +298,11 @@ type TemplateData struct {
 	MapFields         []MapFieldData    // Map type fields from overrides
 	NestedModels      []NestedModelData // Nested model definitions for map fields
 	Imports           []string
+	// SMTChainHost is the catalog host ("destinations" or "sources") whose
+	// chain the model carries, or "" for none. The model gets the chain fields
+	// and an SMTChainHost method; the base resource adds the attributes, built
+	// from the pinned catalog for that host.
+	SMTChainHost string
 }
 
 // MapFieldData holds data for map type fields.
@@ -421,6 +430,7 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 		SchemaFuncName:    entityTypeCap + connectorCodeCap + "Schema",
 		FieldMappingsName: entityTypeCap + connectorCodeCap + "FieldMappings",
 		Fields:            []FieldData{},
+		SMTChainHost:      g.smtChainHost(config, connectorCode),
 	}
 
 	// Track which imports we need
@@ -934,6 +944,18 @@ func (g *Generator) commonFields() []FieldData {
 			NeedsPlanMod:        true,
 			APIFieldName:        "", // TransformType is handled separately
 		})
+		fields = append(fields, FieldData{
+			GoFieldName:         "EditRevision",
+			GoType:              "types.String",
+			TfsdkTag:            "edit_revision",
+			TfAttrName:          "edit_revision",
+			SchemaAttrType:      "schema.StringAttribute",
+			Computed:            true,
+			Description:         "Opaque revision used to reject concurrent transform edits.",
+			MarkdownDescription: "Opaque revision used to reject concurrent transform edits. This value is managed by Streamkap and is separate from the transform implementation version.",
+			NeedsPlanMod:        true,
+			APIFieldName:        "", // EditRevision is handled separately by the base transform
+		})
 		fields = append(fields, tagsCommonField(g.entityType))
 	} else {
 		fields = append(fields, FieldData{
@@ -1021,12 +1043,7 @@ func isPortField(tfAttrName string) bool {
 // isSecretField returns true if the field name indicates a credential that must
 // be Sensitive regardless of what the backend spec says.
 //
-// The webhook plugins declare `api.key` with neither `encrypt: true` nor
-// `control: "password"`, so IsSensitive() reports false and the key would be
-// printed in plan output and logs. The same is true of the http-sink's
-// `http.headers.authorization`, which carries the literal header value
-// ("Bearer <token>"). This has regressed in the backend more than once, and
-// hand-patching the generated files loses the fix on the next regen.
+// The credential-name fallback protects api.key and authorization headers when backend encryption metadata is missing or regresses.
 //
 // The AWS credential names are here for the same reason. `aws_access_key_id`
 // arrives with `encrypt: true` on the DynamoDB source but without it on the S3,
@@ -1519,8 +1536,22 @@ type {{ .ModelName }} struct {
 	ReplayWindow       types.String         ` + "`" + `tfsdk:"replay_window"` + "`" + `
 	ConnectorStatus    types.String         ` + "`" + `tfsdk:"connector_status"` + "`" + `
 {{- end }}
+{{- if .SMTChainHost }}
+	SMTChain            types.List   ` + "`" + `tfsdk:"smt_chain"` + "`" + `
+	SMTSecrets          types.List   ` + "`" + `tfsdk:"smt_secrets"` + "`" + `
+	SMTPredicates       types.List   ` + "`" + `tfsdk:"smt_predicates"` + "`" + `
+	SMTPredicateSecrets types.List   ` + "`" + `tfsdk:"smt_predicate_secrets"` + "`" + `
+	SMTManagedOverrides types.Map    ` + "`" + `tfsdk:"smt_managed_overrides"` + "`" + `
+	SMTChainRevision    types.String ` + "`" + `tfsdk:"smt_chain_revision"` + "`" + `
+{{- end }}
 	Timeouts timeouts.Value ` + "`" + `tfsdk:"timeouts"` + "`" + `
 }
+{{- if .SMTChainHost }}
+
+// SMTChainHost names the SMT catalog host whose chain this model carries. The
+// base connector resource builds the chain attributes from it.
+func ({{ .ModelName }}) SMTChainHost() string { return "{{ .SMTChainHost }}" }
+{{- end }}
 
 // {{ .SchemaFuncName }} returns the Terraform schema for the {{ .ConnectorCode }} {{ .EntityType }}.
 func {{ .SchemaFuncName }}() schema.Schema {

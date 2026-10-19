@@ -33,6 +33,54 @@ type Source struct {
 	// making `tags = []` indistinguishable from "unset" on the wire and leaving
 	// the user unable to clear tags via Terraform.
 	Tags []string `json:"tags"`
+	// SMTChain is the chain write a create or update carries, saved
+	// atomically with the source. nil omits the key, which keeps the chain;
+	// the backend refuses an explicit null.
+	SMTChain *SMTChainWrite `json:"smt_chain,omitempty"`
+	// SMTChainReceipt identifies the chain revision a create or update
+	// accepted. Only those responses carry it, and only when they staged a
+	// chain.
+	SMTChainReceipt *SourceSMTChainReceipt `json:"smt_chain_receipt,omitempty"`
+}
+
+// SourceSMTChainReceipt is the secret-free identity of the source chain
+// generation accepted with a source write.
+type SourceSMTChainReceipt struct {
+	Incarnation   string `json:"incarnation"`
+	ChainRevision string `json:"chain_revision"`
+	Generation    int64  `json:"generation"`
+}
+
+// sendSourceWrite logs and sends a source create or update. A body carrying a
+// chain holds secret operation values, so it is logged without the chain, and
+// it is never retried: a replayed create would collide on the name and a
+// replayed update is refused as stale, so the original outcome must surface.
+func (s *streamkapAPI) sendSourceWrite(ctx context.Context, op string, req *http.Request, reqPayload Source, payload []byte, resp *Source) error {
+	logged := payload
+	if reqPayload.SMTChain != nil {
+		withoutChain := reqPayload
+		withoutChain.SMTChain = nil
+		var err error
+		if logged, err = json.Marshal(withoutChain); err != nil {
+			return err
+		}
+	}
+	tflog.Debug(ctx, fmt.Sprintf(
+		"%s request details:\n"+
+			"\tMethod: %s\n"+
+			"\tURL: %s\n"+
+			"\tBody: %s\n"+
+			"\tSMT chain: %t (omitted from the log)",
+		op,
+		req.Method,
+		req.URL.String(),
+		redactSensitiveJSON(logged),
+		reqPayload.SMTChain != nil,
+	))
+	if reqPayload.SMTChain != nil {
+		return s.doRequest(ctx, req, resp)
+	}
+	return s.doRequestWithRetry(ctx, req, resp)
 }
 
 func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*Source, error) {
@@ -58,17 +106,8 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 	if err != nil {
 		return nil, err
 	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"CreateSource request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n"+
-			"\tBody: %s",
-		req.Method,
-		req.URL.String(),
-		redactSensitiveJSON(payload),
-	))
 	var resp Source
-	err = s.doRequestWithRetry(ctx, req, &resp)
+	err = s.sendSourceWrite(ctx, "CreateSource", req, reqPayload, payload, &resp)
 	if err != nil {
 		// Sources reach the create_before_destroy trigger too: the generated
 		// schemas carry RequiresReplace attributes. See adoptRefusedError.
@@ -156,17 +195,8 @@ func (s *streamkapAPI) UpdateSource(ctx context.Context, sourceID string, reqPay
 	if err != nil {
 		return nil, err
 	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"UpdateSource request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n"+
-			"\tBody: %s",
-		req.Method,
-		req.URL.String(),
-		redactSensitiveJSON(payload),
-	))
 	var resp Source
-	err = s.doRequestWithRetry(ctx, req, &resp)
+	err = s.sendSourceWrite(ctx, "UpdateSource", req, reqPayload, payload, &resp)
 	if err != nil {
 		return nil, err
 	}

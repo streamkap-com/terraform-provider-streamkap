@@ -15,6 +15,13 @@
       "sensitive": false,
       "type": "basetypes.BoolType"
     },
+    "edit_revision": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
     "id": {
       "required": false,
       "optional": false,

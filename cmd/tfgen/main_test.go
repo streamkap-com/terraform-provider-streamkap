@@ -44,6 +44,12 @@ func fixtureBackend(t *testing.T, entityDir string, commonJSON string, connector
 	return root
 }
 
+// testSMTOptions pins the corpus copy so the connectors that opt into
+// smt_chain generate in the fixture runs.
+func testSMTOptions() smtOptions {
+	return smtOptions{CatalogPath: filepath.Join("..", "..", "internal", "smt", "testdata", "contract_corpus.json"), BackendRevision: "test"}
+}
+
 const validCommonConfig = `{"config":[{"name":"sentinel.common.field","user_defined":true,"display_name":"Sentinel","value":{"control":"string"}}]}`
 
 const validPluginConfig = `{"display_name":"Test","config":[{"name":"database.hostname.user.defined","user_defined":true,"required":true,"display_name":"Host","value":{"control":"string"}}]}`
@@ -58,7 +64,7 @@ func TestRunGenerate_MalformedConnectorConfigIsFatal(t *testing.T) {
 		"truncated":  `{"display_name":"Truncated","config":[{"name":"a.b",`,
 	})
 
-	err := runGenerate(backend, t.TempDir(), "sources", "")
+	err := runGenerate(backend, t.TempDir(), "sources", "", testSMTOptions())
 	if err == nil {
 		t.Fatal("runGenerate returned nil for a connector whose config exists but fails to parse; the connector would be silently dropped from the generated set")
 	}
@@ -77,7 +83,7 @@ func TestRunGenerate_AbsentConnectorConfigIsSkipped(t *testing.T) {
 	})
 
 	out := t.TempDir()
-	if err := runGenerate(backend, out, "sources", ""); err != nil {
+	if err := runGenerate(backend, out, "sources", "", testSMTOptions()); err != nil {
 		t.Fatalf("runGenerate should skip a connector with no configuration.latest.json; got error: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(out, "source_postgresql.go")); err != nil {
@@ -107,7 +113,7 @@ func TestRunGenerate_BrokenCommonConfigIsFatal(t *testing.T) {
 				"postgresql": validPluginConfig,
 			})
 
-			err := runGenerate(backend, t.TempDir(), "sources", "")
+			err := runGenerate(backend, t.TempDir(), "sources", "", testSMTOptions())
 			if err == nil {
 				t.Fatal("runGenerate returned nil with an unusable configurations_for_all.json; every connector in the run would silently lose its shared fields")
 			}
@@ -128,7 +134,7 @@ func TestRunGenerate_KafkaDirectExemptFromCommonConfig(t *testing.T) {
 	})
 
 	out := t.TempDir()
-	if err := runGenerate(backend, out, "sources", "kafkadirect"); err != nil {
+	if err := runGenerate(backend, out, "sources", "kafkadirect", testSMTOptions()); err != nil {
 		t.Fatalf("kafkadirect must generate without configurations_for_all.json; got error: %v", err)
 	}
 	content, err := os.ReadFile(filepath.Join(out, "source_kafkadirect.go"))

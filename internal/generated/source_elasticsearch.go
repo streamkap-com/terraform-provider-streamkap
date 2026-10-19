@@ -47,8 +47,18 @@ type SourceElasticsearchModel struct {
 	TransformsOversizedRecordsSemanticTypesExclude   types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
 	TransformsOversizedRecordsReplaceNullWithDefault types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
 	InsertTopicNameEnabled                           types.Bool     `tfsdk:"insert_topic_name_enabled"`
+	SMTChain                                         types.List     `tfsdk:"smt_chain"`
+	SMTSecrets                                       types.List     `tfsdk:"smt_secrets"`
+	SMTPredicates                                    types.List     `tfsdk:"smt_predicates"`
+	SMTPredicateSecrets                              types.List     `tfsdk:"smt_predicate_secrets"`
+	SMTManagedOverrides                              types.Map      `tfsdk:"smt_managed_overrides"`
+	SMTChainRevision                                 types.String   `tfsdk:"smt_chain_revision"`
 	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
 }
+
+// SMTChainHost names the SMT catalog host whose chain this model carries. The
+// base connector resource builds the chain attributes from it.
+func (SourceElasticsearchModel) SMTChainHost() string { return "sources" }
 
 // SourceElasticsearchSchema returns the Terraform schema for the elasticsearch source.
 func SourceElasticsearchSchema() schema.Schema {

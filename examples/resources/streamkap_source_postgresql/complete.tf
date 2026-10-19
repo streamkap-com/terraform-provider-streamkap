@@ -81,6 +81,27 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   # the streamkap_tags data source). Set explicitly to manage; omit to let the
   # backend keep whatever tags it has attached out-of-band; set to [] to clear.
   tags = [streamkap_tag.production.id]
+
+  # Nested transform chain (optional). Filter has no settings: it drops the
+  # records its predicate matches. Entries are matched to server instances by
+  # key, and the chain cannot be combined with the flat transforms_* and
+  # predicates_* attributes.
+  smt_chain = [
+    {
+      key       = "drop-audit"
+      type      = "filter"
+      name      = "Drop audit tables"
+      filter    = {}
+      predicate = { key = "audit-topics" }
+    },
+  ]
+  smt_predicates = [
+    {
+      key                = "audit-topics"
+      type               = "topic_name_matches"
+      topic_name_matches = { pattern = ".*\\.audit_.*" }
+    },
+  ]
 }
 
 resource "streamkap_tag" "production" {

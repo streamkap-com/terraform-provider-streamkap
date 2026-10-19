@@ -64,6 +64,21 @@ resource "streamkap_destination_postgresql" "example" {
   # topic2table_map = true
   # transforms_change_topic_name_match_regex = ".*\\.(.*)"
   # transforms_change_topic_name_mapping     = "$1"
+
+  # Nested transform chain (optional). Entries run in order and are matched to
+  # server instances by key. It replaces the flat transforms_* and
+  # predicates_* attributes, which cannot be set alongside it.
+  smt_chain = [
+    {
+      key  = "strip-schema"
+      type = "regex_router"
+      name = "Strip the schema prefix"
+      regex_router = {
+        regex       = ".*\\.(.*)"
+        replacement = "$1"
+      }
+    },
+  ]
 }
 
 output "postgresql_destination_id" {
