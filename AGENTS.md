@@ -226,6 +226,7 @@ Everything above is for *consuming* the provider. What follows is for *changing*
 | `docs/resources/`, `docs/data-sources/` | Auto-generated per-resource pages (regen via `make generate`). |
 | `docs/ARCHITECTURE.md` | Layered diagram + CRUD flow + design rationale. |
 | `docs/CODE_GENERATOR.md` | tfgen internals: parser, generator, overrides.json, "adding a new connector" walkthrough. |
+| `docs/SMT_CHAIN.md` | Nested SMT chain on connectors: catalog-derived schema, wire contract, write paths, predicates, secrets, adoption. |
 | `templates/guides/migration.md` | Source for the v2 → v3 upgrade guide. `go generate main.go` copies it to `docs/guides/migration.md` for Registry publication. `docs/MIGRATION.md` preserves the old GitHub entry point. |
 | `docs/audits/<date>/`, `docs/plans/<date>-*.md` | Point-in-time audit reports and execution plans. Append new files; do not rewrite history. **Both directories are gitignored** (`.gitignore`), so everything you write there is local-only and invisible to anyone who clones the repo. Treat them as a working scratchpad, not shared history, and never assume a reader can see them. Whether that gitignore is intentional is an open question — don't "fix" it by committing audits or by editing `.gitignore` on your own. |
 | `CHANGELOG.md` | User-visible changes per release. Update before tagging. |
