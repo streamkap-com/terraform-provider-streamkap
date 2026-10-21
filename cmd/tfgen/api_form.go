@@ -48,19 +48,34 @@ type apiFormControl struct {
 	Rule     *apiFormRule     `json:"rule"`
 }
 
-func (control apiFormControl) rules() map[string]*apiFormRule {
+// rules maps each field to the rule on its control. A rule on a layout would
+// apply to every control inside it and a second rule on one field would
+// replace the first; neither is modelled, so both stop generation.
+func (control apiFormControl) rules() (map[string]*apiFormRule, error) {
 	rules := map[string]*apiFormRule{}
-	var visit func(apiFormControl)
-	visit = func(item apiFormControl) {
-		if item.Type == "Control" && item.Rule != nil {
-			rules[strings.TrimPrefix(item.Scope, "#/properties/")] = item.Rule
+	var visit func(apiFormControl) error
+	visit = func(item apiFormControl) error {
+		if item.Rule != nil {
+			if item.Type != "Control" {
+				return fmt.Errorf("rule on a %q element is not supported; put it on each control", item.Type)
+			}
+			field := strings.TrimPrefix(item.Scope, "#/properties/")
+			if _, ok := rules[field]; ok {
+				return fmt.Errorf("field %q has more than one rule", field)
+			}
+			rules[field] = item.Rule
 		}
 		for _, child := range item.Elements {
-			visit(child)
+			if err := visit(child); err != nil {
+				return err
+			}
 		}
+		return nil
 	}
-	visit(control)
-	return rules
+	if err := visit(control); err != nil {
+		return nil, err
+	}
+	return rules, nil
 }
 
 // formValue renders a condition value the way the provider compares it at plan
@@ -238,7 +253,10 @@ func applyAPIFormContract(config *ConnectorConfig, code, path string) error {
 		}
 		config.APIDependencies = append(config.APIDependencies, APIDependency{Field: field, Requires: requires})
 	}
-	rules := form.UISchema.rules()
+	rules, err := form.UISchema.rules()
+	if err != nil {
+		return fmt.Errorf("API source form %s: %w", path, err)
+	}
 	for i := range config.Config {
 		entry := &config.Config[i]
 		if !entry.UserDefined {
