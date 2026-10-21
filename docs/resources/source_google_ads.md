@@ -98,7 +98,7 @@ output "google_ads_source_id" {
 - `client_secret` (String, Sensitive) The client secret of the same OAuth client, from APIs & Services → Credentials.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `conversion_window_days` (Number) How many days back reports are re-read to pick up late conversions. Set it to the longest click-through conversion window of your conversion actions, up to 90. Defaults to `30`.
+- `conversion_window_days` (Number) How many days back reports are re-read to pick up late conversions and conversion adjustments. Set it to the longest click-through conversion window of your conversion actions, plus 54 days if you upload conversion adjustments (restatements or retractions), up to 144. Defaults to `30`.
 - `custom_queries` (String) GAQL queries to sync, as a JSON list of {name, query} without ORDER BY, LIMIT or date filters, e.g. [{"name": "campaign_devices", "query": "SELECT campaign.id, campaign.name, segments.device, metrics.clicks FROM campaign WHERE campaign.status = 'ENABLED'"}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; to change a synced query, add it under a new name.
 - `customer_ids` (List of String) More Google Ads accounts to sync with the same credentials, into the same topics; each row carries its customer_id. An account added later syncs from then on; reset the source to backfill its history.
 - `include_client_accounts` (Boolean) Sync every enabled client account under the manager account in Customer ID, including clients added later. Defaults to `false`.

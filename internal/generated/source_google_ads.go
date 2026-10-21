@@ -160,11 +160,11 @@ func SourceGoogleAdsSchema() schema.Schema {
 			"conversion_window_days": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "How many days back reports are re-read to pick up late conversions. Set it to the longest click-through conversion window of your conversion actions, up to 90. Defaults to 30.",
-				MarkdownDescription: "How many days back reports are re-read to pick up late conversions. Set it to the longest click-through conversion window of your conversion actions, up to 90. Defaults to `30`.",
+				Description:         "How many days back reports are re-read to pick up late conversions and conversion adjustments. Set it to the longest click-through conversion window of your conversion actions, plus 54 days if you upload conversion adjustments (restatements or retractions), up to 144. Defaults to 30.",
+				MarkdownDescription: "How many days back reports are re-read to pick up late conversions and conversion adjustments. Set it to the longest click-through conversion window of your conversion actions, plus 54 days if you upload conversion adjustments (restatements or retractions), up to 144. Defaults to `30`.",
 				Default:             int64default.StaticInt64(30),
 				Validators: []validator.Int64{
-					int64validator.Between(1, 90),
+					int64validator.Between(1, 144),
 				},
 			},
 			"customer_id": schema.StringAttribute{
