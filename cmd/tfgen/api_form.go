@@ -126,32 +126,34 @@ func (form *apiFormContract) visibility(rule *apiFormRule) (conditionField strin
 	default:
 		return "", nil, false, fmt.Errorf("unsupported condition schema %v", rule.Condition.Schema)
 	}
-	switch rule.Effect {
-	case "SHOW":
-		if matchesAll {
+	if rule.Effect != "SHOW" && rule.Effect != "HIDE" {
+		return "", nil, false, fmt.Errorf("unsupported rule effect %q", rule.Effect)
+	}
+	if matchesAll {
+		if rule.Effect == "SHOW" {
 			return "", nil, false, nil
 		}
-		return conditionField, matched, false, nil
-	case "HIDE":
-		if matchesAll {
-			return conditionField, nil, true, nil
-		}
-		property, ok := form.JSONSchema.Properties[conditionField]
-		if !ok {
-			return "", nil, false, fmt.Errorf("no condition property %q", conditionField)
-		}
-		values := propertyValues(property)
-		if len(values) == 0 {
-			return "", nil, false, fmt.Errorf("condition property %q lists no values to invert HIDE against", conditionField)
-		}
-		for _, value := range values {
-			if !slices.Contains(matched, value) {
-				showWhen = append(showWhen, value)
-			}
-		}
-		return conditionField, showWhen, len(showWhen) == 0, nil
+		return conditionField, nil, true, nil
 	}
-	return "", nil, false, fmt.Errorf("unsupported rule effect %q", rule.Effect)
+	// A condition on a field the form does not declare has no attribute to
+	// read at plan time, so the generated check would silently never apply.
+	property, ok := form.JSONSchema.Properties[conditionField]
+	if !ok {
+		return "", nil, false, fmt.Errorf("no condition property %q", conditionField)
+	}
+	if rule.Effect == "SHOW" {
+		return conditionField, matched, false, nil
+	}
+	values := propertyValues(property)
+	if len(values) == 0 {
+		return "", nil, false, fmt.Errorf("condition property %q lists no values to invert HIDE against", conditionField)
+	}
+	for _, value := range values {
+		if !slices.Contains(matched, value) {
+			showWhen = append(showWhen, value)
+		}
+	}
+	return conditionField, showWhen, len(showWhen) == 0, nil
 }
 
 // oauthMode derives how the vendor's Connect flow is selected. The form does

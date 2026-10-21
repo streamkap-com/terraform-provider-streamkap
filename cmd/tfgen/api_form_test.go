@@ -139,6 +139,7 @@ func TestApplyAPIFormContractRejectsUnsupportedRules(t *testing.T) {
 		"oauth without an oauth mode": `{"oauth":{},"json_schema":{"properties":{"auth_mode":{"type":"string","enum":["token"]},"token":{"type":"string"}}},"ui_schema":{}}`,
 		"hide against an open value":  `{"json_schema":{"properties":{"region":{"type":"string"},"token":{"type":"string"}}},"ui_schema":{"elements":[{"type":"Control","scope":"#/properties/token","rule":{"effect":"HIDE","condition":{"scope":"#/properties/region","schema":{"const":"eu"}}}}]}}`,
 		"unknown condition keyword":   `{"json_schema":{"properties":{"auth_mode":{"type":"string","enum":["a","b"]},"token":{"type":"string"}}},"ui_schema":{"elements":[{"type":"Control","scope":"#/properties/token","rule":{"effect":"SHOW","condition":{"scope":"#/properties/auth_mode","schema":{"pattern":"a"}}}}]}}`,
+		"show on an undeclared field": `{"json_schema":{"properties":{"token":{"type":"string"}}},"ui_schema":{"elements":[{"type":"Control","scope":"#/properties/token","rule":{"effect":"SHOW","condition":{"scope":"#/properties/auth_mode","schema":{"const":"token"}}}}]}}`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			config := &ConnectorConfig{Config: []ConfigEntry{{Name: "token", UserDefined: true, Value: ValueObject{Control: "password"}}}}

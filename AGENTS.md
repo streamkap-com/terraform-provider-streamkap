@@ -405,7 +405,7 @@ API-source schemas come from two backend artifacts per vendor, `app/sources/plug
 Regenerate only the API sources when the backend branch is not `main`, so no unrelated CDC change rides along. `make generate` regenerates every connector and refuses a non-`main` backend unless `ALLOW_NONMAIN=1`:
 
 ```bash
-git -C "$STREAMKAP_BACKEND_PATH" rev-parse --abbrev-ref HEAD   # the branch you were told to use
+ALLOW_NONMAIN=1 bash scripts/codegen-preflight.sh   # stops on an unset or unreadable path; check the branch it prints
 for v in hubspot salesforce netsuite stripe zendesk google_analytics facebook_ads google_ads; do
   go run ./cmd/tfgen generate --backend-path="$STREAMKAP_BACKEND_PATH" --output=internal/generated --entity-type sources --connector "$v"
 done
