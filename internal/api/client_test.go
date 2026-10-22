@@ -824,6 +824,23 @@ func TestAPIError_UnreadableRequestKeepsRefusedFieldNames(t *testing.T) {
 	assert.NotContains(t, apiErr.Fields[0].Message, "hunter2-pass")
 }
 
+// A refusal that names its fields but carries no usable detail still reports
+// each field, masked.
+func TestAPIError_FieldsWithoutDetailKept(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	baseURL := "https://api.test.streamkap.com"
+	client := newTestClient(baseURL)
+	httpmock.RegisterResponder(http.MethodPost, baseURL+"/sources?secret_returned=true&wait=false", httpmock.NewJsonResponderOrPanic(http.StatusBadRequest, map[string]any{
+		"detail": nil, "fields": []map[string]any{{"field": "database.password", "message": "hunter2-pass is wrong"}}}))
+	_, err := client.CreateSource(context.Background(), Source{Name: "s", Connector: "postgresql", Config: map[string]any{"database.password": "hunter2-pass"}})
+	var apiErr *APIError
+	require.True(t, errors.As(err, &apiErr))
+	require.Len(t, apiErr.Fields, 1)
+	assert.Equal(t, "database.password", apiErr.Fields[0].Field)
+	assert.Equal(t, redactedPlaceholder+" is wrong", apiErr.Fields[0].Message)
+}
+
 // TestTokenRenewal_On401RetriesWithFreshToken — the OAuth token used to be
 // fetched once in provider.Configure and never renewed, so any apply outliving
 // the token TTL failed every remaining resource with an opaque 401.

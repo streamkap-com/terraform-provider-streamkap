@@ -467,12 +467,12 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 		}
 		named, _ := ctx.Value(sentSecretsKey{}).([]string)
 		secrets := secretForms(append(slices.Clone(sent), named...))
+		for i := range envelope.Fields {
+			envelope.Fields[i].Message = maskSentSecrets(envelope.Fields[i].Message, secrets)
+		}
 		// Masking runs before snippet, which cuts and flattens the text and
 		// would split a secret or change its newlines.
 		if detail, structured, ok := parseAPIErrorDetail(body); ok {
-			for i := range envelope.Fields {
-				envelope.Fields[i].Message = maskSentSecrets(envelope.Fields[i].Message, secrets)
-			}
 			shown := maskSentSecrets(detail, secrets)
 			if structured {
 				shown = snippet([]byte(shown))
@@ -489,7 +489,7 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 		if !json.Valid(body) {
 			tflog.Debug(ctx, fmt.Sprintf("%s %s → %d: response body not JSON: %s", req.Method, req.URL, resp.StatusCode, shown))
 		}
-		return &APIError{StatusCode: resp.StatusCode, Detail: prefix + shown, RequestID: requestID, raw: prefix + raw}
+		return &APIError{StatusCode: resp.StatusCode, Detail: prefix + shown, RequestID: requestID, Fields: envelope.Fields, raw: prefix + raw}
 	}
 
 	// A 2xx with an empty body is a success with nothing to decode — the
