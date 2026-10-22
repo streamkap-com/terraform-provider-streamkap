@@ -163,12 +163,19 @@ func isUnset(value attr.Value) bool {
 // stale value, since Read refills a secret the API echoes as null. In OAuth
 // mode the form does not say which hidden fields the grant fills, so they are
 // kept while the grant is unchanged, and planned unknown when a new grant is
-// sent, so state takes whatever the backend then holds.
+// sent, so state takes whatever the backend then holds. Only a source already
+// in OAuth mode has grant-filled values to keep; coming from a pasted mode,
+// those fields hold that mode's secrets.
 func (c *apiSourceConfig) PlanAdjustments(config any, state any) (unset []string, unknown []string) {
 	values := c.conditionValues(config, oauthGrantAttr)
 	newGrant := false
 	if grant := values[oauthGrantAttr]; grant != nil && !grant.IsNull() {
 		newGrant = state == nil || grant.IsUnknown() || !grant.Equal(shared.CaptureFields(state, []string{oauthGrantAttr})[oauthGrantAttr])
+	}
+	priorOAuth := false
+	if state != nil && c.OAuth.AuthModeField != "" {
+		mode, known := c.authMode(shared.CaptureFields(state, []string{c.OAuth.AuthModeField}))
+		priorOAuth = known && mode == c.OAuth.AuthModeValue
 	}
 	for _, condition := range c.Conditions {
 		show, value, known := shown(condition, values)
@@ -179,8 +186,11 @@ func (c *apiSourceConfig) PlanAdjustments(config any, state any) (unset []string
 		if !show && c.OAuth.Enabled && condition.ConditionField == c.OAuth.AuthModeField && value == c.OAuth.AuthModeValue {
 			if newGrant {
 				unknown = append(unknown, condition.Field)
+				continue
 			}
-			continue
+			if priorOAuth {
+				continue
+			}
 		}
 		unset = append(unset, condition.Field)
 	}

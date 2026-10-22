@@ -523,3 +523,15 @@ func TestAPISourceSwitchToOAuthNeedsNewGrant(t *testing.T) {
 		t.Errorf("a source already in oauth mode keeps its spent grant: %v", diags)
 	}
 }
+
+// Only a source already in OAuth mode has grant-filled values to keep. Coming from a pasted mode, the previous
+// mode's secret must not be kept from state: the backend drops it, and Read would refill its null echo forever.
+func TestAPISourceSwitchToOAuthDoesNotKeepThePastedSecret(t *testing.T) {
+	googleAds := apiSource(t, NewGoogleAdsResource)
+	prior := &generated.SourceGoogleAdsModel{AuthMode: types.StringValue("service_account"), ServiceAccountKey: types.StringValue("key")}
+	config := &generated.SourceGoogleAdsModel{AuthMode: types.StringValue("oauth"), ClientID: types.StringValue("id"), ClientSecret: types.StringValue("secret")}
+	unset, unknown := googleAds.PlanAdjustments(config, prior)
+	if !slices.Contains(unset, "service_account_key") && !slices.Contains(unknown, "service_account_key") {
+		t.Errorf("the service_account mode's key was kept from state: unset=%v unknown=%v", unset, unknown)
+	}
+}
