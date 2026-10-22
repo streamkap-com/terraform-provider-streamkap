@@ -232,6 +232,17 @@ func TestGetTfCfgListString(t *testing.T) {
 		}
 	})
 
+	// Only API sources store lists as CSV; they decode it themselves. A string
+	// echoed for another connector's list is not split here: "" would become
+	// [] against a null plan, and a JSON array string would be cut at commas.
+	t.Run("string is not a list", func(t *testing.T) {
+		for _, value := range []string{"", `["a","b"]`, "a,b"} {
+			if result := GetTfCfgListString(ctx, map[string]any{"key": value}, "key"); !result.IsNull() {
+				t.Errorf("string %q decoded as %#v, want null", value, result)
+			}
+		}
+	})
+
 	t.Run("empty list", func(t *testing.T) {
 		cfg := map[string]any{"key": []any{}}
 		result := GetTfCfgListString(ctx, cfg, "key")

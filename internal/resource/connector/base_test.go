@@ -4,14 +4,19 @@ import (
 	"context"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/shared"
 )
 
@@ -156,5 +161,141 @@ func TestDefaultedNullEchoIsRefilled(t *testing.T) {
 	shared.FillNullFields(model, planned)
 	if model.Scope.ValueString() != "other" || !model.Lob.ValueBool() {
 		t.Errorf("a differing non-null echo must be kept: got %#v / %#v", model.Scope, model.Lob)
+	}
+}
+
+type formModel struct {
+	Date types.String `tfsdk:"date"`
+}
+
+func TestConfiguredFormsFollowTheRecordedEcho(t *testing.T) {
+	planned := map[string]attr.Value{"date": types.StringValue("2026-01-01")}
+	applied := &formModel{Date: types.StringValue("2026-01-01T00:00:00+00:00")}
+	private := keepConfiguredForms(applied, planned)
+	if applied.Date.ValueString() != "2026-01-01" || private == nil {
+		t.Fatalf("apply must keep the configured form and record the echo: %v %s", applied.Date, private)
+	}
+
+	refreshed := &formModel{Date: types.StringValue("2026-01-01T00:00:00+00:00")}
+	kept, err := restoreConfiguredForms(refreshed, map[string]attr.Value{"date": applied.Date}, private)
+	if err != nil || refreshed.Date.ValueString() != "2026-01-01" || kept == nil {
+		t.Fatalf("an unchanged echo must keep the configured form: %v %s %v", refreshed.Date, kept, err)
+	}
+
+	drifted := &formModel{Date: types.StringValue("2025-06-01T00:00:00+00:00")}
+	kept, err = restoreConfiguredForms(drifted, map[string]attr.Value{"date": applied.Date}, private)
+	if err != nil || drifted.Date.ValueString() != "2025-06-01T00:00:00+00:00" || kept != nil {
+		t.Fatalf("a changed echo is drift and must replace the configured form: %v %s %v", drifted.Date, kept, err)
+	}
+
+	if _, err := restoreConfiguredForms(&formModel{}, nil, []byte("not json")); err == nil {
+		t.Fatal("corrupt private state must be reported")
+	}
+}
+
+type mappedConfig struct{ fakeConfig }
+
+func (mappedConfig) GetFieldMappings() map[string]string {
+	return map[string]string{"token": "api.token", "region": "region"}
+}
+
+func TestSaveErrorNamesTheAttribute(t *testing.T) {
+	r := NewBaseConnectorResource(mappedConfig{}).(*BaseConnectorResource)
+	refused := &api.APIError{StatusCode: 400, Detail: "The key was rejected.", Fields: []api.APIFieldError{{Field: "api.token", Message: "The key was rejected."}}}
+
+	var diags diag.Diagnostics
+	r.addSaveError(&diags, "Error creating fake source", "Unable to create source", refused)
+	if len(diags) != 1 || !diags[0].(diag.DiagnosticWithPath).Path().Equal(path.Root("token")) {
+		t.Fatalf("a refused field must be reported on its attribute: %v", diags)
+	}
+
+	refused.Fields = append(refused.Fields, api.APIFieldError{Field: "unmapped", Message: "?"})
+	diags = nil
+	r.addSaveError(&diags, "Error creating fake source", "Unable to create source", refused)
+	if len(diags) != 1 || diags[0].Detail() != "Unable to create source: The key was rejected. (HTTP 400)" {
+		t.Fatalf("an unmapped field must fall back to the whole error: %v", diags)
+	}
+}
+
+// aliasedConfig maps a deprecated alias and its canonical attribute to one API field.
+type aliasedConfig struct{ fakeConfig }
+
+func (aliasedConfig) GetSchema() schema.Schema {
+	return schema.Schema{Attributes: map[string]schema.Attribute{
+		"token":     schema.StringAttribute{Optional: true},
+		"old_token": schema.StringAttribute{Optional: true, DeprecationMessage: "Use token instead."},
+	}}
+}
+
+func (aliasedConfig) GetFieldMappings() map[string]string {
+	return map[string]string{"token": "api.token", "old_token": "api.token"}
+}
+
+func TestSaveErrorPrefersTheCanonicalAttributeAndKeepsTheRequestID(t *testing.T) {
+	r := NewBaseConnectorResource(aliasedConfig{}).(*BaseConnectorResource)
+	refused := &api.APIError{StatusCode: 400, Detail: "Refused.", RequestID: "req-42", Fields: []api.APIFieldError{{Field: "api.token", Message: "The key was rejected."}}}
+	for i := 0; i < 50; i++ {
+		var diags diag.Diagnostics
+		r.addSaveError(&diags, "Error creating fake source", "Unable to create source", refused)
+		if len(diags) != 1 || !diags[0].(diag.DiagnosticWithPath).Path().Equal(path.Root("token")) {
+			t.Fatalf("the error must land on the canonical attribute every time: %v", diags)
+		}
+		if detail := diags[0].Detail(); !strings.Contains(detail, "The key was rejected.") || !strings.Contains(detail, "Refused.") || !strings.Contains(detail, "request_id=req-42") {
+			t.Fatalf("the attributed error must keep the detail and request ID: %q", detail)
+		}
+	}
+}
+
+type normalizedModel struct {
+	Subdomain types.String `tfsdk:"subdomain"`
+	Region    types.String `tfsdk:"region"`
+}
+
+type normalizedConfig struct{ fakeConfig }
+
+func (normalizedConfig) GetFieldMappings() map[string]string {
+	return map[string]string{"subdomain": "subdomain", "region": "region"}
+}
+func (normalizedConfig) NewModelInstance() any          { return &normalizedModel{} }
+func (normalizedConfig) ConfiguredFormFields() []string { return []string{"subdomain"} }
+
+// Only a field the backend is known to normalize keeps its configured spelling; any other differing echo is a real
+// change (a value dropped or rewritten) and must reach state so the plan shows it.
+func TestConfiguredFormsOnlyForNormalizedFields(t *testing.T) {
+	r := NewBaseConnectorResource(normalizedConfig{}).(*BaseConnectorResource)
+	planned := shared.CaptureFields(&normalizedModel{Subdomain: types.StringValue("ACME"), Region: types.StringValue("eu,us")}, r.configuredFormAttrNames())
+	applied := &normalizedModel{Subdomain: types.StringValue("acme"), Region: types.StringValue("eu")}
+	keepConfiguredForms(applied, planned)
+	if applied.Subdomain.ValueString() != "ACME" {
+		t.Errorf("a normalized echo must keep the configured spelling, got %v", applied.Subdomain)
+	}
+	if applied.Region.ValueString() != "eu" {
+		t.Errorf("a field the backend does not normalize must keep its echo, got %v", applied.Region)
+	}
+}
+
+// PlanAdjustments may name an attribute of any type; setting a String null on a map path would fail every plan.
+func TestPlanAdjustmentValuesMatchTheAttributeType(t *testing.T) {
+	ctx := context.Background()
+	objectType := map[string]attr.Type{"a": types.StringType}
+	for name, test := range map[string]struct {
+		attribute     schema.Attribute
+		null, unknown attr.Value
+	}{
+		"map":    {schema.MapAttribute{ElementType: types.StringType}, types.MapNull(types.StringType), types.MapUnknown(types.StringType)},
+		"object": {schema.ObjectAttribute{AttributeTypes: objectType}, types.ObjectNull(objectType), types.ObjectUnknown(objectType)},
+		"number": {schema.NumberAttribute{}, types.NumberNull(), types.NumberUnknown()},
+		"list":   {schema.ListAttribute{ElementType: types.StringType}, types.ListNull(types.StringType), types.ListUnknown(types.StringType)},
+		"string": {schema.StringAttribute{}, types.StringNull(), types.StringUnknown()},
+	} {
+		if got, err := nullValue(ctx, test.attribute); err != nil || !got.Equal(test.null) {
+			t.Errorf("%s: null = %v, %v", name, got, err)
+		}
+		if got, err := unknownValue(ctx, test.attribute); err != nil || !got.Equal(test.unknown) {
+			t.Errorf("%s: unknown = %v, %v", name, got, err)
+		}
+	}
+	if _, err := nullValue(ctx, nil); err == nil {
+		t.Error("an attribute missing from the schema must be an error, not a String")
 	}
 }

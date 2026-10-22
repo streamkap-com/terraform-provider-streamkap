@@ -20,6 +20,7 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/tag"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/topic"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/topic_destination"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/transform"
 )
 
@@ -276,7 +277,7 @@ func (p *streamkapProvider) DataSources(_ context.Context) []func() datasource.D
 
 // Resources defines the resources implemented in the provider.
 func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resource {
-	return []func() resource.Resource{
+	return append([]func() resource.Resource{
 		source.NewMongoDBResource,
 		source.NewMySQLResource,
 		source.NewPostgreSQLResource,
@@ -328,6 +329,7 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		destination.NewPineconeDestResource,
 		pipeline.NewPipelineResource,
 		topic.NewTopicResource,
+		topic_destination.NewResource,
 		tag.NewTagResource,
 		transform.NewMapFilterResource,
 		transform.NewEnrichResource,
@@ -338,5 +340,5 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		transform.NewTopicRouterResource,
 		kafka_user.NewKafkaUserResource,
 		client_credential.NewClientCredentialResource,
-	}
+	}, source.APISourceResources()...)
 }

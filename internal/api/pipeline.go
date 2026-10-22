@@ -20,6 +20,9 @@ type Pipeline struct {
 	Transforms                   []*PipelineTransform                  `json:"transforms"`
 	TopicAutoDiscoveryTransforms []PipelineTopicAutoDiscoveryTransform `json:"topic_auto_discovery_transforms"`
 	Tags                         []string                              `json:"tags"`
+	// Managed marks an API source's send-to-destination binding, which its topic delivery creates and removes. The
+	// pipeline API answers 409 on its update and delete; it is never sent.
+	Managed bool `json:"managed,omitempty"`
 
 	// PeriodicAudit is configured outside Terraform (the UI), but it has to be
 	// round-tripped on update: the backend lists periodic_audit in

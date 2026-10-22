@@ -15,9 +15,9 @@ Terraform source address: `streamkap-com/streamkap` (`registry.terraform.io/stre
 
 ## What it manages
 
-- **Sources** — CDC and event connectors (databases, queues, webhooks, S3).
+- **Sources** — CDC, event and API connectors (databases, queues, webhooks, S3, SaaS APIs).
 - **Destinations** — warehouses, lakes, queues, vector DBs.
-- **Pipelines** — connect a source to a destination, optionally through transforms.
+- **Pipelines** — connect a CDC source to a destination, optionally through transforms. An API source has none: `streamkap_topic_destination` sends its topics, and `streamkap_pipeline` refuses an API source and a managed pipeline.
 - **Transforms** — in-flight data transformations (JS map/filter, enrich, SQL join, rollup, fan-out).
 - **Topics** — Kafka topic configuration.
 - **Kafka users** and **Client credentials** (v3+) — access control and machine auth.
@@ -104,6 +104,8 @@ Full per-resource examples: `examples/resources/streamkap_<name>/{basic,complete
 ### Sources
 `streamkap_source_postgresql`, `mysql`, `mongodb`, `mongodbhosted`, `dynamodb`, `sqlserver`, `oracle`, `oracleaws`, `db2`, `informix` (v3), `mariadb`, `alloydb`, `documentdb`, `elasticsearch`, `planetscale`, `redis`, `s3`, `supabase`, `vitess`, `webhook`, `salesforce_webhook` (v3), `zendesk_webhook` (v3), `shopify_webhook` (v3), `stripe_webhook` (v3), `kafkadirect`.
 
+API sources: `streamkap_source_hubspot`, `salesforce`, `netsuite`, `stripe`, `zendesk`, `google_analytics`, `facebook_ads`, `google_ads`. They start by themselves; route their topics with `streamkap_topic_destination`, not `streamkap_pipeline`. An OAuth mode needs an `oauth_grant_id` from Connect, which Terraform cannot run: each resource page gives the CLI handoff.
+
 ### Destinations
 `streamkap_destination_snowflake`, `clickhouse`, `databricks`, `postgresql`, `mysql`, `sqlserver`, `oracle`, `db2`, `cockroachdb`, `bigquery`, `redshift`, `motherduck`, `starburst`, `s3`, `gcs`, `r2`, `azblob`, `iceberg`, `kafka`, `kafkadirect`, `httpsink`, `redis`, `weaviate` (v3), `pinecone` (v3).
 
@@ -111,7 +113,7 @@ Full per-resource examples: `examples/resources/streamkap_<name>/{basic,complete
 `streamkap_transform_map_filter`, `enrich`, `enrich_async`, `sql_join`, `rollup`, `fan_out`, `topic_router` (v3).
 
 ### Other resources
-`streamkap_pipeline`, `streamkap_topic`, `streamkap_tag`, `streamkap_kafka_user` (v3), `streamkap_client_credential` (v3).
+`streamkap_pipeline`, `streamkap_topic_destination`, `streamkap_topic`, `streamkap_tag`, `streamkap_kafka_user` (v3), `streamkap_client_credential` (v3).
 
 ### Data sources
 `streamkap_transform`, `streamkap_tag`, `streamkap_tags` (v3), `streamkap_topics`, `streamkap_topic`, `streamkap_topic_metrics`, `streamkap_roles` (v3).
@@ -385,7 +387,7 @@ Control→TF-type mapping table lives in `docs/CODE_GENERATOR.md` (kept in sync 
 - Unsupported backend controls stop generation; `code-editor` maps to String.
 - Backend `readonly` is sometimes a UI hint. Preserve configurable fields such as SSH public keys and S3 topic selection; omit `UseStateForUnknown` for derived fields so updates can recompute them.
 - `control: "password"` OR `encrypt: true` → `Sensitive: true`.
-- Fields named or suffixed `api_key`, `authorization`, `access_key_id`, `secret_access_key`, or `secret_key` are forced `Sensitive: true` by `isSecretField` in `cmd/tfgen/generator.go`.
+- Fields named or suffixed `api_key`, `authorization`, `access_key_id`, `secret_access_key`, `secret_key`, `consumer_key`, or `token_id` are forced `Sensitive: true` by `isSecretField` in `cmd/tfgen/generator.go`.
 - Every connector merges the entity-wide `configurations_for_all.json` common fields **except `kafkadirect`**, which the backend (`_load_global_configuration`) resolves from its plugin config alone. tfgen mirrors this skip in `Generate()`; the Kafka Direct source/destination expose only their plugin fields.
 - Go field naming preserves: `ID SSH SSL SQL DB URL API AWS ARN QA` uppercase. So `ssh_port` → `SSHPort`, `role_arn` → `RoleARN`.
 
@@ -395,6 +397,35 @@ Control→TF-type mapping table lives in `docs/CODE_GENERATOR.md` (kept in sync 
 
 An override's `api_field_name` must resolve to a field the backend actually declares — tfgen fails the build otherwise, for both `field_overrides` and `additional_fields`. Review overrides when backend fields change so Terraform does not accept attributes that the API ignores.
 When an override's `api_field_name` matches a backend field, the override wins and the auto-parsed version is dropped.
+
+### API sources
+
+API-source schemas come from two backend artifacts per vendor, `app/sources/plugins/<vendor>/configuration.latest.json` and `form.schema.json`, which the backend generates from its vendor config models. How tfgen reads them is in `docs/CODE_GENERATOR.md`; the runtime hooks are in `docs/ARCHITECTURE.md`.
+
+Regenerate only the API sources when the backend branch is not `main`, so no unrelated CDC change rides along. `make generate` regenerates every connector and refuses a non-`main` backend unless `ALLOW_NONMAIN=1`:
+
+```bash
+ALLOW_NONMAIN=1 bash scripts/codegen-preflight.sh   # stops on an unset or unreadable path; check the branch it prints
+for v in hubspot salesforce netsuite stripe zendesk google_analytics facebook_ads google_ads; do
+  go run ./cmd/tfgen generate --backend-path="$STREAMKAP_BACKEND_PATH" --output=internal/generated --entity-type sources --connector "$v"
+done
+go generate main.go   # docs, after the schemas
+make snapshots        # then read the diff
+```
+
+A new vendor also needs its generated `Source<Vendor>APISource` in `apiSources` (`internal/resource/source/api_sources.go`), which registers the resource and keeps `streamkap_pipeline` off it, a one-line constructor there for its tests, a `TestSchemaBackwardsCompatibility_APISources` row, `examples/resources/streamkap_source_<vendor>/{basic,complete}.tf` and `import.sh`, and a lifecycle case in `internal/provider/api_source_vendors_local_test.go` if it adds an auth pattern.
+
+Traps:
+- A form `HIDE` rule hides a field only for the values it lists. Reading it as always-hidden once dropped HubSpot `token` and Google Ads `client_id`/`client_secret`; check each vendor's credentials survive a regen.
+- The backend normalizes echoed values: `backfill_start` to a UTC datetime, Google Ads IDs lose dashes, Facebook Ads IDs lose `act_`, Salesforce `domain` gains `https://`, Zendesk `subdomain` is lowercased. `ConnectorConfigKeepsConfiguredForm` keeps the configured spelling only for the fields `normalizedFields` in `api_sources.go` lists: a field the backend starts normalizing needs a row there, or its apply fails as an inconsistent result. Lifecycle fixtures must normalize the same way.
+- An update replaces the whole config. The backend keeps an absent secret and restores the fields a grant owns (Salesforce `org_id`, `environment`, and `domain` in oauth mode). The provider resends every secret the current auth mode shows, so a new location (Salesforce `domain`, NetSuite `account_id`) never pairs with a kept secret, which the backend refuses. It omits an unchanged secret the form hides (grant-filled, and the backend may have rotated it) and an unchanged `oauth_grant_id` (spent).
+- A grant is authorized for one host (`oauth.host_field`, the Zendesk `subdomain`); changing it without a new grant fails at plan time.
+- On an auth-mode switch the backend drops the old mode's secrets, and it refuses a real secret typed for another mode; the provider checks the latter at plan time for pasted modes. Removed gated fields are planned null, because Read refills a null-echoed secret from state.
+- In OAuth mode the grant fills fields the form hides (HubSpot `token`, Salesforce `domain`, Stripe `token`, Google Ads `refresh_token`). They are kept while `oauth_grant_id` is unchanged on a source already in OAuth mode, and planned unknown when a new grant is sent; a switch into OAuth mode needs a new grant.
+- `null` clears an optional secret; the backend refuses it for a required one. Config is `extra="forbid"`, so a vendor without OAuth must never be sent `oauth_grant_id`.
+- Conditional rules belong in the backend artifacts (SHOW rules, `dependentRequired`), never in hand-written validators here. Matching `custom_<name>` resources to `custom_*` definitions cannot be expressed; the backend reports it as a 400 at apply.
+- A refused save carries `fields: [{field, message}]` beside `detail`; the provider puts each message on its attribute.
+- A source update sends a new resource's topic to every destination the source already sends to, and stops a removed one, outside `streamkap_topic_destination`.
 
 ### Fix the generator, not the generated output
 
@@ -463,7 +494,7 @@ Required env vars for acceptance: `TF_ACC=1`, `STREAMKAP_CLIENT_ID`, `STREAMKAP_
 - AI-agent-friendly schema descriptions: every resource/data source needs both `Description` and `MarkdownDescription`. tfgen emits these automatically; if you add an attribute by hand, document enums (list valid values), defaults, and `**Security:**` notes for sensitive fields.
 - Each resource needs `examples/resources/streamkap_<name>/{basic,complete}.tf`.
 - Use `streamkap-com/streamkap` in Terraform configurations and local development overrides; the Go module path is `github.com/streamkap-com/terraform-provider-streamkap`.
-- Connector status values (read-only): `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
+- Connector status values (read-only): `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`; API sources also report `Pending`.
 - **Never log a connector `Config`/`configMap`.** It is keyed by API field name and holds decrypted credentials. Request bodies are logged through `redactSensitiveJSON` (`internal/api/redact.go`); anything logged outside `internal/api` bypasses it. Secrets travel under dotted Kafka-Connect names (`api.key`, `snowflake.private.key`), so any new redaction pattern must treat `.` as a separator.
 
 For deeper detail follow the Documentation map at the top of this file.

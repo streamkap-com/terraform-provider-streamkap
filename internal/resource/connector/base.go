@@ -45,11 +45,16 @@ package connector
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"maps"
 	"reflect"
+	"slices"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -58,6 +63,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
@@ -98,6 +104,45 @@ type ConnectorConfig interface {
 	// This is needed for reflection-based operations.
 	NewModelInstance() any
 }
+
+// ConnectorConfigValidator checks the planned model at plan time. prior is the
+// prior state model, nil on Create.
+type ConnectorConfigValidator interface {
+	ValidateConfiguration(model any, prior any) diag.Diagnostics
+}
+
+// ConnectorConfigRequestFilter lets a connector adjust the config it sends.
+// state is nil on Create and the prior state model on Update.
+type ConnectorConfigRequestFilter interface {
+	FilterRequestConfig(configMap map[string]any, plan any, state any)
+}
+
+// ConnectorConfigPlanAdjuster names attributes whose planned value must be
+// null or unknown, given the configuration and the prior state (nil on Create).
+type ConnectorConfigPlanAdjuster interface {
+	PlanAdjustments(config any, state any) (unset []string, unknown []string)
+}
+
+// ConnectorConfigResponseDecoder rewrites a response config into the shapes the
+// model reads, before it is mapped (API sources store lists as CSV strings).
+type ConnectorConfigResponseDecoder interface {
+	DecodeResponseConfig(config map[string]any)
+}
+
+// ConnectorConfigKeepsConfiguredForm names the attributes whose value the
+// backend normalizes before echoing it (a date stored as a UTC datetime, an ID
+// with its dashes removed, an empty list as unset). For those, the configured
+// spelling is kept in state while the backend still echoes the normalized form
+// recorded at apply time; any other echo is real drift and replaces it. Every
+// other attribute takes its echo, so a value the backend dropped or rewrote
+// shows as a change.
+type ConnectorConfigKeepsConfiguredForm interface {
+	ConfiguredFormFields() []string
+}
+
+// configuredFormKey is the private-state key holding, per attribute, the
+// normalized echo recorded when the configured spelling was kept.
+const configuredFormKey = "configured_form_echo"
 
 // ConnectorConfigWithJSONStringFields is an optional interface that connectors
 // can implement to specify fields that should be serialized as JSON strings
@@ -143,6 +188,8 @@ func (r *BaseConnectorResource) Metadata(ctx context.Context, req resource.Metad
 // Schema returns the schema for this resource.
 func (r *BaseConnectorResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	baseSchema := r.config.GetSchema()
+	// A config may cache its schema; the alias rewrite below must not reach it.
+	baseSchema.Attributes = maps.Clone(baseSchema.Attributes)
 	// Alias defaults must wait until ModifyPlan. Applying them earlier marks
 	// computed fields unknown even when the alias resolves to unchanged state.
 	mappings := r.config.GetFieldMappings()
@@ -201,13 +248,50 @@ func (r *BaseConnectorResource) ModifyPlan(ctx context.Context, req resource.Mod
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	validator, validates := r.config.(ConnectorConfigValidator)
+	adjuster, adjusts := r.config.(ConnectorConfigPlanAdjuster)
+	var prior any
+	if (validates || adjusts) && !req.State.Raw.IsNull() {
+		prior = r.config.NewModelInstance()
+		resp.Diagnostics.Append(req.State.Get(ctx, prior)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+	if validates {
+		resp.Diagnostics.Append(validator.ValidateConfiguration(model, prior)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+	s := r.config.GetSchema()
+	if adjusts {
+		plan := func(name string, value attr.Value, err error) {
+			if err != nil {
+				resp.Diagnostics.AddError("Error planning "+r.config.GetResourceName(), fmt.Sprintf("Cannot plan %s: %s.", name, err))
+				return
+			}
+			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(name), value)...)
+		}
+		unset, unknown := adjuster.PlanAdjustments(model, prior)
+		for _, name := range unset {
+			value, err := nullValue(ctx, s.Attributes[name])
+			plan(name, value, err)
+		}
+		for _, name := range unknown {
+			value, err := unknownValue(ctx, s.Attributes[name])
+			plan(name, value, err)
+		}
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
 	mappings := r.config.GetFieldMappings()
 	names := make([]string, 0, len(mappings))
 	for name := range mappings {
 		names = append(names, name)
 	}
 	configured := shared.CaptureFields(model, names)
-	s := r.config.GetSchema()
 	for alias, attribute := range s.Attributes {
 		if attribute.GetDeprecationMessage() == "" {
 			continue
@@ -322,8 +406,11 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 
 	// Capture user-supplied secrets before the API echo can overwrite them, and
 	// the defaulted attributes the backend may drop (see shared.DefaultedAttrNames).
-	plannedSecrets := shared.CaptureFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
-	plannedDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(r.config.GetSchema()))
+	s := r.config.GetSchema()
+	secrets := shared.SensitiveStringAttrNames(s)
+	plannedSecrets := shared.CaptureFields(model, secrets)
+	plannedDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(s))
+	plannedForms := shared.CaptureFields(model, r.configuredFormAttrNames())
 
 	// Get name from model
 	name := r.getStringField(model, "Name")
@@ -345,6 +432,10 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	if filter, ok := r.config.(ConnectorConfigRequestFilter); ok {
+		filter.FilterRequestConfig(configMap, model, nil)
+	}
+
 	// Never log configMap: it holds decrypted credentials keyed by API field name
 	// and bypasses the redaction applied to the request body in internal/api.
 	tflog.Debug(ctx, fmt.Sprintf("Creating %s %s", r.config.GetConnectorType(), r.config.GetConnectorCode()))
@@ -354,6 +445,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	var connectorName string
 	var connectorCode string
 	var connectorStatus string
+	var responseClusterID string
 	var responseConfig map[string]any
 
 	kcClusterId := r.getStringField(model, "KcClusterId")
@@ -370,18 +462,17 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 			Tags:        tags,
 		})
 		if err != nil {
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Error creating %s source", r.config.GetConnectorCode()),
-				fmt.Sprintf("Unable to create source: %s", err),
-			)
+			r.addSaveError(&resp.Diagnostics, fmt.Sprintf("Error creating %s source", r.config.GetConnectorCode()), "Unable to create source", err)
 			return
 		}
 		id = source.ID
 		connectorName = source.Name
 		connectorCode = source.Connector
 		connectorStatus = source.ConnectorStatus
+		responseClusterID = source.KcClusterId
 		responseConfig = source.Config
 		responseTags = source.Tags
+		addConnectionWarning(&resp.Diagnostics, source)
 
 	case ConnectorTypeDestination:
 		destination, err := r.client.CreateDestination(ctx, api.Destination{
@@ -402,6 +493,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		connectorName = destination.Name
 		connectorCode = destination.Connector
 		connectorStatus = destination.ConnectorStatus
+		responseClusterID = destination.KcClusterId
 		responseConfig = destination.Config
 		responseTags = destination.Tags
 	}
@@ -411,10 +503,17 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	r.setStringField(model, "Name", connectorName)
 	r.setStringField(model, "Connector", connectorCode)
 	r.setStringField(model, "ConnectorStatus", connectorStatus)
+	// A cluster the server selects is planned unknown; the response names it.
+	if cluster := shared.CaptureFields(model, []string{"kc_cluster_id"})["kc_cluster_id"]; cluster != nil && cluster.IsUnknown() {
+		r.setStringField(model, "KcClusterId", responseClusterID)
+	}
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, responseTags))
 	r.configMapToModel(ctx, responseConfig, model)
 	shared.PreserveKnownFields(model, plannedSecrets)
 	shared.FillNullFields(model, plannedDefaults)
+	if r.keepsConfiguredForm() {
+		resp.Diagnostics.Append(resp.Private.SetKey(ctx, configuredFormKey, keepConfiguredForms(model, plannedForms))...)
+	}
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
@@ -459,11 +558,14 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 	// Snapshot the secrets already in state. The API response can null them out
 	// (see shared.FillNullFields); prior state is the only source we have
 	// on refresh, since Read gets no plan.
-	priorSecrets := shared.CaptureFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
+	s := r.config.GetSchema()
+	secrets := shared.SensitiveStringAttrNames(s)
+	priorSecrets := shared.CaptureFields(model, secrets)
 	// Same for defaulted attributes the backend drops when their gating
 	// condition is unmet: nulling them in state would plan the Default back
 	// every run.
-	priorDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(r.config.GetSchema()))
+	priorDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(s))
+	priorForms := shared.CaptureFields(model, r.configuredFormAttrNames())
 
 	// Get ID from model
 	id := r.getStringField(model, "ID")
@@ -537,6 +639,16 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 	r.configMapToModel(ctx, responseConfig, model)
 	shared.FillNullFields(model, priorSecrets)
 	shared.FillNullFields(model, priorDefaults)
+	if r.keepsConfiguredForm() {
+		recorded, diags := req.Private.GetKey(ctx, configuredFormKey)
+		resp.Diagnostics.Append(diags...)
+		kept, err := restoreConfiguredForms(model, priorForms, recorded)
+		if err != nil {
+			resp.Diagnostics.AddError(fmt.Sprintf("Error reading %s %s", r.config.GetConnectorType(), r.config.GetConnectorCode()), err.Error())
+			return
+		}
+		resp.Diagnostics.Append(resp.Private.SetKey(ctx, configuredFormKey, kept)...)
+	}
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
@@ -580,8 +692,11 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 
 	// Capture user-supplied secrets before the API echo can overwrite them, and
 	// the defaulted attributes the backend may drop (see shared.DefaultedAttrNames).
-	plannedSecrets := shared.CaptureFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
-	plannedDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(r.config.GetSchema()))
+	s := r.config.GetSchema()
+	secrets := shared.SensitiveStringAttrNames(s)
+	plannedSecrets := shared.CaptureFields(model, secrets)
+	plannedDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(s))
+	plannedForms := shared.CaptureFields(model, r.configuredFormAttrNames())
 
 	// Get ID and name from model
 	id := r.getStringField(model, "ID")
@@ -602,6 +717,15 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 			fmt.Sprintf("Unable to marshal configuration: %s", err),
 		)
 		return
+	}
+
+	if filter, ok := r.config.(ConnectorConfigRequestFilter); ok {
+		prior := r.config.NewModelInstance()
+		resp.Diagnostics.Append(req.State.Get(ctx, prior)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		filter.FilterRequestConfig(configMap, model, prior)
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Updating %s %s with ID: %s", r.config.GetConnectorType(), r.config.GetConnectorCode(), id))
@@ -626,10 +750,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 			Tags:        tags,
 		})
 		if err != nil {
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Error updating %s source", r.config.GetConnectorCode()),
-				fmt.Sprintf("Unable to update source: %s", err),
-			)
+			r.addSaveError(&resp.Diagnostics, fmt.Sprintf("Error updating %s source", r.config.GetConnectorCode()), "Unable to update source", err)
 			return
 		}
 		connectorName = source.Name
@@ -637,6 +758,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		connectorStatus = source.ConnectorStatus
 		responseConfig = source.Config
 		responseTags = source.Tags
+		addConnectionWarning(&resp.Diagnostics, source)
 
 	case ConnectorTypeDestination:
 		destination, err := r.client.UpdateDestination(ctx, id, api.Destination{
@@ -667,6 +789,9 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 	r.configMapToModel(ctx, responseConfig, model)
 	shared.PreserveKnownFields(model, plannedSecrets)
 	shared.FillNullFields(model, plannedDefaults)
+	if r.keepsConfiguredForm() {
+		resp.Diagnostics.Append(resp.Private.SetKey(ctx, configuredFormKey, keepConfiguredForms(model, plannedForms))...)
+	}
 
 	// connector_status handling on Update.
 	//
@@ -833,6 +958,9 @@ func (r *BaseConnectorResource) isJSONStringField(fieldName string, jsonStringFi
 
 // configMapToModel updates a model struct from a config map using the field mappings.
 func (r *BaseConnectorResource) configMapToModel(ctx context.Context, cfg map[string]any, model any) {
+	if decoder, ok := r.config.(ConnectorConfigResponseDecoder); ok {
+		decoder.DecodeResponseConfig(cfg)
+	}
 	shared.ConfigMapToModel(ctx, cfg, model, r.config.GetFieldMappings(), r.setValueHook())
 }
 
@@ -1154,4 +1282,128 @@ func normalizeTagsResponse(userTags, serverTags []string) []string {
 		return []string{}
 	}
 	return serverTags
+}
+
+func (r *BaseConnectorResource) keepsConfiguredForm() bool {
+	_, ok := r.config.(ConnectorConfigKeepsConfiguredForm)
+	return ok
+}
+
+// configuredFormAttrNames lists the attributes whose configured spelling is
+// kept over a normalized echo.
+func (r *BaseConnectorResource) configuredFormAttrNames() []string {
+	if keeps, ok := r.config.(ConnectorConfigKeepsConfiguredForm); ok {
+		return keeps.ConfiguredFormFields()
+	}
+	return nil
+}
+
+// keepConfiguredForms restores each planned value the backend echoed in a
+// different, normalized form (null included: an empty value it drops), and
+// returns those echoes as private state.
+func keepConfiguredForms(model any, planned map[string]attr.Value) []byte {
+	echoed := shared.CaptureFields(model, slices.Collect(maps.Keys(planned)))
+	recorded := map[string]string{}
+	kept := map[string]attr.Value{}
+	for name, want := range planned {
+		got := echoed[name]
+		if want == nil || got == nil || want.IsNull() || want.IsUnknown() || got.IsUnknown() || want.Equal(got) {
+			continue
+		}
+		recorded[name] = got.String()
+		kept[name] = want
+	}
+	shared.PreserveKnownFields(model, kept)
+	return encodeConfiguredForms(recorded)
+}
+
+// restoreConfiguredForms keeps the prior configured spelling while the API
+// still echoes the normalized value recorded for it, and forgets a record the
+// API no longer matches.
+func restoreConfiguredForms(model any, prior map[string]attr.Value, private []byte) ([]byte, error) {
+	recorded := map[string]string{}
+	if len(private) > 0 {
+		if err := json.Unmarshal(private, &recorded); err != nil {
+			return nil, fmt.Errorf("restoreConfiguredForms: private state %q is not a JSON object: %w", configuredFormKey, err)
+		}
+	}
+	echoed := shared.CaptureFields(model, slices.Collect(maps.Keys(recorded)))
+	kept := map[string]attr.Value{}
+	for name, echo := range recorded {
+		if got := echoed[name]; got == nil || got.String() != echo || prior[name] == nil {
+			delete(recorded, name)
+			continue
+		}
+		kept[name] = prior[name]
+	}
+	shared.PreserveKnownFields(model, kept)
+	return encodeConfiguredForms(recorded), nil
+}
+
+// encodeConfiguredForms returns nil for no records, which removes the key.
+func encodeConfiguredForms(recorded map[string]string) []byte {
+	if len(recorded) == 0 {
+		return nil
+	}
+	data, _ := json.Marshal(recorded)
+	return data
+}
+
+// addSaveError puts each message of a refused save on the attribute it names,
+// when the backend names a mapped field for every one; otherwise it reports the
+// whole error. A field a deprecated alias shares goes to the canonical
+// attribute, and each message keeps the full error for its request ID.
+func (r *BaseConnectorResource) addSaveError(diags *diag.Diagnostics, summary, prefix string, err error) {
+	var apiErr *api.APIError
+	if errors.As(err, &apiErr) && len(apiErr.Fields) > 0 {
+		mappings := r.config.GetFieldMappings()
+		attributes := r.config.GetSchema().Attributes
+		deprecated := func(name string) bool {
+			return attributes[name] != nil && attributes[name].GetDeprecationMessage() != ""
+		}
+		owners := map[string]string{}
+		for _, name := range slices.Sorted(maps.Keys(mappings)) {
+			if owner, taken := owners[mappings[name]]; !taken || (deprecated(owner) && !deprecated(name)) {
+				owners[mappings[name]] = name
+			}
+		}
+		var attributed diag.Diagnostics
+		for _, field := range apiErr.Fields {
+			name, ok := owners[field.Field]
+			if !ok {
+				attributed = nil
+				break
+			}
+			attributed.AddAttributeError(path.Root(name), summary, fmt.Sprintf("%s\n\n%s: %s", field.Message, prefix, err))
+		}
+		if attributed != nil {
+			diags.Append(attributed...)
+			return
+		}
+	}
+	diags.AddError(summary, fmt.Sprintf("%s: %s", prefix, err))
+}
+
+func addConnectionWarning(diags *diag.Diagnostics, source *api.Source) {
+	if source.ConnectionWarning != "" {
+		diags.AddWarning("Source saved with a connection warning", source.ConnectionWarning)
+	}
+}
+
+// unknownValue is the typed unknown for a top-level attribute.
+func unknownValue(ctx context.Context, attribute schema.Attribute) (attr.Value, error) {
+	return typedValue(ctx, attribute, tftypes.UnknownValue)
+}
+
+// nullValue is the typed null for a top-level attribute.
+func nullValue(ctx context.Context, attribute schema.Attribute) (attr.Value, error) {
+	return typedValue(ctx, attribute, nil)
+}
+
+func typedValue(ctx context.Context, attribute schema.Attribute, raw any) (attr.Value, error) {
+	if attribute == nil {
+		return nil, errors.New("the attribute is not in the schema")
+	}
+	t := attribute.GetType()
+	return t.ValueFromTerraform(ctx, tftypes.NewValue(t.TerraformType(ctx), raw))
 }

@@ -1868,6 +1868,10 @@ func TestIsSecretField(t *testing.T) {
 		{"access_key_id", true},
 		{"aws_secret_access_key", true},
 		{"aws_secret_key", true},
+		// NetSuite token-based auth: the identifier halves of the consumer and
+		// token pairs ship without encrypt:true.
+		{"consumer_key", true},
+		{"token_id", true},
 		// Names that merely mention a credential are not themselves secrets.
 		{"oauth2_access_token_url", false},
 		{"iceberg_catalog_s3_credentials_enabled", false},

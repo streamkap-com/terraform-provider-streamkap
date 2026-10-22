@@ -15,18 +15,17 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Resources                                   │
 ├──────────────────┬──────────────────┬──────────────────┬────────┤
-│  Sources (25)    │  Destinations(24)│  Transforms (7)  │ Other  │
+│  Sources (33)    │  Destinations(24)│  Transforms (7)  │ Other  │
 │  PostgreSQL      │  Snowflake       │  MapFilter       │Pipeline│
 │  MySQL, MongoDB  │  ClickHouse      │  Enrich          │ Topic  │
 │  DynamoDB        │  Databricks      │  EnrichAsync     │  Tag   │
 │  SQLServer       │  PostgreSQL, S3  │  SQLJoin         │        │
 │  KafkaDirect     │  Iceberg, Kafka  │  Rollup, FanOut  │        │
 │  Oracle, Redis   │  BigQuery, GCS   │  TopicRouter     │        │
-│  + 17 more...    │  + 15 more...    │                  │        │
+│  + 25 more...    │  + 15 more...    │                  │        │
 └──────────────────┴──────────────────┴──────────────────┴────────┘
 
-61 resources in total (25 sources + 24 destinations + 7 transforms + pipeline,
-topic, tag, kafka_user, client_credential) and 7 data sources.
+70 resources in total (33 sources + 24 destinations + 7 transforms + pipeline, topic, topic_destination, tag, kafka_user, client_credential) and 7 data sources.
 `internal/provider/provider.go` is the register of record — `Resources()` /
 `DataSources()`.
               │
@@ -55,10 +54,22 @@ topic, tag, kafka_user, client_credential) and 7 data sources.
 
 ## Code generation
 
-`cmd/tfgen` reads backend plugin configurations, merges common fields, applies
+`cmd/tfgen` reads backend plugin configurations, merges CDC common fields, applies
 `overrides.json`, and emits schemas, models and field mappings under
 `internal/generated/`. The handwritten resource wrappers add CRUD wiring and
 v2 attribute aliases.
+
+API sources use the same source CRUD base, with their schema and form rules generated into one `generated.Source<Vendor>APISource` each. `internal/resource/source/api_sources.go` plugs five optional `BaseConnectorResource` hooks into the base:
+
+- `ConnectorConfigValidator` checks at plan time what the backend would refuse: a required field of the selected auth mode, a `dependentRequired` pair, a secret typed for another pasted mode, a create in an OAuth mode, or an update switching into one, without a new `oauth_grant_id`, and a new Zendesk `subdomain` without a new grant.
+- `ConnectorConfigPlanAdjuster` plans a removed form-gated field null; without it, Read would refill a null-echoed secret from state. In OAuth mode the hidden fields a grant fills are kept while the grant is unchanged and planned unknown when a new one is sent; a field the form shows in OAuth mode, or one left over from the pasted mode a source switches from, is planned null.
+- `ConnectorConfigRequestFilter` omits unset fields on create. On update it resends every secret the current auth mode shows, and omits an unchanged hidden secret (the backend keeps it, and may have rotated it), a hidden secret planned unknown for a new grant to fill, and an unchanged `oauth_grant_id` (spent). An explicit null clears a secret.
+- `ConnectorConfigKeepsConfiguredForm` keeps the configured spelling of a value the backend normalizes, for the fields `normalizedFields` lists only, so any other dropped or rewritten value shows as drift. The normalized echo is recorded in private state at apply time; Read keeps the configured value while the backend still returns that echo, and treats any other value as drift.
+- `ConnectorConfigResponseDecoder` splits the lists the backend stores as comma-joined strings before the response is read into the model; an empty one reads as null, as the backend treats it. The shared list helper reads only JSON arrays.
+
+A refused API-source save names the config fields at fault in `fields` beside `detail`; source create and update report each on its attribute.
+
+`streamkap_topic_destination` owns one topic's link to one destination. PUT/GET/DELETE target that pair, leaving the other topics in the managed binding intact. The backend serializes binding changes per source, so the provider applies one source's links one at a time.
 
 Use `STREAMKAP_BACKEND_PATH=<backend-main-checkout> make generate` to generate
 schemas before registry documentation. See [Code Generator](CODE_GENERATOR.md)

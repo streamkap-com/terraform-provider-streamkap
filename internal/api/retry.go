@@ -52,6 +52,11 @@ var transientMessages = []string{
 	"i/o timeout",
 }
 
+// busyLockConflict is the 409 detail from an API source's topic delivery while
+// another change (the UI, the CLI, another workspace) holds the source's binding
+// lock past the backend's own wait. Only a 409 carrying it is retried.
+const busyLockConflict = "is still in progress; retry shortly"
+
 // isRetryableStatus reports the statuses that are always worth another attempt:
 // the caller is throttled, or an intermediary failed to reach the API at all.
 // 5xx is deliberately not blanket-retryable — a plain 500 is a backend bug, and
@@ -90,6 +95,9 @@ func IsRetryableError(err error) bool {
 	var apiErr *APIError
 	if errors.As(err, &apiErr) {
 		if isRetryableStatus(apiErr.StatusCode) {
+			return true
+		}
+		if apiErr.StatusCode == http.StatusConflict && strings.Contains(strings.ToLower(apiErr.Detail), busyLockConflict) {
 			return true
 		}
 		return matchesTransientMessage(apiErr.Detail)

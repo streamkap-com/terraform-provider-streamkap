@@ -291,12 +291,17 @@ func TestTerraformType(t *testing.T) {
 		{"one-select", TerraformTypeString},
 		{"multi-select", TerraformTypeList},
 		{"slider", TerraformTypeInt64},
+		{"input-number", TerraformTypeInt64},
 		{"unknown", TerraformTypeString}, // Default case
 		{"", TerraformTypeString},        // Empty string case
 	}
 
 	for _, tt := range tests {
 		entry := ConfigEntry{Value: ValueObject{Control: tt.control}}
+		if tt.control == "input-number" {
+			entry.Value.Control = "input"
+			entry.Value.Type = "number"
+		}
 		result := entry.TerraformType()
 		if result != tt.expected {
 			t.Errorf("TerraformType() for control %q = %q, want %q", tt.control, result, tt.expected)
@@ -316,8 +321,16 @@ func TestHasSupportedControl(t *testing.T) {
 			}
 		})
 	}
+	entry := ConfigEntry{Value: ValueObject{Control: "input", Type: "number"}}
+	if !entry.HasSupportedControl() {
+		t.Error("HasSupportedControl() = false for numeric input")
+	}
+	entry.Value.Type = "unknown"
+	if entry.HasSupportedControl() {
+		t.Error("HasSupportedControl() = true for unknown input type")
+	}
 
-	entry := ConfigEntry{Value: ValueObject{Control: "future-control"}}
+	entry = ConfigEntry{Value: ValueObject{Control: "future-control"}}
 	if entry.HasSupportedControl() {
 		t.Error("HasSupportedControl() = true for an unknown control")
 	}
