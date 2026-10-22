@@ -432,3 +432,23 @@ func TestGoogleAdsAuthModeHasNoProviderDefault(t *testing.T) {
 		t.Fatal("a vendor whose default is a pasted mode keeps its default")
 	}
 }
+
+// A new grant plans the secrets it fills unknown; the update must leave them
+// out so the grant fills them, not send null, which clears an optional secret
+// and is refused for a required one.
+func TestAPISourceNewGrantOmitsGrantFilledSecrets(t *testing.T) {
+	hubspot := apiSource(t, NewHubSpotResource)
+	prior := &generated.SourceHubspotModel{AuthMode: types.StringValue("oauth"), Token: types.StringValue("filled-by-grant-1"), OauthGrantID: types.StringValue("grant-1")}
+	plan := &generated.SourceHubspotModel{AuthMode: types.StringValue("oauth"), Token: types.StringUnknown(), OauthGrantID: types.StringValue("grant-2")}
+	update, err := shared.ModelToConfigMap(context.Background(), plan, generated.SourceHubspotFieldMappings, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hubspot.FilterRequestConfig(update, plan, prior)
+	if value, ok := update["token"]; ok {
+		t.Errorf("a grant-filled secret planned unknown was sent as %#v", value)
+	}
+	if update["oauth_grant_id"] != "grant-2" {
+		t.Errorf("the new grant must be sent: %v", update)
+	}
+}

@@ -219,8 +219,9 @@ func (c *apiSourceConfig) connectSteps() string {
 // auth mode shows, so a changed location (Salesforce domain, NetSuite
 // account_id) never pairs with a kept secret, which the backend refuses. It
 // omits an unchanged secret the form hides, which the grant filled and the
-// backend may have rotated since, and an unchanged oauth_grant_id, which is
-// spent. An explicit null still clears a secret the configuration removed.
+// backend may have rotated since, one planned unknown for a new grant to
+// fill, and an unchanged oauth_grant_id, which is spent. An explicit null
+// still clears a secret the configuration removed.
 func (c *apiSourceConfig) FilterRequestConfig(configMap map[string]any, plan any, state any) {
 	if state == nil {
 		for key, value := range configMap {
@@ -243,7 +244,7 @@ func (c *apiSourceConfig) FilterRequestConfig(configMap map[string]any, plan any
 			continue
 		}
 		before, after := prior[name], planned[name]
-		if before == nil || after == nil || before.Equal(after) || (name == oauthGrantAttr && !isSet(after)) {
+		if before == nil || after == nil || after.IsUnknown() || before.Equal(after) || (name == oauthGrantAttr && !isSet(after)) {
 			delete(configMap, apiField)
 		}
 	}
