@@ -529,3 +529,42 @@ func TestValidateConfigRefusesAnAPISource(t *testing.T) {
 		}
 	}
 }
+
+type noCreateClient struct {
+	api.StreamkapAPI
+	t *testing.T
+}
+
+func (c noCreateClient) CreatePipeline(context.Context, api.Pipeline) (*api.Pipeline, error) {
+	c.t.Fatal("a pipeline over an API source was sent to the backend")
+	return nil, nil
+}
+
+// source.connector is unknown at plan time when it references a source created in the same apply, so ValidateConfig
+// cannot see it; Create refuses it before the POST.
+func TestCreateRefusesAnAPISourceBeforeThePOST(t *testing.T) {
+	schemaResp, raw := pipelineValue(t, nil)
+	sourceType := raw.Type().(tftypes.Object).AttributeTypes["source"].(tftypes.Object)
+	destinationType := raw.Type().(tftypes.Object).AttributeTypes["destination"].(tftypes.Object)
+	_, raw = pipelineValue(t, map[string]tftypes.Value{
+		"name": tftypes.NewValue(tftypes.String, "p"),
+		"destination": tftypes.NewValue(destinationType, map[string]tftypes.Value{
+			"id":        tftypes.NewValue(tftypes.String, "d1"),
+			"name":      tftypes.NewValue(tftypes.String, "warehouse"),
+			"connector": tftypes.NewValue(tftypes.String, "snowflake"),
+		}),
+		"source": tftypes.NewValue(sourceType, map[string]tftypes.Value{
+			"id":        tftypes.NewValue(tftypes.String, "s1"),
+			"name":      tftypes.NewValue(tftypes.String, "crm"),
+			"connector": tftypes.NewValue(tftypes.String, "hubspot"),
+			"topics":    tftypes.NewValue(sourceType.AttributeTypes["topics"], nil),
+		}),
+	})
+	resp := res.CreateResponse{State: tfsdk.State{Schema: schemaResp.Schema}}
+	(&PipelineResource{client: noCreateClient{t: t}}).Create(context.Background(), res.CreateRequest{
+		Plan: tfsdk.Plan{Schema: schemaResp.Schema, Raw: raw}, Config: tfsdk.Config{Schema: schemaResp.Schema, Raw: raw},
+	}, &resp)
+	if !resp.Diagnostics.HasError() || !strings.Contains(resp.Diagnostics.Errors()[0].Detail(), "streamkap_topic_destination") {
+		t.Fatalf("an API source must be refused at apply: %v", resp.Diagnostics)
+	}
+}

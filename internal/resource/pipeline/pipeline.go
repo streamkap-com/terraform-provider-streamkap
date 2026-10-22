@@ -348,6 +348,10 @@ func (r *PipelineResource) Create(ctx context.Context, req res.CreateRequest, re
 	ctx, cancel := context.WithTimeout(ctx, createTimeout)
 	defer cancel()
 
+	if refuseAPISource(plan, &resp.Diagnostics) {
+		return
+	}
+
 	// If applicable, this is a great opportunity to initialize any necessary
 	// provider client data and make a call using it.
 	payload, err := r.model2API(ctx, plan)
@@ -447,6 +451,10 @@ func (r *PipelineResource) Update(ctx context.Context, req res.UpdateRequest, re
 	ctx, cancel := context.WithTimeout(ctx, updateTimeout)
 	defer cancel()
 
+	if refuseAPISource(plan, &resp.Diagnostics) {
+		return
+	}
+
 	payload, err := r.model2API(ctx, plan)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -535,6 +543,19 @@ func (r *PipelineResource) ValidateConfig(ctx context.Context, req res.ValidateC
 	if problem := apiSourceProblem(connector.ValueString()); problem != "" {
 		resp.Diagnostics.AddAttributeError(path.Root("source").AtName("connector"), "API source in a pipeline", problem)
 	}
+}
+
+// refuseAPISource repeats ValidateConfig's check at apply, where source.connector is known even when it referenced a
+// source created in the same apply.
+func refuseAPISource(plan PipelineResourceModel, diags *diag.Diagnostics) bool {
+	if plan.Source == nil {
+		return false
+	}
+	problem := apiSourceProblem(plan.Source.Connector.ValueString())
+	if problem != "" {
+		diags.AddAttributeError(path.Root("source").AtName("connector"), "API source in a pipeline", problem)
+	}
+	return problem != ""
 }
 
 // apiSourceProblem is why a pipeline cannot read from connector, or "" when it can.
