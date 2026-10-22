@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OAuth modes (HubSpot, Salesforce, Stripe, Google Ads, and Zendesk always) take an `oauth_grant_id` from Connect in the Streamkap UI or the CLI; Terraform cannot run the browser consent. A create without one, a switch into an OAuth mode without a new one, or a new Zendesk `subdomain` without a new one, fails at plan time.
 - The plan also fails on a missing field of the selected auth mode, a secret typed for another mode, and half of a field pair (Facebook Ads `app_id` and `app_secret`).
 - A save-time `connection_warning` shows as a Terraform warning, and a refused save reports each message on the attribute it names.
-- `streamkap_topic_destination` takes a `timeouts` block. A change queued behind another change to the same source stops at its timeout or on interrupt.
+- `streamkap_topic_destination` takes a `timeouts` block. Changes to one source's topics take turns, and each change's timeout starts when its turn does; an interrupt ends the wait.
 - Guide to OAuth grants, and `required_providers` in every complete example.
 
 ### Changed
@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Debug logs no longer print MongoDB, DocumentDB and Azure Blob connection strings or the BigQuery key file in request bodies.
-- An error message no longer repeats a secret the request sent, such as a connection string a database driver echoes back.
+- An error message no longer repeats a secret the request sent, such as a connection string a database driver echoes back. Every `Sensitive` attribute and every secret-named field is masked, verbatim or JSON-, URL- or HTML-encoded, and errors are still classified for retry on the unmasked text.
 - An imported OAuth source whose configuration still holds the grant its create spent applies cleanly: the grant is recorded without being sent, with a warning.
 - NetSuite fails at plan time on a secret typed for the other auth mode, as the API does; `consumer_key` and `token_id` are sensitive.
 - Topic delivery retries while another change holds the source's lock.
