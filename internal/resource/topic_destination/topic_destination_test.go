@@ -224,3 +224,39 @@ func TestTopicDestinationLockWaitEndsAtTheTimeout(t *testing.T) {
 		t.Fatal("create kept waiting for the source past its 50ms timeout")
 	}
 }
+
+// Only timeouts reach Update, because topic_id and destination_id replace the
+// resource; a changed timeout is stored without touching the binding.
+func TestTopicDestinationUpdateStoresChangedTimeouts(t *testing.T) {
+	ctx := context.Background()
+	r := &Resource{}
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	objType := schemaResp.Schema.Type().TerraformType(ctx).(tftypes.Object)
+	timeoutsType := objType.AttributeTypes["timeouts"].(tftypes.Object)
+	value := func(create string) tftypes.Value {
+		timeoutsValue := map[string]tftypes.Value{}
+		for name := range timeoutsType.AttributeTypes {
+			timeoutsValue[name] = tftypes.NewValue(tftypes.String, nil)
+		}
+		timeoutsValue["create"] = tftypes.NewValue(tftypes.String, create)
+		return tftypes.NewValue(objType, map[string]tftypes.Value{
+			"id":             tftypes.NewValue(tftypes.String, "source_1.hubspot.contacts|dest-1"),
+			"topic_id":       tftypes.NewValue(tftypes.String, "source_1.hubspot.contacts"),
+			"destination_id": tftypes.NewValue(tftypes.String, "dest-1"),
+			"binding_id":     tftypes.NewValue(tftypes.String, "binding-1"),
+			"timeouts":       tftypes.NewValue(timeoutsType, timeoutsValue),
+		})
+	}
+	resp := resource.UpdateResponse{State: tfsdk.State{Schema: schemaResp.Schema, Raw: value("20m")}}
+	r.Update(ctx, resource.UpdateRequest{
+		Plan:  tfsdk.Plan{Schema: schemaResp.Schema, Raw: value("40m")},
+		State: tfsdk.State{Schema: schemaResp.Schema, Raw: value("20m")},
+	}, &resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("a timeouts-only change must apply: %v", resp.Diagnostics)
+	}
+	if !resp.State.Raw.Equal(value("40m")) {
+		t.Fatalf("state kept the old timeouts: %v", resp.State.Raw)
+	}
+}
