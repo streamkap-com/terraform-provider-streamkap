@@ -445,7 +445,7 @@ func TestManagedPipelineIsNotAdopted(t *testing.T) {
 	if err == nil {
 		t.Fatal("a managed pipeline was adopted")
 	}
-	for _, want := range []string{"streamkap_topic_destination", "<topic_id>|d1", "terraform state rm"} {
+	for _, want := range []string{"streamkap_topic_destination", "<topic_id>|d1"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("%q does not say %q", err, want)
 		}
@@ -476,13 +476,22 @@ func pipelineValue(t *testing.T, set map[string]tftypes.Value) (res.SchemaRespon
 	return schemaResp, tftypes.NewValue(objType, values)
 }
 
-func TestReadRefusesAManagedPipeline(t *testing.T) {
+// Refresh drops a managed pipeline from state with a warning instead of failing, which would block every plan and
+// destroy in the workspace.
+func TestReadDropsAManagedPipeline(t *testing.T) {
 	schemaResp, raw := pipelineValue(t, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "p1")})
 	state := tfsdk.State{Schema: schemaResp.Schema, Raw: raw}
 	resp := res.ReadResponse{State: state}
 	(&PipelineResource{client: managedPipelineClient{}}).Read(context.Background(), res.ReadRequest{State: state}, &resp)
-	if !resp.Diagnostics.HasError() || !strings.Contains(resp.Diagnostics.Errors()[0].Detail(), "streamkap_topic_destination") {
-		t.Fatalf("a managed pipeline was read into state: %v", resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("a managed pipeline failed the refresh: %v", resp.Diagnostics)
+	}
+	if !resp.State.Raw.IsNull() {
+		t.Fatal("a managed pipeline was kept in state")
+	}
+	warnings := resp.Diagnostics.Warnings()
+	if len(warnings) != 1 || !strings.Contains(warnings[0].Detail(), "streamkap_topic_destination") {
+		t.Fatalf("the removal must be explained with a warning naming streamkap_topic_destination: %v", resp.Diagnostics)
 	}
 }
 

@@ -402,8 +402,11 @@ func (r *PipelineResource) Read(ctx context.Context, req res.ReadRequest, resp *
 		resp.State.RemoveResource(ctx)
 		return
 	}
+	// Failing here would fail every refresh, and so every plan and destroy in the workspace; dropping the entry leaves
+	// the pipeline to the topic delivery that owns it.
 	if err := managedPipelineError(*pipeline); err != nil {
-		resp.Diagnostics.AddError("Managed pipeline", err.Error())
+		resp.Diagnostics.AddWarning("Managed pipeline removed from state", err.Error()+" Terraform no longer tracks it; the pipeline itself is kept.")
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
@@ -551,7 +554,7 @@ func managedPipelineError(pipeline api.Pipeline) error {
 	}
 	return fmt.Errorf("pipeline %s is managed by its API source's topic delivery and cannot be managed as "+
 		"streamkap_pipeline. Manage each topic with streamkap_topic_destination (import ID "+
-		"\"<topic_id>|%s\"), and remove this one with `terraform state rm`", pipeline.ID, pipeline.Destination.ID)
+		"\"<topic_id>|%s\").", pipeline.ID, pipeline.Destination.ID)
 }
 
 func (r *PipelineResource) ImportState(ctx context.Context, req res.ImportStateRequest, resp *res.ImportStateResponse) {
