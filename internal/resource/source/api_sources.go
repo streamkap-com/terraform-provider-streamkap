@@ -19,6 +19,10 @@ import (
 
 const oauthGrantAttr = "oauth_grant_id"
 
+// authModeAttr selects an API source's sign-in method, with or without an
+// OAuth mode among its values.
+const authModeAttr = "auth_mode"
+
 type apiSourceConfig struct {
 	generated.APISource
 
@@ -178,7 +182,7 @@ func (c *apiSourceConfig) ValidateConfiguration(model any, prior any) diag.Diagn
 		// mode the grant may use secrets the form hides, so only the pasted
 		// modes, where the form shows exactly the secrets they sign in with,
 		// are checked.
-		if !show && slices.Contains(secrets, condition.Field) && condition.ConditionField == c.OAuth.AuthModeField &&
+		if !show && slices.Contains(secrets, condition.Field) && condition.ConditionField == authModeAttr &&
 			conditionValue != "" && conditionValue != c.OAuth.AuthModeValue && isSet(value) {
 			diags.AddAttributeError(path.Root(condition.Field), "API source value for another auth mode", condition.Field+" is not used when "+condition.ConditionField+" is "+conditionValue+"; remove it, or switch "+condition.ConditionField+".")
 		}
