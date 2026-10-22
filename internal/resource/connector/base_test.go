@@ -273,3 +273,29 @@ func TestConfiguredFormsOnlyForNormalizedFields(t *testing.T) {
 		t.Errorf("a field the backend does not normalize must keep its echo, got %v", applied.Region)
 	}
 }
+
+// PlanAdjustments may name an attribute of any type; setting a String null on a map path would fail every plan.
+func TestPlanAdjustmentValuesMatchTheAttributeType(t *testing.T) {
+	ctx := context.Background()
+	objectType := map[string]attr.Type{"a": types.StringType}
+	for name, test := range map[string]struct {
+		attribute     schema.Attribute
+		null, unknown attr.Value
+	}{
+		"map":    {schema.MapAttribute{ElementType: types.StringType}, types.MapNull(types.StringType), types.MapUnknown(types.StringType)},
+		"object": {schema.ObjectAttribute{AttributeTypes: objectType}, types.ObjectNull(objectType), types.ObjectUnknown(objectType)},
+		"number": {schema.NumberAttribute{}, types.NumberNull(), types.NumberUnknown()},
+		"list":   {schema.ListAttribute{ElementType: types.StringType}, types.ListNull(types.StringType), types.ListUnknown(types.StringType)},
+		"string": {schema.StringAttribute{}, types.StringNull(), types.StringUnknown()},
+	} {
+		if got, err := nullValue(ctx, test.attribute); err != nil || !got.Equal(test.null) {
+			t.Errorf("%s: null = %v, %v", name, got, err)
+		}
+		if got, err := unknownValue(ctx, test.attribute); err != nil || !got.Equal(test.unknown) {
+			t.Errorf("%s: unknown = %v, %v", name, got, err)
+		}
+	}
+	if _, err := nullValue(ctx, nil); err == nil {
+		t.Error("an attribute missing from the schema must be an error, not a String")
+	}
+}

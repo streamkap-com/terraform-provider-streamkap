@@ -63,6 +63,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
@@ -263,13 +264,21 @@ func (r *BaseConnectorResource) ModifyPlan(ctx context.Context, req resource.Mod
 	}
 	s := r.config.GetSchema()
 	if adjusts {
-		attributes := s.Attributes
+		plan := func(name string, value attr.Value, err error) {
+			if err != nil {
+				resp.Diagnostics.AddError("Error planning "+r.config.GetResourceName(), fmt.Sprintf("Cannot plan %s: %s.", name, err))
+				return
+			}
+			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(name), value)...)
+		}
 		unset, unknown := adjuster.PlanAdjustments(model, prior)
 		for _, name := range unset {
-			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(name), nullValue(attributes[name]))...)
+			value, err := nullValue(ctx, s.Attributes[name])
+			plan(name, value, err)
 		}
 		for _, name := range unknown {
-			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(name), unknownValue(attributes[name]))...)
+			value, err := unknownValue(ctx, s.Attributes[name])
+			plan(name, value, err)
 		}
 		if resp.Diagnostics.HasError() {
 			return
@@ -1380,35 +1389,19 @@ func addConnectionWarning(diags *diag.Diagnostics, source *api.Source) {
 }
 
 // unknownValue is the typed unknown for a top-level attribute.
-func unknownValue(attribute schema.Attribute) attr.Value {
-	switch a := attribute.(type) {
-	case schema.ListAttribute:
-		return types.ListUnknown(a.ElementType)
-	case schema.SetAttribute:
-		return types.SetUnknown(a.ElementType)
-	case schema.BoolAttribute:
-		return types.BoolUnknown()
-	case schema.Int64Attribute:
-		return types.Int64Unknown()
-	case schema.Float64Attribute:
-		return types.Float64Unknown()
-	}
-	return types.StringUnknown()
+func unknownValue(ctx context.Context, attribute schema.Attribute) (attr.Value, error) {
+	return typedValue(ctx, attribute, tftypes.UnknownValue)
 }
 
 // nullValue is the typed null for a top-level attribute.
-func nullValue(attribute schema.Attribute) attr.Value {
-	switch a := attribute.(type) {
-	case schema.ListAttribute:
-		return types.ListNull(a.ElementType)
-	case schema.SetAttribute:
-		return types.SetNull(a.ElementType)
-	case schema.BoolAttribute:
-		return types.BoolNull()
-	case schema.Int64Attribute:
-		return types.Int64Null()
-	case schema.Float64Attribute:
-		return types.Float64Null()
+func nullValue(ctx context.Context, attribute schema.Attribute) (attr.Value, error) {
+	return typedValue(ctx, attribute, nil)
+}
+
+func typedValue(ctx context.Context, attribute schema.Attribute, raw any) (attr.Value, error) {
+	if attribute == nil {
+		return nil, errors.New("the attribute is not in the schema")
 	}
-	return types.StringNull()
+	t := attribute.GetType()
+	return t.ValueFromTerraform(ctx, tftypes.NewValue(t.TerraformType(ctx), raw))
 }
