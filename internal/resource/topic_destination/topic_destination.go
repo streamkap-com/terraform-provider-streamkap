@@ -41,6 +41,8 @@ func NewResource() resource.Resource { return &Resource{} }
 // import ID.
 var topicIDPattern = regexp.MustCompile(`^source_[^.|]+\.[^.|]+\.[^|]+$`)
 
+const topicIDShape = "must be source_<source id>.<connector>.<resource>, the topic ID of an API source's resource"
+
 func (r *Resource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_topic_destination"
 }
@@ -61,8 +63,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				Description:         "Full topic ID, source_<source id>.<connector>.<resource>. Changing it replaces the resource.",
 				MarkdownDescription: "Full topic ID, `source_<source id>.<connector>.<resource>`. Changing it replaces the resource.",
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
-				Validators: []validator.String{stringvalidator.RegexMatches(topicIDPattern,
-					"must be source_<source id>.<connector>.<resource>, the topic ID of an API source's resource")},
+				Validators:          []validator.String{stringvalidator.RegexMatches(topicIDPattern, topicIDShape)},
 			},
 			"destination_id": schema.StringAttribute{
 				Required:            true,
@@ -115,15 +116,6 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if model.TopicID.IsNull() || model.DestinationID.IsNull() {
-		topicID, destinationID, err := parseCompositeID(model.ID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddError("Invalid topic destination ID", err.Error())
-			return
-		}
-		model.TopicID = types.StringValue(topicID)
-		model.DestinationID = types.StringValue(destinationID)
-	}
 	link, err := r.client.GetTopicDestination(ctx, model.TopicID.ValueString(), model.DestinationID.ValueString())
 	if api.IsNotFound(err) {
 		resp.State.RemoveResource(ctx)
@@ -158,6 +150,10 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	topicID, destinationID, err := parseCompositeID(req.ID)
 	if err != nil {
 		resp.Diagnostics.AddError("Invalid topic destination import ID", err.Error())
+		return
+	}
+	if !topicIDPattern.MatchString(topicID) {
+		resp.Diagnostics.AddError("Invalid topic destination import ID", fmt.Sprintf("topic ID %q %s", topicID, topicIDShape))
 		return
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)

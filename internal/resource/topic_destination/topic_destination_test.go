@@ -3,6 +3,7 @@ package topic_destination
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -158,5 +159,25 @@ func TestTopicDestinationTopicIDShape(t *testing.T) {
 		if valid(topicID) {
 			t.Errorf("accepted %q", topicID)
 		}
+	}
+}
+
+// An import ID is checked like topic_id in a configuration, before Read asks the API for a topic that cannot exist.
+func TestTopicDestinationImportValidatesTopicID(t *testing.T) {
+	ctx := context.Background()
+	var schemaResp resource.SchemaResponse
+	(&Resource{}).Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	importID := func(id string) resource.ImportStateResponse {
+		objType := schemaResp.Schema.Type().TerraformType(ctx)
+		resp := resource.ImportStateResponse{State: tfsdk.State{Schema: schemaResp.Schema, Raw: tftypes.NewValue(objType, nil)}}
+		(&Resource{}).ImportState(ctx, resource.ImportStateRequest{ID: id}, &resp)
+		return resp
+	}
+	resp := importID("foo|dest-1")
+	if !resp.Diagnostics.HasError() || !strings.Contains(resp.Diagnostics.Errors()[0].Detail(), "source_<source id>.<connector>.<resource>") {
+		t.Fatalf("import of a malformed topic ID must be refused with its expected shape: %v", resp.Diagnostics)
+	}
+	if resp := importID("source_abc.hubspot.contacts|dest-1"); resp.Diagnostics.HasError() {
+		t.Fatalf("a valid import ID was refused: %v", resp.Diagnostics)
 	}
 }
