@@ -108,7 +108,9 @@ type APIError struct {
 	Fields []APIFieldError
 	// raw is the error as the API wrote it, before sent secrets were masked
 	// out of Detail. Errors are classified on it: a secret that spells part of
-	// a transient or not-found phrase must not change the outcome. Never shown.
+	// a transient or not-found phrase must not change the outcome. It holds the
+	// secrets Detail masks, so it is never logged, printed, or put into another
+	// error's message; read it only through classifiedText.
 	raw string
 }
 

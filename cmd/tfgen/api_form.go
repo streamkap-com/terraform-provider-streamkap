@@ -287,6 +287,12 @@ func applyAPIFormContract(config *ConnectorConfig, code, path string) error {
 			}
 		}
 		entry.APIFormShow = len(showWhen) > 0
+		// The provider checks a secret against the selected mode only on the
+		// auth mode field, the one the backend refuses other modes' secrets by.
+		// A secret shown by another field would skip that check silently.
+		if entry.APIFormShow && conditionField != authModeProperty && (entry.IsSensitive() || isSecretField(entry.TerraformAttributeName())) {
+			return fmt.Errorf("API source form %s shows secret %q by %q, not by %q; the plan-time check for a secret of another sign-in mode reads only %q", path, entry.Name, conditionField, authModeProperty, authModeProperty)
+		}
 		needsInput := required[entry.Name] && !entry.APIFormShow
 		if entry.APIFormShow {
 			conditionDefault, _ := formValue(form.JSONSchema.Properties[conditionField].Default)
