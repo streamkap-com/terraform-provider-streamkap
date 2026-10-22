@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -213,5 +214,34 @@ func TestSaveErrorNamesTheAttribute(t *testing.T) {
 	r.addSaveError(&diags, "Error creating fake source", "Unable to create source", refused)
 	if len(diags) != 1 || diags[0].Detail() != "Unable to create source: The key was rejected. (HTTP 400)" {
 		t.Fatalf("an unmapped field must fall back to the whole error: %v", diags)
+	}
+}
+
+// aliasedConfig maps a deprecated alias and its canonical attribute to one API field.
+type aliasedConfig struct{ fakeConfig }
+
+func (aliasedConfig) GetSchema() schema.Schema {
+	return schema.Schema{Attributes: map[string]schema.Attribute{
+		"token":     schema.StringAttribute{Optional: true},
+		"old_token": schema.StringAttribute{Optional: true, DeprecationMessage: "Use token instead."},
+	}}
+}
+
+func (aliasedConfig) GetFieldMappings() map[string]string {
+	return map[string]string{"token": "api.token", "old_token": "api.token"}
+}
+
+func TestSaveErrorPrefersTheCanonicalAttributeAndKeepsTheRequestID(t *testing.T) {
+	r := NewBaseConnectorResource(aliasedConfig{}).(*BaseConnectorResource)
+	refused := &api.APIError{StatusCode: 400, Detail: "Refused.", RequestID: "req-42", Fields: []api.APIFieldError{{Field: "api.token", Message: "The key was rejected."}}}
+	for i := 0; i < 50; i++ {
+		var diags diag.Diagnostics
+		r.addSaveError(&diags, "Error creating fake source", "Unable to create source", refused)
+		if len(diags) != 1 || !diags[0].(diag.DiagnosticWithPath).Path().Equal(path.Root("token")) {
+			t.Fatalf("the error must land on the canonical attribute every time: %v", diags)
+		}
+		if detail := diags[0].Detail(); !strings.Contains(detail, "The key was rejected.") || !strings.Contains(detail, "Refused.") || !strings.Contains(detail, "request_id=req-42") {
+			t.Fatalf("the attributed error must keep the detail and request ID: %q", detail)
+		}
 	}
 }

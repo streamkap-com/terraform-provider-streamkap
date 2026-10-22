@@ -1338,22 +1338,30 @@ func encodeConfiguredForms(recorded map[string]string) []byte {
 
 // addSaveError puts each message of a refused save on the attribute it names,
 // when the backend names a mapped field for every one; otherwise it reports the
-// whole error.
+// whole error. A field a deprecated alias shares goes to the canonical
+// attribute, and each message keeps the full error for its request ID.
 func (r *BaseConnectorResource) addSaveError(diags *diag.Diagnostics, summary, prefix string, err error) {
 	var apiErr *api.APIError
 	if errors.As(err, &apiErr) && len(apiErr.Fields) > 0 {
-		attributes := map[string]string{}
-		for name, apiField := range r.config.GetFieldMappings() {
-			attributes[apiField] = name
+		mappings := r.config.GetFieldMappings()
+		attributes := r.config.GetSchema().Attributes
+		deprecated := func(name string) bool {
+			return attributes[name] != nil && attributes[name].GetDeprecationMessage() != ""
+		}
+		owners := map[string]string{}
+		for _, name := range slices.Sorted(maps.Keys(mappings)) {
+			if owner, taken := owners[mappings[name]]; !taken || (deprecated(owner) && !deprecated(name)) {
+				owners[mappings[name]] = name
+			}
 		}
 		var attributed diag.Diagnostics
 		for _, field := range apiErr.Fields {
-			name, ok := attributes[field.Field]
+			name, ok := owners[field.Field]
 			if !ok {
 				attributed = nil
 				break
 			}
-			attributed.AddAttributeError(path.Root(name), summary, field.Message)
+			attributed.AddAttributeError(path.Root(name), summary, fmt.Sprintf("%s\n\n%s: %s", field.Message, prefix, err))
 		}
 		if attributed != nil {
 			diags.Append(attributed...)
