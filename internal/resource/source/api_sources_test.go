@@ -452,3 +452,29 @@ func TestAPISourceNewGrantOmitsGrantFilledSecrets(t *testing.T) {
 		t.Errorf("the new grant must be sent: %v", update)
 	}
 }
+
+// Only the fields OAuth mode hides are the grant's. One the form shows in OAuth
+// mode and the configuration removed must be planned null like in any other
+// mode, or UseStateForUnknown keeps the old value and the backend is never told.
+func TestAPISourceOAuthPlansRemovedShownFieldsNull(t *testing.T) {
+	source := generated.SourceGoogleAdsAPISource
+	source.Conditions = slices.Clone(source.Conditions)
+	for i := range source.Conditions {
+		if source.Conditions[i].Field == "client_id" {
+			source.Conditions[i].Required = false
+		}
+	}
+	googleAds := &apiSourceConfig{source}
+	prior := &generated.SourceGoogleAdsModel{AuthMode: types.StringValue("oauth"), ClientID: types.StringValue("client"), ClientSecret: types.StringValue("secret"),
+		RefreshToken: types.StringValue("filled-by-grant"), OauthGrantID: types.StringValue("grant-1")}
+	for _, grant := range []string{"grant-1", "grant-2"} {
+		config := &generated.SourceGoogleAdsModel{AuthMode: types.StringValue("oauth"), ClientSecret: types.StringValue("secret"), OauthGrantID: types.StringValue(grant)}
+		unset, unknown := googleAds.PlanAdjustments(config, prior)
+		if !slices.Contains(unset, "client_id") || slices.Contains(unknown, "client_id") {
+			t.Errorf("grant %s: client_id, shown in OAuth mode and removed, must be planned null: unset=%v unknown=%v", grant, unset, unknown)
+		}
+		if slices.Contains(unset, "refresh_token") {
+			t.Errorf("grant %s: refresh_token, hidden in OAuth mode, is the grant's and must not be cleared: unset=%v", grant, unset)
+		}
+	}
+}

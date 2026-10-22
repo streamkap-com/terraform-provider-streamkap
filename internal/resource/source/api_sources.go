@@ -141,12 +141,12 @@ func (c *apiSourceConfig) PlanAdjustments(config any, state any) (unset []string
 		newGrant = state == nil || grant.IsUnknown() || !grant.Equal(shared.CaptureFields(state, []string{oauthGrantAttr})[oauthGrantAttr])
 	}
 	for _, condition := range c.Conditions {
-		_, value, known := shown(condition, values)
+		show, value, known := shown(condition, values)
 		field := values[condition.Field]
 		if !known || field == nil || !field.IsNull() {
 			continue
 		}
-		if c.OAuth.Enabled && condition.ConditionField == c.OAuth.AuthModeField && value == c.OAuth.AuthModeValue {
+		if !show && c.OAuth.Enabled && condition.ConditionField == c.OAuth.AuthModeField && value == c.OAuth.AuthModeValue {
 			if newGrant {
 				unknown = append(unknown, condition.Field)
 			}
