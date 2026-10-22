@@ -42,10 +42,24 @@ resource "streamkap_source_google_ads" "example" {
 ### Complete
 
 ```terraform
-# auth_mode "oauth" needs an oauth_grant_id from Connect with Google
-# (Streamkap UI, or the CLI's start-source-oauth-connect and
-# poll-source-oauth-grant) on top of your OAuth client. The refresh_token mode
+# auth_mode "oauth" needs an oauth_grant_id from Connect with Google, got with
+# the CLI's start-source-oauth-connect and poll-source-oauth-grant on top of
+# your OAuth client (the "Get an OAuth grant" guide has the steps). The refresh_token mode
 # below takes a refresh token you minted with that client instead.
+
+terraform {
+  required_providers {
+    streamkap = {
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
+    }
+  }
+  required_version = ">= 1.5.0"
+}
+
+provider "streamkap" {}
+
 variable "google_ads_client_secret" {
   type      = string
   sensitive = true
@@ -103,7 +117,7 @@ output "google_ads_source_id" {
 - `customer_ids` (List of String) More Google Ads accounts to sync with the same credentials, into the same topics; each row carries its customer_id. An account added later syncs from then on; reset the source to backfill its history.
 - `include_client_accounts` (Boolean) Sync every enabled client account under the manager account in Customer ID, including clients added later. Defaults to `false`.
 - `login_customer_id` (String) The manager account through which your Google user or service account reaches these accounts, e.g. 123-456-7890. Leave empty for direct access.
-- `oauth_grant_id` (String, Sensitive) Single-use grant from Connect with Google Ads, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect google_ads --body <file>`, the file holding your OAuth client's client_id and client_secret as JSON, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant google_ads --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source.
+- `oauth_grant_id` (String, Sensitive) Single-use grant from Connect with Google Ads, which Terraform cannot run. Get one with the Streamkap CLI: run `streamkap sources start-source-oauth-connect google_ads --body <file>`, the file holding your OAuth client's client_id and client_secret as JSON, open the returned authorize_url and approve, then run `streamkap sources poll-source-oauth-grant google_ads --state <state>` until it returns oauth_grant_id (see the [OAuth grants guide](https://registry.terraform.io/providers/streamkap-com/streamkap/latest/docs/guides/oauth-grants)). Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. To use Connect in the Streamkap UI instead, create the source there and import it, leaving this unset.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `refresh_token` (String, Sensitive) A refresh token for the https://www.googleapis.com/auth/adwords scope, minted with this OAuth client by a Google user with access to these accounts. Google keeps 100 per user and client; minting more invalidates the oldest.

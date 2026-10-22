@@ -40,6 +40,19 @@ resource "streamkap_source_stripe" "example" {
 ### Complete
 
 ```terraform
+terraform {
+  required_providers {
+    streamkap = {
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
+    }
+  }
+  required_version = ">= 1.5.0"
+}
+
+provider "streamkap" {}
+
 variable "stripe_restricted_key" {
   type      = string
   sensitive = true
@@ -71,7 +84,7 @@ output "stripe_source_id" {
 - `api_version` (String) The Stripe API version to pin, e.g. 2026-08-26.dahlia. Leave empty to use your account's default, shown in Workbench.
 - `auth_mode` (String) How Streamkap signs in to Stripe: paste a restricted key, or install Streamkap's Stripe App with Connect with Stripe (through the API, the oauth_grant_id Connect returns). Defaults to `restricted_key`. Valid values: `restricted_key`, `oauth`.
 - `backfill_start` (String) Earliest creation date to read when a resource first syncs; unset reads all history. Applies to resources added later too; changing it does not re-read resources already synced. Events and discounts reach back at most 30 days, the time Stripe keeps events. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.
-- `oauth_grant_id` (String, Sensitive) Single-use grant from Connect with Stripe, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect stripe`, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant stripe --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source.
+- `oauth_grant_id` (String, Sensitive) Single-use grant from Connect with Stripe, which Terraform cannot run. Get one with the Streamkap CLI: run `streamkap sources start-source-oauth-connect stripe`, open the returned authorize_url and approve, then run `streamkap sources poll-source-oauth-grant stripe --state <state>` until it returns oauth_grant_id (see the [OAuth grants guide](https://registry.terraform.io/providers/streamkap-com/streamkap/latest/docs/guides/oauth-grants)). Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. To use Connect in the Streamkap UI instead, create the source there and import it, leaving this unset.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.

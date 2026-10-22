@@ -308,6 +308,8 @@ func applyAPIFormContract(config *ConnectorConfig, code, path string) error {
 
 const oauthGrantField = "oauth_grant_id"
 
+const oauthGuideURL = "https://registry.terraform.io/providers/streamkap-com/streamkap/latest/docs/guides/oauth-grants"
+
 // oauthGrantEntry is the create/update handoff for the Connect flow. The
 // backend accepts it in config and swaps it for the credentials the flow
 // stored; it is not a config-model field, so neither artifact declares it.
@@ -317,8 +319,10 @@ func oauthGrantEntry(displayName, code, connectCommand string) ConfigEntry {
 		Name:        oauthGrantField,
 		DisplayName: "OAuth grant ID",
 		Description: "Single-use grant from Connect with " + displayName + ", which Terraform cannot run. " +
-			"Finish Connect in the Streamkap UI, or run " + connectCommand + ", open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant " + code + " --state <state>`. " +
-			"Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source.",
+			"Get one with the Streamkap CLI: run " + connectCommand + ", open the returned authorize_url and approve, then run `streamkap sources poll-source-oauth-grant " + code + " --state <state>` until it returns oauth_grant_id " +
+			"(see the [OAuth grants guide](" + oauthGuideURL + ")). " +
+			"Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. " +
+			"To use Connect in the Streamkap UI instead, create the source there and import it, leaving this unset.",
 		UserDefined: true,
 		Required:    &required,
 		Encrypt:     true,

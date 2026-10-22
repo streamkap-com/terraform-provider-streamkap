@@ -1,7 +1,21 @@
-# auth_mode "oauth" needs an oauth_grant_id from Connect with Google
-# (Streamkap UI, or the CLI's start-source-oauth-connect and
-# poll-source-oauth-grant) on top of your OAuth client. The refresh_token mode
+# auth_mode "oauth" needs an oauth_grant_id from Connect with Google, got with
+# the CLI's start-source-oauth-connect and poll-source-oauth-grant on top of
+# your OAuth client (the "Get an OAuth grant" guide has the steps). The refresh_token mode
 # below takes a refresh token you minted with that client instead.
+
+terraform {
+  required_providers {
+    streamkap = {
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
+    }
+  }
+  required_version = ">= 1.5.0"
+}
+
+provider "streamkap" {}
+
 variable "google_ads_client_secret" {
   type      = string
   sensitive = true

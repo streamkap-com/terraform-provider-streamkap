@@ -43,6 +43,19 @@ resource "streamkap_source_salesforce" "example" {
 ### Complete
 
 ```terraform
+terraform {
+  required_providers {
+    streamkap = {
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
+    }
+  }
+  required_version = ">= 1.5.0"
+}
+
+provider "streamkap" {}
+
 variable "salesforce_domain" {
   type = string
 }
@@ -89,7 +102,7 @@ output "salesforce_source_id" {
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `domain` (String) Your org's My Domain URL from Setup → My Domain, e.g. https://acme.my.salesforce.com. A sandbox has its own, e.g. https://acme--dev.sandbox.my.salesforce.com.
-- `oauth_grant_id` (String, Sensitive) Single-use grant from Connect with Salesforce, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect salesforce --environment <production|sandbox>`, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant salesforce --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source.
+- `oauth_grant_id` (String, Sensitive) Single-use grant from Connect with Salesforce, which Terraform cannot run. Get one with the Streamkap CLI: run `streamkap sources start-source-oauth-connect salesforce --environment <production|sandbox>`, open the returned authorize_url and approve, then run `streamkap sources poll-source-oauth-grant salesforce --state <state>` until it returns oauth_grant_id (see the [OAuth grants guide](https://registry.terraform.io/providers/streamkap-com/streamkap/latest/docs/guides/oauth-grants)). Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. To use Connect in the Streamkap UI instead, create the source there and import it, leaving this unset.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `private_key` (String, Sensitive) The unencrypted RSA private key, in PEM format with its BEGIN and END lines, whose certificate you uploaded to the app for the JWT bearer flow.

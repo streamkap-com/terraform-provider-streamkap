@@ -3,6 +3,19 @@
 # Consumers need three things: READ on the topics, READ on their consumer group,
 # and (when decoding Avro/Protobuf) a schema registry proxy.
 
+terraform {
+  required_providers {
+    streamkap = {
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
+    }
+  }
+  required_version = ">= 1.5.0"
+}
+
+provider "streamkap" {}
+
 resource "streamkap_kafka_user" "example" {
   # 3-24 characters, letters/digits/hyphen, no leading or trailing hyphen.
   username = "analytics-consumer"

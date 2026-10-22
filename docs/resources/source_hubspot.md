@@ -40,6 +40,19 @@ resource "streamkap_source_hubspot" "example" {
 ### Complete
 
 ```terraform
+terraform {
+  required_providers {
+    streamkap = {
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
+    }
+  }
+  required_version = ">= 1.5.0"
+}
+
+provider "streamkap" {}
+
 variable "hubspot_private_app_token" {
   type      = string
   sensitive = true
@@ -71,7 +84,7 @@ output "hubspot_source_id" {
 - `api_version` (String) HubSpot API version this source calls. Keep 2026-03; v3 (legacy) is only for sources created on it. Defaults to `2026-03`. Valid values: `v3`, `2026-03`.
 - `auth_mode` (String) How Streamkap signs in to HubSpot: paste an access token, or install Streamkap's HubSpot app with Connect with HubSpot (through the API, the oauth_grant_id Connect returns). Defaults to `token`. Valid values: `token`, `oauth`.
 - `backfill_start` (String) Earliest modification date to read when a resource first syncs; unset reads all history. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.
-- `oauth_grant_id` (String, Sensitive) Single-use grant from Connect with HubSpot, which Terraform cannot run. Finish Connect in the Streamkap UI, or run `streamkap sources start-source-oauth-connect hubspot`, open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant hubspot --state <state>`. Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. Leave it unset on an imported source.
+- `oauth_grant_id` (String, Sensitive) Single-use grant from Connect with HubSpot, which Terraform cannot run. Get one with the Streamkap CLI: run `streamkap sources start-source-oauth-connect hubspot`, open the returned authorize_url and approve, then run `streamkap sources poll-source-oauth-grant hubspot --state <state>` until it returns oauth_grant_id (see the [OAuth grants guide](https://registry.terraform.io/providers/streamkap-com/streamkap/latest/docs/guides/oauth-grants)). Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. To use Connect in the Streamkap UI instead, create the source there and import it, leaving this unset.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `properties` (List of String) Properties to sync, by internal name rather than label. Each object's hs_object_id and last-modified date are always synced.
