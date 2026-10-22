@@ -313,7 +313,8 @@ func emptyValue(value attr.Value) bool {
 	return false
 }
 
-// apiSources is every API source the provider registers.
+// apiSources is every API source the provider registers (APISourceResources),
+// so streamkap_pipeline refuses exactly the sources that exist.
 var apiSources = []generated.APISource{
 	generated.SourceHubspotAPISource,
 	generated.SourceSalesforceAPISource,
@@ -338,6 +339,15 @@ func IsAPISourceConnector(connector string) bool {
 
 func newAPISource(source generated.APISource) resource.Resource {
 	return connector.NewBaseConnectorResource(&apiSourceConfig{source})
+}
+
+// APISourceResources is the constructor of every API source resource.
+func APISourceResources() []func() resource.Resource {
+	constructors := make([]func() resource.Resource, 0, len(apiSources))
+	for _, source := range apiSources {
+		constructors = append(constructors, func() resource.Resource { return newAPISource(source) })
+	}
+	return constructors
 }
 
 func NewHubSpotResource() resource.Resource { return newAPISource(generated.SourceHubspotAPISource) }

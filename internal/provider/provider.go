@@ -277,7 +277,7 @@ func (p *streamkapProvider) DataSources(_ context.Context) []func() datasource.D
 
 // Resources defines the resources implemented in the provider.
 func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resource {
-	return []func() resource.Resource{
+	return append([]func() resource.Resource{
 		source.NewMongoDBResource,
 		source.NewMySQLResource,
 		source.NewPostgreSQLResource,
@@ -303,14 +303,6 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		source.NewShopifyWebhookResource,
 		source.NewStripeWebhookResource,
 		source.NewInformixResource,
-		source.NewHubSpotResource,
-		source.NewSalesforceResource,
-		source.NewNetSuiteResource,
-		source.NewStripeResource,
-		source.NewZendeskResource,
-		source.NewGoogleAnalyticsResource,
-		source.NewFacebookAdsResource,
-		source.NewGoogleAdsResource,
 		destination.NewSnowflakeResource,
 		destination.NewClickHouseResource,
 		destination.NewDatabricksResource,
@@ -348,5 +340,5 @@ func (p *streamkapProvider) Resources(_ context.Context) []func() resource.Resou
 		transform.NewTopicRouterResource,
 		kafka_user.NewKafkaUserResource,
 		client_credential.NewClientCredentialResource,
-	}
+	}, source.APISourceResources()...)
 }

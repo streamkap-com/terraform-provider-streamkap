@@ -413,7 +413,7 @@ go generate main.go   # docs, after the schemas
 make snapshots        # then read the diff
 ```
 
-A new vendor also needs a one-line constructor over its generated `Source<Vendor>APISource` in `internal/resource/source/api_sources.go`, a `Resources()` entry, a `TestSchemaBackwardsCompatibility_APISources` row, `examples/resources/streamkap_source_<vendor>/{basic,complete}.tf` and `import.sh`, and a lifecycle case in `internal/provider/api_source_vendors_local_test.go` if it adds an auth pattern.
+A new vendor also needs its generated `Source<Vendor>APISource` in `apiSources` (`internal/resource/source/api_sources.go`), which registers the resource and keeps `streamkap_pipeline` off it, a one-line constructor there for its tests, a `TestSchemaBackwardsCompatibility_APISources` row, `examples/resources/streamkap_source_<vendor>/{basic,complete}.tf` and `import.sh`, and a lifecycle case in `internal/provider/api_source_vendors_local_test.go` if it adds an auth pattern.
 
 Traps:
 - A form `HIDE` rule hides a field only for the values it lists. Reading it as always-hidden once dropped HubSpot `token` and Google Ads `client_id`/`client_secret`; check each vendor's credentials survive a regen.
