@@ -110,14 +110,14 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
 	unlock, err := lockSource(ctx, model.TopicID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error attaching topic to destination", err.Error())
 		return
 	}
 	defer unlock()
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 	link, err := r.client.AttachTopicDestination(ctx, model.TopicID.ValueString(), model.DestinationID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error attaching topic to destination", err.Error())
@@ -177,14 +177,14 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
 	unlock, err := lockSource(ctx, model.TopicID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error detaching topic from destination", err.Error())
 		return
 	}
 	defer unlock()
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 	if err := r.client.DetachTopicDestination(ctx, model.TopicID.ValueString(), model.DestinationID.ValueString()); err != nil {
 		resp.Diagnostics.AddError("Error detaching topic from destination", err.Error())
 	}
@@ -207,15 +207,19 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 
 // The backend serializes changes to one source's bindings and answers 409 once
 // another change has held that lock for a minute, so for_each's parallel
-// applies over one source's topics take turns here instead. Each source has a
-// one-slot channel rather than a mutex, so a change queued behind its siblings
-// still ends at its timeout or on Ctrl-C.
+// applies over one source's topics take turns here instead. A change's timeout
+// starts once it holds the source, so a long for_each over one source is not
+// failed by its own queue; the wait is a one-slot channel rather than a mutex
+// so Ctrl-C still ends it.
 var sourceLocks sync.Map
 
 // lockSource locks the source a topic ID names: source_<id>.<connector>.<resource>.
 func lockSource(ctx context.Context, topicID string) (unlock func(), err error) {
 	source, _, _ := strings.Cut(topicID, ".")
-	value, _ := sourceLocks.LoadOrStore(source, make(chan struct{}, 1))
+	value, ok := sourceLocks.Load(source)
+	if !ok {
+		value, _ = sourceLocks.LoadOrStore(source, make(chan struct{}, 1))
+	}
 	slot := value.(chan struct{})
 	select {
 	case slot <- struct{}{}:

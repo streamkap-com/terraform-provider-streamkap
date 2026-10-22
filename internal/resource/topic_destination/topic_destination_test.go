@@ -183,9 +183,10 @@ func TestTopicDestinationImportValidatesTopicID(t *testing.T) {
 	}
 }
 
-// A change waiting on another change to the same source gives up when its timeout runs out, instead of waiting on the
-// backend's retries for every topic queued ahead of it.
-func TestTopicDestinationLockWaitEndsAtTheTimeout(t *testing.T) {
+// A change queued behind others for the same source starts its timeout once it
+// holds the source, so a long for_each still finishes; an interrupt ends the
+// wait.
+func TestTopicDestinationLockWaitAndTimeout(t *testing.T) {
 	ctx := context.Background()
 	r := &Resource{client: &bindingClient{topics: map[string][]string{}}}
 	var schemaResp resource.SchemaResponse
@@ -196,32 +197,56 @@ func TestTopicDestinationLockWaitEndsAtTheTimeout(t *testing.T) {
 	for name := range timeoutsType.AttributeTypes {
 		timeoutsValue[name] = tftypes.NewValue(tftypes.String, "50ms")
 	}
-	value := tftypes.NewValue(objType, map[string]tftypes.Value{
-		"id":             tftypes.NewValue(tftypes.String, nil),
-		"topic_id":       tftypes.NewValue(tftypes.String, "source_busy.hubspot.contacts"),
-		"destination_id": tftypes.NewValue(tftypes.String, "dest-1"),
-		"binding_id":     tftypes.NewValue(tftypes.String, nil),
-		"timeouts":       tftypes.NewValue(timeoutsType, timeoutsValue),
-	})
+	plan := func(topicID string) tfsdk.Plan {
+		return tfsdk.Plan{Schema: schemaResp.Schema, Raw: tftypes.NewValue(objType, map[string]tftypes.Value{
+			"id":             tftypes.NewValue(tftypes.String, nil),
+			"topic_id":       tftypes.NewValue(tftypes.String, topicID),
+			"destination_id": tftypes.NewValue(tftypes.String, "dest-1"),
+			"binding_id":     tftypes.NewValue(tftypes.String, nil),
+			"timeouts":       tftypes.NewValue(timeoutsType, timeoutsValue),
+		})}
+	}
+	create := func(ctx context.Context, topicID string) <-chan resource.CreateResponse {
+		done := make(chan resource.CreateResponse, 1)
+		go func() {
+			resp := resource.CreateResponse{State: tfsdk.State{Schema: schemaResp.Schema}}
+			r.Create(ctx, resource.CreateRequest{Plan: plan(topicID)}, &resp)
+			done <- resp
+		}()
+		return done
+	}
 
 	unlock, err := lockSource(ctx, "source_busy.hubspot.deals")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer unlock()
-	done := make(chan resource.CreateResponse, 1)
-	go func() {
-		resp := resource.CreateResponse{State: tfsdk.State{Schema: schemaResp.Schema}}
-		r.Create(ctx, resource.CreateRequest{Plan: tfsdk.Plan{Schema: schemaResp.Schema, Raw: value}}, &resp)
-		done <- resp
-	}()
+	queued := create(ctx, "source_busy.hubspot.contacts")
+	time.Sleep(150 * time.Millisecond) // three times the 50ms timeout
+	unlock()
 	select {
-	case resp := <-done:
-		if !resp.Diagnostics.HasError() || !strings.Contains(resp.Diagnostics.Errors()[0].Detail(), "source_busy") {
-			t.Fatalf("a create that timed out waiting for its source must fail naming the source: %v", resp.Diagnostics)
+	case resp := <-queued:
+		if resp.Diagnostics.HasError() {
+			t.Fatalf("time queued behind another change used up the create timeout: %v", resp.Diagnostics)
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatal("create kept waiting for the source past its 50ms timeout")
+		t.Fatal("create never ran after the source was released")
+	}
+
+	unlock, err = lockSource(ctx, "source_held.hubspot.deals")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer unlock()
+	interrupted, cancel := context.WithCancel(ctx)
+	waiting := create(interrupted, "source_held.hubspot.contacts")
+	cancel()
+	select {
+	case resp := <-waiting:
+		if !resp.Diagnostics.HasError() || !strings.Contains(resp.Diagnostics.Errors()[0].Detail(), "source_held") {
+			t.Fatalf("an interrupted wait must fail naming the source: %v", resp.Diagnostics)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("an interrupt did not end the wait for the source")
 	}
 }
 
