@@ -225,6 +225,7 @@ var SourceNetsuiteAPISource = APISource{
 	Schema:        SourceNetsuiteSchema,
 	FieldMappings: SourceNetsuiteFieldMappings,
 	NewModel:      func() any { return &SourceNetsuiteModel{} },
+	AuthModeField: "auth_mode",
 	Conditions: []APICondition{
 		{Field: "client_id", ConditionField: "auth_mode", ConditionValues: []string{"certificate"}, ConditionDefault: "certificate", Required: true},
 		{Field: "certificate_id", ConditionField: "auth_mode", ConditionValues: []string{"certificate"}, ConditionDefault: "certificate", Required: true},

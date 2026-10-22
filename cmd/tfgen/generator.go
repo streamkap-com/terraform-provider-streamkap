@@ -293,6 +293,7 @@ type TemplateData struct {
 	APIConditions     []APICondition
 	APIDependencies   []APIDependency
 	APIOAuth          APIOAuth
+	APIAuthModeField  string
 	ModelName         string // e.g., "SourcePostgresqlModel"
 	SchemaFuncName    string // e.g., "SourcePostgresqlSchema"
 	FieldMappingsName string // e.g., "SourcePostgresqlFieldMappings"
@@ -427,6 +428,7 @@ func (g *Generator) prepareTemplateData(config *ConnectorConfig, connectorCode s
 		APIConditions:     config.APIConditions,
 		APIDependencies:   config.APIDependencies,
 		APIOAuth:          config.APIOAuth,
+		APIAuthModeField:  config.APIAuthModeField,
 		ModelName:         entityTypeCap + connectorCodeCap + "Model",
 		SchemaFuncName:    entityTypeCap + connectorCodeCap + "Schema",
 		FieldMappingsName: entityTypeCap + connectorCodeCap + "FieldMappings",
@@ -1703,6 +1705,7 @@ var {{ .EntityTypeCap }}{{ .ConnectorCodeCap }}APISource = APISource{
 	Schema:        {{ .SchemaFuncName }},
 	FieldMappings: {{ .FieldMappingsName }},
 	NewModel:      func() any { return &{{ .ModelName }}{} },
+	AuthModeField: {{ printf "%q" .APIAuthModeField }},
 	Conditions: []APICondition{
 {{- range .APIConditions }}
 		{Field: {{ printf "%q" .Field }}, ConditionField: {{ printf "%q" .ConditionField }}, ConditionValues: []string{ {{- range $i, $v := .ConditionValues }}{{ if $i }}, {{ end }}{{ printf "%q" $v }}{{ end -}} }, ConditionDefault: {{ printf "%q" .ConditionDefault }}, Required: {{ .Required }}},

@@ -188,6 +188,7 @@ var SourceFacebookAdsAPISource = APISource{
 	Schema:        SourceFacebookAdsSchema,
 	FieldMappings: SourceFacebookAdsFieldMappings,
 	NewModel:      func() any { return &SourceFacebookAdsModel{} },
+	AuthModeField: "",
 	Conditions:    []APICondition{},
 	Dependencies: []APIDependency{
 		{Field: "app_id", Requires: []string{"app_secret"}},

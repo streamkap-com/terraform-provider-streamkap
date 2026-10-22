@@ -83,6 +83,7 @@ type ConnectorConfig struct {
 	APIConditions         []APICondition  `json:"-"`
 	APIDependencies       []APIDependency `json:"-"`
 	APIOAuth              APIOAuth        `json:"-"`
+	APIAuthModeField      string          `json:"-"`
 	// ComingSoon, when true, marks this connector as not yet generally available
 	// on the backend. Such connectors are visible in the UI but not actually
 	// deployable; we skip generating Terraform resources for them so users

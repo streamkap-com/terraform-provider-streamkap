@@ -164,6 +164,7 @@ var SourceGoogleAnalyticsAPISource = APISource{
 	Schema:        SourceGoogleAnalyticsSchema,
 	FieldMappings: SourceGoogleAnalyticsFieldMappings,
 	NewModel:      func() any { return &SourceGoogleAnalyticsModel{} },
+	AuthModeField: "",
 	Conditions:    []APICondition{},
 	Dependencies:  []APIDependency{},
 	OAuth:         APIOAuth{Enabled: false, AuthModeField: "", AuthModeValue: "", AuthModeDefault: "", ConnectCommand: "", HostField: ""},

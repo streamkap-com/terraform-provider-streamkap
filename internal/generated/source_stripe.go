@@ -155,6 +155,7 @@ var SourceStripeAPISource = APISource{
 	Schema:        SourceStripeSchema,
 	FieldMappings: SourceStripeFieldMappings,
 	NewModel:      func() any { return &SourceStripeModel{} },
+	AuthModeField: "auth_mode",
 	Conditions: []APICondition{
 		{Field: "token", ConditionField: "auth_mode", ConditionValues: []string{"restricted_key"}, ConditionDefault: "restricted_key", Required: true},
 	},

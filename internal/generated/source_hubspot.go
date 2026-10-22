@@ -183,6 +183,7 @@ var SourceHubspotAPISource = APISource{
 	Schema:        SourceHubspotSchema,
 	FieldMappings: SourceHubspotFieldMappings,
 	NewModel:      func() any { return &SourceHubspotModel{} },
+	AuthModeField: "auth_mode",
 	Conditions: []APICondition{
 		{Field: "token", ConditionField: "auth_mode", ConditionValues: []string{"token"}, ConditionDefault: "token", Required: true},
 		{Field: "properties", ConditionField: "sync_all_properties", ConditionValues: []string{"false"}, ConditionDefault: "true", Required: true},

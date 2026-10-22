@@ -246,6 +246,7 @@ var SourceGoogleAdsAPISource = APISource{
 	Schema:        SourceGoogleAdsSchema,
 	FieldMappings: SourceGoogleAdsFieldMappings,
 	NewModel:      func() any { return &SourceGoogleAdsModel{} },
+	AuthModeField: "auth_mode",
 	Conditions: []APICondition{
 		{Field: "client_id", ConditionField: "auth_mode", ConditionValues: []string{"oauth", "refresh_token"}, ConditionDefault: "", Required: true},
 		{Field: "client_secret", ConditionField: "auth_mode", ConditionValues: []string{"oauth", "refresh_token"}, ConditionDefault: "", Required: true},

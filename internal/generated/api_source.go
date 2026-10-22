@@ -10,6 +10,8 @@ type APISource struct {
 	Schema        func() schema.Schema
 	FieldMappings map[string]string
 	NewModel      func() any
+	// AuthModeField selects how the source signs in; empty when it has one way.
+	AuthModeField string
 	Conditions    []APICondition
 	Dependencies  []APIDependency
 	OAuth         APIOAuth

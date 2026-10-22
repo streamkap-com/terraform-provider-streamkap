@@ -50,6 +50,9 @@ func TestApplyAPIFormContract(t *testing.T) {
 	if refreshToken.UserDefined {
 		t.Error("hidden system-managed credential must not be configured in Terraform")
 	}
+	if config.APIAuthModeField != "auth_mode" {
+		t.Errorf("the form's auth mode selector must reach the generated contract, got %q", config.APIAuthModeField)
+	}
 }
 
 func TestApplyAPIFormContractRequiresForm(t *testing.T) {
@@ -131,6 +134,9 @@ func TestApplyAPIFormContractOAuthOnlyVendor(t *testing.T) {
 	want := APIOAuth{Enabled: true, HostField: "subdomain", ConnectCommand: "`streamkap sources start-source-oauth-connect vendor --environment <subdomain>`"}
 	if !reflect.DeepEqual(config.APIOAuth, want) {
 		t.Errorf("a vendor without auth_mode signs in only through OAuth, on the host the grant is for: %#v", config.APIOAuth)
+	}
+	if config.APIAuthModeField != "" {
+		t.Errorf("a vendor with one way to sign in has no auth mode field, got %q", config.APIAuthModeField)
 	}
 }
 
