@@ -88,7 +88,7 @@ The grant is kept in state and not sent again while it is unchanged. Later plans
 
 ## Reconnect a source
 
-If the vendor revokes access or you change a Zendesk subdomain, run steps 2 to 4 again. Then set the new grant and apply. A grant that differs from the one in state reconnects the source.
+If the vendor revokes access, you change a Zendesk subdomain, or you switch `auth_mode` to OAuth, run steps 2 to 4 again. Then set the new grant and apply. A grant that differs from the one in state reconnects the source.
 
 ## Import instead
 

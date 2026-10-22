@@ -500,3 +500,26 @@ func TestAPISourceReadsStoredCSVLists(t *testing.T) {
 		t.Errorf("an absent list must read as null, got %#v", model.Properties)
 	}
 }
+
+// Switching an existing source into OAuth mode needs a new grant, as a create does; a spent grant left in the
+// configuration does not count.
+func TestAPISourceSwitchToOAuthNeedsNewGrant(t *testing.T) {
+	hubspot := apiSource(t, NewHubSpotResource)
+	prior := &generated.SourceHubspotModel{AuthMode: types.StringValue("token"), Token: types.StringValue("pat"), OauthGrantID: types.StringValue("spent")}
+	for name, grant := range map[string]types.String{"no grant": types.StringNull(), "the spent grant": types.StringValue("spent")} {
+		config := &generated.SourceHubspotModel{AuthMode: types.StringValue("oauth"), OauthGrantID: grant}
+		if got := diagPaths(hubspot.ValidateConfiguration(config, prior)); !slices.Equal(got, []string{"oauth_grant_id"}) {
+			t.Errorf("%s: switching to oauth must be refused on oauth_grant_id, got %v", name, got)
+		}
+	}
+	for name, grant := range map[string]types.String{"a new grant": types.StringValue("fresh"), "a grant unknown until apply": types.StringUnknown()} {
+		config := &generated.SourceHubspotModel{AuthMode: types.StringValue("oauth"), OauthGrantID: grant}
+		if diags := hubspot.ValidateConfiguration(config, prior); diags.HasError() {
+			t.Errorf("%s: %v", name, diags)
+		}
+	}
+	connected := &generated.SourceHubspotModel{AuthMode: types.StringValue("oauth"), OauthGrantID: types.StringValue("spent")}
+	if diags := hubspot.ValidateConfiguration(connected, connected); diags.HasError() {
+		t.Errorf("a source already in oauth mode keeps its spent grant: %v", diags)
+	}
+}

@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - API sources: `streamkap_source_hubspot`, `salesforce`, `netsuite`, `stripe`, `zendesk`, `google_analytics`, `facebook_ads` and `google_ads`, generated from the backend's plugin and form contracts with every auth mode.
 - `streamkap_topic_destination` sends one API-source topic to a destination.
-- OAuth modes (HubSpot, Salesforce, Stripe, Google Ads, and Zendesk always) take an `oauth_grant_id` from Connect in the Streamkap UI or the CLI; Terraform cannot run the browser consent. A create without one, or a new Zendesk `subdomain` without a new one, fails at plan time.
+- OAuth modes (HubSpot, Salesforce, Stripe, Google Ads, and Zendesk always) take an `oauth_grant_id` from Connect in the Streamkap UI or the CLI; Terraform cannot run the browser consent. A create without one, a switch into an OAuth mode without a new one, or a new Zendesk `subdomain` without a new one, fails at plan time.
 - The plan also fails on a missing field of the selected auth mode, a secret typed for another mode, and half of a field pair (Facebook Ads `app_id` and `app_secret`).
 - A save-time `connection_warning` shows as a Terraform warning, and a refused save reports each message on the attribute it names.
 

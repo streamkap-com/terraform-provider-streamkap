@@ -103,8 +103,14 @@ func (c *apiSourceConfig) ValidateConfiguration(model any, prior any) diag.Diagn
 		extra = append(extra, dependency.Requires...)
 	}
 	values := c.conditionValues(model, extra...)
-	if prior == nil && c.OAuth.Enabled {
-		diags.Append(c.validateOAuthCreate(values)...)
+	if c.OAuth.Enabled && prior == nil {
+		diags.Append(c.validateOAuthGrant(values, nil)...)
+	}
+	if c.OAuth.Enabled && prior != nil && c.OAuth.AuthModeField != "" {
+		before := shared.CaptureFields(prior, []string{c.OAuth.AuthModeField, oauthGrantAttr})
+		if mode, known := c.authMode(before); known && mode != c.OAuth.AuthModeValue {
+			diags.Append(c.validateOAuthGrant(values, before[oauthGrantAttr])...)
+		}
 	}
 	if prior != nil && c.OAuth.HostField != "" {
 		diags.Append(c.validateHostChange(values, shared.CaptureFields(prior, []string{c.OAuth.HostField, oauthGrantAttr}))...)
@@ -181,25 +187,31 @@ func (c *apiSourceConfig) PlanAdjustments(config any, state any) (unset []string
 	return unset, unknown
 }
 
-// validateOAuthCreate requires the Connect handoff on a create in OAuth mode:
-// the consent step runs in a browser, which Terraform cannot drive.
-func (c *apiSourceConfig) validateOAuthCreate(values map[string]attr.Value) diag.Diagnostics {
+// authMode is the auth mode values select, its default when unset; known is
+// false while it is unknown at plan time.
+func (c *apiSourceConfig) authMode(values map[string]attr.Value) (mode string, known bool) {
+	if field := values[c.OAuth.AuthModeField]; field != nil && field.IsUnknown() {
+		return "", false
+	}
+	if mode = conditionString(values[c.OAuth.AuthModeField]); mode == "" {
+		mode = c.OAuth.AuthModeDefault
+	}
+	return mode, true
+}
+
+// validateOAuthGrant requires the Connect handoff on a create in OAuth mode,
+// and on an update that switches into it: the consent step runs in a browser,
+// which Terraform cannot drive. spent is the prior grant, which the backend
+// consumed and cannot reuse.
+func (c *apiSourceConfig) validateOAuthGrant(values map[string]attr.Value, spent attr.Value) diag.Diagnostics {
 	var diags diag.Diagnostics
 	if c.OAuth.AuthModeField != "" {
-		mode := values[c.OAuth.AuthModeField]
-		if mode != nil && mode.IsUnknown() {
-			return diags
-		}
-		value := conditionString(mode)
-		if value == "" {
-			value = c.OAuth.AuthModeDefault
-		}
-		if value != c.OAuth.AuthModeValue {
+		if mode, known := c.authMode(values); !known || mode != c.OAuth.AuthModeValue {
 			return diags
 		}
 	}
 	grant := values[oauthGrantAttr]
-	if grant != nil && (grant.IsUnknown() || (!grant.IsNull() && !emptyValue(grant))) {
+	if grant != nil && (grant.IsUnknown() || (isSet(grant) && (spent == nil || !grant.Equal(spent)))) {
 		return diags
 	}
 	summary := c.DisplayName + " sign-in needs an OAuth grant"
