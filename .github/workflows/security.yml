@@ -1,9 +1,13 @@
 # Security scanning workflow for Terraform provider.
 name: Security Scan
 
-# Run security scans on all pushes and pull requests.
+# Run security scans on pull requests and on main. A push to a PR branch is
+# already scanned by its pull_request run, and a release tag by release.yml's
+# workflow_call, so `push` on every ref only doubled each check.
 on:
   push:
+    branches:
+      - main
   pull_request:
   workflow_call:
 
