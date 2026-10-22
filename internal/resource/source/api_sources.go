@@ -3,6 +3,7 @@ package source
 import (
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -20,6 +21,12 @@ const oauthGrantAttr = "oauth_grant_id"
 
 type apiSourceConfig struct {
 	generated.APISource
+
+	// The generated schema is built once per config; secrets are its
+	// Sensitive string attributes.
+	once    sync.Once
+	schema  schema.Schema
+	secrets []string
 }
 
 var _ connector.ConnectorConfig = (*apiSourceConfig)(nil)
@@ -29,7 +36,19 @@ var _ connector.ConnectorConfigPlanAdjuster = (*apiSourceConfig)(nil)
 var _ connector.ConnectorConfigKeepsConfiguredForm = (*apiSourceConfig)(nil)
 var _ connector.ConnectorConfigResponseDecoder = (*apiSourceConfig)(nil)
 
-func (c *apiSourceConfig) GetSchema() schema.Schema            { return c.Schema() }
+func (c *apiSourceConfig) GetSchema() schema.Schema {
+	c.once.Do(func() {
+		c.schema = c.Schema()
+		c.secrets = shared.SensitiveStringAttrNames(c.schema)
+	})
+	return c.schema
+}
+
+func (c *apiSourceConfig) sensitiveAttrNames() []string {
+	c.GetSchema()
+	return c.secrets
+}
+
 func (c *apiSourceConfig) GetFieldMappings() map[string]string { return c.FieldMappings }
 func (c *apiSourceConfig) GetConnectorType() connector.ConnectorType {
 	return connector.ConnectorTypeSource
@@ -65,7 +84,7 @@ func (c *apiSourceConfig) ConfiguredFormFields() []string {
 // An empty one reads as null: the backend treats an empty optional list as
 // unset, and a configured [] is kept by ConfiguredFormFields.
 func (c *apiSourceConfig) DecodeResponseConfig(config map[string]any) {
-	for name, attribute := range c.Schema().Attributes {
+	for name, attribute := range c.GetSchema().Attributes {
 		if _, isList := attribute.(schema.ListAttribute); !isList {
 			continue
 		}
@@ -139,7 +158,7 @@ func (c *apiSourceConfig) ValidateConfiguration(model any, prior any) diag.Diagn
 	if prior != nil && c.OAuth.HostField != "" {
 		diags.Append(c.validateHostChange(values, shared.CaptureFields(prior, []string{c.OAuth.HostField, oauthGrantAttr}))...)
 	}
-	secrets := shared.SensitiveStringAttrNames(c.Schema())
+	secrets := c.sensitiveAttrNames()
 	for _, condition := range c.Conditions {
 		show, conditionValue, known := shown(condition, values)
 		if !known {
@@ -301,7 +320,7 @@ func (c *apiSourceConfig) FilterRequestConfig(configMap map[string]any, plan any
 		}
 		return
 	}
-	secrets := shared.SensitiveStringAttrNames(c.Schema())
+	secrets := c.sensitiveAttrNames()
 	planned := shared.CaptureFields(plan, secrets)
 	prior := shared.CaptureFields(state, secrets)
 	values := c.conditionValues(plan)
@@ -384,7 +403,7 @@ func IsAPISourceConnector(connector string) bool {
 }
 
 func newAPISource(source generated.APISource) resource.Resource {
-	return connector.NewBaseConnectorResource(&apiSourceConfig{source})
+	return connector.NewBaseConnectorResource(&apiSourceConfig{APISource: source})
 }
 
 // APISourceResources is the constructor of every API source resource.

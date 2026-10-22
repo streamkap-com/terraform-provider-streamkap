@@ -553,3 +553,18 @@ func TestAPISourceConfiguredFormFields(t *testing.T) {
 		}
 	}
 }
+
+func TestAPISourceBuildsItsSchemaOnce(t *testing.T) {
+	source := generated.SourceHubspotAPISource
+	builds := 0
+	source.Schema = func() schema.Schema { builds++; return generated.SourceHubspotAPISource.Schema() }
+	config := &apiSourceConfig{APISource: source}
+	model := &generated.SourceHubspotModel{Token: types.StringValue("pat")}
+	config.GetSchema()
+	config.ValidateConfiguration(model, model)
+	config.FilterRequestConfig(map[string]any{"token": "pat"}, model, model)
+	config.DecodeResponseConfig(map[string]any{"resources": "contacts"})
+	if builds != 1 {
+		t.Errorf("the generated schema was built %d times, want once", builds)
+	}
+}

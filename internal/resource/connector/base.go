@@ -188,6 +188,8 @@ func (r *BaseConnectorResource) Metadata(ctx context.Context, req resource.Metad
 // Schema returns the schema for this resource.
 func (r *BaseConnectorResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	baseSchema := r.config.GetSchema()
+	// A config may cache its schema; the alias rewrite below must not reach it.
+	baseSchema.Attributes = maps.Clone(baseSchema.Attributes)
 	// Alias defaults must wait until ModifyPlan. Applying them earlier marks
 	// computed fields unknown even when the alias resolves to unchanged state.
 	mappings := r.config.GetFieldMappings()
