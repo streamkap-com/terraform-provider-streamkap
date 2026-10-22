@@ -407,9 +407,11 @@ func (r *PipelineResource) Read(ctx context.Context, req res.ReadRequest, resp *
 		return
 	}
 	// Failing here would fail every refresh, and so every plan and destroy in the workspace; dropping the entry leaves
-	// the pipeline to the topic delivery that owns it.
+	// the pipeline to the topic delivery that owns it. Planning the block again cannot create a second one: its
+	// source is an API source, which ValidateConfig and Create refuse.
 	if err := managedPipelineError(*pipeline); err != nil {
-		resp.Diagnostics.AddWarning("Managed pipeline removed from state", err.Error()+". Terraform no longer tracks it; the pipeline itself is kept.")
+		resp.Diagnostics.AddWarning("Managed pipeline removed from state", err.Error()+". Terraform no longer tracks it; "+
+			"the pipeline itself is kept. Remove this streamkap_pipeline from the configuration.")
 		resp.State.RemoveResource(ctx)
 		return
 	}
@@ -579,6 +581,17 @@ func managedPipelineError(pipeline api.Pipeline) error {
 }
 
 func (r *PipelineResource) ImportState(ctx context.Context, req res.ImportStateRequest, resp *res.ImportStateResponse) {
+	pipeline, err := r.client.GetPipeline(ctx, req.ID)
+	if err != nil {
+		resp.Diagnostics.AddError("Error importing pipeline", fmt.Sprintf("Unable to read pipeline %s, got error: %s", req.ID, err))
+		return
+	}
+	if pipeline != nil {
+		if err := managedPipelineError(*pipeline); err != nil {
+			resp.Diagnostics.AddError("Managed pipeline", err.Error())
+			return
+		}
+	}
 	res.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 

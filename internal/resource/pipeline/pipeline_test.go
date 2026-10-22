@@ -568,3 +568,13 @@ func TestCreateRefusesAnAPISourceBeforeThePOST(t *testing.T) {
 		t.Fatalf("an API source must be refused at apply: %v", resp.Diagnostics)
 	}
 }
+
+func TestImportRefusesAManagedPipeline(t *testing.T) {
+	schemaResp, _ := pipelineValue(t, nil)
+	objType := schemaResp.Schema.Type().TerraformType(context.Background())
+	resp := res.ImportStateResponse{State: tfsdk.State{Schema: schemaResp.Schema, Raw: tftypes.NewValue(objType, nil)}}
+	(&PipelineResource{client: managedPipelineClient{}}).ImportState(context.Background(), res.ImportStateRequest{ID: "p1"}, &resp)
+	if !resp.Diagnostics.HasError() || !strings.Contains(resp.Diagnostics.Errors()[0].Detail(), "streamkap_topic_destination") {
+		t.Fatalf("importing a managed pipeline must fail with the reason: %v", resp.Diagnostics)
+	}
+}
