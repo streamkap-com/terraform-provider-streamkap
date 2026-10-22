@@ -35,9 +35,6 @@ var transientMessages = []string{
 	"not_leader_for_partition",
 	"kafka connect api call failed with status code 404", // Connector not yet deployed (PENDING destination/source)
 	"kafka connect api call failed with status code 409", // Conflict during concurrent connector updates
-	// 409 from an API source's topic delivery while another change (the UI, the CLI, another workspace) holds the
-	// source's binding lock past the backend's own wait.
-	"is still in progress; retry shortly",
 
 	// Gateway wording embedded in a 5xx detail. A non-2xx always becomes an
 	// APIError, so a real 429/502/503/504 is already caught by status; these
@@ -54,6 +51,11 @@ var transientMessages = []string{
 	"network unreachable",
 	"i/o timeout",
 }
+
+// busyLockConflict is the 409 detail from an API source's topic delivery while
+// another change (the UI, the CLI, another workspace) holds the source's binding
+// lock past the backend's own wait. Only a 409 carrying it is retried.
+const busyLockConflict = "is still in progress; retry shortly"
 
 // isRetryableStatus reports the statuses that are always worth another attempt:
 // the caller is throttled, or an intermediary failed to reach the API at all.
@@ -93,6 +95,9 @@ func IsRetryableError(err error) bool {
 	var apiErr *APIError
 	if errors.As(err, &apiErr) {
 		if isRetryableStatus(apiErr.StatusCode) {
+			return true
+		}
+		if apiErr.StatusCode == http.StatusConflict && strings.Contains(strings.ToLower(apiErr.Detail), busyLockConflict) {
 			return true
 		}
 		return matchesTransientMessage(apiErr.Detail)

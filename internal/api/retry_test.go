@@ -35,6 +35,7 @@ func TestIsRetryableError_APIError(t *testing.T) {
 		{"500 carrying a KC timeout", &APIError{StatusCode: http.StatusInternalServerError, Detail: "KafkaConnectTimeout: timed out on all nodes"}, true},
 		{"wrapped 429", fmt.Errorf("CreateSource: %w", &APIError{StatusCode: http.StatusTooManyRequests, Detail: "slow down"}), true},
 		{"409 while another change to the source's delivery holds its lock", &APIError{StatusCode: http.StatusConflict, Detail: "Another destination change for source 'abc' is still in progress; retry shortly."}, true},
+		{"400 quoting the busy-lock phrase", &APIError{StatusCode: http.StatusBadRequest, Detail: "name: 'a change is still in progress; retry shortly' is not allowed"}, false},
 		{"409 on a managed pipeline", &APIError{StatusCode: http.StatusConflict, Detail: "This pipeline is managed automatically by its source's Send to destination configuration."}, false},
 	}
 
