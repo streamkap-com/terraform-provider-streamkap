@@ -178,7 +178,7 @@ func (c *apiSourceConfig) ValidateConfiguration(model any, prior any) diag.Diagn
 		// mode the grant may use secrets the form hides, so only the pasted
 		// modes, where the form shows exactly the secrets they sign in with,
 		// are checked.
-		if !show && slices.Contains(secrets, condition.Field) && condition.ConditionField == c.OAuth.AuthModeField &&
+		if !show && slices.Contains(secrets, condition.Field) && c.AuthModeField != "" && condition.ConditionField == c.AuthModeField &&
 			conditionValue != "" && conditionValue != c.OAuth.AuthModeValue && isSet(value) {
 			diags.AddAttributeError(path.Root(condition.Field), "API source value for another auth mode", condition.Field+" is not used when "+condition.ConditionField+" is "+conditionValue+"; remove it, or switch "+condition.ConditionField+".")
 		}

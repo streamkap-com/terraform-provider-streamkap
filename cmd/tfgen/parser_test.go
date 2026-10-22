@@ -82,8 +82,8 @@ func TestParseConnectorConfig_PostgreSQL(t *testing.T) {
 		t.Errorf("Expected slider min 1, got %d", sliderEntry.GetSliderMin())
 	}
 
-	if sliderEntry.GetSliderMax() != 10 {
-		t.Errorf("Expected slider max 10, got %d", sliderEntry.GetSliderMax())
+	if sliderEntry.GetSliderMax() != 50 {
+		t.Errorf("Expected slider max 50, got %d", sliderEntry.GetSliderMax())
 	}
 
 	// Verify one-select entry with raw_values

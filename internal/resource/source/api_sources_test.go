@@ -144,6 +144,9 @@ func TestAPISourceCredentialModes(t *testing.T) {
 		t.Fatalf("NetSuite certificate mode rejected complete credentials: %v", diags)
 	}
 	netsuite.AuthMode = types.StringValue("tba")
+	netsuite.ClientID = types.StringNull()
+	netsuite.CertificateID = types.StringNull()
+	netsuite.PrivateKey = types.StringNull()
 	netsuite.ConsumerKey = types.StringValue("key")
 	netsuite.ConsumerSecret = types.StringValue("secret")
 	netsuite.TokenID = types.StringValue("token")
@@ -419,6 +422,12 @@ func TestAPISourceRefusesAnotherModesSecret(t *testing.T) {
 		Username: types.StringValue("u"), PrivateKey: types.StringValue("key"), ClientSecret: types.StringValue("service-secret")}
 	if got := diagPaths(salesforce.ValidateConfiguration(sf, sf)); !slices.Equal(got, []string{"client_secret"}) {
 		t.Errorf("a service-mode secret typed in jwt mode: %v", got)
+	}
+	netsuite := apiSource(t, NewNetSuiteResource)
+	ns := &generated.SourceNetsuiteModel{AuthMode: types.StringValue("tba"), AccountID: types.StringValue("1234567"), ConsumerKey: types.StringValue("key"),
+		ConsumerSecret: types.StringValue("secret"), TokenID: types.StringValue("token"), TokenSecret: types.StringValue("token-secret"), PrivateKey: types.StringValue("certificate-key")}
+	if got := diagPaths(netsuite.ValidateConfiguration(ns, nil)); !slices.Equal(got, []string{"private_key"}) {
+		t.Errorf("a certificate-mode secret typed in tba mode, on a source without OAuth: %v", got)
 	}
 }
 

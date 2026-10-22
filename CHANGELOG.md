@@ -7,15 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-10-22
+
 ### Added
 - API sources: `streamkap_source_hubspot`, `salesforce`, `netsuite`, `stripe`, `zendesk`, `google_analytics`, `facebook_ads` and `google_ads`, generated from the backend's plugin and form contracts with every auth mode.
 - `streamkap_topic_destination` sends one API-source topic to a destination.
 - OAuth modes (HubSpot, Salesforce, Stripe, Google Ads, and Zendesk always) take an `oauth_grant_id` from Connect in the Streamkap UI or the CLI; Terraform cannot run the browser consent. A create without one, a switch into an OAuth mode without a new one, or a new Zendesk `subdomain` without a new one, fails at plan time.
 - The plan also fails on a missing field of the selected auth mode, a secret typed for another mode, and half of a field pair (Facebook Ads `app_id` and `app_secret`).
 - A save-time `connection_warning` shows as a Terraform warning, and a refused save reports each message on the attribute it names.
+- `streamkap_topic_destination` takes a `timeouts` block. Changes to one source's topics take turns, and each change's timeout starts when its turn does; an interrupt ends the wait.
+- Guide to OAuth grants, and `required_providers` in every complete example.
+
+### Changed
+- `streamkap_pipeline` refuses an API source: at plan time, or at apply when the plan cannot see the source. API sources reach destinations through `streamkap_topic_destination`.
+- Importing a pipeline the backend manages for topic delivery is refused, and one found on refresh is dropped from state with a warning.
+- Go 1.27.3 and `golang.org/x/net` v0.60.0 for new advisories.
 
 ### Fixed
 - Debug logs no longer print MongoDB, DocumentDB and Azure Blob connection strings or the BigQuery key file in request bodies.
+- An error message, or a source's save-time connection warning, no longer repeats a secret the request sent, such as a connection string a database driver echoes back. Masked are a source's or destination's `Sensitive` attributes and any request field named like a secret, verbatim or JSON-, URL- or HTML-encoded. Errors are still classified for retry on the unmasked text.
+- An imported OAuth source whose configuration still holds the grant its create spent applies cleanly: the grant is recorded without being sent, with a warning.
+- NetSuite fails at plan time on a secret typed for the other auth mode, as the API does; `consumer_key` and `token_id` are sensitive.
+- Topic delivery retries while another change holds the source's lock.
 
 ## [3.0.1] - 2026-09-23
 

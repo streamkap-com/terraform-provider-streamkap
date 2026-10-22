@@ -204,17 +204,22 @@ func (form *apiFormContract) oauthMode(code string) (APIOAuth, error) {
 		command += "`"
 	}
 	oauth := APIOAuth{Enabled: true, ConnectCommand: command, HostField: flow.HostField}
-	property, ok := form.JSONSchema.Properties["auth_mode"]
+	property, ok := form.JSONSchema.Properties[authModeProperty]
 	if !ok {
 		return oauth, nil
 	}
 	if !slices.Contains(propertyValues(property), "oauth") {
 		return APIOAuth{}, fmt.Errorf("declares an OAuth flow, but auth_mode offers no \"oauth\" value")
 	}
-	oauth.AuthModeField, oauth.AuthModeValue = "auth_mode", "oauth"
+	oauth.AuthModeField, oauth.AuthModeValue = authModeProperty, "oauth"
 	oauth.AuthModeDefault, _ = formValue(property.Default)
 	return oauth, nil
 }
+
+// authModeProperty is the form field that selects how an API source signs
+// in: the backend names it the same for every vendor, and refuses a secret
+// typed for a mode other than the selected one.
+const authModeProperty = "auth_mode"
 
 func applyAPIFormContract(config *ConnectorConfig, code, path string) error {
 	data, err := os.ReadFile(path)
@@ -231,6 +236,9 @@ func applyAPIFormContract(config *ConnectorConfig, code, path string) error {
 	required := make(map[string]bool, len(form.JSONSchema.Required))
 	for _, name := range form.JSONSchema.Required {
 		required[name] = true
+	}
+	if _, ok := form.JSONSchema.Properties[authModeProperty]; ok {
+		config.APIAuthModeField = authModeProperty
 	}
 	if config.APIOAuth, err = form.oauthMode(code); err != nil {
 		return fmt.Errorf("API source form %s %w", path, err)
@@ -279,6 +287,12 @@ func applyAPIFormContract(config *ConnectorConfig, code, path string) error {
 			}
 		}
 		entry.APIFormShow = len(showWhen) > 0
+		// The provider checks a secret against the selected mode only on the
+		// auth mode field, the one the backend refuses other modes' secrets by.
+		// A secret shown by another field would skip that check silently.
+		if entry.APIFormShow && conditionField != authModeProperty && (entry.IsSensitive() || isSecretField(entry.TerraformAttributeName())) {
+			return fmt.Errorf("API source form %s shows secret %q by %q, not by %q; the plan-time check for a secret of another sign-in mode reads only %q", path, entry.Name, conditionField, authModeProperty, authModeProperty)
+		}
 		needsInput := required[entry.Name] && !entry.APIFormShow
 		if entry.APIFormShow {
 			conditionDefault, _ := formValue(form.JSONSchema.Properties[conditionField].Default)

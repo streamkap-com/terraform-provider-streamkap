@@ -537,3 +537,26 @@ func TestZendeskSourceImportWithTheSpentGrant(t *testing.T) {
 		},
 	})
 }
+
+// A refusal can quote any credential back, including one whose API field name
+// says nothing of a secret: every Sensitive attribute's value is masked.
+func TestAPISourceRefusalMasksEverySensitiveValue(t *testing.T) {
+	const key = `{"type":"service_account","private_key_id":"k-123456"}`
+	f := &apiSourceFixture{t: t, connector: "google_analytics",
+		refuse: &api.APIError{StatusCode: http.StatusBadRequest, Detail: "Bad key " + key + " for this property"}}
+	server := f.server()
+	defer server.Close()
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{{
+			Config: fixtureProvider(server.URL) + `resource "streamkap_source_google_analytics" "ga" {
+  name                = "ga"
+  property_id         = "123456789"
+  service_account_key = "{\"type\":\"service_account\",\"private_key_id\":\"k-123456\"}"
+  resources           = ["devices"]
+}
+`,
+			ExpectError: regexp.MustCompile(`Bad key \*\*\*REDACTED\*\*\* for this property`),
+		}},
+	})
+}

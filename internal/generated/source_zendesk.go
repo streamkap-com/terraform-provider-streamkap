@@ -129,6 +129,7 @@ var SourceZendeskAPISource = APISource{
 	Schema:        SourceZendeskSchema,
 	FieldMappings: SourceZendeskFieldMappings,
 	NewModel:      func() any { return &SourceZendeskModel{} },
+	AuthModeField: "",
 	Conditions:    []APICondition{},
 	Dependencies:  []APIDependency{},
 	OAuth:         APIOAuth{Enabled: true, AuthModeField: "", AuthModeValue: "", AuthModeDefault: "", ConnectCommand: "`streamkap sources start-source-oauth-connect zendesk --environment <subdomain>`", HostField: "subdomain"},

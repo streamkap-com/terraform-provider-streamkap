@@ -299,3 +299,14 @@ func TestPlanAdjustmentValuesMatchTheAttributeType(t *testing.T) {
 		t.Error("an attribute missing from the schema must be an error, not a String")
 	}
 }
+
+// A save the backend accepted can still quote a credential back in its
+// connection warning; the warning masks the plan's secrets like an error does.
+func TestConnectionWarningMasksSentSecrets(t *testing.T) {
+	ctx := withSentSecrets(context.Background(), map[string]attr.Value{"service_account_key": types.StringValue(`{"private_key_id":"k-123456"}`)})
+	var diags diag.Diagnostics
+	addConnectionWarning(ctx, &diags, &api.Source{ConnectionWarning: `Key {"private_key_id":"k-123456"} lacks the Viewer role`})
+	if len(diags) != 1 || diags[0].Detail() != "Key ***REDACTED*** lacks the Viewer role" {
+		t.Fatalf("connection warning = %v", diags)
+	}
+}

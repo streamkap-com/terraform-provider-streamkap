@@ -205,6 +205,7 @@ var SourceSalesforceAPISource = APISource{
 	Schema:        SourceSalesforceSchema,
 	FieldMappings: SourceSalesforceFieldMappings,
 	NewModel:      func() any { return &SourceSalesforceModel{} },
+	AuthModeField: "auth_mode",
 	Conditions: []APICondition{
 		{Field: "domain", ConditionField: "auth_mode", ConditionValues: []string{"service", "jwt"}, ConditionDefault: "service", Required: true},
 		{Field: "client_id", ConditionField: "auth_mode", ConditionValues: []string{"service", "jwt"}, ConditionDefault: "service", Required: true},

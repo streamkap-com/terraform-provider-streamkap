@@ -143,3 +143,40 @@ func TestRedactSensitiveJSON_EmptyAndMalformed(t *testing.T) {
 		t.Errorf("expected placeholder for malformed JSON, got %q", got)
 	}
 }
+
+// A transform's code can carry an outbound credential, so the implementation
+// subtree's values are masked like a secret's.
+func TestSentSecrets_IncludeTransformImplementation(t *testing.T) {
+	code := "fetch(url, {headers: {key: 'outbound-credential'}})"
+	body, _ := json.Marshal(map[string]any{"implementation": map[string]any{"value_transform": code}})
+	if got := maskSentSecrets("bad code: "+code, sentSecrets(body)); got != "bad code: "+redactedPlaceholder {
+		t.Fatalf("implementation code left unmasked: %s", got)
+	}
+}
+
+// A short secret right after a JSON escape is still a word of its own, and
+// a secret quoted the way Python or a lower-case encoder writes it is masked.
+func TestMaskSentSecrets_EscapesAndEncoderVariants(t *testing.T) {
+	cases := map[string]struct{ secret, text, want string }{
+		"after a JSON newline":  {"k9z", `"line1\nk9z"`, `"line1\n***REDACTED***"`},
+		"after a JSON \\u":      {"k9z", `"<k9z"`, `"<***REDACTED***"`},
+		"inside a longer word":  {"k9z", "k9zz", "k9zz"},
+		"Python quote":          {"ab/cd+efgh", "x=ab/cd%2Befgh", "x=***REDACTED***"},
+		"lower-case hex escape": {"a=b?c&d1", "q=a%3db%3fc%26d1", "q=***REDACTED***"},
+	}
+	for name, c := range cases {
+		if got := maskSentSecrets(c.text, secretForms([]string{c.secret})); got != c.want {
+			t.Errorf("%s: got %s, want %s", name, got, c.want)
+		}
+	}
+}
+
+// A transform's language names the runtime, not a credential; masking it
+// would blank the word from every message about the transform.
+func TestSentSecrets_KeepTheTransformLanguage(t *testing.T) {
+	body, _ := json.Marshal(map[string]any{"implementation": map[string]any{"language": "JAVASCRIPT", "value_transform": "return 'outbound-credential'"}})
+	got := maskSentSecrets("JAVASCRIPT failed on return 'outbound-credential'", secretForms(sentSecrets(body)))
+	if got != "JAVASCRIPT failed on "+redactedPlaceholder {
+		t.Fatalf("got %s", got)
+	}
+}
