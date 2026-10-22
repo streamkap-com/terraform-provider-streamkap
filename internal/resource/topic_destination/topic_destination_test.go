@@ -98,6 +98,7 @@ func TestTopicDestinationSerializesChangesPerSource(t *testing.T) {
 			"topic_id":       tftypes.NewValue(tftypes.String, topicID),
 			"destination_id": tftypes.NewValue(tftypes.String, "dest-1"),
 			"binding_id":     tftypes.NewValue(tftypes.String, nil),
+			"timeouts":       tftypes.NewValue(objType.AttributeTypes["timeouts"], nil),
 		})
 	}
 	run := func(op func(topicID string)) {
@@ -179,5 +180,47 @@ func TestTopicDestinationImportValidatesTopicID(t *testing.T) {
 	}
 	if resp := importID("source_abc.hubspot.contacts|dest-1"); resp.Diagnostics.HasError() {
 		t.Fatalf("a valid import ID was refused: %v", resp.Diagnostics)
+	}
+}
+
+// A change waiting on another change to the same source gives up when its timeout runs out, instead of waiting on the
+// backend's retries for every topic queued ahead of it.
+func TestTopicDestinationLockWaitEndsAtTheTimeout(t *testing.T) {
+	ctx := context.Background()
+	r := &Resource{client: &bindingClient{topics: map[string][]string{}}}
+	var schemaResp resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &schemaResp)
+	objType := schemaResp.Schema.Type().TerraformType(ctx).(tftypes.Object)
+	timeoutsType := objType.AttributeTypes["timeouts"].(tftypes.Object)
+	timeoutsValue := map[string]tftypes.Value{}
+	for name := range timeoutsType.AttributeTypes {
+		timeoutsValue[name] = tftypes.NewValue(tftypes.String, "50ms")
+	}
+	value := tftypes.NewValue(objType, map[string]tftypes.Value{
+		"id":             tftypes.NewValue(tftypes.String, nil),
+		"topic_id":       tftypes.NewValue(tftypes.String, "source_busy.hubspot.contacts"),
+		"destination_id": tftypes.NewValue(tftypes.String, "dest-1"),
+		"binding_id":     tftypes.NewValue(tftypes.String, nil),
+		"timeouts":       tftypes.NewValue(timeoutsType, timeoutsValue),
+	})
+
+	unlock, err := lockSource(ctx, "source_busy.hubspot.deals")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer unlock()
+	done := make(chan resource.CreateResponse, 1)
+	go func() {
+		resp := resource.CreateResponse{State: tfsdk.State{Schema: schemaResp.Schema}}
+		r.Create(ctx, resource.CreateRequest{Plan: tfsdk.Plan{Schema: schemaResp.Schema, Raw: value}}, &resp)
+		done <- resp
+	}()
+	select {
+	case resp := <-done:
+		if !resp.Diagnostics.HasError() || !strings.Contains(resp.Diagnostics.Errors()[0].Detail(), "source_busy") {
+			t.Fatalf("a create that timed out waiting for its source must fail naming the source: %v", resp.Diagnostics)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("create kept waiting for the source past its 50ms timeout")
 	}
 }
