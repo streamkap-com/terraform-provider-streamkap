@@ -749,6 +749,81 @@ func TestAPIError_SentSecretsMaskedInEveryResponseShape(t *testing.T) {
 	}
 }
 
+// A secret that happens to spell part of a transient message must not stop the
+// retry: classification reads the backend's words, and only the error shown is
+// masked.
+func TestAPIError_RetryClassifiesTheUnmaskedDetail(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	baseURL := "https://api.test.streamkap.com"
+	client := newTestClient(baseURL)
+	calls := 0
+	httpmock.RegisterResponder(http.MethodPost, baseURL+"/sources?secret_returned=true&wait=false", func(*http.Request) (*http.Response, error) {
+		calls++
+		if calls == 1 {
+			return httpmock.NewJsonResponse(http.StatusInternalServerError, map[string]any{
+				"detail": "Request cannot be completed because a rebalance is expected"})
+		}
+		return httpmock.NewJsonResponse(http.StatusAccepted, map[string]any{"id": "src-1", "name": "s", "connector": "postgresql"})
+	})
+	_, err := client.CreateSource(context.Background(), Source{Name: "s", Connector: "postgresql", Config: map[string]any{"database.password": "rebalance"}})
+	require.NoError(t, err)
+	assert.Equal(t, 2, calls)
+}
+
+// Secrets come back URL-encoded in a query string or HTML-escaped in a gateway
+// page as often as verbatim, and a short one may follow a %XX escape.
+func TestAPIError_EncodedSentSecretsMasked(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	baseURL := "https://api.test.streamkap.com"
+	client := newTestClient(baseURL)
+	password := "p@ss word/<1>"
+	httpmock.RegisterResponder(http.MethodPost, baseURL+"/sources?secret_returned=true&wait=false",
+		httpmock.NewJsonResponderOrPanic(http.StatusBadRequest, map[string]any{
+			"detail": "GET /login?pw=p%40ss+word%2F%3C1%3E&pin%3Dk9z failed: <b>p@ss word/&lt;1&gt;</b>"}))
+	_, err := client.CreateSource(context.Background(), Source{Name: "s", Connector: "postgresql", Config: map[string]any{
+		"database.password": password, "sasl.password": "k9z"}})
+	require.Error(t, err)
+	assert.Equal(t, "GET /login?pw="+redactedPlaceholder+"&pin%3D"+redactedPlaceholder+" failed: <b>"+redactedPlaceholder+"</b> (HTTP 400)", err.Error())
+}
+
+// The caller names the values it marked secret, whatever their request keys.
+func TestAPIError_MasksSecretsNamedOnTheContext(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	baseURL := "https://api.test.streamkap.com"
+	client := newTestClient(baseURL)
+	httpmock.RegisterResponder(http.MethodPost, baseURL+"/sources?secret_returned=true&wait=false",
+		httpmock.NewJsonResponderOrPanic(http.StatusBadRequest, map[string]any{"detail": "header Bearer abc.def.ghi rejected"}))
+	ctx := WithSentSecrets(context.Background(), "Bearer abc.def.ghi")
+	_, err := client.CreateSource(ctx, Source{Name: "s", Connector: "http", Config: map[string]any{"http.headers.authorization": "Bearer abc.def.ghi"}})
+	require.Error(t, err)
+	assert.Equal(t, "header "+redactedPlaceholder+" rejected (HTTP 400)", err.Error())
+}
+
+// When the request cannot be re-read its secrets are unknown, so the detail is
+// withheld, but each refused field still names its attribute.
+func TestAPIError_UnreadableRequestKeepsRefusedFieldNames(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	baseURL := "https://api.test.streamkap.com"
+	client := newTestClient(baseURL).(*streamkapAPI)
+	httpmock.RegisterResponder(http.MethodPost, baseURL+"/sources", httpmock.NewJsonResponderOrPanic(http.StatusBadRequest, map[string]any{
+		"detail": "rejected hunter2-pass", "fields": []map[string]any{{"field": "database.password", "message": "hunter2-pass is wrong"}}}))
+	req, err := http.NewRequest(http.MethodPost, baseURL+"/sources", strings.NewReader(`{"database.password":"hunter2-pass"}`))
+	require.NoError(t, err)
+	req.GetBody = func() (io.ReadCloser, error) { return nil, errors.New("body gone") }
+	err = client.send(context.Background(), req, &Source{}, "")
+	var apiErr *APIError
+	require.True(t, errors.As(err, &apiErr))
+	assert.NotContains(t, err.Error(), "hunter2-pass")
+	assert.Contains(t, apiErr.Detail, "body gone")
+	require.Len(t, apiErr.Fields, 1)
+	assert.Equal(t, "database.password", apiErr.Fields[0].Field)
+	assert.NotContains(t, apiErr.Fields[0].Message, "hunter2-pass")
+}
+
 // TestTokenRenewal_On401RetriesWithFreshToken — the OAuth token used to be
 // fetched once in provider.Configure and never renewed, so any apply outliving
 // the token TTL failed every remaining resource with an opaque 401.

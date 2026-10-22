@@ -409,6 +409,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	s := r.config.GetSchema()
 	secrets := shared.SensitiveStringAttrNames(s)
 	plannedSecrets := shared.CaptureFields(model, secrets)
+	ctx = withSentSecrets(ctx, plannedSecrets)
 	plannedDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(s))
 	plannedForms := shared.CaptureFields(model, r.configuredFormAttrNames())
 
@@ -695,6 +696,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 	s := r.config.GetSchema()
 	secrets := shared.SensitiveStringAttrNames(s)
 	plannedSecrets := shared.CaptureFields(model, secrets)
+	ctx = withSentSecrets(ctx, plannedSecrets)
 	plannedDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(s))
 	plannedForms := shared.CaptureFields(model, r.configuredFormAttrNames())
 
@@ -1406,4 +1408,16 @@ func typedValue(ctx context.Context, attribute schema.Attribute, raw any) (attr.
 	}
 	t := attribute.GetType()
 	return t.ValueFromTerraform(ctx, tftypes.NewValue(t.TerraformType(ctx), raw))
+}
+
+// withSentSecrets names the plan's Sensitive values on ctx, so an error that
+// quotes one back masks it whatever its API field is called.
+func withSentSecrets(ctx context.Context, secrets map[string]attr.Value) context.Context {
+	var values []string
+	for _, value := range secrets {
+		if s, ok := value.(types.String); ok && !s.IsNull() && !s.IsUnknown() {
+			values = append(values, s.ValueString())
+		}
+	}
+	return api.WithSentSecrets(ctx, values...)
 }

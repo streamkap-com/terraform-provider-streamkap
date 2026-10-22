@@ -97,10 +97,10 @@ func IsRetryableError(err error) bool {
 		if isRetryableStatus(apiErr.StatusCode) {
 			return true
 		}
-		if apiErr.StatusCode == http.StatusConflict && strings.Contains(strings.ToLower(apiErr.Detail), busyLockConflict) {
+		if apiErr.StatusCode == http.StatusConflict && strings.Contains(strings.ToLower(apiErr.classifiedText()), busyLockConflict) {
 			return true
 		}
-		return matchesTransientMessage(apiErr.Detail)
+		return matchesTransientMessage(apiErr.classifiedText())
 	}
 
 	return matchesTransientMessage(err.Error())

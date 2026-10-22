@@ -143,3 +143,13 @@ func TestRedactSensitiveJSON_EmptyAndMalformed(t *testing.T) {
 		t.Errorf("expected placeholder for malformed JSON, got %q", got)
 	}
 }
+
+// A transform's code can carry an outbound credential, so the implementation
+// subtree's values are masked like a secret's.
+func TestSentSecrets_IncludeTransformImplementation(t *testing.T) {
+	code := "fetch(url, {headers: {key: 'outbound-credential'}})"
+	body, _ := json.Marshal(map[string]any{"implementation": map[string]any{"value_transform": code}})
+	if got := maskSentSecrets("bad code: "+code, sentSecrets(body)); got != "bad code: "+redactedPlaceholder {
+		t.Fatalf("implementation code left unmasked: %s", got)
+	}
+}

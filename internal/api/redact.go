@@ -1,9 +1,12 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"html"
+	"net/url"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -94,16 +97,24 @@ func redactValue(v any, errorResponse bool) any {
 // repeats them.
 var secretValueKeyRegex = regexp.MustCompile(`(?i)` +
 	`(password|passwd|secret|token|passphrase|credential|keyfile|sasl|` +
-	`api[_.-]?key|private[_.-]?key|access[_.-]?key|consumer[_.-]?key|connection[_.-]?string)`)
+	`api[_.-]?key|private[_.-]?key|access[_.-]?key|consumer[_.-]?key|connection[_.-]?string|implementation)`)
 
 // A secret shorter than minSubstringSecretLen is masked only where it stands
 // as a whole word, so a short password is still masked without blanking the
 // same letters inside other words.
 const minSubstringSecretLen = 6
 
-// sentSecrets returns the secret values a JSON request body carries, longest
-// first, so a connection string is masked before a password inside it. Each
-// also comes JSON-escaped, the form a re-encoded error body repeats it in.
+type sentSecretsKey struct{}
+
+// WithSentSecrets names values a request on ctx carries as secrets, so its
+// error masks them even under a request key that does not say so (a service
+// account key, an Authorization header, an OAuth grant).
+func WithSentSecrets(ctx context.Context, values ...string) context.Context {
+	prior, _ := ctx.Value(sentSecretsKey{}).([]string)
+	return context.WithValue(ctx, sentSecretsKey{}, append(slices.Clone(prior), values...))
+}
+
+// sentSecrets returns the secret values a JSON request body carries.
 func sentSecrets(body []byte) []string {
 	var obj any
 	if json.Unmarshal(body, &obj) != nil {
@@ -122,17 +133,32 @@ func sentSecrets(body []byte) []string {
 				walk(inner, secret)
 			}
 		case string:
-			if secret && val != "" {
+			if secret {
 				secrets = append(secrets, val)
-				if encoded, err := json.Marshal(val); err == nil && string(encoded[1:len(encoded)-1]) != val {
-					secrets = append(secrets, string(encoded[1:len(encoded)-1]))
-				}
 			}
 		}
 	}
 	walk(obj, false)
-	sort.Slice(secrets, func(i, j int) bool { return len(secrets[i]) > len(secrets[j]) })
 	return secrets
+}
+
+// secretForms returns each secret as an error can repeat it: verbatim,
+// JSON-escaped in a re-encoded body, URL-encoded in a quoted request, and
+// HTML-escaped in a gateway page. Longest first, so a connection string is
+// masked before a password inside it.
+func secretForms(secrets []string) []string {
+	var forms []string
+	for _, secret := range secrets {
+		if secret == "" {
+			continue
+		}
+		forms = append(forms, secret, url.QueryEscape(secret), url.PathEscape(secret), html.EscapeString(secret))
+		if encoded, err := json.Marshal(secret); err == nil {
+			forms = append(forms, string(encoded[1:len(encoded)-1]))
+		}
+	}
+	slices.SortFunc(forms, func(a, b string) int { return len(b) - len(a) })
+	return slices.Compact(forms)
 }
 
 // maskSentSecrets masks each sent secret where an error message repeats it.
@@ -158,13 +184,24 @@ func maskWholeWord(text, word string) string {
 		before, _ := utf8.DecodeLastRuneInString(text[:i])
 		after, _ := utf8.DecodeRuneInString(text[i+len(word):])
 		out.WriteString(text[:i])
-		if isWordRune(before) || isWordRune(after) {
+		if (isWordRune(before) && !afterPercentEscape(text[:i])) || isWordRune(after) {
 			out.WriteString(word)
 		} else {
 			out.WriteString(redactedPlaceholder)
 		}
 		text = text[i+len(word):]
 	}
+}
+
+// afterPercentEscape reports whether text ends in a %XX escape, whose last hex
+// digit is a separator ("%3D" is "="), not part of the word that follows.
+func afterPercentEscape(text string) bool {
+	n := len(text)
+	return n >= 3 && text[n-3] == '%' && isHex(text[n-2]) && isHex(text[n-1])
+}
+
+func isHex(c byte) bool {
+	return '0' <= c && c <= '9' || 'a' <= c && c <= 'f' || 'A' <= c && c <= 'F'
 }
 
 func isWordRune(r rune) bool {
