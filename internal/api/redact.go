@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"html"
 	"net/url"
 	"regexp"
@@ -126,6 +127,10 @@ func sentSecrets(body []byte) []string {
 		switch val := v.(type) {
 		case map[string]any:
 			for k, inner := range val {
+				// A transform's language names its runtime, not a credential.
+				if secret && strings.EqualFold(k, "language") {
+					continue
+				}
 				walk(inner, secret || secretValueKeyRegex.MatchString(k))
 			}
 		case []any:
@@ -142,17 +147,28 @@ func sentSecrets(body []byte) []string {
 	return secrets
 }
 
+// MaskSentSecrets masks the secrets WithSentSecrets named on ctx in text a
+// save returned beside its result, such as a connection warning.
+func MaskSentSecrets(ctx context.Context, text string) string {
+	named, _ := ctx.Value(sentSecretsKey{}).([]string)
+	return maskSentSecrets(text, secretForms(named))
+}
+
 // secretForms returns each secret as an error can repeat it: verbatim,
-// JSON-escaped in a re-encoded body, URL-encoded in a quoted request, and
-// HTML-escaped in a gateway page. Longest first, so a connection string is
-// masked before a password inside it.
+// JSON-escaped in a re-encoded body, URL-encoded the way Go or Python quotes
+// it (either hex case) in a quoted request, and HTML-escaped in a gateway
+// page. Longest first, so a connection string is masked before a password
+// inside it.
 func secretForms(secrets []string) []string {
 	var forms []string
 	for _, secret := range secrets {
 		if secret == "" {
 			continue
 		}
-		forms = append(forms, secret, url.QueryEscape(secret), url.PathEscape(secret), html.EscapeString(secret))
+		forms = append(forms, secret, html.EscapeString(secret))
+		for _, quoted := range []string{url.QueryEscape(secret), url.PathEscape(secret), pythonQuote(secret)} {
+			forms = append(forms, quoted, percentEscape.ReplaceAllStringFunc(quoted, strings.ToLower))
+		}
 		if encoded, err := json.Marshal(secret); err == nil {
 			forms = append(forms, string(encoded[1:len(encoded)-1]))
 		}
@@ -184,7 +200,7 @@ func maskWholeWord(text, word string) string {
 		before, _ := utf8.DecodeLastRuneInString(text[:i])
 		after, _ := utf8.DecodeRuneInString(text[i+len(word):])
 		out.WriteString(text[:i])
-		if (isWordRune(before) && !afterPercentEscape(text[:i])) || isWordRune(after) {
+		if (isWordRune(before) && !afterEscape(text[:i])) || isWordRune(after) {
 			out.WriteString(word)
 		} else {
 			out.WriteString(redactedPlaceholder)
@@ -193,11 +209,36 @@ func maskWholeWord(text, word string) string {
 	}
 }
 
-// afterPercentEscape reports whether text ends in a %XX escape, whose last hex
-// digit is a separator ("%3D" is "="), not part of the word that follows.
-func afterPercentEscape(text string) bool {
+var percentEscape = regexp.MustCompile(`%[0-9A-F]{2}`)
+
+// pythonQuote is urllib.parse.quote with its default safe "/", the form a
+// Python backend or connector puts a value into a URL with.
+func pythonQuote(s string) string {
+	var b strings.Builder
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || '0' <= c && c <= '9' || strings.IndexByte("_.-~/", c) >= 0 {
+			b.WriteByte(c)
+		} else {
+			fmt.Fprintf(&b, "%%%02X", c)
+		}
+	}
+	return b.String()
+}
+
+// afterEscape reports whether text ends in an escape (%XX, \uXXXX, or a
+// backslash and a letter such as \n), whose last character is a separator,
+// not part of the word that follows.
+func afterEscape(text string) bool {
 	n := len(text)
-	return n >= 3 && text[n-3] == '%' && isHex(text[n-2]) && isHex(text[n-1])
+	switch {
+	case n >= 3 && text[n-3] == '%' && isHex(text[n-2]) && isHex(text[n-1]):
+		return true
+	case n >= 6 && text[n-6] == '\\' && text[n-5] == 'u' && isHex(text[n-4]) && isHex(text[n-3]) && isHex(text[n-2]) && isHex(text[n-1]):
+		return true
+	default:
+		return n >= 2 && text[n-2] == '\\' && strings.IndexByte("bfnrt", text[n-1]) >= 0
+	}
 }
 
 func isHex(c byte) bool {

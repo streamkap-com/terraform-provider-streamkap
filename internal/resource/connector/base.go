@@ -473,7 +473,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		responseClusterID = source.KcClusterId
 		responseConfig = source.Config
 		responseTags = source.Tags
-		addConnectionWarning(&resp.Diagnostics, source)
+		addConnectionWarning(ctx, &resp.Diagnostics, source)
 
 	case ConnectorTypeDestination:
 		destination, err := r.client.CreateDestination(ctx, api.Destination{
@@ -760,7 +760,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		connectorStatus = source.ConnectorStatus
 		responseConfig = source.Config
 		responseTags = source.Tags
-		addConnectionWarning(&resp.Diagnostics, source)
+		addConnectionWarning(ctx, &resp.Diagnostics, source)
 
 	case ConnectorTypeDestination:
 		destination, err := r.client.UpdateDestination(ctx, id, api.Destination{
@@ -1386,9 +1386,9 @@ func (r *BaseConnectorResource) addSaveError(diags *diag.Diagnostics, summary, p
 	diags.AddError(summary, fmt.Sprintf("%s: %s", prefix, err))
 }
 
-func addConnectionWarning(diags *diag.Diagnostics, source *api.Source) {
+func addConnectionWarning(ctx context.Context, diags *diag.Diagnostics, source *api.Source) {
 	if source.ConnectionWarning != "" {
-		diags.AddWarning("Source saved with a connection warning", source.ConnectionWarning)
+		diags.AddWarning("Source saved with a connection warning", api.MaskSentSecrets(ctx, source.ConnectionWarning))
 	}
 }
 

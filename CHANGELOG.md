@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Debug logs no longer print MongoDB, DocumentDB and Azure Blob connection strings or the BigQuery key file in request bodies.
-- An error message no longer repeats a secret the request sent, such as a connection string a database driver echoes back. Every `Sensitive` attribute and every secret-named field is masked, verbatim or JSON-, URL- or HTML-encoded, and errors are still classified for retry on the unmasked text.
+- An error message, or a source's save-time connection warning, no longer repeats a secret the request sent, such as a connection string a database driver echoes back. Masked are a source's or destination's `Sensitive` attributes and any request field named like a secret, verbatim or JSON-, URL- or HTML-encoded. Errors are still classified for retry on the unmasked text.
 - An imported OAuth source whose configuration still holds the grant its create spent applies cleanly: the grant is recorded without being sent, with a warning.
 - NetSuite fails at plan time on a secret typed for the other auth mode, as the API does; `consumer_key` and `token_id` are sensitive.
 - Topic delivery retries while another change holds the source's lock.

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -463,7 +464,7 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 			}
 		}
 		named, _ := ctx.Value(sentSecretsKey{}).([]string)
-		secrets := secretForms(append(sent, named...))
+		secrets := secretForms(append(slices.Clone(sent), named...))
 		// Masking runs before snippet, which cuts and flattens the text and
 		// would split a secret or change its newlines.
 		if detail, structured, ok := parseAPIErrorDetail(body); ok {
