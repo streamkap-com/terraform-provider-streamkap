@@ -22,13 +22,15 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/constants"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/helper"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var (
-	_ res.Resource                = &PipelineResource{}
-	_ res.ResourceWithConfigure   = &PipelineResource{}
-	_ res.ResourceWithImportState = &PipelineResource{}
+	_ res.Resource                   = &PipelineResource{}
+	_ res.ResourceWithConfigure      = &PipelineResource{}
+	_ res.ResourceWithImportState    = &PipelineResource{}
+	_ res.ResourceWithValidateConfig = &PipelineResource{}
 )
 
 func NewPipelineResource() res.Resource {
@@ -142,6 +144,9 @@ func (r *PipelineResource) Schema(ctx context.Context, req res.SchemaRequest, re
 		MarkdownDescription: "Manages a **Streamkap pipeline** that connects sources to destinations with optional transforms.\n\n" +
 			"A pipeline is the core orchestration resource that defines how data flows from a source " +
 			"connector through optional transforms to a destination connector.\n\n" +
+			"**Not for API sources** (`streamkap_source_hubspot`, `streamkap_source_zendesk` and the other API sources): " +
+			"send their topics with `streamkap_topic_destination`, which keeps the managed pipeline that delivers them. " +
+			"A managed pipeline cannot be imported here.\n\n" +
 			"**Related resources:** `streamkap_source_*` (sources), `streamkap_destination_*` (destinations), " +
 			"`streamkap_transform_*` (transforms), `streamkap_topic` (topics).\n\n" +
 			"[Documentation](https://docs.streamkap.com/pipelines)",
@@ -397,6 +402,10 @@ func (r *PipelineResource) Read(ctx context.Context, req res.ReadRequest, resp *
 		resp.State.RemoveResource(ctx)
 		return
 	}
+	if err := managedPipelineError(*pipeline); err != nil {
+		resp.Diagnostics.AddError("Managed pipeline", err.Error())
+		return
+	}
 
 	if err := r.api2Model(ctx, *pipeline, &state); err != nil {
 		resp.Diagnostics.AddError("Error mapping pipeline response", err.Error())
@@ -511,6 +520,38 @@ func (r *PipelineResource) Delete(ctx context.Context, req res.DeleteRequest, re
 		)
 		return
 	}
+}
+
+// ValidateConfig refuses an API source before apply, where the backend would answer 400.
+func (r *PipelineResource) ValidateConfig(ctx context.Context, req res.ValidateConfigRequest, resp *res.ValidateConfigResponse) {
+	var connector types.String
+	resp.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("source").AtName("connector"), &connector)...)
+	if resp.Diagnostics.HasError() || connector.IsNull() || connector.IsUnknown() {
+		return
+	}
+	if problem := apiSourceProblem(connector.ValueString()); problem != "" {
+		resp.Diagnostics.AddAttributeError(path.Root("source").AtName("connector"), "API source in a pipeline", problem)
+	}
+}
+
+// apiSourceProblem is why a pipeline cannot read from connector, or "" when it can.
+func apiSourceProblem(connector string) string {
+	if !source.IsAPISourceConnector(connector) {
+		return ""
+	}
+	return fmt.Sprintf("%q is an API source, which has no pipeline. Send its topics to a destination with "+
+		"streamkap_topic_destination; Streamkap keeps the managed pipeline that delivers them.", connector)
+}
+
+// managedPipelineError refuses an API source's managed delivery pipeline: the pipeline API answers 409 on its
+// update and delete, so a resource holding it could neither apply a change nor be destroyed.
+func managedPipelineError(pipeline api.Pipeline) error {
+	if !pipeline.Managed {
+		return nil
+	}
+	return fmt.Errorf("pipeline %s is managed by its API source's topic delivery and cannot be managed as "+
+		"streamkap_pipeline. Manage each topic with streamkap_topic_destination (import ID "+
+		"\"<topic_id>|%s\"), and remove this one with `terraform state rm`", pipeline.ID, pipeline.Destination.ID)
 }
 
 func (r *PipelineResource) ImportState(ctx context.Context, req res.ImportStateRequest, resp *res.ImportStateResponse) {

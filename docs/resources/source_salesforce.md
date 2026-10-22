@@ -4,7 +4,7 @@ page_title: "streamkap_source_salesforce Resource - terraform-provider-streamkap
 subcategory: ""
 description: |-
   Manages a Salesforce API source connector.
-  Send its topics to destinations with streamkap_topic_destination; API sources do not use streamkap_pipeline.
+  Send its topics to destinations with streamkap_topic_destination; API sources do not use streamkap_pipeline. Route every resource with for_each over resources: the source cannot be destroyed while any of its topics is still sent.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Manages a **Salesforce API source connector**.
 
-Send its topics to destinations with **streamkap_topic_destination**; API sources do not use streamkap_pipeline.
+Send its topics to destinations with **streamkap_topic_destination**; API sources do not use streamkap_pipeline. Route every resource with for_each over resources: the source cannot be destroyed while any of its topics is still sent.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -77,6 +77,36 @@ resource "streamkap_source_salesforce" "example" {
   client_secret  = var.salesforce_client_secret
   resources      = ["Account", "Contact", "Custom_Record__c"]
   backfill_start = "2026-01-01T00:00:00Z"
+}
+
+# JWT bearer: the External Client App's certificate flow, signing in as one user.
+variable "salesforce_jwt_private_key" {
+  type      = string
+  sensitive = true
+}
+
+resource "streamkap_source_salesforce" "jwt" {
+  name        = "salesforce-crm-jwt"
+  auth_mode   = "jwt"
+  domain      = var.salesforce_domain
+  client_id   = var.salesforce_client_id
+  username    = "integration@example.com"
+  private_key = var.salesforce_jwt_private_key
+  resources   = ["Account", "Opportunity"]
+}
+
+# Connect (OAuth): get the grant with the Streamkap CLI right before applying (the
+# "Get an OAuth grant" guide has the steps); Terraform cannot run the consent page.
+variable "salesforce_oauth_grant_id" {
+  type      = string
+  sensitive = true
+}
+
+resource "streamkap_source_salesforce" "oauth" {
+  name           = "salesforce-crm-oauth"
+  auth_mode      = "oauth"
+  oauth_grant_id = var.salesforce_oauth_grant_id
+  resources      = ["Account", "Contact"]
 }
 
 output "salesforce_source_id" {

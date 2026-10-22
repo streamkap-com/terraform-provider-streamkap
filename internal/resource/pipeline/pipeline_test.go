@@ -7,7 +7,10 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	res "github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 )
@@ -415,5 +418,105 @@ func TestPreservePeriodicAuditNilIsNoop(t *testing.T) {
 	}
 	if len(diags) != 0 {
 		t.Fatalf("no audit must not warn, got %v", diags)
+	}
+}
+
+// The backend answers 400 for a pipeline over an API source; the plan says so first and names the resource to use.
+func TestAPISourceConnectorIsRefusedAtPlan(t *testing.T) {
+	for _, code := range []string{"hubspot", "salesforce", "netsuite", "stripe", "zendesk", "google_analytics", "facebook_ads", "google_ads"} {
+		problem := apiSourceProblem(code)
+		if problem == "" || !strings.Contains(problem, "streamkap_topic_destination") {
+			t.Errorf("%s: %q does not refuse the API source or name streamkap_topic_destination", code, problem)
+		}
+	}
+	for _, code := range []string{"postgresql", "mysql", "stripe_webhook", ""} {
+		if problem := apiSourceProblem(code); problem != "" {
+			t.Errorf("%s is not an API source, refused with %q", code, problem)
+		}
+	}
+}
+
+// A managed pipeline is read-only (409 on update and delete), so the resource must not adopt one.
+func TestManagedPipelineIsNotAdopted(t *testing.T) {
+	if err := managedPipelineError(api.Pipeline{ID: "p1", Destination: api.PipelineDestination{ID: "d1"}}); err != nil {
+		t.Fatalf("an unmanaged pipeline was refused: %v", err)
+	}
+	err := managedPipelineError(api.Pipeline{ID: "p1", Managed: true, Destination: api.PipelineDestination{ID: "d1"}})
+	if err == nil {
+		t.Fatal("a managed pipeline was adopted")
+	}
+	for _, want := range []string{"streamkap_topic_destination", "<topic_id>|d1", "terraform state rm"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("%q does not say %q", err, want)
+		}
+	}
+}
+
+type managedPipelineClient struct {
+	api.StreamkapAPI
+}
+
+func (managedPipelineClient) GetPipeline(_ context.Context, id string) (*api.Pipeline, error) {
+	return &api.Pipeline{ID: id, Managed: true, Destination: api.PipelineDestination{ID: "d1"}}, nil
+}
+
+// pipelineValue is the resource's object with every attribute null but the ones given.
+func pipelineValue(t *testing.T, set map[string]tftypes.Value) (res.SchemaResponse, tftypes.Value) {
+	t.Helper()
+	var schemaResp res.SchemaResponse
+	(&PipelineResource{}).Schema(context.Background(), res.SchemaRequest{}, &schemaResp)
+	objType := schemaResp.Schema.Type().TerraformType(context.Background()).(tftypes.Object)
+	values := map[string]tftypes.Value{}
+	for name, typ := range objType.AttributeTypes {
+		values[name] = tftypes.NewValue(typ, nil)
+	}
+	for name, value := range set {
+		values[name] = value
+	}
+	return schemaResp, tftypes.NewValue(objType, values)
+}
+
+func TestReadRefusesAManagedPipeline(t *testing.T) {
+	schemaResp, raw := pipelineValue(t, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "p1")})
+	state := tfsdk.State{Schema: schemaResp.Schema, Raw: raw}
+	resp := res.ReadResponse{State: state}
+	(&PipelineResource{client: managedPipelineClient{}}).Read(context.Background(), res.ReadRequest{State: state}, &resp)
+	if !resp.Diagnostics.HasError() || !strings.Contains(resp.Diagnostics.Errors()[0].Detail(), "streamkap_topic_destination") {
+		t.Fatalf("a managed pipeline was read into state: %v", resp.Diagnostics)
+	}
+}
+
+func TestValidateConfigRefusesAnAPISource(t *testing.T) {
+	var schemaResp res.SchemaResponse
+	(&PipelineResource{}).Schema(context.Background(), res.SchemaRequest{}, &schemaResp)
+	sourceType := schemaResp.Schema.Type().TerraformType(context.Background()).(tftypes.Object).AttributeTypes["source"].(tftypes.Object)
+	source := func(connector string) tftypes.Value {
+		return tftypes.NewValue(sourceType, map[string]tftypes.Value{
+			"id":        tftypes.NewValue(tftypes.String, "s1"),
+			"name":      tftypes.NewValue(tftypes.String, "src"),
+			"connector": tftypes.NewValue(tftypes.String, connector),
+			"topics":    tftypes.NewValue(sourceType.AttributeTypes["topics"], nil),
+		})
+	}
+	validate := func(value tftypes.Value) diag.Diagnostics {
+		_, raw := pipelineValue(t, map[string]tftypes.Value{"source": value})
+		resp := res.ValidateConfigResponse{}
+		(&PipelineResource{}).ValidateConfig(context.Background(), res.ValidateConfigRequest{
+			Config: tfsdk.Config{Schema: schemaResp.Schema, Raw: raw},
+		}, &resp)
+		return resp.Diagnostics
+	}
+	if diags := validate(source("hubspot")); !diags.HasError() {
+		t.Error("a pipeline over an API source passed validation")
+	}
+	for name, value := range map[string]tftypes.Value{
+		"a CDC source":         source("postgresql"),
+		"an unknown source":    tftypes.NewValue(sourceType, tftypes.UnknownValue),
+		"an unknown connector": tftypes.NewValue(sourceType, map[string]tftypes.Value{"id": tftypes.NewValue(tftypes.String, "s1"), "name": tftypes.NewValue(tftypes.String, "src"), "connector": tftypes.NewValue(tftypes.String, tftypes.UnknownValue), "topics": tftypes.NewValue(sourceType.AttributeTypes["topics"], nil)}),
+		"no source at all yet": tftypes.NewValue(sourceType, nil),
+	} {
+		if diags := validate(value); diags.HasError() {
+			t.Errorf("%s was refused: %v", name, diags)
+		}
 	}
 }

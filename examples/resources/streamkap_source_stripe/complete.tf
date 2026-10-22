@@ -24,6 +24,20 @@ resource "streamkap_source_stripe" "example" {
   backfill_start = "2026-01-01"
 }
 
+# Connect (OAuth): get the grant with the Streamkap CLI right before applying (the
+# "Get an OAuth grant" guide has the steps); Terraform cannot run the consent page.
+variable "stripe_oauth_grant_id" {
+  type      = string
+  sensitive = true
+}
+
+resource "streamkap_source_stripe" "oauth" {
+  name           = "stripe-billing-oauth"
+  auth_mode      = "oauth"
+  oauth_grant_id = var.stripe_oauth_grant_id
+  resources      = ["customers", "invoices"]
+}
+
 output "stripe_source_id" {
   value = streamkap_source_stripe.example.id
 }

@@ -34,6 +34,8 @@ func TestIsRetryableError_APIError(t *testing.T) {
 		{"500 carrying a Kafka Connect 409", &APIError{StatusCode: http.StatusInternalServerError, Detail: "Kafka Connect API call failed with status code 409 and response ..."}, true},
 		{"500 carrying a KC timeout", &APIError{StatusCode: http.StatusInternalServerError, Detail: "KafkaConnectTimeout: timed out on all nodes"}, true},
 		{"wrapped 429", fmt.Errorf("CreateSource: %w", &APIError{StatusCode: http.StatusTooManyRequests, Detail: "slow down"}), true},
+		{"409 while another change to the source's delivery holds its lock", &APIError{StatusCode: http.StatusConflict, Detail: "Another destination change for source 'abc' is still in progress; retry shortly."}, true},
+		{"409 on a managed pipeline", &APIError{StatusCode: http.StatusConflict, Detail: "This pipeline is managed automatically by its source's Send to destination configuration."}, false},
 	}
 
 	for _, tt := range tests {

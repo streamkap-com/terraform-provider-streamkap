@@ -3,12 +3,15 @@
 page_title: "streamkap_topic_destination Resource - terraform-provider-streamkap"
 subcategory: ""
 description: |-
-  Sends one API source topic to a destination. API sources have no streamkap_pipeline; declare one of these per topic and destination, usually with for_each over the source's resources. When a source's resources change, the backend also sends a new resource's topic to every destination the source already sends to, and stops sending a removed one.
+  Sends one API source topic to a destination. API sources have no streamkap_pipeline; declare one of these per topic and destination, with for_each over the source's resources. When a source's resources change, the backend also sends a new resource's topic to every destination the source already sends to, and stops sending a removed one.
+  Route every resource of a source this way: a topic the backend attached that no resource tracks stays on the destination, and the source cannot be destroyed while any topic is still sent (detach it with streamkap topics detach-topic-destination).
 ---
 
 # streamkap_topic_destination (Resource)
 
-Sends one API source topic to a destination. API sources have no `streamkap_pipeline`; declare one of these per topic and destination, usually with `for_each` over the source's `resources`. When a source's resources change, the backend also sends a new resource's topic to every destination the source already sends to, and stops sending a removed one.
+Sends one API source topic to a destination. API sources have no `streamkap_pipeline`; declare one of these per topic and destination, with `for_each` over the source's `resources`. When a source's resources change, the backend also sends a new resource's topic to every destination the source already sends to, and stops sending a removed one.
+
+Route every resource of a source this way: a topic the backend attached that no resource tracks stays on the destination, and the source cannot be destroyed while any topic is still sent (detach it with `streamkap topics detach-topic-destination`).
 
 ## Example Usage
 

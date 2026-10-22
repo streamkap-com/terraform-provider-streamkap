@@ -1578,7 +1578,8 @@ func {{ .SchemaFuncName }}() schema.Schema {
 		{{- if .APISource }}
 		Description:         "Manages {{ .Article }} {{ .DisplayName }} API source connector. Send its topics to destinations with streamkap_topic_destination.",
 		MarkdownDescription: "Manages {{ .Article }} **{{ .DisplayName }} API source connector**.\n\n" +
-			"Send its topics to destinations with **streamkap_topic_destination**; API sources do not use streamkap_pipeline.\n\n" +
+			"Send its topics to destinations with **streamkap_topic_destination**; API sources do not use streamkap_pipeline. " +
+			"Route every resource with for_each over resources: the source cannot be destroyed while any of its topics is still sent.\n\n" +
 			"[Documentation]({{ .DocURL }})",
 		{{- else }}
 		Description:         "Manages {{ .Article }} {{ .DisplayName }} {{ .EntityType }} connector. Use with streamkap_pipeline to build data pipelines.",

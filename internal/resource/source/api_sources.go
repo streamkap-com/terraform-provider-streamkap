@@ -288,6 +288,29 @@ func emptyValue(value attr.Value) bool {
 	return false
 }
 
+// apiSources is every API source the provider registers.
+var apiSources = []generated.APISource{
+	generated.SourceHubspotAPISource,
+	generated.SourceSalesforceAPISource,
+	generated.SourceNetsuiteAPISource,
+	generated.SourceStripeAPISource,
+	generated.SourceZendeskAPISource,
+	generated.SourceGoogleAnalyticsAPISource,
+	generated.SourceFacebookAdsAPISource,
+	generated.SourceGoogleAdsAPISource,
+}
+
+// IsAPISourceConnector reports whether connector is an API source's code. An API source has no pipeline: its
+// topics reach a destination through streamkap_topic_destination.
+func IsAPISourceConnector(connector string) bool {
+	for _, source := range apiSources {
+		if source.Code == connector {
+			return true
+		}
+	}
+	return false
+}
+
 func newAPISource(source generated.APISource) resource.Resource {
 	return connector.NewBaseConnectorResource(&apiSourceConfig{source})
 }

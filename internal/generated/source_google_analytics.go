@@ -40,7 +40,8 @@ func SourceGoogleAnalyticsSchema() schema.Schema {
 	return schema.Schema{
 		Description: "Manages a Google Analytics 4 API source connector. Send its topics to destinations with streamkap_topic_destination.",
 		MarkdownDescription: "Manages a **Google Analytics 4 API source connector**.\n\n" +
-			"Send its topics to destinations with **streamkap_topic_destination**; API sources do not use streamkap_pipeline.\n\n" +
+			"Send its topics to destinations with **streamkap_topic_destination**; API sources do not use streamkap_pipeline. " +
+			"Route every resource with for_each over resources: the source cannot be destroyed while any of its topics is still sent.\n\n" +
 			"[Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

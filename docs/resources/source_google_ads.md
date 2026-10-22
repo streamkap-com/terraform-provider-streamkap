@@ -4,7 +4,7 @@ page_title: "streamkap_source_google_ads Resource - terraform-provider-streamkap
 subcategory: ""
 description: |-
   Manages a Google Ads API source connector.
-  Send its topics to destinations with streamkap_topic_destination; API sources do not use streamkap_pipeline.
+  Send its topics to destinations with streamkap_topic_destination; API sources do not use streamkap_pipeline. Route every resource with for_each over resources: the source cannot be destroyed while any of its topics is still sent.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Manages a **Google Ads API source connector**.
 
-Send its topics to destinations with **streamkap_topic_destination**; API sources do not use streamkap_pipeline.
+Send its topics to destinations with **streamkap_topic_destination**; API sources do not use streamkap_pipeline. Route every resource with for_each over resources: the source cannot be destroyed while any of its topics is still sent.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -42,10 +42,8 @@ resource "streamkap_source_google_ads" "example" {
 ### Complete
 
 ```terraform
-# auth_mode "oauth" needs an oauth_grant_id from Connect with Google, got with
-# the CLI's start-source-oauth-connect and poll-source-oauth-grant on top of
-# your OAuth client (the "Get an OAuth grant" guide has the steps). The refresh_token mode
-# below takes a refresh token you minted with that client instead.
+# Two of Google Ads' sign-ins: a refresh token you minted with your own OAuth
+# client, and Connect with Google through that client (auth_mode "oauth").
 
 terraform {
   required_providers {
@@ -87,6 +85,23 @@ resource "streamkap_source_google_ads" "example" {
   }])
   conversion_window_days = 30
   backfill_start         = "2026-01-01"
+}
+
+# Connect with Google through your own OAuth client (auth_mode "oauth"): get the grant with the Streamkap CLI right before applying (the
+# "Get an OAuth grant" guide has the steps); Terraform cannot run the consent page.
+variable "google_ads_oauth_grant_id" {
+  type      = string
+  sensitive = true
+}
+
+resource "streamkap_source_google_ads" "oauth" {
+  name           = "google-ads-oauth"
+  auth_mode      = "oauth"
+  client_id      = "1234567890-abc.apps.googleusercontent.com"
+  client_secret  = var.google_ads_client_secret
+  oauth_grant_id = var.google_ads_oauth_grant_id
+  customer_id    = "1234567890"
+  resources      = ["campaign", "campaign_performance"]
 }
 
 output "google_ads_source_id" {

@@ -17,7 +17,7 @@ Terraform source address: `streamkap-com/streamkap` (`registry.terraform.io/stre
 
 - **Sources** — CDC, event and API connectors (databases, queues, webhooks, S3, SaaS APIs).
 - **Destinations** — warehouses, lakes, queues, vector DBs.
-- **Pipelines** — connect a source to a destination, optionally through transforms.
+- **Pipelines** — connect a CDC source to a destination, optionally through transforms. An API source has none: `streamkap_topic_destination` sends its topics, and `streamkap_pipeline` refuses an API source and a managed pipeline.
 - **Transforms** — in-flight data transformations (JS map/filter, enrich, SQL join, rollup, fan-out).
 - **Topics** — Kafka topic configuration.
 - **Kafka users** and **Client credentials** (v3+) — access control and machine auth.
@@ -113,7 +113,7 @@ API sources: `streamkap_source_hubspot`, `salesforce`, `netsuite`, `stripe`, `ze
 `streamkap_transform_map_filter`, `enrich`, `enrich_async`, `sql_join`, `rollup`, `fan_out`, `topic_router` (v3).
 
 ### Other resources
-`streamkap_pipeline`, `streamkap_topic`, `streamkap_tag`, `streamkap_kafka_user` (v3), `streamkap_client_credential` (v3).
+`streamkap_pipeline`, `streamkap_topic_destination`, `streamkap_topic`, `streamkap_tag`, `streamkap_kafka_user` (v3), `streamkap_client_credential` (v3).
 
 ### Data sources
 `streamkap_transform`, `streamkap_tag`, `streamkap_tags` (v3), `streamkap_topics`, `streamkap_topic`, `streamkap_topic_metrics`, `streamkap_roles` (v3).
@@ -494,7 +494,7 @@ Required env vars for acceptance: `TF_ACC=1`, `STREAMKAP_CLIENT_ID`, `STREAMKAP_
 - AI-agent-friendly schema descriptions: every resource/data source needs both `Description` and `MarkdownDescription`. tfgen emits these automatically; if you add an attribute by hand, document enums (list valid values), defaults, and `**Security:**` notes for sensitive fields.
 - Each resource needs `examples/resources/streamkap_<name>/{basic,complete}.tf`.
 - Use `streamkap-com/streamkap` in Terraform configurations and local development overrides; the Go module path is `github.com/streamkap-com/terraform-provider-streamkap`.
-- Connector status values (read-only): `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
+- Connector status values (read-only): `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`; API sources also report `Pending`.
 - **Never log a connector `Config`/`configMap`.** It is keyed by API field name and holds decrypted credentials. Request bodies are logged through `redactSensitiveJSON` (`internal/api/redact.go`); anything logged outside `internal/api` bypasses it. Secrets travel under dotted Kafka-Connect names (`api.key`, `snowflake.private.key`), so any new redaction pattern must treat `.` as a separator.
 
 For deeper detail follow the Documentation map at the top of this file.

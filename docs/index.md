@@ -14,6 +14,8 @@ Terraform provider for **Streamkap** data streaming platform.
 
 Manages sources, destinations, pipelines, transforms, and topics.
 
+API sources (`streamkap_source_hubspot`, `streamkap_source_salesforce`, `streamkap_source_zendesk` and the other SaaS connectors) have no pipeline: send each of their topics to a destination with `streamkap_topic_destination`. Sources that sign in through Connect (OAuth) take a one-time grant; see [Get an OAuth grant for an API source](https://registry.terraform.io/providers/streamkap-com/streamkap/latest/docs/guides/oauth-grants).
+
 **Version guidance:** The stable release line is **v3.x**. Pin `version = "3.0.1"` and review the [migration guide](https://registry.terraform.io/providers/streamkap-com/streamkap/latest/docs/guides/migration) before upgrading from v2. The legacy v2 line receives bug and security fixes only through 15 October 2026.
 
 [User documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)

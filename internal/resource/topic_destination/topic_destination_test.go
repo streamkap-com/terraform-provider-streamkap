@@ -7,9 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
@@ -128,5 +131,32 @@ func TestTopicDestinationSerializesChangesPerSource(t *testing.T) {
 	})
 	if got := client.topics["dest-1"]; len(got) != 0 {
 		t.Fatalf("parallel detaches left %v", got)
+	}
+}
+
+// A topic ID the backend cannot resolve to an API source fails at apply; the plan catches its shape, including the
+// "|" that would break the import ID.
+func TestTopicDestinationTopicIDShape(t *testing.T) {
+	var response resource.SchemaResponse
+	(&Resource{}).Schema(context.Background(), resource.SchemaRequest{}, &response)
+	validators := response.Schema.Attributes["topic_id"].(schema.StringAttribute).Validators
+	valid := func(topicID string) bool {
+		var out validator.StringResponse
+		for _, v := range validators {
+			v.ValidateString(context.Background(), validator.StringRequest{
+				Path: path.Root("topic_id"), ConfigValue: types.StringValue(topicID),
+			}, &out)
+		}
+		return !out.Diagnostics.HasError()
+	}
+	for _, topicID := range []string{"source_abc.salesforce.Account", "source_abc.google_analytics.custom_daily.users"} {
+		if !valid(topicID) {
+			t.Errorf("refused %q", topicID)
+		}
+	}
+	for _, topicID := range []string{"Account", "source_abc.Account", "abc.salesforce.Account", "source_abc.salesforce.Acc|ount", "source_.salesforce.Account"} {
+		if valid(topicID) {
+			t.Errorf("accepted %q", topicID)
+		}
 	}
 }

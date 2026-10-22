@@ -3,14 +3,18 @@ package topic_destination
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
+
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
@@ -33,14 +37,18 @@ var _ resource.ResourceWithImportState = (*Resource)(nil)
 
 func NewResource() resource.Resource { return &Resource{} }
 
+// topicIDPattern is an API source's topic ID, source_<id>.<connector>.<resource>; no "|", which separates the
+// import ID.
+var topicIDPattern = regexp.MustCompile(`^source_[^.|]+\.[^.|]+\.[^|]+$`)
+
 func (r *Resource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_topic_destination"
 }
 
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description:         "Sends one API source topic to a destination. API sources have no streamkap_pipeline; declare one of these per topic and destination, usually with for_each over the source's resources. When a source's resources change, the backend also sends a new resource's topic to every destination the source already sends to, and stops sending a removed one.",
-		MarkdownDescription: "Sends one API source topic to a destination. API sources have no `streamkap_pipeline`; declare one of these per topic and destination, usually with `for_each` over the source's `resources`. When a source's resources change, the backend also sends a new resource's topic to every destination the source already sends to, and stops sending a removed one.",
+		Description:         "Sends one API source topic to a destination. API sources have no streamkap_pipeline; declare one of these per topic and destination, with for_each over the source's resources. When a source's resources change, the backend also sends a new resource's topic to every destination the source already sends to, and stops sending a removed one. Route every resource of a source this way: a topic the backend attached that no resource tracks stays on the destination, and the source cannot be destroyed while any topic is still sent.",
+		MarkdownDescription: "Sends one API source topic to a destination. API sources have no `streamkap_pipeline`; declare one of these per topic and destination, with `for_each` over the source's `resources`. When a source's resources change, the backend also sends a new resource's topic to every destination the source already sends to, and stops sending a removed one.\n\nRoute every resource of a source this way: a topic the backend attached that no resource tracks stays on the destination, and the source cannot be destroyed while any topic is still sent (detach it with `streamkap topics detach-topic-destination`).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -53,6 +61,8 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				Description:         "Full topic ID, source_<source id>.<connector>.<resource>. Changing it replaces the resource.",
 				MarkdownDescription: "Full topic ID, `source_<source id>.<connector>.<resource>`. Changing it replaces the resource.",
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
+				Validators: []validator.String{stringvalidator.RegexMatches(topicIDPattern,
+					"must be source_<source id>.<connector>.<resource>, the topic ID of an API source's resource")},
 			},
 			"destination_id": schema.StringAttribute{
 				Required:            true,

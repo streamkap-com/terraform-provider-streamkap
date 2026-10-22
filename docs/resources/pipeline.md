@@ -5,6 +5,7 @@ subcategory: ""
 description: |-
   Manages a Streamkap pipeline that connects sources to destinations with optional transforms.
   A pipeline is the core orchestration resource that defines how data flows from a source connector through optional transforms to a destination connector.
+  Not for API sources (streamkap_source_hubspot, streamkap_source_zendesk and the other API sources): send their topics with streamkap_topic_destination, which keeps the managed pipeline that delivers them. A managed pipeline cannot be imported here.
   Related resources: streamkap_source_* (sources), streamkap_destination_* (destinations), streamkap_transform_* (transforms), streamkap_topic (topics).
   Documentation https://docs.streamkap.com/pipelines
 ---
@@ -14,6 +15,8 @@ description: |-
 Manages a **Streamkap pipeline** that connects sources to destinations with optional transforms.
 
 A pipeline is the core orchestration resource that defines how data flows from a source connector through optional transforms to a destination connector.
+
+**Not for API sources** (`streamkap_source_hubspot`, `streamkap_source_zendesk` and the other API sources): send their topics with `streamkap_topic_destination`, which keeps the managed pipeline that delivers them. A managed pipeline cannot be imported here.
 
 **Related resources:** `streamkap_source_*` (sources), `streamkap_destination_*` (destinations), `streamkap_transform_*` (transforms), `streamkap_topic` (topics).
 

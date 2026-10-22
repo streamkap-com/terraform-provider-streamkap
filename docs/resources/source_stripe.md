@@ -4,7 +4,7 @@ page_title: "streamkap_source_stripe Resource - terraform-provider-streamkap"
 subcategory: ""
 description: |-
   Manages a Stripe API source connector.
-  Send its topics to destinations with streamkap_topic_destination; API sources do not use streamkap_pipeline.
+  Send its topics to destinations with streamkap_topic_destination; API sources do not use streamkap_pipeline. Route every resource with for_each over resources: the source cannot be destroyed while any of its topics is still sent.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Manages a **Stripe API source connector**.
 
-Send its topics to destinations with **streamkap_topic_destination**; API sources do not use streamkap_pipeline.
+Send its topics to destinations with **streamkap_topic_destination**; API sources do not use streamkap_pipeline. Route every resource with for_each over resources: the source cannot be destroyed while any of its topics is still sent.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
@@ -64,6 +64,20 @@ resource "streamkap_source_stripe" "example" {
   resources      = ["customers", "charges", "subscriptions", "invoices"]
   api_version    = "2025-08-27.basil"
   backfill_start = "2026-01-01"
+}
+
+# Connect (OAuth): get the grant with the Streamkap CLI right before applying (the
+# "Get an OAuth grant" guide has the steps); Terraform cannot run the consent page.
+variable "stripe_oauth_grant_id" {
+  type      = string
+  sensitive = true
+}
+
+resource "streamkap_source_stripe" "oauth" {
+  name           = "stripe-billing-oauth"
+  auth_mode      = "oauth"
+  oauth_grant_id = var.stripe_oauth_grant_id
+  resources      = ["customers", "invoices"]
 }
 
 output "stripe_source_id" {

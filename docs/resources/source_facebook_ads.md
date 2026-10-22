@@ -4,7 +4,7 @@ page_title: "streamkap_source_facebook_ads Resource - terraform-provider-streamk
 subcategory: ""
 description: |-
   Manages a Facebook Ads API source connector.
-  Send its topics to destinations with streamkap_topic_destination; API sources do not use streamkap_pipeline.
+  Send its topics to destinations with streamkap_topic_destination; API sources do not use streamkap_pipeline. Route every resource with for_each over resources: the source cannot be destroyed while any of its topics is still sent.
   Documentation https://docs.streamkap.com/streamkap-provider-for-terraform
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 Manages a **Facebook Ads API source connector**.
 
-Send its topics to destinations with **streamkap_topic_destination**; API sources do not use streamkap_pipeline.
+Send its topics to destinations with **streamkap_topic_destination**; API sources do not use streamkap_pipeline. Route every resource with for_each over resources: the source cannot be destroyed while any of its topics is still sent.
 
 [Documentation](https://docs.streamkap.com/streamkap-provider-for-terraform)
 
