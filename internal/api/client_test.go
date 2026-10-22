@@ -716,6 +716,37 @@ func TestAPIError_PlainDetailMasksSentSecrets(t *testing.T) {
 	assert.Equal(t, "rejected "+redactedPlaceholder, apiErr.Fields[0].Message)
 }
 
+// A secret survives neither the 200-character cut nor JSON escaping: a PEM key
+// keeps its newlines and a password its quotes and ampersands in a structured
+// detail, a JSON body without detail, and a non-JSON body.
+func TestAPIError_SentSecretsMaskedInEveryResponseShape(t *testing.T) {
+	pem := "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASC\n-----END PRIVATE KEY-----"
+	password := `p&ss<"word>`
+	padding := strings.Repeat("x", 190)
+	for name, responder := range map[string]httpmock.Responder{
+		"structured detail": httpmock.NewJsonResponderOrPanic(http.StatusUnprocessableEntity, map[string]any{
+			"detail": []map[string]any{{"msg": "bad key " + pem + " and password " + password}}}),
+		"JSON without detail": httpmock.NewJsonResponderOrPanic(http.StatusBadRequest, map[string]any{
+			"message": "bad key " + pem + " and password " + password}),
+		"non-JSON body": httpmock.NewStringResponder(http.StatusBadGateway, padding+" "+password+"\n"+pem),
+	} {
+		t.Run(name, func(t *testing.T) {
+			httpmock.Activate()
+			defer httpmock.DeactivateAndReset()
+			baseURL := "https://api.test.streamkap.com"
+			client := newTestClient(baseURL)
+			httpmock.RegisterResponder(http.MethodPost, baseURL+"/sources?secret_returned=true&wait=false", responder)
+			_, err := client.CreateSource(context.Background(), Source{Name: "s", Connector: "snowflake", Config: map[string]any{
+				"snowflake.private.key": pem, "connection.password": password,
+			}})
+			require.Error(t, err)
+			for _, leak := range []string{"MIIEvQIBADANBgkqhkiG9w0BAQEFAASC", "p&ss", `p\u0026ss`, "ss<", `ss\u003c`} {
+				assert.NotContains(t, err.Error(), leak)
+			}
+		})
+	}
+}
+
 // TestTokenRenewal_On401RetriesWithFreshToken — the OAuth token used to be
 // fetched once in provider.Configure and never renewed, so any apply outliving
 // the token TTL failed every remaining resource with an opaque 401.

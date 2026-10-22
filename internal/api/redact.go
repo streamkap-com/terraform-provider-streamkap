@@ -99,7 +99,8 @@ var secretValueKeyRegex = regexp.MustCompile(`(?i)` +
 const minMaskedSecretLen = 6
 
 // sentSecrets returns the secret values a JSON request body carries, longest
-// first, so a connection string is masked before a password inside it.
+// first, so a connection string is masked before a password inside it. Each
+// also comes JSON-escaped, the form a re-encoded error body repeats it in.
 func sentSecrets(body []byte) []string {
 	var obj any
 	if json.Unmarshal(body, &obj) != nil {
@@ -120,6 +121,9 @@ func sentSecrets(body []byte) []string {
 		case string:
 			if secret && len(val) >= minMaskedSecretLen {
 				secrets = append(secrets, val)
+				if encoded, err := json.Marshal(val); err == nil && string(encoded[1:len(encoded)-1]) != val {
+					secrets = append(secrets, string(encoded[1:len(encoded)-1]))
+				}
 			}
 		}
 	}

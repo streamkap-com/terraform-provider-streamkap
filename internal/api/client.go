@@ -429,8 +429,15 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 		// auth redirect) and arrive as HTML. Returning only the bare JSON parse
 		// error ("invalid character '<' looking for beginning of value") strips
 		// every actionable hint, which has been a recurring debugging dead-end.
-		secrets := requestSecrets(req)
-		if detail, ok := parseAPIErrorDetail(body); ok {
+		secrets, err := requestSecrets(req)
+		if err != nil {
+			return &APIError{
+				StatusCode: resp.StatusCode,
+				Detail:     fmt.Sprintf("%s %s: error detail withheld, because the request could not be re-read to mask the secrets it sent: %v", req.Method, req.URL, err),
+				RequestID:  requestID,
+			}
+		}
+		if detail, ok := parseAPIErrorDetail(body, secrets); ok {
 			var envelope struct {
 				Fields []APIFieldError `json:"fields"`
 			}
@@ -441,10 +448,10 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 			return &APIError{StatusCode: resp.StatusCode, Detail: maskSentSecrets(detail, secrets), RequestID: requestID, Fields: envelope.Fields}
 		}
 		if json.Valid(body) {
-			detail := fmt.Sprintf("%s %s: JSON error response: %s", req.Method, req.URL, snippet([]byte(redactSensitiveErrorJSON(body))))
-			return &APIError{StatusCode: resp.StatusCode, Detail: maskSentSecrets(detail, secrets), RequestID: requestID}
+			detail := fmt.Sprintf("%s %s: JSON error response: %s", req.Method, req.URL, snippet([]byte(maskSentSecrets(redactSensitiveErrorJSON(body), secrets))))
+			return &APIError{StatusCode: resp.StatusCode, Detail: detail, RequestID: requestID}
 		}
-		text := maskSentSecrets(snippet(body), secrets)
+		text := snippet([]byte(maskSentSecrets(string(body), secrets)))
 		tflog.Debug(ctx, fmt.Sprintf("%s %s → %d: response body not JSON: %s", req.Method, req.URL, resp.StatusCode, text))
 		return &APIError{
 			StatusCode: resp.StatusCode,
@@ -468,23 +475,26 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 }
 
 // requestSecrets reads the secret values req sent, to mask them in its error.
-func requestSecrets(req *http.Request) []string {
+// A request without a body sent none.
+func requestSecrets(req *http.Request) ([]string, error) {
 	if req.GetBody == nil {
-		return nil
+		return nil, nil
 	}
 	body, err := req.GetBody()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer body.Close()
 	sent, err := io.ReadAll(body)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return sentSecrets(sent)
+	return sentSecrets(sent), nil
 }
 
-func parseAPIErrorDetail(body []byte) (string, bool) {
+// parseAPIErrorDetail masks secrets before snippet cuts and flattens the
+// detail, which would split a secret or change its newlines.
+func parseAPIErrorDetail(body []byte, secrets []string) (string, bool) {
 	var envelope struct {
 		Detail json.RawMessage `json:"detail"`
 	}
@@ -497,7 +507,7 @@ func parseAPIErrorDetail(body []byte) (string, bool) {
 		return detail, strings.TrimSpace(detail) != ""
 	}
 
-	return snippet([]byte(redactSensitiveErrorJSON(envelope.Detail))), true
+	return snippet([]byte(maskSentSecrets(redactSensitiveErrorJSON(envelope.Detail), secrets))), true
 }
 
 func isUnauthorized(err error) bool {
