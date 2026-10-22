@@ -259,8 +259,9 @@ func (r *BaseConnectorResource) ModifyPlan(ctx context.Context, req resource.Mod
 			return
 		}
 	}
+	s := r.config.GetSchema()
 	if adjusts {
-		attributes := r.config.GetSchema().Attributes
+		attributes := s.Attributes
 		unset, unknown := adjuster.PlanAdjustments(model, prior)
 		for _, name := range unset {
 			resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(name), nullValue(attributes[name]))...)
@@ -278,7 +279,6 @@ func (r *BaseConnectorResource) ModifyPlan(ctx context.Context, req resource.Mod
 		names = append(names, name)
 	}
 	configured := shared.CaptureFields(model, names)
-	s := r.config.GetSchema()
 	for alias, attribute := range s.Attributes {
 		if attribute.GetDeprecationMessage() == "" {
 			continue
@@ -393,9 +393,11 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 
 	// Capture user-supplied secrets before the API echo can overwrite them, and
 	// the defaulted attributes the backend may drop (see shared.DefaultedAttrNames).
-	plannedSecrets := shared.CaptureFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
-	plannedDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(r.config.GetSchema()))
-	plannedForms := shared.CaptureFields(model, r.configuredFormAttrNames())
+	s := r.config.GetSchema()
+	secrets := shared.SensitiveStringAttrNames(s)
+	plannedSecrets := shared.CaptureFields(model, secrets)
+	plannedDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(s))
+	plannedForms := shared.CaptureFields(model, r.configuredFormAttrNames(secrets))
 
 	// Get name from model
 	name := r.getStringField(model, "Name")
@@ -488,7 +490,8 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	r.setStringField(model, "Name", connectorName)
 	r.setStringField(model, "Connector", connectorCode)
 	r.setStringField(model, "ConnectorStatus", connectorStatus)
-	if r.config.GetSchema().Attributes["kc_cluster_id"].IsComputed() && !r.config.GetSchema().Attributes["kc_cluster_id"].IsOptional() {
+	// A cluster the server selects is planned unknown; the response names it.
+	if cluster := shared.CaptureFields(model, []string{"kc_cluster_id"})["kc_cluster_id"]; cluster != nil && cluster.IsUnknown() {
 		r.setStringField(model, "KcClusterId", responseClusterID)
 	}
 	r.setStringSliceField(model, "Tags", normalizeTagsResponse(tags, responseTags))
@@ -542,12 +545,14 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 	// Snapshot the secrets already in state. The API response can null them out
 	// (see shared.FillNullFields); prior state is the only source we have
 	// on refresh, since Read gets no plan.
-	priorSecrets := shared.CaptureFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
+	s := r.config.GetSchema()
+	secrets := shared.SensitiveStringAttrNames(s)
+	priorSecrets := shared.CaptureFields(model, secrets)
 	// Same for defaulted attributes the backend drops when their gating
 	// condition is unmet: nulling them in state would plan the Default back
 	// every run.
-	priorDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(r.config.GetSchema()))
-	priorForms := shared.CaptureFields(model, r.configuredFormAttrNames())
+	priorDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(s))
+	priorForms := shared.CaptureFields(model, r.configuredFormAttrNames(secrets))
 
 	// Get ID from model
 	id := r.getStringField(model, "ID")
@@ -674,9 +679,11 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 
 	// Capture user-supplied secrets before the API echo can overwrite them, and
 	// the defaulted attributes the backend may drop (see shared.DefaultedAttrNames).
-	plannedSecrets := shared.CaptureFields(model, shared.SensitiveStringAttrNames(r.config.GetSchema()))
-	plannedDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(r.config.GetSchema()))
-	plannedForms := shared.CaptureFields(model, r.configuredFormAttrNames())
+	s := r.config.GetSchema()
+	secrets := shared.SensitiveStringAttrNames(s)
+	plannedSecrets := shared.CaptureFields(model, secrets)
+	plannedDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(s))
+	plannedForms := shared.CaptureFields(model, r.configuredFormAttrNames(secrets))
 
 	// Get ID and name from model
 	id := r.getStringField(model, "ID")
@@ -1271,11 +1278,10 @@ func (r *BaseConnectorResource) keepsConfiguredForm() bool {
 
 // configuredFormAttrNames lists the mapped non-secret attributes. Secrets
 // already keep their configured value (shared.PreserveKnownFields).
-func (r *BaseConnectorResource) configuredFormAttrNames() []string {
+func (r *BaseConnectorResource) configuredFormAttrNames(secrets []string) []string {
 	if !r.keepsConfiguredForm() {
 		return nil
 	}
-	secrets := shared.SensitiveStringAttrNames(r.config.GetSchema())
 	var names []string
 	for name := range r.config.GetFieldMappings() {
 		if !slices.Contains(secrets, name) {
