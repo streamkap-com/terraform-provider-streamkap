@@ -687,6 +687,35 @@ func TestAPIError_JSONWithoutDetailIsRedacted(t *testing.T) {
 	}
 }
 
+// A plain-string refusal is the backend's or a connector's own prose, so no key
+// marks a secret inside it; a database driver can still echo the connection
+// string or password it was handed. The values the request sent as secrets are
+// masked wherever they reappear, and the rest of the message is kept.
+func TestAPIError_PlainDetailMasksSentSecrets(t *testing.T) {
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	baseURL := "https://api.test.streamkap.com"
+	client := newTestClient(baseURL)
+	uri := "mongodb://app:hunter2-pass@db.internal:27017"
+	httpmock.RegisterResponder(http.MethodPost, baseURL+"/sources?secret_returned=true&wait=false",
+		httpmock.NewJsonResponderOrPanic(http.StatusBadRequest, map[string]any{
+			"detail": "mongodb.connection.string: Unable to connect to " + uri + " in certificate mode",
+			"fields": []map[string]any{{"field": "token_secret", "message": "rejected tba-token-secret"}},
+		}))
+
+	_, err := client.CreateSource(context.Background(), Source{Name: "s", Connector: "mongodb", Config: map[string]any{
+		"mongodb.connection.string": uri, "auth_mode": "certificate", "token_secret": "tba-token-secret",
+	}})
+
+	require.Error(t, err)
+	var apiErr *APIError
+	require.True(t, errors.As(err, &apiErr))
+	assert.NotContains(t, err.Error(), "hunter2-pass")
+	assert.NotContains(t, apiErr.Fields[0].Message, "tba-token-secret")
+	assert.Contains(t, apiErr.Detail, "mongodb.connection.string: Unable to connect to "+redactedPlaceholder+" in certificate mode")
+	assert.Equal(t, "rejected "+redactedPlaceholder, apiErr.Fields[0].Message)
+}
+
 // TestTokenRenewal_On401RetriesWithFreshToken — the OAuth token used to be
 // fetched once in provider.Configure and never renewed, so any apply outliving
 // the token TTL failed every remaining resource with an opaque 401.

@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -83,4 +84,54 @@ func redactValue(v any, errorResponse bool) any {
 	default:
 		return v
 	}
+}
+
+// secretValueKeyRegex picks the request values masked in an error message. It
+// is narrower than sensitiveKeyRegex: that one's `auth` and `client_id` would
+// mask ordinary words such as an auth_mode value wherever the backend's prose
+// repeats them.
+var secretValueKeyRegex = regexp.MustCompile(`(?i)` +
+	`(password|passwd|secret|token|passphrase|credential|keyfile|sasl|` +
+	`api[_.-]?key|private[_.-]?key|access[_.-]?key|consumer[_.-]?key|connection[_.-]?string)`)
+
+// minMaskedSecretLen keeps short values, which also occur as plain words,
+// from blanking out parts of a message.
+const minMaskedSecretLen = 6
+
+// sentSecrets returns the secret values a JSON request body carries, longest
+// first, so a connection string is masked before a password inside it.
+func sentSecrets(body []byte) []string {
+	var obj any
+	if json.Unmarshal(body, &obj) != nil {
+		return nil
+	}
+	var secrets []string
+	var walk func(v any, secret bool)
+	walk = func(v any, secret bool) {
+		switch val := v.(type) {
+		case map[string]any:
+			for k, inner := range val {
+				walk(inner, secret || secretValueKeyRegex.MatchString(k))
+			}
+		case []any:
+			for _, inner := range val {
+				walk(inner, secret)
+			}
+		case string:
+			if secret && len(val) >= minMaskedSecretLen {
+				secrets = append(secrets, val)
+			}
+		}
+	}
+	walk(obj, false)
+	sort.Slice(secrets, func(i, j int) bool { return len(secrets[i]) > len(secrets[j]) })
+	return secrets
+}
+
+// maskSentSecrets masks each sent secret where an error message repeats it.
+func maskSentSecrets(text string, secrets []string) string {
+	for _, secret := range secrets {
+		text = strings.ReplaceAll(text, secret, redactedPlaceholder)
+	}
+	return text
 }

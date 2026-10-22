@@ -429,24 +429,26 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 		// auth redirect) and arrive as HTML. Returning only the bare JSON parse
 		// error ("invalid character '<' looking for beginning of value") strips
 		// every actionable hint, which has been a recurring debugging dead-end.
+		secrets := requestSecrets(req)
 		if detail, ok := parseAPIErrorDetail(body); ok {
 			var envelope struct {
 				Fields []APIFieldError `json:"fields"`
 			}
 			_ = json.Unmarshal(body, &envelope) // parseAPIErrorDetail already decoded this body
-			return &APIError{StatusCode: resp.StatusCode, Detail: detail, RequestID: requestID, Fields: envelope.Fields}
+			for i := range envelope.Fields {
+				envelope.Fields[i].Message = maskSentSecrets(envelope.Fields[i].Message, secrets)
+			}
+			return &APIError{StatusCode: resp.StatusCode, Detail: maskSentSecrets(detail, secrets), RequestID: requestID, Fields: envelope.Fields}
 		}
 		if json.Valid(body) {
 			detail := fmt.Sprintf("%s %s: JSON error response: %s", req.Method, req.URL, snippet([]byte(redactSensitiveErrorJSON(body))))
-			return &APIError{StatusCode: resp.StatusCode, Detail: detail, RequestID: requestID}
+			return &APIError{StatusCode: resp.StatusCode, Detail: maskSentSecrets(detail, secrets), RequestID: requestID}
 		}
-		tflog.Debug(ctx,
-			fmt.Sprintf("%s %s → %d: response body not JSON: %s",
-				req.Method, req.URL, resp.StatusCode, snippet(body)),
-		)
+		text := maskSentSecrets(snippet(body), secrets)
+		tflog.Debug(ctx, fmt.Sprintf("%s %s → %d: response body not JSON: %s", req.Method, req.URL, resp.StatusCode, text))
 		return &APIError{
 			StatusCode: resp.StatusCode,
-			Detail:     fmt.Sprintf("%s %s: non-JSON response body: %s", req.Method, req.URL, snippet(body)),
+			Detail:     fmt.Sprintf("%s %s: non-JSON response body: %s", req.Method, req.URL, text),
 			RequestID:  requestID,
 		}
 	}
@@ -463,6 +465,23 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 		return fmt.Errorf("%s %s → %d: failed to decode response body: %w", req.Method, req.URL, resp.StatusCode, err)
 	}
 	return nil
+}
+
+// requestSecrets reads the secret values req sent, to mask them in its error.
+func requestSecrets(req *http.Request) []string {
+	if req.GetBody == nil {
+		return nil
+	}
+	body, err := req.GetBody()
+	if err != nil {
+		return nil
+	}
+	defer body.Close()
+	sent, err := io.ReadAll(body)
+	if err != nil {
+		return nil
+	}
+	return sentSecrets(sent)
 }
 
 func parseAPIErrorDetail(body []byte) (string, bool) {
