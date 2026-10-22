@@ -494,3 +494,46 @@ func TestZendeskSourceImportThenUpdate(t *testing.T) {
 		t.Errorf("updates = %d, want 1 (the import and the update must converge)", n)
 	}
 }
+
+// The recovery from a create whose response was lost is an import, with a configuration still holding the grant
+// that create spent. The apply after import records the grant without sending it (the backend would refuse it as
+// already used), and later plans are empty.
+func TestZendeskSourceImportWithTheSpentGrant(t *testing.T) {
+	f := &apiSourceFixture{t: t, connector: "zendesk", secrets: []string{"refresh_token"}}
+	f.stored = &api.Source{ID: fixtureSourceID, Name: "support", Connector: "zendesk", KcClusterId: "api-cluster", ConnectorStatus: "Active",
+		Config: map[string]any{"subdomain": "acme", "resources": "tickets", "refresh_token": "stored-refresh-token"}}
+	server := f.server()
+	defer server.Close()
+	config := fixtureProvider(server.URL) + `resource "streamkap_source_zendesk" "support" {
+  name           = "support"
+  subdomain      = "acme"
+  oauth_grant_id = "spent-grant"
+  resources      = ["tickets"]
+}
+`
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:             config,
+				ResourceName:       "streamkap_source_zendesk.support",
+				ImportState:        true,
+				ImportStateId:      fixtureSourceID,
+				ImportStatePersist: true,
+			},
+			{
+				Config: config,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_source_zendesk.support", "oauth_grant_id", "spent-grant"),
+					f.checkRequest(&f.updates, 0, func(body map[string]any) error {
+						if _, sent := body["oauth_grant_id"]; sent {
+							return fmt.Errorf("the spent grant was sent after import: %v", body)
+						}
+						return nil
+					}),
+				),
+			},
+			{Config: config, PlanOnly: true},
+		},
+	})
+}

@@ -158,6 +158,12 @@ func (c *apiSourceConfig) ValidateConfiguration(model any, prior any) diag.Diagn
 	if prior != nil && c.OAuth.HostField != "" {
 		diags.Append(c.validateHostChange(values, shared.CaptureFields(prior, []string{c.OAuth.HostField, oauthGrantAttr}))...)
 	}
+	if prior != nil && c.importedGrant(values, c.conditionValues(prior, extra...)) {
+		diags.AddAttributeWarning(path.Root(oauthGrantAttr), "oauth_grant_id treated as already used",
+			"This "+c.DisplayName+" source has no grant in state, so it was imported, and a grant left in its configuration "+
+				"is usually the one its create already spent. Terraform records it without sending it, and the source keeps its "+
+				"connection. To reconnect, run "+c.connectSteps()+" Then set the new grant and apply.")
+	}
 	secrets := c.sensitiveAttrNames()
 	for _, condition := range c.Conditions {
 		show, conditionValue, known := shown(condition, values)
@@ -298,6 +304,43 @@ func (c *apiSourceConfig) validateHostChange(values, prior map[string]attr.Value
 	return diags
 }
 
+// importedGrant reports a configured grant on a source that already signs in through OAuth, keeps its host, and has
+// no grant in state: an imported one. Its configuration was usually written for the create the import replaced (the
+// recovery from a create whose response was lost), so the grant is the spent one, and sending it fails the update. A
+// grant that switches into OAuth, moves the host, or replaces one in state is new and still sent.
+func (c *apiSourceConfig) importedGrant(planned, prior map[string]attr.Value) bool {
+	if !c.OAuth.Enabled || !isSet(planned[oauthGrantAttr]) || !isUnset(prior[oauthGrantAttr]) {
+		return false
+	}
+	if c.OAuth.AuthModeField != "" {
+		if mode, known := c.authMode(prior); !known || mode != c.OAuth.AuthModeValue {
+			return false
+		}
+		if mode, known := c.authMode(planned); !known || mode != c.OAuth.AuthModeValue {
+			return false
+		}
+	}
+	if c.OAuth.HostField != "" {
+		host, before := planned[c.OAuth.HostField], prior[c.OAuth.HostField]
+		if !isSet(host) || !isSet(before) || !host.Equal(before) {
+			return false
+		}
+	}
+	return true
+}
+
+// grantFields are the attributes importedGrant reads.
+func (c *apiSourceConfig) grantFields() []string {
+	fields := []string{oauthGrantAttr}
+	if c.OAuth.AuthModeField != "" {
+		fields = append(fields, c.OAuth.AuthModeField)
+	}
+	if c.OAuth.HostField != "" {
+		fields = append(fields, c.OAuth.HostField)
+	}
+	return fields
+}
+
 // connectSteps is the CLI handoff for an OAuth grant.
 func (c *apiSourceConfig) connectSteps() string {
 	return c.OAuth.ConnectCommand + ", open the returned authorize_url, then run `streamkap sources poll-source-oauth-grant " + c.Code + " --state <state>`."
@@ -309,8 +352,9 @@ func (c *apiSourceConfig) connectSteps() string {
 // account_id) never pairs with a kept secret, which the backend refuses. It
 // omits an unchanged secret the form hides, which the grant filled and the
 // backend may have rotated since, one planned unknown for a new grant to
-// fill, and an unchanged oauth_grant_id, which is spent. An explicit null
-// still clears a secret the configuration removed.
+// fill, an unchanged oauth_grant_id, which is spent, and an imported source's
+// configured grant (importedGrant). An explicit null still clears a secret the
+// configuration removed.
 func (c *apiSourceConfig) FilterRequestConfig(configMap map[string]any, plan any, state any) {
 	if state == nil {
 		for key, value := range configMap {
@@ -324,6 +368,9 @@ func (c *apiSourceConfig) FilterRequestConfig(configMap map[string]any, plan any
 	planned := shared.CaptureFields(plan, secrets)
 	prior := shared.CaptureFields(state, secrets)
 	values := c.conditionValues(plan)
+	if apiField, ok := c.FieldMappings[oauthGrantAttr]; ok && c.importedGrant(c.conditionValues(plan, c.grantFields()...), c.conditionValues(state, c.grantFields()...)) {
+		delete(configMap, apiField)
+	}
 	for _, name := range secrets {
 		apiField, ok := c.FieldMappings[name]
 		if !ok {

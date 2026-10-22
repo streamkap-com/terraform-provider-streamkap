@@ -568,3 +568,57 @@ func TestAPISourceBuildsItsSchemaOnce(t *testing.T) {
 		t.Errorf("the generated schema was built %d times, want once", builds)
 	}
 }
+
+// An imported OAuth source has no grant in state, while the configuration written for the create the import replaced
+// usually still holds the grant that create spent. Sending it fails the apply ("The connection grant has expired or
+// was already used"), so it is recorded without being sent; a grant that switches into OAuth, moves the host, or
+// replaces one already in state is still sent.
+func TestAPISourceImportedSourceTreatsItsGrantAsSpent(t *testing.T) {
+	zendesk := apiSource(t, NewZendeskResource)
+	hubspot := apiSource(t, NewHubSpotResource)
+	sent := func(config *apiSourceConfig, plan, prior any) bool {
+		body := map[string]any{"oauth_grant_id": "grant"}
+		config.FilterRequestConfig(body, plan, prior)
+		_, ok := body["oauth_grant_id"]
+		return ok
+	}
+	warned := func(config *apiSourceConfig, plan, prior any) bool {
+		diags := config.ValidateConfiguration(plan, prior)
+		if diags.HasError() {
+			t.Fatalf("refused: %v", diags)
+		}
+		return len(diags.Warnings()) > 0
+	}
+	cases := []struct {
+		name        string
+		config      *apiSourceConfig
+		plan, prior any
+		send        bool
+	}{
+		{"imported Zendesk source", zendesk,
+			&generated.SourceZendeskModel{Subdomain: types.StringValue("acme"), OauthGrantID: types.StringValue("grant")},
+			&generated.SourceZendeskModel{Subdomain: types.StringValue("acme"), OauthGrantID: types.StringNull()}, false},
+		{"imported HubSpot source in OAuth mode", hubspot,
+			&generated.SourceHubspotModel{AuthMode: types.StringValue("oauth"), OauthGrantID: types.StringValue("grant")},
+			&generated.SourceHubspotModel{AuthMode: types.StringValue("oauth"), OauthGrantID: types.StringNull()}, false},
+		{"imported Zendesk source moving subdomain", zendesk,
+			&generated.SourceZendeskModel{Subdomain: types.StringValue("other"), OauthGrantID: types.StringValue("grant")},
+			&generated.SourceZendeskModel{Subdomain: types.StringValue("acme"), OauthGrantID: types.StringNull()}, true},
+		{"HubSpot switching from a token into OAuth", hubspot,
+			&generated.SourceHubspotModel{AuthMode: types.StringValue("oauth"), OauthGrantID: types.StringValue("grant")},
+			&generated.SourceHubspotModel{AuthMode: types.StringValue("token"), Token: types.StringValue("pat"), OauthGrantID: types.StringNull()}, true},
+		{"a new grant replacing the one in state", zendesk,
+			&generated.SourceZendeskModel{Subdomain: types.StringValue("acme"), OauthGrantID: types.StringValue("grant")},
+			&generated.SourceZendeskModel{Subdomain: types.StringValue("acme"), OauthGrantID: types.StringValue("spent")}, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := sent(tc.config, tc.plan, tc.prior); got != tc.send {
+				t.Errorf("grant sent = %v, want %v", got, tc.send)
+			}
+			if got := warned(tc.config, tc.plan, tc.prior); got == tc.send {
+				t.Errorf("warned = %v; the plan must say exactly when a grant is kept back", got)
+			}
+		})
+	}
+}

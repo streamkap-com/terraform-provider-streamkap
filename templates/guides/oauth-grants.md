@@ -100,6 +100,8 @@ terraform import streamkap_source_zendesk.support <source-id>
 
 Leave `oauth_grant_id` unset on an imported source. The backend keeps the credentials from the UI's Connect.
 
+The same import recovers a create whose response was lost: the source exists, so the retried create fails, and you import it instead. That configuration still holds the grant the lost create spent. On the first apply after the import, the provider records that grant without sending it, warns that it treated it as already used, and leaves the source's connection as it is. To reconnect later, get a new grant and set it.
+
 ## MCP
 
 The Streamkap MCP server has the same two steps, `streamkap_start_source_oauth_connect` and `streamkap_poll_source_oauth_grant`, if an agent prepares the grant for you.
