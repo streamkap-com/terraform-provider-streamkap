@@ -18,7 +18,7 @@ import (
 var sensitiveKeyRegex = regexp.MustCompile(`(?i)` +
 	`(password|passwd|secret|token|credential|passphrase|` +
 	`api[_.-]?key|private[_.-]?key|public[_.-]?key|` +
-	`access[_.-]?key|service[_.-]?account|keyfile|connection[_.-]?string|` +
+	`access[_.-]?key|consumer[_.-]?key|service[_.-]?account|keyfile|connection[_.-]?string|` +
 	`auth|bearer|session|cookie|` +
 	`client[_.-]?secret|client[_.-]?id|sasl|pem|implementation)`)
 

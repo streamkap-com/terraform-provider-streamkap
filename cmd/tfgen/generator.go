@@ -1061,6 +1061,10 @@ func isPortField(tfAttrName string) bool {
 // they are listed anyway so that dropping the flag upstream cannot silently
 // downgrade them.
 //
+// NetSuite token-based auth ships `consumer_key` and `token_id` unflagged
+// while their `_secret` halves are encrypted; the pairs are credentials, so the
+// identifier halves are kept out of plan output too.
+//
 // Matching is deliberately narrow: an exact name or an underscore-suffixed
 // name. `api_key_enabled` is a flag, `http_authorization_type` is an enum, and
 // `oauth2_access_token_url` is an endpoint — none are secrets.
@@ -1098,6 +1102,8 @@ var forcedSecretNames = []string{
 	"access_key_id",
 	"secret_access_key",
 	"secret_key",
+	"consumer_key",
+	"token_id",
 }
 
 func isSecretField(tfAttrName string) bool {

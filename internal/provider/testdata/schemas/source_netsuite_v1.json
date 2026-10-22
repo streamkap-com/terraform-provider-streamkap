@@ -54,7 +54,7 @@
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false,
+      "sensitive": true,
       "type": "basetypes.StringType"
     },
     "consumer_secret": {
@@ -117,7 +117,7 @@
       "required": false,
       "optional": true,
       "computed": true,
-      "sensitive": false,
+      "sensitive": true,
       "type": "basetypes.StringType"
     },
     "token_secret": {

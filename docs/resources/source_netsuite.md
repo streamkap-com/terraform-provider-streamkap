@@ -109,7 +109,9 @@ output "netsuite_source_id" {
 - `backfill_start` (String) Earliest modification date to read when a resource first syncs; unset reads all history. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.
 - `certificate_id` (String) The Certificate ID (not the fingerprint) of the certificate mapped to this integration in Setup → Integration → Manage Authentication → OAuth 2.0 Client Credentials (M2M) Setup.
 - `client_id` (String) The Client ID NetSuite showed once, when you saved the integration record in Setup → Integration → Manage Integrations.
-- `consumer_key` (String) The Consumer Key of the integration record the access token belongs to, shown once when you save the record in Setup → Integration → Manage Integrations.
+- `consumer_key` (String, Sensitive) The Consumer Key of the integration record the access token belongs to, shown once when you save the record in Setup → Integration → Manage Integrations.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `consumer_secret` (String, Sensitive) The Consumer Secret shown beside the Consumer Key when the integration record was saved.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
@@ -121,7 +123,9 @@ output "netsuite_source_id" {
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
-- `token_id` (String) The Token ID of the access token for that integration and role, from Setup → Users/Roles → Access Tokens.
+- `token_id` (String, Sensitive) The Token ID of the access token for that integration and role, from Setup → Users/Roles → Access Tokens.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `token_secret` (String, Sensitive) The Token Secret NetSuite shows once beside the Token ID when the access token is created; if it is lost, create a new token.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.

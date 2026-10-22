@@ -186,7 +186,7 @@ The generator applies these conversions:
 
 1. **Port fields**: Fields named `port` or ending with `_port` are converted to `Int64` even if stored as strings in the backend
 2. **Sensitive fields**: Fields with `encrypt: true` or `control: "password"` are marked `Sensitive: true`
-3. **Credentials by name**: `isSecretField` forces fields named or suffixed `api_key`, `authorization`, `access_key_id`, `secret_access_key`, or `secret_key` to `Sensitive: true`, even when the backend omits sensitivity flags. Names such as `api_key_enabled` and `http_authorization_type` do not match.
+3. **Credentials by name**: `isSecretField` forces fields named or suffixed `api_key`, `authorization`, `access_key_id`, `secret_access_key`, `secret_key`, `consumer_key`, or `token_id` to `Sensitive: true`, even when the backend omits sensitivity flags. Names such as `api_key_enabled` and `http_authorization_type` do not match.
 4. **Set-once fields**: Fields with `set_once: true` get `RequiresReplace()` plan modifier
 
 ### Go Field Naming (acronyms)

@@ -156,8 +156,9 @@ func SourceNetsuiteSchema() schema.Schema {
 			"consumer_key": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The Consumer Key of the integration record the access token belongs to, shown once when you save the record in Setup → Integration → Manage Integrations.",
-				MarkdownDescription: "The Consumer Key of the integration record the access token belongs to, shown once when you save the record in Setup → Integration → Manage Integrations.",
+				Sensitive:           true,
+				Description:         "The Consumer Key of the integration record the access token belongs to, shown once when you save the record in Setup → Integration → Manage Integrations. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The Consumer Key of the integration record the access token belongs to, shown once when you save the record in Setup → Integration → Manage Integrations.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -175,8 +176,9 @@ func SourceNetsuiteSchema() schema.Schema {
 			"token_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The Token ID of the access token for that integration and role, from Setup → Users/Roles → Access Tokens.",
-				MarkdownDescription: "The Token ID of the access token for that integration and role, from Setup → Users/Roles → Access Tokens.",
+				Sensitive:           true,
+				Description:         "The Token ID of the access token for that integration and role, from Setup → Users/Roles → Access Tokens. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The Token ID of the access token for that integration and role, from Setup → Users/Roles → Access Tokens.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

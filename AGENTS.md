@@ -387,7 +387,7 @@ Control→TF-type mapping table lives in `docs/CODE_GENERATOR.md` (kept in sync 
 - Unsupported backend controls stop generation; `code-editor` maps to String.
 - Backend `readonly` is sometimes a UI hint. Preserve configurable fields such as SSH public keys and S3 topic selection; omit `UseStateForUnknown` for derived fields so updates can recompute them.
 - `control: "password"` OR `encrypt: true` → `Sensitive: true`.
-- Fields named or suffixed `api_key`, `authorization`, `access_key_id`, `secret_access_key`, or `secret_key` are forced `Sensitive: true` by `isSecretField` in `cmd/tfgen/generator.go`.
+- Fields named or suffixed `api_key`, `authorization`, `access_key_id`, `secret_access_key`, `secret_key`, `consumer_key`, or `token_id` are forced `Sensitive: true` by `isSecretField` in `cmd/tfgen/generator.go`.
 - Every connector merges the entity-wide `configurations_for_all.json` common fields **except `kafkadirect`**, which the backend (`_load_global_configuration`) resolves from its plugin config alone. tfgen mirrors this skip in `Generate()`; the Kafka Direct source/destination expose only their plugin fields.
 - Go field naming preserves: `ID SSH SSL SQL DB URL API AWS ARN QA` uppercase. So `ssh_port` → `SSHPort`, `role_arn` → `RoleARN`.
 
