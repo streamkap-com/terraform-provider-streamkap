@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 // sensitiveKeyRegex matches JSON keys that are likely to carry secrets. We
@@ -94,9 +96,10 @@ var secretValueKeyRegex = regexp.MustCompile(`(?i)` +
 	`(password|passwd|secret|token|passphrase|credential|keyfile|sasl|` +
 	`api[_.-]?key|private[_.-]?key|access[_.-]?key|consumer[_.-]?key|connection[_.-]?string)`)
 
-// minMaskedSecretLen keeps short values, which also occur as plain words,
-// from blanking out parts of a message.
-const minMaskedSecretLen = 6
+// A secret shorter than minSubstringSecretLen is masked only where it stands
+// as a whole word, so a short password is still masked without blanking the
+// same letters inside other words.
+const minSubstringSecretLen = 6
 
 // sentSecrets returns the secret values a JSON request body carries, longest
 // first, so a connection string is masked before a password inside it. Each
@@ -119,7 +122,7 @@ func sentSecrets(body []byte) []string {
 				walk(inner, secret)
 			}
 		case string:
-			if secret && len(val) >= minMaskedSecretLen {
+			if secret && val != "" {
 				secrets = append(secrets, val)
 				if encoded, err := json.Marshal(val); err == nil && string(encoded[1:len(encoded)-1]) != val {
 					secrets = append(secrets, string(encoded[1:len(encoded)-1]))
@@ -135,7 +138,35 @@ func sentSecrets(body []byte) []string {
 // maskSentSecrets masks each sent secret where an error message repeats it.
 func maskSentSecrets(text string, secrets []string) string {
 	for _, secret := range secrets {
-		text = strings.ReplaceAll(text, secret, redactedPlaceholder)
+		if len(secret) >= minSubstringSecretLen {
+			text = strings.ReplaceAll(text, secret, redactedPlaceholder)
+		} else {
+			text = maskWholeWord(text, secret)
+		}
 	}
 	return text
+}
+
+func maskWholeWord(text, word string) string {
+	var out strings.Builder
+	for {
+		i := strings.Index(text, word)
+		if i < 0 {
+			out.WriteString(text)
+			return out.String()
+		}
+		before, _ := utf8.DecodeLastRuneInString(text[:i])
+		after, _ := utf8.DecodeRuneInString(text[i+len(word):])
+		out.WriteString(text[:i])
+		if isWordRune(before) || isWordRune(after) {
+			out.WriteString(word)
+		} else {
+			out.WriteString(redactedPlaceholder)
+		}
+		text = text[i+len(word):]
+	}
+}
+
+func isWordRune(r rune) bool {
+	return r != utf8.RuneError && (unicode.IsLetter(r) || unicode.IsDigit(r))
 }

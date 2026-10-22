@@ -699,12 +699,12 @@ func TestAPIError_PlainDetailMasksSentSecrets(t *testing.T) {
 	uri := "mongodb://app:hunter2-pass@db.internal:27017"
 	httpmock.RegisterResponder(http.MethodPost, baseURL+"/sources?secret_returned=true&wait=false",
 		httpmock.NewJsonResponderOrPanic(http.StatusBadRequest, map[string]any{
-			"detail": "mongodb.connection.string: Unable to connect to " + uri + " in certificate mode",
-			"fields": []map[string]any{{"field": "token_secret", "message": "rejected tba-token-secret"}},
+			"detail": "mongodb.connection.string: Unable to connect to " + uri + " in certificate mode as k9z (not k9zz)",
+			"fields": []map[string]any{{"field": "token_secret", "message": "rejected tba-token-secret"}, {"field": "sasl.password", "message": "k9z is too short"}},
 		}))
 
 	_, err := client.CreateSource(context.Background(), Source{Name: "s", Connector: "mongodb", Config: map[string]any{
-		"mongodb.connection.string": uri, "auth_mode": "certificate", "token_secret": "tba-token-secret",
+		"mongodb.connection.string": uri, "auth_mode": "certificate", "token_secret": "tba-token-secret", "sasl.password": "k9z",
 	}})
 
 	require.Error(t, err)
@@ -712,8 +712,9 @@ func TestAPIError_PlainDetailMasksSentSecrets(t *testing.T) {
 	require.True(t, errors.As(err, &apiErr))
 	assert.NotContains(t, err.Error(), "hunter2-pass")
 	assert.NotContains(t, apiErr.Fields[0].Message, "tba-token-secret")
-	assert.Contains(t, apiErr.Detail, "mongodb.connection.string: Unable to connect to "+redactedPlaceholder+" in certificate mode")
+	assert.Contains(t, apiErr.Detail, "mongodb.connection.string: Unable to connect to "+redactedPlaceholder+" in certificate mode as "+redactedPlaceholder+" (not k9zz)")
 	assert.Equal(t, "rejected "+redactedPlaceholder, apiErr.Fields[0].Message)
+	assert.Equal(t, redactedPlaceholder+" is too short", apiErr.Fields[1].Message)
 }
 
 // A secret survives neither the 200-character cut nor JSON escaping: a PEM key
@@ -722,13 +723,14 @@ func TestAPIError_PlainDetailMasksSentSecrets(t *testing.T) {
 func TestAPIError_SentSecretsMaskedInEveryResponseShape(t *testing.T) {
 	pem := "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASC\n-----END PRIVATE KEY-----"
 	password := `p&ss<"word>`
+	short := "k9z"
 	padding := strings.Repeat("x", 190)
 	for name, responder := range map[string]httpmock.Responder{
 		"structured detail": httpmock.NewJsonResponderOrPanic(http.StatusUnprocessableEntity, map[string]any{
-			"detail": []map[string]any{{"msg": "bad key " + pem + " and password " + password}}}),
+			"detail": []map[string]any{{"msg": "bad key " + pem + " and password " + password + " for " + short}}}),
 		"JSON without detail": httpmock.NewJsonResponderOrPanic(http.StatusBadRequest, map[string]any{
-			"message": "bad key " + pem + " and password " + password}),
-		"non-JSON body": httpmock.NewStringResponder(http.StatusBadGateway, padding+" "+password+"\n"+pem),
+			"message": "bad key " + pem + " and password " + password + " for " + short}),
+		"non-JSON body": httpmock.NewStringResponder(http.StatusBadGateway, padding+" "+password+"\n"+pem+" "+short),
 	} {
 		t.Run(name, func(t *testing.T) {
 			httpmock.Activate()
@@ -737,10 +739,10 @@ func TestAPIError_SentSecretsMaskedInEveryResponseShape(t *testing.T) {
 			client := newTestClient(baseURL)
 			httpmock.RegisterResponder(http.MethodPost, baseURL+"/sources?secret_returned=true&wait=false", responder)
 			_, err := client.CreateSource(context.Background(), Source{Name: "s", Connector: "snowflake", Config: map[string]any{
-				"snowflake.private.key": pem, "connection.password": password,
+				"snowflake.private.key": pem, "connection.password": password, "sasl.password": short,
 			}})
 			require.Error(t, err)
-			for _, leak := range []string{"MIIEvQIBADANBgkqhkiG9w0BAQEFAASC", "p&ss", `p\u0026ss`, "ss<", `ss\u003c`} {
+			for _, leak := range []string{"MIIEvQIBADANBgkqhkiG9w0BAQEFAASC", "p&ss", `p\u0026ss`, "ss<", `ss\u003c`, short} {
 				assert.NotContains(t, err.Error(), leak)
 			}
 		})
