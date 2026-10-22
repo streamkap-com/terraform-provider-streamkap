@@ -122,6 +122,12 @@ type ConnectorConfigPlanAdjuster interface {
 	PlanAdjustments(config any, state any) (unset []string, unknown []string)
 }
 
+// ConnectorConfigResponseDecoder rewrites a response config into the shapes the
+// model reads, before it is mapped (API sources store lists as CSV strings).
+type ConnectorConfigResponseDecoder interface {
+	DecodeResponseConfig(config map[string]any)
+}
+
 // ConnectorConfigKeepsConfiguredForm marks a connector whose backend
 // normalizes values it echoes (a date stored as a UTC datetime, an ID with its
 // dashes removed). The configured spelling is kept in state while the backend
@@ -932,6 +938,9 @@ func (r *BaseConnectorResource) isJSONStringField(fieldName string, jsonStringFi
 
 // configMapToModel updates a model struct from a config map using the field mappings.
 func (r *BaseConnectorResource) configMapToModel(ctx context.Context, cfg map[string]any, model any) {
+	if decoder, ok := r.config.(ConnectorConfigResponseDecoder); ok {
+		decoder.DecodeResponseConfig(cfg)
+	}
 	shared.ConfigMapToModel(ctx, cfg, model, r.config.GetFieldMappings(), r.setValueHook())
 }
 

@@ -2,6 +2,7 @@ package source
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -26,6 +27,7 @@ var _ connector.ConnectorConfigValidator = (*apiSourceConfig)(nil)
 var _ connector.ConnectorConfigRequestFilter = (*apiSourceConfig)(nil)
 var _ connector.ConnectorConfigPlanAdjuster = (*apiSourceConfig)(nil)
 var _ connector.ConnectorConfigKeepsConfiguredForm = (*apiSourceConfig)(nil)
+var _ connector.ConnectorConfigResponseDecoder = (*apiSourceConfig)(nil)
 
 func (c *apiSourceConfig) GetSchema() schema.Schema            { return c.Schema() }
 func (c *apiSourceConfig) GetFieldMappings() map[string]string { return c.FieldMappings }
@@ -39,6 +41,28 @@ func (c *apiSourceConfig) NewModelInstance() any    { return c.NewModel() }
 // KeepsConfiguredForm opts API sources into keeping the configured spelling of
 // a value the backend normalizes (see connector.ConnectorConfigKeepsConfiguredForm).
 func (c *apiSourceConfig) KeepsConfiguredForm() {}
+
+// DecodeResponseConfig splits the lists the backend stores joined with commas;
+// an empty list is stored as "".
+func (c *apiSourceConfig) DecodeResponseConfig(config map[string]any) {
+	for name, attribute := range c.Schema().Attributes {
+		if _, isList := attribute.(schema.ListAttribute); !isList {
+			continue
+		}
+		apiField := c.FieldMappings[name]
+		stored, ok := config[apiField].(string)
+		if !ok {
+			continue
+		}
+		items := []any{}
+		for _, item := range strings.Split(stored, ",") {
+			if item = strings.TrimSpace(item); item != "" {
+				items = append(items, item)
+			}
+		}
+		config[apiField] = items
+	}
+}
 
 // conditionValues captures every condition field, and the fields they gate.
 func (c *apiSourceConfig) conditionValues(model any, extra ...string) map[string]attr.Value {

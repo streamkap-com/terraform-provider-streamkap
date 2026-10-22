@@ -478,3 +478,25 @@ func TestAPISourceOAuthPlansRemovedShownFieldsNull(t *testing.T) {
 		}
 	}
 }
+
+// The backend stores an API source's lists joined with commas (an empty list as "").
+func TestAPISourceReadsStoredCSVLists(t *testing.T) {
+	read := func(stored map[string]any) *generated.SourceHubspotModel {
+		apiSource(t, NewHubSpotResource).DecodeResponseConfig(stored)
+		var model generated.SourceHubspotModel
+		shared.ConfigMapToModel(context.Background(), stored, &model, generated.SourceHubspotFieldMappings, nil)
+		return &model
+	}
+	model := read(map[string]any{"resources": "contacts, deals,companies", "properties": ""})
+	var resources []string
+	model.Resources.ElementsAs(context.Background(), &resources, false)
+	if !slices.Equal(resources, []string{"contacts", "deals", "companies"}) {
+		t.Errorf("resources = %#v", model.Resources)
+	}
+	if model.Properties.IsNull() || len(model.Properties.Elements()) != 0 {
+		t.Errorf("an empty stored list must read as [], got %#v", model.Properties)
+	}
+	if model := read(map[string]any{"resources": "contacts"}); !model.Properties.IsNull() {
+		t.Errorf("an absent list must read as null, got %#v", model.Properties)
+	}
+}
