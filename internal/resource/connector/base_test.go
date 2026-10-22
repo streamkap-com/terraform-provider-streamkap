@@ -245,3 +245,31 @@ func TestSaveErrorPrefersTheCanonicalAttributeAndKeepsTheRequestID(t *testing.T)
 		}
 	}
 }
+
+type normalizedModel struct {
+	Subdomain types.String `tfsdk:"subdomain"`
+	Region    types.String `tfsdk:"region"`
+}
+
+type normalizedConfig struct{ fakeConfig }
+
+func (normalizedConfig) GetFieldMappings() map[string]string {
+	return map[string]string{"subdomain": "subdomain", "region": "region"}
+}
+func (normalizedConfig) NewModelInstance() any          { return &normalizedModel{} }
+func (normalizedConfig) ConfiguredFormFields() []string { return []string{"subdomain"} }
+
+// Only a field the backend is known to normalize keeps its configured spelling; any other differing echo is a real
+// change (a value dropped or rewritten) and must reach state so the plan shows it.
+func TestConfiguredFormsOnlyForNormalizedFields(t *testing.T) {
+	r := NewBaseConnectorResource(normalizedConfig{}).(*BaseConnectorResource)
+	planned := shared.CaptureFields(&normalizedModel{Subdomain: types.StringValue("ACME"), Region: types.StringValue("eu,us")}, r.configuredFormAttrNames())
+	applied := &normalizedModel{Subdomain: types.StringValue("acme"), Region: types.StringValue("eu")}
+	keepConfiguredForms(applied, planned)
+	if applied.Subdomain.ValueString() != "ACME" {
+		t.Errorf("a normalized echo must keep the configured spelling, got %v", applied.Subdomain)
+	}
+	if applied.Region.ValueString() != "eu" {
+		t.Errorf("a field the backend does not normalize must keep its echo, got %v", applied.Region)
+	}
+}

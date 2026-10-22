@@ -464,7 +464,7 @@ func TestAPISourceOAuthPlansRemovedShownFieldsNull(t *testing.T) {
 			source.Conditions[i].Required = false
 		}
 	}
-	googleAds := &apiSourceConfig{source}
+	googleAds := &apiSourceConfig{APISource: source}
 	prior := &generated.SourceGoogleAdsModel{AuthMode: types.StringValue("oauth"), ClientID: types.StringValue("client"), ClientSecret: types.StringValue("secret"),
 		RefreshToken: types.StringValue("filled-by-grant"), OauthGrantID: types.StringValue("grant-1")}
 	for _, grant := range []string{"grant-1", "grant-2"} {
@@ -479,7 +479,8 @@ func TestAPISourceOAuthPlansRemovedShownFieldsNull(t *testing.T) {
 	}
 }
 
-// The backend stores an API source's lists joined with commas (an empty list as "").
+// The backend stores an API source's lists joined with commas. It reads an empty optional list as unset, so a stored ""
+// is null: decoding it as [] would contradict a null plan and fail the apply.
 func TestAPISourceReadsStoredCSVLists(t *testing.T) {
 	read := func(stored map[string]any) *generated.SourceHubspotModel {
 		apiSource(t, NewHubSpotResource).DecodeResponseConfig(stored)
@@ -493,8 +494,8 @@ func TestAPISourceReadsStoredCSVLists(t *testing.T) {
 	if !slices.Equal(resources, []string{"contacts", "deals", "companies"}) {
 		t.Errorf("resources = %#v", model.Resources)
 	}
-	if model.Properties.IsNull() || len(model.Properties.Elements()) != 0 {
-		t.Errorf("an empty stored list must read as [], got %#v", model.Properties)
+	if !model.Properties.IsNull() {
+		t.Errorf("an empty stored list must read as null, got %#v", model.Properties)
 	}
 	if model := read(map[string]any{"resources": "contacts"}); !model.Properties.IsNull() {
 		t.Errorf("an absent list must read as null, got %#v", model.Properties)
@@ -533,5 +534,22 @@ func TestAPISourceSwitchToOAuthDoesNotKeepThePastedSecret(t *testing.T) {
 	unset, unknown := googleAds.PlanAdjustments(config, prior)
 	if !slices.Contains(unset, "service_account_key") && !slices.Contains(unknown, "service_account_key") {
 		t.Errorf("the service_account mode's key was kept from state: unset=%v unknown=%v", unset, unknown)
+	}
+}
+
+// Every field kept over its normalized echo exists, and nothing else is kept: a value the backend dropped, like an
+// unknown resource, must show as drift.
+func TestAPISourceConfiguredFormFields(t *testing.T) {
+	for _, source := range apiSources {
+		config := &apiSourceConfig{APISource: source}
+		attributes := config.GetSchema().Attributes
+		for _, name := range config.ConfiguredFormFields() {
+			if _, ok := attributes[name]; !ok {
+				t.Errorf("%s: normalized field %q is not in the schema", source.Code, name)
+			}
+		}
+		if slices.Contains(config.ConfiguredFormFields(), "resources") {
+			t.Errorf("%s: resources is not normalized and must take its echo", source.Code)
+		}
 	}
 }

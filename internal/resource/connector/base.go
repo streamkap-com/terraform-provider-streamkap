@@ -128,13 +128,15 @@ type ConnectorConfigResponseDecoder interface {
 	DecodeResponseConfig(config map[string]any)
 }
 
-// ConnectorConfigKeepsConfiguredForm marks a connector whose backend
-// normalizes values it echoes (a date stored as a UTC datetime, an ID with its
-// dashes removed). The configured spelling is kept in state while the backend
-// still echoes the normalized form recorded at apply time; any other echo is
-// real drift and replaces it.
+// ConnectorConfigKeepsConfiguredForm names the attributes whose value the
+// backend normalizes before echoing it (a date stored as a UTC datetime, an ID
+// with its dashes removed, an empty list as unset). For those, the configured
+// spelling is kept in state while the backend still echoes the normalized form
+// recorded at apply time; any other echo is real drift and replaces it. Every
+// other attribute takes its echo, so a value the backend dropped or rewrote
+// shows as a change.
 type ConnectorConfigKeepsConfiguredForm interface {
-	KeepsConfiguredForm()
+	ConfiguredFormFields() []string
 }
 
 // configuredFormKey is the private-state key holding, per attribute, the
@@ -397,7 +399,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	secrets := shared.SensitiveStringAttrNames(s)
 	plannedSecrets := shared.CaptureFields(model, secrets)
 	plannedDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(s))
-	plannedForms := shared.CaptureFields(model, r.configuredFormAttrNames(secrets))
+	plannedForms := shared.CaptureFields(model, r.configuredFormAttrNames())
 
 	// Get name from model
 	name := r.getStringField(model, "Name")
@@ -552,7 +554,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 	// condition is unmet: nulling them in state would plan the Default back
 	// every run.
 	priorDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(s))
-	priorForms := shared.CaptureFields(model, r.configuredFormAttrNames(secrets))
+	priorForms := shared.CaptureFields(model, r.configuredFormAttrNames())
 
 	// Get ID from model
 	id := r.getStringField(model, "ID")
@@ -683,7 +685,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 	secrets := shared.SensitiveStringAttrNames(s)
 	plannedSecrets := shared.CaptureFields(model, secrets)
 	plannedDefaults := shared.CaptureFields(model, shared.DefaultedAttrNames(s))
-	plannedForms := shared.CaptureFields(model, r.configuredFormAttrNames(secrets))
+	plannedForms := shared.CaptureFields(model, r.configuredFormAttrNames())
 
 	// Get ID and name from model
 	id := r.getStringField(model, "ID")
@@ -1276,19 +1278,13 @@ func (r *BaseConnectorResource) keepsConfiguredForm() bool {
 	return ok
 }
 
-// configuredFormAttrNames lists the mapped non-secret attributes. Secrets
-// already keep their configured value (shared.PreserveKnownFields).
-func (r *BaseConnectorResource) configuredFormAttrNames(secrets []string) []string {
-	if !r.keepsConfiguredForm() {
-		return nil
+// configuredFormAttrNames lists the attributes whose configured spelling is
+// kept over a normalized echo.
+func (r *BaseConnectorResource) configuredFormAttrNames() []string {
+	if keeps, ok := r.config.(ConnectorConfigKeepsConfiguredForm); ok {
+		return keeps.ConfiguredFormFields()
 	}
-	var names []string
-	for name := range r.config.GetFieldMappings() {
-		if !slices.Contains(secrets, name) {
-			names = append(names, name)
-		}
-	}
-	return names
+	return nil
 }
 
 // keepConfiguredForms restores each planned value the backend echoed in a

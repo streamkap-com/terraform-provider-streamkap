@@ -38,12 +38,32 @@ func (c *apiSourceConfig) GetConnectorCode() string { return c.Code }
 func (c *apiSourceConfig) GetResourceName() string  { return "source_" + c.Code }
 func (c *apiSourceConfig) NewModelInstance() any    { return c.NewModel() }
 
-// KeepsConfiguredForm opts API sources into keeping the configured spelling of
-// a value the backend normalizes (see connector.ConnectorConfigKeepsConfiguredForm).
-func (c *apiSourceConfig) KeepsConfiguredForm() {}
+// normalizedFields are, per vendor, the attributes whose value the backend's
+// config model rewrites before storing it (validators in
+// app/services/api_sources/vendors/<vendor>.py): IDs lose dashes or act_,
+// hosts gain or lose their scheme and case, strings are stripped, and an empty
+// optional list or string is stored as unset. Every vendor also stores
+// backfill_start as a UTC datetime.
+var normalizedFields = map[string][]string{
+	"facebook_ads":     {"account_id", "account_ids", "app_id"},
+	"google_ads":       {"customer_id", "login_customer_id", "customer_ids", "client_id"},
+	"google_analytics": {"property_id", "property_ids"},
+	"hubspot":          {"properties"},
+	"netsuite":         {"account_id"},
+	"salesforce":       {"domain"},
+	"stripe":           {"api_version"},
+	"zendesk":          {"subdomain"},
+}
 
-// DecodeResponseConfig splits the lists the backend stores joined with commas;
-// an empty list is stored as "".
+// ConfiguredFormFields keeps the configured spelling of the values the
+// backend normalizes (see connector.ConnectorConfigKeepsConfiguredForm).
+func (c *apiSourceConfig) ConfiguredFormFields() []string {
+	return append([]string{"backfill_start"}, normalizedFields[c.Code]...)
+}
+
+// DecodeResponseConfig splits the lists the backend stores joined with commas.
+// An empty one reads as null: the backend treats an empty optional list as
+// unset, and a configured [] is kept by ConfiguredFormFields.
 func (c *apiSourceConfig) DecodeResponseConfig(config map[string]any) {
 	for name, attribute := range c.Schema().Attributes {
 		if _, isList := attribute.(schema.ListAttribute); !isList {
@@ -54,11 +74,15 @@ func (c *apiSourceConfig) DecodeResponseConfig(config map[string]any) {
 		if !ok {
 			continue
 		}
-		items := []any{}
+		var items []any
 		for _, item := range strings.Split(stored, ",") {
 			if item = strings.TrimSpace(item); item != "" {
 				items = append(items, item)
 			}
+		}
+		if items == nil {
+			config[apiField] = nil
+			continue
 		}
 		config[apiField] = items
 	}
