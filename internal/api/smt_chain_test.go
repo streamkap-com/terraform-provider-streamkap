@@ -12,20 +12,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// smtWireFixtures copies the backend app/services/smt/fixtures/wire_fixtures.json at revision a81369efd10add73a6d133356c4da3a05a633af9 (wire_version 4), sha256 86ce03a7772c50c69e6b302bc32e901ceff89cd22a78f79554950bea53c91802.
+// smtWireFixtures copies the backend app/services/smt/fixtures/wire_fixtures.json at revision aec997750f7fc38044129dad69e7e177670964e0 (wire_version 5), sha256 d27f0966b2a4772d329180bd65d2fbf751494e038f12b6a4a6f0f47467ba3636.
 const smtWireFixtures = "testdata/smt_wire_fixtures.json"
 
 type smtWire struct {
-	WireVersion          int               `json:"wire_version"`
-	Routes               map[string]string `json:"routes"`
-	CreateRequest        json.RawMessage   `json:"create_request"`
-	UpdateRequest        json.RawMessage   `json:"update_request"`
-	SecretOperationsReq  json.RawMessage   `json:"secret_operations_request"`
-	ReadResponse         json.RawMessage   `json:"read_response"`
-	SelectorReadResponse json.RawMessage   `json:"selector_read_response"`
-	ConflictResponse     json.RawMessage   `json:"conflict_response"`
-	ValidationResponse   json.RawMessage   `json:"validation_response"`
-	OpenAPI              struct {
+	WireVersion              int               `json:"wire_version"`
+	Routes                   map[string]string `json:"routes"`
+	CreateRequest            json.RawMessage   `json:"create_request"`
+	DestinationCreateRequest json.RawMessage   `json:"destination_create_request"`
+	UpdateRequest            json.RawMessage   `json:"update_request"`
+	SecretOperationsReq      json.RawMessage   `json:"secret_operations_request"`
+	ReadResponse             json.RawMessage   `json:"read_response"`
+	SelectorReadResponse     json.RawMessage   `json:"selector_read_response"`
+	SourceChainReceipt       json.RawMessage   `json:"source_chain_receipt"`
+	ConflictResponse         json.RawMessage   `json:"conflict_response"`
+	MissingRevisionResponse  json.RawMessage   `json:"missing_revision_response"`
+	OrderRejectedResponse    json.RawMessage   `json:"order_rejected_response"`
+	ValidationResponse       json.RawMessage   `json:"validation_response"`
+	OpenAPI                  struct {
 		Paths      map[string]json.RawMessage `json:"paths"`
 		Components struct {
 			Schemas map[string]struct {
@@ -43,7 +47,7 @@ func loadSMTWire(t *testing.T) *smtWire {
 	require.NoError(t, err)
 	var w smtWire
 	require.NoError(t, json.Unmarshal(raw, &w))
-	require.Equal(t, 4, w.WireVersion)
+	require.Equal(t, 5, w.WireVersion)
 	return &w
 }
 
@@ -84,7 +88,7 @@ func TestSMTWire_RequestsMatchFixture(t *testing.T) {
 	var update SMTChainWrite
 	require.NoError(t, json.Unmarshal(w.UpdateRequest, &update))
 	require.NotNil(t, update.ExpectedRevision)
-	require.Equal(t, []string{"instance-b", "instance-a", ""}, []string{(*update.Transforms)[0].ID, (*update.Transforms)[1].ID, (*update.Transforms)[2].ID})
+	require.Equal(t, []string{"MaskField1", "RegexRouter1", ""}, []string{(*update.Transforms)[0].ID, (*update.Transforms)[1].ID, (*update.Transforms)[2].ID}, "an existing instance is addressed by its alias")
 	require.False(t, (*update.Transforms)[0].Enabled)
 
 	var rotate SMTChainWrite
@@ -99,7 +103,7 @@ func TestSMTWire_RequestsMatchFixture(t *testing.T) {
 	// inline, no predicate.
 	rev := "r1"
 	sentTransforms := []SMTInstanceWrite{{
-		ID: "instance-c", Type: "contract_fixture_nested", Name: "Routes", Enabled: true,
+		ID: "ContractFixture1", Type: "contract_fixture_nested", Name: "Routes", Enabled: true,
 		Config:           map[string]any{"enabled": true},
 		SecretOperations: []SMTSecretOperation{{Pointer: "/routes/row-east/token", Operation: SMTSecretReplace, Value: "v"}, {Pointer: "/routes/row~0west~11/token", Operation: SMTSecretClear}},
 	}}
@@ -149,22 +153,24 @@ func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 	require.Len(t, read.Desired.Transforms, 2)
 	first := read.Desired.Transforms[0]
 	require.Equal(t, "typed", first.Kind)
-	require.Equal(t, "instance-b", first.ID)
-	require.Equal(t, "MaskField1", first.Alias)
-	require.Equal(t, int64(1), first.SchemaVersion)
+	require.Equal(t, "MaskField1", first.ID)
+	require.Equal(t, int64(3), first.SchemaVersion)
 	require.Equal(t, "Mask email (renamed)", first.Name)
 	require.False(t, first.Enabled)
-	require.Equal(t, "SHA256_TRUNCATE", first.Config["mask_function"], "declared defaults are materialised on read")
+	require.Equal(t, "SHA256", first.Config["mask_function"], "declared defaults are materialised on read")
 	require.Equal(t, []string{"/mask_salt"}, first.ConfiguredSecretPaths)
 	require.False(t, first.HasPredicate())
 	require.False(t, first.HasSelector())
 
+	// A selector is write-only: the instance a selector was saved on reads
+	// back with no selector and the field lists it compiled to.
 	var selectorRead SMTChainRead
 	require.NoError(t, json.Unmarshal(w.SelectorReadResponse, &selectorRead))
-	require.Len(t, selectorRead.Desired.Transforms, 1)
-	require.True(t, selectorRead.Desired.Transforms[0].HasSelector())
-	require.Empty(t, selectorRead.Desired.Transforms[0].Config["fields_include"], "desired config remains rule-bearing, not compiled")
-	require.NotEmpty(t, selectorRead.LastApplied.Transforms[0].Config["fields_include"], "last_applied records the compiled fields separately")
+	require.Len(t, selectorRead.LastApplied.Transforms, 1)
+	compiled := selectorRead.LastApplied.Transforms[0]
+	require.False(t, compiled.HasSelector())
+	require.Equal(t, []string{"*.email"}, toStrings(compiled.Config["fields_include"]))
+	require.Equal(t, []string{"audit_log.email"}, toStrings(compiled.Config["fields_exclude"]))
 	// The effective order interleaves the managed slots with the user
 	// instances; the provider manages only the user ones and keeps the
 	// managed rows opaque.
@@ -174,7 +180,7 @@ func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 			userOrder = append(userOrder, entry)
 		}
 	}
-	require.Equal(t, []SMTOrderEntry{{Origin: "user", Reference: "instance-b"}, {Origin: "user", Reference: "instance-a"}}, userOrder)
+	require.Equal(t, []SMTOrderEntry{{Origin: "user", Reference: "MaskField1"}, {Origin: "user", Reference: "RegexRouter1"}}, userOrder)
 	var managed []map[string]any
 	require.NoError(t, json.Unmarshal(read.Desired.Managed, &managed))
 	require.Len(t, managed, 10, "the managed rows are decoded raw, never dropped")
@@ -192,19 +198,25 @@ func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 		return raw
 	}
 	for _, tc := range []struct {
-		name     string
-		status   int
-		body     json.RawMessage
-		conflict bool
-		code     string
-		issues   int
+		name            string
+		status          int
+		body            json.RawMessage
+		conflict        bool
+		missingRevision bool
+		code            string
+		issues          int
 	}{
-		{"conflict", http.StatusConflict, w.ConflictResponse, true, "smt_revision_conflict", 1},
-		{"connector deleting", http.StatusConflict, envelope("smt_connector_deleting", "Destination dest-1 is being deleted; its SMT chain can no longer be written"), false, "smt_connector_deleting", 0},
-		{"validation", http.StatusUnprocessableEntity, w.ValidationResponse, false, "smt_validation_failed", 3},
+		{name: "conflict", status: http.StatusConflict, body: w.ConflictResponse, conflict: true, code: "smt_revision_conflict", issues: 1},
+		{name: "missing revision", status: http.StatusConflict, body: w.MissingRevisionResponse, missingRevision: true, code: "smt_revision_conflict", issues: 1},
+		{name: "connector deleting", status: http.StatusConflict, body: envelope("smt_connector_deleting", "Destination dest-1 is being deleted; its SMT chain can no longer be written"), code: "smt_connector_deleting"},
+		{name: "read failed", status: http.StatusServiceUnavailable, body: envelope("smt_read_failed", "The chain write was accepted but could not be read back; read the chain again before retrying"), code: "smt_read_failed"},
+		{name: "validation", status: http.StatusUnprocessableEntity, body: w.ValidationResponse, code: "smt_validation_failed", issues: 3},
+		{name: "order rejected", status: http.StatusUnprocessableEntity, body: w.OrderRejectedResponse, code: "smt_validation_failed", issues: 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			calls := 0
 			srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+				calls++
 				rw.Header().Set("Content-Type", "application/json")
 				rw.WriteHeader(tc.status)
 				_, _ = rw.Write(tc.body)
@@ -213,12 +225,15 @@ func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 			client := NewClient(&Config{BaseURL: srv.URL}).(*streamkapAPI)
 			_, err := client.PutSMTChain(context.Background(), "destinations", "dest-1", SMTChainWrite{})
 			require.Error(t, err)
+			require.Equal(t, 1, calls, "a chain write is never replayed: the server may have saved it")
 			require.Equal(t, tc.conflict, IsSMTRevisionConflict(err))
+			require.Equal(t, tc.missingRevision, IsSMTExpectedRevisionMissing(err))
 			env, ok := SMTErrorOf(err)
 			require.True(t, ok, "%v", err)
 			require.Equal(t, tc.code, env.Code)
 			require.Len(t, env.Issues, tc.issues)
 			require.Equal(t, tc.code == "smt_connector_deleting", IsSMTConnectorDeleting(err))
+			require.Equal(t, tc.code == "smt_read_failed", IsSMTReadFailed(err))
 		})
 	}
 
@@ -232,7 +247,90 @@ func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 	require.Equal(t, "smt_config_missing", missing.Code)
 	require.Equal(t, "/transforms/1/config/routes/1/endpoint", missing.Pointer)
 	require.NotNil(t, missing.InstanceID)
-	require.Equal(t, "instance-c", *missing.InstanceID)
+	require.Equal(t, "ContractFixture1", *missing.InstanceID)
+
+	// Two authored instances in the wrong relative order for the
+	// destination's required sequence: the issue names the later one by its
+	// alias and points at its position in the request.
+	var order struct {
+		Detail SMTErrorEnvelope `json:"detail"`
+	}
+	require.NoError(t, json.Unmarshal(w.OrderRejectedResponse, &order))
+	require.Len(t, order.Detail.Issues, 1)
+	rejected := order.Detail.Issues[0]
+	require.Equal(t, "smt_order_rejected", rejected.Code)
+	require.Equal(t, "/transforms/1", rejected.Pointer)
+	require.NotNil(t, rejected.InstanceID)
+	require.Equal(t, "RegexRouter1", *rejected.InstanceID)
+}
+
+// An instance id is its transform alias, and the order references the user
+// instances by that id: a read never carries a second identity to track.
+func TestSMTWire_InstanceIDIsAlias(t *testing.T) {
+	w := loadSMTWire(t)
+	for name, body := range map[string]json.RawMessage{"read_response": w.ReadResponse, "selector_read_response": w.SelectorReadResponse} {
+		var read SMTChainRead
+		require.NoError(t, json.Unmarshal(body, &read))
+		ids := map[string]bool{}
+		for _, inst := range read.Desired.Transforms {
+			require.Equal(t, inst.Alias, inst.ID, "%s: instance %s", name, inst.ID)
+			ids[inst.ID] = true
+		}
+		for _, entry := range read.Desired.Order {
+			if entry.Origin == "user" {
+				require.True(t, ids[entry.Reference], "%s: order references %s, which is no instance id", name, entry.Reference)
+			}
+		}
+	}
+}
+
+// A destination create embeds its first chain under smt_chain beside the
+// connector body, with no expected revision, and every top-level key the
+// client sends is one CreateDestinationReq declares.
+func TestCreateDestination_EmbedsChainAsFixture(t *testing.T) {
+	w := loadSMTWire(t)
+	var req Destination
+	require.NoError(t, json.Unmarshal(w.DestinationCreateRequest, &req))
+	require.NotNil(t, req.SMTChain)
+	require.Nil(t, req.SMTChain.ExpectedRevision)
+
+	// The fixture leaves enabled at its schema default on one instance; the
+	// provider always sends the flag, so the expected body spells the default.
+	var defaults struct {
+		Default bool `json:"default"`
+	}
+	require.NoError(t, json.Unmarshal(w.OpenAPI.Components.Schemas["SmtInstanceWrite"].Properties["enabled"], &defaults))
+	var want map[string]any
+	require.NoError(t, json.Unmarshal(w.DestinationCreateRequest, &want))
+	for i, raw := range want["smt_chain"].(map[string]any)["transforms"].([]any) {
+		entry := raw.(map[string]any)
+		if _, set := entry["enabled"]; !set {
+			entry["enabled"] = defaults.Default
+			(*req.SMTChain.Transforms)[i].Enabled = defaults.Default
+		}
+	}
+
+	var sent map[string]json.RawMessage
+	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		require.Equal(t, http.MethodPost, r.Method)
+		require.Equal(t, "/destinations", r.URL.Path)
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&sent))
+		rw.Header().Set("Content-Type", "application/json")
+		_, _ = rw.Write([]byte(`{"id":"dest-1","name":"Warehouse","connector":"snowflake","config":{}}`))
+	}))
+	defer srv.Close()
+	_, err := NewClient(&Config{BaseURL: srv.URL}).CreateDestination(context.Background(), req)
+	require.NoError(t, err)
+
+	wantChain, err := json.Marshal(want["smt_chain"])
+	require.NoError(t, err)
+	require.JSONEq(t, string(wantChain), string(sent["smt_chain"]))
+	keys := make([]string, 0, len(sent))
+	for k := range sent {
+		keys = append(keys, k)
+	}
+	schema := w.OpenAPI.Components.Schemas["CreateDestinationReq"]
+	assertDeclared(t, schema.Properties, schema.Required, keys)
 }
 
 func TestSMTWire_HasSelector(t *testing.T) {

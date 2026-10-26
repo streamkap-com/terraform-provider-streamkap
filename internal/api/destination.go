@@ -19,7 +19,7 @@ type GetDestinationResponse struct {
 }
 
 type Destination struct {
-	ID              string         `json:"id"`
+	ID              string         `json:"id,omitempty"`
 	Name            string         `json:"name"`
 	Connector       string         `json:"connector"`
 	ConnectorStatus string         `json:"connector_status,omitempty"`
@@ -28,8 +28,8 @@ type Destination struct {
 	// See the matching comment on api.Source.Tags for why omitempty is absent here.
 	Tags []string `json:"tags"`
 	// SMTChain is the chain a create saves atomically with the destination.
-	// Only the create route accepts it; an update writes the chain through
-	// PUT .../smt-chain. nil omits the key.
+	// The update route accepts it too, but the provider writes an existing
+	// destination's chain through PUT .../smt-chain. nil omits the key.
 	SMTChain *SMTChainWrite `json:"smt_chain,omitempty"`
 }
 

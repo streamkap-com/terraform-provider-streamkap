@@ -3,7 +3,6 @@ package connector_test
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"maps"
 	"net/http"
@@ -200,8 +199,8 @@ func (f *fakeAPI) CreateSource(_ context.Context, req api.Source) (*api.Source, 
 }
 
 // saveEmbeddedChain applies a connector body's smt_chain under the same rules
-// as the chain write and answers like the backend's connector routes: a
-// refusal is a plain-text 400, never the chain routes' structured envelope.
+// as the chain write, and a refusal carries the chain routes' structured
+// envelope, as the backend's connector routes answer it.
 func (f *fakeAPI) saveEmbeddedChain(id string, chain *api.SMTChainWrite, created bool) (*api.SourceSMTChainReceipt, error) {
 	if chain == nil {
 		return nil, nil
@@ -210,39 +209,13 @@ func (f *fakeAPI) saveEmbeddedChain(id string, chain *api.SMTChainWrite, created
 	sent := roundTrip(*chain)
 	f.lastEmbedded = &sent
 	if _, err := f.applyChainLocked(id, *chain, created); err != nil {
-		return nil, sourceRouteError(err)
+		return nil, err
 	}
 	if f.dropNextReceipt {
 		f.dropNextReceipt = false
 		return nil, nil
 	}
 	return &api.SourceSMTChainReceipt{ChainRevision: f.chains[id].ChainRevision}, nil
-}
-
-// sourceRouteError is how the backend's source routes surface a refused
-// embedded chain: the chain service's exception text as a plain 400 detail.
-// A contract violation names each issue as "code at pointer", a revision
-// conflict carries its message.
-func sourceRouteError(err error) error {
-	env, ok := api.SMTErrorOf(err)
-	if !ok {
-		var apiErr *api.APIError
-		if errors.As(err, &apiErr) {
-			return &api.APIError{StatusCode: http.StatusBadRequest, Detail: apiErr.Detail}
-		}
-		return err
-	}
-	detail := env.Message
-	if env.Code == "smt_validation_failed" {
-		parts := make([]string, 0, len(env.Issues))
-		for _, issue := range env.Issues {
-			parts = append(parts, issue.Code+" at "+issue.Pointer)
-		}
-		detail = strings.Join(parts, "; ")
-	} else if len(env.Issues) > 0 {
-		detail = env.Issues[0].Message
-	}
-	return &api.APIError{StatusCode: http.StatusBadRequest, Detail: detail}
 }
 
 func sourceOf(d api.Destination) api.Source {
@@ -391,6 +364,13 @@ func smtError(status int, code, message string, issues ...api.SMTValidationIssue
 	return &api.APIError{StatusCode: status, Detail: message, DetailJSON: detail}
 }
 
+// revisionRefusal is the 409 the backend answers a missing, stale or
+// misplaced expected revision with; the issue names which.
+func revisionRefusal(code, message string) error {
+	return smtError(http.StatusConflict, "smt_revision_conflict", "The connector's SMT chain changed since it was read; read it again before saving",
+		api.SMTValidationIssue{Code: code, Message: message, Pointer: "/expected_revision"})
+}
+
 // PutSMTChain replaces the chain under the revision guard and applies the
 // secret operations each instance carries, checking every pointer against
 // the persisted config the way the backend's SmtSecretPointer validation
@@ -413,13 +393,11 @@ func (f *fakeAPI) applyChainLocked(id string, w api.SMTChainWrite, created bool)
 	if _, ok := f.sources[id]; !ok {
 		return nil, &api.APIError{StatusCode: http.StatusNotFound, Detail: "source not found"}
 	}
-	if created != (w.ExpectedRevision == nil) {
-		message := "Field required"
-		if created {
-			message = "Extra inputs are not permitted"
-		}
-		return nil, smtError(http.StatusUnprocessableEntity, "smt_validation_failed", "The chain was not saved; fix the issues and send it again",
-			api.SMTValidationIssue{Code: "smt_expected_revision_invalid", Message: message, Pointer: "/expected_revision"})
+	if created && w.ExpectedRevision != nil {
+		return nil, revisionRefusal("smt_revision_conflict", "The connector does not exist yet; send its chain without expected_revision")
+	}
+	if !created && w.ExpectedRevision == nil {
+		return nil, revisionRefusal("smt_expected_revision_required", "Read the chain and send its chain_revision as expected_revision")
 	}
 	if f.failNextChainWrite {
 		f.failNextChainWrite = false
@@ -437,8 +415,7 @@ func (f *fakeAPI) applyChainLocked(id string, w api.SMTChainWrite, created bool)
 		current.ChainRevision = strconv.Itoa(f.revisions[id])
 	}
 	if w.ExpectedRevision != nil && *w.ExpectedRevision != current.ChainRevision {
-		return nil, smtError(http.StatusConflict, "smt_revision_conflict", "The chain changed since it was read; read it again before saving",
-			api.SMTValidationIssue{Code: "smt_revision_conflict", Message: "expected revision is stale", Pointer: "/expected_revision"})
+		return nil, revisionRefusal("smt_revision_conflict", "The chain changed since it was read")
 	}
 	predicates := append([]api.SMTPredicateRead(nil), current.Predicates...)
 	instances := append([]api.SMTInstanceRead(nil), current.Transforms...)
@@ -521,8 +498,9 @@ func (f *fakeAPI) persist(prior []api.SMTInstanceRead, chain []api.SMTInstanceWr
 			}
 			read.ID, read.Alias = old.ID, old.Alias
 		} else {
+			// The server names an instance by its transform alias.
 			read.ID = f.id("inst")
-			read.Alias = fmt.Sprintf("%s_%s", w.Type, read.ID)
+			read.Alias = read.ID
 		}
 		if w.Predicate != nil {
 			predicateID := w.Predicate.ID
@@ -642,15 +620,20 @@ func (f *fakeAPI) setPredicate(id, instanceID string) {
 	}
 }
 
-// setSelector attaches a selector to an instance outside Terraform.
-func (f *fakeAPI) setSelector(id, instanceID string) {
+// compileSelector saves a selector on an instance outside Terraform the way
+// the backend does: the rule is compiled into the instance's field lists and
+// not kept, so reads carry the lists and no selector, under a new revision.
+func (f *fakeAPI) compileSelector(id, instanceID string, include, exclude []any) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	for i := range f.chainOf(id).Transforms {
 		if f.chains[id].Transforms[i].ID == instanceID {
-			f.chains[id].Transforms[i].Selector = json.RawMessage(`{"include":[{"table":"*","column":"email"}],"exclude":[]}`)
+			f.chains[id].Transforms[i].Config["fields_include"] = include
+			f.chains[id].Transforms[i].Config["fields_exclude"] = exclude
 		}
 	}
+	f.revisions[id]++
+	f.chains[id].ChainRevision = strconv.Itoa(f.revisions[id])
 }
 
 // rejectNextWrite makes the next PutSMTChain answer 422 with the given

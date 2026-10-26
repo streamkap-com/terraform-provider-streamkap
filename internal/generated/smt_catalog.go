@@ -5,10 +5,10 @@
 // input, for its own host.
 //
 //	artifact:          catalog.json
-//	artifact sha256:   5675b658d0ac9d496b87b779a39a04061819b3b812385b8d10c93340f4b29f82
-//	envelope digest:   sha256:4a7f662dd246781611aac2df94be5f74cd4985465da062c549f29ddcca532914
-//	backend revision:  2df5bb05901aa92200c5169b507826b79ac39cd6
-//	catalog types:     6
+//	artifact sha256:   a596a46b8d961e38eb1c5a6f7243917ef953424c84dc17a8224e3399c80230a7
+//	envelope digest:   sha256:e575cea8e41b3a342fdf30eab877a74374df9ef8acbf919e92bb465ae274a932
+//	backend revision:  aec997750f7fc38044129dad69e7e177670964e0
+//	catalog types:     7
 //	destinations authorable types: 4
 //	  - drop_fields
 //	  - mask_field
@@ -32,10 +32,10 @@ import (
 var smtCatalogJSON []byte
 
 // SMTCatalogSHA256 is the sha256 of the embedded artifact copy.
-const SMTCatalogSHA256 = "5675b658d0ac9d496b87b779a39a04061819b3b812385b8d10c93340f4b29f82"
+const SMTCatalogSHA256 = "a596a46b8d961e38eb1c5a6f7243917ef953424c84dc17a8224e3399c80230a7"
 
 // SMTCatalogBackendRevision is the backend commit the artifact was copied from.
-const SMTCatalogBackendRevision = "2df5bb05901aa92200c5169b507826b79ac39cd6"
+const SMTCatalogBackendRevision = "aec997750f7fc38044129dad69e7e177670964e0"
 
 // smtChains builds each host's chain once. A host is listed when the catalog
 // publishes at least one type for it.

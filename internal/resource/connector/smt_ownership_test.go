@@ -21,8 +21,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	tfresource "github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"github.com/stretchr/testify/require"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
@@ -370,11 +372,9 @@ func TestSMT_FlatProjectionStrippedAndPinned(t *testing.T) {
 }
 
 // chainHosts are the two update paths of the same chain: a destination's
-// PUT .../smt-chain, answered with a structured envelope, and a source's
-// embedded smt_chain, which the backend's source routes refuse with a plain
-// 400 detail. Both embed the chain in the create request, which those routes
-// refuse the same way. Each carries the diagnostic a refused write produces
-// there.
+// PUT .../smt-chain and a source's embedded smt_chain. Both answer a refused
+// chain with the same structured envelope, and both embed the chain in the
+// create request. Each carries the diagnostic a refused write produces there.
 var chainHosts = []struct {
 	name          string
 	addr          string
@@ -395,8 +395,8 @@ var chainHosts = []struct {
 		name:          "source",
 		addr:          addr,
 		hcl:           hcl,
-		stale:         regexp.MustCompile(`Error updating postgresql source[\s\S]*expected revision is stale`),
-		rejected:      regexp.MustCompile(`Error updating postgresql source[\s\S]*smt_config_string_pattern_mismatch at[\s\S]*/transforms/1/config/services/0/key`),
+		stale:         regexp.MustCompile(`Transform chain changed outside Terraform[\s\S]*no longer current`),
+		rejected:      regexp.MustCompile(`Transform chain rejected[\s\S]*smt_config_string_pattern_mismatch`),
 		createRefused: regexp.MustCompile(`Error creating postgresql source[\s\S]*chain service unavailable`),
 	},
 }
@@ -677,30 +677,52 @@ func TestSMT_UnrepresentableAndRejectedWrites(t *testing.T) {
 	}
 }
 
-func TestSMT_SelectorIsRefusedOnRefresh(t *testing.T) {
-	factories, fake := newFixture(t)
-	config := `
-resource "streamkap_destination_snowflake" "t" {
-  name                    = "chain"
-  snowflake_url_name      = "acct.snowflakecomputing.invalid"
-  snowflake_user_name     = "u"
-  snowflake_private_key   = "k"
-  snowflake_database_name = "D"
-  snowflake_schema_name   = "S"
-` + chainAB + "\n}\n"
+// A selector is write-only: one saved outside Terraform reads back as the
+// field lists it compiled to, with no selector. Refresh shows those lists as
+// drift on the plain attributes rather than refusing the chain, the apply
+// restores the configured lists, and HCL that carries the compiled lists
+// converges.
+func TestSMT_SelectorWrittenElsewhereReadsAsFieldLists(t *testing.T) {
+	factories, fake := newCatalogFixture(t)
+	chain := func(include, exclude string) string {
+		return fmt.Sprintf(`
+  smt_chain = [
+    { key = "m", type = "mask_field", name = "Mask email", mask_field = { fields_include = %s, fields_exclude = %s } },
+  ]`, include, exclude)
+	}
+	configured := pgHCL(chain(`["email"]`, `[]`))
+	compiled := pgHCL(chain(`["*.email"]`, `["audit_log.email"]`))
+	compileSelector := func() {
+		id := fake.sourceIDs()[0]
+		fake.compileSelector(id, fake.instances(id)[0].ID, []any{"*.email"}, []any{"audit_log.email"})
+	}
+	maskPath := tfjsonpath.New("smt_chain").AtSliceIndex(0).AtMapKey("mask_field")
 
 	tfresource.UnitTest(t, tfresource.TestCase{
 		ProtoV6ProviderFactories: factories,
 		Steps: []tfresource.TestStep{
-			{Config: config},
+			{Config: configured},
 			{
-				PreConfig: func() {
-					id := fake.sourceIDs()[0]
-					fake.setSelector(id, fake.instances(id)[0].ID)
+				PreConfig: compileSelector,
+				Config:    configured,
+				ConfigPlanChecks: tfresource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+					plancheck.ExpectResourceAction(pgDest, plancheck.ResourceActionUpdate),
+					plancheck.ExpectKnownValue(pgDest, maskPath.AtMapKey("fields_include"), knownvalue.ListExact([]knownvalue.Check{knownvalue.StringExact("email")})),
+				}},
+				Check: func(s *terraform.State) error {
+					got := fake.instances(attrAt(s, pgDest, "id"))[0].Config
+					if !reflect.DeepEqual(got["fields_include"], []any{"email"}) || !reflect.DeepEqual(got["fields_exclude"], []any{}) {
+						return fmt.Errorf("the apply did not restore the configured lists: %v", got)
+					}
+					return nil
 				},
-				Config:      config,
-				PlanOnly:    true,
-				ExpectError: regexp.MustCompile(`Transform selector cannot be represented`),
+			},
+			{
+				PreConfig: compileSelector,
+				Config:    compiled,
+				ConfigPlanChecks: tfresource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+					plancheck.ExpectEmptyPlan(),
+				}},
 			},
 		},
 	})

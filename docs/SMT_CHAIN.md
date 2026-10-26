@@ -30,9 +30,10 @@ At runtime `generated.SMTChain(host)` builds the host's chain once from the cata
 - The read projection is `desired`, `last_applied` and `application_status`. Every connector reads under a `desired.chain_revision`, an opaque token, whether or not it has user transforms. The provider manages `desired` only and stores the revision in `smt_chain_revision`. Every write to an existing connector sends `expected_revision`; only a connector create, which embeds its first chain, sends none. `managed` and `order` remain server projections.
 - An instance id is its transform alias and a predicate id is its predicate alias, so both stay stable for as long as the alias exists.
 - `alias`, `schema_version`, `codec_version` and `configured_secret_paths` are server-owned and never sent.
-- Errors are `{"detail": {code, message, issues}}`. `smt_revision_conflict` means the chain changed outside Terraform; `smt_connector_deleting` means the deletion is pending.
+- Errors are `{"detail": {code, message, issues}}`, from the chain route and from a connector route that carried an embedded chain alike. `smt_revision_conflict` means the chain changed outside Terraform, unless its issue is `smt_expected_revision_required`: the write lacked its revision, which is a provider defect. `smt_connector_deleting` means the deletion is pending. A 503 `smt_read_failed` on a write leaves the outcome unknown (the server answers it whether loading the connector failed before saving or the saved chain could not be read back), so the diagnostic asks for a refresh. `smt_order_rejected` arrives as an issue of `smt_validation_failed` and points at the entry that must move.
 - Validation issues carry a runtime pointer into the request body and are attached to the attribute it locates: `/transforms/1/config/routes/1/endpoint` becomes `smt_chain[1].<type>.routes[1].endpoint`, `/predicates/i/config/...` lands in `smt_predicates[i].<type>`, secret-operation issues land on `smt_secrets` or `smt_predicate_secrets`, and `/managed_overrides` on `smt_managed_overrides`.
 - An instance the schema cannot represent fails Read with a diagnostic rather than being dropped by the next write: an `opaque` instance, an unknown instance kind, an instance carrying a selector, or a predicate attachment outside the returned predicate pool.
+- A selector is write-only and Terraform has no attribute for it. The server compiles a selector saved elsewhere into the instance's `fields_include` and `fields_exclude` and reads back only those lists, so a refresh shows them as drift on the plain attributes. The selector refusal above only fires for a read that still carries one, which the read schema allows but the server does not produce.
 
 ## Source and destination write paths
 
@@ -44,7 +45,7 @@ Every write to an existing connector reads the chain first (`Surface.ExpectedRev
 - When state holds no revision, as on the first chain of a resource that was on the flat surface, the write takes the current revision. If the connector already has user transforms or predicates and the write replaces the user chain, it is refused with import guidance instead, since the replacement would delete them. An override-only write replaces no transforms and proceeds.
 - A write that sends nothing reads nothing.
 
-Destinations have a chain write route. An update sends the connector request first, then `PUT /destinations/{id}/smt-chain`, with connector changes allowed in the same apply. The destination create route accepts `smt_chain`; its update route does not.
+Destinations have a chain write route. An update sends the connector request first, then `PUT /destinations/{id}/smt-chain`, with connector changes allowed in the same apply. Both destination connector routes accept an embedded `smt_chain`; the provider embeds it on create only.
 
 Sources have chain read and catalog routes but no chain write route. The chain rides in the source create or update body:
 

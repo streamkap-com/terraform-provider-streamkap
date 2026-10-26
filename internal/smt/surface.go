@@ -756,6 +756,16 @@ func (s *Surface) WriteError(err error, expectedRevision types.String, w *Write)
 			fmt.Sprintf("The chain revision %q this plan was built from is no longer current. Run terraform plan again to refresh it and review the drift before applying: %s", expectedRevision.ValueString(), err))
 		return diags
 	}
+	if api.IsSMTExpectedRevisionMissing(err) {
+		diags.AddAttributeError(root, "Transform chain sent without its revision",
+			fmt.Sprintf("The provider wrote the chain of an existing connector without the revision it read, so nothing was written. Please report this issue to the provider developers: %s", err))
+		return diags
+	}
+	if api.IsSMTReadFailed(err) {
+		diags.AddAttributeError(root, "Transform chain outcome unconfirmed",
+			fmt.Sprintf("The server could not read the chain while writing it, so the write may or may not have been saved. Run terraform plan to refresh the chain before applying again: %s", err))
+		return diags
+	}
 	if api.IsSMTConnectorDeleting(err) {
 		diags.AddAttributeError(root, "Connector is being deleted",
 			fmt.Sprintf("The connector's deletion is pending, so its transform chain can no longer be written. Run terraform plan again once the deletion completes: %s", err))

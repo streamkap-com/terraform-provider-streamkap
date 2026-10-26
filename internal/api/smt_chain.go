@@ -12,8 +12,8 @@ import (
 )
 
 // The SMT chain wire contract, as the backend's
-// app/services/smt/fixtures/wire_fixtures.json spells it (wire_version 4,
-// backend revision a81369efd10add73a6d133356c4da3a05a633af9). A copy of
+// app/services/smt/fixtures/wire_fixtures.json spells it (wire_version 5,
+// backend revision aec997750f7fc38044129dad69e7e177670964e0). A copy of
 // that fixture lives in testdata and the decode test pins these types to
 // it. Resource code depends on SMTChainAPI only.
 //
@@ -100,7 +100,9 @@ type SMTPredicateRead struct {
 	ConfiguredSecretPaths []string       `json:"configured_secret_paths"`
 }
 
-// SMTInstanceRead is one instance of a chain snapshot. Kind is "typed" for a catalog instance and "opaque" for one the catalog cannot describe, in which case only id, alias, name, enabled and reason are set. Selector stays raw and cannot be managed; predicate stays raw so the SMT surface can resolve its server id to the provider predicate key.
+// SMTInstanceRead is one instance of a chain snapshot. Kind is "typed" for a catalog instance and "opaque" for one the catalog cannot describe, in which case only id, alias, name, enabled and reason are set. The id is the instance's transform alias. Predicate stays raw so the SMT surface can resolve its server id to the provider predicate key.
+//
+// A selector is write-only: the server compiles it into the field lists of config and reads back those lists with no selector. The read schema still declares the field, so Selector stays raw and an instance that carries one is refused rather than managed, since writing the compiled lists back would drop the rule.
 type SMTInstanceRead struct {
 	Kind                  string          `json:"kind"`
 	ID                    string          `json:"id"`
@@ -172,11 +174,14 @@ type SMTValidationIssue struct {
 	Pointer    string  `json:"pointer"`
 }
 
-// Error codes the provider reacts to: a stale expected revision and a
-// connector pending deletion.
+// Error codes the provider reacts to. A write without expected_revision is
+// answered with the revision conflict code and names the missing revision in
+// its issue; smt_read_failed is a 503 whose write may or may not have landed.
 const (
-	smtRevisionConflictCode  = "smt_revision_conflict"
-	smtConnectorDeletingCode = "smt_connector_deleting"
+	smtRevisionConflictCode         = "smt_revision_conflict"
+	smtExpectedRevisionRequiredCode = "smt_expected_revision_required"
+	smtConnectorDeletingCode        = "smt_connector_deleting"
+	smtReadFailedCode               = "smt_read_failed"
 )
 
 // SMTChainAPI is the server surface the connector resources drive the chain
@@ -210,7 +215,31 @@ func smtErrorCode(err error) string {
 // IsSMTRevisionConflict reports whether a chain write was refused because the
 // chain moved since it was read: the expected revision is stale.
 func IsSMTRevisionConflict(err error) bool {
-	return smtErrorCode(err) == smtRevisionConflictCode
+	env, ok := SMTErrorOf(err)
+	return ok && env.Code == smtRevisionConflictCode && !env.hasIssue(smtExpectedRevisionRequiredCode)
+}
+
+// IsSMTExpectedRevisionMissing reports whether a write to an existing
+// connector was refused because it carried no expected revision.
+func IsSMTExpectedRevisionMissing(err error) bool {
+	env, ok := SMTErrorOf(err)
+	return ok && env.Code == smtRevisionConflictCode && env.hasIssue(smtExpectedRevisionRequiredCode)
+}
+
+// IsSMTReadFailed reports whether the chain could not be read. On a write the
+// server answers it both when loading the connector failed before saving and
+// when the saved chain could not be read back, so the outcome is unknown.
+func IsSMTReadFailed(err error) bool {
+	return smtErrorCode(err) == smtReadFailedCode
+}
+
+func (e *SMTErrorEnvelope) hasIssue(code string) bool {
+	for _, issue := range e.Issues {
+		if issue.Code == code {
+			return true
+		}
+	}
+	return false
 }
 
 // IsSMTConnectorDeleting reports whether a chain write was refused because

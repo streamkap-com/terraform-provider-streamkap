@@ -104,7 +104,8 @@ func TestSMT_CatalogTypesOnDestinationPostgresql(t *testing.T) {
 					tfresource.TestCheckResourceAttr(pgDest, "smt_chain.2.key", "m"),
 					tfresource.TestCheckResourceAttr(pgDest, "smt_chain.2.mask_field.fields_include.0", "email"),
 					tfresource.TestCheckResourceAttr(pgDest, "smt_chain.2.mask_field.fields_exclude.#", "0"),
-					tfresource.TestCheckResourceAttr(pgDest, "smt_chain.2.mask_field.mask_function", "SHA256_TRUNCATE"),
+					tfresource.TestCheckResourceAttr(pgDest, "smt_chain.2.schema_version", "3"),
+					tfresource.TestCheckResourceAttr(pgDest, "smt_chain.2.mask_field.mask_function", "SHA256"),
 					tfresource.TestCheckResourceAttr(pgDest, "smt_chain.2.mask_field.mask_char", "*"),
 					tfresource.TestCheckResourceAttr(pgDest, "smt_chain.2.mask_field.mask_fixed_value", "***"),
 					tfresource.TestCheckResourceAttr(pgDest, "smt_chain.2.mask_field.replace_null_with_default", "true"),
@@ -127,7 +128,7 @@ func TestSMT_CatalogTypesOnDestinationPostgresql(t *testing.T) {
 							return fmt.Errorf("flat SMT keys reached the API with the chain configured: %v", sent)
 						}
 						stored := fake.instances(id)
-						if len(stored) != 3 || stored[2].Config["mask_function"] != "SHA256_TRUNCATE" {
+						if len(stored) != 3 || stored[2].Config["mask_function"] != "SHA256" {
 							return fmt.Errorf("server chain not stored with defaults: %+v", stored)
 						}
 						if _, leaked := stored[2].Config["mask_salt"]; leaked {

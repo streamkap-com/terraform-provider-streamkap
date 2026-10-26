@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "producer": "app.services.smt.catalog_artifact",
-  "digest": "sha256:4a7f662dd246781611aac2df94be5f74cd4985465da062c549f29ddcca532914",
+  "digest": "sha256:e575cea8e41b3a342fdf30eab877a74374df9ef8acbf919e92bb465ae274a932",
   "types": [
     {
       "label": "Regex router",
@@ -312,7 +312,7 @@
       "schema_version": 2,
       "codec_version": 1,
       "publishable": true,
-      "authorable": true,
+      "authorable": false,
       "kind": "kafka_connect_smt",
       "role": "transform",
       "categories": [
@@ -454,6 +454,213 @@
         "schema_keywords": [
           "additionalProperties",
           "default",
+          "enum",
+          "format",
+          "items",
+          "maxLength",
+          "minLength",
+          "pattern",
+          "properties",
+          "required",
+          "title",
+          "type",
+          "writeOnly"
+        ],
+        "schema_types": [
+          "array",
+          "boolean",
+          "object",
+          "string"
+        ],
+        "schema_formats": [
+          "password"
+        ],
+        "ui_elements": [
+          "Category",
+          "Control"
+        ],
+        "ui_controls": [
+          "multi-select",
+          "one-select",
+          "password",
+          "string",
+          "toggle"
+        ],
+        "secret_addressing": [
+          "json-pointer-v1"
+        ]
+      },
+      "examples": {
+        "read_projection": {
+          "fields_include": [
+            "email"
+          ],
+          "fields_exclude": [],
+          "mask_function": "SHA256_TRUNCATE",
+          "mask_char": "*",
+          "mask_fixed_value": "***",
+          "replace_null_with_default": true
+        },
+        "encoded_factory_fingerprint": "sha256:68f056715a6b93d7fe84e98c0fc8b59778b9322f766623cd2ef8781932a76b8b",
+        "encoded_codec_vectors_fingerprint": "sha256:9dfdd09c8907c70eaf71853aae167876310a7cb06dca7bd06ce9138174195178"
+      },
+      "alias_base": "MaskField",
+      "hosts": [
+        "destinations"
+      ],
+      "kc_class": "com.streamkap.kafka.connect.transforms.MaskField$Value",
+      "package": "streamkap-transforms-multi-converter"
+    },
+    {
+      "label": "Mask field",
+      "type_id": "mask_field",
+      "schema_version": 3,
+      "codec_version": 1,
+      "publishable": true,
+      "authorable": true,
+      "kind": "kafka_connect_smt",
+      "role": "transform",
+      "categories": [
+        "modify_column"
+      ],
+      "description": "Replace the values of chosen columns with a hash, a fixed value or null",
+      "disabled_reason": null,
+      "input_arity": "one",
+      "output_arity": "one",
+      "can_create_topics": false,
+      "compatible_transform_types": [],
+      "supports_negate": false,
+      "data_schema": {
+        "additionalProperties": false,
+        "description": "The worker hashes with the full SHA256 digest by default; new instances follow it.",
+        "properties": {
+          "fields_include": {
+            "items": {
+              "pattern": "^[^,]+$",
+              "type": "string"
+            },
+            "title": "Fields Include",
+            "type": "array"
+          },
+          "fields_exclude": {
+            "items": {
+              "pattern": "^[^,]+$",
+              "type": "string"
+            },
+            "title": "Fields Exclude",
+            "type": "array"
+          },
+          "mask_function": {
+            "default": "SHA256",
+            "enum": [
+              "SHA256_TRUNCATE",
+              "MD5_TRUNCATE",
+              "SHA256",
+              "MD5",
+              "REDACT",
+              "FIXED",
+              "NULLIFY"
+            ],
+            "title": "Mask Function",
+            "type": "string"
+          },
+          "mask_salt": {
+            "default": "",
+            "format": "password",
+            "title": "Mask Salt",
+            "type": "string",
+            "writeOnly": true
+          },
+          "mask_char": {
+            "default": "*",
+            "maxLength": 1,
+            "minLength": 1,
+            "pattern": "^[^\\u0000-\\u0020]$",
+            "title": "Mask Char",
+            "type": "string"
+          },
+          "mask_fixed_value": {
+            "default": "***",
+            "title": "Mask Fixed Value",
+            "type": "string"
+          },
+          "replace_null_with_default": {
+            "default": true,
+            "title": "Replace Null With Default",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fields_include"
+        ],
+        "title": "MaskFieldConfig",
+        "type": "object"
+      },
+      "ui_schema": {
+        "type": "Category",
+        "label": "Mask field",
+        "elements": [
+          {
+            "type": "Control",
+            "scope": "#/properties/fields_include",
+            "options": {
+              "control": "multi-select"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/fields_exclude",
+            "options": {
+              "control": "multi-select"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/mask_function",
+            "options": {
+              "control": "one-select"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/mask_salt",
+            "options": {
+              "control": "password"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/mask_char",
+            "options": {
+              "control": "string"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/mask_fixed_value",
+            "options": {
+              "control": "string"
+            }
+          },
+          {
+            "type": "Control",
+            "scope": "#/properties/replace_null_with_default",
+            "options": {
+              "control": "toggle"
+            }
+          }
+        ]
+      },
+      "secret_paths": [
+        "/mask_salt"
+      ],
+      "row_keys": {},
+      "consumer_requirements": {
+        "version": 1,
+        "schema_keywords": [
+          "additionalProperties",
+          "default",
+          "description",
           "enum",
           "format",
           "items",

@@ -39,15 +39,40 @@ func TestSourceSMTChainWire_MatchesFixture(t *testing.T) {
 	require.NotContains(t, jsonKeys(t, Source{Name: "pg", Connector: "postgresql", Config: map[string]any{}}), "smt_chain",
 		"an omitted chain keeps the stored one; the backend refuses null")
 
-	var resp Source
-	require.NoError(t, json.Unmarshal([]byte(`{"id":"src-1","name":"pg","connector":"postgresql","config":{},"smt_chain_receipt":{"chain_revision":"rev-2"}}`), &resp))
-	require.Equal(t, &SourceSMTChainReceipt{ChainRevision: "rev-2"}, resp.SMTChainReceipt)
 	assertDeclared(t, schemas["SourceConnector"].Properties, nil, []string{"smt_chain_receipt"})
 	receipt := schemas["SourceSmtChainReceipt"]
 	require.JSONEq(t, "false", string(receipt.AdditionalProperties))
-	require.Equal(t, []string{"chain_revision"}, jsonKeys(t, *resp.SMTChainReceipt))
-	assertDeclared(t, receipt.Properties, nil, jsonKeys(t, *resp.SMTChainReceipt))
-	require.Contains(t, receipt.Required, "chain_revision")
+	require.Equal(t, []string{"chain_revision"}, receipt.Required)
+}
+
+// A source update that carries a chain sends the revision it read and gets
+// back the fixture's receipt, which the client surfaces as the accepted
+// chain revision.
+func TestUpdateSource_ReturnsFixtureReceipt(t *testing.T) {
+	w := loadSMTWire(t)
+	var want SourceSMTChainReceipt
+	require.NoError(t, json.Unmarshal(w.SourceChainReceipt, &want))
+	require.NotEmpty(t, want.ChainRevision)
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	baseURL := "https://api.test.streamkap.com"
+	var sent map[string]json.RawMessage
+	httpmock.RegisterResponder(http.MethodPut, baseURL+"/sources/src-1?secret_returned=true&wait=false", func(req *http.Request) (*http.Response, error) {
+		require.NoError(t, json.NewDecoder(req.Body).Decode(&sent))
+		return httpmock.NewStringResponse(http.StatusOK, `{"id":"src-1","name":"pg","connector":"postgresql","config":{},"smt_chain_receipt":`+string(w.SourceChainReceipt)+`}`), nil
+	})
+
+	rev := "r1"
+	transforms := []SMTInstanceWrite{{ID: "Filter1", Type: "filter", Name: "Drop", Enabled: true, Config: map[string]any{}}}
+	resp, err := newTestClient(baseURL).UpdateSource(context.Background(), "src-1", Source{Name: "pg", Connector: "postgresql", Config: map[string]any{},
+		SMTChain: &SMTChainWrite{ExpectedRevision: &rev, Transforms: &transforms}})
+	require.NoError(t, err)
+	require.Equal(t, &want, resp.SMTChainReceipt)
+
+	var chain map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(sent["smt_chain"], &chain))
+	require.JSONEq(t, `"r1"`, string(chain["expected_revision"]), "a source update's chain carries the revision it read")
 }
 
 // A connector write that carries a chain is sent once even when the gateway
