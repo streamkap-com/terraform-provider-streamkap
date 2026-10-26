@@ -137,9 +137,8 @@ func attrAt(s *terraform.State, address, name string) string {
 }
 
 // destAddr and destHCL are the Snowflake destination counterparts of addr and
-// hcl: a destination embeds its first chain in the create request and writes
-// later ones through PUT .../smt-chain, a source embeds every one in the
-// source request.
+// hcl: a destination, like a source, embeds every chain write in its create
+// or update request.
 const destAddr = "streamkap_destination_snowflake.t"
 
 func destHCL(body string) string {

@@ -94,6 +94,7 @@ func TestConnectorWrite_EmbeddedChainIsNotRetriedOrLogged(t *testing.T) {
 	httpmock.RegisterResponder(http.MethodPost, baseURL+"/sources?secret_returned=true&wait=false", failing)
 	httpmock.RegisterResponder(http.MethodPut, baseURL+"/sources/src-1?secret_returned=true&wait=false", failing)
 	httpmock.RegisterResponder(http.MethodPost, baseURL+"/destinations?secret_returned=true&wait=false", failing)
+	httpmock.RegisterResponder(http.MethodPut, baseURL+"/destinations/dest-1?secret_returned=true&wait=false", failing)
 
 	transforms := []SMTInstanceWrite{{Type: "filter", Name: "Drop", Enabled: true, Config: map[string]any{},
 		SecretOperations: []SMTSecretOperation{{Pointer: "/token", Operation: SMTSecretReplace, Value: "plaintext-secret"}}}}
@@ -116,6 +117,11 @@ func TestConnectorWrite_EmbeddedChainIsNotRetriedOrLogged(t *testing.T) {
 	require.Error(t, err)
 	require.Len(t, bodies, 3, "a destination create carrying a chain must not be replayed")
 	require.Contains(t, string(bodies[2]), `"smt_chain"`)
+
+	_, err = client.UpdateDestination(ctx, "dest-1", Destination{Name: "pg", Connector: "postgresql", Config: map[string]any{}, SMTChain: chained.SMTChain})
+	require.Error(t, err)
+	require.Len(t, bodies, 4, "a destination update carrying a chain must not be replayed")
+	require.Contains(t, string(bodies[3]), `"smt_chain"`)
 
 	require.NotContains(t, logs.String(), "plaintext-secret")
 	require.NotContains(t, logs.String(), "smt_chain\\\":")

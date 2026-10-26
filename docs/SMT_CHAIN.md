@@ -45,12 +45,10 @@ Every write to an existing connector reads the chain first (`Surface.ExpectedRev
 - When state holds no revision, as on the first chain of a resource that was on the flat surface, the write takes the current revision. If the connector already has user transforms or predicates and the write replaces the user chain, it is refused with import guidance instead, since the replacement would delete them. An override-only write replaces no transforms and proceeds.
 - A write that sends nothing reads nothing.
 
-Destinations have a chain write route. An update sends the connector request first, then `PUT /destinations/{id}/smt-chain`, with connector changes allowed in the same apply. Both destination connector routes accept an embedded `smt_chain`; the provider embeds it on create only.
-
-Sources have chain read and catalog routes but no chain write route. The chain rides in the source create or update body:
+The chain rides in the connector create or update body for sources and destinations alike, so one request saves the connector settings and the chain, and a refused chain saves neither. Destinations also have a chain write route, `PUT /destinations/{id}/smt-chain`, which the provider does not use: Terraform's Update sends the connector body whatever changed, so embedding keeps every update to one request, a chain-only change included, without a second code path. Sources have chain read and catalog routes but no chain write route.
 
 - A body carrying a chain, on either connector type, carries secret values, so it is logged without the chain and never retried; a replay would collide on the name or be refused as stale.
-- A source response carries `smt_chain_receipt.chain_revision`. The provider reads the chain back and records it only if it is that revision; a different revision is reported as a change outside Terraform, and a missing receipt as an unconfirmed outcome. A destination create response carries no receipt, and the destination did not exist before the request, so its read-back is recorded as is.
+- A source response carries `smt_chain_receipt.chain_revision`. The provider reads the chain back and records it only if it is that revision; a different revision is reported as a change outside Terraform, and a missing receipt as an unconfirmed outcome. A destination response carries no receipt, so its read-back is recorded as is; on an update an edit landing between the save and the read-back cannot be told apart, as with the chain route, whose response is also read after the save.
 - A refusal with a structured SMT envelope is mapped onto the chain attributes; any other refusal is reported against the connector, because the same request carried the connector settings.
 - Managed slots are destination-scoped, so `ValidateConfig` refuses a non-empty `smt_managed_overrides` on a source.
 

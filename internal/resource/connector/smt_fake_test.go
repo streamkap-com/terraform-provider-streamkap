@@ -120,11 +120,11 @@ type fakeAPI struct {
 	// projectFlat makes reads echo the chain into a legacy flat key, the way a
 	// backend adapter might; the provider must never let that become state.
 	projectFlat bool
-	// failNextChainWrite makes the next PutSMTChain fail after the connector
-	// itself was created.
+	// failNextChainWrite makes the next chain write fail with a gateway error,
+	// embedded or not.
 	failNextChainWrite bool
 	// bumpRevisionBeforeNextWrite simulates an edit made elsewhere between the
-	// plan's refresh and the apply: the next PutSMTChain sees a newer revision.
+	// plan's refresh and the apply: the next chain write sees a newer revision.
 	bumpRevisionBeforeNextWrite bool
 	// nextWriteIssues makes the next PutSMTChain fail validation with them.
 	nextWriteIssues []api.SMTValidationIssue

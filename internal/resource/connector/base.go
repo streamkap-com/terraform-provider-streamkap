@@ -782,20 +782,23 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		responseTags = source.Tags
 
 	case ConnectorTypeDestination:
+		embedded, ok := r.embeddedChain(chain, expectedRevision, &resp.Diagnostics)
+		if !ok {
+			return
+		}
 		destination, err := r.client.UpdateDestination(ctx, id, api.Destination{
 			Name:        name,
 			Connector:   r.config.GetConnectorCode(),
 			Config:      configMap,
 			KcClusterId: kcClusterId,
 			Tags:        tags,
+			SMTChain:    embedded,
 		})
 		if err != nil {
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Error updating %s destination", r.config.GetConnectorCode()),
-				fmt.Sprintf("Unable to update destination: %s", err),
-			)
+			r.addConnectorWriteError(&resp.Diagnostics, "updating", "update", err, chain, expectedRevision)
 			return
 		}
+		chainSent = embedded != nil
 		connectorName = destination.Name
 		connectorCode = destination.Connector
 		connectorStatus = destination.ConnectorStatus
@@ -839,11 +842,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
-	if r.config.GetConnectorType() == ConnectorTypeSource {
-		r.recordEmbeddedChain(ctx, id, chain, chainSent, receipt, priorChain, priorPredicates, priorOverrides, priorRevision, &resp.State, &resp.Diagnostics)
-		return
-	}
-	r.applyChain(ctx, id, chain, priorChain, priorPredicates, priorOverrides, priorRevision, expectedRevision, &resp.State, &resp.Diagnostics)
+	r.recordEmbeddedChain(ctx, id, chain, chainSent, receipt, priorChain, priorPredicates, priorOverrides, priorRevision, &resp.State, &resp.Diagnostics)
 }
 
 // Delete deletes the connector resource.
@@ -971,33 +970,11 @@ func (r *BaseConnectorResource) planChain(ctx context.Context, plan tfsdk.Plan, 
 	return write, shared.CaptureFields(model, r.smt.FlatSMT), true
 }
 
-// applyChain writes a destination's chain and secret operations under
-// expectedRevision after the connector update succeeded, and records the
-// result in state. A failed write keeps the prior chain and revision: the
-// server chain did not move, and state must hold no unknown from the plan.
-func (r *BaseConnectorResource) applyChain(ctx context.Context, id string, write *smt.Write, priorChain, priorPredicates types.List, priorOverrides types.Map, priorRevision, expectedRevision types.String, state *tfsdk.State, diags *diag.Diagnostics) {
-	if r.smt == nil || diags.HasError() {
-		return
-	}
-	chain, predicates, overrides, revision := priorChain, priorPredicates, priorOverrides, priorRevision
-	if client, ok := r.chainClient(diags); ok {
-		applied, d := r.smt.ApplyGraph(ctx, client, r.chainKind(), id, write, expectedRevision)
-		diags.Append(d...)
-		if !d.HasError() {
-			chain, predicates, overrides, revision = applied.Transforms, applied.Predicates, applied.ManagedOverrides, applied.Revision
-		}
-	}
-	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrChain), chain)...)
-	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrPredicates), predicates)...)
-	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrManagedOverrides), overrides)...)
-	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrRevision), revision)...)
-}
-
-// embeddedChain is the chain write a connector create or a source update
-// carries, which the backend saves atomically with the connector body: sources
-// have no chain write route, and a destination create embeds its first chain.
-// It is nil when nothing is to be written, which omits the key and so keeps
-// the stored chain. ok is false when the write cannot be built.
+// embeddedChain is the chain write a connector create or update carries,
+// which the backend saves atomically with the connector body, so a refused
+// chain leaves the connector settings unsaved too. It is nil when nothing is
+// to be written, which omits the key and so keeps the stored chain. ok is
+// false when the write cannot be built.
 func (r *BaseConnectorResource) embeddedChain(write *smt.Write, expectedRevision types.String, diags *diag.Diagnostics) (*api.SMTChainWrite, bool) {
 	if r.smt == nil || write == nil {
 		return nil, true
@@ -1046,14 +1023,14 @@ func (r *BaseConnectorResource) addConnectorWriteError(diags *diag.Diagnostics, 
 	)
 }
 
-// recordEmbeddedChain records the chain of a connector whose create or source
-// update succeeded. When the request carried a chain, the chain is read back.
-// A source response names the revision it accepted and the read must be that
+// recordEmbeddedChain records the chain of a connector whose create or update
+// succeeded. When the request carried a chain, the chain is read back. A
+// source response names the revision it accepted and the read must be that
 // revision; otherwise the read could belong to a later edit and its instances
-// would be keyed by the wrong plan entries. A destination create response
-// names none, and the destination did not exist before the request. A failed
-// read keeps the prior chain and revision so state holds no unknown; the next
-// refresh reads the real chain.
+// would be keyed by the wrong plan entries. A destination response names
+// none, so a destination's read-back is recorded as is. A failed read keeps
+// the prior chain and revision so state holds no unknown; the next refresh
+// reads the real chain.
 func (r *BaseConnectorResource) recordEmbeddedChain(ctx context.Context, id string, write *smt.Write, sent bool, receipt *api.SourceSMTChainReceipt, priorChain, priorPredicates types.List, priorOverrides types.Map, priorRevision types.String, state *tfsdk.State, diags *diag.Diagnostics) {
 	if r.smt == nil || diags.HasError() {
 		return

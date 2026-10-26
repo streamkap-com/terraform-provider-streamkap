@@ -371,10 +371,10 @@ func TestSMT_FlatProjectionStrippedAndPinned(t *testing.T) {
 	})
 }
 
-// chainHosts are the two update paths of the same chain: a destination's
-// PUT .../smt-chain and a source's embedded smt_chain. Both answer a refused
-// chain with the same structured envelope, and both embed the chain in the
-// create request. Each carries the diagnostic a refused write produces there.
+// chainHosts are the two connector kinds a chain rides on. Both embed the
+// chain in their create and update requests and answer a refused chain with
+// the same structured envelope. Each carries the diagnostic a refused write
+// produces there.
 var chainHosts = []struct {
 	name          string
 	addr          string
@@ -635,8 +635,7 @@ resource "streamkap_destination_snowflake" "t" {
 
 // An instance the schema cannot represent is refused on refresh instead of
 // being dropped by the next write, and a validation issue the plan could not
-// catch is reported with its pointer: located on the config attribute for a
-// destination, named in the source error for a source.
+// catch is reported with its pointer, located on the chain attributes.
 func TestSMT_UnrepresentableAndRejectedWrites(t *testing.T) {
 	for _, host := range chainHosts {
 		t.Run(host.name, func(t *testing.T) {
@@ -675,6 +674,68 @@ func TestSMT_UnrepresentableAndRejectedWrites(t *testing.T) {
 			})
 		})
 	}
+}
+
+// A destination update that changes a setting and the chain is one request,
+// so a refused chain saves neither: the server keeps the prior name, chain and
+// revision, state keeps them too, and the next apply sends both again.
+func TestSMT_RefusedDestinationUpdateSavesNothing(t *testing.T) {
+	const name = `name                    = "chain"`
+	renamed := strings.Replace(destHCL(chainBA), name, `name                    = "renamed"`, 1)
+	factories, fake := newFixture(t)
+	var id, revision string
+	var order []string
+	serverOrder := func() []string {
+		var ids []string
+		for _, inst := range fake.instances(id) {
+			ids = append(ids, inst.ID)
+		}
+		return ids
+	}
+
+	tfresource.UnitTest(t, tfresource.TestCase{
+		ProtoV6ProviderFactories: factories,
+		Steps: []tfresource.TestStep{
+			{
+				Config: destHCL(chainAB),
+				Check: func(s *terraform.State) error {
+					id, revision = attrAt(s, destAddr, "id"), attrAt(s, destAddr, "smt_chain_revision")
+					order = serverOrder()
+					return nil
+				},
+			},
+			{
+				PreConfig: func() {
+					fake.resetEvents()
+					fake.rejectNextWrite(api.SMTValidationIssue{Code: "smt_config_string_pattern_mismatch", Message: "String should match pattern", Pointer: "/transforms/1/config/services/0/key"})
+				},
+				Config:      renamed,
+				ExpectError: regexp.MustCompile(`Transform chain rejected[\s\S]*smt_config_string_pattern_mismatch`),
+			},
+			{
+				PreConfig: func() {
+					if got := fake.recordedEvents(); !reflect.DeepEqual(got, []string{"connector-update", "chain-embedded"}) {
+						t.Fatalf("the refused update must be one request, got %v", got)
+					}
+					stored, err := fake.GetDestination(context.Background(), id)
+					require.NoError(t, err)
+					require.Equal(t, "chain", stored.Name, "the refused update saved the connector setting")
+					require.Equal(t, order, serverOrder(), "the refused update saved the chain")
+					read, err := fake.GetSMTChain(context.Background(), "destinations", id)
+					require.NoError(t, err)
+					require.Equal(t, revision, read.Desired.ChainRevision)
+				},
+				Config: renamed,
+				ConfigPlanChecks: tfresource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+					plancheck.ExpectResourceAction(destAddr, plancheck.ResourceActionUpdate),
+				}},
+				Check: tfresource.ComposeTestCheckFunc(
+					tfresource.TestCheckResourceAttr(destAddr, "name", "renamed"),
+					tfresource.TestCheckResourceAttr(destAddr, "smt_chain.0.key", "b"),
+				),
+			},
+		},
+	})
 }
 
 // A selector is write-only: one saved outside Terraform reads back as the
@@ -810,10 +871,10 @@ func uiChain(f *fakeAPI) []api.SMTInstanceWrite {
 	return []api.SMTInstanceWrite{{Type: "contract_fixture_nested", Name: "From the UI", Enabled: true, Config: spec.Examples.ReadProjection}}
 }
 
-// The first chain on an existing destination is an ordinary update: the
-// connector update, then a chain write under the revision read beforehand,
-// with connector changes in the same apply. Transforms created outside
-// Terraform are refused before either write.
+// The first chain on an existing destination is an ordinary update: one
+// destination request carries the connector change and the chain, under the
+// revision read beforehand. Transforms created outside Terraform are refused
+// before anything is written.
 func TestSMT_FirstDestinationChainReadsTheRevisionFirst(t *testing.T) {
 	const name = `name                    = "chain"`
 	t.Run("written under the current revision", func(t *testing.T) {
@@ -826,8 +887,11 @@ func TestSMT_FirstDestinationChainReadsTheRevisionFirst(t *testing.T) {
 					PreConfig: fake.resetEvents,
 					Config:    strings.Replace(destHCL(chainAB), name, `name                    = "renamed"`, 1),
 					Check: func(s *terraform.State) error {
-						if got := fake.recordedEvents(); !reflect.DeepEqual(got, []string{"connector-update", "chain-put"}) {
-							return fmt.Errorf("first chain request order = %v", got)
+						if got := fake.recordedEvents(); !reflect.DeepEqual(got, []string{"connector-update", "chain-embedded"}) {
+							return fmt.Errorf("the connector change and the chain must ride in one destination update, got %v", got)
+						}
+						if sent := fake.lastEmbeddedChain(); sent.ExpectedRevision == nil || *sent.ExpectedRevision != "0" {
+							return fmt.Errorf("the update must carry the revision read before it, got %v", sent.ExpectedRevision)
 						}
 						attributes := s.RootModule().Resources[destAddr].Primary.Attributes
 						if attributes["name"] != "renamed" || attributes["smt_chain_revision"] == "" || attributes["smt_chain.0.id"] == "" {

@@ -27,10 +27,25 @@ type Destination struct {
 	KcClusterId     string         `json:"kc_cluster_id,omitempty"`
 	// See the matching comment on api.Source.Tags for why omitempty is absent here.
 	Tags []string `json:"tags"`
-	// SMTChain is the chain a create saves atomically with the destination.
-	// The update route accepts it too, but the provider writes an existing
-	// destination's chain through PUT .../smt-chain. nil omits the key.
+	// SMTChain is the chain write a create or update carries, saved
+	// atomically with the destination. nil omits the key, which keeps the
+	// chain; the backend refuses an explicit null.
 	SMTChain *SMTChainWrite `json:"smt_chain,omitempty"`
+}
+
+// sendDestinationWrite logs and sends a destination create or update; see
+// sendConnectorWrite.
+func (s *streamkapAPI) sendDestinationWrite(ctx context.Context, op string, req *http.Request, reqPayload Destination, payload []byte, resp *Destination) error {
+	logged := payload
+	if reqPayload.SMTChain != nil {
+		withoutChain := reqPayload
+		withoutChain.SMTChain = nil
+		var err error
+		if logged, err = json.Marshal(withoutChain); err != nil {
+			return err
+		}
+	}
+	return s.sendConnectorWrite(ctx, op, req, logged, reqPayload.SMTChain != nil, resp)
 }
 
 func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destination) (*Destination, error) {
@@ -56,16 +71,8 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destina
 	if err != nil {
 		return nil, err
 	}
-	logged := payload
-	if reqPayload.SMTChain != nil {
-		withoutChain := reqPayload
-		withoutChain.SMTChain = nil
-		if logged, err = json.Marshal(withoutChain); err != nil {
-			return nil, err
-		}
-	}
 	var resp Destination
-	err = s.sendConnectorWrite(ctx, "CreateDestination", req, logged, reqPayload.SMTChain != nil, &resp)
+	err = s.sendDestinationWrite(ctx, "CreateDestination", req, reqPayload, payload, &resp)
 	if err != nil {
 		if isAlreadyExists(err) {
 			return nil, adoptRefusedError(adoptConflict{
@@ -147,17 +154,8 @@ func (s *streamkapAPI) UpdateDestination(ctx context.Context, destinationID stri
 	if err != nil {
 		return nil, err
 	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"UpdateDestination request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n"+
-			"\tBody: %s",
-		req.Method,
-		req.URL.String(),
-		redactSensitiveJSON(payload),
-	))
 	var resp Destination
-	err = s.doRequestWithRetry(ctx, req, &resp)
+	err = s.sendDestinationWrite(ctx, "UpdateDestination", req, reqPayload, payload, &resp)
 	if err != nil {
 		return nil, err
 	}
