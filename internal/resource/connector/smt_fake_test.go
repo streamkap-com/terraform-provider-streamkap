@@ -113,10 +113,14 @@ type fakeAPI struct {
 	connectorWrites int
 	// lastEmbedded is the smt_chain the last source write carried.
 	lastEmbedded *api.SMTChainWrite
-	// dropNextReceipt makes the next source write that saves a chain answer
+	// dropNextReceipt makes the next connector write that saves a chain answer
 	// without smt_chain_receipt.
 	dropNextReceipt bool
-	events          []string
+	// editAfterNextSave simulates an edit made elsewhere between a connector
+	// write that saves a chain and the provider's read-back: the receipt names
+	// the saved revision, the read a later one.
+	editAfterNextSave bool
+	events            []string
 	// projectFlat makes reads echo the chain into a legacy flat key, the way a
 	// backend adapter might; the provider must never let that become state.
 	projectFlat bool
@@ -201,7 +205,7 @@ func (f *fakeAPI) CreateSource(_ context.Context, req api.Source) (*api.Source, 
 // saveEmbeddedChain applies a connector body's smt_chain under the same rules
 // as the chain write, and a refusal carries the chain routes' structured
 // envelope, as the backend's connector routes answer it.
-func (f *fakeAPI) saveEmbeddedChain(id string, chain *api.SMTChainWrite, created bool) (*api.SourceSMTChainReceipt, error) {
+func (f *fakeAPI) saveEmbeddedChain(id string, chain *api.SMTChainWrite, created bool) (*api.SMTChainReceipt, error) {
 	if chain == nil {
 		return nil, nil
 	}
@@ -215,7 +219,13 @@ func (f *fakeAPI) saveEmbeddedChain(id string, chain *api.SMTChainWrite, created
 		f.dropNextReceipt = false
 		return nil, nil
 	}
-	return &api.SourceSMTChainReceipt{ChainRevision: f.chains[id].ChainRevision}, nil
+	receipt := &api.SMTChainReceipt{ChainRevision: f.chains[id].ChainRevision}
+	if f.editAfterNextSave {
+		f.editAfterNextSave = false
+		f.revisions[id]++
+		f.chains[id].ChainRevision = strconv.Itoa(f.revisions[id])
+	}
+	return receipt, nil
 }
 
 func sourceOf(d api.Destination) api.Source {
@@ -223,7 +233,7 @@ func sourceOf(d api.Destination) api.Source {
 }
 
 func destinationOf(s api.Source) api.Destination {
-	return api.Destination{ID: s.ID, Name: s.Name, Connector: s.Connector, ConnectorStatus: s.ConnectorStatus, Config: s.Config, KcClusterId: s.KcClusterId, Tags: s.Tags}
+	return api.Destination{ID: s.ID, Name: s.Name, Connector: s.Connector, ConnectorStatus: s.ConnectorStatus, Config: s.Config, KcClusterId: s.KcClusterId, Tags: s.Tags, SMTChainReceipt: s.SMTChainReceipt}
 }
 
 // Destinations share the source store; only the kind the chain endpoints

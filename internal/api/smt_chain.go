@@ -13,7 +13,7 @@ import (
 
 // The SMT chain wire contract, as the backend's
 // app/services/smt/fixtures/wire_fixtures.json spells it (wire_version 5,
-// backend revision 92d6e46eba63b6b03bbe75c3275b565a1cfd965d). A copy of
+// backend revision 85c1cd844069e710892077f102652d9b7937dded). A copy of
 // that fixture lives in testdata and the decode test pins these types to
 // it. Resource code depends on SMTChainAPI only.
 //

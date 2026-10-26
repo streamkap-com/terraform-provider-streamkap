@@ -50,7 +50,7 @@ func TestSourceSMTChainWire_MatchesFixture(t *testing.T) {
 // chain revision.
 func TestUpdateSource_ReturnsFixtureReceipt(t *testing.T) {
 	w := loadSMTWire(t)
-	var want SourceSMTChainReceipt
+	var want SMTChainReceipt
 	require.NoError(t, json.Unmarshal(w.SourceChainReceipt, &want))
 	require.NotEmpty(t, want.ChainRevision)
 

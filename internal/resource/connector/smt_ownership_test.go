@@ -569,25 +569,57 @@ func TestSMT_SourceChainRidesInTheSourceRequest(t *testing.T) {
 }
 
 // A response that saved a chain but does not name the accepted revision
-// cannot be keyed safely: the apply fails and the next plan refreshes.
-func TestSMT_SourceChainWithoutReceiptIsUnconfirmed(t *testing.T) {
-	factories, fake := newFixture(t)
-	tfresource.UnitTest(t, tfresource.TestCase{
-		ProtoV6ProviderFactories: factories,
-		Steps: []tfresource.TestStep{
-			{Config: hcl(chainAB)},
-			{
-				PreConfig:   func() { fake.dropNextReceipt = true },
-				Config:      hcl(chainBA),
-				ExpectError: regexp.MustCompile(`Transform chain outcome unconfirmed`),
-			},
-			{
-				// Refresh reads the saved chain; the plan converges.
-				Config:           hcl(chainBA),
-				ConfigPlanChecks: tfresource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()}},
-			},
-		},
-	})
+// cannot be keyed safely, on either connector kind: the apply fails and the
+// next plan refreshes.
+func TestSMT_ChainWithoutReceiptIsUnconfirmed(t *testing.T) {
+	for _, host := range chainHosts {
+		t.Run(host.name, func(t *testing.T) {
+			factories, fake := newFixture(t)
+			tfresource.UnitTest(t, tfresource.TestCase{
+				ProtoV6ProviderFactories: factories,
+				Steps: []tfresource.TestStep{
+					{Config: host.hcl(chainAB)},
+					{
+						PreConfig:   func() { fake.dropNextReceipt = true },
+						Config:      host.hcl(chainBA),
+						ExpectError: regexp.MustCompile(`Transform chain outcome unconfirmed`),
+					},
+					{
+						// Refresh reads the saved chain; the plan converges.
+						Config:           host.hcl(chainBA),
+						ConfigPlanChecks: tfresource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()}},
+					},
+				},
+			})
+		})
+	}
+}
+
+// A read-back under a later revision than the one the write's receipt names
+// belongs to an edit made elsewhere after the save, so it is not keyed by the
+// plan: the apply fails as a change outside Terraform, on either connector
+// kind, and the next plan refreshes the saved chain.
+func TestSMT_ReadBackPastTheReceiptIsRefused(t *testing.T) {
+	for _, host := range chainHosts {
+		t.Run(host.name, func(t *testing.T) {
+			factories, fake := newFixture(t)
+			tfresource.UnitTest(t, tfresource.TestCase{
+				ProtoV6ProviderFactories: factories,
+				Steps: []tfresource.TestStep{
+					{Config: host.hcl(chainAB)},
+					{
+						PreConfig:   func() { fake.editAfterNextSave = true },
+						Config:      host.hcl(chainBA),
+						ExpectError: regexp.MustCompile(`Transform chain changed outside Terraform[\s\S]*saved transform chain revision`),
+					},
+					{
+						Config:           host.hcl(chainBA),
+						ConfigPlanChecks: tfresource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()}},
+					},
+				},
+			})
+		})
+	}
 }
 
 // The destination base drives the same chain under the destinations kind.

@@ -31,6 +31,10 @@ type Destination struct {
 	// atomically with the destination. nil omits the key, which keeps the
 	// chain; the backend refuses an explicit null.
 	SMTChain *SMTChainWrite `json:"smt_chain,omitempty"`
+	// SMTChainReceipt identifies the chain revision a create or update
+	// accepted. Only those responses carry it, and only when they saved a
+	// chain.
+	SMTChainReceipt *SMTChainReceipt `json:"smt_chain_receipt,omitempty"`
 }
 
 // sendDestinationWrite logs and sends a destination create or update; see

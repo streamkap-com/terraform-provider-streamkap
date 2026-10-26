@@ -462,7 +462,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 	kcClusterId := r.getStringField(model, "KcClusterId")
 	tags := r.getStringSliceField(ctx, model, "Tags")
 	var responseTags []string
-	var receipt *api.SourceSMTChainReceipt
+	var receipt *api.SMTChainReceipt
 	var chainSent bool
 
 	switch r.config.GetConnectorType() {
@@ -509,6 +509,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 			r.addConnectorWriteError(&resp.Diagnostics, "creating", "create", err, chain, priorRevision)
 			return
 		}
+		receipt = destination.SMTChainReceipt
 		chainSent = embedded != nil
 		id = destination.ID
 		connectorName = destination.Name
@@ -752,7 +753,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 	kcClusterId := r.getStringField(model, "KcClusterId")
 	tags := r.getStringSliceField(ctx, model, "Tags")
 	var responseTags []string
-	var receipt *api.SourceSMTChainReceipt
+	var receipt *api.SMTChainReceipt
 	var chainSent bool
 
 	switch r.config.GetConnectorType() {
@@ -798,6 +799,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 			r.addConnectorWriteError(&resp.Diagnostics, "updating", "update", err, chain, expectedRevision)
 			return
 		}
+		receipt = destination.SMTChainReceipt
 		chainSent = embedded != nil
 		connectorName = destination.Name
 		connectorCode = destination.Connector
@@ -1024,14 +1026,12 @@ func (r *BaseConnectorResource) addConnectorWriteError(diags *diag.Diagnostics, 
 }
 
 // recordEmbeddedChain records the chain of a connector whose create or update
-// succeeded. When the request carried a chain, the chain is read back. A
-// source response names the revision it accepted and the read must be that
-// revision; otherwise the read could belong to a later edit and its instances
-// would be keyed by the wrong plan entries. A destination response names
-// none, so a destination's read-back is recorded as is. A failed read keeps
-// the prior chain and revision so state holds no unknown; the next refresh
-// reads the real chain.
-func (r *BaseConnectorResource) recordEmbeddedChain(ctx context.Context, id string, write *smt.Write, sent bool, receipt *api.SourceSMTChainReceipt, priorChain, priorPredicates types.List, priorOverrides types.Map, priorRevision types.String, state *tfsdk.State, diags *diag.Diagnostics) {
+// succeeded. When the request carried a chain, the chain is read back. The
+// response names the revision it accepted and the read must be that revision;
+// otherwise the read could belong to a later edit and its instances would be
+// keyed by the wrong plan entries. A failed read keeps the prior chain and
+// revision so state holds no unknown; the next refresh reads the real chain.
+func (r *BaseConnectorResource) recordEmbeddedChain(ctx context.Context, id string, write *smt.Write, sent bool, receipt *api.SMTChainReceipt, priorChain, priorPredicates types.List, priorOverrides types.Map, priorRevision types.String, state *tfsdk.State, diags *diag.Diagnostics) {
 	if r.smt == nil || diags.HasError() {
 		return
 	}
@@ -1047,11 +1047,11 @@ func (r *BaseConnectorResource) recordEmbeddedChain(ctx context.Context, id stri
 	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrRevision), graph.Revision)...)
 }
 
-func (r *BaseConnectorResource) readEmbeddedChain(ctx context.Context, id string, write *smt.Write, receipt *api.SourceSMTChainReceipt, diags *diag.Diagnostics) (smt.GraphState, bool) {
+func (r *BaseConnectorResource) readEmbeddedChain(ctx context.Context, id string, write *smt.Write, receipt *api.SMTChainReceipt, diags *diag.Diagnostics) (smt.GraphState, bool) {
 	kind := r.config.GetConnectorType()
-	if kind == ConnectorTypeSource && (receipt == nil || receipt.ChainRevision == "") {
+	if receipt == nil || receipt.ChainRevision == "" {
 		diags.AddAttributeError(path.Root(smt.AttrChain), "Transform chain outcome unconfirmed",
-			"The source was saved with its transform chain, but the response did not identify the accepted chain revision. Run terraform plan to refresh the chain before applying again.")
+			fmt.Sprintf("The %s was saved with its transform chain, but the response did not identify the accepted chain revision. Run terraform plan to refresh the chain before applying again.", kind))
 		return smt.GraphState{}, false
 	}
 	client, ok := r.chainClient(diags)
@@ -1068,9 +1068,9 @@ func (r *BaseConnectorResource) readEmbeddedChain(ctx context.Context, id string
 			fmt.Sprintf("The %s and its transform chain were saved, but reading the chain back failed. Run terraform plan to refresh it: %s", kind, err))
 		return smt.GraphState{}, false
 	}
-	if receipt != nil && read.Desired.ChainRevision != receipt.ChainRevision {
+	if read.Desired.ChainRevision != receipt.ChainRevision {
 		diags.AddAttributeError(path.Root(smt.AttrChain), "Transform chain changed outside Terraform",
-			fmt.Sprintf("The source saved transform chain revision %q, but the chain now reads as revision %q. Run terraform plan to refresh it and review the drift before applying.", receipt.ChainRevision, read.Desired.ChainRevision))
+			fmt.Sprintf("The %s saved transform chain revision %q, but the chain now reads as revision %q. Run terraform plan to refresh it and review the drift before applying.", kind, receipt.ChainRevision, read.Desired.ChainRevision))
 		return smt.GraphState{}, false
 	}
 	applied, d := r.smt.AppliedState(ctx, write, read)

@@ -2884,6 +2884,9 @@
   "source_chain_receipt": {
     "chain_revision": "a5ffa5b833e6db552f77d5781779e8f7"
   },
+  "destination_chain_receipt": {
+    "chain_revision": "a5ffa5b833e6db552f77d5781779e8f7"
+  },
   "openapi": {
     "openapi": "3.1.0",
     "paths": {
@@ -4699,6 +4702,17 @@
               ],
               "title": "Tags",
               "description": "List of tag IDs assigned to this destination"
+            },
+            "smt_chain_receipt": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SourceSmtChainReceipt"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Create/update response only: the SMT chain revision accepted with this destination write. Absent when the write carried no smt_chain."
             }
           },
           "additionalProperties": true,
@@ -6945,7 +6959,7 @@
               "type": "string",
               "minLength": 1,
               "title": "Chain Revision",
-              "description": "Chain revision the source write accepted"
+              "description": "Chain revision the connector write accepted"
             }
           },
           "additionalProperties": false,
@@ -6954,7 +6968,7 @@
             "chain_revision"
           ],
           "title": "SourceSmtChainReceipt",
-          "description": "The source SMT chain revision accepted with a source write."
+          "description": "The SMT chain revision accepted with a source or destination write.\n\nDestinations share it under this name: consumers resolve the schema by its OpenAPI component name."
         },
         "UpdateDestinationReq": {
           "properties": {

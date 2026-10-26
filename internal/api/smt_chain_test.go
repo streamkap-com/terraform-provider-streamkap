@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// smtWireFixtures copies the backend app/services/smt/fixtures/wire_fixtures.json at revision 92d6e46eba63b6b03bbe75c3275b565a1cfd965d (wire_version 5), sha256 e0ead26c9bbcbb9b5364d85521f67e84a862c058ed8a9d70c1dd86d961ea82ac.
+// smtWireFixtures copies the backend app/services/smt/fixtures/wire_fixtures.json at revision 85c1cd844069e710892077f102652d9b7937dded (wire_version 5), sha256 7565ba4b6c9e56947469a174b2242b9edb964c2aa2c8505ca1c8332465a45617.
 const smtWireFixtures = "testdata/smt_wire_fixtures.json"
 
 type smtWire struct {
@@ -25,6 +25,7 @@ type smtWire struct {
 	ReadResponse             json.RawMessage   `json:"read_response"`
 	SelectorReadResponse     json.RawMessage   `json:"selector_read_response"`
 	SourceChainReceipt       json.RawMessage   `json:"source_chain_receipt"`
+	DestinationChainReceipt  json.RawMessage   `json:"destination_chain_receipt"`
 	ConflictResponse         json.RawMessage   `json:"conflict_response"`
 	MissingRevisionResponse  json.RawMessage   `json:"missing_revision_response"`
 	OrderRejectedResponse    json.RawMessage   `json:"order_rejected_response"`
@@ -292,8 +293,9 @@ func TestSMTWire_InstanceIDIsAlias(t *testing.T) {
 }
 
 // A destination create embeds its first chain under smt_chain beside the
-// connector body, with no expected revision, and every top-level key the
-// client sends is one CreateDestinationReq declares.
+// connector body, with no expected revision, every top-level key the client
+// sends is one CreateDestinationReq declares, and the response's receipt names
+// the accepted revision.
 func TestCreateDestination_EmbedsChainAsFixture(t *testing.T) {
 	w := loadSMTWire(t)
 	var req Destination
@@ -323,11 +325,16 @@ func TestCreateDestination_EmbedsChainAsFixture(t *testing.T) {
 		require.Equal(t, "/destinations", r.URL.Path)
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&sent))
 		rw.Header().Set("Content-Type", "application/json")
-		_, _ = rw.Write([]byte(`{"id":"dest-1","name":"Warehouse","connector":"snowflake","config":{}}`))
+		_, _ = rw.Write([]byte(`{"id":"dest-1","name":"Warehouse","connector":"snowflake","config":{},"smt_chain_receipt":` + string(w.DestinationChainReceipt) + `}`))
 	}))
 	defer srv.Close()
-	_, err := NewClient(&Config{BaseURL: srv.URL}).CreateDestination(context.Background(), req)
+	resp, err := NewClient(&Config{BaseURL: srv.URL}).CreateDestination(context.Background(), req)
 	require.NoError(t, err)
+	var receipt SMTChainReceipt
+	require.NoError(t, json.Unmarshal(w.DestinationChainReceipt, &receipt))
+	require.NotEmpty(t, receipt.ChainRevision)
+	require.Equal(t, &receipt, resp.SMTChainReceipt)
+	assertDeclared(t, w.OpenAPI.Components.Schemas["DestinationConnector"].Properties, nil, []string{"smt_chain_receipt"})
 
 	wantChain, err := json.Marshal(want["smt_chain"])
 	require.NoError(t, err)

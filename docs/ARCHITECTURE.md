@@ -182,7 +182,7 @@ Update:
 4. When the SMT chain changes, read it first: refuse a revision that moved since the plan, or a first write over transforms Terraform does not manage, before anything is sent
 5. Call API UpdateSource/UpdateDestination, embedding a changed SMT chain in the same request (`smt_chain`) with the revision read in step 4
 6. Convert API response to model, then restore planned secrets and fill null defaults
-7. Update state, reading the chain back (a source's under the revision its response accepted)
+7. Update state, reading the chain back under the revision the response's receipt accepted
 
 Delete:
 1. Call API DeleteSource/DeleteDestination

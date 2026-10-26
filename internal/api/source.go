@@ -38,13 +38,14 @@ type Source struct {
 	// the backend refuses an explicit null.
 	SMTChain *SMTChainWrite `json:"smt_chain,omitempty"`
 	// SMTChainReceipt identifies the chain revision a create or update
-	// accepted. Only those responses carry it, and only when they staged a
+	// accepted. Only those responses carry it, and only when they saved a
 	// chain.
-	SMTChainReceipt *SourceSMTChainReceipt `json:"smt_chain_receipt,omitempty"`
+	SMTChainReceipt *SMTChainReceipt `json:"smt_chain_receipt,omitempty"`
 }
 
-// SourceSMTChainReceipt names the chain revision a source write accepted.
-type SourceSMTChainReceipt struct {
+// SMTChainReceipt names the chain revision a source or destination write
+// accepted. The wire schema is named SourceSmtChainReceipt for both.
+type SMTChainReceipt struct {
 	ChainRevision string `json:"chain_revision"`
 }
 
