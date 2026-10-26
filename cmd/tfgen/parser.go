@@ -79,14 +79,51 @@ type ConnectorConfig struct {
 	Serialisation         string        `json:"serialisation,omitempty"`
 	Metrics               []Metric      `json:"metrics,omitempty"`
 	Config                []ConfigEntry `json:"config"`
+	// APISource marks a connector served by the API-source runner rather than
+	// Kafka Connect. The backend refuses SMT chains on it.
+	APISource        bool            `json:"api_source,omitempty"`
+	APIConditions    []APICondition  `json:"-"`
+	APIDependencies  []APIDependency `json:"-"`
+	APIOAuth         APIOAuth        `json:"-"`
+	APIAuthModeField string          `json:"-"`
 	// ComingSoon, when true, marks this connector as not yet generally available
 	// on the backend. Such connectors are visible in the UI but not actually
 	// deployable; we skip generating Terraform resources for them so users
 	// don't get a schema that always errors at apply time.
 	ComingSoon bool `json:"coming_soon,omitempty"`
-	// APISource marks a connector served by the API-source runner rather than
-	// Kafka Connect. The backend refuses SMT chains on it.
-	APISource bool `json:"api_source,omitempty"`
+}
+
+// APICondition is an API-source field the form shows only while its condition
+// field holds one of ConditionValues (ConditionDefault when unset). Required
+// fields must be set whenever they are shown.
+type APICondition struct {
+	Field            string
+	ConditionField   string
+	ConditionValues  []string
+	ConditionDefault string
+	Required         bool
+}
+
+// APIDependency is a field that, when set, needs every field in Requires set
+// too (JSON Schema dependentRequired).
+type APIDependency struct {
+	Field    string
+	Requires []string
+}
+
+// APIOAuth describes a vendor's Connect (OAuth) flow. An enabled flow with no
+// AuthModeField is the vendor's only way to sign in.
+type APIOAuth struct {
+	Enabled         bool
+	AuthModeField   string
+	AuthModeValue   string
+	AuthModeDefault string
+	// ConnectCommand is the CLI command that starts Connect, with the
+	// options this vendor's flow needs.
+	ConnectCommand string
+	// HostField names the config field the grant is authorized for (the
+	// Zendesk subdomain): changing it needs a new grant.
+	HostField string
 }
 
 // Metric represents a metrics definition (primarily for sources).
@@ -126,6 +163,8 @@ type ConfigEntry struct {
 	SetOnce              bool        `json:"set_once,omitempty"`
 	IsOverwrite          bool        `json:"is_overwrite,omitempty"`
 	IsDeleted            bool        `json:"is_deleted,omitempty"`
+	APIFormShow          bool        `json:"-"`
+	APIFormMinItems      int         `json:"-"`
 }
 
 // ValueObject represents the value field in a config entry.
@@ -385,6 +424,9 @@ func (e *ConfigEntry) TerraformType() TerraformType {
 // for the backend control. Unknown controls must stop generation instead of
 // silently becoming string attributes with potentially incompatible values.
 func (e *ConfigEntry) HasSupportedControl() bool {
+	if e.Value.Control == "input" {
+		return e.Value.Type == "number"
+	}
 	switch e.Value.Control {
 	case "string", "password", "textarea", "datetime", "code-editor", "json",
 		"number", "boolean", "toggle", "one-select", "multi-select", "slider":

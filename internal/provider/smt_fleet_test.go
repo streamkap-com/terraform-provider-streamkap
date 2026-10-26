@@ -17,6 +17,7 @@ import (
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/generated"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/connector"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/resource/source"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/smt"
 )
 
@@ -51,14 +52,17 @@ func connectorResources(t *testing.T) []chainResource {
 }
 
 // The backend can manage a chain on every published source and destination
-// except kafkadirect (composition_context.potentially_supported, which gates
-// the chain routes), and the pinned catalog publishes types for both hosts.
+// except kafkadirect and the API sources (composition_context.potentially_supported,
+// which gates the chain routes), and the pinned catalog publishes types for
+// both hosts.
 // Exactly those resources carry the chain, each built from its own host.
 func TestSMTChainFleetFollowsBackendCapability(t *testing.T) {
 	counts := map[connector.ConnectorType]int{}
 	for _, r := range connectorResources(t) {
 		t.Run(r.typeName, func(t *testing.T) {
-			supported := r.config.GetConnectorCode() != "kafkadirect"
+			code := r.config.GetConnectorCode()
+			apiSource := r.config.GetConnectorType() == connector.ConnectorTypeSource && source.IsAPISourceConnector(code)
+			supported := code != "kafkadirect" && !apiSource
 			for _, name := range chainAttributes {
 				_, has := r.schema.Attributes[name]
 				require.Equal(t, supported, has, "%s present=%v, backend support=%v", name, has, supported)

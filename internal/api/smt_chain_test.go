@@ -347,3 +347,28 @@ func TestCreateDestination_EmbedsChainAsFixture(t *testing.T) {
 	schema := w.OpenAPI.Components.Schemas["CreateDestinationReq"]
 	assertDeclared(t, schema.Properties, schema.Required, keys)
 }
+
+// A structured refusal that repeats a secret the request sent is masked in
+// the envelope callers decode as well as in the message, and the envelope
+// still decodes, so the issue keeps landing on its attribute.
+func TestSMTError_MasksSentSecretsInEnvelope(t *testing.T) {
+	const salt = "fixture-sent-salt-7f3a"
+	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
+		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusUnprocessableEntity)
+		_, _ = rw.Write([]byte(`{"detail":{"code":"smt_validation_failed","message":"The destination was not saved","issues":[{"code":"smt_config_invalid","message":"salt ` + salt + ` is too short","pointer":"/transforms/0/secret_operations/0/value","instance_id":null,"request_key":null}]}}`))
+	}))
+	defer srv.Close()
+	rev := "r1"
+	transforms := []SMTInstanceWrite{{ID: "MaskField1", Type: "mask_field", Name: "Mask", Enabled: true, Config: map[string]any{},
+		SecretOperations: []SMTSecretOperation{{Pointer: "/mask_salt", Operation: SMTSecretReplace, Value: salt}}}}
+	_, err := NewClient(&Config{BaseURL: srv.URL}).(*streamkapAPI).PutSMTChain(context.Background(), "destinations", "dest-1", SMTChainWrite{ExpectedRevision: &rev, Transforms: &transforms})
+	require.Error(t, err)
+	require.NotContains(t, err.Error(), salt)
+	env, ok := SMTErrorOf(err)
+	require.True(t, ok, "%v", err)
+	require.Len(t, env.Issues, 1)
+	require.NotContains(t, env.Issues[0].Message, salt)
+	require.Contains(t, env.Issues[0].Message, redactedPlaceholder)
+	require.Equal(t, "/transforms/0/secret_operations/0/value", env.Issues[0].Pointer)
+}

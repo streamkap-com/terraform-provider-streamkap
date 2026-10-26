@@ -170,6 +170,11 @@ func sweepPipelines(_ string) error {
 
 	var errs []error
 	for _, pipeline := range pipelines {
+		// A managed pipeline is an API source's topic delivery: the pipeline API refuses its delete (409), and it
+		// goes when its topics are detached.
+		if pipeline.Managed {
+			continue
+		}
 		if isTestResource(pipeline.Name) {
 			log.Printf("[INFO] Sweeping pipeline: %s (ID: %s)", pipeline.Name, pipeline.ID)
 			if err := client.DeletePipeline(ctx, pipeline.ID); err != nil {

@@ -1,0 +1,62 @@
+{
+  "version": "v3.0.0",
+  "attributes": {
+    "binding_id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "destination_id": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "topic_id": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    }
+  },
+  "blocks": {
+    "timeouts": {
+      "nesting_mode": "single",
+      "type": "timeouts.Type"
+    }
+  },
+  "block_attributes": {
+    "timeouts.create": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "timeouts.delete": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "timeouts.read": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    }
+  }
+}

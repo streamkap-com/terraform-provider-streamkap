@@ -1,6 +1,6 @@
 module github.com/streamkap-com/terraform-provider-streamkap
 
-go 1.27.2
+go 1.27.3
 
 require (
 	github.com/hashicorp/terraform-plugin-docs v0.25.0

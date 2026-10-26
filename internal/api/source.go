@@ -41,6 +41,9 @@ type Source struct {
 	// accepted. Only those responses carry it, and only when they saved a
 	// chain.
 	SMTChainReceipt *SMTChainReceipt `json:"smt_chain_receipt,omitempty"`
+	// ConnectionWarning is set on an API source's create and update responses
+	// when the save succeeded but a credential or resource check warned.
+	ConnectionWarning string `json:"connection_warning,omitempty"`
 }
 
 // SMTChainReceipt names the chain revision a source or destination write

@@ -36,9 +36,13 @@ const hostCatalog = `{
 
 var chainFieldTags = []string{`tfsdk:"smt_chain"`, `tfsdk:"smt_secrets"`, `tfsdk:"smt_predicates"`, `tfsdk:"smt_predicate_secrets"`, `tfsdk:"smt_managed_overrides"`, `tfsdk:"smt_chain_revision"`}
 
-// apiSourcePluginConfig is a plugin config the backend marks as served by the
-// API-source runner.
-const apiSourcePluginConfig = `{"display_name":"HubSpot","api_source":true,"config":[{"name":"database.hostname.user.defined","user_defined":true,"required":true,"display_name":"Host","value":{"control":"string"}}]}`
+// apiSourcePluginConfig and apiSourceForm are a plugin config the backend
+// marks as served by the API-source runner and the form contract every API
+// source carries beside it.
+const (
+	apiSourcePluginConfig = `{"display_name":"HubSpot","api_source":true,"config":[{"name":"resources","user_defined":true,"required":true,"display_name":"Resources","value":{"control":"multi-select","default":["contacts"],"raw_values":["contacts"]}}]}`
+	apiSourceForm         = `{"json_schema":{"required":["resources"],"properties":{"resources":{"items":{"type":"string"},"type":"array"}}},"ui_schema":{"elements":[{"type":"Control","scope":"#/properties/resources"}]}}`
+)
 
 func generateWithCatalog(t *testing.T, entityDir string, catalog string, connectors ...string) string {
 	t.Helper()
@@ -50,6 +54,11 @@ func generateWithCatalog(t *testing.T, entityDir string, catalog string, connect
 		}
 	}
 	backend := fixtureBackend(t, entityDir, validCommonConfig, plugins)
+	if _, ok := plugins["hubspot"]; ok {
+		if err := os.WriteFile(filepath.Join(backend, "app", entityDir, "plugins", "hubspot", "form.schema.json"), []byte(apiSourceForm), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
 	out := t.TempDir()
 	if err := runGenerate(backend, out, entityDir, "", smtOptions{CatalogPath: writeCommandCatalog(t, catalog), BackendRevision: "test"}); err != nil {
 		t.Fatalf("runGenerate %s: %v", entityDir, err)

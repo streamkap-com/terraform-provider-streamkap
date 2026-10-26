@@ -1,5 +1,18 @@
 # Complete Pinecone destination configuration
 
+terraform {
+  required_providers {
+    streamkap = {
+      source = "streamkap-com/streamkap"
+      # Set version to the release matching this documentation.
+      # Beta releases require an exact prerelease version; omission selects stable.
+    }
+  }
+  required_version = ">= 1.5.0"
+}
+
+provider "streamkap" {}
+
 resource "streamkap_destination_pinecone" "example" {
   name = "my-pinecone-dest"
 

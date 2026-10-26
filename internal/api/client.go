@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -66,6 +67,9 @@ type StreamkapAPI interface {
 	DeleteTopic(ctx context.Context, TopicID string) error
 	ListTopics(ctx context.Context, params *TopicListParams) (*TopicDetailsResponse, error)
 	GetTopicTableMetrics(ctx context.Context, req TopicTableMetricsRequest) (TopicTableMetricsResponse, error)
+	AttachTopicDestination(ctx context.Context, topicID, destinationID string) (*TopicDestinationLink, error)
+	GetTopicDestination(ctx context.Context, topicID, destinationID string) (*TopicDestinationLink, error)
+	DetachTopicDestination(ctx context.Context, topicID, destinationID string) error
 
 	// Kafka User APIs
 	CreateKafkaUser(ctx context.Context, reqPayload CreateKafkaUserRequest) (*KafkaUser, error)
@@ -99,10 +103,33 @@ type APIError struct {
 	StatusCode int
 	Detail     string
 	RequestID  string
-	// DetailJSON is the redacted `detail` object of a structured error body,
-	// for callers that map its issues to attributes. Empty when the detail
-	// was a plain string.
+	// DetailJSON is the `detail` object of a structured error body, with
+	// secret-named keys redacted and sent secrets masked, for callers that map
+	// its issues to attributes. Empty when the detail was a plain string.
 	DetailJSON json.RawMessage
+	// Fields is set when an API-source save is refused and every error names
+	// a config field.
+	Fields []APIFieldError
+	// raw is the error as the API wrote it, before sent secrets were masked
+	// out of Detail. Errors are classified on it: a secret that spells part of
+	// a transient or not-found phrase must not change the outcome. It holds the
+	// secrets Detail masks, so it is never logged, printed, or put into another
+	// error's message; read it only through classifiedText.
+	raw string
+}
+
+// classifiedText is the error text to match phrases against.
+func (e *APIError) classifiedText() string {
+	if e.raw != "" {
+		return e.raw
+	}
+	return e.Detail
+}
+
+// APIFieldError is one entry of the `fields` list sent beside `detail`.
+type APIFieldError struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
 }
 
 func (e *APIError) Error() string {
@@ -128,6 +155,10 @@ var notFoundDetails = []string{
 // isAlreadyExists reports whether Create failed because the backend already
 // holds a record with this name.
 func isAlreadyExists(err error) bool {
+	var apiErr *APIError
+	if errors.As(err, &apiErr) {
+		return strings.Contains(apiErr.classifiedText(), "already exists")
+	}
 	return err != nil && strings.Contains(err.Error(), "already exists")
 }
 
@@ -176,6 +207,7 @@ func adoptRefusedError(c adoptConflict, err error) error {
 	}
 	return fmt.Errorf(
 		"streamkap %[1]s %[2]q already exists on the backend, and auto-adoption is unsafe (it would risk destroying the live %[1]s under create_before_destroy). Recovery options:\n"+
+			"  • If the old %[1]s was deleted moments ago (a replace, or a destroy and then an apply), the backend keeps its name until the teardown it runs in the background finishes. Wait a minute and re-run apply.\n"+
 			"  • If this is a `lifecycle { create_before_destroy = true }` replace: remove that directive — Streamkap enforces unique %[1]s names per %[3]s, so a new and an old %[1]s cannot coexist by name. Use the default destroy-then-create, or rename so the two can briefly coexist.\n"+
 			"  • If you have deposed entries from earlier failed applies (shown in `terraform plan` as `<address> (destroy deposed <key>)`), back up state and compare their backend IDs before applying. If a deposed and current instance share an ID, resolve the state collision before Terraform destroys the live record. See docs/MIGRATION.md → \"Known limitations\".\n"+
 			"  • If this is recovering from an apply that lost its response: run `terraform import %[4]s`.%[5]s Find the id in the Streamkap UI or via `GET %[6]s?partial_name=%[2]s`, then re-run apply.\n"+
@@ -201,7 +233,7 @@ func IsNotFound(err error) bool {
 	if apiErr.StatusCode < 400 || apiErr.StatusCode >= 500 {
 		return false
 	}
-	detail := strings.ToLower(apiErr.Detail)
+	detail := strings.ToLower(apiErr.classifiedText())
 	for _, phrase := range notFoundDetails {
 		if strings.Contains(detail, phrase) {
 			return true
@@ -420,22 +452,50 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 		// auth redirect) and arrive as HTML. Returning only the bare JSON parse
 		// error ("invalid character '<' looking for beginning of value") strips
 		// every actionable hint, which has been a recurring debugging dead-end.
-		if detail, detailJSON, ok := parseAPIErrorDetail(body); ok {
-			return &APIError{StatusCode: resp.StatusCode, Detail: detail, RequestID: requestID, DetailJSON: detailJSON}
+		var envelope struct {
+			Fields []APIFieldError `json:"fields"`
 		}
+		_ = json.Unmarshal(body, &envelope) // a body without fields, or not JSON, leaves none
+		sent, err := secretsOf(ctx, req)
+		if err != nil {
+			for i := range envelope.Fields {
+				envelope.Fields[i].Message = "message withheld with the error detail"
+			}
+			return &APIError{
+				StatusCode: resp.StatusCode,
+				Detail:     fmt.Sprintf("%s %s: error detail withheld, because the request could not be re-read to mask the secrets it sent: %v", req.Method, req.URL, err),
+				RequestID:  requestID,
+				Fields:     envelope.Fields,
+				raw:        string(body),
+			}
+		}
+		named, _ := ctx.Value(sentSecretsKey{}).([]string)
+		secrets := secretForms(append(slices.Clone(sent), named...))
+		for i := range envelope.Fields {
+			envelope.Fields[i].Message = maskSentSecrets(envelope.Fields[i].Message, secrets)
+		}
+		// Masking runs before snippet, which cuts and flattens the text and
+		// would split a secret or change its newlines.
+		if detail, structured, ok := parseAPIErrorDetail(body); ok {
+			shown := maskSentSecrets(detail, secrets)
+			var detailJSON json.RawMessage
+			if structured {
+				shown = snippet([]byte(shown))
+				detailJSON = maskJSONStrings(json.RawMessage(detail), secrets)
+			}
+			return &APIError{StatusCode: resp.StatusCode, Detail: shown, RequestID: requestID, Fields: envelope.Fields, DetailJSON: detailJSON, raw: detail}
+		}
+		prefix := fmt.Sprintf("%s %s: non-JSON response body: ", req.Method, req.URL)
+		raw := string(body)
 		if json.Valid(body) {
-			detail := fmt.Sprintf("%s %s: JSON error response: %s", req.Method, req.URL, snippet([]byte(redactSensitiveErrorJSON(body))))
-			return &APIError{StatusCode: resp.StatusCode, Detail: detail, RequestID: requestID}
+			prefix = fmt.Sprintf("%s %s: JSON error response: ", req.Method, req.URL)
+			raw = redactSensitiveErrorJSON(body)
 		}
-		tflog.Debug(ctx,
-			fmt.Sprintf("%s %s → %d: response body not JSON: %s",
-				req.Method, req.URL, resp.StatusCode, snippet(body)),
-		)
-		return &APIError{
-			StatusCode: resp.StatusCode,
-			Detail:     fmt.Sprintf("%s %s: non-JSON response body: %s", req.Method, req.URL, snippet(body)),
-			RequestID:  requestID,
+		shown := snippet([]byte(maskSentSecrets(raw, secrets)))
+		if !json.Valid(body) {
+			tflog.Debug(ctx, fmt.Sprintf("%s %s → %d: response body not JSON: %s", req.Method, req.URL, resp.StatusCode, shown))
 		}
+		return &APIError{StatusCode: resp.StatusCode, Detail: prefix + shown, RequestID: requestID, Fields: envelope.Fields, raw: prefix + raw}
 	}
 
 	// A 2xx with an empty body is a success with nothing to decode — the
@@ -452,24 +512,59 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 	return nil
 }
 
-// parseAPIErrorDetail returns the detail as a message and, for a structured
-// detail, its redacted JSON in full: the message is capped for readability,
-// the JSON is what a caller decodes.
-func parseAPIErrorDetail(body []byte) (string, json.RawMessage, bool) {
+type requestSecretsKey struct{}
+
+// requestSecretsCache holds one request's secrets, read on its first failed
+// attempt and reused by its retries. It belongs to req alone: a token renewal
+// sends its own request on the same ctx.
+type requestSecretsCache struct {
+	req    *http.Request
+	once   sync.Once
+	values []string
+	err    error
+}
+
+func secretsOf(ctx context.Context, req *http.Request) ([]string, error) {
+	cache, ok := ctx.Value(requestSecretsKey{}).(*requestSecretsCache)
+	if !ok || cache.req != req {
+		return requestSecrets(req)
+	}
+	cache.once.Do(func() { cache.values, cache.err = requestSecrets(req) })
+	return cache.values, cache.err
+}
+
+// requestSecrets reads the secret values req sent, to mask them in its error.
+// A request without a body sent none.
+func requestSecrets(req *http.Request) ([]string, error) {
+	if req.GetBody == nil {
+		return nil, nil
+	}
+	body, err := req.GetBody()
+	if err != nil {
+		return nil, err
+	}
+	defer body.Close()
+	sent, err := io.ReadAll(body)
+	if err != nil {
+		return nil, err
+	}
+	return sentSecrets(sent), nil
+}
+
+// parseAPIErrorDetail returns the body's `detail` unmasked and uncut. A
+// structured detail is re-encoded with its secret-named keys redacted, and the
+// caller shortens it.
+func parseAPIErrorDetail(body []byte) (detail string, structured bool, ok bool) {
 	var envelope struct {
 		Detail json.RawMessage `json:"detail"`
 	}
 	if err := json.Unmarshal(body, &envelope); err != nil || len(envelope.Detail) == 0 {
-		return "", nil, false
+		return "", false, false
 	}
-
-	var detail string
 	if err := json.Unmarshal(envelope.Detail, &detail); err == nil {
-		return detail, nil, strings.TrimSpace(detail) != ""
+		return detail, false, strings.TrimSpace(detail) != ""
 	}
-
-	redacted := redactSensitiveErrorJSON(envelope.Detail)
-	return snippet([]byte(redacted)), json.RawMessage(redacted), true
+	return redactSensitiveErrorJSON(envelope.Detail), true, true
 }
 
 func isUnauthorized(err error) bool {
@@ -519,6 +614,7 @@ func snippet(b []byte) string {
 // straight to do() — routing it back through doRequest would recurse.
 func (s *streamkapAPI) doRequestWithRetry(ctx context.Context, req *http.Request, result any) error {
 	cfg := s.retryCfg
+	ctx = context.WithValue(ctx, requestSecretsKey{}, &requestSecretsCache{req: req})
 
 	return RetryWithBackoff(ctx, cfg, func() error {
 		if err := rewindBody(req); err != nil {
