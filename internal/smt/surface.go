@@ -617,6 +617,10 @@ func (s *Surface) ExpectedRevision(ctx context.Context, client api.SMTChainAPI, 
 	}
 	root := writeRoot(w)
 	read, err := client.GetSMTChain(ctx, kind, connectorID)
+	if summary, detail, ok := ViewInvalid(err); ok {
+		diags.AddAttributeError(root, summary, detail)
+		return priorRevision, diags
+	}
 	if err != nil {
 		diags.AddAttributeError(root, "Unable to read the transform chain",
 			fmt.Sprintf("The transform chain was not written because the connector's current chain could not be read: %s", err))
@@ -751,6 +755,10 @@ func predicateKeysForAppliedGraph(w *Write, read *api.SMTChainRead) ([]string, d
 func (s *Surface) WriteError(err error, expectedRevision types.String, w *Write) diag.Diagnostics {
 	var diags diag.Diagnostics
 	root := writeRoot(w)
+	if summary, detail, ok := ViewInvalid(err); ok {
+		diags.AddAttributeError(root, summary, detail)
+		return diags
+	}
 	if api.IsSMTRevisionConflict(err) {
 		diags.AddAttributeError(root, "Transform chain changed outside Terraform",
 			fmt.Sprintf("The chain revision %q this plan was built from is no longer current. Run terraform plan again to refresh it and review the drift before applying: %s", expectedRevision.ValueString(), err))
@@ -780,6 +788,18 @@ func (s *Surface) WriteError(err error, expectedRevision types.String, w *Write)
 		diags.AddAttributeError(s.issuePath(issue.Pointer, w), "Transform chain rejected: "+env.Message, fmt.Sprintf("%s: %s (%s)", issue.Pointer, issue.Message, issue.Code))
 	}
 	return diags
+}
+
+// ViewInvalid returns the diagnostic text for a server refusal caused by a
+// connector whose stored chain metadata the server cannot read. Every chain
+// read and connector save fails until it is repaired, so it is neither drift
+// nor a configuration error, and retrying or re-planning does not help.
+func ViewInvalid(err error) (summary, detail string, ok bool) {
+	if !api.IsSMTViewInvalid(err) {
+		return "", "", false
+	}
+	return "Transform chain metadata is malformed",
+		fmt.Sprintf("The server cannot read this connector's stored transform chain metadata, so neither the chain nor the connector can be read or saved until it is repaired. Changing the configuration will not help; contact Streamkap support to repair the connector: %s", err), true
 }
 
 func writeRoot(w *Write) path.Path {
@@ -872,7 +892,11 @@ func (s *Surface) RefreshGraph(ctx context.Context, client api.SMTChainAPI, kind
 		if prior.IsNull() {
 			at = path.Root(AttrManagedOverrides)
 		}
-		diags.AddAttributeError(at, "Error reading transform chain", err.Error())
+		if summary, detail, ok := ViewInvalid(err); ok {
+			diags.AddAttributeError(at, summary, detail)
+		} else {
+			diags.AddAttributeError(at, "Error reading transform chain", err.Error())
+		}
 		return GraphState{Transforms: prior, Predicates: priorPredicates, ManagedOverrides: priorOverrides, Revision: types.StringNull()}, diags
 	}
 	if prior.IsNull() {
@@ -896,7 +920,7 @@ func (s *Surface) RefreshGraph(ctx context.Context, client api.SMTChainAPI, kind
 	return state, diags
 }
 
-// stateFrom turns the desired snapshot into state. An instance the schema cannot represent, an opaque one or one carrying a selector, is refused rather than silently dropped: writing the chain back without it would delete it.
+// stateFrom turns the desired snapshot into state. An instance the schema cannot represent, an opaque one or one of an unknown kind, is refused rather than silently dropped: writing the chain back without it would delete it.
 func (s *Surface) stateFrom(ctx context.Context, read *api.SMTChainRead, keys []string, versions map[string]int64) (types.List, types.String, diag.Diagnostics) {
 	state, diags := s.stateGraphFrom(ctx, read, keys, nil, versions, nil)
 	return state.Transforms, state.Revision, diags
@@ -914,10 +938,6 @@ func (s *Surface) stateGraphFrom(ctx context.Context, read *api.SMTChainRead, ke
 		if inst.Kind == "opaque" {
 			diags.AddAttributeError(at, "Transform instance cannot be represented",
 				fmt.Sprintf("instance %s (%s) is opaque: %s. This provider version cannot manage it; remove it from the chain elsewhere before managing the chain here.", inst.ID, inst.Alias, inst.Reason))
-		}
-		if inst.HasSelector() {
-			diags.AddAttributeError(at, "Transform selector cannot be represented",
-				fmt.Sprintf("instance %s (%s) carries a selector. This provider version has no selector attribute and would drop the rule on the next write; remove the selector elsewhere before managing the chain here.", inst.ID, inst.Alias))
 		}
 	}
 	if diags.HasError() {

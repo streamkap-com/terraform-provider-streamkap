@@ -27,7 +27,7 @@ func TestStateFromOpaqueRetentionBoundary(t *testing.T) {
 		},
 		{
 			name: "unknown kind",
-			rows: []api.SMTInstanceRead{{Kind: "future-private-kind", ID: "private-id", Alias: "private-alias", Config: map[string]any{"private": "hidden"}, Predicate: []byte(`{"private":"hidden"}`), Selector: []byte(`{"private":"hidden"}`)}},
+			rows: []api.SMTInstanceRead{{Kind: "future-private-kind", ID: "private-id", Alias: "private-alias", Config: map[string]any{"private": "hidden"}, Predicate: []byte(`{"private":"hidden"}`)}},
 			want: "Transform kind cannot be represented",
 		},
 	} {

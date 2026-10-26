@@ -203,6 +203,40 @@
       ]
     }
   },
+  "selector_write_request": {
+    "catalog_precondition": {
+      "contract_version": 1,
+      "digest": "sha256:e575cea8e41b3a342fdf30eab877a74374df9ef8acbf919e92bb465ae274a932"
+    },
+    "transforms": [
+      {
+        "type": "mask_field",
+        "name": "Mask email rule",
+        "config": {},
+        "selector": {
+          "include": [
+            {
+              "table": "*",
+              "column": "email"
+            }
+          ],
+          "exclude": [
+            {
+              "table": "audit_log",
+              "column": "email"
+            }
+          ]
+        },
+        "secret_operations": [
+          {
+            "pointer": "/mask_salt",
+            "operation": "replace",
+            "value": "fixture-salt"
+          }
+        ]
+      }
+    ]
+  },
   "catalog_read_response": {
     "contract_version": 1,
     "digest": "sha256:e575cea8e41b3a342fdf30eab877a74374df9ef8acbf919e92bb465ae274a932",
@@ -2619,7 +2653,7 @@
   },
   "selector_read_response": {
     "desired": {
-      "chain_revision": "a5ffa5b833e6db552f77d5781779e8f7",
+      "chain_revision": "5c71106154dafa81394db496b51bbb4a",
       "deployment_generation": 21,
       "predicates": [],
       "transforms": [
@@ -2633,8 +2667,12 @@
           "name": "Mask email rule",
           "enabled": true,
           "config": {
-            "fields_include": [],
-            "fields_exclude": [],
+            "fields_include": [
+              "*.email"
+            ],
+            "fields_exclude": [
+              "audit_log.email"
+            ],
             "mask_function": "SHA256",
             "mask_char": "*",
             "mask_fixed_value": "***",
@@ -2644,20 +2682,7 @@
             "/mask_salt"
           ],
           "predicate": null,
-          "selector": {
-            "include": [
-              {
-                "table": "*",
-                "column": "email"
-              }
-            ],
-            "exclude": [
-              {
-                "table": "audit_log",
-                "column": "email"
-              }
-            ]
-          }
+          "selector": null
         }
       ],
       "managed": [],
@@ -2670,7 +2695,7 @@
       ]
     },
     "last_applied": {
-      "chain_revision": "a5ffa5b833e6db552f77d5781779e8f7",
+      "chain_revision": "5c71106154dafa81394db496b51bbb4a",
       "deployment_generation": 21,
       "predicates": [],
       "transforms": [
@@ -2963,6 +2988,16 @@
                 }
               },
               "description": "Service Unavailable"
+            },
+            "409": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Conflict"
             }
           }
         }
@@ -3077,6 +3112,16 @@
                 }
               },
               "description": "Service Unavailable"
+            },
+            "409": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Conflict"
             }
           }
         }
@@ -3238,6 +3283,16 @@
                 }
               },
               "description": "Service Unavailable"
+            },
+            "409": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Conflict"
             }
           }
         },
@@ -3429,6 +3484,16 @@
                 }
               },
               "description": "Service Unavailable"
+            },
+            "409": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Conflict"
             }
           }
         }
@@ -3543,6 +3608,16 @@
                 }
               },
               "description": "Service Unavailable"
+            },
+            "409": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Conflict"
             }
           }
         }
@@ -3611,6 +3686,16 @@
                 }
               },
               "description": "Service Unavailable"
+            },
+            "409": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Conflict"
             }
           }
         }
@@ -5471,7 +5556,7 @@
               },
               "type": "object",
               "title": "Config",
-              "description": "Declared defaults materialized, secret leaves absent. In desired, a selector owns both field lists and they are empty; last_applied retains compiled lists."
+              "description": "Declared defaults materialized, secret leaves absent. A selector sent on write appears here as the field lists it compiled to."
             },
             "configured_secret_paths": {
               "items": {
@@ -5501,7 +5586,7 @@
                   "type": "null"
                 }
               ],
-              "description": "Desired field-selection intent; owns both field lists in config. Absent on last_applied."
+              "description": "Always null on reads: a selector is write-only and is compiled into config's field lists on save."
             }
           },
           "additionalProperties": false,

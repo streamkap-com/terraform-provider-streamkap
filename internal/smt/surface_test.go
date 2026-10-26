@@ -38,19 +38,6 @@ func TestIssuePath(t *testing.T) {
 	}
 }
 
-// The read schema still declares a selector on an instance, so a read that
-// carries one is refused rather than managed: writing the instance back
-// without it would drop the rule. The server compiles selectors away and
-// never returns one, so the read here is constructed, not a fixture.
-func TestStateFromRefusesSelectorBearingRead(t *testing.T) {
-	read := api.SMTChainRead{Desired: api.SMTChainSnapshot{ChainRevision: "r1", Transforms: []api.SMTInstanceRead{
-		{Kind: "typed", ID: "MaskField1", Alias: "MaskField1", Type: "mask_field", Selector: json.RawMessage(`{"include":[{"table":"*","column":"email"}],"exclude":[]}`)},
-	}}}
-	_, _, diags := (&Surface{}).stateFrom(context.Background(), &read, nil, nil)
-	require.True(t, diags.HasError())
-	require.Contains(t, diags.Errors()[0].Summary(), "Transform selector cannot be represented")
-}
-
 func loadWireFixture(t *testing.T) map[string]json.RawMessage {
 	t.Helper()
 	raw, err := os.ReadFile("../api/testdata/smt_wire_fixtures.json")
@@ -60,11 +47,10 @@ func loadWireFixture(t *testing.T) map[string]json.RawMessage {
 	return fixture
 }
 
-// A selector is write-only: a rule saved elsewhere reads back as the field
-// lists it compiled to, which is what the fixture's last_applied records, and
-// with no selector. Read keeps those lists as the instance's plain mask_field
-// config under the pinned catalog's current release instead of refusing the
-// instance, and the instance id is its alias.
+// A selector is write-only: the instance a rule was saved on reads back with
+// the field lists it compiled to. Read keeps those lists as the instance's
+// plain mask_field config under the pinned catalog's current release, and the
+// instance id is its alias.
 func TestStateFromKeepsCompiledSelectorLists(t *testing.T) {
 	corpus, err := LoadCorpus("../generated/smt_catalog.json")
 	require.NoError(t, err)
@@ -73,9 +59,6 @@ func TestStateFromKeepsCompiledSelectorLists(t *testing.T) {
 
 	var read api.SMTChainRead
 	require.NoError(t, json.Unmarshal(loadWireFixture(t)["selector_read_response"], &read))
-	require.NotNil(t, read.LastApplied)
-	read.Desired = *read.LastApplied
-	require.False(t, read.Desired.Transforms[0].HasSelector())
 
 	list, revision, diags := NewSurface(chain, nil).stateFrom(context.Background(), &read, []string{"MaskField1"}, nil)
 	require.False(t, diags.HasError(), "%v", diags)
@@ -92,8 +75,9 @@ func TestStateFromKeepsCompiledSelectorLists(t *testing.T) {
 
 // A refused chain write is named by what the server reports: a write without
 // its revision is a provider defect, not drift; an unreadable chain leaves the
-// outcome unknown; a stale revision is drift; and an order refusal lands on
-// the chain entry the issue points at.
+// outcome unknown; a stale revision is drift; malformed stored chain metadata
+// needs a server-side repair; and an order refusal lands on the chain entry
+// the issue points at.
 func TestWriteErrorNamesFixtureRefusals(t *testing.T) {
 	fixture := loadWireFixture(t)
 	refusal := func(status int, body json.RawMessage) error {
@@ -104,6 +88,7 @@ func TestWriteErrorNamesFixtureRefusals(t *testing.T) {
 		return &api.APIError{StatusCode: status, Detail: "refused", DetailJSON: envelope.Detail}
 	}
 	readFailed := json.RawMessage(`{"detail":{"code":"smt_read_failed","message":"The chain write was accepted but could not be read back; read the chain again before retrying","issues":[]}}`)
+	viewInvalid := json.RawMessage(`{"detail":{"code":"smt_view_invalid","message":"The connector's stored SMT chain metadata cannot be read (names is not a mapping); its chain cannot be read or saved","issues":[]}}`)
 	w := &Write{Configured: true, ChainConfigured: true, correlated: []Correlated{{Key: "mask", Type: "mask_field"}, {Key: "route", Type: "regex_router"}}}
 	chain := path.Root(AttrChain)
 	for _, tc := range []struct {
@@ -116,6 +101,7 @@ func TestWriteErrorNamesFixtureRefusals(t *testing.T) {
 		{"missing revision", refusal(409, fixture["missing_revision_response"]), "Transform chain sent without its revision", chain, "report this issue"},
 		{"read failed", refusal(503, readFailed), "Transform chain outcome unconfirmed", chain, "may or may not have been saved"},
 		{"stale revision", refusal(409, fixture["conflict_response"]), "Transform chain changed outside Terraform", chain, "no longer current"},
+		{"view invalid", refusal(409, viewInvalid), "Transform chain metadata is malformed", chain, "contact Streamkap support"},
 		{"order rejected", refusal(422, fixture["order_rejected_response"]), "Transform chain rejected: The destination was not saved; fix the SMT chain issues and send it again", chain.AtListIndex(1), "smt_order_rejected"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -175,4 +161,16 @@ func TestExpectedRevisionReadsBeforeWriting(t *testing.T) {
 	revision, diags := s.ExpectedRevision(ctx, &managedOverrideClient{err: errors.New("no read expected")}, "destinations", "destination-1", unchanged, types.StringValue("r1"))
 	require.False(t, diags.HasError(), "a write that sends nothing reads nothing: %v", diags)
 	require.Equal(t, types.StringValue("r1"), revision)
+}
+
+// Malformed stored chain metadata fails the read before a write the same way:
+// it is named as a server-side repair, not as an unreadable chain to retry,
+// and nothing is written.
+func TestExpectedRevisionNamesMalformedChainMetadata(t *testing.T) {
+	detail := json.RawMessage(`{"code":"smt_view_invalid","message":"The connector's stored SMT chain metadata cannot be read (names is not a mapping); its chain cannot be read or saved","issues":[]}`)
+	client := &managedOverrideClient{err: &api.APIError{StatusCode: 409, Detail: "refused", DetailJSON: detail}}
+	_, diags := (&Surface{}).ExpectedRevision(context.Background(), client, "destinations", "destination-1", &Write{Configured: true, ChainConfigured: true}, types.StringValue("r1"))
+	require.True(t, diags.HasError())
+	require.Equal(t, "Transform chain metadata is malformed", diags.Errors()[0].Summary())
+	require.Empty(t, client.writes)
 }

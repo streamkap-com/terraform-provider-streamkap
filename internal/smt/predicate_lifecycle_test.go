@@ -454,7 +454,7 @@ func TestApplyGraphPreservesSharedPredicateIdentityThroughCopyAndCleanup(t *test
 	transformRead := func(id, predicateID string) api.SMTInstanceRead {
 		attachment, err := json.Marshal(api.SMTPredicateAttachment{ID: predicateID})
 		require.NoError(t, err)
-		return api.SMTInstanceRead{Kind: "typed", ID: id, Alias: "Route" + id, Type: "route", SchemaVersion: 1, CodecVersion: 1, Name: id, Enabled: true, Config: map[string]any{"replacement": id}, ConfiguredSecretPaths: []string{}, Predicate: attachment, Selector: json.RawMessage("null")}
+		return api.SMTInstanceRead{Kind: "typed", ID: id, Alias: "Route" + id, Type: "route", SchemaVersion: 1, CodecVersion: 1, Name: id, Enabled: true, Config: map[string]any{"replacement": id}, ConfiguredSecretPaths: []string{}, Predicate: attachment}
 	}
 	read := func(revision string, predicates []api.SMTPredicateRead, transforms []api.SMTInstanceRead) *api.SMTChainRead {
 		return &api.SMTChainRead{Desired: api.SMTChainSnapshot{ChainRevision: revision, Predicates: predicates, Transforms: transforms}, ApplicationStatus: "pending"}

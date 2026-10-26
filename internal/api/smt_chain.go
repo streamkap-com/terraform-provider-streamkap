@@ -13,7 +13,7 @@ import (
 
 // The SMT chain wire contract, as the backend's
 // app/services/smt/fixtures/wire_fixtures.json spells it (wire_version 5,
-// backend revision aec997750f7fc38044129dad69e7e177670964e0). A copy of
+// backend revision 92d6e46eba63b6b03bbe75c3275b565a1cfd965d). A copy of
 // that fixture lives in testdata and the decode test pins these types to
 // it. Resource code depends on SMTChainAPI only.
 //
@@ -102,7 +102,7 @@ type SMTPredicateRead struct {
 
 // SMTInstanceRead is one instance of a chain snapshot. Kind is "typed" for a catalog instance and "opaque" for one the catalog cannot describe, in which case only id, alias, name, enabled and reason are set. The id is the instance's transform alias. Predicate stays raw so the SMT surface can resolve its server id to the provider predicate key.
 //
-// A selector is write-only: the server compiles it into the field lists of config and reads back those lists with no selector. The read schema still declares the field, so Selector stays raw and an instance that carries one is refused rather than managed, since writing the compiled lists back would drop the rule.
+// The read's selector is not decoded: a selector is write-only, compiled into config's field lists on save and always null on reads, so those lists are all there is to manage.
 type SMTInstanceRead struct {
 	Kind                  string          `json:"kind"`
 	ID                    string          `json:"id"`
@@ -114,7 +114,6 @@ type SMTInstanceRead struct {
 	Enabled               bool            `json:"enabled"`
 	Config                map[string]any  `json:"config"`
 	ConfiguredSecretPaths []string        `json:"configured_secret_paths"`
-	Selector              json.RawMessage `json:"selector"`
 	Predicate             json.RawMessage `json:"predicate"`
 	Reason                string          `json:"reason,omitempty"`
 }
@@ -122,11 +121,6 @@ type SMTInstanceRead struct {
 // HasPredicate reports whether the instance carries a predicate.
 func (r SMTInstanceRead) HasPredicate() bool {
 	return len(r.Predicate) > 0 && string(r.Predicate) != "null"
-}
-
-// HasSelector reports whether the instance carries a selector.
-func (r SMTInstanceRead) HasSelector() bool {
-	return len(r.Selector) > 0 && string(r.Selector) != "null"
 }
 
 // SMTOrderEntry is one position of the effective chain order.
@@ -182,6 +176,7 @@ const (
 	smtExpectedRevisionRequiredCode = "smt_expected_revision_required"
 	smtConnectorDeletingCode        = "smt_connector_deleting"
 	smtReadFailedCode               = "smt_read_failed"
+	smtViewInvalidCode              = "smt_view_invalid"
 )
 
 // SMTChainAPI is the server surface the connector resources drive the chain
@@ -231,6 +226,12 @@ func IsSMTExpectedRevisionMissing(err error) bool {
 // when the saved chain could not be read back, so the outcome is unknown.
 func IsSMTReadFailed(err error) bool {
 	return smtErrorCode(err) == smtReadFailedCode
+}
+
+// IsSMTViewInvalid reports whether the server refused a chain read or a
+// connector save because the connector's stored chain metadata is malformed.
+func IsSMTViewInvalid(err error) bool {
+	return smtErrorCode(err) == smtViewInvalidCode
 }
 
 func (e *SMTErrorEnvelope) hasIssue(code string) bool {

@@ -1031,6 +1031,10 @@ func (r *BaseConnectorResource) expectedRevision(ctx context.Context, id string,
 // is reported against the connector, since the same request carried the
 // connector settings.
 func (r *BaseConnectorResource) addConnectorWriteError(diags *diag.Diagnostics, verbing, verb string, err error, write *smt.Write, expectedRevision types.String) {
+	if summary, detail, ok := smt.ViewInvalid(err); ok {
+		diags.AddError(summary, detail)
+		return
+	}
 	if _, structured := api.SMTErrorOf(err); structured && r.smt != nil && write != nil && write.Configured {
 		diags.Append(r.smt.WriteError(err, expectedRevision, write)...)
 		return
@@ -1078,6 +1082,10 @@ func (r *BaseConnectorResource) readEmbeddedChain(ctx context.Context, id string
 		return smt.GraphState{}, false
 	}
 	read, err := client.GetSMTChain(ctx, r.chainKind(), id)
+	if summary, detail, ok := smt.ViewInvalid(err); ok {
+		diags.AddAttributeError(path.Root(smt.AttrChain), summary, detail)
+		return smt.GraphState{}, false
+	}
 	if err != nil {
 		diags.AddAttributeError(path.Root(smt.AttrChain), "Unable to read the saved transform chain",
 			fmt.Sprintf("The %s and its transform chain were saved, but reading the chain back failed. Run terraform plan to refresh it: %s", kind, err))

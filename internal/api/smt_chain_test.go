@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// smtWireFixtures copies the backend app/services/smt/fixtures/wire_fixtures.json at revision aec997750f7fc38044129dad69e7e177670964e0 (wire_version 5), sha256 d27f0966b2a4772d329180bd65d2fbf751494e038f12b6a4a6f0f47467ba3636.
+// smtWireFixtures copies the backend app/services/smt/fixtures/wire_fixtures.json at revision 92d6e46eba63b6b03bbe75c3275b565a1cfd965d (wire_version 5), sha256 e0ead26c9bbcbb9b5364d85521f67e84a862c058ed8a9d70c1dd86d961ea82ac.
 const smtWireFixtures = "testdata/smt_wire_fixtures.json"
 
 type smtWire struct {
@@ -160,17 +160,22 @@ func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 	require.Equal(t, "SHA256", first.Config["mask_function"], "declared defaults are materialised on read")
 	require.Equal(t, []string{"/mask_salt"}, first.ConfiguredSecretPaths)
 	require.False(t, first.HasPredicate())
-	require.False(t, first.HasSelector())
 
-	// A selector is write-only: the instance a selector was saved on reads
-	// back with no selector and the field lists it compiled to.
+	// A selector is write-only: the instance it was saved on reads back with
+	// no selector and the field lists it compiled to.
 	var selectorRead SMTChainRead
 	require.NoError(t, json.Unmarshal(w.SelectorReadResponse, &selectorRead))
-	require.Len(t, selectorRead.LastApplied.Transforms, 1)
-	compiled := selectorRead.LastApplied.Transforms[0]
-	require.False(t, compiled.HasSelector())
+	require.Len(t, selectorRead.Desired.Transforms, 1)
+	compiled := selectorRead.Desired.Transforms[0]
 	require.Equal(t, []string{"*.email"}, toStrings(compiled.Config["fields_include"]))
 	require.Equal(t, []string{"audit_log.email"}, toStrings(compiled.Config["fields_exclude"]))
+	var rawSelectorRead struct {
+		Desired struct {
+			Transforms []map[string]json.RawMessage `json:"transforms"`
+		} `json:"desired"`
+	}
+	require.NoError(t, json.Unmarshal(w.SelectorReadResponse, &rawSelectorRead))
+	require.JSONEq(t, "null", string(rawSelectorRead.Desired.Transforms[0]["selector"]), "nothing to manage beyond the compiled lists")
 	// The effective order interleaves the managed slots with the user
 	// instances; the provider manages only the user ones and keeps the
 	// managed rows opaque.
@@ -209,6 +214,7 @@ func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 		{name: "conflict", status: http.StatusConflict, body: w.ConflictResponse, conflict: true, code: "smt_revision_conflict", issues: 1},
 		{name: "missing revision", status: http.StatusConflict, body: w.MissingRevisionResponse, missingRevision: true, code: "smt_revision_conflict", issues: 1},
 		{name: "connector deleting", status: http.StatusConflict, body: envelope("smt_connector_deleting", "Destination dest-1 is being deleted; its SMT chain can no longer be written"), code: "smt_connector_deleting"},
+		{name: "view invalid", status: http.StatusConflict, body: envelope("smt_view_invalid", "The connector's stored SMT chain metadata cannot be read (names is not a mapping); its chain cannot be read or saved"), code: "smt_view_invalid"},
 		{name: "read failed", status: http.StatusServiceUnavailable, body: envelope("smt_read_failed", "The chain write was accepted but could not be read back; read the chain again before retrying"), code: "smt_read_failed"},
 		{name: "validation", status: http.StatusUnprocessableEntity, body: w.ValidationResponse, code: "smt_validation_failed", issues: 3},
 		{name: "order rejected", status: http.StatusUnprocessableEntity, body: w.OrderRejectedResponse, code: "smt_validation_failed", issues: 1},
@@ -234,6 +240,7 @@ func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 			require.Len(t, env.Issues, tc.issues)
 			require.Equal(t, tc.code == "smt_connector_deleting", IsSMTConnectorDeleting(err))
 			require.Equal(t, tc.code == "smt_read_failed", IsSMTReadFailed(err))
+			require.Equal(t, tc.code == "smt_view_invalid", IsSMTViewInvalid(err))
 		})
 	}
 
@@ -331,22 +338,4 @@ func TestCreateDestination_EmbedsChainAsFixture(t *testing.T) {
 	}
 	schema := w.OpenAPI.Components.Schemas["CreateDestinationReq"]
 	assertDeclared(t, schema.Properties, schema.Required, keys)
-}
-
-func TestSMTWire_HasSelector(t *testing.T) {
-	for _, tc := range []struct {
-		name string
-		raw  string
-		want bool
-	}{
-		{name: "absent", raw: `{}`},
-		{name: "null", raw: `{"selector":null}`},
-		{name: "configured", raw: `{"selector":{"streams":["orders"]}}`, want: true},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			var instance SMTInstanceRead
-			require.NoError(t, json.Unmarshal([]byte(tc.raw), &instance))
-			require.Equal(t, tc.want, instance.HasSelector())
-		})
-	}
 }
