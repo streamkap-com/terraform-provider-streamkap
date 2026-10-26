@@ -45,7 +45,9 @@ package connector
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -480,7 +482,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 			SMTChain:    embedded,
 		})
 		if err != nil {
-			r.addConnectorWriteError(&resp.Diagnostics, "creating", "create", err, chain, priorRevision)
+			r.addConnectorWriteError(&resp.Diagnostics, "creating", "create", err, chain, embedded != nil, priorRevision)
 			return
 		}
 		receipt = source.SMTChainReceipt
@@ -506,7 +508,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 			SMTChain:    embedded,
 		})
 		if err != nil {
-			r.addConnectorWriteError(&resp.Diagnostics, "creating", "create", err, chain, priorRevision)
+			r.addConnectorWriteError(&resp.Diagnostics, "creating", "create", err, chain, embedded != nil, priorRevision)
 			return
 		}
 		receipt = destination.SMTChainReceipt
@@ -771,7 +773,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 			SMTChain:    embedded,
 		})
 		if err != nil {
-			r.addConnectorWriteError(&resp.Diagnostics, "updating", "update", err, chain, expectedRevision)
+			r.addConnectorWriteError(&resp.Diagnostics, "updating", "update", err, chain, embedded != nil, expectedRevision)
 			return
 		}
 		receipt = source.SMTChainReceipt
@@ -796,7 +798,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 			SMTChain:    embedded,
 		})
 		if err != nil {
-			r.addConnectorWriteError(&resp.Diagnostics, "updating", "update", err, chain, expectedRevision)
+			r.addConnectorWriteError(&resp.Diagnostics, "updating", "update", err, chain, embedded != nil, expectedRevision)
 			return
 		}
 		receipt = destination.SMTChainReceipt
@@ -1008,8 +1010,9 @@ func (r *BaseConnectorResource) expectedRevision(ctx context.Context, id string,
 // addConnectorWriteError reports a refused connector create or update. A
 // structured SMT envelope is located on the chain attributes; anything else
 // is reported against the connector, since the same request carried the
-// connector settings.
-func (r *BaseConnectorResource) addConnectorWriteError(diags *diag.Diagnostics, verbing, verb string, err error, write *smt.Write, expectedRevision types.String) {
+// connector settings. The connector routes answer a body carrying a chain
+// that Kafka Connect refuses with a plain 400, which saved nothing.
+func (r *BaseConnectorResource) addConnectorWriteError(diags *diag.Diagnostics, verbing, verb string, err error, write *smt.Write, chainSent bool, expectedRevision types.String) {
 	if summary, detail, ok := smt.ViewInvalid(err); ok {
 		diags.AddError(summary, detail)
 		return
@@ -1019,10 +1022,13 @@ func (r *BaseConnectorResource) addConnectorWriteError(diags *diag.Diagnostics, 
 		return
 	}
 	kind := r.config.GetConnectorType()
-	diags.AddError(
-		fmt.Sprintf("Error %s %s %s", verbing, r.config.GetConnectorCode(), kind),
-		fmt.Sprintf("Unable to %s %s: %s", verb, kind, err),
-	)
+	summary := fmt.Sprintf("Error %s %s %s", verbing, r.config.GetConnectorCode(), kind)
+	var apiErr *api.APIError
+	if chainSent && errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusBadRequest {
+		diags.AddError(summary, fmt.Sprintf("The %s and its transform chain were refused, so nothing was saved: %s", kind, err))
+		return
+	}
+	diags.AddError(summary, fmt.Sprintf("Unable to %s %s: %s", verb, kind, err))
 }
 
 // recordEmbeddedChain records the chain of a connector whose create or update

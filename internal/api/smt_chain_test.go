@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// smtWireFixtures copies the backend app/services/smt/fixtures/wire_fixtures.json at revision 85c1cd844069e710892077f102652d9b7937dded (wire_version 5), sha256 7565ba4b6c9e56947469a174b2242b9edb964c2aa2c8505ca1c8332465a45617.
+// smtWireFixtures copies the backend app/services/smt/fixtures/wire_fixtures.json at revision 41d45de6e9a6bcfc765b309cc55340f1a13beb9e (wire_version 5), sha256 723f76eb0f4c546ef3d35f785bdde0bb28454a54333516de4a852d0b1c91aad9.
 const smtWireFixtures = "testdata/smt_wire_fixtures.json"
 
 type smtWire struct {
@@ -217,6 +217,7 @@ func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 		{name: "connector deleting", status: http.StatusConflict, body: envelope("smt_connector_deleting", "Destination dest-1 is being deleted; its SMT chain can no longer be written"), code: "smt_connector_deleting"},
 		{name: "view invalid", status: http.StatusConflict, body: envelope("smt_view_invalid", "The connector's stored SMT chain metadata cannot be read (names is not a mapping); its chain cannot be read or saved"), code: "smt_view_invalid"},
 		{name: "read failed", status: http.StatusServiceUnavailable, body: envelope("smt_read_failed", "The chain write was accepted but could not be read back; read the chain again before retrying"), code: "smt_read_failed"},
+		{name: "worker refused", status: http.StatusBadRequest, body: envelope("smt_validation_failed", "Kafka Connect refused the destination's config; nothing was saved: Connector configuration is invalid"), code: "smt_validation_failed"},
 		{name: "validation", status: http.StatusUnprocessableEntity, body: w.ValidationResponse, code: "smt_validation_failed", issues: 3},
 		{name: "order rejected", status: http.StatusUnprocessableEntity, body: w.OrderRejectedResponse, code: "smt_validation_failed", issues: 1},
 	} {

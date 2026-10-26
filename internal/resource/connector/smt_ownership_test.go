@@ -595,6 +595,61 @@ func TestSMT_ChainWithoutReceiptIsUnconfirmed(t *testing.T) {
 	}
 }
 
+// Kafka Connect refusing the rendered config of a connector write that carries
+// a chain is a definite refusal on either connector kind: the diagnostic says
+// nothing was saved and gives the worker's reason, the server keeps the prior
+// chain, and the next apply sends the write again rather than treating the
+// outcome as unconfirmed or as drift.
+func TestSMT_WorkerRefusalSavesNothing(t *testing.T) {
+	for _, host := range chainHosts {
+		t.Run(host.name, func(t *testing.T) {
+			factories, fake := newFixture(t)
+			var order []string
+			serverOrder := func(s *terraform.State) []string {
+				var ids []string
+				for _, inst := range fake.instances(attrAt(s, host.addr, "id")) {
+					ids = append(ids, inst.ID)
+				}
+				return ids
+			}
+			tfresource.UnitTest(t, tfresource.TestCase{
+				ProtoV6ProviderFactories: factories,
+				Steps: []tfresource.TestStep{
+					{
+						Config: host.hcl(chainAB),
+						Check: func(s *terraform.State) error {
+							order = serverOrder(s)
+							return nil
+						},
+					},
+					{
+						PreConfig: func() {
+							fake.refuseNextSave = "Connector configuration is invalid: transforms.RegexRouter1.regex is not a valid pattern"
+						},
+						Config:      host.hcl(chainBA),
+						ExpectError: regexp.MustCompile(`refused, so nothing was saved:\s+Connector configuration is invalid`),
+					},
+					{
+						Config: host.hcl(chainBA),
+						ConfigPlanChecks: tfresource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction(host.addr, plancheck.ResourceActionUpdate),
+						}},
+						Check: tfresource.ComposeTestCheckFunc(
+							tfresource.TestCheckResourceAttr(host.addr, "smt_chain.0.key", "b"),
+							func(s *terraform.State) error {
+								if got := serverOrder(s); reflect.DeepEqual(got, order) {
+									return fmt.Errorf("the retried write did not reorder the server chain: %v", got)
+								}
+								return nil
+							},
+						),
+					},
+				},
+			})
+		})
+	}
+}
+
 // A read-back under a later revision than the one the write's receipt names
 // belongs to an edit made elsewhere after the save, so it is not keyed by the
 // plan: the apply fails as a change outside Terraform, on either connector

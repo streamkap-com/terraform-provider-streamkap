@@ -120,7 +120,11 @@ type fakeAPI struct {
 	// write that saves a chain and the provider's read-back: the receipt names
 	// the saved revision, the read a later one.
 	editAfterNextSave bool
-	events            []string
+	// refuseNextSave makes the next connector write that carries a chain fail
+	// the way the connector routes answer Kafka Connect refusing the rendered
+	// config: a plain 400 naming the worker's reason, with nothing saved.
+	refuseNextSave string
+	events         []string
 	// projectFlat makes reads echo the chain into a legacy flat key, the way a
 	// backend adapter might; the provider must never let that become state.
 	projectFlat bool
@@ -212,6 +216,10 @@ func (f *fakeAPI) saveEmbeddedChain(id string, chain *api.SMTChainWrite, created
 	f.events = append(f.events, "chain-embedded")
 	sent := roundTrip(*chain)
 	f.lastEmbedded = &sent
+	if reason := f.refuseNextSave; reason != "" {
+		f.refuseNextSave = ""
+		return nil, &api.APIError{StatusCode: http.StatusBadRequest, Detail: reason}
+	}
 	if _, err := f.applyChainLocked(id, *chain, created); err != nil {
 		return nil, err
 	}

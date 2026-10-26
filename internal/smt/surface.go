@@ -754,12 +754,17 @@ func (s *Surface) WriteError(err error, expectedRevision types.String, w *Write)
 		return diags
 	}
 	env, ok := api.SMTErrorOf(err)
-	if !ok || len(env.Issues) == 0 {
+	switch {
+	case ok && len(env.Issues) > 0:
+		for _, issue := range env.Issues {
+			diags.AddAttributeError(s.issuePath(issue.Pointer, w), "Transform chain rejected: "+env.Message, fmt.Sprintf("%s: %s (%s)", issue.Pointer, issue.Message, issue.Code))
+		}
+	case ok && env.Code == api.SMTValidationFailedCode:
+		// Without issues the message names the reason, such as Kafka Connect
+		// refusing the rendered config.
+		diags.AddAttributeError(root, "Transform chain rejected", env.Message)
+	default:
 		diags.AddAttributeError(root, "Error writing transform chain", err.Error())
-		return diags
-	}
-	for _, issue := range env.Issues {
-		diags.AddAttributeError(s.issuePath(issue.Pointer, w), "Transform chain rejected: "+env.Message, fmt.Sprintf("%s: %s (%s)", issue.Pointer, issue.Message, issue.Code))
 	}
 	return diags
 }

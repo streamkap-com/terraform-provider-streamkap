@@ -3382,6 +3382,16 @@
                 }
               },
               "description": "Conflict"
+            },
+            "400": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SmtErrorResponse"
+                  }
+                }
+              },
+              "description": "Bad Request"
             }
           }
         }

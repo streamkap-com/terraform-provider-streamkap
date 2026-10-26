@@ -13,7 +13,7 @@ import (
 
 // The SMT chain wire contract, as the backend's
 // app/services/smt/fixtures/wire_fixtures.json spells it (wire_version 5,
-// backend revision 85c1cd844069e710892077f102652d9b7937dded). A copy of
+// backend revision 41d45de6e9a6bcfc765b309cc55340f1a13beb9e). A copy of
 // that fixture lives in testdata and the decode test pins these types to
 // it. Resource code depends on SMTChainAPI only.
 //
@@ -167,6 +167,11 @@ type SMTValidationIssue struct {
 	RequestKey *string `json:"request_key"`
 	Pointer    string  `json:"pointer"`
 }
+
+// SMTValidationFailedCode is a definite refusal: nothing was saved. Its
+// issues locate the problem, or, without issues, its message names the
+// reason, such as Kafka Connect refusing the rendered config.
+const SMTValidationFailedCode = "smt_validation_failed"
 
 // Error codes the provider reacts to. A write without expected_revision is
 // answered with the revision conflict code and names the missing revision in

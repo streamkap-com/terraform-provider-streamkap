@@ -75,7 +75,8 @@ func TestStateFromKeepsCompiledSelectorLists(t *testing.T) {
 
 // A refused chain write is named by what the server reports: a write without
 // its revision is a provider defect, not drift; an unreadable chain leaves the
-// outcome unknown; a stale revision is drift; malformed stored chain metadata
+// outcome unknown; a stale revision is drift; a refusal by Kafka Connect saved
+// nothing and names the worker's reason; malformed stored chain metadata
 // needs a server-side repair; and an order refusal lands on the chain entry
 // the issue points at.
 func TestWriteErrorNamesFixtureRefusals(t *testing.T) {
@@ -88,6 +89,7 @@ func TestWriteErrorNamesFixtureRefusals(t *testing.T) {
 		return &api.APIError{StatusCode: status, Detail: "refused", DetailJSON: envelope.Detail}
 	}
 	readFailed := json.RawMessage(`{"detail":{"code":"smt_read_failed","message":"The chain write was accepted but could not be read back; read the chain again before retrying","issues":[]}}`)
+	workerRefused := json.RawMessage(`{"detail":{"code":"smt_validation_failed","message":"Kafka Connect refused the destination's config; nothing was saved: Connector configuration is invalid: transforms.RegexRouter1.regex is not a valid pattern","issues":[]}}`)
 	viewInvalid := json.RawMessage(`{"detail":{"code":"smt_view_invalid","message":"The connector's stored SMT chain metadata cannot be read (names is not a mapping); its chain cannot be read or saved","issues":[]}}`)
 	w := &Write{Configured: true, ChainConfigured: true, correlated: []Correlated{{Key: "mask", Type: "mask_field"}, {Key: "route", Type: "regex_router"}}}
 	chain := path.Root(AttrChain)
@@ -101,6 +103,7 @@ func TestWriteErrorNamesFixtureRefusals(t *testing.T) {
 		{"missing revision", refusal(409, fixture["missing_revision_response"]), "Transform chain sent without its revision", chain, "report this issue"},
 		{"read failed", refusal(503, readFailed), "Transform chain outcome unconfirmed", chain, "may or may not have been saved"},
 		{"stale revision", refusal(409, fixture["conflict_response"]), "Transform chain changed outside Terraform", chain, "no longer current"},
+		{"worker refused", refusal(400, workerRefused), "Transform chain rejected", chain, "nothing was saved: Connector configuration is invalid"},
 		{"view invalid", refusal(409, viewInvalid), "Transform chain metadata is malformed", chain, "contact Streamkap support"},
 		{"order rejected", refusal(422, fixture["order_rejected_response"]), "Transform chain rejected: The destination was not saved; fix the SMT chain issues and send it again", chain.AtListIndex(1), "smt_order_rejected"},
 	} {
