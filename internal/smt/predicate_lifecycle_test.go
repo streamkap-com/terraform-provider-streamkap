@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
@@ -14,23 +15,16 @@ import (
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
 )
 
-type predicateGraphClient struct {
-	responses []*api.SMTChainRead
-	writes    []api.SMTChainWrite
-}
-
-func (c *predicateGraphClient) GetSMTChain(context.Context, string, string) (*api.SMTChainRead, error) {
-	return nil, fmt.Errorf("unexpected GetSMTChain")
-}
-
-func (c *predicateGraphClient) PutSMTChain(_ context.Context, _ string, _ string, write api.SMTChainWrite) (*api.SMTChainRead, error) {
-	c.writes = append(c.writes, write)
-	if len(c.responses) == 0 {
-		return nil, fmt.Errorf("unexpected PutSMTChain")
-	}
-	response := c.responses[0]
-	c.responses = c.responses[1:]
-	return response, nil
+// writeThenRead is what a connector update ships and records for w: the
+// chain body the request embeds, then the state the read-back yields.
+func writeThenRead(t *testing.T, s *Surface, w *Write, expectedRevision types.String, read *api.SMTChainRead) (*api.SMTChainWrite, GraphState, diag.Diagnostics) {
+	t.Helper()
+	_, unsent := s.Unsent(w, expectedRevision)
+	require.False(t, unsent)
+	body, diags := s.WriteRequest(w, expectedRevision)
+	require.False(t, diags.HasError(), "%v", diags)
+	state, diags := s.AppliedState(context.Background(), w, read)
+	return body, state, diags
 }
 
 func predicateFixtureValue(t *testing.T, chain *ChainSchema, key, typeID, pattern, id string, version int64, configured []string) types.Object {
@@ -417,18 +411,16 @@ func TestUnknownPredicatePoolWithoutManagedChainRefusesBeforeHTTP(t *testing.T) 
 	require.Equal(t, "Predicate graph is unknown", diags.Errors()[0].Summary())
 }
 
-func TestApplyGraphRejectsOnePredicateKeyWithTwoReturnedIDs(t *testing.T) {
+func TestAppliedStateRejectsOnePredicateKeyWithTwoReturnedIDs(t *testing.T) {
 	s := predicateSurfaceFixture(t)
 	attachment := func(id string) json.RawMessage {
 		encoded, err := json.Marshal(api.SMTPredicateAttachment{ID: id})
 		require.NoError(t, err)
 		return encoded
 	}
-	client := &predicateGraphClient{responses: []*api.SMTChainRead{
-		{Desired: api.SMTChainSnapshot{
-			Predicates: []api.SMTPredicateRead{{ID: "predicate-one", Type: "topic_match", Config: map[string]any{"pattern": "orders"}}, {ID: "predicate-two", Type: "topic_match", Config: map[string]any{"pattern": "orders"}}},
-			Transforms: []api.SMTInstanceRead{{ID: "a", Predicate: attachment("predicate-one")}, {ID: "b", Predicate: attachment("predicate-two")}},
-		}},
+	read := &api.SMTChainRead{Desired: api.SMTChainSnapshot{
+		Predicates: []api.SMTPredicateRead{{ID: "predicate-one", Type: "topic_match", Config: map[string]any{"pattern": "orders"}}, {ID: "predicate-two", Type: "topic_match", Config: map[string]any{"pattern": "orders"}}},
+		Transforms: []api.SMTInstanceRead{{ID: "a", Predicate: attachment("predicate-one")}, {ID: "b", Predicate: attachment("predicate-two")}},
 	}}
 	write := &Write{
 		Configured:          true,
@@ -441,12 +433,12 @@ func TestApplyGraphRejectsOnePredicateKeyWithTwoReturnedIDs(t *testing.T) {
 		predicateVersions:   map[string]int64{},
 	}
 
-	_, diags := s.ApplyGraph(context.Background(), client, "destinations", "connector", write, types.StringNull())
+	_, _, diags := writeThenRead(t, s, write, types.StringNull(), read)
 	require.True(t, diags.HasError())
 	require.Equal(t, "Predicate identity cannot be represented", diags.Errors()[0].Summary())
 }
 
-func TestApplyGraphPreservesSharedPredicateIdentityThroughCopyAndCleanup(t *testing.T) {
+func TestWriteAndReadBackPreserveSharedPredicateIdentityThroughCopyAndCleanup(t *testing.T) {
 	s := predicateSurfaceFixture(t)
 	predicateRead := func(id, pattern string, configured []string) api.SMTPredicateRead {
 		return api.SMTPredicateRead{ID: id, Alias: "Predicate" + id, Type: "topic_match_secret", SchemaVersion: 1, CodecVersion: 1, Config: map[string]any{"pattern": pattern}, ConfiguredSecretPaths: configured}
@@ -459,12 +451,12 @@ func TestApplyGraphPreservesSharedPredicateIdentityThroughCopyAndCleanup(t *test
 	read := func(revision string, predicates []api.SMTPredicateRead, transforms []api.SMTInstanceRead) *api.SMTChainRead {
 		return &api.SMTChainRead{Desired: api.SMTChainSnapshot{ChainRevision: revision, Predicates: predicates, Transforms: transforms}, ApplicationStatus: "pending"}
 	}
-	client := &predicateGraphClient{responses: []*api.SMTChainRead{
+	reads := []*api.SMTChainRead{
 		read("r1", []api.SMTPredicateRead{predicateRead("predicate-p", "orders", []string{"/token"})}, []api.SMTInstanceRead{transformRead("a", "predicate-p"), transformRead("b", "predicate-p")}),
 		read("r2", []api.SMTPredicateRead{predicateRead("predicate-q", "payments", []string{}), predicateRead("predicate-p", "orders", []string{"/token"})}, []api.SMTInstanceRead{transformRead("a", "predicate-q"), transformRead("b", "predicate-p")}),
 		read("r3", []api.SMTPredicateRead{predicateRead("predicate-p", "orders", []string{"/token"})}, []api.SMTInstanceRead{transformRead("b", "predicate-p")}),
 		read("r4", []api.SMTPredicateRead{}, []api.SMTInstanceRead{}),
-	}}
+	}
 	writes := []*Write{
 		{Configured: true, ChainConfigured: true, Predicates: []api.SMTPredicateWrite{{RequestKey: "p", Type: "topic_match_secret", Config: map[string]any{"pattern": "orders"}, SecretOperations: []api.SMTSecretOperation{{Pointer: "/token", Operation: api.SMTSecretReplace, Value: "p-secret"}}}}, Transforms: []api.SMTInstanceWrite{{Type: "route", Name: "a", Enabled: true, Config: map[string]any{"replacement": "a"}, Predicate: &api.SMTPredicateAttachment{RequestKey: "p"}}, {Type: "route", Name: "b", Enabled: true, Config: map[string]any{"replacement": "b"}, Predicate: &api.SMTPredicateAttachment{RequestKey: "p"}}}, correlated: []Correlated{{Key: "a"}, {Key: "b"}}, predicateCorrelated: []Correlated{{Key: "p"}}, versions: map[string]int64{}, predicateVersions: map[string]int64{"p": 1}},
 		{Configured: true, ChainConfigured: true, Predicates: []api.SMTPredicateWrite{{ID: "predicate-p"}, {RequestKey: "q", Type: "topic_match_secret", Config: map[string]any{"pattern": "payments"}, SecretOperations: []api.SMTSecretOperation{{Pointer: "/token", Operation: api.SMTSecretReplace, Value: "q-secret"}}}}, Transforms: []api.SMTInstanceWrite{{ID: "a", Type: "route", Name: "a", Enabled: true, Config: map[string]any{"replacement": "a"}, Predicate: &api.SMTPredicateAttachment{RequestKey: "q"}}, {ID: "b", Type: "route", Name: "b", Enabled: true, Config: map[string]any{"replacement": "b"}, Predicate: &api.SMTPredicateAttachment{ID: "predicate-p"}}}, correlated: []Correlated{{Key: "a"}, {Key: "b"}}, predicateCorrelated: []Correlated{{Key: "p", ID: "predicate-p", Matched: true}, {Key: "q"}}, versions: map[string]int64{}, predicateVersions: map[string]int64{"p": 1, "q": 0}},
@@ -472,25 +464,27 @@ func TestApplyGraphPreservesSharedPredicateIdentityThroughCopyAndCleanup(t *test
 		{Configured: true, ChainConfigured: true, Predicates: []api.SMTPredicateWrite{}, Transforms: []api.SMTInstanceWrite{}, correlated: []Correlated{}, predicateCorrelated: []Correlated{}, versions: map[string]int64{}, predicateVersions: map[string]int64{}},
 	}
 	var states []GraphState
+	var bodies []*api.SMTChainWrite
 	for i, write := range writes {
-		state, diags := s.ApplyGraph(context.Background(), client, "destinations", "connector", write, types.StringValue(fmt.Sprintf("r%d", i)))
+		body, state, diags := writeThenRead(t, s, write, types.StringValue(fmt.Sprintf("r%d", i)), reads[i])
 		require.False(t, diags.HasError(), "%v", diags)
+		bodies = append(bodies, body)
 		states = append(states, state)
 	}
 	require.Len(t, states[0].Predicates.Elements(), 1)
-	require.Equal(t, "p", (*client.writes[0].Transforms)[0].Predicate.RequestKey)
-	require.Equal(t, "p", (*client.writes[0].Transforms)[1].Predicate.RequestKey)
+	require.Equal(t, "p", (*bodies[0].Transforms)[0].Predicate.RequestKey)
+	require.Equal(t, "p", (*bodies[0].Transforms)[1].Predicate.RequestKey)
 	for _, transform := range states[0].Transforms.Elements() {
 		require.Equal(t, "p", str(transform.(types.Object).Attributes()[attrPredicate].(types.Object).Attributes()[attrKey]))
 	}
 	require.Equal(t, []string{"q", "p"}, []string{str(states[1].Predicates.Elements()[0].(types.Object).Attributes()[attrKey]), str(states[1].Predicates.Elements()[1].(types.Object).Attributes()[attrKey])}, "provider keys follow predicate ids when the server reorders its pool")
-	require.Equal(t, api.SMTPredicateWrite{ID: "predicate-p"}, (*client.writes[1].Predicates)[0])
-	require.Equal(t, "q", (*client.writes[1].Transforms)[0].Predicate.RequestKey)
-	require.Equal(t, "predicate-p", (*client.writes[1].Transforms)[1].Predicate.ID)
+	require.Equal(t, api.SMTPredicateWrite{ID: "predicate-p"}, (*bodies[1].Predicates)[0])
+	require.Equal(t, "q", (*bodies[1].Transforms)[0].Predicate.RequestKey)
+	require.Equal(t, "predicate-p", (*bodies[1].Transforms)[1].Predicate.ID)
 	require.Empty(t, states[1].Predicates.Elements()[0].(types.Object).Attributes()[attrConfiguredSecretPaths].(types.List).Elements(), "Q does not inherit P's configured secret presence")
 	require.Equal(t, []attr.Value{types.StringValue("/token")}, states[1].Predicates.Elements()[1].(types.Object).Attributes()[attrConfiguredSecretPaths].(types.List).Elements())
 	require.Len(t, states[2].Predicates.Elements(), 1, "removing A and Q preserves P while B still references it")
 	require.Empty(t, states[3].Predicates.Elements(), "removing B and P sends explicit cleanup")
-	require.NotNil(t, *client.writes[3].Predicates)
-	require.Empty(t, *client.writes[3].Predicates)
+	require.NotNil(t, *bodies[3].Predicates)
+	require.Empty(t, *bodies[3].Predicates)
 }

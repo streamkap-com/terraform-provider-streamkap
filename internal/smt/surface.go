@@ -570,37 +570,11 @@ func validatePredicateAttachmentSpec(diags *diag.Diagnostics, at path.Path, tran
 	}
 }
 
-// Apply sends the chain replacement, secret operations included, and
-// returns the state values. expectedRevision is the revision the write is
-// compared against. An unchanged
-// chain with no rotation sends nothing. On error the returned values are
-// meaningless and the caller keeps what state already held.
-func (s *Surface) Apply(ctx context.Context, client api.SMTChainAPI, kind, connectorID string, w *Write, expectedRevision types.String) (types.List, types.String, diag.Diagnostics) {
-	state, diags := s.ApplyGraph(ctx, client, kind, connectorID, w, expectedRevision)
-	return state.Transforms, state.Revision, diags
-}
-
 type GraphState struct {
 	Transforms       types.List
 	Predicates       types.List
 	ManagedOverrides types.Map
 	Revision         types.String
-}
-
-func (s *Surface) ApplyGraph(ctx context.Context, client api.SMTChainAPI, kind, connectorID string, w *Write, expectedRevision types.String) (GraphState, diag.Diagnostics) {
-	if state, unsent := s.Unsent(w, expectedRevision); unsent {
-		return state, nil
-	}
-	req, diags := s.WriteRequest(w, expectedRevision)
-	if diags.HasError() {
-		return GraphState{}, diags
-	}
-	read, err := client.PutSMTChain(ctx, kind, connectorID, *req)
-	if err != nil {
-		diags.Append(s.WriteError(err, expectedRevision, w)...)
-		return GraphState{}, diags
-	}
-	return s.AppliedState(ctx, w, read)
 }
 
 // ExpectedRevision reads the chain before a write to an existing connector
@@ -872,15 +846,10 @@ func (s *Surface) issuePath(pointer string, w *Write) path.Path {
 	}
 }
 
-// Refresh reads the chain under the keys state already holds. A null chain
-// in state stays null: the connector is on the released surface and the
+// RefreshGraph reads the chain under the keys state already holds. A null
+// chain in state stays null: the connector is on the released surface and the
 // chain must not be populated behind its back. An empty chain is the import
 // marker and is populated under keys derived from the server ids.
-func (s *Surface) Refresh(ctx context.Context, client api.SMTChainAPI, kind, connectorID string, prior types.List) (types.List, types.String, diag.Diagnostics) {
-	state, diags := s.RefreshGraph(ctx, client, kind, connectorID, prior, types.ListNull(s.Chain.PredicateEntryType), types.MapNull(types.BoolType))
-	return state.Transforms, state.Revision, diags
-}
-
 func (s *Surface) RefreshGraph(ctx context.Context, client api.SMTChainAPI, kind, connectorID string, prior, priorPredicates types.List, priorOverrides types.Map) (GraphState, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if prior.IsNull() && priorOverrides.IsNull() {

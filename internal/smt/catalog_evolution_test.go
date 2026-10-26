@@ -421,12 +421,10 @@ func TestCatalogEvolutionWriteCarriesCatalogPrecondition(t *testing.T) {
 	chain, err := BuildChain(NewCatalog(corpus).ForHost("destinations").Authorable())
 	require.NoError(t, err)
 	surface := NewSurface(chain, nil)
-	client := &predicateGraphClient{}
 
-	_, diags := surface.ApplyGraph(context.Background(), client, "destinations", "destination-1", &Write{Configured: true, ChainConfigured: true}, types.StringNull())
-	require.True(t, diags.HasError(), "the capture client deliberately returns no response")
-	require.Len(t, client.writes, 1)
-	encoded, err := json.Marshal(client.writes[0])
+	write, diags := surface.WriteRequest(&Write{Configured: true, ChainConfigured: true}, types.StringNull())
+	require.False(t, diags.HasError(), "%v", diags)
+	encoded, err := json.Marshal(write)
 	require.NoError(t, err)
 	var body struct {
 		CatalogPrecondition struct {

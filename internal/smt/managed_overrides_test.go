@@ -68,7 +68,10 @@ func TestManagedOverridesAreIndependentFromUserChainOwnership(t *testing.T) {
 	})
 }
 
-func TestManagedOverrideOnlyApplyOmitsGraphAndReadsExactState(t *testing.T) {
+// An override-only write embeds a chain body without transforms or
+// predicates, so it cannot replace the user chain, and the read-back records
+// the overrides and the revision without taking ownership of the user chain.
+func TestManagedOverrideOnlyWriteOmitsGraphAndReadsExactState(t *testing.T) {
 	ctx := context.Background()
 	chain := buildChain(t)
 	surface, resourceSchema := testSurface(chain)
@@ -77,19 +80,24 @@ func TestManagedOverrideOnlyApplyOmitsGraphAndReadsExactState(t *testing.T) {
 	write, diags := surface.PlanWrite(ctx, tfsdk.Plan{Schema: resourceSchema, Raw: cfg.Raw}, types.ListNull(chain.EntryType), cfg, types.ListNull(chain.PredicateEntryType), types.MapNull(types.BoolType))
 	require.False(t, diags.HasError(), "%v", diags)
 
-	client := &managedOverrideClient{read: &api.SMTChainRead{Desired: api.SMTChainSnapshot{
+	_, unsent := surface.Unsent(write, types.StringValue("r1"))
+	require.False(t, unsent)
+	body, bodyDiags := surface.WriteRequest(write, types.StringValue("r1"))
+	require.False(t, bodyDiags.HasError(), "%v", bodyDiags)
+	require.Nil(t, body.Transforms)
+	require.Nil(t, body.Predicates)
+	require.Equal(t, &map[string]bool{"user_defined:MaskField": false}, body.ManagedOverrides)
+	require.Equal(t, "r1", *body.ExpectedRevision)
+
+	read := &api.SMTChainRead{Desired: api.SMTChainSnapshot{
 		ChainRevision:    "r2",
 		ManagedOverrides: map[string]bool{"user_defined:MaskField": false},
 		Transforms: []api.SMTInstanceRead{{
 			Kind: "opaque", ID: "unmanaged", Alias: "Unmanaged1", Reason: "outside provider catalog",
 		}},
-	}}}
-	state, applyDiags := surface.ApplyGraph(ctx, client, "destinations", "destination-1", write, types.StringValue("r1"))
+	}}
+	state, applyDiags := surface.AppliedState(ctx, write, read)
 	require.False(t, applyDiags.HasError(), "%v", applyDiags)
-	require.Len(t, client.writes, 1)
-	require.Nil(t, client.writes[0].Transforms)
-	require.Nil(t, client.writes[0].Predicates)
-	require.Equal(t, &map[string]bool{"user_defined:MaskField": false}, client.writes[0].ManagedOverrides)
 	require.True(t, state.Transforms.IsNull(), "override-only ownership must not adopt the user chain")
 	require.True(t, state.Predicates.IsNull())
 	require.Equal(t, configured, state.ManagedOverrides)

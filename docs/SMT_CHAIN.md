@@ -4,7 +4,7 @@ Maintainer notes for the nested single message transform (SMT) chain that source
 
 Code map:
 
-- `internal/smt`: the representation. `corpus.go` parses the catalog and selects each type's current release; `schema.go` derives the typed config child of a type; `chain.go` builds the chain, predicate and secret attributes and converts between state and the wire; `convert.go` is the value codec; `correlate.go` joins plan to state by key; `secrets.go` resolves pointers and plans rotations; `surface.go` is what the connector resource composes (`ValidateConfig`, `ModifyPlan`, `PlanWrite`, `ApplyGraph`, `RefreshGraph`, error mapping).
+- `internal/smt`: the representation. `corpus.go` parses the catalog and selects each type's current release; `schema.go` derives the typed config child of a type; `chain.go` builds the chain, predicate and secret attributes and converts between state and the wire; `convert.go` is the value codec; `correlate.go` joins plan to state by key; `secrets.go` resolves pointers and plans rotations; `surface.go` is what the connector resource composes (`ValidateConfig`, `ModifyPlan`, `PlanWrite`, `ExpectedRevision`, `WriteRequest` for the embedded chain body, `AppliedState` for the read-back, `RefreshGraph`, error mapping).
 - `cmd/tfgen/smt.go`: validates the catalog with the runtime builder and writes `internal/generated/smt_catalog.{json,go}`.
 - `internal/resource/connector/base.go`: adds the attributes to an opted-in model's schema and drives the chain in each CRUD step.
 - `internal/api/smt_chain.go`: the wire DTOs and `SMTChainAPI`.
