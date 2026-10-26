@@ -571,7 +571,8 @@ func validatePredicateAttachmentSpec(diags *diag.Diagnostics, at path.Path, tran
 }
 
 // Apply sends the chain replacement, secret operations included, and
-// returns the state values. expectedRevision is null on create. An unchanged
+// returns the state values. expectedRevision is the revision the write is
+// compared against. An unchanged
 // chain with no rotation sends nothing. On error the returned values are
 // meaningless and the caller keeps what state already held.
 func (s *Surface) Apply(ctx context.Context, client api.SMTChainAPI, kind, connectorID string, w *Write, expectedRevision types.String) (types.List, types.String, diag.Diagnostics) {
@@ -602,6 +603,39 @@ func (s *Surface) ApplyGraph(ctx context.Context, client api.SMTChainAPI, kind, 
 	return s.AppliedState(ctx, w, read)
 }
 
+// ExpectedRevision reads the chain before a write to an existing connector
+// and returns the revision the write is compared against. An edit made
+// elsewhere since the revision in state was read is refused before anything
+// is written. A first write, for which state holds no revision, takes the
+// current one, but is refused when the connector already has transforms this
+// resource does not manage, since the write would replace them. A write that
+// sends nothing reads nothing and keeps priorRevision.
+func (s *Surface) ExpectedRevision(ctx context.Context, client api.SMTChainAPI, kind, connectorID string, w *Write, priorRevision types.String) (types.String, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if _, unsent := s.Unsent(w, priorRevision); unsent {
+		return priorRevision, diags
+	}
+	root := writeRoot(w)
+	read, err := client.GetSMTChain(ctx, kind, connectorID)
+	if err != nil {
+		diags.AddAttributeError(root, "Unable to read the transform chain",
+			fmt.Sprintf("The transform chain was not written because the connector's current chain could not be read: %s", err))
+		return priorRevision, diags
+	}
+	current := read.Desired.ChainRevision
+	if !priorRevision.IsNull() && priorRevision.ValueString() != current {
+		diags.AddAttributeError(root, "Transform chain changed outside Terraform",
+			fmt.Sprintf("The chain revision %q this plan was built from is no longer current; the connector now reads as revision %q. Run terraform plan again to refresh it and review the drift before applying.", priorRevision.ValueString(), current))
+		return priorRevision, diags
+	}
+	if priorRevision.IsNull() && w.ChainConfigured && (len(read.Desired.Transforms) > 0 || len(read.Desired.Predicates) > 0) {
+		diags.AddAttributeError(root, "Transform chain already exists outside Terraform",
+			fmt.Sprintf("The connector already has transforms this resource does not manage. Import the resource to adopt them (its instances become %s entries keyed by their server ids), then apply.", AttrChain))
+		return priorRevision, diags
+	}
+	return types.StringValue(current), diags
+}
+
 // Unsent reports whether w needs no request, and if so the state the apply
 // records: an unmanaged surface, or the unchanged graph under its revision.
 func (s *Surface) Unsent(w *Write, expectedRevision types.String) (GraphState, bool) {
@@ -616,7 +650,8 @@ func (s *Surface) Unsent(w *Write, expectedRevision types.String) (GraphState, b
 
 // WriteRequest is the chain write for w: the PUT body on a destination, the
 // embedded smt_chain of a source create or update. Call it only when Unsent
-// reports false. expectedRevision is null on the write that creates the chain.
+// reports false. expectedRevision is null only on a connector create, which
+// embeds the chain and has no revision to compare against.
 func (s *Surface) WriteRequest(w *Write, expectedRevision types.String) (*api.SMTChainWrite, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	contractVersion, digest, err := s.Chain.Catalog.WritePrecondition()
@@ -726,16 +761,6 @@ func (s *Surface) WriteError(err error, expectedRevision types.String, w *Write)
 			fmt.Sprintf("The connector's deletion is pending, so its transform chain can no longer be written. Run terraform plan again once the deletion completes: %s", err))
 		return diags
 	}
-	if api.IsSMTRevisionRequired(err) {
-		diags.AddAttributeError(root, "Transform chain already exists outside Terraform",
-			fmt.Sprintf("The connector already has a transform chain this resource does not manage. Import the resource to adopt it (its instances become %s entries keyed by their server ids), then apply: %s", AttrChain, err))
-		return diags
-	}
-	if api.IsSMTAdoptionRequired(err) {
-		diags.AddAttributeError(root, "Legacy transforms require explicit adoption",
-			fmt.Sprintf("The destination gained authored legacy transforms after Terraform audited it. Review and adopt them through the SMT chain adoption API or UI, then refresh Terraform state: %s", err))
-		return diags
-	}
 	env, ok := api.SMTErrorOf(err)
 	if !ok || len(env.Issues) == 0 {
 		diags.AddAttributeError(root, "Error writing transform chain", err.Error())
@@ -832,11 +857,6 @@ func (s *Surface) RefreshGraph(ctx context.Context, client api.SMTChainAPI, kind
 		return GraphState{Transforms: prior, Predicates: priorPredicates, ManagedOverrides: priorOverrides, Revision: types.StringNull()}, nil
 	}
 	read, err := client.GetSMTChain(ctx, kind, connectorID)
-	if api.IsSMTChainAbsent(err) {
-		// The connector has no chain yet: an empty managed chain with no
-		// revision, so the next write creates it.
-		read, err = &api.SMTChainRead{}, nil
-	}
 	if err != nil {
 		at := path.Root(AttrChain)
 		if prior.IsNull() {

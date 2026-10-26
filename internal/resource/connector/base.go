@@ -480,7 +480,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 			SMTChain:    embedded,
 		})
 		if err != nil {
-			r.addSourceWriteError(&resp.Diagnostics, "creating", "create", err, chain, priorRevision)
+			r.addConnectorWriteError(&resp.Diagnostics, "creating", "create", err, chain, priorRevision)
 			return
 		}
 		receipt = source.SMTChainReceipt
@@ -493,20 +493,23 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		responseTags = source.Tags
 
 	case ConnectorTypeDestination:
+		embedded, ok := r.embeddedChain(chain, priorRevision, &resp.Diagnostics)
+		if !ok {
+			return
+		}
 		destination, err := r.client.CreateDestination(ctx, api.Destination{
 			Name:        name,
 			Connector:   r.config.GetConnectorCode(),
 			Config:      configMap,
 			KcClusterId: kcClusterId,
 			Tags:        tags,
+			SMTChain:    embedded,
 		})
 		if err != nil {
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Error creating %s destination", r.config.GetConnectorCode()),
-				fmt.Sprintf("Unable to create destination: %s", err),
-			)
+			r.addConnectorWriteError(&resp.Diagnostics, "creating", "create", err, chain, priorRevision)
 			return
 		}
+		chainSent = embedded != nil
 		id = destination.ID
 		connectorName = destination.Name
 		connectorCode = destination.Connector
@@ -528,83 +531,8 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
-	// A source saved its chain in the same request; only the read-back remains.
-	if r.config.GetConnectorType() == ConnectorTypeSource {
-		r.recordEmbeddedChain(ctx, id, chain, chainSent, receipt, priorChain, priorPredicates, priorOverrides, priorRevision, &resp.State, &resp.Diagnostics)
-		return
-	}
-	// The connector exists from here on. A failed chain write still records
-	// it, so Terraform taints the resource instead of losing the record and
-	// colliding on the name at the next apply.
-	r.applyChain(ctx, id, chain, priorChain, priorPredicates, priorOverrides, priorRevision, &resp.State, &resp.Diagnostics)
-}
-
-// applyInitialChainUpdate creates a destination's first chain before any generic connector update can overwrite legacy SMT state; the backend repeats the adoption classification inside the tokenless PUT, and mixed ordinary connector edits are refused because the two authorities cannot be made atomic by the provider.
-func (r *BaseConnectorResource) applyInitialChainUpdate(ctx context.Context, id string, plannedModel any, priorState tfsdk.State, write *smt.Write, priorRevision types.String, plannedConfig map[string]any, state *tfsdk.State, diags *diag.Diagnostics) bool {
-	if r.config.GetConnectorType() != ConnectorTypeDestination || r.smt == nil || write == nil || !write.Configured || write.Unchanged {
-		return false
-	}
-	if priorRevision.IsUnknown() {
-		diags.AddAttributeError(path.Root(smt.AttrChain), "Transform chain revision is unknown", "The initial transform chain was not written because Terraform could not determine whether a chain already exists. Refresh the resource and plan again.")
-		return true
-	}
-	if !priorRevision.IsNull() {
-		return false
-	}
-	priorModel := r.config.NewModelInstance()
-	diags.Append(priorState.Get(ctx, priorModel)...)
-	if diags.HasError() {
-		return true
-	}
-	priorConfig, err := r.modelToConfigMap(ctx, priorModel)
-	if err != nil {
-		diags.AddAttributeError(path.Root(smt.AttrChain), "Unable to compare connector settings", fmt.Sprintf("The initial transform chain was not written because the prior connector configuration could not be marshalled: %s", err))
-		return true
-	}
-	r.smt.StripFlat(priorConfig)
-	if !reflect.DeepEqual(priorConfig, plannedConfig) || r.getStringField(priorModel, "Name") != r.getStringField(plannedModel, "Name") || r.getStringField(priorModel, "KcClusterId") != r.getStringField(plannedModel, "KcClusterId") || !reflect.DeepEqual(r.getStringSliceField(ctx, priorModel, "Tags"), r.getStringSliceField(ctx, plannedModel, "Tags")) {
-		diags.AddAttributeError(path.Root(smt.AttrChain), "Initial transform chain must be applied separately", "The connector settings and its first transform chain cannot be changed safely in one update. Apply the transform chain while the connector settings are unchanged, then apply the connector changes.")
-		return true
-	}
-	client, ok := r.chainClient(diags)
-	if !ok {
-		return true
-	}
-	audit, err := client.GetSMTChainAdoption(ctx, r.chainKind(), id)
-	if err != nil {
-		diags.AddAttributeError(path.Root(smt.AttrChain), "Unable to inspect legacy transforms", fmt.Sprintf("The initial transform chain was not written because the destination could not be audited: %s", err))
-		return true
-	}
-	switch audit.Status {
-	case api.SMTAdoptionAvailable:
-		diags.AddAttributeError(path.Root(smt.AttrChain), "Legacy transforms require explicit adoption", "This destination has legacy transforms that Terraform must not replace implicitly. Review and adopt them through the SMT chain adoption API or UI, then refresh Terraform state.")
-		return true
-	case api.SMTAdoptionUnavailable:
-		message := audit.Message
-		if message == "" {
-			message = "The destination did not provide a safe adoption classification."
-		}
-		diags.AddAttributeError(path.Root(smt.AttrChain), "Transform chain cannot be created", message)
-		return true
-	case api.SMTAdoptionManagedOnly:
-		// The tokenless PUT immediately below repeats this classification under
-		// the backend's captured connector authority.
-	default:
-		diags.AddAttributeError(path.Root(smt.AttrChain), "Invalid transform adoption response", fmt.Sprintf("The destination returned unknown adoption status %q; no connector or chain change was sent.", audit.Status))
-		return true
-	}
-	applied, applyDiags := r.smt.ApplyGraph(ctx, client, r.chainKind(), id, write, priorRevision)
-	diags.Append(applyDiags...)
-	if diags.HasError() {
-		return true
-	}
-	r.setStringField(plannedModel, "ConnectorStatus", r.getStringField(priorModel, "ConnectorStatus"))
-	diags.Append(state.Set(ctx, plannedModel)...)
-	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrChain), applied.Transforms)...)
-	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrPredicates), applied.Predicates)...)
-	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrManagedOverrides), applied.ManagedOverrides)...)
-	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrRevision), applied.Revision)...)
-	return true
+	// The connector saved its chain in the same request; only the read-back remains.
+	r.recordEmbeddedChain(ctx, id, chain, chainSent, receipt, priorChain, priorPredicates, priorOverrides, priorRevision, &resp.State, &resp.Diagnostics)
 }
 
 // Read reads the connector resource.
@@ -808,7 +736,8 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 	if !ok {
 		return
 	}
-	if r.applyInitialChainUpdate(ctx, id, model, req.State, chain, priorRevision, configMap, &resp.State, &resp.Diagnostics) {
+	expectedRevision, ok := r.expectedRevision(ctx, id, chain, priorRevision, &resp.Diagnostics)
+	if !ok {
 		return
 	}
 
@@ -828,8 +757,8 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 
 	switch r.config.GetConnectorType() {
 	case ConnectorTypeSource:
-		embedded, ok := r.embeddedChain(chain, priorRevision, &resp.Diagnostics)
-		if !ok || !r.requireNoUnmanagedSourceChain(ctx, id, embedded, &resp.Diagnostics) {
+		embedded, ok := r.embeddedChain(chain, expectedRevision, &resp.Diagnostics)
+		if !ok {
 			return
 		}
 		source, err := r.client.UpdateSource(ctx, id, api.Source{
@@ -841,7 +770,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 			SMTChain:    embedded,
 		})
 		if err != nil {
-			r.addSourceWriteError(&resp.Diagnostics, "updating", "update", err, chain, priorRevision)
+			r.addConnectorWriteError(&resp.Diagnostics, "updating", "update", err, chain, expectedRevision)
 			return
 		}
 		receipt = source.SMTChainReceipt
@@ -914,7 +843,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		r.recordEmbeddedChain(ctx, id, chain, chainSent, receipt, priorChain, priorPredicates, priorOverrides, priorRevision, &resp.State, &resp.Diagnostics)
 		return
 	}
-	r.applyChain(ctx, id, chain, priorChain, priorPredicates, priorOverrides, priorRevision, &resp.State, &resp.Diagnostics)
+	r.applyChain(ctx, id, chain, priorChain, priorPredicates, priorOverrides, priorRevision, expectedRevision, &resp.State, &resp.Diagnostics)
 }
 
 // Delete deletes the connector resource.
@@ -1042,17 +971,17 @@ func (r *BaseConnectorResource) planChain(ctx context.Context, plan tfsdk.Plan, 
 	return write, shared.CaptureFields(model, r.smt.FlatSMT), true
 }
 
-// applyChain writes the chain and the secret operations after the connector
-// request succeeded, and records the result in state. A failed write keeps
-// the prior chain and revision: the server chain did not move, and state
-// must hold no unknown from the plan.
-func (r *BaseConnectorResource) applyChain(ctx context.Context, id string, write *smt.Write, priorChain, priorPredicates types.List, priorOverrides types.Map, priorRevision types.String, state *tfsdk.State, diags *diag.Diagnostics) {
+// applyChain writes a destination's chain and secret operations under
+// expectedRevision after the connector update succeeded, and records the
+// result in state. A failed write keeps the prior chain and revision: the
+// server chain did not move, and state must hold no unknown from the plan.
+func (r *BaseConnectorResource) applyChain(ctx context.Context, id string, write *smt.Write, priorChain, priorPredicates types.List, priorOverrides types.Map, priorRevision, expectedRevision types.String, state *tfsdk.State, diags *diag.Diagnostics) {
 	if r.smt == nil || diags.HasError() {
 		return
 	}
 	chain, predicates, overrides, revision := priorChain, priorPredicates, priorOverrides, priorRevision
 	if client, ok := r.chainClient(diags); ok {
-		applied, d := r.smt.ApplyGraph(ctx, client, r.chainKind(), id, write, priorRevision)
+		applied, d := r.smt.ApplyGraph(ctx, client, r.chainKind(), id, write, expectedRevision)
 		diags.Append(d...)
 		if !d.HasError() {
 			chain, predicates, overrides, revision = applied.Transforms, applied.Predicates, applied.ManagedOverrides, applied.Revision
@@ -1064,10 +993,11 @@ func (r *BaseConnectorResource) applyChain(ctx context.Context, id string, write
 	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrRevision), revision)...)
 }
 
-// embeddedChain is the chain write a source create or update carries: sources
-// have no chain route, the backend saves the chain atomically with the source
-// body. It is nil when nothing is to be written, which omits the key and so
-// keeps the stored chain. ok is false when the write cannot be built.
+// embeddedChain is the chain write a connector create or a source update
+// carries, which the backend saves atomically with the connector body: sources
+// have no chain write route, and a destination create embeds its first chain.
+// It is nil when nothing is to be written, which omits the key and so keeps
+// the stored chain. ok is false when the write cannot be built.
 func (r *BaseConnectorResource) embeddedChain(write *smt.Write, expectedRevision types.String, diags *diag.Diagnostics) (*api.SMTChainWrite, bool) {
 	if r.smt == nil || write == nil {
 		return nil, true
@@ -1080,54 +1010,46 @@ func (r *BaseConnectorResource) embeddedChain(write *smt.Write, expectedRevision
 	return req, !d.HasError()
 }
 
-// requireNoUnmanagedSourceChain refuses a first chain write to an existing
-// source that already has a chain this resource does not manage. The source
-// routes answer that case with a plain 400, so the import guidance the
-// destination route's smt_expected_revision_required carries is given here,
-// before the write. A chain created between this read and the write is still
-// refused by the backend.
-func (r *BaseConnectorResource) requireNoUnmanagedSourceChain(ctx context.Context, id string, embedded *api.SMTChainWrite, diags *diag.Diagnostics) bool {
-	if embedded == nil || embedded.ExpectedRevision != nil {
-		return true
+// expectedRevision is the revision a write to the existing connector is
+// compared against; see smt.Surface.ExpectedRevision. ok is false when the
+// write must not be sent.
+func (r *BaseConnectorResource) expectedRevision(ctx context.Context, id string, write *smt.Write, priorRevision types.String, diags *diag.Diagnostics) (types.String, bool) {
+	if r.smt == nil || write == nil {
+		return priorRevision, true
 	}
 	client, ok := r.chainClient(diags)
 	if !ok {
-		return false
+		return priorRevision, false
 	}
-	_, err := client.GetSMTChain(ctx, r.chainKind(), id)
-	switch {
-	case api.IsSMTChainAbsent(err):
-		return true
-	case err != nil:
-		diags.AddAttributeError(path.Root(smt.AttrChain), "Unable to inspect the source transform chain",
-			fmt.Sprintf("The first transform chain was not written because the source's existing chain could not be read: %s", err))
-	default:
-		diags.AddAttributeError(path.Root(smt.AttrChain), "Transform chain already exists outside Terraform",
-			fmt.Sprintf("The source already has a transform chain this resource does not manage. Import the resource to adopt it (its instances become %s entries keyed by their server ids), then apply.", smt.AttrChain))
-	}
-	return false
+	revision, d := r.smt.ExpectedRevision(ctx, client, r.chainKind(), id, write, priorRevision)
+	diags.Append(d...)
+	return revision, !d.HasError()
 }
 
-// addSourceWriteError reports a refused source create or update. A structured
-// SMT envelope is located on the chain attributes; anything else is reported
-// against the source, since the same request carried the connector settings.
-func (r *BaseConnectorResource) addSourceWriteError(diags *diag.Diagnostics, verbing, verb string, err error, write *smt.Write, expectedRevision types.String) {
+// addConnectorWriteError reports a refused connector create or update. A
+// structured SMT envelope is located on the chain attributes; anything else
+// is reported against the connector, since the same request carried the
+// connector settings.
+func (r *BaseConnectorResource) addConnectorWriteError(diags *diag.Diagnostics, verbing, verb string, err error, write *smt.Write, expectedRevision types.String) {
 	if _, structured := api.SMTErrorOf(err); structured && r.smt != nil && write != nil && write.Configured {
 		diags.Append(r.smt.WriteError(err, expectedRevision, write)...)
 		return
 	}
+	kind := r.config.GetConnectorType()
 	diags.AddError(
-		fmt.Sprintf("Error %s %s source", verbing, r.config.GetConnectorCode()),
-		fmt.Sprintf("Unable to %s source: %s", verb, err),
+		fmt.Sprintf("Error %s %s %s", verbing, r.config.GetConnectorCode(), kind),
+		fmt.Sprintf("Unable to %s %s: %s", verb, kind, err),
 	)
 }
 
-// recordEmbeddedChain records the chain of a source whose create or update
-// succeeded. When the request carried a chain, the chain is read back and must
-// be the revision the response accepted; otherwise the read could belong to a
-// later edit and its instances would be keyed by the wrong plan entries. A
-// failed read keeps the prior chain and revision so state holds no unknown;
-// the next refresh reads the real chain.
+// recordEmbeddedChain records the chain of a connector whose create or source
+// update succeeded. When the request carried a chain, the chain is read back.
+// A source response names the revision it accepted and the read must be that
+// revision; otherwise the read could belong to a later edit and its instances
+// would be keyed by the wrong plan entries. A destination create response
+// names none, and the destination did not exist before the request. A failed
+// read keeps the prior chain and revision so state holds no unknown; the next
+// refresh reads the real chain.
 func (r *BaseConnectorResource) recordEmbeddedChain(ctx context.Context, id string, write *smt.Write, sent bool, receipt *api.SourceSMTChainReceipt, priorChain, priorPredicates types.List, priorOverrides types.Map, priorRevision types.String, state *tfsdk.State, diags *diag.Diagnostics) {
 	if r.smt == nil || diags.HasError() {
 		return
@@ -1145,7 +1067,8 @@ func (r *BaseConnectorResource) recordEmbeddedChain(ctx context.Context, id stri
 }
 
 func (r *BaseConnectorResource) readEmbeddedChain(ctx context.Context, id string, write *smt.Write, receipt *api.SourceSMTChainReceipt, diags *diag.Diagnostics) (smt.GraphState, bool) {
-	if receipt == nil || receipt.ChainRevision == "" {
+	kind := r.config.GetConnectorType()
+	if kind == ConnectorTypeSource && (receipt == nil || receipt.ChainRevision == "") {
 		diags.AddAttributeError(path.Root(smt.AttrChain), "Transform chain outcome unconfirmed",
 			"The source was saved with its transform chain, but the response did not identify the accepted chain revision. Run terraform plan to refresh the chain before applying again.")
 		return smt.GraphState{}, false
@@ -1157,10 +1080,10 @@ func (r *BaseConnectorResource) readEmbeddedChain(ctx context.Context, id string
 	read, err := client.GetSMTChain(ctx, r.chainKind(), id)
 	if err != nil {
 		diags.AddAttributeError(path.Root(smt.AttrChain), "Unable to read the saved transform chain",
-			fmt.Sprintf("The source and its transform chain revision %q were saved, but reading the chain back failed. Run terraform plan to refresh it: %s", receipt.ChainRevision, err))
+			fmt.Sprintf("The %s and its transform chain were saved, but reading the chain back failed. Run terraform plan to refresh it: %s", kind, err))
 		return smt.GraphState{}, false
 	}
-	if read.Desired.ChainRevision != receipt.ChainRevision {
+	if receipt != nil && read.Desired.ChainRevision != receipt.ChainRevision {
 		diags.AddAttributeError(path.Root(smt.AttrChain), "Transform chain changed outside Terraform",
 			fmt.Sprintf("The source saved transform chain revision %q, but the chain now reads as revision %q. Run terraform plan to refresh it and review the drift before applying.", receipt.ChainRevision, read.Desired.ChainRevision))
 		return smt.GraphState{}, false

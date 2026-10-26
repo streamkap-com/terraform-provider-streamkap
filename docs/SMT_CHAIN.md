@@ -27,27 +27,30 @@ At runtime `generated.SMTChain(host)` builds the host's chain once from the cata
 
 - Secret operations are not a separate endpoint. They ride inside the instance or predicate they target (`secret_operations`, `operation: replace|clear`) under the same `expected_revision`, so a rotation is a chain write. An unchanged chain with no rotation sends nothing.
 - `name` is required on the wire, so `smt_chain[*].name` is Required. `enabled` defaults to true and is echoed on read, so it is Optional + Computed + Default(true) and a toggle made elsewhere shows as drift.
-- The read projection is `desired`, `last_applied` and `application_status`. The provider manages `desired` only and stores `desired.chain_revision` in `smt_chain_revision`; an update sends it as `expected_revision`, a create sends none. `managed` and `order` remain server projections.
+- The read projection is `desired`, `last_applied` and `application_status`. Every connector reads under a `desired.chain_revision`, an opaque token, whether or not it has user transforms. The provider manages `desired` only and stores the revision in `smt_chain_revision`. Every write to an existing connector sends `expected_revision`; only a connector create, which embeds its first chain, sends none. `managed` and `order` remain server projections.
+- An instance id is its transform alias and a predicate id is its predicate alias, so both stay stable for as long as the alias exists.
 - `alias`, `schema_version`, `codec_version` and `configured_secret_paths` are server-owned and never sent.
-- Errors are `{"detail": {code, message, issues}}`. `smt_revision_conflict` and `smt_chain_exists` mean the chain changed outside Terraform; `smt_expected_revision_required` means the connector already has a chain this resource does not manage and must be imported; `smt_connector_deleting` means the deletion is pending; `smt_adoption_required` means legacy transforms need explicit adoption; `smt_chain_absent` on read is an empty chain with no revision.
+- Errors are `{"detail": {code, message, issues}}`. `smt_revision_conflict` means the chain changed outside Terraform; `smt_connector_deleting` means the deletion is pending.
 - Validation issues carry a runtime pointer into the request body and are attached to the attribute it locates: `/transforms/1/config/routes/1/endpoint` becomes `smt_chain[1].<type>.routes[1].endpoint`, `/predicates/i/config/...` lands in `smt_predicates[i].<type>`, secret-operation issues land on `smt_secrets` or `smt_predicate_secrets`, and `/managed_overrides` on `smt_managed_overrides`.
 - An instance the schema cannot represent fails Read with a diagnostic rather than being dropped by the next write: an `opaque` instance, an unknown instance kind, an instance carrying a selector, or a predicate attachment outside the returned predicate pool.
 
 ## Source and destination write paths
 
-Destinations have a chain route. The connector request goes first, then `PUT /destinations/{id}/smt-chain`. If the chain write fails after a create, the connector is still recorded in state so Terraform taints it, rather than losing the record and colliding on the name at the next apply.
+A create embeds the chain in the connector request as `smt_chain`, for sources and destinations alike, so a refused chain creates no connector. After an embedded write the chain is read back for state.
 
-The first chain on an existing destination takes a separate path (`applyInitialChainUpdate`):
+Every write to an existing connector reads the chain first (`Surface.ExpectedRevision`), before the connector request:
 
-- The ordinary connector settings (config, name, cluster and tags) must be unchanged in the same plan, and the generic connector update is skipped. The two writes cannot be made atomic, so a mixed plan is refused with "apply the chain first".
-- `GET /destinations/{id}/smt-chain-adoption` classifies the destination. `available` (authored legacy transforms) is refused until they are adopted through the adoption API or UI; `unavailable` is refused with the backend's message; `managed_only` proceeds with the revision-less PUT, which the backend classifies again and refuses with `smt_adoption_required` if legacy transforms appeared in between.
+- When state holds a revision and the chain now reads under a different one, the apply is refused as a change outside Terraform and nothing is sent. The write carries the revision it read, which the server compares again atomically.
+- When state holds no revision, as on the first chain of a resource that was on the flat surface, the write takes the current revision. If the connector already has user transforms or predicates and the write replaces the user chain, it is refused with import guidance instead, since the replacement would delete them. An override-only write replaces no transforms and proceeds.
+- A write that sends nothing reads nothing.
 
-Sources have chain read and catalog routes but no chain write route. The chain rides in the source create or update body as `smt_chain`:
+Destinations have a chain write route. An update sends the connector request first, then `PUT /destinations/{id}/smt-chain`, with connector changes allowed in the same apply. The destination create route accepts `smt_chain`; its update route does not.
 
-- That body carries secret values, so it is logged without the chain and never retried; a replay would collide on the name or be refused as stale.
-- The response carries `smt_chain_receipt.chain_revision`. The provider reads the chain back and records it only if it is that revision; a different revision is reported as a change outside Terraform, and a missing receipt as an unconfirmed outcome.
-- Before the first embedded write to an existing source, the provider reads the chain and refuses with import guidance if one exists, since the source routes do not return `smt_expected_revision_required`.
-- A refusal with a structured SMT envelope is mapped onto the chain attributes; any other refusal is reported against the source, because the same request carried the connector settings.
+Sources have chain read and catalog routes but no chain write route. The chain rides in the source create or update body:
+
+- A body carrying a chain, on either connector type, carries secret values, so it is logged without the chain and never retried; a replay would collide on the name or be refused as stale.
+- A source response carries `smt_chain_receipt.chain_revision`. The provider reads the chain back and records it only if it is that revision; a different revision is reported as a change outside Terraform, and a missing receipt as an unconfirmed outcome. A destination create response carries no receipt, and the destination did not exist before the request, so its read-back is recorded as is.
+- A refusal with a structured SMT envelope is mapped onto the chain attributes; any other refusal is reported against the connector, because the same request carried the connector settings.
 - Managed slots are destination-scoped, so `ValidateConfig` refuses a non-empty `smt_managed_overrides` on a source.
 
 ## Decisions the representation forces
@@ -56,7 +59,7 @@ Sources have chain read and catalog routes but no chain write route. The chain r
 - Defaults are load-bearing. The plan carries the fully defaulted tree and the backend read projection materialises the same defaults; a backend that dropped one would show a diff on every plan.
 - Flat and nested surfaces never mix. The released flat `transforms_*` and `predicates_*` attributes keep their client-side defaults, so the conflict is judged on configuration only: `ValidateConfig` refuses a flat attribute set alongside `smt_chain`. With the chain configured, `ModifyPlan` nulls flat attributes that would otherwise be unknown, `StripFlat` removes every `transforms.*` and `predicates.*` wire key (derived from the runtime field mappings, so wrapper aliases are covered), and Create, Update and Read pin those attributes to the plan or prior state so the API echo cannot move them.
 - A null `smt_chain` is the released surface: refresh never populates it, and removing the attribute from configuration returns the resource to that surface without touching the server chain. Import writes `[]` as the adoption marker.
-- `smt_chain_revision` is the last-read revision. `ModifyPlan` keeps it when the planned chain, predicates and overrides equal prior state and nothing rotates; otherwise it is unknown. It is null while neither the chain nor overrides are managed. This is what detects a stale write without a re-read at apply.
+- `smt_chain_revision` is the last-read revision, an opaque token. `ModifyPlan` keeps it when the planned chain, predicates and overrides equal prior state and nothing rotates; otherwise it is unknown. It is null while neither the chain nor overrides are managed. The read before a write compares it, so an edit made after the plan's refresh is refused instead of overwritten.
 - `smt_predicates` has no schema default: a default differs from the null a released state holds and makes the framework plan computed nulls unknown, so released resources would never converge. When the chain is configured and `smt_predicates` is not, the plan sets `[]`. `TestSMTChainReleasedStatePlansNoChangeOnEveryResource` plans a released state on every chained resource.
 
 ## Predicates
@@ -125,4 +128,4 @@ resource "streamkap_destination_postgresql" "orders" {
 }
 ```
 
-The first apply after import plans an Update, because import leaves the flat SMT attributes null and their defaults fill them; that Update pins the imported ids, leaves the chain unchanged and rotates nothing unless `smt_secrets` asks for it. The next plan is empty. A connector without a chain imports as an empty managed chain with no revision, and its first chain is created without an expected revision. A resource on the flat surface cannot take over a chain created elsewhere; it is told to import.
+The first apply after import plans an Update, because import leaves the flat SMT attributes null and their defaults fill them; that Update pins the imported ids, leaves the chain unchanged and rotates nothing unless `smt_secrets` asks for it. The next plan is empty. A connector without user transforms imports as an empty managed chain under its current revision, and its first chain is written under that revision. A resource on the flat surface cannot take over transforms created elsewhere; it is told to import.

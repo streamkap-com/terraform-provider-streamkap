@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -22,7 +23,6 @@ import (
 	tfresource "github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
-	"github.com/hashicorp/terraform-plugin-testing/tfversion"
 	"github.com/stretchr/testify/require"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
@@ -369,30 +369,35 @@ func TestSMT_FlatProjectionStrippedAndPinned(t *testing.T) {
 	})
 }
 
-// chainHosts are the two write paths of the same chain: a destination's
+// chainHosts are the two update paths of the same chain: a destination's
 // PUT .../smt-chain, answered with a structured envelope, and a source's
 // embedded smt_chain, which the backend's source routes refuse with a plain
-// 400 detail. Each carries the diagnostic a refused write produces there.
+// 400 detail. Both embed the chain in the create request, which those routes
+// refuse the same way. Each carries the diagnostic a refused write produces
+// there.
 var chainHosts = []struct {
-	name     string
-	addr     string
-	hcl      func(string) string
-	stale    *regexp.Regexp
-	rejected *regexp.Regexp
+	name          string
+	addr          string
+	hcl           func(string) string
+	stale         *regexp.Regexp
+	rejected      *regexp.Regexp
+	createRefused *regexp.Regexp
 }{
 	{
-		name:     "destination",
-		addr:     destAddr,
-		hcl:      destHCL,
-		stale:    regexp.MustCompile(`Transform chain changed outside Terraform[\s\S]*no longer current`),
-		rejected: regexp.MustCompile(`Transform chain rejected[\s\S]*smt_config_string_pattern_mismatch`),
+		name:          "destination",
+		addr:          destAddr,
+		hcl:           destHCL,
+		stale:         regexp.MustCompile(`Transform chain changed outside Terraform[\s\S]*no longer current`),
+		rejected:      regexp.MustCompile(`Transform chain rejected[\s\S]*smt_config_string_pattern_mismatch`),
+		createRefused: regexp.MustCompile(`Error creating snowflake destination[\s\S]*chain service unavailable`),
 	},
 	{
-		name:     "source",
-		addr:     addr,
-		hcl:      hcl,
-		stale:    regexp.MustCompile(`Error updating postgresql source[\s\S]*expected revision is stale`),
-		rejected: regexp.MustCompile(`Error updating postgresql source[\s\S]*smt_config_string_pattern_mismatch at[\s\S]*/transforms/1/config/services/0/key`),
+		name:          "source",
+		addr:          addr,
+		hcl:           hcl,
+		stale:         regexp.MustCompile(`Error updating postgresql source[\s\S]*expected revision is stale`),
+		rejected:      regexp.MustCompile(`Error updating postgresql source[\s\S]*smt_config_string_pattern_mismatch at[\s\S]*/transforms/1/config/services/0/key`),
+		createRefused: regexp.MustCompile(`Error creating postgresql source[\s\S]*chain service unavailable`),
 	},
 }
 
@@ -450,77 +455,54 @@ func TestSMT_StaleRevisionIsRejected(t *testing.T) {
 	}
 }
 
-// A destination chain write that fails right after the connector was
-// created still records the connector, so Terraform taints it instead of
-// losing the record and colliding on the name at the next apply.
-func TestSMT_FailedChainWriteAfterCreateIsTainted(t *testing.T) {
-	factories, fake := newFixture(t)
-	fake.failNextChainWrite = true
+// A connector saves its first chain in the create request, so a refused
+// chain creates nothing: no state entry, no server record, and the next apply
+// is a plain create.
+func TestSMT_FailedEmbeddedChainCreatesNoConnector(t *testing.T) {
+	for _, host := range chainHosts {
+		t.Run(host.name, func(t *testing.T) {
+			factories, fake := newFixture(t)
+			fake.failNextChainWrite = true
 
-	tfresource.UnitTest(t, tfresource.TestCase{
-		TerraformVersionChecks:   []tfversion.TerraformVersionCheck{tfversion.SkipBelow(tfversion.Version1_11_0)},
-		ProtoV6ProviderFactories: factories,
-		Steps: []tfresource.TestStep{
-			{
-				Config:      destHCL(chainAB),
-				ExpectError: regexp.MustCompile(`Error writing transform chain`),
-			},
-			{
-				Config: destHCL(chainAB),
-				ConfigPlanChecks: tfresource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
-					plancheck.ExpectResourceAction(destAddr, plancheck.ResourceActionReplace),
-				}},
-				Check: tfresource.ComposeTestCheckFunc(
-					tfresource.TestCheckResourceAttr(destAddr, "smt_chain.#", "2"),
-					func(s *terraform.State) error {
-						if n := len(fake.sourceIDs()); n != 1 {
-							return fmt.Errorf("replace must leave exactly one connector, got %d", n)
-						}
-						return nil
+			tfresource.UnitTest(t, tfresource.TestCase{
+				ProtoV6ProviderFactories: factories,
+				Steps: []tfresource.TestStep{
+					{
+						Config:      host.hcl(chainAB),
+						ExpectError: host.createRefused,
 					},
-				),
-			},
-		},
-	})
-}
-
-// A source saves its chain in the same request as the connector, so a
-// refused chain creates nothing: no state entry, no server record, and the
-// next apply is a plain create.
-func TestSMT_FailedEmbeddedChainCreatesNoSource(t *testing.T) {
-	factories, fake := newFixture(t)
-	fake.failNextChainWrite = true
-
-	tfresource.UnitTest(t, tfresource.TestCase{
-		ProtoV6ProviderFactories: factories,
-		Steps: []tfresource.TestStep{
-			{
-				Config:      hcl(chainAB),
-				ExpectError: regexp.MustCompile(`Error creating postgresql source[\s\S]*chain service unavailable`),
-			},
-			{
-				PreConfig: func() {
-					if n := len(fake.sourceIDs()); n != 0 {
-						t.Fatalf("a refused embedded chain left %d sources behind", n)
-					}
+					{
+						PreConfig: func() {
+							if n := len(fake.sourceIDs()); n != 0 {
+								t.Fatalf("a refused embedded chain left %d connectors behind", n)
+							}
+							fake.resetEvents()
+						},
+						Config: host.hcl(chainAB),
+						ConfigPlanChecks: tfresource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
+							plancheck.ExpectResourceAction(host.addr, plancheck.ResourceActionCreate),
+						}},
+						Check: tfresource.ComposeTestCheckFunc(
+							tfresource.TestCheckResourceAttr(host.addr, "smt_chain.#", "2"),
+							tfresource.TestCheckResourceAttrSet(host.addr, "smt_chain_revision"),
+							func(s *terraform.State) error {
+								if n := len(fake.sourceIDs()); n != 1 {
+									return fmt.Errorf("want exactly one connector, got %d", n)
+								}
+								if got := fake.recordedEvents(); !reflect.DeepEqual(got, []string{"connector-create", "chain-embedded"}) {
+									return fmt.Errorf("the chain must ride in the create request, got %v", got)
+								}
+								if sent := fake.lastEmbeddedChain(); sent.ExpectedRevision != nil {
+									return fmt.Errorf("a create has no revision to send, got %q", *sent.ExpectedRevision)
+								}
+								return nil
+							},
+						),
+					},
 				},
-				Config: hcl(chainAB),
-				ConfigPlanChecks: tfresource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{
-					plancheck.ExpectResourceAction(addr, plancheck.ResourceActionCreate),
-				}},
-				Check: tfresource.ComposeTestCheckFunc(
-					tfresource.TestCheckResourceAttr(addr, "smt_chain.#", "2"),
-					tfresource.TestCheckResourceAttrSet(addr, "smt_chain_revision"),
-					func(s *terraform.State) error {
-						if n := len(fake.sourceIDs()); n != 1 {
-							return fmt.Errorf("want exactly one source, got %d", n)
-						}
-						return nil
-					},
-				),
-			},
-		},
-	})
+			})
+		})
+	}
 }
 
 // A source has no chain route: the chain rides in the source create and
@@ -724,11 +706,11 @@ resource "streamkap_destination_snowflake" "t" {
 	})
 }
 
-// A connector without a chain imports as an empty managed chain with no
-// revision, and the first chain the HCL adds is created without an expected
-// revision. A resource still on the flat surface cannot silently take over a
-// chain that exists on the server: the write is refused and the diagnostic
-// says to import.
+// A connector without user transforms imports as an empty managed chain under
+// its current revision, and the first chain the HCL adds is written under that
+// revision. A resource still on the flat surface cannot silently take over
+// transforms that exist on the server: the write is refused before anything
+// is sent and the diagnostic says to import.
 func TestSMT_AdoptionPaths(t *testing.T) {
 	factories, fake := newFixture(t)
 	ctx := context.Background()
@@ -750,10 +732,10 @@ func TestSMT_AdoptionPaths(t *testing.T) {
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
 					a := states[0].Attributes
 					if a["smt_chain.#"] != "0" {
-						return fmt.Errorf("a connector without a chain imports as an empty managed chain, got %q", a["smt_chain.#"])
+						return fmt.Errorf("a connector without user transforms imports as an empty managed chain, got %q", a["smt_chain.#"])
 					}
-					if _, has := a["smt_chain_revision"]; has {
-						return fmt.Errorf("no revision exists before the chain is created")
+					if a["smt_chain_revision"] == "" {
+						return fmt.Errorf("every connector's chain reads under a revision")
 					}
 					return nil
 				},
@@ -767,6 +749,9 @@ func TestSMT_AdoptionPaths(t *testing.T) {
 					func(*terraform.State) error {
 						if got := fake.recordedEvents(); !reflect.DeepEqual(got, []string{"connector-update", "chain-embedded"}) {
 							return fmt.Errorf("the initial source chain must ride in the one source update, got %v", got)
+						}
+						if sent := fake.lastEmbeddedChain(); sent.ExpectedRevision == nil || *sent.ExpectedRevision != "0" {
+							return fmt.Errorf("the first write must carry the imported revision, got %v", sent.ExpectedRevision)
 						}
 						return nil
 					},
@@ -786,64 +771,48 @@ func TestSMT_AdoptionPaths(t *testing.T) {
 			},
 			{
 				PreConfig: func() {
-					id := fake2.sourceIDs()[0]
-					_, err := fake2.PutSMTChain(ctx, "sources", id, api.SMTChainWrite{Transforms: &[]api.SMTInstanceWrite{
-						{Type: "contract_fixture_nested", Name: "From the UI", Enabled: true, Config: func() map[string]any {
-							spec, _ := catalogSpec(fake2.cat, "transform", "contract_fixture_nested")
-							return spec.Examples.ReadProjection
-						}()},
-					}})
-					require.NoError(t, err)
+					fake2.putChain(t, "sources", fake2.sourceIDs()[0], uiChain(fake2))
+					fake2.resetEvents()
 				},
 				Config:      hcl(chainAB),
-				ExpectError: regexp.MustCompile(`Transform chain already exists outside Terraform[\s\S]*Import the resource`),
+				ExpectError: regexp.MustCompile(`Transform chain already exists outside Terraform[\s\S]*Import[\s\S]*the resource`),
 			},
 		},
 	})
+	require.Empty(t, fake2.recordedEvents(), "the refused first write must send nothing, the connector update included")
 }
 
-func TestProviderInitialDestinationChainIsGuardedBeforeConnectorMutation(t *testing.T) {
-	const destinationAddr = "streamkap_destination_snowflake.t"
-	destinationConfig := func(name, chain string) string {
-		return `
-resource "streamkap_destination_snowflake" "t" {
-  name                    = "` + name + `"
-  snowflake_url_name      = "acct.snowflakecomputing.invalid"
-  snowflake_user_name     = "u"
-  snowflake_private_key   = "k"
-  snowflake_database_name = "D"
-  snowflake_schema_name   = "S"
-` + chain + "\n}\n"
-	}
-	t.Run("managed-only chain is created without a connector update", func(t *testing.T) {
+// uiChain is one user transform created outside Terraform.
+func uiChain(f *fakeAPI) []api.SMTInstanceWrite {
+	spec, _ := catalogSpec(f.cat, "transform", "contract_fixture_nested")
+	return []api.SMTInstanceWrite{{Type: "contract_fixture_nested", Name: "From the UI", Enabled: true, Config: spec.Examples.ReadProjection}}
+}
+
+// The first chain on an existing destination is an ordinary update: the
+// connector update, then a chain write under the revision read beforehand,
+// with connector changes in the same apply. Transforms created outside
+// Terraform are refused before either write.
+func TestSMT_FirstDestinationChainReadsTheRevisionFirst(t *testing.T) {
+	const name = `name                    = "chain"`
+	t.Run("written under the current revision", func(t *testing.T) {
 		factories, fake := newFixture(t)
 		tfresource.UnitTest(t, tfresource.TestCase{
 			ProtoV6ProviderFactories: factories,
 			Steps: []tfresource.TestStep{
-				{Config: destinationConfig("chain", "")},
+				{Config: destHCL("")},
 				{
 					PreConfig: fake.resetEvents,
-					Config:    destinationConfig("chain", chainAB),
+					Config:    strings.Replace(destHCL(chainAB), name, `name                    = "renamed"`, 1),
 					Check: func(s *terraform.State) error {
-						if got := fake.connectorWriteCount(); got != 1 {
-							return fmt.Errorf("initial chain caused a connector write: got %d total connector writes, events %v", got, fake.recordedEvents())
-						}
-						if got := fake.recordedEvents(); !reflect.DeepEqual(got, []string{"adoption-read", "chain-put"}) {
-							return fmt.Errorf("initial chain request order = %v", got)
-						}
-						attributes := s.RootModule().Resources[destinationAddr].Primary.Attributes
-						if attributes["smt_chain_revision"] == "" || attributes["smt_chain.0.id"] == "" {
-							return fmt.Errorf("accepted chain identities were not recorded in state")
-						}
-						return nil
-					},
-				},
-				{
-					PreConfig: fake.resetEvents,
-					Config:    destinationConfig("chain", chainBA),
-					Check: func(*terraform.State) error {
 						if got := fake.recordedEvents(); !reflect.DeepEqual(got, []string{"connector-update", "chain-put"}) {
-							return fmt.Errorf("existing-chain request order = %v", got)
+							return fmt.Errorf("first chain request order = %v", got)
+						}
+						attributes := s.RootModule().Resources[destAddr].Primary.Attributes
+						if attributes["name"] != "renamed" || attributes["smt_chain_revision"] == "" || attributes["smt_chain.0.id"] == "" {
+							return fmt.Errorf("the connector change and the accepted chain identities were not both recorded: %v", attributes)
+						}
+						if got := fake.instances(attributes["id"]); len(got) != 2 {
+							return fmt.Errorf("destination chain not stored: %v", got)
 						}
 						return nil
 					},
@@ -852,70 +821,23 @@ resource "streamkap_destination_snowflake" "t" {
 		})
 	})
 
-	t.Run("legacy edit racing the audit is refused by the chain write", func(t *testing.T) {
+	t.Run("transforms created outside Terraform are refused before any write", func(t *testing.T) {
 		factories, fake := newFixture(t)
-		var id string
 		tfresource.UnitTest(t, tfresource.TestCase{
 			ProtoV6ProviderFactories: factories,
 			Steps: []tfresource.TestStep{
-				{Config: destinationConfig("chain", "")},
+				{Config: destHCL("")},
 				{
 					PreConfig: func() {
-						id = fake.sourceIDs()[0]
+						fake.putChain(t, "destinations", fake.sourceIDs()[0], uiChain(fake))
 						fake.resetEvents()
-						fake.legacyRaceAfterAdoption[id] = true
 					},
-					Config:      destinationConfig("chain", chainAB),
-					ExpectError: regexp.MustCompile(`Legacy transforms require explicit adoption`),
+					Config:      destHCL(chainAB),
+					ExpectError: regexp.MustCompile(`Transform chain already exists outside Terraform[\s\S]*Import[\s\S]*the resource`),
 				},
 			},
 		})
 		require.Equal(t, 1, fake.connectorWriteCount())
-		require.Equal(t, []string{"adoption-read", "chain-put"}, fake.recordedEvents())
-		require.Empty(t, fake.instances(id))
-		var apiError *api.APIError
-		require.ErrorAs(t, fake.recordedChainError(), &apiError)
-		require.Equal(t, 409, apiError.StatusCode)
-		envelope, ok := api.SMTErrorOf(apiError)
-		require.True(t, ok)
-		require.Equal(t, "smt_adoption_required", envelope.Code)
-		require.Equal(t, "/", envelope.Issues[0].Pointer)
-	})
-
-	t.Run("legacy and unavailable classifications refuse before writes", func(t *testing.T) {
-		for _, tc := range []struct {
-			status string
-			want   string
-		}{{"available", "Legacy transforms require explicit adoption"}, {"unavailable", "fixture adoption is unavailable"}} {
-			t.Run(tc.status, func(t *testing.T) {
-				factories, fake := newFixture(t)
-				tfresource.UnitTest(t, tfresource.TestCase{
-					ProtoV6ProviderFactories: factories,
-					Steps: []tfresource.TestStep{
-						{Config: destinationConfig("chain", "")},
-						{PreConfig: func() {
-							id := fake.sourceIDs()[0]
-							fake.adoptionStatus[id] = tc.status
-							fake.resetEvents()
-						}, Config: destinationConfig("chain", chainAB), ExpectError: regexp.MustCompile(tc.want)},
-					},
-				})
-				require.Equal(t, 1, fake.connectorWriteCount())
-				require.Equal(t, []string{"adoption-read"}, fake.recordedEvents())
-			})
-		}
-	})
-
-	t.Run("ordinary connector changes cannot share the initial chain update", func(t *testing.T) {
-		factories, fake := newFixture(t)
-		tfresource.UnitTest(t, tfresource.TestCase{
-			ProtoV6ProviderFactories: factories,
-			Steps: []tfresource.TestStep{
-				{Config: destinationConfig("chain", "")},
-				{PreConfig: fake.resetEvents, Config: destinationConfig("renamed", chainAB), ExpectError: regexp.MustCompile(`Initial transform chain must be applied separately`)},
-			},
-		})
-		require.Equal(t, 1, fake.connectorWriteCount())
-		require.Empty(t, fake.recordedEvents())
+		require.Empty(t, fake.recordedEvents(), "the refused first write must send nothing, the connector update included")
 	})
 }

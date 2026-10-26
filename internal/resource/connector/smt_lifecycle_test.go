@@ -137,8 +137,9 @@ func attrAt(s *terraform.State, address, name string) string {
 }
 
 // destAddr and destHCL are the Snowflake destination counterparts of addr and
-// hcl: a destination writes its chain through PUT .../smt-chain, a source
-// embeds it in the source request.
+// hcl: a destination embeds its first chain in the create request and writes
+// later ones through PUT .../smt-chain, a source embeds every one in the
+// source request.
 const destAddr = "streamkap_destination_snowflake.t"
 
 func destHCL(body string) string {
@@ -746,7 +747,7 @@ func TestSMT_UnchangedDestinationChainSendsNoChainWrite(t *testing.T) {
 			{
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
-					requests("connector-create", "chain-put"),
+					requests("connector-create", "chain-embedded"),
 					func(s *terraform.State) error {
 						revision = attrAt(s, destAddr, smt.AttrRevision)
 						return nil

@@ -16,7 +16,8 @@ import (
 // A source chain rides in the source create and update bodies: the request
 // keys are the ones CreateSourceReq and UpdateSourceReq declare, the chain
 // key is absent unless a chain is written, and the response receipt decodes
-// with exactly the keys SourceSmtChainReceipt requires.
+// the accepted revision under a key SourceSmtChainReceipt declares and
+// requires.
 func TestSourceSMTChainWire_MatchesFixture(t *testing.T) {
 	w := loadSMTWire(t)
 	require.Equal(t, "POST /sources", w.Routes["source_create"])
@@ -39,18 +40,20 @@ func TestSourceSMTChainWire_MatchesFixture(t *testing.T) {
 		"an omitted chain keeps the stored one; the backend refuses null")
 
 	var resp Source
-	require.NoError(t, json.Unmarshal([]byte(`{"id":"src-1","name":"pg","connector":"postgresql","config":{},"smt_chain_receipt":{"incarnation":"inc","chain_revision":"rev-2","generation":3}}`), &resp))
-	require.Equal(t, &SourceSMTChainReceipt{Incarnation: "inc", ChainRevision: "rev-2", Generation: 3}, resp.SMTChainReceipt)
+	require.NoError(t, json.Unmarshal([]byte(`{"id":"src-1","name":"pg","connector":"postgresql","config":{},"smt_chain_receipt":{"chain_revision":"rev-2"}}`), &resp))
+	require.Equal(t, &SourceSMTChainReceipt{ChainRevision: "rev-2"}, resp.SMTChainReceipt)
 	assertDeclared(t, schemas["SourceConnector"].Properties, nil, []string{"smt_chain_receipt"})
 	receipt := schemas["SourceSmtChainReceipt"]
 	require.JSONEq(t, "false", string(receipt.AdditionalProperties))
-	assertDeclared(t, receipt.Properties, receipt.Required, jsonKeys(t, *resp.SMTChainReceipt))
+	require.Equal(t, []string{"chain_revision"}, jsonKeys(t, *resp.SMTChainReceipt))
+	assertDeclared(t, receipt.Properties, nil, jsonKeys(t, *resp.SMTChainReceipt))
+	require.Contains(t, receipt.Required, "chain_revision")
 }
 
-// A source write that carries a chain is sent once even when the gateway
+// A connector write that carries a chain is sent once even when the gateway
 // fails, and its debug log never carries the chain, whose secret operations
 // hold plaintext. A write without a chain keeps the released retry.
-func TestSourceWrite_EmbeddedChainIsNotRetriedOrLogged(t *testing.T) {
+func TestConnectorWrite_EmbeddedChainIsNotRetriedOrLogged(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	baseURL := "https://api.test.streamkap.com"
@@ -65,6 +68,7 @@ func TestSourceWrite_EmbeddedChainIsNotRetriedOrLogged(t *testing.T) {
 	}
 	httpmock.RegisterResponder(http.MethodPost, baseURL+"/sources?secret_returned=true&wait=false", failing)
 	httpmock.RegisterResponder(http.MethodPut, baseURL+"/sources/src-1?secret_returned=true&wait=false", failing)
+	httpmock.RegisterResponder(http.MethodPost, baseURL+"/destinations?secret_returned=true&wait=false", failing)
 
 	transforms := []SMTInstanceWrite{{Type: "filter", Name: "Drop", Enabled: true, Config: map[string]any{},
 		SecretOperations: []SMTSecretOperation{{Pointer: "/token", Operation: SMTSecretReplace, Value: "plaintext-secret"}}}}
@@ -82,6 +86,11 @@ func TestSourceWrite_EmbeddedChainIsNotRetriedOrLogged(t *testing.T) {
 	_, err = client.UpdateSource(ctx, "src-1", chained)
 	require.Error(t, err)
 	require.Len(t, bodies, 2, "an update carrying a chain must not be replayed")
+
+	_, err = client.CreateDestination(ctx, Destination{Name: "pg", Connector: "postgresql", Config: map[string]any{}, SMTChain: chained.SMTChain})
+	require.Error(t, err)
+	require.Len(t, bodies, 3, "a destination create carrying a chain must not be replayed")
+	require.Contains(t, string(bodies[2]), `"smt_chain"`)
 
 	require.NotContains(t, logs.String(), "plaintext-secret")
 	require.NotContains(t, logs.String(), "smt_chain\\\":")

@@ -25,9 +25,6 @@ type smtWire struct {
 	SelectorReadResponse json.RawMessage   `json:"selector_read_response"`
 	ConflictResponse     json.RawMessage   `json:"conflict_response"`
 	ValidationResponse   json.RawMessage   `json:"validation_response"`
-	AdoptionResponse     json.RawMessage   `json:"adoption_response"`
-	ManagedOnlyResponse  json.RawMessage   `json:"adoption_managed_only_response"`
-	UnavailableResponse  json.RawMessage   `json:"adoption_unavailable_response"`
 	OpenAPI              struct {
 		Paths      map[string]json.RawMessage `json:"paths"`
 		Components struct {
@@ -78,7 +75,7 @@ func TestSMTWire_RequestsMatchFixture(t *testing.T) {
 
 	var create SMTChainWrite
 	require.NoError(t, json.Unmarshal(w.CreateRequest, &create))
-	require.Nil(t, create.ExpectedRevision, "a create carries no expected revision")
+	require.Nil(t, create.ExpectedRevision, "a connector create's embedded chain carries no expected revision")
 	require.Len(t, *create.Transforms, 2)
 	require.Equal(t, "mask_field", (*create.Transforms)[1].Type)
 	require.Equal(t, []string{"orders.email"}, toStrings((*create.Transforms)[1].Config["fields_include"]))
@@ -112,7 +109,7 @@ func TestSMTWire_RequestsMatchFixture(t *testing.T) {
 	assertDeclared(t, schemas["SmtSecretReplaceWire"].Properties, schemas["SmtSecretReplaceWire"].Required, jsonKeys(t, (*sent.Transforms)[0].SecretOperations[0]))
 	assertDeclared(t, schemas["SmtSecretClearWire"].Properties, schemas["SmtSecretClearWire"].Required, jsonKeys(t, (*sent.Transforms)[0].SecretOperations[1]))
 	require.NotContains(t, jsonKeys(t, SMTInstanceWrite{}), "id", "a new instance omits id; null is rejected")
-	require.NotContains(t, jsonKeys(t, SMTChainWrite{}), "expected_revision", "a create omits the expected revision")
+	require.NotContains(t, jsonKeys(t, SMTChainWrite{}), "expected_revision", "a connector create's embedded chain omits the expected revision")
 
 	require.Equal(t, "PUT /destinations/{destination_id}/smt-chain", w.Routes["chain_write"])
 	require.Equal(t, "GET /destinations/{destination_id}/smt-chain", w.Routes["chain_read"])
@@ -144,26 +141,6 @@ func toStrings(v any) []string {
 // revision conflict and a 422 whose issues locate the problem.
 func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 	w := loadSMTWire(t)
-	for _, fixture := range []struct {
-		body   json.RawMessage
-		status string
-	}{
-		{w.AdoptionResponse, SMTAdoptionAvailable},
-		{w.ManagedOnlyResponse, SMTAdoptionManagedOnly},
-		{w.UnavailableResponse, SMTAdoptionUnavailable},
-	} {
-		var audit SMTChainAdoptionRead
-		require.NoError(t, json.Unmarshal(fixture.body, &audit))
-		require.Equal(t, fixture.status, audit.Status)
-		if audit.Status == SMTAdoptionAvailable {
-			require.NotEmpty(t, audit.ExpectedRevision)
-			require.Equal(t, []string{"/mask_salt"}, audit.Transforms[0].ConfiguredSecretPaths)
-			require.NotContains(t, audit.Transforms[0].Config, "mask_salt")
-		} else {
-			require.Empty(t, audit.ExpectedRevision)
-		}
-	}
-
 	var read SMTChainRead
 	require.NoError(t, json.Unmarshal(w.ReadResponse, &read))
 	require.Equal(t, "a5ffa5b833e6db552f77d5781779e8f7", read.Desired.ChainRevision)
@@ -223,8 +200,6 @@ func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 		issues   int
 	}{
 		{"conflict", http.StatusConflict, w.ConflictResponse, true, "smt_revision_conflict", 1},
-		{"lost create race", http.StatusConflict, envelope("smt_chain_exists", "A chain was created concurrently"), true, "smt_chain_exists", 0},
-		{"revision required", http.StatusConflict, envelope("smt_expected_revision_required", "The chain exists; send expected_revision"), false, "smt_expected_revision_required", 0},
 		{"connector deleting", http.StatusConflict, envelope("smt_connector_deleting", "Destination dest-1 is being deleted; its SMT chain can no longer be written"), false, "smt_connector_deleting", 0},
 		{"validation", http.StatusUnprocessableEntity, w.ValidationResponse, false, "smt_validation_failed", 3},
 	} {
@@ -243,17 +218,10 @@ func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 			require.True(t, ok, "%v", err)
 			require.Equal(t, tc.code, env.Code)
 			require.Len(t, env.Issues, tc.issues)
-			require.Equal(t, tc.code == "smt_expected_revision_required", IsSMTRevisionRequired(err))
 			require.Equal(t, tc.code == "smt_connector_deleting", IsSMTConnectorDeleting(err))
-			require.False(t, IsSMTChainAbsent(err))
 		})
 	}
 
-	// A wired route answers a structured 404 for a connector without a chain;
-	// a plain 404 (unwired kind, feature off) is not that.
-	absent := &APIError{StatusCode: http.StatusNotFound, DetailJSON: envelope("smt_chain_absent", "no chain")[len(`{"detail":`) : len(envelope("smt_chain_absent", "no chain"))-1]}
-	require.True(t, IsSMTChainAbsent(absent))
-	require.False(t, IsSMTChainAbsent(&APIError{StatusCode: http.StatusNotFound, Detail: "Not Found"}))
 	require.False(t, IsSMTRevisionConflict(&APIError{StatusCode: http.StatusConflict, Detail: "conflict"}), "a bare 409 without the envelope is not classified")
 
 	var validation struct {

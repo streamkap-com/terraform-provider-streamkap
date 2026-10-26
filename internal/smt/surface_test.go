@@ -3,10 +3,12 @@ package smt
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
@@ -47,4 +49,50 @@ func TestStateFromRefusesSelectorReadFixture(t *testing.T) {
 	_, _, diags := (&Surface{}).stateFrom(context.Background(), &read, nil, nil)
 	require.True(t, diags.HasError())
 	require.Contains(t, diags.Errors()[0].Summary(), "Transform selector cannot be represented")
+}
+
+// Before a write to an existing connector the chain is read: the write takes
+// the current revision, an edit made since the revision in state was read is
+// refused, and a first write is refused when the connector already holds user
+// transforms, which a chain replacement would delete. An override-only write
+// replaces no transforms, so it may proceed over them. None of the refusals
+// writes anything.
+func TestExpectedRevisionReadsBeforeWriting(t *testing.T) {
+	ctx := context.Background()
+	s := &Surface{}
+	chainWrite := &Write{Configured: true, ChainConfigured: true}
+	overrideWrite := &Write{Configured: true, ManagedOverrides: &map[string]bool{}}
+	empty := &api.SMTChainRead{Desired: api.SMTChainSnapshot{ChainRevision: "r2"}}
+	held := &api.SMTChainRead{Desired: api.SMTChainSnapshot{ChainRevision: "r2", Transforms: []api.SMTInstanceRead{{Kind: "typed", ID: "MaskField1"}}}}
+	for _, tc := range []struct {
+		name  string
+		read  *api.SMTChainRead
+		write *Write
+		prior types.String
+		error string
+	}{
+		{name: "current revision", read: held, write: chainWrite, prior: types.StringValue("r2")},
+		{name: "first write to an empty chain", read: empty, write: chainWrite, prior: types.StringNull()},
+		{name: "first override write over user transforms", read: held, write: overrideWrite, prior: types.StringNull()},
+		{name: "edited since the plan", read: held, write: chainWrite, prior: types.StringValue("r1"), error: "Transform chain changed outside Terraform"},
+		{name: "first write over user transforms", read: held, write: chainWrite, prior: types.StringNull(), error: "Transform chain already exists outside Terraform"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client := &managedOverrideClient{read: tc.read}
+			revision, diags := s.ExpectedRevision(ctx, client, "destinations", "destination-1", tc.write, tc.prior)
+			require.Empty(t, client.writes)
+			if tc.error != "" {
+				require.True(t, diags.HasError())
+				require.Equal(t, tc.error, diags.Errors()[0].Summary())
+				return
+			}
+			require.False(t, diags.HasError(), "%v", diags)
+			require.Equal(t, types.StringValue("r2"), revision)
+		})
+	}
+
+	unchanged := &Write{Configured: true, ChainConfigured: true, Unchanged: true}
+	revision, diags := s.ExpectedRevision(ctx, &managedOverrideClient{err: errors.New("no read expected")}, "destinations", "destination-1", unchanged, types.StringValue("r1"))
+	require.False(t, diags.HasError(), "a write that sends nothing reads nothing: %v", diags)
+	require.Equal(t, types.StringValue("r1"), revision)
 }

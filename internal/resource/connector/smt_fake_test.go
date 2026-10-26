@@ -91,9 +91,10 @@ func catalogSpec(cat smt.Catalog, role, typeID string) (*smt.TypeSpec, bool) {
 
 // fakeAPI is an in-memory Streamkap API for the connector endpoints the base
 // resource calls plus the chain surface. It echoes config the way a JSON API
-// would (numbers as float64), guards chain writes by revision, records every
-// secret operation and counts writes so a test can prove a rejected plan
-// never reached it.
+// would (numbers as float64), reads every connector's chain under a revision
+// (an empty chain at "0" until the first write), requires that revision on
+// every write to an existing connector, records every secret operation and
+// counts writes so a test can prove a rejected plan never reached it.
 type fakeAPI struct {
 	api.StreamkapAPI
 	mu      sync.Mutex
@@ -110,18 +111,13 @@ type fakeAPI struct {
 	ops             []recordedOp
 	writes          int
 	chainReads      int
-	adoptionReads   int
 	connectorWrites int
 	// lastEmbedded is the smt_chain the last source write carried.
 	lastEmbedded *api.SMTChainWrite
 	// dropNextReceipt makes the next source write that saves a chain answer
 	// without smt_chain_receipt.
-	dropNextReceipt         bool
-	events                  []string
-	adoptionStatus          map[string]string
-	legacyRaceAfterAdoption map[string]bool
-	tokenlessUnsafe         map[string]bool
-	lastChainError          error
+	dropNextReceipt bool
+	events          []string
 	// projectFlat makes reads echo the chain into a legacy flat key, the way a
 	// backend adapter might; the provider must never let that become state.
 	projectFlat bool
@@ -137,16 +133,13 @@ type fakeAPI struct {
 
 func newFakeAPI(cat smt.Catalog) *fakeAPI {
 	return &fakeAPI{
-		cat:                     cat,
-		sources:                 map[string]*api.Source{},
-		kinds:                   map[string]string{},
-		flatKeysSeen:            map[string][]string{},
-		chains:                  map[string]*api.SMTChainSnapshot{},
-		revisions:               map[string]int{},
-		secrets:                 map[string]map[string]string{},
-		adoptionStatus:          map[string]string{},
-		legacyRaceAfterAdoption: map[string]bool{},
-		tokenlessUnsafe:         map[string]bool{},
+		cat:          cat,
+		sources:      map[string]*api.Source{},
+		kinds:        map[string]string{},
+		flatKeysSeen: map[string][]string{},
+		chains:       map[string]*api.SMTChainSnapshot{},
+		revisions:    map[string]int{},
+		secrets:      map[string]map[string]string{},
 	}
 }
 
@@ -179,7 +172,7 @@ func flatKeys(cfg map[string]any) []string {
 
 // CreateSource stores the connector and, when the request embeds a chain,
 // saves it in the same write the way the backend does: a refused chain
-// leaves no source behind.
+// leaves no connector behind. Destinations create through it too.
 func (f *fakeAPI) CreateSource(_ context.Context, req api.Source) (*api.Source, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -194,7 +187,7 @@ func (f *fakeAPI) CreateSource(_ context.Context, req api.Source) (*api.Source, 
 	f.sources[stored.ID] = &stored
 	f.kinds[stored.ID] = "sources"
 	f.flatKeysSeen[stored.ID] = flatKeys(req.Config)
-	receipt, err := f.saveEmbeddedChain(stored.ID, chain)
+	receipt, err := f.saveEmbeddedChain(stored.ID, chain, true)
 	if err != nil {
 		delete(f.sources, stored.ID)
 		delete(f.kinds, stored.ID)
@@ -206,25 +199,24 @@ func (f *fakeAPI) CreateSource(_ context.Context, req api.Source) (*api.Source, 
 	return &out, nil
 }
 
-// saveEmbeddedChain applies a source body's smt_chain under the same rules as
-// the chain write and answers like the backend's source routes: a refusal is
-// a plain-text 400, never the chain routes' structured envelope.
-func (f *fakeAPI) saveEmbeddedChain(id string, chain *api.SMTChainWrite) (*api.SourceSMTChainReceipt, error) {
+// saveEmbeddedChain applies a connector body's smt_chain under the same rules
+// as the chain write and answers like the backend's connector routes: a
+// refusal is a plain-text 400, never the chain routes' structured envelope.
+func (f *fakeAPI) saveEmbeddedChain(id string, chain *api.SMTChainWrite, created bool) (*api.SourceSMTChainReceipt, error) {
 	if chain == nil {
 		return nil, nil
 	}
 	f.events = append(f.events, "chain-embedded")
 	sent := roundTrip(*chain)
 	f.lastEmbedded = &sent
-	if _, err := f.applyChainLocked(id, *chain); err != nil {
-		f.lastChainError = err
+	if _, err := f.applyChainLocked(id, *chain, created); err != nil {
 		return nil, sourceRouteError(err)
 	}
 	if f.dropNextReceipt {
 		f.dropNextReceipt = false
 		return nil, nil
 	}
-	return &api.SourceSMTChainReceipt{Incarnation: "incarnation-" + id, ChainRevision: f.chains[id].ChainRevision, Generation: int64(f.revisions[id])}, nil
+	return &api.SourceSMTChainReceipt{ChainRevision: f.chains[id].ChainRevision}, nil
 }
 
 // sourceRouteError is how the backend's source routes surface a refused
@@ -254,7 +246,7 @@ func sourceRouteError(err error) error {
 }
 
 func sourceOf(d api.Destination) api.Source {
-	return api.Source{ID: d.ID, Name: d.Name, Connector: d.Connector, ConnectorStatus: d.ConnectorStatus, Config: d.Config, KcClusterId: d.KcClusterId, Tags: d.Tags}
+	return api.Source{ID: d.ID, Name: d.Name, Connector: d.Connector, ConnectorStatus: d.ConnectorStatus, Config: d.Config, KcClusterId: d.KcClusterId, Tags: d.Tags, SMTChain: d.SMTChain}
 }
 
 func destinationOf(s api.Source) api.Destination {
@@ -325,7 +317,7 @@ func (f *fakeAPI) UpdateSource(_ context.Context, id string, req api.Source) (*a
 	priorFlat := f.flatKeysSeen[id]
 	f.sources[id] = &stored
 	f.flatKeysSeen[id] = flatKeys(req.Config)
-	receipt, err := f.saveEmbeddedChain(id, chain)
+	receipt, err := f.saveEmbeddedChain(id, chain, false)
 	if err != nil {
 		f.sources[id] = prior
 		f.flatKeysSeen[id] = priorFlat
@@ -373,32 +365,7 @@ func (f *fakeAPI) GetSMTChain(_ context.Context, kind, id string) (*api.SMTChain
 	if _, ok := f.sources[id]; !ok {
 		return nil, &api.APIError{StatusCode: http.StatusNotFound, Detail: "source not found"}
 	}
-	if f.chains[id] == nil {
-		return nil, smtError(http.StatusNotFound, "smt_chain_absent", "The destination has no chain")
-	}
 	return f.readOf(id), nil
-}
-
-func (f *fakeAPI) GetSMTChainAdoption(_ context.Context, kind, id string) (*api.SMTChainAdoptionRead, error) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.adoptionReads++
-	f.events = append(f.events, "adoption-read")
-	if kind != f.kinds[id] {
-		return nil, fmt.Errorf("adoption read under kind %q for a %s connector", kind, f.kinds[id])
-	}
-	if _, ok := f.sources[id]; !ok {
-		return nil, &api.APIError{StatusCode: http.StatusNotFound, Detail: "source not found"}
-	}
-	status := f.adoptionStatus[id]
-	if status == "" {
-		status = "managed_only"
-	}
-	if f.legacyRaceAfterAdoption[id] {
-		f.legacyRaceAfterAdoption[id] = false
-		f.tokenlessUnsafe[id] = true
-	}
-	return &api.SMTChainAdoptionRead{Status: status, Reason: "fixture_reason", Message: "fixture adoption is unavailable"}, nil
 }
 
 // chainOf is the stored desired snapshot; a connector without one has an
@@ -436,19 +403,23 @@ func (f *fakeAPI) PutSMTChain(_ context.Context, kind, id string, w api.SMTChain
 	if kind != f.kinds[id] {
 		return nil, fmt.Errorf("chain write under kind %q for a %s connector", kind, f.kinds[id])
 	}
-	return f.applyChainLocked(id, w)
+	return f.applyChainLocked(id, w, false)
 }
 
 // applyChainLocked is the chain write shared by PUT .../smt-chain and a
-// source body's embedded smt_chain.
-func (f *fakeAPI) applyChainLocked(id string, w api.SMTChainWrite) (*api.SMTChainRead, error) {
+// connector body's embedded smt_chain. Only a connector create omits the
+// expected revision, and it must.
+func (f *fakeAPI) applyChainLocked(id string, w api.SMTChainWrite, created bool) (*api.SMTChainRead, error) {
 	if _, ok := f.sources[id]; !ok {
 		return nil, &api.APIError{StatusCode: http.StatusNotFound, Detail: "source not found"}
 	}
-	if w.ExpectedRevision == nil && f.tokenlessUnsafe[id] {
-		f.lastChainError = smtError(http.StatusConflict, "smt_adoption_required", "The destination has authored legacy SMT state; adopt it before creating a chain",
-			api.SMTValidationIssue{Code: "smt_adoption_required", Message: "Legacy transforms require explicit adoption", Pointer: "/"})
-		return nil, f.lastChainError
+	if created != (w.ExpectedRevision == nil) {
+		message := "Field required"
+		if created {
+			message = "Extra inputs are not permitted"
+		}
+		return nil, smtError(http.StatusUnprocessableEntity, "smt_validation_failed", "The chain was not saved; fix the issues and send it again",
+			api.SMTValidationIssue{Code: "smt_expected_revision_invalid", Message: message, Pointer: "/expected_revision"})
 	}
 	if f.failNextChainWrite {
 		f.failNextChainWrite = false
@@ -459,18 +430,11 @@ func (f *fakeAPI) applyChainLocked(id string, w api.SMTChainWrite) (*api.SMTChai
 		f.nextWriteIssues = nil
 		return nil, smtError(http.StatusUnprocessableEntity, "smt_validation_failed", "The chain was not saved; fix the issues and send it again", issues...)
 	}
-	exists := f.chains[id] != nil
 	current := f.chainOf(id)
 	if f.bumpRevisionBeforeNextWrite {
 		f.bumpRevisionBeforeNextWrite = false
 		f.revisions[id]++
 		current.ChainRevision = strconv.Itoa(f.revisions[id])
-	}
-	if w.ExpectedRevision == nil && exists {
-		return nil, smtError(http.StatusConflict, "smt_expected_revision_required", "The chain exists; send its revision as expected_revision")
-	}
-	if w.ExpectedRevision != nil && !exists {
-		return nil, smtError(http.StatusNotFound, "smt_chain_absent", "The destination has no chain")
 	}
 	if w.ExpectedRevision != nil && *w.ExpectedRevision != current.ChainRevision {
 		return nil, smtError(http.StatusConflict, "smt_revision_conflict", "The chain changed since it was read; read it again before saving",
@@ -652,9 +616,19 @@ func (f *fakeAPI) seedChain(t *testing.T, chain []api.SMTInstanceWrite) string {
 		"database.dbname.user.defined": "d", "schema.include.list.user.defined": "public", "table.include.list.user.defined": "public.t",
 	}})
 	require.NoError(t, err)
-	_, err = f.PutSMTChain(ctx, "sources", src.ID, api.SMTChainWrite{Transforms: &chain})
-	require.NoError(t, err)
+	f.putChain(t, "sources", src.ID, chain)
 	return src.ID
+}
+
+// putChain replaces a connector's user transforms outside Terraform, reading
+// the revision first the way any client must.
+func (f *fakeAPI) putChain(t *testing.T, kind, id string, chain []api.SMTInstanceWrite) {
+	t.Helper()
+	ctx := context.Background()
+	read, err := f.GetSMTChain(ctx, kind, id)
+	require.NoError(t, err)
+	_, err = f.PutSMTChain(ctx, kind, id, api.SMTChainWrite{ExpectedRevision: &read.Desired.ChainRevision, Transforms: &chain})
+	require.NoError(t, err)
 }
 
 // setPredicate attaches a predicate to an instance outside Terraform.
@@ -776,12 +750,6 @@ func (f *fakeAPI) lastEmbeddedChain() *api.SMTChainWrite {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return f.lastEmbedded
-}
-
-func (f *fakeAPI) recordedChainError() error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return f.lastChainError
 }
 
 func (f *fakeAPI) resetEvents() {

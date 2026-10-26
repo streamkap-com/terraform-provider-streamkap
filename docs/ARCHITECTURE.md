@@ -164,9 +164,9 @@ Create:
 2. Capture planned sensitive strings and defaulted values
 3. Extract name from model
 4. Convert model to API config (ModelToConfigMap)
-5. Call API CreateSource/CreateDestination; a source embeds its SMT chain in the same request, a destination writes it afterwards
+5. Call API CreateSource/CreateDestination with the SMT chain embedded in the same request (`smt_chain`)
 6. Convert API response to model, then restore planned secrets and fill null defaults
-7. Store ID in state
+7. Store ID in state and read the saved chain back
 
 Read:
 1. Capture prior sensitive strings and defaulted values
@@ -179,8 +179,8 @@ Update:
 1. Read the Terraform plan into the model
 2. Capture planned sensitive strings and defaulted values
 3. Convert to API config
-4. For an existing destination's first configured SMT chain, require unchanged ordinary connector settings, audit legacy transform ownership, create the chain under backend authority, and skip the generic connector update
-5. Otherwise call API UpdateSource/UpdateDestination; a source embeds a changed SMT chain in the same request (`smt_chain`), a destination writes it afterwards with `PUT .../smt-chain`
+4. When the SMT chain changes, read it first: refuse a revision that moved since the plan, or a first write over transforms Terraform does not manage, before anything is sent
+5. Call API UpdateSource/UpdateDestination; a source embeds a changed SMT chain in the same request (`smt_chain`), a destination writes it afterwards with `PUT .../smt-chain`; both send the revision read in step 4
 6. Convert API response to model, then restore planned secrets and fill null defaults
 7. Update state, reading a source's chain back under the revision its response accepted
 

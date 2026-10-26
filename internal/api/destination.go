@@ -27,6 +27,10 @@ type Destination struct {
 	KcClusterId     string         `json:"kc_cluster_id,omitempty"`
 	// See the matching comment on api.Source.Tags for why omitempty is absent here.
 	Tags []string `json:"tags"`
+	// SMTChain is the chain a create saves atomically with the destination.
+	// Only the create route accepts it; an update writes the chain through
+	// PUT .../smt-chain. nil omits the key.
+	SMTChain *SMTChainWrite `json:"smt_chain,omitempty"`
 }
 
 func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destination) (*Destination, error) {
@@ -52,17 +56,16 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destina
 	if err != nil {
 		return nil, err
 	}
-	tflog.Debug(ctx, fmt.Sprintf(
-		"CreateDestination request details:\n"+
-			"\tMethod: %s\n"+
-			"\tURL: %s\n"+
-			"\tBody: %s",
-		req.Method,
-		req.URL.String(),
-		redactSensitiveJSON(payload),
-	))
+	logged := payload
+	if reqPayload.SMTChain != nil {
+		withoutChain := reqPayload
+		withoutChain.SMTChain = nil
+		if logged, err = json.Marshal(withoutChain); err != nil {
+			return nil, err
+		}
+	}
 	var resp Destination
-	err = s.doRequestWithRetry(ctx, req, &resp)
+	err = s.sendConnectorWrite(ctx, "CreateDestination", req, logged, reqPayload.SMTChain != nil, &resp)
 	if err != nil {
 		if isAlreadyExists(err) {
 			return nil, adoptRefusedError(adoptConflict{

@@ -23,10 +23,6 @@ func (c *predicateGraphClient) GetSMTChain(context.Context, string, string) (*ap
 	return nil, fmt.Errorf("unexpected GetSMTChain")
 }
 
-func (c *predicateGraphClient) GetSMTChainAdoption(context.Context, string, string) (*api.SMTChainAdoptionRead, error) {
-	return nil, fmt.Errorf("unexpected GetSMTChainAdoption")
-}
-
 func (c *predicateGraphClient) PutSMTChain(_ context.Context, _ string, _ string, write api.SMTChainWrite) (*api.SMTChainRead, error) {
 	c.writes = append(c.writes, write)
 	if len(c.responses) == 0 {
@@ -477,11 +473,7 @@ func TestApplyGraphPreservesSharedPredicateIdentityThroughCopyAndCleanup(t *test
 	}
 	var states []GraphState
 	for i, write := range writes {
-		expectedRevision := types.StringNull()
-		if i > 0 {
-			expectedRevision = types.StringValue(fmt.Sprintf("r%d", i))
-		}
-		state, diags := s.ApplyGraph(context.Background(), client, "destinations", "connector", write, expectedRevision)
+		state, diags := s.ApplyGraph(context.Background(), client, "destinations", "connector", write, types.StringValue(fmt.Sprintf("r%d", i)))
 		require.False(t, diags.HasError(), "%v", diags)
 		states = append(states, state)
 	}

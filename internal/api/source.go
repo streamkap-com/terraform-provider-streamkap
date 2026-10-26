@@ -43,18 +43,13 @@ type Source struct {
 	SMTChainReceipt *SourceSMTChainReceipt `json:"smt_chain_receipt,omitempty"`
 }
 
-// SourceSMTChainReceipt is the secret-free identity of the source chain
-// generation accepted with a source write.
+// SourceSMTChainReceipt names the chain revision a source write accepted.
 type SourceSMTChainReceipt struct {
-	Incarnation   string `json:"incarnation"`
 	ChainRevision string `json:"chain_revision"`
-	Generation    int64  `json:"generation"`
 }
 
-// sendSourceWrite logs and sends a source create or update. A body carrying a
-// chain holds secret operation values, so it is logged without the chain, and
-// it is never retried: a replayed create would collide on the name and a
-// replayed update is refused as stale, so the original outcome must surface.
+// sendSourceWrite logs and sends a source create or update; see
+// sendConnectorWrite.
 func (s *streamkapAPI) sendSourceWrite(ctx context.Context, op string, req *http.Request, reqPayload Source, payload []byte, resp *Source) error {
 	logged := payload
 	if reqPayload.SMTChain != nil {
@@ -65,6 +60,15 @@ func (s *streamkapAPI) sendSourceWrite(ctx context.Context, op string, req *http
 			return err
 		}
 	}
+	return s.sendConnectorWrite(ctx, op, req, logged, reqPayload.SMTChain != nil, resp)
+}
+
+// sendConnectorWrite logs and sends a connector write. A body carrying a
+// chain holds secret operation values, so the caller logs it without the
+// chain, and it is never retried: a replayed create would collide on the name
+// and a replayed update is refused as stale, so the original outcome must
+// surface.
+func (s *streamkapAPI) sendConnectorWrite(ctx context.Context, op string, req *http.Request, logged []byte, carriesChain bool, resp any) error {
 	tflog.Debug(ctx, fmt.Sprintf(
 		"%s request details:\n"+
 			"\tMethod: %s\n"+
@@ -75,9 +79,9 @@ func (s *streamkapAPI) sendSourceWrite(ctx context.Context, op string, req *http
 		req.Method,
 		req.URL.String(),
 		redactSensitiveJSON(logged),
-		reqPayload.SMTChain != nil,
+		carriesChain,
 	))
-	if reqPayload.SMTChain != nil {
+	if carriesChain {
 		return s.doRequest(ctx, req, resp)
 	}
 	return s.doRequestWithRetry(ctx, req, resp)

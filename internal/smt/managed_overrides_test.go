@@ -25,10 +25,6 @@ func (c *managedOverrideClient) GetSMTChain(context.Context, string, string) (*a
 	return c.read, c.err
 }
 
-func (c *managedOverrideClient) GetSMTChainAdoption(context.Context, string, string) (*api.SMTChainAdoptionRead, error) {
-	return nil, nil
-}
-
 func (c *managedOverrideClient) PutSMTChain(_ context.Context, _, _ string, write api.SMTChainWrite) (*api.SMTChainRead, error) {
 	c.writes = append(c.writes, write)
 	return c.read, nil

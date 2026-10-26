@@ -19,9 +19,8 @@ import (
 //
 // The fixture publishes the routes for destinations. kind is the path segment
 // ("sources" or "destinations"); a kind the backend has not wired answers a
-// plain 404 like any other missing route, which is distinct from the
-// structured smt_chain_absent a wired route answers for a connector without
-// a chain.
+// plain 404 like any other missing route. A wired route reads every
+// connector's chain, possibly without user transforms, under a revision.
 
 // SMTSecretOperation is one write-only operation carried inside the instance
 // it targets: "replace" with a value, or "clear".
@@ -71,10 +70,12 @@ type SMTPredicateWrite struct {
 	SecretOperations []SMTSecretOperation `json:"secret_operations,omitempty"`
 }
 
-// SMTChainWrite is PUT .../smt-chain. Transforms and managed overrides are
-// independent replace-if-present fields. ExpectedRevision is absent on the
-// write that creates the chain and the last-read revision otherwise; the
-// server compares it atomically.
+// SMTChainWrite is PUT .../smt-chain and the smt_chain a connector create or
+// source update embeds. Transforms and managed overrides are independent
+// replace-if-present fields. ExpectedRevision is the last-read revision, which
+// the server compares atomically; every write to an existing connector
+// carries it, and only a connector create, which has nothing to compare
+// against, omits it.
 type SMTCatalogPrecondition struct {
 	ContractVersion int    `json:"contract_version"`
 	Digest          string `json:"digest"`
@@ -153,34 +154,6 @@ type SMTChainRead struct {
 	ApplicationStatus string            `json:"application_status"`
 }
 
-// SMTAdoptionInstanceRead is the secret-free projection of one legacy transform that an explicit adoption would preserve.
-type SMTAdoptionInstanceRead struct {
-	Alias                 string         `json:"alias"`
-	Type                  string         `json:"type"`
-	SchemaVersion         int64          `json:"schema_version"`
-	CodecVersion          int64          `json:"codec_version"`
-	Name                  string         `json:"name"`
-	Config                map[string]any `json:"config"`
-	ConfiguredSecretPaths []string       `json:"configured_secret_paths"`
-}
-
-// SMTChainAdoptionRead classifies a destination without a chain. Available legacy transforms require explicit adoption; managed_only permits the ordinary first-chain PUT; unavailable permits neither operation.
-type SMTChainAdoptionRead struct {
-	Status           string                    `json:"status"`
-	ExpectedRevision string                    `json:"expected_revision,omitempty"`
-	ManagedAliases   []string                  `json:"managed_aliases,omitempty"`
-	Transforms       []SMTAdoptionInstanceRead `json:"transforms,omitempty"`
-	Reason           string                    `json:"reason,omitempty"`
-	Message          string                    `json:"message,omitempty"`
-	Issues           []SMTValidationIssue      `json:"issues,omitempty"`
-}
-
-const (
-	SMTAdoptionAvailable   = "available"
-	SMTAdoptionManagedOnly = "managed_only"
-	SMTAdoptionUnavailable = "unavailable"
-)
-
 // SMTErrorEnvelope is the detail of every 4xx these routes raise themselves.
 type SMTErrorEnvelope struct {
 	Code    string               `json:"code"`
@@ -199,21 +172,17 @@ type SMTValidationIssue struct {
 	Pointer    string  `json:"pointer"`
 }
 
-// Error codes the provider reacts to. The five 409 codes distinguish a stale expected revision, a create that lost a race, a missing expected revision for an existing chain, a connector pending deletion, and authored legacy transforms that require adoption.
+// Error codes the provider reacts to: a stale expected revision and a
+// connector pending deletion.
 const (
 	smtRevisionConflictCode  = "smt_revision_conflict"
-	smtChainExistsCode       = "smt_chain_exists"
-	smtRevisionRequiredCode  = "smt_expected_revision_required"
 	smtConnectorDeletingCode = "smt_connector_deleting"
-	smtChainAbsentCode       = "smt_chain_absent"
-	smtAdoptionRequiredCode  = "smt_adoption_required"
 )
 
 // SMTChainAPI is the server surface the connector resources drive the chain
 // through.
 type SMTChainAPI interface {
 	GetSMTChain(ctx context.Context, kind, connectorID string) (*SMTChainRead, error)
-	GetSMTChainAdoption(ctx context.Context, kind, connectorID string) (*SMTChainAdoptionRead, error)
 	PutSMTChain(ctx context.Context, kind, connectorID string, chain SMTChainWrite) (*SMTChainRead, error)
 }
 
@@ -239,43 +208,20 @@ func smtErrorCode(err error) string {
 }
 
 // IsSMTRevisionConflict reports whether a chain write was refused because the
-// chain moved since it was read: the expected revision is stale, or a create
-// lost the race to another creator.
+// chain moved since it was read: the expected revision is stale.
 func IsSMTRevisionConflict(err error) bool {
-	code := smtErrorCode(err)
-	return code == smtRevisionConflictCode || code == smtChainExistsCode
-}
-
-// IsSMTRevisionRequired reports whether a chain write without an expected
-// revision was refused because the connector already has a chain.
-func IsSMTRevisionRequired(err error) bool {
-	return smtErrorCode(err) == smtRevisionRequiredCode
+	return smtErrorCode(err) == smtRevisionConflictCode
 }
 
 // IsSMTConnectorDeleting reports whether a chain write was refused because
-// the connector's deletion is pending: the deletion drops the chain document,
-// so nothing written now would survive it.
+// the connector's deletion is pending, so nothing written now would survive
+// it.
 func IsSMTConnectorDeleting(err error) bool {
 	return smtErrorCode(err) == smtConnectorDeletingCode
 }
 
-// IsSMTChainAbsent reports whether a chain read answered that the connector
-// has no chain yet, which is an empty chain to the provider.
-func IsSMTChainAbsent(err error) bool {
-	return smtErrorCode(err) == smtChainAbsentCode
-}
-
-// IsSMTAdoptionRequired reports whether a tokenless first-chain write found authored legacy transforms that require explicit review and adoption.
-func IsSMTAdoptionRequired(err error) bool {
-	return smtErrorCode(err) == smtAdoptionRequiredCode
-}
-
 func smtChainPath(kind, connectorID string) string {
 	return "/" + kind + "/" + connectorID + "/smt-chain"
-}
-
-func smtChainAdoptionPath(kind, connectorID string) string {
-	return smtChainPath(kind, connectorID) + "-adoption"
 }
 
 func (s *streamkapAPI) GetSMTChain(ctx context.Context, kind, connectorID string) (*SMTChainRead, error) {
@@ -284,18 +230,6 @@ func (s *streamkapAPI) GetSMTChain(ctx context.Context, kind, connectorID string
 		return nil, err
 	}
 	var resp SMTChainRead
-	if err := s.doRequest(ctx, req, &resp); err != nil {
-		return nil, err
-	}
-	return &resp, nil
-}
-
-func (s *streamkapAPI) GetSMTChainAdoption(ctx context.Context, kind, connectorID string) (*SMTChainAdoptionRead, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.cfg.BaseURL+smtChainAdoptionPath(kind, connectorID), http.NoBody)
-	if err != nil {
-		return nil, err
-	}
-	var resp SMTChainAdoptionRead
 	if err := s.doRequest(ctx, req, &resp); err != nil {
 		return nil, err
 	}
