@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/streamkap-com/terraform-provider-streamkap/internal/api"
+	"github.com/streamkap-com/terraform-provider-streamkap/internal/generated"
 )
 
 func checkSMTImportedAttributes(attributes map[string]string, ids map[string]string, revision string) error {
@@ -117,10 +118,24 @@ func seedDestinationPostgresqlSMTImport(t *testing.T, name string) (string, map[
 		}
 	})
 
-	chain, err := smtClient.PutSMTChain(ctx, "destinations", destination.ID, api.SMTChainWrite{Transforms: &[]api.SMTInstanceWrite{
-		{Type: "regex_router", Name: "Users", Enabled: true, Config: map[string]any{"regex": "^public\\.users$", "replacement": "users_routed"}},
-		{Type: "regex_router", Name: "Orders renamed", Enabled: true, Config: map[string]any{"regex": "^public\\.orders$", "replacement": "orders_routed"}},
-	}})
+	// A chain write carries the catalog it was authored against and the revision it replaces.
+	contractVersion, digest, err := generated.SMTChain("destinations").Catalog.WritePrecondition()
+	if err != nil {
+		t.Fatalf("read the embedded SMT catalog precondition: %v", err)
+	}
+	empty, err := smtClient.GetSMTChain(ctx, "destinations", destination.ID)
+	if err != nil {
+		t.Fatalf("read import fixture SMT chain: %v", err)
+	}
+	revision := empty.Desired.ChainRevision
+	chain, err := smtClient.PutSMTChain(ctx, "destinations", destination.ID, api.SMTChainWrite{
+		CatalogPrecondition: api.SMTCatalogPrecondition{ContractVersion: contractVersion, Digest: digest},
+		ExpectedRevision:    &revision,
+		Transforms: &[]api.SMTInstanceWrite{
+			{Type: "regex_router", Name: "Users", Enabled: true, Config: map[string]any{"regex": "^public\\.users$", "replacement": "users_routed"}},
+			{Type: "regex_router", Name: "Orders renamed", Enabled: true, Config: map[string]any{"regex": "^public\\.orders$", "replacement": "orders_routed"}},
+		},
+	})
 	if err != nil {
 		t.Fatalf("create import fixture SMT chain: %v", err)
 	}
