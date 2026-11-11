@@ -1,5 +1,5 @@
 {
-  "wire_version": 5,
+  "wire_version": 6,
   "producer": "app.services.smt.wire_fixtures",
   "routes": {
     "catalog_list": "GET /destinations/smt-catalog?connector={connector}",
@@ -18,7 +18,7 @@
   "create_request": {
     "catalog_precondition": {
       "contract_version": 1,
-      "digest": "sha256:e575cea8e41b3a342fdf30eab877a74374df9ef8acbf919e92bb465ae274a932"
+      "digest": "sha256:a272bcc8032795da5ba3187ad318ac60aafbbfc178054e800abffd79af9944ae"
     },
     "transforms": [
       {
@@ -51,7 +51,7 @@
   "update_request": {
     "catalog_precondition": {
       "contract_version": 1,
-      "digest": "sha256:e575cea8e41b3a342fdf30eab877a74374df9ef8acbf919e92bb465ae274a932"
+      "digest": "sha256:a272bcc8032795da5ba3187ad318ac60aafbbfc178054e800abffd79af9944ae"
     },
     "expected_revision": "5b0b0774753288985bc61f593b27ee09",
     "transforms": [
@@ -89,7 +89,7 @@
   "opaque_write_request": {
     "catalog_precondition": {
       "contract_version": 1,
-      "digest": "sha256:e575cea8e41b3a342fdf30eab877a74374df9ef8acbf919e92bb465ae274a932"
+      "digest": "sha256:a272bcc8032795da5ba3187ad318ac60aafbbfc178054e800abffd79af9944ae"
     },
     "expected_revision": "a5ffa5b833e6db552f77d5781779e8f7",
     "transforms": [
@@ -112,7 +112,7 @@
   "secret_operations_request": {
     "catalog_precondition": {
       "contract_version": 1,
-      "digest": "sha256:e575cea8e41b3a342fdf30eab877a74374df9ef8acbf919e92bb465ae274a932"
+      "digest": "sha256:a272bcc8032795da5ba3187ad318ac60aafbbfc178054e800abffd79af9944ae"
     },
     "expected_revision": "5b0b0774753288985bc61f593b27ee09",
     "transforms": [
@@ -152,7 +152,7 @@
   "predicate_graph_request": {
     "catalog_precondition": {
       "contract_version": 1,
-      "digest": "sha256:e575cea8e41b3a342fdf30eab877a74374df9ef8acbf919e92bb465ae274a932"
+      "digest": "sha256:a272bcc8032795da5ba3187ad318ac60aafbbfc178054e800abffd79af9944ae"
     },
     "expected_revision": "5b0b0774753288985bc61f593b27ee09",
     "predicates": [
@@ -206,7 +206,7 @@
   "selector_write_request": {
     "catalog_precondition": {
       "contract_version": 1,
-      "digest": "sha256:e575cea8e41b3a342fdf30eab877a74374df9ef8acbf919e92bb465ae274a932"
+      "digest": "sha256:a272bcc8032795da5ba3187ad318ac60aafbbfc178054e800abffd79af9944ae"
     },
     "transforms": [
       {
@@ -239,7 +239,7 @@
   },
   "catalog_read_response": {
     "contract_version": 1,
-    "digest": "sha256:e575cea8e41b3a342fdf30eab877a74374df9ef8acbf919e92bb465ae274a932",
+    "digest": "sha256:a272bcc8032795da5ba3187ad318ac60aafbbfc178054e800abffd79af9944ae",
     "types": [
       {
         "type_id": "regex_router",
@@ -1108,9 +1108,9 @@
         "row_keys": {},
         "examples": {
           "read_projection": {
-            "pattern": "^orders\\..*$"
+            "pattern": ".*orders$"
           },
-          "encoded_factory_fingerprint": "sha256:0535ddbb31080edbe85e9b09115dd9d90804c91483d3454871d41bbcf2aff785",
+          "encoded_factory_fingerprint": "sha256:cfb28c19ba11180787ad562b8f2d18b51b4a1370b0574c6a71215425386ef41e",
           "encoded_codec_vectors_fingerprint": "sha256:09cb3dea3dc880845ba260e007e4e18f291bdd84e50a218c655cfa3e5ddf4209"
         },
         "consumer_requirements": {
@@ -1234,6 +1234,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "The connector plugin's mapping lists it in transforms; it runs whether or not a pipeline feeds the destination",
+          "categories": [
+            "route_record"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1250,6 +1253,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Adds the _streamkap_* metadata columns every sink relies on; added for every feeding pipeline, dropped only when a feeding kafkadirect source already carries them (records.carry.streamkap.metadata)",
+          "categories": [
+            "add_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1266,6 +1272,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Renames fields that clash with Snowflake's reserved names; listed for upsert ingestion only",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1282,6 +1291,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1298,6 +1310,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1314,6 +1329,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1330,6 +1348,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1346,6 +1367,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1362,6 +1386,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Coerces decimal values for the sink; added for every feeding pipeline",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1378,6 +1405,9 @@
           "predicate": null,
           "policy": "optional",
           "reason": "Masks the string columns in the Mask Field setting; clearing that setting removes it",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": true,
@@ -1547,6 +1577,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "The connector plugin's mapping lists it in transforms; it runs whether or not a pipeline feeds the destination",
+          "categories": [
+            "route_record"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1563,6 +1596,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Adds the _streamkap_* metadata columns every sink relies on; added for every feeding pipeline, dropped only when a feeding kafkadirect source already carries them (records.carry.streamkap.metadata)",
+          "categories": [
+            "add_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1579,6 +1615,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Renames fields that clash with Snowflake's reserved names; listed for upsert ingestion only",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1595,6 +1634,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1611,6 +1653,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1627,6 +1672,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1643,6 +1691,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1659,6 +1710,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1675,6 +1729,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Coerces decimal values for the sink; added for every feeding pipeline",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1691,6 +1748,9 @@
           "predicate": null,
           "policy": "optional",
           "reason": "Masks the string columns in the Mask Field setting; clearing that setting removes it",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": true,
@@ -1843,6 +1903,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "The connector plugin's mapping lists it in transforms; it runs whether or not a pipeline feeds the destination",
+          "categories": [
+            "route_record"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1859,6 +1922,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Adds the _streamkap_* metadata columns every sink relies on; added for every feeding pipeline, dropped only when a feeding kafkadirect source already carries them (records.carry.streamkap.metadata)",
+          "categories": [
+            "add_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1875,6 +1941,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Renames fields that clash with Snowflake's reserved names; listed for upsert ingestion only",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1891,6 +1960,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1907,6 +1979,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1923,6 +1998,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1939,6 +2017,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1955,6 +2036,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1971,6 +2055,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Coerces decimal values for the sink; added for every feeding pipeline",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -1987,6 +2074,9 @@
           "predicate": null,
           "policy": "optional",
           "reason": "Masks the string columns in the Mask Field setting; clearing that setting removes it",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": true,
@@ -2105,6 +2195,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "The connector plugin's mapping lists it in transforms; it runs whether or not a pipeline feeds the destination",
+          "categories": [
+            "route_record"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2121,6 +2214,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Adds the _streamkap_* metadata columns every sink relies on; added for every feeding pipeline, dropped only when a feeding kafkadirect source already carries them (records.carry.streamkap.metadata)",
+          "categories": [
+            "add_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2137,6 +2233,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Renames fields that clash with Snowflake's reserved names; listed for upsert ingestion only",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2153,6 +2252,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2169,6 +2271,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2185,6 +2290,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2201,6 +2309,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2217,6 +2328,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2233,6 +2347,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Coerces decimal values for the sink; added for every feeding pipeline",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2249,6 +2366,9 @@
           "predicate": null,
           "policy": "optional",
           "reason": "Masks the string columns in the Mask Field setting; clearing that setting removes it",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": true,
@@ -2412,6 +2532,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "The connector plugin's mapping lists it in transforms; it runs whether or not a pipeline feeds the destination",
+          "categories": [
+            "route_record"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2428,6 +2551,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Adds the _streamkap_* metadata columns every sink relies on; added for every feeding pipeline, dropped only when a feeding kafkadirect source already carries them (records.carry.streamkap.metadata)",
+          "categories": [
+            "add_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2444,6 +2570,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Renames fields that clash with Snowflake's reserved names; listed for upsert ingestion only",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2460,6 +2589,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2476,6 +2608,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2492,6 +2627,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2508,6 +2646,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2524,6 +2665,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Converts temporal values to what the sink stores; listed by the connector plugin's mapping",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2540,6 +2684,9 @@
           "predicate": null,
           "policy": "required",
           "reason": "Coerces decimal values for the sink; added for every feeding pipeline",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": false,
@@ -2556,6 +2703,9 @@
           "predicate": null,
           "policy": "optional",
           "reason": "Masks the string columns in the Mask Field setting; clearing that setting removes it",
+          "categories": [
+            "modify_column"
+          ],
           "enabled": true,
           "applicable": true,
           "overridable": true,
@@ -2850,7 +3000,7 @@
     "smt_chain": {
       "catalog_precondition": {
         "contract_version": 1,
-        "digest": "sha256:e575cea8e41b3a342fdf30eab877a74374df9ef8acbf919e92bb465ae274a932"
+        "digest": "sha256:a272bcc8032795da5ba3187ad318ac60aafbbfc178054e800abffd79af9944ae"
       },
       "transforms": [
         {
@@ -5510,6 +5660,7 @@
                 "$ref": "#/components/schemas/SmtSelectorTermWire"
               },
               "type": "array",
+              "maxItems": 10922,
               "title": "Include",
               "description": "Terms the rule selects; at least one, and a term the worker would misread is refused"
             },
@@ -5518,6 +5669,7 @@
                 "$ref": "#/components/schemas/SmtSelectorTermWire"
               },
               "type": "array",
+              "maxItems": 10922,
               "title": "Exclude",
               "description": "Terms subtracted from the included set; may be empty"
             }
@@ -5652,6 +5804,7 @@
             },
             "name": {
               "type": "string",
+              "maxLength": 200,
               "minLength": 1,
               "pattern": "\\S",
               "title": "Name"
@@ -5789,6 +5942,22 @@
               "pattern": "\\S",
               "title": "Reason"
             },
+            "categories": {
+              "items": {
+                "type": "string",
+                "enum": [
+                  "add_column",
+                  "delete_column",
+                  "modify_column",
+                  "add_computed_topic",
+                  "route_record",
+                  "filter_record"
+                ]
+              },
+              "type": "array",
+              "title": "Categories",
+              "description": "The outcomes this slot's type produces, such as route_record for one that renames the topic; empty for a predicate and for an opaque slot, whose type the platform does not know"
+            },
             "enabled": {
               "type": "boolean",
               "title": "Enabled"
@@ -5827,6 +5996,7 @@
             "predicate",
             "policy",
             "reason",
+            "categories",
             "enabled",
             "applicable",
             "overridable",
@@ -6386,6 +6556,7 @@
           "properties": {
             "table": {
               "type": "string",
+              "maxLength": 65536,
               "minLength": 1,
               "pattern": "\\S",
               "title": "Table",
@@ -6393,6 +6564,7 @@
             },
             "column": {
               "type": "string",
+              "maxLength": 65536,
               "minLength": 1,
               "pattern": "\\S",
               "title": "Column",

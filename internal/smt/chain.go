@@ -83,7 +83,8 @@ func BuildChain(cat Catalog) (*ChainSchema, error) {
 		attrName: schema.StringAttribute{
 			Required:    true,
 			Description: "Mutable display name.",
-			Validators:  []validator.String{stringvalidator.LengthAtLeast(1)},
+			// The chain write bounds the name in characters, as Python counts them.
+			Validators: []validator.String{stringvalidator.UTF8LengthBetween(1, 200)},
 		},
 		attrEnabled: schema.BoolAttribute{
 			Optional:    true,

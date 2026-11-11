@@ -1,7 +1,7 @@
 {
   "contract_version": 1,
   "producer": "app.services.smt.catalog_artifact",
-  "digest": "sha256:e575cea8e41b3a342fdf30eab877a74374df9ef8acbf919e92bb465ae274a932",
+  "digest": "sha256:a272bcc8032795da5ba3187ad318ac60aafbbfc178054e800abffd79af9944ae",
   "types": [
     {
       "label": "Regex router",
@@ -988,9 +988,9 @@
       },
       "examples": {
         "read_projection": {
-          "pattern": "^orders\\..*$"
+          "pattern": ".*orders$"
         },
-        "encoded_factory_fingerprint": "sha256:0535ddbb31080edbe85e9b09115dd9d90804c91483d3454871d41bbcf2aff785",
+        "encoded_factory_fingerprint": "sha256:cfb28c19ba11180787ad562b8f2d18b51b4a1370b0574c6a71215425386ef41e",
         "encoded_codec_vectors_fingerprint": "sha256:09cb3dea3dc880845ba260e007e4e18f291bdd84e50a218c655cfa3e5ddf4209"
       },
       "alias_base": "TopicNameMatches",

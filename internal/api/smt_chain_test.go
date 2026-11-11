@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// smtWireFixtures copies the backend app/services/smt/fixtures/wire_fixtures.json (wire_version 5), sha256 723f76eb0f4c546ef3d35f785bdde0bb28454a54333516de4a852d0b1c91aad9.
+// smtWireFixtures copies the backend app/services/smt/fixtures/wire_fixtures.json (wire_version 6), sha256 30c2ceda36cd03bc921b29eb46eb0b85d92311c5e34c1a9fc2c9ae3674712c97.
 const smtWireFixtures = "testdata/smt_wire_fixtures.json"
 
 type smtWire struct {
@@ -48,7 +48,7 @@ func loadSMTWire(t *testing.T) *smtWire {
 	require.NoError(t, err)
 	var w smtWire
 	require.NoError(t, json.Unmarshal(raw, &w))
-	require.Equal(t, 5, w.WireVersion)
+	require.Equal(t, 6, w.WireVersion)
 	return &w
 }
 
@@ -195,6 +195,7 @@ func TestSMTWire_ResponsesMatchFixture(t *testing.T) {
 		require.IsType(t, true, row["applicable"])
 		require.IsType(t, true, row["overridable"])
 	}
+	require.Contains(t, w.OpenAPI.Components.Schemas["SmtManagedTransformRead"].Required, "categories")
 	require.Contains(t, w.OpenAPI.Components.Schemas["SmtManagedTransformRead"].Required, "applicable")
 	require.Contains(t, w.OpenAPI.Components.Schemas["SmtManagedTransformRead"].Required, "overridable")
 
@@ -371,4 +372,32 @@ func TestSMTError_MasksSentSecretsInEnvelope(t *testing.T) {
 	require.NotContains(t, env.Issues[0].Message, salt)
 	require.Contains(t, env.Issues[0].Message, redactedPlaceholder)
 	require.Equal(t, "/transforms/0/secret_operations/0/value", env.Issues[0].Pointer)
+}
+
+// Managed rows gained a read-only categories array in wire version 6. The read
+// keeps managed rows raw, so a backend that sends categories and one that does
+// not both decode, and the rows reach the caller unchanged.
+func TestSMTWire_ManagedRowCategoriesAreOptional(t *testing.T) {
+	w := loadSMTWire(t)
+	var withCategories SMTChainRead
+	require.NoError(t, json.Unmarshal(w.ReadResponse, &withCategories))
+	var rows []map[string]any
+	require.NoError(t, json.Unmarshal(withCategories.Desired.Managed, &rows))
+	require.Equal(t, []any{"route_record"}, rows[0]["categories"])
+
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(w.ReadResponse, &doc))
+	for _, row := range doc["desired"].(map[string]any)["managed"].([]any) {
+		delete(row.(map[string]any), "categories")
+	}
+	without, err := json.Marshal(doc)
+	require.NoError(t, err)
+	var withoutCategories SMTChainRead
+	require.NoError(t, json.Unmarshal(without, &withoutCategories))
+	require.Equal(t, withCategories.Desired.ChainRevision, withoutCategories.Desired.ChainRevision)
+	require.Equal(t, withCategories.Desired.Transforms, withoutCategories.Desired.Transforms)
+	var rowsWithout []map[string]any
+	require.NoError(t, json.Unmarshal(withoutCategories.Desired.Managed, &rowsWithout))
+	require.Len(t, rowsWithout, 10)
+	require.NotContains(t, rowsWithout[0], "categories")
 }

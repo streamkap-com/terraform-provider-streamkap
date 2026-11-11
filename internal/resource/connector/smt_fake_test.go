@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -376,8 +377,31 @@ func (f *fakeAPI) chainOf(id string) *api.SMTChainSnapshot {
 
 func (f *fakeAPI) readOf(id string) *api.SMTChainRead {
 	snapshot := roundTrip(*f.chainOf(id))
+	snapshot.Managed = wireManagedRows()
 	return &api.SMTChainRead{Desired: snapshot, ApplicationStatus: "pending"}
 }
+
+// wireManagedRows are the managed rows of the wire fixture's read, in the
+// wire version 6 shape (each with its read-only categories), so every fake
+// read carries what the backend sends.
+var wireManagedRows = sync.OnceValue(func() json.RawMessage {
+	raw, err := os.ReadFile("../../api/testdata/smt_wire_fixtures.json")
+	if err != nil {
+		panic(fmt.Sprintf("read the wire fixture: %v", err))
+	}
+	var fixture struct {
+		WireVersion  int `json:"wire_version"`
+		ReadResponse struct {
+			Desired struct {
+				Managed json.RawMessage `json:"managed"`
+			} `json:"desired"`
+		} `json:"read_response"`
+	}
+	if err := json.Unmarshal(raw, &fixture); err != nil || fixture.WireVersion != 6 {
+		panic(fmt.Sprintf("the wire fixture must be wire version 6 (got %d): %v", fixture.WireVersion, err))
+	}
+	return fixture.ReadResponse.Desired.Managed
+})
 
 // smtError is the structured envelope the chain routes answer with.
 func smtError(status int, code, message string, issues ...api.SMTValidationIssue) error {
