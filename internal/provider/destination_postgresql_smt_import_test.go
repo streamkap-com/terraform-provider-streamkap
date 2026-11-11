@@ -190,7 +190,7 @@ variable "orders_key" { type = string }
 				Config:             importConfig,
 				ConfigVariables:    keys,
 				ImportState:        true,
-				ImportStateIdFunc:  func(*terraform.State) (string, error) { return destinationID, nil },
+				ImportStateIdFunc:  func(*terraform.State) (string, error) { return destinationID + "/smt_chain", nil },
 				ImportStatePersist: true,
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
 					if len(states) != 1 {

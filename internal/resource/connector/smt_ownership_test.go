@@ -897,7 +897,7 @@ func TestSMT_AdoptionPaths(t *testing.T) {
 				Config:             hcl(""),
 				ResourceName:       addr,
 				ImportState:        true,
-				ImportStateId:      legacy.ID,
+				ImportStateId:      legacy.ID + "/smt_chain",
 				ImportStatePersist: true,
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
 					a := states[0].Attributes

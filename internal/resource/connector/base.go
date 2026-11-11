@@ -51,6 +51,7 @@ import (
 	"net/http"
 	"reflect"
 	"slices"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -1051,16 +1052,30 @@ func (r *BaseConnectorResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 }
 
-// ImportState imports an existing resource by ID. With the chain enabled it
-// also writes the empty chain that marks the surface as managed, so the Read
-// that follows adopts the server instances under keys derived from their ids.
+// chainImportSuffix, appended to an import id, adopts the connector's
+// transform chain.
+const chainImportSuffix = "/" + smt.AttrChain
+
+// ImportState imports an existing resource by ID, leaving the chain unmanaged
+// as the released provider did, so a configuration without SMT attributes
+// plans no change. An id ending in chainImportSuffix also writes the empty
+// chain that marks the surface as managed, so the Read that follows adopts the
+// server instances under keys derived from their ids.
 func (r *BaseConnectorResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-	if r.smt != nil {
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(smt.AttrChain), r.smt.ImportMarker())...)
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(smt.AttrPredicates), r.smt.PredicateImportMarker())...)
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(smt.AttrManagedOverrides), types.MapValueMust(types.BoolType, map[string]attr.Value{}))...)
+	id, adoptChain := strings.CutSuffix(req.ID, chainImportSuffix)
+	if !adoptChain {
+		resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+		return
 	}
+	if r.smt == nil {
+		resp.Diagnostics.AddError("Transform chain import not supported",
+			fmt.Sprintf("This resource has no %s to adopt. Import it by its id alone.", smt.AttrChain))
+		return
+	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(smt.AttrChain), r.smt.ImportMarker())...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(smt.AttrPredicates), r.smt.PredicateImportMarker())...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(smt.AttrManagedOverrides), types.MapValueMust(types.BoolType, map[string]attr.Value{}))...)
 }
 
 // chainKind is the API path segment for this connector type.
@@ -1224,12 +1239,16 @@ func (r *BaseConnectorResource) refreshChain(ctx context.Context, id string, pri
 	}
 	var prior, priorPredicates types.List
 	var priorOverrides types.Map
+	var priorRevision types.String
 	diags.Append(priorState.GetAttribute(ctx, path.Root(smt.AttrChain), &prior)...)
 	diags.Append(priorState.GetAttribute(ctx, path.Root(smt.AttrPredicates), &priorPredicates)...)
 	diags.Append(priorState.GetAttribute(ctx, path.Root(smt.AttrManagedOverrides), &priorOverrides)...)
+	diags.Append(priorState.GetAttribute(ctx, path.Root(smt.AttrRevision), &priorRevision)...)
 	if diags.HasError() {
 		return
 	}
+	// Only ImportState leaves the empty chain marker without a revision.
+	importing := !prior.IsNull() && len(prior.Elements()) == 0 && priorRevision.IsNull()
 	if prior.IsNull() && priorOverrides.IsNull() {
 		diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrRevision), types.StringNull())...)
 		return
@@ -1238,15 +1257,19 @@ func (r *BaseConnectorResource) refreshChain(ctx context.Context, id string, pri
 	if !ok {
 		return
 	}
-	graph, d := r.smt.RefreshGraph(ctx, client, r.chainKind(), id, prior, priorPredicates, priorOverrides)
+	graph, d := r.smt.RefreshGraph(ctx, client, r.chainKind(), id, prior, priorPredicates, priorOverrides, importing)
 	diags.Append(d...)
 	if diags.HasError() {
 		return
 	}
-	for _, name := range r.smt.FlatSMT {
-		var v attr.Value
-		diags.Append(priorState.GetAttribute(ctx, path.Root(name), &v)...)
-		diags.Append(state.SetAttribute(ctx, path.Root(name), v)...)
+	// A chain the import could not adopt leaves the surface unmanaged, so the
+	// flat attributes keep what the API returned.
+	if !graph.Transforms.IsNull() || !graph.ManagedOverrides.IsNull() {
+		for _, name := range r.smt.FlatSMT {
+			var v attr.Value
+			diags.Append(priorState.GetAttribute(ctx, path.Root(name), &v)...)
+			diags.Append(state.SetAttribute(ctx, path.Root(name), v)...)
+		}
 	}
 	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrChain), graph.Transforms)...)
 	diags.Append(state.SetAttribute(ctx, path.Root(smt.AttrPredicates), graph.Predicates)...)

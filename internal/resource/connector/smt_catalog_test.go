@@ -251,7 +251,7 @@ func TestSMT_CatalogTypesOnDestinationPostgresql(t *testing.T) {
 			{
 				ResourceName:      pgDest,
 				ImportState:       true,
-				ImportStateIdFunc: func(s *terraform.State) (string, error) { return pgAttr(s, "id"), nil },
+				ImportStateIdFunc: func(s *terraform.State) (string, error) { return pgAttr(s, "id") + "/smt_chain", nil },
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
 					a := states[0].Attributes
 					if a["smt_chain.#"] != "3" {

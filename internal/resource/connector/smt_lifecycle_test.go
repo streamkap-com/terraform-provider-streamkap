@@ -304,7 +304,7 @@ func TestSMT_ChainLifecycle(t *testing.T) {
 			{
 				ResourceName:      addr,
 				ImportState:       true,
-				ImportStateIdFunc: func(s *terraform.State) (string, error) { return attrOf(s, "id"), nil },
+				ImportStateIdFunc: func(s *terraform.State) (string, error) { return attrOf(s, "id") + "/smt_chain", nil },
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
 					if len(states) != 1 {
 						return fmt.Errorf("want one imported state, got %d", len(states))
@@ -601,7 +601,7 @@ func TestSMT_ImportAdoption(t *testing.T) {
 				Config:             hcl(adopted),
 				ResourceName:       addr,
 				ImportState:        true,
-				ImportStateId:      connID,
+				ImportStateId:      connID + "/smt_chain",
 				ImportStatePersist: true,
 				ImportStateCheck: func(states []*terraform.InstanceState) error {
 					a := states[0].Attributes

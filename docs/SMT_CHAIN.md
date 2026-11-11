@@ -57,7 +57,7 @@ The chain rides in the connector create or update body for sources and destinati
 - Correlation is by provider `key` only (`correlate.go`). Position, display name and server ids play no part: a matched key keeps its server id and alias across reorder and rename, a new key creates a new server instance that inherits no secrets, and a type change under an existing key is refused at plan time.
 - Defaults are load-bearing. The plan carries the fully defaulted tree and the backend read projection materialises the same defaults; a backend that dropped one would show a diff on every plan.
 - Flat and nested surfaces never mix. The released flat `transforms_*` and `predicates_*` attributes keep their client-side defaults, so the conflict is judged on configuration only: `ValidateConfig` refuses a flat attribute set alongside `smt_chain`. With the chain configured, `ModifyPlan` nulls flat attributes that would otherwise be unknown, `StripFlat` removes every `transforms.*` and `predicates.*` wire key (derived from the runtime field mappings, so wrapper aliases are covered), and Create, Update and Read pin those attributes to the plan or prior state so the API echo cannot move them.
-- A null `smt_chain` is the released surface: refresh never populates it, and removing the attribute from configuration returns the resource to that surface without touching the server chain. Import writes `[]` as the adoption marker.
+- A null `smt_chain` is the released surface: refresh never populates it, and removing the attribute from configuration returns the resource to that surface without touching the server chain. Import by id alone keeps it null; import with the `/smt_chain` id suffix writes `[]` as the adoption marker.
 - `smt_chain_revision` is the last-read revision, an opaque token. `ModifyPlan` keeps it when the planned chain, predicates and overrides equal prior state and nothing rotates; otherwise it is unknown. It is null while neither the chain nor overrides are managed. The read before a write compares it, so an edit made after the plan's refresh is refused instead of overwritten.
 - `smt_predicates` has no schema default: a default differs from the null a released state holds and makes the framework plan computed nulls unknown, so released resources would never converge. When the chain is configured and `smt_predicates` is not, the plan sets `[]`. `TestSMTChainReleasedStatePlansNoChangeOnEveryResource` plans a released state on every chained resource.
 
@@ -88,14 +88,14 @@ Secret leaves never appear in the config child, in plan or in state. They are wr
 
 ## Adoption
 
-Import writes the empty chain marker, and the Read that follows adopts the server instances and predicates under keys equal to their server ids. Renaming such a key later is a remove-and-add on the server. Import does not invent `smt_secrets`, so `secret_version` starts at 0.
+Import by id alone imports the connector as v3.1.0 did: the chain is not read, `smt_chain` stays null, the flat attributes come from the API, and a configuration without SMT attributes plans no change. To adopt the chain, import with the id `<connector id>/smt_chain`: import writes the empty chain marker, and the Read that follows adopts the server instances and predicates under keys equal to their server ids. When the API has no chain route (it answers 404), that import continues as an import by id alone, with a warning; any other read failure fails the import. Renaming such a key later is a remove-and-add on the server. Import does not invent `smt_secrets`, so `secret_version` starts at 0.
 
 The keys are the ids the import returned; everything else is the server's current configuration, and defaulted attributes may be omitted:
 
 ```hcl
 import {
   to = streamkap_destination_postgresql.orders
-  id = "<destination id>"
+  id = "<destination id>/smt_chain"
 }
 
 resource "streamkap_destination_postgresql" "orders" {
@@ -127,4 +127,4 @@ resource "streamkap_destination_postgresql" "orders" {
 }
 ```
 
-The first apply after import plans an Update, because import leaves the flat SMT attributes null and their defaults fill them; that Update pins the imported ids, leaves the chain unchanged and rotates nothing unless `smt_secrets` asks for it. The next plan is empty. A connector without user transforms imports as an empty managed chain under its current revision, and its first chain is written under that revision. A resource on the flat surface cannot take over transforms created elsewhere; it is told to import.
+The first apply after a chain import plans an Update, because that import leaves the flat SMT attributes null and their defaults fill them; that Update pins the imported ids, leaves the chain unchanged and rotates nothing unless `smt_secrets` asks for it. The next plan is empty. A connector without user transforms imports as an empty managed chain under its current revision, and its first chain is written under that revision. A resource on the flat surface cannot take over transforms created elsewhere; it is told to import with the `/smt_chain` suffix.

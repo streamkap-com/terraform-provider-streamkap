@@ -125,6 +125,7 @@ func TestManagedOverrideOnlyRefreshErrorPreservesOwnedStateAndPath(t *testing.T)
 		types.ListNull(chain.EntryType),
 		types.ListNull(chain.PredicateEntryType),
 		priorOverrides,
+		false,
 	)
 
 	require.True(t, diags.HasError())

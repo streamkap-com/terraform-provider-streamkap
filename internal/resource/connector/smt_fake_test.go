@@ -136,6 +136,9 @@ type fakeAPI struct {
 	bumpRevisionBeforeNextWrite bool
 	// nextWriteIssues makes the next PutSMTChain fail validation with them.
 	nextWriteIssues []api.SMTValidationIssue
+	// chainReadErr, when set, is what every chain read returns: a 404 is a
+	// backend without the chain route.
+	chainReadErr error
 }
 
 func newFakeAPI(cat smt.Catalog) *fakeAPI {
@@ -350,6 +353,9 @@ func (f *fakeAPI) GetSMTChain(_ context.Context, kind, id string) (*api.SMTChain
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.chainReads++
+	if f.chainReadErr != nil {
+		return nil, f.chainReadErr
+	}
 	if kind != f.kinds[id] {
 		return nil, fmt.Errorf("chain read under kind %q for a %s connector", kind, f.kinds[id])
 	}

@@ -608,7 +608,7 @@ func (s *Surface) ExpectedRevision(ctx context.Context, client api.SMTChainAPI, 
 	}
 	if priorRevision.IsNull() && w.ChainConfigured && (len(read.Desired.Transforms) > 0 || len(read.Desired.Predicates) > 0) {
 		diags.AddAttributeError(root, "Transform chain already exists outside Terraform",
-			fmt.Sprintf("The connector already has transforms this resource does not manage. Import the resource to adopt them (its instances become %s entries keyed by their server ids), then apply.", AttrChain))
+			fmt.Sprintf("The connector already has transforms this resource does not manage. Import the resource with the id %q to adopt them (its instances become %s entries keyed by their server ids), then apply.", connectorID+"/"+AttrChain, AttrChain))
 		return priorRevision, diags
 	}
 	return types.StringValue(current), diags
@@ -854,13 +854,21 @@ func (s *Surface) issuePath(pointer string, w *Write) path.Path {
 // RefreshGraph reads the chain under the keys state already holds. A null
 // chain in state stays null: the connector is on the released surface and the
 // chain must not be populated behind its back. An empty chain is the import
-// marker and is populated under keys derived from the server ids.
-func (s *Surface) RefreshGraph(ctx context.Context, client api.SMTChainAPI, kind, connectorID string, prior, priorPredicates types.List, priorOverrides types.Map) (GraphState, diag.Diagnostics) {
+// marker and is populated under keys derived from the server ids. On the
+// Read that follows an import (importing), a backend without the chain route
+// answers 404: the connector then stays on the released surface, with every
+// chain attribute null.
+func (s *Surface) RefreshGraph(ctx context.Context, client api.SMTChainAPI, kind, connectorID string, prior, priorPredicates types.List, priorOverrides types.Map, importing bool) (GraphState, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if prior.IsNull() && priorOverrides.IsNull() {
 		return GraphState{Transforms: prior, Predicates: priorPredicates, ManagedOverrides: priorOverrides, Revision: types.StringNull()}, nil
 	}
 	read, err := client.GetSMTChain(ctx, kind, connectorID)
+	if importing && api.IsNotFound(err) {
+		diags.AddWarning("Transform chain not imported",
+			fmt.Sprintf("The API has no transform chain for this connector (%s), so it was imported without %s, as a connector imported by its id alone.", err, AttrChain))
+		return GraphState{Transforms: types.ListNull(s.Chain.EntryType), Predicates: types.ListNull(s.Chain.PredicateEntryType), ManagedOverrides: types.MapNull(types.BoolType), Revision: types.StringNull()}, diags
+	}
 	if err != nil {
 		at := path.Root(AttrChain)
 		if prior.IsNull() {
