@@ -264,12 +264,14 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
+	// Parsed before the create so a value that is not a JSON object creates
+	// nothing. `{}` and `null` parse to an empty map, which the write omits.
 	var implementation map[string]any
 	if !implementationJSON.IsNull() && !implementationJSON.IsUnknown() {
-		if err := json.Unmarshal([]byte(implementationJSON.ValueString()), &implementation); err != nil || len(implementation) == 0 {
+		if err := json.Unmarshal([]byte(implementationJSON.ValueString()), &implementation); err != nil {
 			resp.Diagnostics.AddError(
 				"Invalid Implementation JSON",
-				"implementation_json must be a non-empty JSON object",
+				fmt.Sprintf("Unable to parse implementation_json: %s", err),
 			)
 			return
 		}
@@ -279,12 +281,13 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 	// and bypasses the redaction applied to the request body in internal/api.
 	tflog.Debug(ctx, fmt.Sprintf("Creating %s transform", r.config.GetTransformType()))
 
-	// Call the Transform API
+	// Call the Transform API. The implementation is written afterwards through
+	// implementation_details: a backend without edit revisions would store one
+	// sent here without validating it.
 	transform, err := r.client.CreateTransform(ctx, api.CreateTransformRequest{
-		Transform:      r.config.GetTransformType(),
-		Config:         configMap,
-		Tags:           tags,
-		Implementation: implementation,
+		Transform: r.config.GetTransformType(),
+		Config:    configMap,
+		Tags:      tags,
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -332,6 +335,24 @@ func (r *BaseTransformResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	if !implementationJSON.IsNull() && !implementationJSON.IsUnknown() {
+		// Guarded by the revision the create returned, when the backend has one.
+		implementationDetails, err := r.client.UpdateTransformImplementationDetails(ctx, transform.ID, api.UpdateTransformImplementationRequest{
+			TransformID:      transform.ID,
+			Implementation:   implementation,
+			ExpectedRevision: transform.EditRevision,
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Error setting %s transform implementation", r.config.GetTransformType()),
+				fmt.Sprintf("Unable to update implementation: %s", err),
+			)
+			return
+		}
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("edit_revision"), types.StringPointerValue(implementationDetails.EditRevision))...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
 		// Set the user's implementation_json in state
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("implementation_json"), implementationJSON)...)
 	} else {
@@ -622,12 +643,41 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	// Without a revision in state (a backend without edit revisions, or state
+	// written before them), read the transform first. A backend without edit
+	// revisions replaces the stored implementation with whatever the update
+	// body holds, so an unguarded update echoes it; a revision the read
+	// returns guards the update instead.
+	var echoedImplementation map[string]any
+	if expectedRevision == nil {
+		existingTransform, err := r.client.GetTransform(ctx, id)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Error reading %s transform for update", r.config.GetTransformType()),
+				fmt.Sprintf("Unable to read existing transform: %s", err),
+			)
+			return
+		}
+		if existingTransform == nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Error reading %s transform for update", r.config.GetTransformType()),
+				fmt.Sprintf("Transform %s does not exist", id),
+			)
+			return
+		}
+		expectedRevision = existingTransform.EditRevision
+		if expectedRevision == nil {
+			echoedImplementation = existingTransform.Implementation
+		}
+	}
+
 	tflog.Debug(ctx, fmt.Sprintf("Updating %s transform with ID: %s", r.config.GetTransformType(), id))
 
 	// Update configuration through the generic transform endpoint. Implementation changes use the dedicated implementation_details endpoint below.
 	transform, err := r.client.UpdateTransform(ctx, id, api.UpdateTransformRequest{
 		Transform:        r.config.GetTransformType(),
 		Config:           configMap,
+		Implementation:   echoedImplementation,
 		Tags:             tags,
 		ExpectedRevision: expectedRevision,
 	})
@@ -689,10 +739,10 @@ func (r *BaseTransformResource) Update(ctx context.Context, req resource.UpdateR
 		if implementationChanged {
 			// Parse the new implementation JSON
 			var implMap map[string]any
-			if err := json.Unmarshal([]byte(planImplementationJSON.ValueString()), &implMap); err != nil || len(implMap) == 0 {
+			if err := json.Unmarshal([]byte(planImplementationJSON.ValueString()), &implMap); err != nil {
 				resp.Diagnostics.AddError(
 					"Invalid Implementation JSON",
-					"implementation_json must be a non-empty JSON object",
+					fmt.Sprintf("Unable to parse implementation_json: %s", err),
 				)
 				return
 			}

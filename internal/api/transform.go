@@ -41,21 +41,27 @@ type Transform struct {
 // CreateTransformRequest represents the request payload for creating a transform.
 // See the comment on api.Source.Tags for why Tags is NOT omitempty.
 type CreateTransformRequest struct {
-	Transform      string         `json:"transform"`
-	Config         map[string]any `json:"config"`
-	CreatedFrom    string         `json:"created_from,omitempty"`
-	Tags           []string       `json:"tags"`
-	Implementation map[string]any `json:"implementation,omitempty"`
+	Transform   string         `json:"transform"`
+	Config      map[string]any `json:"config"`
+	CreatedFrom string         `json:"created_from,omitempty"`
+	Tags        []string       `json:"tags"`
 }
 
 // UpdateTransformRequest represents the request payload for updating a transform.
 // See the comment on api.Source.Tags for why Tags is NOT omitempty.
+//
+// ExpectedRevision is sent only when one was read: a backend without edit
+// revisions stores unknown keys, and one with them reads an explicit null as a
+// guard. Implementation is echoed on an unguarded write because a backend
+// without edit revisions replaces the stored implementation with whatever the
+// body holds; one with them ignores it.
 type UpdateTransformRequest struct {
 	ID               string         `json:"id"`
 	Transform        string         `json:"transform"`
 	Config           map[string]any `json:"config"`
+	Implementation   map[string]any `json:"implementation,omitempty"`
 	Tags             []string       `json:"tags"`
-	ExpectedRevision *string        `json:"expected_revision"`
+	ExpectedRevision *string        `json:"expected_revision,omitempty"`
 }
 
 var transformEditRevisionPattern = regexp.MustCompile(`^[0-9a-f]{32}$`)
@@ -170,7 +176,7 @@ func (s *streamkapAPI) CreateTransform(ctx context.Context, reqPayload CreateTra
 		}
 		return nil, err
 	}
-	if err := ValidateTransformEditRevision(resp.EditRevision, false); err != nil {
+	if err := ValidateTransformEditRevision(resp.EditRevision, true); err != nil {
 		return nil, fmt.Errorf("CreateTransform returned invalid edit revision: %w", err)
 	}
 
@@ -204,7 +210,7 @@ func (s *streamkapAPI) UpdateTransform(ctx context.Context, transformID string, 
 		redactSensitiveJSON(payload),
 	))
 	var resp Transform
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doTransformWrite(ctx, req, &resp, reqPayload.ExpectedRevision != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -238,9 +244,11 @@ type TransformImplementationDetails struct {
 	EditRevision   *string        `json:"edit_revision,omitempty"`
 }
 
+// UpdateTransformImplementationRequest omits ExpectedRevision when none was
+// read; see UpdateTransformRequest.
 type UpdateTransformImplementationRequest struct {
 	TransformID      string         `json:"transform_id"`
-	ExpectedRevision *string        `json:"expected_revision"`
+	ExpectedRevision *string        `json:"expected_revision,omitempty"`
 	Description      *string        `json:"description,omitempty"`
 	Implementation   map[string]any `json:"implementation,omitempty"`
 	Config           map[string]any `json:"config,omitempty"`
@@ -321,7 +329,7 @@ func (s *streamkapAPI) UpdateTransformImplementationDetails(ctx context.Context,
 		redactSensitiveJSON(payload),
 	))
 	var resp TransformImplementationUpdateResponse
-	err = s.doRequest(ctx, req, &resp)
+	err = s.doTransformWrite(ctx, req, &resp, details.ExpectedRevision != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -330,6 +338,16 @@ func (s *streamkapAPI) UpdateTransformImplementationDetails(ctx context.Context,
 	}
 
 	return &resp, nil
+}
+
+// doTransformWrite retries an unguarded write on a transient failure, as
+// transform writes always were. A guarded write is sent once: a replay after an
+// uncertain outcome is refused as stale when the first attempt was applied.
+func (s *streamkapAPI) doTransformWrite(ctx context.Context, req *http.Request, result any, guarded bool) error {
+	if guarded {
+		return s.doRequest(ctx, req, result)
+	}
+	return s.doRequestWithRetry(ctx, req, result)
 }
 
 // DeployTransformPreview triggers a preview deployment for a transform.

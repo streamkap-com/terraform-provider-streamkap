@@ -59,20 +59,34 @@ func updateMapFilterRequestWithNullableRevision(t *testing.T, client api.Streamk
 	}, resource.UpdateResponse{State: tfsdk.State{Schema: schemaResp.Schema}}
 }
 
-func TestUpdateLegacyNoopChainsNullRevisionToFirstImplementationChange(t *testing.T) {
+// Neither state nor the read before the update holds a revision, so both
+// writes go unguarded with the stored implementation echoed, as in v3.1.0, and
+// a revision the backend returns afterwards is kept for the next update.
+func TestUpdateWithoutReadRevisionWritesUnguardedAndKeepsTheReturnedOne(t *testing.T) {
 	oldImplementation := `{"language":"JAVASCRIPT","value_transform":"return value"}`
 	newImplementation := `{"language":"JAVASCRIPT","value_transform":"return {...value, updated: true}"}`
 	implementationRevision := "33333333333333333333333333333333"
+	stored := map[string]any{"language": "JAVASCRIPT", "value_transform": "return value"}
 	genericPuts := 0
 	implementationPuts := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		switch {
+		case req.Method == http.MethodGet && req.URL.Path == "/transforms/transform-1":
+			w.Header().Set("Content-Type", "application/json")
+			require.NoError(t, json.NewEncoder(w).Encode(map[string]any{"result": []any{map[string]any{
+				"id":             "transform-1",
+				"name":           "atomic-transform",
+				"transform_type": "map_filter",
+				"config":         map[string]any{},
+				"implementation": stored,
+				"edit_revision":  nil,
+			}}}))
 		case req.Method == http.MethodPut && req.URL.Path == "/transforms":
 			genericPuts++
 			var body map[string]any
 			require.NoError(t, json.NewDecoder(req.Body).Decode(&body))
-			require.Contains(t, body, "expected_revision")
-			require.Nil(t, body["expected_revision"])
+			require.NotContains(t, body, "expected_revision")
+			require.Equal(t, stored, body["implementation"])
 			w.Header().Set("Content-Type", "application/json")
 			require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
 				"id":             "transform-1",
@@ -86,8 +100,7 @@ func TestUpdateLegacyNoopChainsNullRevisionToFirstImplementationChange(t *testin
 			implementationPuts++
 			var body map[string]any
 			require.NoError(t, json.NewDecoder(req.Body).Decode(&body))
-			require.Contains(t, body, "expected_revision")
-			require.Nil(t, body["expected_revision"])
+			require.NotContains(t, body, "expected_revision")
 			w.Header().Set("Content-Type", "application/json")
 			require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
 				"transform_id":   "transform-1",

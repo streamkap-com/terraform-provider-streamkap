@@ -46,12 +46,14 @@ func TestUpdateTransformCarriesAndReturnsEditRevision(t *testing.T) {
 	require.Equal(t, wantFresh, *got.EditRevision)
 }
 
-func TestUpdateTransformIncludesNullExpectedRevisionForLegacyState(t *testing.T) {
+// A backend without edit revisions stores unknown body keys, and the backend
+// with them reads an explicit null as a guard, so an unguarded write omits the
+// key, as the v3.1.0 provider did.
+func TestUpdateTransformOmitsExpectedRevisionWhenNoneWasRead(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		var body map[string]any
 		require.NoError(t, json.NewDecoder(req.Body).Decode(&body))
-		require.Contains(t, body, "expected_revision")
-		require.Nil(t, body["expected_revision"])
+		require.NotContains(t, body, "expected_revision")
 		w.Header().Set("Content-Type", "application/json")
 		require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
 			"id":             "transform-1",
@@ -59,7 +61,6 @@ func TestUpdateTransformIncludesNullExpectedRevisionForLegacyState(t *testing.T)
 			"transform_type": "map_filter",
 			"config":         map[string]any{},
 			"tags":           []string{},
-			"edit_revision":  "11111111111111111111111111111111",
 		}))
 	}))
 	defer server.Close()
@@ -68,6 +69,60 @@ func TestUpdateTransformIncludesNullExpectedRevisionForLegacyState(t *testing.T)
 
 	_, err := NewClient(&Config{BaseURL: server.URL}).UpdateTransform(context.Background(), "transform-1", payload)
 	require.NoError(t, err)
+}
+
+// Unguarded writes are what the v3.1.0 provider sent, retried on a transient
+// failure as it did; only a guarded write must not be replayed.
+func TestUnguardedTransformWritesRetryTransientFailures(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		call func(StreamkapAPI) error
+	}{
+		{
+			name: "configuration",
+			call: func(client StreamkapAPI) error {
+				_, err := client.UpdateTransform(context.Background(), "transform-1", UpdateTransformRequest{Transform: "map_filter", Config: map[string]any{}, Tags: []string{}})
+				return err
+			},
+		},
+		{
+			name: "implementation",
+			call: func(client StreamkapAPI) error {
+				_, err := client.UpdateTransformImplementationDetails(context.Background(), "transform-1", UpdateTransformImplementationRequest{
+					Implementation: map[string]any{"language": "JAVASCRIPT", "value_transform": "return value"},
+				})
+				return err
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			requests := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				requests++
+				w.Header().Set("Content-Type", "application/json")
+				if requests == 1 {
+					w.WriteHeader(http.StatusServiceUnavailable)
+					require.NoError(t, json.NewEncoder(w).Encode(map[string]any{"detail": "temporarily unavailable"}))
+					return
+				}
+				require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+					"id":             "transform-1",
+					"transform_id":   "transform-1",
+					"name":           "legacy",
+					"transform_type": "map_filter",
+					"version_id":     "2",
+					"config":         map[string]any{},
+					"tags":           []string{},
+				}))
+			}))
+			defer server.Close()
+
+			err := tc.call(NewClient(&Config{BaseURL: server.URL, Retry: &RetryConfig{MaxRetries: 1}}))
+
+			require.NoError(t, err)
+			require.Equal(t, 2, requests)
+		})
+	}
 }
 
 func TestUpdateTransformAcceptsNullRevisionOnlyForLegacyNoop(t *testing.T) {
@@ -85,7 +140,8 @@ func TestUpdateTransformAcceptsNullRevisionOnlyForLegacyNoop(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				var body map[string]any
 				require.NoError(t, json.NewDecoder(req.Body).Decode(&body))
-				require.Contains(t, body, "expected_revision")
+				_, sent := body["expected_revision"]
+				require.Equal(t, tc.expectedRevision != nil, sent)
 				w.Header().Set("Content-Type", "application/json")
 				require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
 					"id":             "transform-1",
@@ -117,7 +173,8 @@ func TestUpdateTransformAcceptsNullRevisionOnlyForLegacyNoop(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				var body map[string]any
 				require.NoError(t, json.NewDecoder(req.Body).Decode(&body))
-				require.Contains(t, body, "expected_revision")
+				_, sent := body["expected_revision"]
+				require.Equal(t, tc.expectedRevision != nil, sent)
 				w.Header().Set("Content-Type", "application/json")
 				require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
 					"transform_id":   "transform-1",

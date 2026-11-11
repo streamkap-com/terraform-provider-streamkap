@@ -7,8 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/stretchr/testify/require"
 
@@ -82,30 +84,50 @@ func updateMapFilterRequest(t *testing.T, client api.StreamkapAPI, oldImplementa
 	}, resource.UpdateResponse{State: tfsdk.State{Schema: schemaResp.Schema}}
 }
 
-func TestCreateWithImplementationUsesOneAtomicPost(t *testing.T) {
+// The create request carries no implementation: a backend without edit
+// revisions would store it unvalidated. A backend that returns a revision gets
+// the implementation write guarded by it.
+func TestCreateWithImplementationGuardsItWithTheCreatedRevision(t *testing.T) {
 	implementation := `{"language":"JAVASCRIPT","value_transform":"function transform(value) { return value; }"}`
+	createdRevision := "0123456789abcdef0123456789abcdef"
+	implementationRevision := "fedcba9876543210fedcba9876543210"
 	postCalls := 0
-	putCalls := 0
-	var posted map[string]any
+	implementationPuts := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		switch {
 		case req.Method == http.MethodPost && req.URL.Path == "/transforms":
 			postCalls++
+			var posted map[string]any
 			require.NoError(t, json.NewDecoder(req.Body).Decode(&posted))
+			require.NotContains(t, posted, "implementation")
 			w.Header().Set("Content-Type", "application/json")
 			require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
 				"id":             "transform-1",
 				"name":           "atomic-transform",
 				"transform_type": "map_filter",
-				"edit_revision":  "0123456789abcdef0123456789abcdef",
+				"edit_revision":  createdRevision,
 				"config":         posted["config"],
-				"implementation": posted["implementation"],
 				"tags":           []string{},
 			}))
-		case req.Method == http.MethodPut:
-			putCalls++
+		case req.Method == http.MethodPut && req.URL.Path == "/transforms/transform-1/implementation_details":
+			implementationPuts++
+			var body map[string]any
+			require.NoError(t, json.NewDecoder(req.Body).Decode(&body))
+			require.Equal(t, map[string]any{
+				"transform_id":      "transform-1",
+				"expected_revision": createdRevision,
+				"implementation": map[string]any{
+					"language":        "JAVASCRIPT",
+					"value_transform": "function transform(value) { return value; }",
+				},
+			}, body)
 			w.Header().Set("Content-Type", "application/json")
-			require.NoError(t, json.NewEncoder(w).Encode(map[string]any{}))
+			require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+				"transform_id":   "transform-1",
+				"version_id":     "2",
+				"implementation": body["implementation"],
+				"edit_revision":  implementationRevision,
+			}))
 		case req.Method == http.MethodGet && req.URL.Path == "/transforms/transform-1/job_status":
 			w.Header().Set("Content-Type", "application/json")
 			require.NoError(t, json.NewEncoder(w).Encode(map[string]any{"status": "UNKNOWN"}))
@@ -120,11 +142,10 @@ func TestCreateWithImplementationUsesOneAtomicPost(t *testing.T) {
 
 	require.False(t, resp.Diagnostics.HasError(), "create diagnostics: %v", resp.Diagnostics)
 	require.Equal(t, 1, postCalls)
-	require.Zero(t, putCalls)
-	require.Equal(t, map[string]any{
-		"language":        "JAVASCRIPT",
-		"value_transform": "function transform(value) { return value; }",
-	}, posted["implementation"])
+	require.Equal(t, 1, implementationPuts)
+	var stateRevision types.String
+	require.False(t, resp.State.GetAttribute(context.Background(), path.Root("edit_revision"), &stateRevision).HasError())
+	require.Equal(t, implementationRevision, stateRevision.ValueString())
 }
 
 func TestCreateRejectsInvalidImplementationBeforeRequest(t *testing.T) {
@@ -178,8 +199,10 @@ func TestCreateWithoutImplementationKeepsServerDefault(t *testing.T) {
 	require.Equal(t, 1, postCalls)
 }
 
+// `{}` and `null` stay valid, as they were in v3.1.0; they are covered by
+// TestReleasedBackendCreateSendsReleasedProviderRequests.
 func TestCreateRejectsNonObjectImplementationBeforeRequest(t *testing.T) {
-	for _, implementation := range []string{`[1]`, `null`, `{}`} {
+	for _, implementation := range []string{`[1]`, `"text"`} {
 		t.Run(implementation, func(t *testing.T) {
 			requests := 0
 			server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
@@ -202,13 +225,26 @@ func TestUpdateKeepsImplementationOutOfGenericPutAndUsesDedicatedEndpoint(t *tes
 	newImplementation := `{"language":"JAVASCRIPT","value_transform":"return {...value, updated: true}"}`
 	genericPuts := 0
 	implementationPuts := 0
+	readRevision := "11111111111111111111111111111111"
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		switch {
+		case req.Method == http.MethodGet && req.URL.Path == "/transforms/transform-1":
+			// State written before edit revisions holds none, so the update reads one.
+			w.Header().Set("Content-Type", "application/json")
+			require.NoError(t, json.NewEncoder(w).Encode(map[string]any{"result": []any{map[string]any{
+				"id":             "transform-1",
+				"name":           "atomic-transform",
+				"transform_type": "map_filter",
+				"config":         map[string]any{},
+				"implementation": map[string]any{"language": "JAVASCRIPT", "value_transform": "return value"},
+				"edit_revision":  readRevision,
+			}}}))
 		case req.Method == http.MethodPut && req.URL.Path == "/transforms":
 			genericPuts++
 			var body map[string]any
 			require.NoError(t, json.NewDecoder(req.Body).Decode(&body))
 			require.NotContains(t, body, "implementation")
+			require.Equal(t, readRevision, body["expected_revision"])
 			w.Header().Set("Content-Type", "application/json")
 			require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
 				"id":             "transform-1",

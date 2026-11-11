@@ -100,7 +100,7 @@ If `implementation_json` is omitted, updates preserve the implementation managed
 outside Terraform. With `deploy = true`, terminal failed or stopped deployment
 status produces an error while preserving the saved transform in state.
 
-Every transform resource retains the backend's nullable opaque `edit_revision` as computed state. Update sends the revision already observed by Terraform with the configuration request, then sends the fresh accepted revision with a changed implementation request. Each accepted response replaces the state token. The provider does not refresh immediately before an update because doing so would silently accept an edit made outside the current Terraform state.
+Every transform resource retains the backend's nullable opaque `edit_revision` as computed state. Update sends the revision already observed by Terraform with the configuration request, then sends the fresh accepted revision with a changed implementation request. Each accepted response replaces the state token. The provider does not refresh before an update that has a revision in state, because doing so would silently accept an edit made outside the current Terraform state. Without one it reads the transform first: a revision that read returns guards the update, and with none the update echoes the stored implementation and omits `expected_revision`, because a backend without edit revisions replaces the implementation with whatever the update body holds. Create never sends the implementation in the create request; it writes it through `implementation_details`, guarded by the revision the create returned when there is one. Guarded writes are not retried; unguarded ones are.
 
 ## Non-Connector Resources
 
