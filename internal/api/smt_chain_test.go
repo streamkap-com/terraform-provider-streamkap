@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// smtWireFixtures copies the backend app/services/smt/fixtures/wire_fixtures.json at revision 41d45de6e9a6bcfc765b309cc55340f1a13beb9e (wire_version 5), sha256 723f76eb0f4c546ef3d35f785bdde0bb28454a54333516de4a852d0b1c91aad9.
+// smtWireFixtures copies the backend app/services/smt/fixtures/wire_fixtures.json (wire_version 5), sha256 723f76eb0f4c546ef3d35f785bdde0bb28454a54333516de4a852d0b1c91aad9.
 const smtWireFixtures = "testdata/smt_wire_fixtures.json"
 
 type smtWire struct {
