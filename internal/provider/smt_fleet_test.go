@@ -260,3 +260,93 @@ func toTerraformValue(t *testing.T, typ tftypes.Type, wire any) any {
 	t.Fatalf("no conversion for %T into %s", wire, typ)
 	return nil
 }
+
+// A change to a released state plans the released computed attributes the way
+// v3.1.0 did: connector_status unknown, since the update reports it, and a
+// deprecated computed alias the configuration leaves unset either unknown or,
+// when its canonical attribute has a default, that default.
+func TestSMTChainReleasedStatePlansAChangeLikeTheReleasedProvider(t *testing.T) {
+	ctx := context.Background()
+	server := providerserver.NewProtocol6(New("test")())()
+	schemas, err := server.GetProviderSchema(ctx, &tfprotov6.GetProviderSchemaRequest{})
+	require.NoError(t, err)
+	require.Empty(t, schemas.Diagnostics)
+
+	for _, r := range connectorResources(t) {
+		if _, chained := r.schema.Attributes[smt.AttrChain]; !chained {
+			continue
+		}
+		t.Run(r.typeName, func(t *testing.T) {
+			objType := schemas.ResourceSchemas[r.typeName].ValueType().(tftypes.Object)
+			generatedSchema := r.config.GetSchema()
+			mappings := r.config.GetFieldMappings()
+			prior := map[string]tftypes.Value{}
+			config := map[string]tftypes.Value{}
+			proposed := map[string]tftypes.Value{}
+			defaults := map[string]tftypes.Value{}
+			var aliases []string
+			for name, typ := range objType.AttributeTypes {
+				prior[name], config[name], proposed[name] = tftypes.NewValue(typ, nil), tftypes.NewValue(typ, nil), tftypes.NewValue(typ, nil)
+				a, released := r.schema.Attributes[name]
+				if !released || isChainAttribute(name) {
+					continue
+				}
+				switch {
+				case a.IsRequired():
+					v := placeholder(t, name, typ)
+					prior[name], config[name], proposed[name] = v, v, v
+				case a.IsComputed():
+					if v, ok := releasedDefault(generatedSchema, mappings, name); ok {
+						wire, err := smt.ToWire(v, path.Root(name))
+						require.NoError(t, err)
+						defaults[name] = tftypes.NewValue(typ, toTerraformValue(t, typ, wire))
+						prior[name] = defaults[name]
+					}
+					if a.GetDeprecationMessage() != "" {
+						aliases = append(aliases, name)
+						if prior[name].IsNull() {
+							prior[name] = placeholder(t, name, typ)
+						}
+					}
+					proposed[name] = prior[name]
+				}
+			}
+			prior["id"] = tftypes.NewValue(tftypes.String, "existing")
+			proposed["id"] = prior["id"]
+			prior["connector_status"] = tftypes.NewValue(tftypes.String, "Active")
+			proposed["connector_status"] = prior["connector_status"]
+			config["name"] = tftypes.NewValue(tftypes.String, "renamed")
+			proposed["name"] = config["name"]
+
+			priorDV, err := tfprotov6.NewDynamicValue(objType, tftypes.NewValue(objType, prior))
+			require.NoError(t, err)
+			configDV, err := tfprotov6.NewDynamicValue(objType, tftypes.NewValue(objType, config))
+			require.NoError(t, err)
+			proposedDV, err := tfprotov6.NewDynamicValue(objType, tftypes.NewValue(objType, proposed))
+			require.NoError(t, err)
+			plan, err := server.PlanResourceChange(ctx, &tfprotov6.PlanResourceChangeRequest{
+				TypeName: r.typeName, PriorState: &priorDV, Config: &configDV, ProposedNewState: &proposedDV,
+			})
+			require.NoError(t, err)
+			for _, d := range plan.Diagnostics {
+				t.Errorf("plan diagnostic: %s: %s", d.Summary, d.Detail)
+			}
+			if t.Failed() {
+				return
+			}
+			planned, err := plan.PlannedState.Unmarshal(objType)
+			require.NoError(t, err)
+			var plannedAttrs map[string]tftypes.Value
+			require.NoError(t, planned.As(&plannedAttrs))
+
+			require.False(t, plannedAttrs["connector_status"].IsKnown(), "connector_status planned %s", plannedAttrs["connector_status"])
+			for _, alias := range aliases {
+				got := plannedAttrs[alias]
+				if want, ok := defaults[alias]; ok && got.Equal(want) {
+					continue
+				}
+				require.False(t, got.IsKnown(), "%s planned %s", alias, got)
+			}
+		})
+	}
+}

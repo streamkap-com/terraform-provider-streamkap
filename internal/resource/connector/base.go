@@ -219,37 +219,12 @@ func (r *BaseConnectorResource) Schema(ctx context.Context, req resource.SchemaR
 	baseSchema := r.config.GetSchema()
 	// A config may cache its schema; the rewrites below must not reach it.
 	baseSchema.Attributes = maps.Clone(baseSchema.Attributes)
-	// Read refreshes connector_status before planning. Preserve that observed
-	// value through the plan instead of replacing it with an unknown value.
-	status := baseSchema.Attributes["connector_status"].(schema.StringAttribute)
-	status.PlanModifiers = append(slices.Clip(status.PlanModifiers), stringplanmodifier.UseStateForUnknown())
-	baseSchema.Attributes["connector_status"] = status
-
-	// Deprecated computed aliases retain an absent prior value instead of
-	// planning it unknown. Alias defaults must wait until ModifyPlan; applying
-	// them earlier marks computed fields unknown even when the alias resolves
-	// to unchanged state.
+	// Alias defaults must wait until ModifyPlan. Applying them earlier marks
+	// computed fields unknown even when the alias resolves to unchanged state.
 	mappings := r.config.GetFieldMappings()
 	for alias, attribute := range baseSchema.Attributes {
 		if attribute.GetDeprecationMessage() == "" {
 			continue
-		}
-		switch a := attribute.(type) {
-		case schema.StringAttribute:
-			if a.Computed {
-				a.PlanModifiers = append(a.PlanModifiers, stringplanmodifier.UseStateForUnknown())
-				baseSchema.Attributes[alias] = a
-			}
-		case schema.BoolAttribute:
-			if a.Computed {
-				a.PlanModifiers = append(a.PlanModifiers, boolplanmodifier.UseStateForUnknown())
-				baseSchema.Attributes[alias] = a
-			}
-		case schema.Int64Attribute:
-			if a.Computed {
-				a.PlanModifiers = append(a.PlanModifiers, int64planmodifier.UseStateForUnknown())
-				baseSchema.Attributes[alias] = a
-			}
 		}
 		for canonical, apiField := range mappings {
 			if canonical == alias || apiField != mappings[alias] {
