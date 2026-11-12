@@ -24,11 +24,12 @@ type TransformDataSource struct {
 
 // TransformDataSourceModel describes the data source data model.
 type TransformDataSourceModel struct {
-	ID        types.String   `tfsdk:"id"`
-	Name      types.String   `tfsdk:"name"`
-	StartTime types.String   `tfsdk:"start_time"`
-	TopicIDs  []types.String `tfsdk:"topic_ids"`
-	TopicMap  []TopicModel   `tfsdk:"topic_map"`
+	ID           types.String   `tfsdk:"id"`
+	Name         types.String   `tfsdk:"name"`
+	StartTime    types.String   `tfsdk:"start_time"`
+	EditRevision types.String   `tfsdk:"edit_revision"`
+	TopicIDs     []types.String `tfsdk:"topic_ids"`
+	TopicMap     []TopicModel   `tfsdk:"topic_map"`
 }
 
 type TopicModel struct {
@@ -62,6 +63,11 @@ func (d *TransformDataSource) Schema(ctx context.Context, req ds.SchemaRequest, 
 			"start_time": schema.StringAttribute{
 				Description:         "The start time of the transform.",
 				MarkdownDescription: "The start time of the transform.",
+				Computed:            true,
+			},
+			"edit_revision": schema.StringAttribute{
+				Description:         "Opaque revision of the current transform edit state.",
+				MarkdownDescription: "Opaque revision of the current transform edit state. This value is managed by Streamkap and is separate from the transform implementation version.",
 				Computed:            true,
 			},
 			"topic_ids": schema.ListAttribute{
@@ -153,6 +159,7 @@ func (r *TransformDataSource) modelFromAPIObject(apiObject api.Transform, model 
 	model.ID = types.StringValue(apiObject.ID)
 	model.Name = types.StringValue(apiObject.Name)
 	model.StartTime = types.StringPointerValue(apiObject.StartTime)
+	model.EditRevision = types.StringPointerValue(apiObject.EditRevision)
 
 	topicIDs := []types.String{}
 	for _, topicID := range apiObject.TopicIDs {

@@ -72,18 +72,20 @@ import (
 
 // ConnectorConfig represents the top-level structure of a configuration.latest.json file.
 type ConnectorConfig struct {
-	DisplayName           string          `json:"display_name"`
-	Description           string          `json:"description,omitempty"`
-	SchemaLevels          []string        `json:"schema_levels,omitempty"`
-	DebeziumConnectorName string          `json:"debezium_connector_name,omitempty"`
-	Serialisation         string          `json:"serialisation,omitempty"`
-	Metrics               []Metric        `json:"metrics,omitempty"`
-	Config                []ConfigEntry   `json:"config"`
-	APISource             bool            `json:"api_source,omitempty"`
-	APIConditions         []APICondition  `json:"-"`
-	APIDependencies       []APIDependency `json:"-"`
-	APIOAuth              APIOAuth        `json:"-"`
-	APIAuthModeField      string          `json:"-"`
+	DisplayName           string        `json:"display_name"`
+	Description           string        `json:"description,omitempty"`
+	SchemaLevels          []string      `json:"schema_levels,omitempty"`
+	DebeziumConnectorName string        `json:"debezium_connector_name,omitempty"`
+	Serialisation         string        `json:"serialisation,omitempty"`
+	Metrics               []Metric      `json:"metrics,omitempty"`
+	Config                []ConfigEntry `json:"config"`
+	// APISource marks a connector served by the API-source runner rather than
+	// Kafka Connect. The backend refuses SMT chains on it.
+	APISource        bool            `json:"api_source,omitempty"`
+	APIConditions    []APICondition  `json:"-"`
+	APIDependencies  []APIDependency `json:"-"`
+	APIOAuth         APIOAuth        `json:"-"`
+	APIAuthModeField string          `json:"-"`
 	// ComingSoon, when true, marks this connector as not yet generally available
 	// on the backend. Such connectors are visible in the UI but not actually
 	// deployable; we skip generating Terraform resources for them so users
@@ -429,6 +431,8 @@ func (e *ConfigEntry) HasSupportedControl() bool {
 	case "string", "password", "textarea", "datetime", "code-editor", "json",
 		"number", "boolean", "toggle", "one-select", "multi-select", "slider":
 		return true
+	case "input":
+		return e.Value.Type == "number"
 	default:
 		return false
 	}

@@ -124,6 +124,7 @@ Valid values: `7d`, `3d`, `24h`, `10m`, `0` (continue from last position). Only 
 - `connector_status` (String) Current deployment status of the transform. **Read-only**.
 
 Values: `RUNNING`, `INITIALIZING`, `DEPLOYING`, `STOPPED`, `FAILED`, `UNKNOWN`.
+- `edit_revision` (String) Opaque revision used to reject concurrent transform edits. This value is managed by Streamkap and is separate from the transform implementation version.
 - `id` (String) Unique identifier for the transform
 - `transform_type` (String) Transform type
 

@@ -48,7 +48,7 @@ type StreamkapAPI interface {
 	ListTransforms(ctx context.Context) ([]Transform, error)
 	DeleteTransform(ctx context.Context, transformID string) error
 	GetTransformImplementationDetails(ctx context.Context, transformID string) (*TransformImplementationDetailsResponse, error)
-	UpdateTransformImplementationDetails(ctx context.Context, transformID string, details TransformImplementationDetails) (*TransformImplementationDetails, error)
+	UpdateTransformImplementationDetails(ctx context.Context, transformID string, details UpdateTransformImplementationRequest) (*TransformImplementationUpdateResponse, error)
 	DeployTransformPreview(ctx context.Context, transformID string, versionID string, replayWindow string) error
 	DeployTransformLive(ctx context.Context, transformID string, versionID string) error
 	GetTransformJobStatus(ctx context.Context, transformID string) (*TransformJobStatus, error)
@@ -103,6 +103,10 @@ type APIError struct {
 	StatusCode int
 	Detail     string
 	RequestID  string
+	// DetailJSON is the `detail` object of a structured error body, with
+	// secret-named keys redacted and sent secrets masked, for callers that map
+	// its issues to attributes. Empty when the detail was a plain string.
+	DetailJSON json.RawMessage
 	// Fields is set when an API-source save is refused and every error names
 	// a config field.
 	Fields []APIFieldError
@@ -474,10 +478,12 @@ func (s *streamkapAPI) send(ctx context.Context, req *http.Request, result any, 
 		// would split a secret or change its newlines.
 		if detail, structured, ok := parseAPIErrorDetail(body); ok {
 			shown := maskSentSecrets(detail, secrets)
+			var detailJSON json.RawMessage
 			if structured {
 				shown = snippet([]byte(shown))
+				detailJSON = maskJSONStrings(json.RawMessage(detail), secrets)
 			}
-			return &APIError{StatusCode: resp.StatusCode, Detail: shown, RequestID: requestID, Fields: envelope.Fields, raw: detail}
+			return &APIError{StatusCode: resp.StatusCode, Detail: shown, RequestID: requestID, Fields: envelope.Fields, DetailJSON: detailJSON, raw: detail}
 		}
 		prefix := fmt.Sprintf("%s %s: non-JSON response body: ", req.Method, req.URL)
 		raw := string(body)

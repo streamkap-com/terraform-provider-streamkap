@@ -86,8 +86,18 @@ type DestinationSnowflakeModel struct {
 	TransformsCopyFieldCopyFieldMapping              types.String            `tfsdk:"transforms_copy_field_copy_field_mapping"`
 	TransformsHeaderToFieldCustomHeaderMappings      types.String            `tfsdk:"transforms_header_to_field_custom_header_mappings"`
 	AutoQADedupeTableMapping                         map[string]types.String `tfsdk:"auto_qa_dedupe_table_mapping"`
+	SMTChain                                         types.List              `tfsdk:"smt_chain"`
+	SMTSecrets                                       types.List              `tfsdk:"smt_secrets"`
+	SMTPredicates                                    types.List              `tfsdk:"smt_predicates"`
+	SMTPredicateSecrets                              types.List              `tfsdk:"smt_predicate_secrets"`
+	SMTManagedOverrides                              types.Map               `tfsdk:"smt_managed_overrides"`
+	SMTChainRevision                                 types.String            `tfsdk:"smt_chain_revision"`
 	Timeouts                                         timeouts.Value          `tfsdk:"timeouts"`
 }
+
+// SMTChainHost names the SMT catalog host whose chain this model carries. The
+// base connector resource builds the chain attributes from it.
+func (DestinationSnowflakeModel) SMTChainHost() string { return "destinations" }
 
 // DestinationSnowflakeSchema returns the Terraform schema for the snowflake destination.
 func DestinationSnowflakeSchema() schema.Schema {

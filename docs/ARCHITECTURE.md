@@ -100,6 +100,8 @@ If `implementation_json` is omitted, updates preserve the implementation managed
 outside Terraform. With `deploy = true`, terminal failed or stopped deployment
 status produces an error while preserving the saved transform in state.
 
+Every transform resource retains the backend's nullable opaque `edit_revision` as computed state. Update sends the revision already observed by Terraform with the configuration request, then sends the fresh accepted revision with a changed implementation request. Each accepted response replaces the state token. The provider does not refresh before an update that has a revision in state, because doing so would silently accept an edit made outside the current Terraform state. Without one it reads the transform first: a revision that read returns guards the update, and with none the update echoes the stored implementation and omits `expected_revision`, because a backend without edit revisions replaces the implementation with whatever the update body holds. Create never sends the implementation in the create request; it writes it through `implementation_details`, guarded by the revision the create returned when there is one. Guarded writes are not retried; unguarded ones are.
+
 ## Non-Connector Resources
 
 Resources that don't follow the connector pattern have their own implementations:
@@ -173,9 +175,9 @@ Create:
 2. Capture planned sensitive strings and defaulted values
 3. Extract name from model
 4. Convert model to API config (ModelToConfigMap)
-5. Call API CreateSource/CreateDestination
+5. Call API CreateSource/CreateDestination with the SMT chain embedded in the same request (`smt_chain`)
 6. Convert API response to model, then restore planned secrets and fill null defaults
-7. Store ID in state
+7. Store ID in state and read the saved chain back
 
 Read:
 1. Capture prior sensitive strings and defaulted values
@@ -188,9 +190,10 @@ Update:
 1. Read the Terraform plan into the model
 2. Capture planned sensitive strings and defaulted values
 3. Convert to API config
-4. Call API UpdateSource/UpdateDestination
-5. Convert API response to model, then restore planned secrets and fill null defaults
-6. Update state
+4. When the SMT chain changes, read it first: refuse a revision that moved since the plan, or a first write over transforms Terraform does not manage, before anything is sent
+5. Call API UpdateSource/UpdateDestination, embedding a changed SMT chain in the same request (`smt_chain`) with the revision read in step 4
+6. Convert API response to model, then restore planned secrets and fill null defaults
+7. Update state, reading the chain back under the revision the response's receipt accepted
 
 Delete:
 1. Call API DeleteSource/DeleteDestination

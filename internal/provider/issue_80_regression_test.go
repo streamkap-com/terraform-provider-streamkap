@@ -127,12 +127,36 @@ func TestIssue80_OptionalFieldsArePlanStable(t *testing.T) {
 				if issue82MapOverrideFields[f.name+"."+name] {
 					continue
 				}
+				if smtOwnedFields[name] {
+					continue
+				}
 				t.Errorf("%s.%s is Optional but not Computed — exposes issue-#80 "+
 					"inconsistent-result-after-apply when the backend dynamically backfills this field",
 					f.name, name)
 			}
 		})
 	}
+}
+
+// smtOwnedFields are the nested SMT surface, which is Optional-only on
+// purpose: a null smt_chain is the marker that the connector stays on the
+// released flat surface, and Read never populates it, so there is no backend
+// backfill for the plan to be inconsistent with. smt_secrets and
+// smt_predicate_secrets are write-only inputs whose values never reach state.
+var smtOwnedFields = map[string]bool{
+	"smt_chain":             true,
+	"smt_secrets":           true,
+	"smt_predicate_secrets": true,
+}
+
+// smtPlanPinnedFields are the Optional+Computed chain attributes the base
+// resource pins in ModifyPlan (smt.Surface.ModifyPlan) instead of with
+// UseStateForUnknown: their planned value follows chain ownership (null for a
+// released flat connector, the prior value or [] for an owned one), which a
+// state-copying plan modifier cannot express.
+var smtPlanPinnedFields = map[string]bool{
+	"smt_predicates":        true,
+	"smt_managed_overrides": true,
 }
 
 // issue82MapOverrideFields lists the `map_string` / `map_nested` override
@@ -221,7 +245,7 @@ func TestIssue80_OptionalComputedFieldsHaveUseStateForUnknown(t *testing.T) {
 				if attr.GetDeprecationMessage() != "" {
 					continue
 				}
-				if hasDefault(attr) {
+				if hasDefault(attr) || smtPlanPinnedFields[name] {
 					continue
 				}
 				if (f.name == "source_mongodb" || f.name == "source_mongodbhosted") && name == "mongodb_connection_hostname" {

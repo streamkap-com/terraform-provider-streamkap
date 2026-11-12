@@ -92,6 +92,48 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "smt_chain": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ListType[types.ObjectType[\"alias\":basetypes.StringType, \"codec_version\":basetypes.Int64Type, \"enabled\":basetypes.BoolType, \"filter\":types.ObjectType[], \"id\":basetypes.StringType, \"key\":basetypes.StringType, \"name\":basetypes.StringType, \"predicate\":types.ObjectType[\"key\":basetypes.StringType, \"negate\":basetypes.BoolType], \"schema_version\":basetypes.Int64Type, \"secret_version\":basetypes.Int64Type, \"type\":basetypes.StringType]]"
+    },
+    "smt_chain_revision": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_managed_overrides": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.MapType[basetypes.BoolType]"
+    },
+    "smt_predicate_secrets": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ListType[types.ObjectType[\"key\":basetypes.StringType, \"values\":types.ListType[types.ObjectType[\"clear\":basetypes.BoolType, \"pointer\":basetypes.StringType, \"value\":basetypes.StringType]], \"version\":basetypes.Int64Type]]"
+    },
+    "smt_predicates": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.ListType[types.ObjectType[\"alias\":basetypes.StringType, \"codec_version\":basetypes.Int64Type, \"configured_secret_paths\":types.ListType[basetypes.StringType], \"id\":basetypes.StringType, \"key\":basetypes.StringType, \"schema_version\":basetypes.Int64Type, \"secret_version\":basetypes.Int64Type, \"topic_name_matches\":types.ObjectType[\"pattern\":basetypes.StringType], \"type\":basetypes.StringType]]"
+    },
+    "smt_secrets": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ListType[types.ObjectType[\"key\":basetypes.StringType, \"values\":types.ListType[types.ObjectType[\"clear\":basetypes.BoolType, \"pointer\":basetypes.StringType, \"value\":basetypes.StringType]], \"version\":basetypes.Int64Type]]"
+    },
     "ssh_enabled": {
       "required": false,
       "optional": true,
@@ -217,6 +259,261 @@
       "computed": true,
       "sensitive": false,
       "type": "basetypes.BoolType"
+    }
+  },
+  "nested_attributes": {
+    "smt_chain.alias": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.codec_version": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "smt_chain.enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "smt_chain.filter": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ObjectType[]"
+    },
+    "smt_chain.id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.key": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.name": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.predicate": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ObjectType[\"key\":basetypes.StringType, \"negate\":basetypes.BoolType]"
+    },
+    "smt_chain.predicate.key": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.predicate.negate": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "smt_chain.schema_version": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "smt_chain.secret_version": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "smt_chain.type": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_predicate_secrets.key": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_predicate_secrets.values": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "write_only": true,
+      "type": "types.ListType[types.ObjectType[\"clear\":basetypes.BoolType, \"pointer\":basetypes.StringType, \"value\":basetypes.StringType]]"
+    },
+    "smt_predicate_secrets.values.clear": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "write_only": true,
+      "type": "basetypes.BoolType"
+    },
+    "smt_predicate_secrets.values.pointer": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "write_only": true,
+      "type": "basetypes.StringType"
+    },
+    "smt_predicate_secrets.values.value": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": true,
+      "write_only": true,
+      "type": "basetypes.StringType"
+    },
+    "smt_predicate_secrets.version": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "smt_predicates.alias": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_predicates.codec_version": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "smt_predicates.configured_secret_paths": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "types.ListType[basetypes.StringType]"
+    },
+    "smt_predicates.id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_predicates.key": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_predicates.schema_version": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "smt_predicates.secret_version": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "smt_predicates.topic_name_matches": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ObjectType[\"pattern\":basetypes.StringType]"
+    },
+    "smt_predicates.topic_name_matches.pattern": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_predicates.type": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_secrets.key": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_secrets.values": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "write_only": true,
+      "type": "types.ListType[types.ObjectType[\"clear\":basetypes.BoolType, \"pointer\":basetypes.StringType, \"value\":basetypes.StringType]]"
+    },
+    "smt_secrets.values.clear": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "write_only": true,
+      "type": "basetypes.BoolType"
+    },
+    "smt_secrets.values.pointer": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "write_only": true,
+      "type": "basetypes.StringType"
+    },
+    "smt_secrets.values.value": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": true,
+      "write_only": true,
+      "type": "basetypes.StringType"
+    },
+    "smt_secrets.version": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     }
   },
   "blocks": {

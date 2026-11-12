@@ -177,6 +177,38 @@ func secretForms(secrets []string) []string {
 	return slices.Compact(forms)
 }
 
+// maskJSONStrings masks sent secrets in every string value of a JSON
+// document. Masking the encoded text instead could cut across the encoding
+// and leave JSON a caller can no longer decode. A document that does not
+// decode yields nil.
+func maskJSONStrings(raw json.RawMessage, secrets []string) json.RawMessage {
+	var doc any
+	if json.Unmarshal(raw, &doc) != nil {
+		return nil
+	}
+	var mask func(v any) any
+	mask = func(v any) any {
+		switch val := v.(type) {
+		case map[string]any:
+			for k, inner := range val {
+				val[k] = mask(inner)
+			}
+		case []any:
+			for i, inner := range val {
+				val[i] = mask(inner)
+			}
+		case string:
+			return maskSentSecrets(val, secrets)
+		}
+		return v
+	}
+	masked, err := json.Marshal(mask(doc))
+	if err != nil {
+		return nil
+	}
+	return masked
+}
+
 // maskSentSecrets masks each sent secret where an error message repeats it.
 func maskSentSecrets(text string, secrets []string) string {
 	for _, secret := range secrets {

@@ -1,6 +1,13 @@
 {
   "version": "v3.0.0",
   "attributes": {
+    "edit_revision": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
     "id": {
       "required": true,
       "optional": false,

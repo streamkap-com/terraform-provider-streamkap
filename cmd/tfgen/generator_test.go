@@ -38,10 +38,10 @@ func TestCommonFields(t *testing.T) {
 			fields := g.commonFields()
 
 			// Sources/destinations have 6 common fields (id, name, connector, connector_status, kc_cluster_id, tags)
-			// Transforms have 4 common fields (id, name, transform_type, tags)
+			// Transforms have 5 common fields (id, name, transform_type, edit_revision, tags)
 			wantCount := 6
 			if tt.entityType == "transform" {
-				wantCount = 4
+				wantCount = 5
 			}
 			if len(fields) != wantCount {
 				t.Fatalf("commonFields() returned %d fields, want %d", len(fields), wantCount)
@@ -122,6 +122,19 @@ func TestCommonFields(t *testing.T) {
 			}
 			if !thirdField.NeedsPlanMod {
 				t.Error("thirdField.NeedsPlanMod should be true (UseStateForUnknown)")
+			}
+
+			if tt.entityType == "transform" {
+				revisionField := fields[3]
+				if revisionField.GoFieldName != "EditRevision" || revisionField.TfAttrName != "edit_revision" {
+					t.Errorf("revision field = %#v, want EditRevision/edit_revision", revisionField)
+				}
+				if !revisionField.Computed || !revisionField.NeedsPlanMod {
+					t.Errorf("revision field must be Computed with UseStateForUnknown; got Computed=%v NeedsPlanMod=%v", revisionField.Computed, revisionField.NeedsPlanMod)
+				}
+				if revisionField.APIFieldName != "" {
+					t.Errorf("revision field API mapping must be empty (handled by base transform); got %q", revisionField.APIFieldName)
+				}
 			}
 
 			// Verify connector_status field for sources/destinations
@@ -208,6 +221,43 @@ func TestPrepareTemplateDataRejectsUnsupportedControl(t *testing.T) {
 	_, err := g.prepareTemplateData(config, "test")
 	if err == nil || !strings.Contains(err.Error(), `API field "future.field" uses unsupported backend control "future-control"`) {
 		t.Fatalf("prepareTemplateData() error = %v, want unsupported-control error", err)
+	}
+}
+
+func TestPrepareTemplateDataMapsTypedNumberInputToInt64(t *testing.T) {
+	g := NewGenerator("/tmp", "source")
+	config := &ConnectorConfig{
+		DisplayName: "Test",
+		Config: []ConfigEntry{{
+			Name:        "transforms.OversizedRecords.truncate.to.bytes",
+			UserDefined: true,
+			Value: ValueObject{
+				Control: "input",
+				Type:    "number",
+				Default: float64(-1),
+			},
+		}},
+	}
+
+	data, err := g.prepareTemplateData(config, "test")
+	if err != nil {
+		t.Fatalf("prepareTemplateData() error = %v", err)
+	}
+	var field *FieldData
+	for i := range data.Fields {
+		if data.Fields[i].APIFieldName == "transforms.OversizedRecords.truncate.to.bytes" {
+			field = &data.Fields[i]
+			break
+		}
+	}
+	if field == nil {
+		t.Fatal("typed number input field was not generated")
+	}
+	if field.GoType != "types.Int64" || field.SchemaAttrType != "schema.Int64Attribute" {
+		t.Fatalf("field types = (%q, %q), want Int64", field.GoType, field.SchemaAttrType)
+	}
+	if field.DefaultFunc != "int64default.StaticInt64(-1)" {
+		t.Fatalf("DefaultFunc = %q, want int64 -1", field.DefaultFunc)
 	}
 }
 

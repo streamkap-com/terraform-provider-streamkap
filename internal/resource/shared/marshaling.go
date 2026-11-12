@@ -321,6 +321,36 @@ func FillNullFields(model any, captured map[string]attr.Value) {
 	restoreFields(model, captured, true)
 }
 
+// PinFields writes every captured value back into model, null included, so a
+// field the API echoes differently ends up holding exactly what the plan or
+// prior state held. It is how the released flat SMT attributes are kept out of
+// the API round-trip once the nested chain owns that surface: whatever the
+// backend projects into the legacy keys must not become state, or the two
+// surfaces would drift against each other. An unknown captured value is
+// skipped; the chain's ModifyPlan has already nulled those.
+func PinFields(model any, captured map[string]attr.Value) {
+	if len(captured) == 0 {
+		return
+	}
+
+	v, tfsdkToField := BuildTfsdkFieldIndex(model)
+
+	for name, val := range captured {
+		if val == nil || val.IsUnknown() {
+			continue
+		}
+		fieldPath, ok := tfsdkToField[name]
+		if !ok {
+			continue
+		}
+		field := v.FieldByIndex(fieldPath)
+		if !field.CanSet() || field.Type() != reflect.TypeOf(val) {
+			continue
+		}
+		field.Set(reflect.ValueOf(val))
+	}
+}
+
 // restoreFields writes each known captured value back into model. When
 // onlyIfNull is set, a field the API populated is left alone and only the nulls
 // are filled — the difference between the Create/Update and the Read semantics

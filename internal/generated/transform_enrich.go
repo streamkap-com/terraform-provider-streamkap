@@ -22,6 +22,7 @@ type TransformEnrichModel struct {
 	ID                                  types.String         `tfsdk:"id"`
 	Name                                types.String         `tfsdk:"name"`
 	TransformType                       types.String         `tfsdk:"transform_type"`
+	EditRevision                        types.String         `tfsdk:"edit_revision"`
 	Tags                                types.Set            `tfsdk:"tags"`
 	TransformsLanguage                  types.String         `tfsdk:"transforms_language"`
 	TransformsInputTopicPattern         types.String         `tfsdk:"transforms_input_topic_pattern"`
@@ -62,6 +63,14 @@ func TransformEnrichSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Transform type",
 				MarkdownDescription: "Transform type",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"edit_revision": schema.StringAttribute{
+				Computed:            true,
+				Description:         "Opaque revision used to reject concurrent transform edits.",
+				MarkdownDescription: "Opaque revision used to reject concurrent transform edits. This value is managed by Streamkap and is separate from the transform implementation version.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
