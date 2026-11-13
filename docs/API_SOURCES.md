@@ -5,12 +5,15 @@ API-source schemas come from two backend artifacts per vendor, `app/sources/plug
 Regenerate only the API sources when the backend branch is not `main`, so no unrelated CDC change rides along. `make generate` regenerates every connector and refuses a non-`main` backend unless `ALLOW_NONMAIN=1`:
 
 ```bash
-ALLOW_NONMAIN=1 bash scripts/codegen-preflight.sh   # stops on an unset or unreadable path; check the branch it prints
-for v in hubspot salesforce netsuite stripe zendesk google_analytics facebook_ads google_ads; do
-  go run ./cmd/tfgen generate --backend-path="$STREAMKAP_BACKEND_PATH" --output=internal/generated --entity-type sources --connector "$v"
-done
-go generate main.go   # docs, after the schemas
-make snapshots        # then read the diff
+(
+  set -euo pipefail   # a failed step stops the rest, so no docs or snapshots from a partial regen
+  ALLOW_NONMAIN=1 bash scripts/codegen-preflight.sh   # stops on an unset or unreadable path; check the branch it prints
+  for v in hubspot salesforce netsuite stripe zendesk google_analytics facebook_ads google_ads; do
+    go run ./cmd/tfgen generate --backend-path="$STREAMKAP_BACKEND_PATH" --output=internal/generated --entity-type sources --connector "$v"
+  done
+  go generate main.go   # docs, after the schemas
+  make snapshots        # then read the diff
+)
 ```
 
 A new vendor also needs its generated `Source<Vendor>APISource` in `apiSources` (`internal/resource/source/api_sources.go`), which registers the resource and keeps `streamkap_pipeline` off it, a one-line constructor there for its tests, a `TestSchemaBackwardsCompatibility_APISources` row, `examples/resources/streamkap_source_<vendor>/{basic,complete}.tf` and `import.sh`, and a lifecycle case in `internal/provider/api_source_vendors_local_test.go` if it adds an auth pattern.

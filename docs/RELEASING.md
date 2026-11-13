@@ -43,7 +43,7 @@ through 15 October 2026, with support ending 16 October 2026. Existing v2
 artifacts remain available. Verify registry availability and installability;
 a GitHub release alone does not prove registry ingestion.
 
-**Publishing v3 is gated on the security workflow.** Trivy fails on any HIGH or CRITICAL advisory, including transitive dependencies, regardless of code-path reachability.
+**Publishing v3 is gated on the security workflow.** Trivy fails on any HIGH or CRITICAL advisory that has a fixed version, including transitive dependencies, regardless of code-path reachability. An advisory with no fix yet does not fail it (`ignore-unfixed: true` in `.github/workflows/security.yml`), so a green gate does not mean no known HIGH or CRITICAL advisory.
 
 When that happens, `goreleaser` shows as `skipped` and **nothing is published** — no GitHub release, no registry artifacts. Confirm with `gh release view <tag>` returning "release not found". Then bump the dependency, push the approved release branch, and re-point the tag (`git push origin :refs/tags/<tag>` then re-tag and push). Re-pointing is safe *only* because the tag published nothing; once a release exists, burn the number and cut the next one instead.
 
