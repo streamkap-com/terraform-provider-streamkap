@@ -224,6 +224,10 @@ func (r *BaseConnectorResource) Schema(ctx context.Context, req resource.SchemaR
 		}
 	}
 
+	if r.hasSmtChain() {
+		baseSchema.Attributes[smtChainAttr] = smtChainAttribute(r.config.GetConnectorType())
+	}
+
 	// Add timeouts block to the schema
 	baseSchema.Blocks = map[string]schema.Block{
 		"timeouts": timeouts.Block(ctx, timeouts.Opts{
@@ -242,6 +246,9 @@ func (r *BaseConnectorResource) Schema(ctx context.Context, req resource.SchemaR
 func (r *BaseConnectorResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	if req.Plan.Raw.IsNull() {
 		return
+	}
+	if r.hasSmtChain() {
+		planSmtChainIDs(ctx, req, resp)
 	}
 	model := r.config.NewModelInstance()
 	resp.Diagnostics.Append(req.Config.Get(ctx, model)...)
@@ -437,6 +444,13 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		filter.FilterRequestConfig(configMap, model, nil)
 	}
 
+	ctx, plannedChain, smtChain, diags := r.smtChainRequest(ctx, req.Plan.GetAttribute, nil)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	var responseChain *[]api.SmtChainItem
+
 	// Never log configMap: it holds decrypted credentials keyed by API field name
 	// and bypasses the redaction applied to the request body in internal/api.
 	tflog.Debug(ctx, fmt.Sprintf("Creating %s %s", r.config.GetConnectorType(), r.config.GetConnectorCode()))
@@ -461,6 +475,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 			Config:      configMap,
 			KcClusterId: kcClusterId,
 			Tags:        tags,
+			SmtChain:    smtChain,
 		})
 		if err != nil {
 			r.addSaveError(&resp.Diagnostics, fmt.Sprintf("Error creating %s source", r.config.GetConnectorCode()), "Unable to create source", err)
@@ -473,6 +488,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		responseClusterID = source.KcClusterId
 		responseConfig = source.Config
 		responseTags = source.Tags
+		responseChain = source.SmtChain
 		addConnectionWarning(ctx, &resp.Diagnostics, source)
 
 	case ConnectorTypeDestination:
@@ -482,6 +498,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 			Config:      configMap,
 			KcClusterId: kcClusterId,
 			Tags:        tags,
+			SmtChain:    smtChain,
 		})
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -497,6 +514,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 		responseClusterID = destination.KcClusterId
 		responseConfig = destination.Config
 		responseTags = destination.Tags
+		responseChain = destination.SmtChain
 	}
 
 	// Update model with response data
@@ -518,6 +536,7 @@ func (r *BaseConnectorResource) Create(ctx context.Context, req resource.CreateR
 
 	// Save data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	resp.Diagnostics.Append(r.setSmtChainApplied(ctx, &resp.State, plannedChain, responseChain)...)
 }
 
 // Read reads the connector resource.
@@ -587,6 +606,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 	var kcClusterId string
 	var responseConfig map[string]any
 	var responseTags []string
+	var responseChain *[]api.SmtChainItem
 
 	switch r.config.GetConnectorType() {
 	case ConnectorTypeSource:
@@ -608,6 +628,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 		kcClusterId = source.KcClusterId
 		responseConfig = source.Config
 		responseTags = source.Tags
+		responseChain = source.SmtChain
 
 	case ConnectorTypeDestination:
 		destination, err := r.client.GetDestination(ctx, id)
@@ -628,6 +649,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 		kcClusterId = destination.KcClusterId
 		responseConfig = destination.Config
 		responseTags = destination.Tags
+		responseChain = destination.SmtChain
 	}
 
 	// Update model with response data
@@ -653,6 +675,7 @@ func (r *BaseConnectorResource) Read(ctx context.Context, req resource.ReadReque
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	resp.Diagnostics.Append(r.readSmtChain(ctx, req.State.GetAttribute, &resp.State, responseChain)...)
 }
 
 // Update updates the connector resource.
@@ -730,6 +753,12 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		filter.FilterRequestConfig(configMap, model, prior)
 	}
 
+	ctx, plannedChain, smtChain, diags := r.smtChainRequest(ctx, req.Plan.GetAttribute, req.State.GetAttribute)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	tflog.Debug(ctx, fmt.Sprintf("Updating %s %s with ID: %s", r.config.GetConnectorType(), r.config.GetConnectorCode(), id))
 
 	// Call the appropriate API based on connector type
@@ -741,6 +770,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 	kcClusterId := r.getStringField(model, "KcClusterId")
 	tags := r.getStringSliceField(ctx, model, "Tags")
 	var responseTags []string
+	var responseChain *[]api.SmtChainItem
 
 	switch r.config.GetConnectorType() {
 	case ConnectorTypeSource:
@@ -750,6 +780,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 			Config:      configMap,
 			KcClusterId: kcClusterId,
 			Tags:        tags,
+			SmtChain:    smtChain,
 		})
 		if err != nil {
 			r.addSaveError(&resp.Diagnostics, fmt.Sprintf("Error updating %s source", r.config.GetConnectorCode()), "Unable to update source", err)
@@ -760,6 +791,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		connectorStatus = source.ConnectorStatus
 		responseConfig = source.Config
 		responseTags = source.Tags
+		responseChain = source.SmtChain
 		addConnectionWarning(ctx, &resp.Diagnostics, source)
 
 	case ConnectorTypeDestination:
@@ -769,6 +801,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 			Config:      configMap,
 			KcClusterId: kcClusterId,
 			Tags:        tags,
+			SmtChain:    smtChain,
 		})
 		if err != nil {
 			resp.Diagnostics.AddError(
@@ -782,6 +815,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 		connectorStatus = destination.ConnectorStatus
 		responseConfig = destination.Config
 		responseTags = destination.Tags
+		responseChain = destination.SmtChain
 	}
 
 	// Update model with response data.
@@ -822,6 +856,7 @@ func (r *BaseConnectorResource) Update(ctx context.Context, req resource.UpdateR
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
+	resp.Diagnostics.Append(r.setSmtChainApplied(ctx, &resp.State, plannedChain, responseChain)...)
 }
 
 // Delete deletes the connector resource.

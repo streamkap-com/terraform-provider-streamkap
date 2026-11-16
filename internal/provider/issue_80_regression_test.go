@@ -127,6 +127,11 @@ func TestIssue80_OptionalFieldsArePlanStable(t *testing.T) {
 				if issue82MapOverrideFields[f.name+"."+name] {
 					continue
 				}
+				// smt_chain is not backend config: the API never backfills it, and it
+				// must stay non-Computed so removing it from the config can be seen.
+				if name == "smt_chain" {
+					continue
+				}
 				t.Errorf("%s.%s is Optional but not Computed — exposes issue-#80 "+
 					"inconsistent-result-after-apply when the backend dynamically backfills this field",
 					f.name, name)

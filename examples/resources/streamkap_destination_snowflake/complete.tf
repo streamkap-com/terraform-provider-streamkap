@@ -25,6 +25,11 @@ variable "destination_snowflake_key_passphrase" {
   sensitive   = true
   description = "The passphrase of the private key of the Snowflake database"
 }
+variable "mask_salt" {
+  type        = string
+  sensitive   = true
+  description = "Salt prepended to masked values before hashing"
+}
 resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   name                             = "example-destination-snowflake"
   snowflake_url_name               = var.destination_snowflake_url_name
@@ -41,6 +46,24 @@ resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   apply_dynamic_table_script       = false
   snowflake_topic2table_map        = "REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5"
 
+  # Transforms run in list order.
+  smt_chain = [
+    {
+      type          = "mask_field"
+      name          = "Hash emails"
+      config        = jsonencode({ "fields.include.list" = ["public.users.email"], "mask.function" = "SHA256" })
+      secret_config = { "mask.salt" = var.mask_salt }
+    },
+    {
+      type   = "regex_router"
+      name   = "Strip schema prefix"
+      config = jsonencode({ regex = "public\\.(.*)", replacement = "$1" })
+      predicate = {
+        type   = "topic_name_matches"
+        config = jsonencode({ pattern = "public\\..*" })
+      }
+    },
+  ]
 }
 
 output "example-destination-snowflake" {

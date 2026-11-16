@@ -27,6 +27,8 @@ type Destination struct {
 	KcClusterId     string         `json:"kc_cluster_id,omitempty"`
 	// See the matching comment on api.Source.Tags for why omitempty is absent here.
 	Tags []string `json:"tags"`
+	// See api.Source.SmtChain.
+	SmtChain *[]SmtChainItem `json:"smt_chain,omitempty"`
 }
 
 func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destination) (*Destination, error) {

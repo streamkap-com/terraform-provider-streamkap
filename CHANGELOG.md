@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `smt_chain` on Kafka Connect sources and destinations: an ordered list of Single Message Transforms (`mask_field`, `drop_fields`, `regex_router` on destinations; `filter` on sources), each with an optional `topic_name_matches` predicate. Secrets such as `mask.salt` go in the sensitive `secret_config`. Removing `smt_chain` removes the chain; a connector that never sets it is unchanged.
+
 ## [3.1.0] - 2026-10-22
 
 ### Added

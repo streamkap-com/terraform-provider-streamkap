@@ -190,6 +190,7 @@ output "example-source-salesforce-webhook-api-key" {
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
+- `smt_chain` (Attributes List) Single Message Transforms applied by this connector, in the order they run (at most 20). Supported types: `filter`. Removing the attribute removes the chain. (see [below for nested schema](#nestedatt--smt_chain))
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `topic_include_list` (String) Salesforce objects to capture. Select the objects you want to receive change events for. Defaults to `Account,Contact,Lead,Opportunity`.
@@ -210,6 +211,39 @@ output "example-source-salesforce-webhook-api-key" {
 - `connector` (String) Connector type
 - `connector_status` (String) Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
 - `id` (String) Unique identifier for the source
+
+<a id="nestedatt--smt_chain"></a>
+### Nested Schema for `smt_chain`
+
+Required:
+
+- `name` (String) Display name.
+- `type` (String) Transform type, e.g. `mask_field`.
+
+Optional:
+
+- `config` (String) JSON object of properties, e.g. `jsonencode({ "fields.include.list" = ["public.users.email"] })`. Values are strings, booleans or lists of strings. Put secrets in `secret_config`.
+- `enabled` (Boolean) A disabled item keeps its settings but does not run. Defaults to `true`.
+- `predicate` (Attributes) Run the transform only on records that match. (see [below for nested schema](#nestedatt--smt_chain--predicate))
+- `secret_config` (Map of String, Sensitive) Secret properties, e.g. `mask.salt`, kept out of plan output. **Security:** stored in state; mark the source variable sensitive. Removing a key clears the stored secret.
+
+Read-Only:
+
+- `id` (String) Kafka Connect alias the server assigns, e.g. `MaskField1`. Kept across plans while the item's type and name stay the same.
+
+<a id="nestedatt--smt_chain--predicate"></a>
+### Nested Schema for `smt_chain.predicate`
+
+Required:
+
+- `type` (String) Predicate type, e.g. `topic_name_matches`.
+
+Optional:
+
+- `config` (String) JSON object of properties, e.g. `jsonencode({ pattern = "orders.*" })`. Values are strings, booleans or lists of strings. Put secrets in `secret_config`.
+- `negate` (Boolean) Apply the transform to the records that do not match. Defaults to `false`.
+
+
 
 <a id="nestedblock--timeouts"></a>
 ### Nested Schema for `timeouts`

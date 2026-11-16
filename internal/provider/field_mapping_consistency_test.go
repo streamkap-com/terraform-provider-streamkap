@@ -71,6 +71,7 @@ var connectorBaseAttrs = map[string]bool{
 	"connector_status": true,
 	"kc_cluster_id":    true,
 	"tags":             true,
+	"smt_chain":        true,
 }
 
 // transformBaseAttrs are the transform equivalents. implementation_json, deploy

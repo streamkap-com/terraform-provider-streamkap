@@ -180,6 +180,7 @@ output "example-source-supabase" {
 - `reselector_reselect_error_handling_mode` (String) Controls what happens when the re-select post processor fails to fetch a column. 'Fail' stops the connector; 'Warn' logs a warning and continues. Defaults to `fail`. Valid values: `fail`, `warn`.
 - `signal_data_collection_schema_or_database` (String) Full path to the signal table including schema and table name (e.g., 'public.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.
 - `slot_name` (String) The name of the replication slot for the connector to use. Defaults to `streamkap_pgoutput_slot`.
+- `smt_chain` (Attributes List) Single Message Transforms applied by this connector, in the order they run (at most 20). Supported types: `filter`. Removing the attribute removes the chain. (see [below for nested schema](#nestedatt--smt_chain))
 - `snapshot_read_only` (String) When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots. Defaults to `Yes`. Valid values: `Yes`, `No`.
 - `ssh_enabled` (Boolean) <span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.
 - `ssh_host` (String) Hostname of your SSH server
@@ -212,6 +213,39 @@ output "example-source-supabase" {
 - `connector` (String) Connector type
 - `connector_status` (String) Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
 - `id` (String) Unique identifier for the source
+
+<a id="nestedatt--smt_chain"></a>
+### Nested Schema for `smt_chain`
+
+Required:
+
+- `name` (String) Display name.
+- `type` (String) Transform type, e.g. `mask_field`.
+
+Optional:
+
+- `config` (String) JSON object of properties, e.g. `jsonencode({ "fields.include.list" = ["public.users.email"] })`. Values are strings, booleans or lists of strings. Put secrets in `secret_config`.
+- `enabled` (Boolean) A disabled item keeps its settings but does not run. Defaults to `true`.
+- `predicate` (Attributes) Run the transform only on records that match. (see [below for nested schema](#nestedatt--smt_chain--predicate))
+- `secret_config` (Map of String, Sensitive) Secret properties, e.g. `mask.salt`, kept out of plan output. **Security:** stored in state; mark the source variable sensitive. Removing a key clears the stored secret.
+
+Read-Only:
+
+- `id` (String) Kafka Connect alias the server assigns, e.g. `MaskField1`. Kept across plans while the item's type and name stay the same.
+
+<a id="nestedatt--smt_chain--predicate"></a>
+### Nested Schema for `smt_chain.predicate`
+
+Required:
+
+- `type` (String) Predicate type, e.g. `topic_name_matches`.
+
+Optional:
+
+- `config` (String) JSON object of properties, e.g. `jsonencode({ pattern = "orders.*" })`. Values are strings, booleans or lists of strings. Put secrets in `secret_config`.
+- `negate` (Boolean) Apply the transform to the records that do not match. Defaults to `false`.
+
+
 
 <a id="nestedblock--timeouts"></a>
 ### Nested Schema for `timeouts`

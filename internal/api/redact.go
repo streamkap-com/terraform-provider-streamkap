@@ -23,7 +23,7 @@ import (
 // underscored Terraform attribute names, and those dotted keys are what this
 // sees. Matching only `[_-]` silently passed both of those through in the clear.
 var sensitiveKeyRegex = regexp.MustCompile(`(?i)` +
-	`(password|passwd|secret|token|credential|passphrase|` +
+	`(password|passwd|secret|token|credential|passphrase|salt|` +
 	`api[_.-]?key|private[_.-]?key|public[_.-]?key|` +
 	`access[_.-]?key|consumer[_.-]?key|service[_.-]?account|keyfile|connection[_.-]?string|` +
 	`auth|bearer|session|cookie|` +

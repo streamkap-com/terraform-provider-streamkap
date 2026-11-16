@@ -34,6 +34,9 @@ type StreamkapAPI interface {
 	ListDestinations(ctx context.Context) ([]Destination, error)
 	DeleteDestination(ctx context.Context, destinationID string) error
 
+	// SMT chain catalog of a "sources" or "destinations" host
+	ListSmtCatalog(ctx context.Context, host string) ([]SmtCatalogEntry, error)
+
 	// Pipeline APIs
 	CreatePipeline(ctx context.Context, reqPayload Pipeline) (*Pipeline, error)
 	UpdatePipeline(ctx context.Context, pipelineID string, reqPayload Pipeline) (*Pipeline, error)
