@@ -201,7 +201,7 @@ output "example-source-postgresql" {
 - `reselector_reselect_error_handling_mode` (String) Controls what happens when the re-select post processor fails to fetch a column. 'Fail' stops the connector; 'Warn' logs a warning and continues. Defaults to `fail`. Valid values: `fail`, `warn`.
 - `signal_data_collection_schema_or_database` (String) Full path to the signal table including schema and table name (e.g., 'public.streamkap_signal'). This table is used for incremental snapshotting. Follow the documentation for creating this table.
 - `slot_name` (String) The name of the replication slot for the connector to use. Defaults to `streamkap_pgoutput_slot`.
-- `smt_chain` (Attributes List) Single Message Transforms applied by this connector, in the order they run (at most 20). Supported types: `filter`. Removing the attribute removes the chain. (see [below for nested schema](#nestedatt--smt_chain))
+- `smt_chain` (Attributes List) Single Message Transforms applied by this connector, in the order they run (at most 20). Supported types: `filter`. Removing the attribute removes the chain, and so does an apply on a resource that never declared it after a chain was added in the Streamkap app. To manage the chain in the app instead, add `lifecycle { ignore_changes = [smt_chain] }`. (see [below for nested schema](#nestedatt--smt_chain))
 - `snapshot_read_only` (String) When connecting to a read replica PostgreSQL database, this must be set to 'Yes' to support Streamkap snapshots. Defaults to `Yes`. Valid values: `Yes`, `No`.
 - `source_regex_support_enabled` (Boolean) Enable regex support. Useful for merging multiple tables into the same output topic. Defaults to `false`.
 - `ssh_enabled` (Boolean) <span>Streamkap will connect to SSH server in your network which has access to your database. This is necessary if Streamkap cannot connect directly to your database. <a href='https://docs.streamkap.com/streamkap-ip-addresses#streamkap-ip-addresses' class='docs-url' target='_blank'>View the Streamkap IP addresses to allowlist on your SSH server</a> </span>. Defaults to `false`.
@@ -253,7 +253,7 @@ Required:
 
 Optional:
 
-- `config` (String) JSON object of properties, e.g. `jsonencode({ "fields.include.list" = ["public.users.email"] })`. Values are strings, booleans or lists of strings. Put secrets in `secret_config`.
+- `config` (String) JSON object of properties, e.g. `jsonencode({ "fields.include.list" = ["users.email"] })`. Values are strings, booleans or lists of strings. Put secrets in `secret_config`.
 - `enabled` (Boolean) A disabled item keeps its settings but does not run. Defaults to `true`.
 - `predicate` (Attributes) Run the transform only on records that match. (see [below for nested schema](#nestedatt--smt_chain--predicate))
 - `secret_config` (Map of String, Sensitive) Secret properties, e.g. `mask.salt`, kept out of plan output. **Security:** stored in state; mark the source variable sensitive. Removing a key clears the stored secret.

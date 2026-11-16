@@ -46,12 +46,13 @@ resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   apply_dynamic_table_script       = false
   snowflake_topic2table_map        = "REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5"
 
-  # Transforms run in list order.
+  # Transforms run in list order. A column is table.column with exactly one dot;
+  # the table is the topic name at this step, usually without the source prefix.
   smt_chain = [
     {
       type          = "mask_field"
       name          = "Hash emails"
-      config        = jsonencode({ "fields.include.list" = ["public.users.email"], "mask.function" = "SHA256" })
+      config        = jsonencode({ "fields.include.list" = ["users.email"], "mask.function" = "SHA256" })
       secret_config = { "mask.salt" = var.mask_salt }
     },
     {

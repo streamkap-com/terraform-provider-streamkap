@@ -116,7 +116,7 @@ output "example_destination_redis" {
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
 - `redis_key_data_type` (String) Data Type of Redis Key. At the moment, only Stream and List are supported. Defaults to `Stream`. Valid values: `Stream`, `List`, `Hash`.
 - `redis_port` (Number) Redis Port. For example, 6379. Defaults to `6379`.
-- `smt_chain` (Attributes List) Single Message Transforms applied by this connector, in the order they run (at most 20). Supported types: `regex_router`, `mask_field`, `drop_fields`. Removing the attribute removes the chain. (see [below for nested schema](#nestedatt--smt_chain))
+- `smt_chain` (Attributes List) Single Message Transforms applied by this connector, in the order they run (at most 20). Supported types: `regex_router`, `mask_field`, `drop_fields`. Removing the attribute removes the chain, and so does an apply on a resource that never declared it after a chain was added in the Streamkap app. To manage the chain in the app instead, add `lifecycle { ignore_changes = [smt_chain] }`. (see [below for nested schema](#nestedatt--smt_chain))
 - `ssl_enabled` (Boolean) Enable TLS for network connections. Defaults to `true`.
 - `tags` (Set of String) Optional set of tag IDs to apply to this destination. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
@@ -182,7 +182,7 @@ Required:
 
 Optional:
 
-- `config` (String) JSON object of properties, e.g. `jsonencode({ "fields.include.list" = ["public.users.email"] })`. Values are strings, booleans or lists of strings. Put secrets in `secret_config`.
+- `config` (String) JSON object of properties, e.g. `jsonencode({ "fields.include.list" = ["users.email"] })`. Values are strings, booleans or lists of strings. Put secrets in `secret_config`.
 - `enabled` (Boolean) A disabled item keeps its settings but does not run. Defaults to `true`.
 - `predicate` (Attributes) Run the transform only on records that match. (see [below for nested schema](#nestedatt--smt_chain--predicate))
 - `secret_config` (Map of String, Sensitive) Secret properties, e.g. `mask.salt`, kept out of plan output. **Security:** stored in state; mark the source variable sensitive. Removing a key clears the stored secret.

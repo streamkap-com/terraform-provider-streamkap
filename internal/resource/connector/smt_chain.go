@@ -58,7 +58,7 @@ func smtChainAttribute(host ConnectorType) schema.ListNestedAttribute {
 		d := "JSON object of properties, e.g. `jsonencode(" + example + ")`. Values are strings, booleans or lists of strings. Put secrets in `secret_config`."
 		return schema.StringAttribute{Optional: true, CustomType: jsontypes.NormalizedType{}, Description: d, MarkdownDescription: d}
 	}
-	d := "Single Message Transforms applied by this connector, in the order they run (at most 20). Supported types: " + supported + ". Removing the attribute removes the chain."
+	d := "Single Message Transforms applied by this connector, in the order they run (at most 20). Supported types: " + supported + ". Removing the attribute removes the chain, and so does an apply on a resource that never declared it after a chain was added in the Streamkap app. To manage the chain in the app instead, add `lifecycle { ignore_changes = [smt_chain] }`."
 	return schema.ListNestedAttribute{
 		Optional:            true,
 		Description:         d,
@@ -76,7 +76,7 @@ func smtChainAttribute(host ConnectorType) schema.ListNestedAttribute {
 				Validators:  []validator.String{stringvalidator.LengthAtMost(200), stringvalidator.RegexMatches(regexp.MustCompile(`^[^<>&]*$`), "must not contain <, > or &")},
 			},
 			"enabled": schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(true), Description: "A disabled item keeps its settings but does not run. Defaults to `true`."},
-			"config":  configAttr(`{ "fields.include.list" = ["public.users.email"] }`),
+			"config":  configAttr(`{ "fields.include.list" = ["users.email"] }`),
 			"secret_config": schema.MapAttribute{
 				Optional:    true,
 				Sensitive:   true,
