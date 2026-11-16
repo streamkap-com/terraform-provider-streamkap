@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html"
 	"reflect"
+	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -68,8 +69,12 @@ func smtChainAttribute(host ConnectorType) schema.ListNestedAttribute {
 				Computed:    true,
 				Description: "Kafka Connect alias the server assigns, e.g. `MaskField1`. Kept across plans while the item's type and name stay the same.",
 			},
-			"type":    schema.StringAttribute{Required: true, Description: "Transform type, e.g. `mask_field`."},
-			"name":    schema.StringAttribute{Required: true, Description: "Display name."},
+			"type": schema.StringAttribute{Required: true, Description: "Transform type, e.g. `mask_field`."},
+			"name": schema.StringAttribute{
+				Required:    true,
+				Description: "Display name: at most 200 characters, without `<`, `>` or `&`.",
+				Validators:  []validator.String{stringvalidator.LengthAtMost(200), stringvalidator.RegexMatches(regexp.MustCompile(`^[^<>&]*$`), "must not contain <, > or &")},
+			},
 			"enabled": schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(true), Description: "A disabled item keeps its settings but does not run. Defaults to `true`."},
 			"config":  configAttr(`{ "fields.include.list" = ["public.users.email"] }`),
 			"secret_config": schema.MapAttribute{
@@ -295,8 +300,7 @@ func smtChainFromAPI(got *[]api.SmtChainItem, prior *[]smtItemModel, isSecret fu
 				config[key] = value
 			}
 		}
-		// The API HTML-escapes names; state keeps the name as configured.
-		model := smtItemModel{ID: types.StringValue(item.ID), Type: types.StringValue(item.Type), Name: types.StringValue(html.UnescapeString(item.Name)), Enabled: types.BoolValue(item.Enabled)}
+		model := smtItemModel{ID: types.StringValue(item.ID), Type: types.StringValue(item.Type), Name: types.StringValue(item.Name), Enabled: types.BoolValue(item.Enabled)}
 		if model.Config, err = encodeJSONObject(config, before.Config); err != nil {
 			return nil, err
 		}

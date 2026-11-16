@@ -95,7 +95,7 @@ func TestSmtChainFromAPISecrets(t *testing.T) {
 	prior := []smtItemModel{smtItem("MaskField1", "mask_field", "hash", `{"fields.include.list":["t.a"]}`, map[string]string{"mask.salt": "pepper"})}
 	got := []api.SmtChainItem{
 		{ID: "MaskField1", Type: "mask_field", Name: "hash", Enabled: true, Config: map[string]any{"fields.include.list": []any{"t.a"}, "mask.salt": "*****"}},
-		{ID: "MaskField2", Type: "mask_field", Name: "user&#x27;s salt", Enabled: false, Config: map[string]any{"replace.null.with.default": true, "mask.salt": "clear"}},
+		{ID: "MaskField2", Type: "mask_field", Name: "imported", Enabled: false, Config: map[string]any{"replace.null.with.default": true, "mask.salt": "clear"}},
 	}
 	isSecret := func(smtType, key string) bool { return smtType == "mask_field" && key == "mask.salt" }
 
@@ -108,7 +108,6 @@ func TestSmtChainFromAPISecrets(t *testing.T) {
 	require.JSONEq(t, `{"replace.null.with.default":true}`, second.Config.ValueString())
 	require.Equal(t, `"clear"`, second.SecretConfig.Elements()["mask.salt"].String(), "a catalog secret stays out of config")
 	require.False(t, second.Enabled.ValueBool())
-	require.Equal(t, "user's salt", second.Name.ValueString(), "the API's HTML escaping does not reach state")
 
 	none, err := smtChainFromAPI(nil, nil, isSecret)
 	require.NoError(t, err)

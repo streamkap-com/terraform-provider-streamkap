@@ -171,7 +171,7 @@ output "example-source-shopify-webhook" {
 
 Required:
 
-- `name` (String) Display name.
+- `name` (String) Display name: at most 200 characters, without `<`, `>` or `&`.
 - `type` (String) Transform type, e.g. `mask_field`.
 
 Optional:
