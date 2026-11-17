@@ -2,8 +2,8 @@ package source
 
 import (
 	"context"
-	"fmt"
 	"encoding/json"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -25,9 +25,10 @@ import (
 
 // Ensure provider defined types fully satisfy framework interfaces.
 var (
-	_ res.Resource                = &SourceSQLServerResource{}
-	_ res.ResourceWithConfigure   = &SourceSQLServerResource{}
-	_ res.ResourceWithImportState = &SourceSQLServerResource{}
+	_ res.Resource                   = &SourceSQLServerResource{}
+	_ res.ResourceWithConfigure      = &SourceSQLServerResource{}
+	_ res.ResourceWithImportState    = &SourceSQLServerResource{}
+	_ res.ResourceWithValidateConfig = &SourceSQLServerResource{}
 )
 
 func NewSourceSQLServerResource() res.Resource {
@@ -42,31 +43,35 @@ type SourceSQLServerResource struct {
 
 // SourceSQLServerResourceModel describes the resource data model.
 type SourceSQLServerResourceModel struct {
-	ID                                      types.String `tfsdk:"id"`
-	Name                                    types.String `tfsdk:"name"`
-	Connector                               types.String `tfsdk:"connector"`
-	DatabaseHostname                        types.String `tfsdk:"database_hostname"`
-	DatabasePort                            types.Int64  `tfsdk:"database_port"`
-	DatabaseUser                            types.String `tfsdk:"database_user"`
-	DatabasePassword                        types.String `tfsdk:"database_password"`
-	DatabaseName                            types.String `tfsdk:"database_dbname"`
-	SchemaIncludeList                       types.String `tfsdk:"schema_include_list"`
-	TableIncludeList                        types.String `tfsdk:"table_include_list"`
-	SignalDataCollectionSchemaOrDatabase    types.String `tfsdk:"signal_data_collection_schema_or_database"`
-	ColumnExcludeList                       types.String `tfsdk:"column_exclude_list"`
-	HeartbeatEnabled                        types.Bool   `tfsdk:"heartbeat_enabled"`
-	HeartbeatDataCollectionSchemaOrDatabase types.String `tfsdk:"heartbeat_data_collection_schema_or_database"`
-	BinaryHandlingMode                      types.String `tfsdk:"binary_handling_mode"`
-	InsertStaticKeyField                    types.String `tfsdk:"insert_static_key_field"`
-	InsertStaticKeyValue                    types.String `tfsdk:"insert_static_key_value"`
-	InsertStaticValueField                  types.String `tfsdk:"insert_static_value_field"`
-	InsertStaticValue                       types.String `tfsdk:"insert_static_value"`
-	SSHEnabled                              types.Bool   `tfsdk:"ssh_enabled"`
-	SSHHost                                 types.String `tfsdk:"ssh_host"`
-	SSHPort                                 types.String `tfsdk:"ssh_port"`
-	SSHUser                                 types.String `tfsdk:"ssh_user"`
-	SnapshotParallelism                     types.Int64 `tfsdk:"snapshot_parallelism"`
-	SnapshotLargeTableThreshold             types.Int64 `tfsdk:"snapshot_large_table_threshold"`
+	ID                                      types.String                              `tfsdk:"id"`
+	Name                                    types.String                              `tfsdk:"name"`
+	Connector                               types.String                              `tfsdk:"connector"`
+	DatabaseHostname                        types.String                              `tfsdk:"database_hostname"`
+	DatabasePort                            types.Int64                               `tfsdk:"database_port"`
+	DatabaseUser                            types.String                              `tfsdk:"database_user"`
+	DatabasePassword                        types.String                              `tfsdk:"database_password"`
+	AuthMode                                types.String                              `tfsdk:"auth_mode"`
+	AzureTenantID                           types.String                              `tfsdk:"azure_tenant_id"`
+	AzureClientID                           types.String                              `tfsdk:"azure_client_id"`
+	AzureClientSecret                       types.String                              `tfsdk:"azure_client_secret"`
+	DatabaseName                            types.String                              `tfsdk:"database_dbname"`
+	SchemaIncludeList                       types.String                              `tfsdk:"schema_include_list"`
+	TableIncludeList                        types.String                              `tfsdk:"table_include_list"`
+	SignalDataCollectionSchemaOrDatabase    types.String                              `tfsdk:"signal_data_collection_schema_or_database"`
+	ColumnExcludeList                       types.String                              `tfsdk:"column_exclude_list"`
+	HeartbeatEnabled                        types.Bool                                `tfsdk:"heartbeat_enabled"`
+	HeartbeatDataCollectionSchemaOrDatabase types.String                              `tfsdk:"heartbeat_data_collection_schema_or_database"`
+	BinaryHandlingMode                      types.String                              `tfsdk:"binary_handling_mode"`
+	InsertStaticKeyField                    types.String                              `tfsdk:"insert_static_key_field"`
+	InsertStaticKeyValue                    types.String                              `tfsdk:"insert_static_key_value"`
+	InsertStaticValueField                  types.String                              `tfsdk:"insert_static_value_field"`
+	InsertStaticValue                       types.String                              `tfsdk:"insert_static_value"`
+	SSHEnabled                              types.Bool                                `tfsdk:"ssh_enabled"`
+	SSHHost                                 types.String                              `tfsdk:"ssh_host"`
+	SSHPort                                 types.String                              `tfsdk:"ssh_port"`
+	SSHUser                                 types.String                              `tfsdk:"ssh_user"`
+	SnapshotParallelism                     types.Int64                               `tfsdk:"snapshot_parallelism"`
+	SnapshotLargeTableThreshold             types.Int64                               `tfsdk:"snapshot_large_table_threshold"`
 	SnapshotCustomTableConfig               map[string]snapshotCustomTableConfigModel `tfsdk:"snapshot_custom_table_config"`
 }
 
@@ -115,15 +120,41 @@ func (r *SourceSQLServerResource) Schema(ctx context.Context, req res.SchemaRequ
 				MarkdownDescription: "SQLServer Port. For example, 1433",
 			},
 			"database_user": schema.StringAttribute{
-				Required:            true,
-				Description:         "Username to access the database",
-				MarkdownDescription: "Username to access the database",
+				Optional:            true,
+				Description:         "Username to access the database. Required when `auth_mode` is `sql`.",
+				MarkdownDescription: "Username to access the database. Required when `auth_mode` is `sql`.",
 			},
 			"database_password": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
 				Sensitive:           true,
-				Description:         "Password to access the database",
-				MarkdownDescription: "Password to access the database",
+				Description:         "Password to access the database. Required when `auth_mode` is `sql`.",
+				MarkdownDescription: "Password to access the database. Required when `auth_mode` is `sql`.",
+			},
+			"auth_mode": schema.StringAttribute{
+				Computed:            true,
+				Optional:            true,
+				Default:             stringdefault.StaticString("sql"),
+				Description:         "Authentication mode. `sql` uses SQL Server username and password. `entra_service_principal` uses Azure Entra Service Principal (tenant, client id, client secret) against Azure SQL.",
+				MarkdownDescription: "Authentication mode. `sql` uses SQL Server username and password. `entra_service_principal` uses Azure Entra Service Principal (tenant, client id, client secret) against Azure SQL.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("sql", "entra_service_principal"),
+				},
+			},
+			"azure_tenant_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Azure Entra tenant ID. Required when `auth_mode` is `entra_service_principal`.",
+				MarkdownDescription: "Azure Entra tenant ID. Required when `auth_mode` is `entra_service_principal`.",
+			},
+			"azure_client_id": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Azure Entra application (client) ID of the service principal. Required when `auth_mode` is `entra_service_principal`.",
+				MarkdownDescription: "Azure Entra application (client) ID of the service principal. Required when `auth_mode` is `entra_service_principal`.",
+			},
+			"azure_client_secret": schema.StringAttribute{
+				Optional:            true,
+				Sensitive:           true,
+				Description:         "Azure Entra client secret of the service principal. Required when `auth_mode` is `entra_service_principal`. Stored encrypted server-side.",
+				MarkdownDescription: "Azure Entra client secret of the service principal. Required when `auth_mode` is `entra_service_principal`. Stored encrypted server-side.",
 			},
 			"database_dbname": schema.StringAttribute{
 				Required:            true,
@@ -246,11 +277,11 @@ func (r *SourceSQLServerResource) Schema(ctx context.Context, req res.SchemaRequ
 				},
 			},
 			"snapshot_custom_table_config": schema.MapNestedAttribute{
-				Optional:            true,
+				Optional: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"chunks": schema.Int64Attribute{
-							Required:   true,
+							Required: true,
 							Validators: []validator.Int64{
 								int64validator.AtLeast(1),
 							},
@@ -282,6 +313,93 @@ func (r *SourceSQLServerResource) Configure(ctx context.Context, req res.Configu
 	r.client = client
 }
 
+// ValidateConfig enforces auth_mode mutual exclusivity between SQL and Entra SP fields.
+func (r *SourceSQLServerResource) ValidateConfig(ctx context.Context, req res.ValidateConfigRequest, resp *res.ValidateConfigResponse) {
+	var cfg SourceSQLServerResourceModel
+
+	resp.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Defer validation if auth_mode itself is not yet known (e.g. driven by var.foo at plan time).
+	if cfg.AuthMode.IsUnknown() {
+		return
+	}
+	mode := "sql"
+	if !cfg.AuthMode.IsNull() {
+		mode = cfg.AuthMode.ValueString()
+	}
+
+	// "definitely absent" is explicit null; "definitely present" is known-and-not-null.
+	// Unknown is deferred — we can't tell yet, so don't raise.
+	userAbsent := cfg.DatabaseUser.IsNull()
+	passAbsent := cfg.DatabasePassword.IsNull()
+	userPresent := !cfg.DatabaseUser.IsNull() && !cfg.DatabaseUser.IsUnknown()
+	passPresent := !cfg.DatabasePassword.IsNull() && !cfg.DatabasePassword.IsUnknown()
+	tenantAbsent := cfg.AzureTenantID.IsNull()
+	clientAbsent := cfg.AzureClientID.IsNull()
+	secretAbsent := cfg.AzureClientSecret.IsNull()
+	tenantPresent := !cfg.AzureTenantID.IsNull() && !cfg.AzureTenantID.IsUnknown()
+	clientPresent := !cfg.AzureClientID.IsNull() && !cfg.AzureClientID.IsUnknown()
+	secretPresent := !cfg.AzureClientSecret.IsNull() && !cfg.AzureClientSecret.IsUnknown()
+
+	switch mode {
+	case "sql":
+		if userAbsent {
+			resp.Diagnostics.AddAttributeError(path.Root("database_user"),
+				"Missing database_user",
+				"auth_mode = \"sql\" requires database_user to be set.")
+		}
+		if passAbsent {
+			resp.Diagnostics.AddAttributeError(path.Root("database_password"),
+				"Missing database_password",
+				"auth_mode = \"sql\" requires database_password to be set.")
+		}
+		if tenantPresent {
+			resp.Diagnostics.AddAttributeError(path.Root("azure_tenant_id"),
+				"Unexpected azure_tenant_id",
+				"azure_tenant_id must not be set when auth_mode = \"sql\".")
+		}
+		if clientPresent {
+			resp.Diagnostics.AddAttributeError(path.Root("azure_client_id"),
+				"Unexpected azure_client_id",
+				"azure_client_id must not be set when auth_mode = \"sql\".")
+		}
+		if secretPresent {
+			resp.Diagnostics.AddAttributeError(path.Root("azure_client_secret"),
+				"Unexpected azure_client_secret",
+				"azure_client_secret must not be set when auth_mode = \"sql\".")
+		}
+	case "entra_service_principal":
+		if tenantAbsent {
+			resp.Diagnostics.AddAttributeError(path.Root("azure_tenant_id"),
+				"Missing azure_tenant_id",
+				"auth_mode = \"entra_service_principal\" requires azure_tenant_id to be set.")
+		}
+		if clientAbsent {
+			resp.Diagnostics.AddAttributeError(path.Root("azure_client_id"),
+				"Missing azure_client_id",
+				"auth_mode = \"entra_service_principal\" requires azure_client_id to be set.")
+		}
+		if secretAbsent {
+			resp.Diagnostics.AddAttributeError(path.Root("azure_client_secret"),
+				"Missing azure_client_secret",
+				"auth_mode = \"entra_service_principal\" requires azure_client_secret to be set.")
+		}
+		if userPresent {
+			resp.Diagnostics.AddAttributeError(path.Root("database_user"),
+				"Unexpected database_user",
+				"database_user must not be set when auth_mode = \"entra_service_principal\".")
+		}
+		if passPresent {
+			resp.Diagnostics.AddAttributeError(path.Root("database_password"),
+				"Unexpected database_password",
+				"database_password must not be set when auth_mode = \"entra_service_principal\".")
+		}
+	}
+}
+
 func (r *SourceSQLServerResource) Create(ctx context.Context, req res.CreateRequest, resp *res.CreateResponse) {
 	var plan SourceSQLServerResourceModel
 
@@ -307,7 +425,6 @@ func (r *SourceSQLServerResource) Create(ctx context.Context, req res.CreateRequ
 		Connector: plan.Connector.ValueString(),
 		Config:    config,
 	})
-
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -466,28 +583,32 @@ func (r *SourceSQLServerResource) model2ConfigMap(model SourceSQLServerResourceM
 	}
 
 	configMap := map[string]any{
-		"database.hostname.user.defined":               model.DatabaseHostname.ValueString(),
-		"database.port.user.defined":                   int(model.DatabasePort.ValueInt64()),
-		"database.user":                                model.DatabaseUser.ValueString(),
-		"database.password":                            model.DatabasePassword.ValueString(),
-		"database.names":                               model.DatabaseName.ValueString(),
-		"schema.include.list":                          model.SchemaIncludeList.ValueString(),
-		"table.include.list.user.defined":              model.TableIncludeList.ValueString(),
-		"signal.data.collection.schema.or.database":    model.SignalDataCollectionSchemaOrDatabase.ValueStringPointer(),
-		"column.exclude.list.user.defined":             model.ColumnExcludeList.ValueStringPointer(),
-		"heartbeat.enabled":                            model.HeartbeatEnabled.ValueBool(),
-		"heartbeat.data.collection.schema.or.database": model.HeartbeatDataCollectionSchemaOrDatabase.ValueStringPointer(),
-		"transforms.InsertStaticKey1.static.field":      model.InsertStaticKeyField.ValueStringPointer(),
-		"transforms.InsertStaticKey1.static.value":      model.InsertStaticKeyValue.ValueStringPointer(),
-		"transforms.InsertStaticValue1.static.field":    model.InsertStaticValueField.ValueStringPointer(),
-		"transforms.InsertStaticValue1.static.value":    model.InsertStaticValue.ValueStringPointer(),
-		"binary.handling.mode":                         model.BinaryHandlingMode.ValueString(),
-		"ssh.enabled":                                  model.SSHEnabled.ValueBool(),
-		"ssh.host":                                     model.SSHHost.ValueStringPointer(),
-		"ssh.port":                                     model.SSHPort.ValueString(),
-		"ssh.user":                                     model.SSHUser.ValueString(),
-		"streamkap.snapshot.parallelism":               model.SnapshotParallelism.ValueInt64(),
-		"streamkap.snapshot.large.table.threshold":     model.SnapshotLargeTableThreshold.ValueInt64(),
+		"database.hostname.user.defined":                      model.DatabaseHostname.ValueString(),
+		"database.port.user.defined":                          int(model.DatabasePort.ValueInt64()),
+		"database.user.user.defined":                          model.DatabaseUser.ValueStringPointer(),
+		"database.password.user.defined":                      model.DatabasePassword.ValueStringPointer(),
+		"auth_mode":                                           model.AuthMode.ValueString(),
+		"azure_tenant_id":                                     model.AzureTenantID.ValueStringPointer(),
+		"azure_client_id":                                     model.AzureClientID.ValueStringPointer(),
+		"azure_client_secret":                                 model.AzureClientSecret.ValueStringPointer(),
+		"database.names":                                      model.DatabaseName.ValueString(),
+		"schema.include.list":                                 model.SchemaIncludeList.ValueString(),
+		"table.include.list.user.defined":                     model.TableIncludeList.ValueString(),
+		"signal.data.collection.schema.or.database":           model.SignalDataCollectionSchemaOrDatabase.ValueStringPointer(),
+		"column.exclude.list.user.defined":                    model.ColumnExcludeList.ValueStringPointer(),
+		"heartbeat.enabled":                                   model.HeartbeatEnabled.ValueBool(),
+		"heartbeat.data.collection.schema.or.database":        model.HeartbeatDataCollectionSchemaOrDatabase.ValueStringPointer(),
+		"transforms.InsertStaticKey1.static.field":            model.InsertStaticKeyField.ValueStringPointer(),
+		"transforms.InsertStaticKey1.static.value":            model.InsertStaticKeyValue.ValueStringPointer(),
+		"transforms.InsertStaticValue1.static.field":          model.InsertStaticValueField.ValueStringPointer(),
+		"transforms.InsertStaticValue1.static.value":          model.InsertStaticValue.ValueStringPointer(),
+		"binary.handling.mode":                                model.BinaryHandlingMode.ValueString(),
+		"ssh.enabled":                                         model.SSHEnabled.ValueBool(),
+		"ssh.host":                                            model.SSHHost.ValueStringPointer(),
+		"ssh.port":                                            model.SSHPort.ValueString(),
+		"ssh.user":                                            model.SSHUser.ValueString(),
+		"streamkap.snapshot.parallelism":                      model.SnapshotParallelism.ValueInt64(),
+		"streamkap.snapshot.large.table.threshold":            model.SnapshotLargeTableThreshold.ValueInt64(),
 		"streamkap.snapshot.custom.table.config.user.defined": expectedSnapshotCustomTableConfig,
 	}
 
@@ -498,8 +619,35 @@ func (r *SourceSQLServerResource) configMap2Model(cfg map[string]any, model *Sou
 	// Copy the config map to the model
 	model.DatabaseHostname = helper.GetTfCfgString(cfg, "database.hostname.user.defined")
 	model.DatabasePort = helper.GetTfCfgInt64(cfg, "database.port.user.defined")
-	model.DatabaseUser = helper.GetTfCfgString(cfg, "database.user")
-	model.DatabasePassword = helper.GetTfCfgString(cfg, "database.password")
+
+	// Default auth_mode to "sql" so sources that predate the field don't show null → "sql" drift.
+	model.AuthMode = helper.GetTfCfgString(cfg, "auth_mode")
+	if model.AuthMode.IsNull() || model.AuthMode.ValueString() == "" {
+		model.AuthMode = types.StringValue("sql")
+	}
+
+	if model.AuthMode.ValueString() == "sql" {
+		// SQL mode: prefer the new .user.defined keys, fall back to the flat database.user /
+		// database.password for pre-migration sources whose Mongo docs still only have the legacy shape.
+		model.DatabaseUser = helper.GetTfCfgString(cfg, "database.user.user.defined")
+		if model.DatabaseUser.IsNull() || model.DatabaseUser.ValueString() == "" {
+			model.DatabaseUser = helper.GetTfCfgString(cfg, "database.user")
+		}
+		model.DatabasePassword = helper.GetTfCfgString(cfg, "database.password.user.defined")
+		if model.DatabasePassword.IsNull() || model.DatabasePassword.ValueString() == "" {
+			model.DatabasePassword = helper.GetTfCfgString(cfg, "database.password")
+		}
+	} else {
+		// Entra SP mode: the backend's resolver writes azure_client_id into database.user and
+		// azure_client_secret into database.password. Never read those back as SQL credentials —
+		// doing so leaks the client id into database_user and triggers "inconsistent result after apply".
+		model.DatabaseUser = types.StringNull()
+		model.DatabasePassword = types.StringNull()
+	}
+
+	model.AzureTenantID = helper.GetTfCfgString(cfg, "azure_tenant_id")
+	model.AzureClientID = helper.GetTfCfgString(cfg, "azure_client_id")
+	model.AzureClientSecret = helper.GetTfCfgString(cfg, "azure_client_secret")
 	model.DatabaseName = helper.GetTfCfgString(cfg, "database.names")
 	model.SchemaIncludeList = helper.GetTfCfgString(cfg, "schema.include.list")
 	model.TableIncludeList = helper.GetTfCfgString(cfg, "table.include.list.user.defined")

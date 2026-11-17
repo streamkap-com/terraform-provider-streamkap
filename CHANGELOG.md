@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+* **SQL Server source**: Azure Entra Service Principal authentication against Azure SQL. New optional `auth_mode` attribute (enum: `sql` | `entra_service_principal`, defaults to `sql`) alongside three new attributes — `azure_tenant_id`, `azure_client_id`, and `azure_client_secret` (sensitive, stored encrypted server-side). When `auth_mode = "entra_service_principal"` the connector uses `ActiveDirectoryServicePrincipal` to authenticate against `*.database.windows.net` and `database_user` / `database_password` are not required; when `auth_mode = "sql"` (the existing default) the resource behaves unchanged. Cross-attribute validation enforces mutual exclusivity between the SQL and Entra field groups.
+
 ## 2.2.0 (June 22, 2026)
 
 ### Added

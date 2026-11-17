@@ -44,7 +44,7 @@ resource "streamkap_source_sqlserver" "example-source-sqlserver" {
   database_dbname                              = "sqlserverdemo"
   schema_include_list                          = "dbo"
   table_include_list                           = "dbo.Orders"
-  signal_data_collection_schema_or_database    = "streamkap"
+  signal_data_collection_schema_or_database    = "dbo.streamkap_signal"
   heartbeat_enabled                            = false
   heartbeat_data_collection_schema_or_database = null
   binary_handling_mode                         = "bytes"
@@ -75,24 +75,28 @@ output "example-source-sqlserver" {
 
 - `database_dbname` (String) Source Databases
 - `database_hostname` (String) SQLServer Hostname. For example, sqlserverdb.something.rds.amazonaws.com
-- `database_password` (String, Sensitive) Password to access the database
-- `database_user` (String) Username to access the database
 - `name` (String) Source name
 - `schema_include_list` (String) Source schemas to sync
 - `table_include_list` (String) Source tables to sync
 
 ### Optional
 
+- `auth_mode` (String) Authentication mode. `sql` uses SQL Server username and password. `entra_service_principal` uses Azure Entra Service Principal (tenant, client id, client secret) against Azure SQL.
+- `azure_client_id` (String) Azure Entra application (client) ID of the service principal. Required when `auth_mode` is `entra_service_principal`.
+- `azure_client_secret` (String, Sensitive) Azure Entra client secret of the service principal. Required when `auth_mode` is `entra_service_principal`. Stored encrypted server-side.
+- `azure_tenant_id` (String) Azure Entra tenant ID. Required when `auth_mode` is `entra_service_principal`.
 - `binary_handling_mode` (String) Specifies how the data for binary columns e.g. blob, binary, varbinary should be represented. This setting depends on what the destination is. See the documentation for more details.
 - `column_exclude_list` (String) Comma separated list of columns blacklist regular expressions, format schema[.]table[.](column1|column2|etc)
+- `database_password` (String, Sensitive) Password to access the database. Required when `auth_mode` is `sql`.
 - `database_port` (Number) SQLServer Port. For example, 1433
+- `database_user` (String) Username to access the database. Required when `auth_mode` is `sql`.
 - `heartbeat_data_collection_schema_or_database` (String) Heartbeat Table Database
 - `heartbeat_enabled` (Boolean) Heartbeats are used to keep the pipeline healthy when there is a low volume of data at times.
 - `insert_static_key_field` (String) The name of the static field to be added to the message key.
 - `insert_static_key_value` (String) The value of the static field to be added to the message key.
 - `insert_static_value` (String) The value of the static field to be added to the message value.
 - `insert_static_value_field` (String) The name of the static field to be added to the message value.
-- `signal_data_collection_schema_or_database` (String) Schema for signal data collection. If connector is in read-only mode (snapshot_gtid="Yes"), set this to null.
+- `signal_data_collection_schema_or_database` (String) Path to the signal table as `schema.table` (e.g., `dbo.streamkap_signal`). The database name will be added automatically. This table is used for incremental snapshotting.
 - `snapshot_custom_table_config` (Attributes Map) Explicitly set nb of parallel chunks for tables. Format: {"db.Some_Tbl": {"chunks": 5}}. This allows manual settings for parallelization when stats are outdated and estimated table size cannot be computed reliably (see [below for nested schema](#nestedatt--snapshot_custom_table_config))
 - `snapshot_large_table_threshold` (Number) The threshold in MB for a Large Table to require multiple chunks to be read in parallel
 - `snapshot_parallelism` (Number) How many parallel chunk requests to send to the source DB
