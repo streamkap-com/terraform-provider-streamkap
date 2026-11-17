@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-11-17
+
 ### Added
 - `streamkap_source_sqlserver`: Azure Entra Service Principal authentication. Set `auth_mode = "entra_service_principal"` and provide `azure_tenant_id`, `azure_client_id` and `azure_client_secret` to connect to Azure SQL databases that have SQL authentication disabled. `auth_mode` defaults to `"sql"`, which keeps the existing `database_user` and `database_password` flow unchanged. The provider validates mutual exclusivity at plan time: setting `azure_*` fields alongside `database_user`/`database_password`, or leaving the required set for the selected `auth_mode` incomplete, fails before any apply reaches the backend.
 - `streamkap_source_sqlserver`: `transforms_oversized_records_truncate_to_bytes` (int64) truncates an oversized field to a fixed byte length; `transforms_oversized_records_oversized_field_behavior` now also accepts `CLEAR`, which replaces the value with null instead of truncating.
@@ -19,7 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `streamkap_source_sqlserver`: `database_encrypt` now maps to the backend's `.user.defined` wire key, following the split of `database.user` and `database.password` into `.user.defined` entries with dynamic resolvers. Read restores the configured value for sources whose Mongo document still carries the pre-split legacy key, via the resolver's fallback, so existing Terraform-managed sources keep their planned value through `shared.FillNullFields` and no diff appears on the first refresh after upgrade.
 
 ### Known limitations
-- The first plan after upgrade on a legacy SQL Server source whose state was written before this release may show an in-place `auth_mode: null -> "sql"` update. The value is the schema default, applying it is a no-op on the wire, and subsequent plans converge.
 - Switching an existing source between `auth_mode = "sql"` and `auth_mode = "entra_service_principal"` leaves the prior mode's credentials in state until the backend drops them on write. Clearing stale fields as part of the plan is deferred to a follow-up PR (a `ConnectorConfigPlanAdjuster` on `SQLServerConfig`); for now, unset the unused fields explicitly in the configuration to converge.
 
 ## [3.1.0] - 2026-10-22
