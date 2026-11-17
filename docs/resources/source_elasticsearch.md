@@ -124,27 +124,38 @@ output "example-source-elasticsearch" {
 ### Optional
 
 - `datetime_field_value` (String) The day and time to start consuming records from. Leave it empty if you want to consume records as of now.
+- `es_page_size` (Number) Number of documents read from ElasticSearch per request. Higher values catch up faster but use more memory and need a longer read timeout. Defaults to `100`.
 - `es_port` (Number) Port for ElasticSearch HTTP/HTTPS REST API. For example, 443 or 9200. Defaults to `443`.
+- `es_query_filter` (String) Optional ElasticSearch query, written as a JSON object, limiting which documents are read. Leave empty to read every document in the index.
 - `es_scheme` (String) ElasticSearch protocol (http/https). Defaults to `https`. Valid values: `http`, `https`.
 - `http_auth` (String) Type of Authentication. Defaults to `Basic`. Valid values: `None`, `Basic`.
 - `http_auth_password` (String, Sensitive) Elasticsearch password
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `http_auth_user` (String) Elasticsearch username
+- `http_client_connection_timeout_millis` (Number) How long to wait for a connection to ElasticSearch to be established, in milliseconds. Endpoints in another region need more time for the secure handshake. Defaults to `10000`.
+- `http_client_read_timeout_millis` (Number) How long to wait for ElasticSearch to return a page of documents, in milliseconds. Raise this if you raise the page size. Defaults to `30000`.
+- `http_timer_interval_millis` (Number) How long to wait between requests when the connector is up to date, in milliseconds. Defaults to `10000`.
 - `insert_topic_name_enabled` (Boolean) Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
-- `tasks_max` (Number) The maximum number of active tasks. Defaults to `5`.
+- `tasks_max` (Number) The maximum number of active tasks. Indexes are shared out across tasks, so more than one task only helps when this source reads more than one index. Defaults to `1`.
+- `tiebreak_field_name` (String) Optional. A second field to sort on when two documents share the same value in the datetime field. It must be unique per document, sortable, and present on every document - a keyword field, or _id if there is nothing better. Without it, documents that share a datetime value can be skipped when they fall across a page boundary. Numeric and date fields are not supported. The first poll after setting this re-reads one datetime value, so expect a small number of duplicates.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `transforms_oversized_records_fields_exclude_list` (String) Columns to exclude from oversized records processing. Comma separated list in format 'table1.column1,table2.column2'.
 - `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
 - `transforms_oversized_records_max_field_size_bytes` (Number) Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.
 - `transforms_oversized_records_max_record_size_bytes` (Number) Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to `-1`.
-- `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
+- `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size), NULLIFY (set to null), or CLEAR (replace with a placeholder of the right shape). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`, `CLEAR`.
 - `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
-- `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
+- `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Removing io.debezium.data.Json from this list turns on structure-aware JSON truncation: the document is cut at a value boundary and the open objects/arrays are closed, so the result is still valid JSON, marked with a __streamkap_truncated flag. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
+- `transforms_oversized_records_truncate_to_bytes` (Number) How much of an oversized value to keep, in bytes. Independent of the size limit above, which only decides whether a column counts as oversized: a column can be flagged at the destination's limit (e.g. 16MB for Snowflake) but trimmed to something far smaller (e.g. 256 bytes). Default -1 keeps up to the size limit. This is also the main cost lever for JSON truncation - the structure-aware scan only walks the bytes it keeps, so a smaller value is proportionally cheaper; tune it down on pipelines with many oversized JSON columns. Defaults to `-1`.
 - `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.
+- `transforms_records_filter_field` (String) Drop (or keep) records based on the value of this column. Leave empty to disable the filter. Top-level columns only - nested fields and arrays are not supported.
+- `transforms_records_filter_negate_condition` (Boolean) Off (default) is a blacklist: the records that match the condition are dropped. On is a whitelist: only the records that match are kept, everything else is dropped. Defaults to `false`.
+- `transforms_records_filter_op` (String) How the column value is compared. 'in' / 'not_in' take a comma separated list; 'eq', 'ne', 'gt', 'gte', 'lt', 'lte' and 'matches' take a single value; 'is_null' and 'is_not_null' take none. Defaults to `in`. Valid values: `in`, `not_in`, `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `is_null`, `is_not_null`, `matches`.
+- `transforms_records_filter_values` (String) Value(s) to compare against, comma separated. Dates, timestamps and decimals are converted once to the column's type - there is no per-record parsing. Leave empty for 'is_null' / 'is_not_null'.
 - `transforms_value_to_key_fields_include_list` (String) Move column(s) from value to key. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_value_to_key_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
 

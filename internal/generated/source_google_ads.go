@@ -117,8 +117,8 @@ func SourceGoogleAdsSchema() schema.Schema {
 			"resources": schema.ListAttribute{
 				Required:            true,
 				ElementType:         types.StringType,
-				Description:         "Google Ads objects and daily reports to sync, each to its own topic; select custom_<name> for each query in Custom queries (custom_queries). Each uses Google Ads API operations from your Cloud project's daily limit, about 360 a day per account for the default set. Requires at least one item.",
-				MarkdownDescription: "Google Ads objects and daily reports to sync, each to its own topic; select custom_<name> for each query in Custom queries (custom_queries). Each uses Google Ads API operations from your Cloud project's daily limit, about 360 a day per account for the default set. Requires at least one item.",
+				Description:         "Google Ads objects and daily reports to sync, each to its own topic; select custom_<name> for each query in Custom queries. Each uses Google Ads API operations from your Cloud project's daily limit, about 360 a day per account for the default set. Requires at least one item.",
+				MarkdownDescription: "Google Ads objects and daily reports to sync, each to its own topic; select custom_<name> for each query in Custom queries. Each uses Google Ads API operations from your Cloud project's daily limit, about 360 a day per account for the default set. Requires at least one item.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},

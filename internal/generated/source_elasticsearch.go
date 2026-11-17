@@ -35,6 +35,12 @@ type SourceElasticsearchModel struct {
 	DatetimeFieldName                                types.String   `tfsdk:"datetime_field_name"`
 	DatetimeFieldValue                               types.String   `tfsdk:"datetime_field_value"`
 	TasksMax                                         types.Int64    `tfsdk:"tasks_max"`
+	EsPageSize                                       types.Int64    `tfsdk:"es_page_size"`
+	HttpClientConnectionTimeoutMillis                types.Int64    `tfsdk:"http_client_connection_timeout_millis"`
+	HttpClientReadTimeoutMillis                      types.Int64    `tfsdk:"http_client_read_timeout_millis"`
+	TiebreakFieldName                                types.String   `tfsdk:"tiebreak_field_name"`
+	EsQueryFilter                                    types.String   `tfsdk:"es_query_filter"`
+	HttpTimerIntervalMillis                          types.Int64    `tfsdk:"http_timer_interval_millis"`
 	TransformsValueToKeyFieldsIncludeList            types.String   `tfsdk:"transforms_value_to_key_fields_include_list"`
 	TransformsValueToKeyReplaceNullWithDefault       types.Bool     `tfsdk:"transforms_value_to_key_replace_null_with_default"`
 	PreserveNullValues                               types.Bool     `tfsdk:"preserve_null_values"`
@@ -45,8 +51,13 @@ type SourceElasticsearchModel struct {
 	TransformsOversizedRecordsTruncationSuffix       types.String   `tfsdk:"transforms_oversized_records_truncation_suffix"`
 	TransformsOversizedRecordsMaxRecordSizeBytes     types.Int64    `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
 	TransformsOversizedRecordsSemanticTypesExclude   types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
+	TransformsOversizedRecordsTruncateToBytes        types.Int64    `tfsdk:"transforms_oversized_records_truncate_to_bytes"`
 	TransformsOversizedRecordsReplaceNullWithDefault types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
 	InsertTopicNameEnabled                           types.Bool     `tfsdk:"insert_topic_name_enabled"`
+	TransformsRecordsFilterField                     types.String   `tfsdk:"transforms_records_filter_field"`
+	TransformsRecordsFilterOp                        types.String   `tfsdk:"transforms_records_filter_op"`
+	TransformsRecordsFilterValues                    types.String   `tfsdk:"transforms_records_filter_values"`
+	TransformsRecordsFilterNegateCondition           types.Bool     `tfsdk:"transforms_records_filter_negate_condition"`
 	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
 }
 
@@ -175,12 +186,58 @@ func SourceElasticsearchSchema() schema.Schema {
 			"tasks_max": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The maximum number of active tasks. Defaults to 5.",
-				MarkdownDescription: "The maximum number of active tasks. Defaults to `5`.",
-				Default:             int64default.StaticInt64(5),
+				Description:         "The maximum number of active tasks. Indexes are shared out across tasks, so more than one task only helps when this source reads more than one index. Defaults to 1.",
+				MarkdownDescription: "The maximum number of active tasks. Indexes are shared out across tasks, so more than one task only helps when this source reads more than one index. Defaults to `1`.",
+				Default:             int64default.StaticInt64(1),
 				Validators: []validator.Int64{
 					int64validator.Between(1, 10),
 				},
+			},
+			"es_page_size": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Number of documents read from ElasticSearch per request. Higher values catch up faster but use more memory and need a longer read timeout. Defaults to 100.",
+				MarkdownDescription: "Number of documents read from ElasticSearch per request. Higher values catch up faster but use more memory and need a longer read timeout. Defaults to `100`.",
+				Default:             int64default.StaticInt64(100),
+			},
+			"http_client_connection_timeout_millis": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How long to wait for a connection to ElasticSearch to be established, in milliseconds. Endpoints in another region need more time for the secure handshake. Defaults to 10000.",
+				MarkdownDescription: "How long to wait for a connection to ElasticSearch to be established, in milliseconds. Endpoints in another region need more time for the secure handshake. Defaults to `10000`.",
+				Default:             int64default.StaticInt64(10000),
+			},
+			"http_client_read_timeout_millis": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How long to wait for ElasticSearch to return a page of documents, in milliseconds. Raise this if you raise the page size. Defaults to 30000.",
+				MarkdownDescription: "How long to wait for ElasticSearch to return a page of documents, in milliseconds. Raise this if you raise the page size. Defaults to `30000`.",
+				Default:             int64default.StaticInt64(30000),
+			},
+			"tiebreak_field_name": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Optional. A second field to sort on when two documents share the same value in the datetime field. It must be unique per document, sortable, and present on every document - a keyword field, or _id if there is nothing better. Without it, documents that share a datetime value can be skipped when they fall across a page boundary. Numeric and date fields are not supported. The first poll after setting this re-reads one datetime value, so expect a small number of duplicates.",
+				MarkdownDescription: "Optional. A second field to sort on when two documents share the same value in the datetime field. It must be unique per document, sortable, and present on every document - a keyword field, or _id if there is nothing better. Without it, documents that share a datetime value can be skipped when they fall across a page boundary. Numeric and date fields are not supported. The first poll after setting this re-reads one datetime value, so expect a small number of duplicates.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"es_query_filter": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Optional ElasticSearch query, written as a JSON object, limiting which documents are read. Leave empty to read every document in the index.",
+				MarkdownDescription: "Optional ElasticSearch query, written as a JSON object, limiting which documents are read. Leave empty to read every document in the index.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"http_timer_interval_millis": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How long to wait between requests when the connector is up to date, in milliseconds. Defaults to 10000.",
+				MarkdownDescription: "How long to wait between requests when the connector is up to date, in milliseconds. Defaults to `10000`.",
+				Default:             int64default.StaticInt64(10000),
 			},
 			"transforms_value_to_key_fields_include_list": schema.StringAttribute{
 				Optional:            true,
@@ -236,11 +293,11 @@ func SourceElasticsearchSchema() schema.Schema {
 			"transforms_oversized_records_oversized_field_behavior": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to \"TRUNCATE\". Valid values: TRUNCATE, NULLIFY.",
-				MarkdownDescription: "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.",
+				Description:         "Action for oversized fields: TRUNCATE (trim to max size), NULLIFY (set to null), or CLEAR (replace with a placeholder of the right shape). Defaults to \"TRUNCATE\". Valid values: TRUNCATE, NULLIFY, CLEAR.",
+				MarkdownDescription: "Action for oversized fields: TRUNCATE (trim to max size), NULLIFY (set to null), or CLEAR (replace with a placeholder of the right shape). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`, `CLEAR`.",
 				Default:             stringdefault.StaticString("TRUNCATE"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("TRUNCATE", "NULLIFY"),
+					stringvalidator.OneOf("TRUNCATE", "NULLIFY", "CLEAR"),
 				},
 			},
 			"transforms_oversized_records_truncation_suffix": schema.StringAttribute{
@@ -263,9 +320,16 @@ func SourceElasticsearchSchema() schema.Schema {
 			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
-				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Removing io.debezium.data.Json from this list turns on structure-aware JSON truncation: the document is cut at a value boundary and the open objects/arrays are closed, so the result is still valid JSON, marked with a __streamkap_truncated flag. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Removing io.debezium.data.Json from this list turns on structure-aware JSON truncation: the document is cut at a value boundary and the open objects/arrays are closed, so the result is still valid JSON, marked with a __streamkap_truncated flag. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
 				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
+			},
+			"transforms_oversized_records_truncate_to_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How much of an oversized value to keep, in bytes. Independent of the size limit above, which only decides whether a column counts as oversized: a column can be flagged at the destination's limit (e.g. 16MB for Snowflake) but trimmed to something far smaller (e.g. 256 bytes). Default -1 keeps up to the size limit. This is also the main cost lever for JSON truncation - the structure-aware scan only walks the bytes it keeps, so a smaller value is proportionally cheaper; tune it down on pipelines with many oversized JSON columns. Defaults to -1.",
+				MarkdownDescription: "How much of an oversized value to keep, in bytes. Independent of the size limit above, which only decides whether a column counts as oversized: a column can be flagged at the destination's limit (e.g. 16MB for Snowflake) but trimmed to something far smaller (e.g. 256 bytes). Default -1 keeps up to the size limit. This is also the main cost lever for JSON truncation - the structure-aware scan only walks the bytes it keeps, so a smaller value is proportionally cheaper; tune it down on pipelines with many oversized JSON columns. Defaults to `-1`.",
+				Default:             int64default.StaticInt64(-1),
 			},
 			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{
 				Optional:            true,
@@ -281,22 +345,63 @@ func SourceElasticsearchSchema() schema.Schema {
 				MarkdownDescription: "Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
+			"transforms_records_filter_field": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Drop (or keep) records based on the value of this column. Leave empty to disable the filter. Top-level columns only - nested fields and arrays are not supported.",
+				MarkdownDescription: "Drop (or keep) records based on the value of this column. Leave empty to disable the filter. Top-level columns only - nested fields and arrays are not supported.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_records_filter_op": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How the column value is compared. 'in' / 'not_in' take a comma separated list; 'eq', 'ne', 'gt', 'gte', 'lt', 'lte' and 'matches' take a single value; 'is_null' and 'is_not_null' take none. Defaults to \"in\". Valid values: in, not_in, eq, ne, gt, gte, lt, lte, is_null, is_not_null, matches.",
+				MarkdownDescription: "How the column value is compared. 'in' / 'not_in' take a comma separated list; 'eq', 'ne', 'gt', 'gte', 'lt', 'lte' and 'matches' take a single value; 'is_null' and 'is_not_null' take none. Defaults to `in`. Valid values: `in`, `not_in`, `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `is_null`, `is_not_null`, `matches`.",
+				Default:             stringdefault.StaticString("in"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("in", "not_in", "eq", "ne", "gt", "gte", "lt", "lte", "is_null", "is_not_null", "matches"),
+				},
+			},
+			"transforms_records_filter_values": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Value(s) to compare against, comma separated. Dates, timestamps and decimals are converted once to the column's type - there is no per-record parsing. Leave empty for 'is_null' / 'is_not_null'.",
+				MarkdownDescription: "Value(s) to compare against, comma separated. Dates, timestamps and decimals are converted once to the column's type - there is no per-record parsing. Leave empty for 'is_null' / 'is_not_null'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_records_filter_negate_condition": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Off (default) is a blacklist: the records that match the condition are dropped. On is a whitelist: only the records that match are kept, everything else is dropped. Defaults to false.",
+				MarkdownDescription: "Off (default) is a blacklist: the records that match the condition are dropped. On is a whitelist: only the records that match are kept, everything else is dropped. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
 		},
 	}
 }
 
 // SourceElasticsearchFieldMappings maps Terraform attribute names to API field names.
 var SourceElasticsearchFieldMappings = map[string]string{
-	"es_host":               "es.host",
-	"es_scheme":             "es.scheme",
-	"es_port":               "es.port",
-	"http_auth":             "http.auth.user.defined",
-	"http_auth_user":        "http.auth.user",
-	"http_auth_password":    "http.auth.password",
-	"endpoint_include_list": "endpoint.include.list.user.defined",
-	"datetime_field_name":   "datetime.field.name",
-	"datetime_field_value":  "datetime.field.value",
-	"tasks_max":             "tasks.max",
+	"es_host":                               "es.host",
+	"es_scheme":                             "es.scheme",
+	"es_port":                               "es.port",
+	"http_auth":                             "http.auth.user.defined",
+	"http_auth_user":                        "http.auth.user",
+	"http_auth_password":                    "http.auth.password",
+	"endpoint_include_list":                 "endpoint.include.list.user.defined",
+	"datetime_field_name":                   "datetime.field.name",
+	"datetime_field_value":                  "datetime.field.value",
+	"tasks_max":                             "tasks.max",
+	"es_page_size":                          "es.page.size",
+	"http_client_connection_timeout_millis": "http.client.connection.timeout.millis",
+	"http_client_read_timeout_millis":       "http.client.read.timeout.millis",
+	"tiebreak_field_name":                   "tiebreak.field.name",
+	"es_query_filter":                       "es.query.filter",
+	"http_timer_interval_millis":            "http.timer.interval.millis",
 	"transforms_value_to_key_fields_include_list":            "transforms.ValueToKey.fields.include.list",
 	"transforms_value_to_key_replace_null_with_default":      "transforms.ValueToKey.replace.null.with.default",
 	"preserve_null_values":                                   "preserve.null.values",
@@ -307,6 +412,11 @@ var SourceElasticsearchFieldMappings = map[string]string{
 	"transforms_oversized_records_truncation_suffix":         "transforms.OversizedRecords.truncation.suffix",
 	"transforms_oversized_records_max_record_size_bytes":     "transforms.OversizedRecords.max.record.size.bytes",
 	"transforms_oversized_records_semantic_types_exclude":    "transforms.OversizedRecords.semantic.types.exclude",
+	"transforms_oversized_records_truncate_to_bytes":         "transforms.OversizedRecords.truncate.to.bytes",
 	"transforms_oversized_records_replace_null_with_default": "transforms.OversizedRecords.replace.null.with.default",
 	"insert_topic_name_enabled":                              "InsertTopicName.enabled",
+	"transforms_records_filter_field":                        "transforms.RecordsFilter.field",
+	"transforms_records_filter_op":                           "transforms.RecordsFilter.op",
+	"transforms_records_filter_values":                       "transforms.RecordsFilter.values",
+	"transforms_records_filter_negate_condition":             "transforms.RecordsFilter.negate.condition",
 }

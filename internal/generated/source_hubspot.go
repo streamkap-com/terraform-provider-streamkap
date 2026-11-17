@@ -101,8 +101,8 @@ func SourceHubspotSchema() schema.Schema {
 			"auth_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "How Streamkap signs in to HubSpot: paste an access token, or install Streamkap's HubSpot app with Connect with HubSpot (through the API, the oauth_grant_id Connect returns). Defaults to \"token\". Valid values: token, oauth.",
-				MarkdownDescription: "How Streamkap signs in to HubSpot: paste an access token, or install Streamkap's HubSpot app with Connect with HubSpot (through the API, the oauth_grant_id Connect returns). Defaults to `token`. Valid values: `token`, `oauth`.",
+				Description:         "How Streamkap signs in to HubSpot: paste an access token, or click Connect with HubSpot to install Streamkap's HubSpot app. Defaults to \"token\". Valid values: token, oauth.",
+				MarkdownDescription: "How Streamkap signs in to HubSpot: paste an access token, or click Connect with HubSpot to install Streamkap's HubSpot app. Defaults to `token`. Valid values: `token`, `oauth`.",
 				Default:             stringdefault.StaticString("token"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("token", "oauth"),

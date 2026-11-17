@@ -88,7 +88,7 @@ output "zendesk_source_id" {
 
 - `name` (String) Name of the source
 - `resources` (List of String) Zendesk objects to sync, each into its own topic. ticket_audits, ticket_comments, ticket_metric_events and side_conversations are read ticket by ticket, so their first sync of a large account can take days. Requires at least one item.
-- `subdomain` (String) The acme in acme.zendesk.com, shown in Admin Center → Account → Appearance → Branding. Then Connect with Zendesk (through the API, the oauth_grant_id Connect returns) and approve as a Zendesk admin; an agent's access misses the tickets that agent cannot see.
+- `subdomain` (String) The acme in acme.zendesk.com, shown in Admin Center → Account → Appearance → Branding. Then click Connect with Zendesk and approve as a Zendesk admin; an agent's access misses the tickets that agent cannot see.
 
 ### Optional
 

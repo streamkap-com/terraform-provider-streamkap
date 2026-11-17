@@ -59,8 +59,13 @@ type SourceOracleModel struct {
 	TransformsOversizedRecordsTruncationSuffix         types.String   `tfsdk:"transforms_oversized_records_truncation_suffix"`
 	TransformsOversizedRecordsMaxRecordSizeBytes       types.Int64    `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
 	TransformsOversizedRecordsSemanticTypesExclude     types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
+	TransformsOversizedRecordsTruncateToBytes          types.Int64    `tfsdk:"transforms_oversized_records_truncate_to_bytes"`
 	TransformsOversizedRecordsReplaceNullWithDefault   types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
 	InsertTopicNameEnabled                             types.Bool     `tfsdk:"insert_topic_name_enabled"`
+	TransformsRecordsFilterField                       types.String   `tfsdk:"transforms_records_filter_field"`
+	TransformsRecordsFilterOp                          types.String   `tfsdk:"transforms_records_filter_op"`
+	TransformsRecordsFilterValues                      types.String   `tfsdk:"transforms_records_filter_values"`
+	TransformsRecordsFilterNegateCondition             types.Bool     `tfsdk:"transforms_records_filter_negate_condition"`
 	Timeouts                                           timeouts.Value `tfsdk:"timeouts"`
 }
 
@@ -250,8 +255,8 @@ func SourceOracleSchema() schema.Schema {
 			"log_mining_strategy": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Controls how LogMiner resolves column metadata. 'online_catalog' (default) is fastest; 'redo_log_catalog' mines the data dictionary from redo logs and handles schema changes better; 'hybrid' combines both but has limitations with certain settings (e.g. LOB capture is not supported). Defaults to \"online_catalog\". Valid values: online_catalog, redo_log_catalog, hybrid.",
-				MarkdownDescription: "Controls how LogMiner resolves column metadata. 'online_catalog' (default) is fastest; 'redo_log_catalog' mines the data dictionary from redo logs and handles schema changes better; 'hybrid' combines both but has limitations with certain settings (e.g. LOB capture is not supported). Defaults to `online_catalog`. Valid values: `online_catalog`, `redo_log_catalog`, `hybrid`.",
+				Description:         "Controls how LogMiner resolves column metadata. 'online_catalog' (default) is fastest; 'redo_log_catalog' mines the data dictionary from redo logs and handles schema changes better, but is deprecated and will be removed in a future connector version; 'hybrid' combines both but has limitations with certain settings (e.g. LOB capture is not supported). Defaults to \"online_catalog\". Valid values: online_catalog, redo_log_catalog, hybrid.",
+				MarkdownDescription: "Controls how LogMiner resolves column metadata. 'online_catalog' (default) is fastest; 'redo_log_catalog' mines the data dictionary from redo logs and handles schema changes better, but is deprecated and will be removed in a future connector version; 'hybrid' combines both but has limitations with certain settings (e.g. LOB capture is not supported). Defaults to `online_catalog`. Valid values: `online_catalog`, `redo_log_catalog`, `hybrid`.",
 				Default:             stringdefault.StaticString("online_catalog"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("online_catalog", "redo_log_catalog", "hybrid"),
@@ -260,8 +265,8 @@ func SourceOracleSchema() schema.Schema {
 			"lob_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Enables capture of CLOB, NCLOB, and BLOB columns. Not supported with the Hybrid strategy. When combined with the Re-select Post Processor, LOB values unavailable in the redo log are re-fetched from the source at event time, producing one merged event per row change. Defaults to false.",
-				MarkdownDescription: "Enables capture of CLOB, NCLOB, and BLOB columns. Not supported with the Hybrid strategy. When combined with the Re-select Post Processor, LOB values unavailable in the redo log are re-fetched from the source at event time, producing one merged event per row change. Defaults to `false`.",
+				Description:         "Enables capture of CLOB, NCLOB, and BLOB columns. Also required when the database parameter max_string_size is EXTENDED: Oracle then stores VARCHAR2 and NVARCHAR2 values over 4000 bytes, and RAW values over 2000 bytes, as CLOBs internally, so they are only captured with this on. Not supported with the Hybrid strategy. When combined with the Re-select Post Processor, LOB values unavailable in the redo log are re-fetched from the source at event time, producing one merged event per row change. Defaults to false.",
+				MarkdownDescription: "Enables capture of CLOB, NCLOB, and BLOB columns. Also required when the database parameter max_string_size is EXTENDED: Oracle then stores VARCHAR2 and NVARCHAR2 values over 4000 bytes, and RAW values over 2000 bytes, as CLOBs internally, so they are only captured with this on. Not supported with the Hybrid strategy. When combined with the Re-select Post Processor, LOB values unavailable in the redo log are re-fetched from the source at event time, producing one merged event per row change. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"post_processors_reselect_enabled": schema.BoolAttribute{
@@ -344,11 +349,11 @@ func SourceOracleSchema() schema.Schema {
 			"transforms_oversized_records_oversized_field_behavior": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to \"TRUNCATE\". Valid values: TRUNCATE, NULLIFY.",
-				MarkdownDescription: "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.",
+				Description:         "Action for oversized fields: TRUNCATE (trim to max size), NULLIFY (set to null), or CLEAR (replace with a placeholder of the right shape). Defaults to \"TRUNCATE\". Valid values: TRUNCATE, NULLIFY, CLEAR.",
+				MarkdownDescription: "Action for oversized fields: TRUNCATE (trim to max size), NULLIFY (set to null), or CLEAR (replace with a placeholder of the right shape). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`, `CLEAR`.",
 				Default:             stringdefault.StaticString("TRUNCATE"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("TRUNCATE", "NULLIFY"),
+					stringvalidator.OneOf("TRUNCATE", "NULLIFY", "CLEAR"),
 				},
 			},
 			"transforms_oversized_records_truncation_suffix": schema.StringAttribute{
@@ -371,9 +376,16 @@ func SourceOracleSchema() schema.Schema {
 			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
-				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Removing io.debezium.data.Json from this list turns on structure-aware JSON truncation: the document is cut at a value boundary and the open objects/arrays are closed, so the result is still valid JSON, marked with a __streamkap_truncated flag. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Removing io.debezium.data.Json from this list turns on structure-aware JSON truncation: the document is cut at a value boundary and the open objects/arrays are closed, so the result is still valid JSON, marked with a __streamkap_truncated flag. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
 				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
+			},
+			"transforms_oversized_records_truncate_to_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How much of an oversized value to keep, in bytes. Independent of the size limit above, which only decides whether a column counts as oversized: a column can be flagged at the destination's limit (e.g. 16MB for Snowflake) but trimmed to something far smaller (e.g. 256 bytes). Default -1 keeps up to the size limit. This is also the main cost lever for JSON truncation - the structure-aware scan only walks the bytes it keeps, so a smaller value is proportionally cheaper; tune it down on pipelines with many oversized JSON columns. Defaults to -1.",
+				MarkdownDescription: "How much of an oversized value to keep, in bytes. Independent of the size limit above, which only decides whether a column counts as oversized: a column can be flagged at the destination's limit (e.g. 16MB for Snowflake) but trimmed to something far smaller (e.g. 256 bytes). Default -1 keeps up to the size limit. This is also the main cost lever for JSON truncation - the structure-aware scan only walks the bytes it keeps, so a smaller value is proportionally cheaper; tune it down on pipelines with many oversized JSON columns. Defaults to `-1`.",
+				Default:             int64default.StaticInt64(-1),
 			},
 			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{
 				Optional:            true,
@@ -387,6 +399,41 @@ func SourceOracleSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to false.",
 				MarkdownDescription: "Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"transforms_records_filter_field": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Drop (or keep) records based on the value of this column. Leave empty to disable the filter. Top-level columns only - nested fields and arrays are not supported.",
+				MarkdownDescription: "Drop (or keep) records based on the value of this column. Leave empty to disable the filter. Top-level columns only - nested fields and arrays are not supported.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_records_filter_op": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How the column value is compared. 'in' / 'not_in' take a comma separated list; 'eq', 'ne', 'gt', 'gte', 'lt', 'lte' and 'matches' take a single value; 'is_null' and 'is_not_null' take none. Defaults to \"in\". Valid values: in, not_in, eq, ne, gt, gte, lt, lte, is_null, is_not_null, matches.",
+				MarkdownDescription: "How the column value is compared. 'in' / 'not_in' take a comma separated list; 'eq', 'ne', 'gt', 'gte', 'lt', 'lte' and 'matches' take a single value; 'is_null' and 'is_not_null' take none. Defaults to `in`. Valid values: `in`, `not_in`, `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `is_null`, `is_not_null`, `matches`.",
+				Default:             stringdefault.StaticString("in"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("in", "not_in", "eq", "ne", "gt", "gte", "lt", "lte", "is_null", "is_not_null", "matches"),
+				},
+			},
+			"transforms_records_filter_values": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Value(s) to compare against, comma separated. Dates, timestamps and decimals are converted once to the column's type - there is no per-record parsing. Leave empty for 'is_null' / 'is_not_null'.",
+				MarkdownDescription: "Value(s) to compare against, comma separated. Dates, timestamps and decimals are converted once to the column's type - there is no per-record parsing. Leave empty for 'is_null' / 'is_not_null'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_records_filter_negate_condition": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Off (default) is a blacklist: the records that match the condition are dropped. On is a whitelist: only the records that match are kept, everything else is dropped. Defaults to false.",
+				MarkdownDescription: "Off (default) is a blacklist: the records that match the condition are dropped. On is a whitelist: only the records that match are kept, everything else is dropped. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 		},
@@ -429,6 +476,11 @@ var SourceOracleFieldMappings = map[string]string{
 	"transforms_oversized_records_truncation_suffix":         "transforms.OversizedRecords.truncation.suffix",
 	"transforms_oversized_records_max_record_size_bytes":     "transforms.OversizedRecords.max.record.size.bytes",
 	"transforms_oversized_records_semantic_types_exclude":    "transforms.OversizedRecords.semantic.types.exclude",
+	"transforms_oversized_records_truncate_to_bytes":         "transforms.OversizedRecords.truncate.to.bytes",
 	"transforms_oversized_records_replace_null_with_default": "transforms.OversizedRecords.replace.null.with.default",
 	"insert_topic_name_enabled":                              "InsertTopicName.enabled",
+	"transforms_records_filter_field":                        "transforms.RecordsFilter.field",
+	"transforms_records_filter_op":                           "transforms.RecordsFilter.op",
+	"transforms_records_filter_values":                       "transforms.RecordsFilter.values",
+	"transforms_records_filter_negate_condition":             "transforms.RecordsFilter.negate.condition",
 }

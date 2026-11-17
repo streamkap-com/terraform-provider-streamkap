@@ -43,12 +43,26 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "es_page_size": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
     "es_port": {
       "required": false,
       "optional": true,
       "computed": true,
       "sensitive": false,
       "type": "basetypes.Int64Type"
+    },
+    "es_query_filter": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
     },
     "es_scheme": {
       "required": false,
@@ -77,6 +91,27 @@
       "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
+    },
+    "http_client_connection_timeout_millis": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "http_client_read_timeout_millis": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
+    "http_timer_interval_millis": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
     },
     "id": {
       "required": false,
@@ -127,6 +162,13 @@
       "sensitive": false,
       "type": "basetypes.Int64Type"
     },
+    "tiebreak_field_name": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
     "transforms_oversized_records_fields_exclude_list": {
       "required": false,
       "optional": true,
@@ -176,7 +218,42 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "transforms_oversized_records_truncate_to_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
     "transforms_oversized_records_truncation_suffix": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_records_filter_field": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_records_filter_negate_condition": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "transforms_records_filter_op": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_records_filter_values": {
       "required": false,
       "optional": true,
       "computed": true,

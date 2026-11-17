@@ -90,25 +90,29 @@ output "facebook_ads_source_id" {
 
 ### Required
 
-- `access_token` (String, Sensitive) A system-user access token with ads_read: in Business settings → Users → System users, assign the ad account under Assign assets, then Generate token for an app with the Marketing API. A token with a 60-day expiry must be replaced here before it expires.
-
-**Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `account_id` (String) The ad account's number, shown after the account name in Ads Manager's account menu, e.g. 123456789012345; an act_ prefix is fine.
+- `account_id` (String) The ad account's number, shown after the account name in Ads Manager's account menu, e.g. 123456789012345; an act_ prefix is fine. Filled in from the ad accounts you select when you connect with Facebook.
 - `name` (String) Name of the source
-- `resources` (List of String) Ad objects and daily insights reports to sync, each to its own topic; select custom_<name> for each report in Custom insights (custom_insights). Breakdowns by demographics, geography, platform, device or hour multiply the rows. Requires at least one item.
+- `resources` (List of String) Ad objects and daily insights reports to sync, each to its own topic; select custom_<name> for each report in Custom insights. Breakdowns by demographics, geography, platform, device or hour multiply the rows. Requires at least one item.
 
 ### Optional
 
-- `account_ids` (List of String) More ad accounts to sync with the same access token; assign each to the token's system user. Their rows share each resource's topic, tagged with account_id, and an account added later syncs only from then on unless you reset the source.
+- `access_token` (String, Sensitive) A system-user access token with ads_read: in Business settings → Users → System users, assign the ad account under Assign assets, then Generate token for an app with the Marketing API. A token with a 60-day expiry must be replaced here before it expires.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
+- `account_ids` (List of String) More ad accounts to sync with the same credentials: select each in the Facebook dialog when you connect with Facebook, or assign each to the token's system user when you paste a token. Their rows share each resource's topic, tagged with account_id, and an account added later syncs only from then on unless you reset the source.
 - `api_version` (String) Marketing API version this source calls. Keep v26.0 unless you need v25.0, which Meta will retire. Defaults to `v26.0`. Valid values: `v26.0`, `v25.0`.
 - `app_id` (String) Optional, set together with App secret: the ID of the Meta app the token was generated for, from App Dashboard → App settings → Basic.
 - `app_secret` (String, Sensitive) The app's secret from App Dashboard → App settings → Basic; set it together with App ID. Required if the app has Require App Secret on, and lets the connection test warn before the token expires or if it lacks ads_read.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
+- `auth_mode` (String) How Streamkap signs in to Facebook Ads: paste a system-user access token, or click Connect with Facebook to connect your business to Streamkap's Meta app. Defaults to `token`. Valid values: `token`, `oauth`.
 - `backfill_start` (String) Earliest date to read when a resource first syncs; unset reads insights from about 13 months back and full object history. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.
 - `custom_insights` (String) Insights reports you define, as a JSON list of {name, level, …} using Marketing API names, e.g. [{"name": "campaign_by_country", "level": "campaign", "breakdowns": ["country"], "fields": ["campaign_id", "spend", "impressions", "clicks", "actions"]}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; to change a synced report, add it under a new name.
 - `fetch_thumbnail_images` (Boolean) Store each creative's thumbnail image in thumbnail_data_url, since Meta's thumbnail_url link expires after a few days. Images over 256 KB are skipped. Defaults to `false`.
 - `include_deleted` (Boolean) Also sync deleted campaigns, ad sets, ads and creatives, with status DELETED, since Meta still reports their spend. Turned on later, it applies from then on. Defaults to `false`.
+- `oauth_grant_id` (String, Sensitive) Single-use grant from Connect with Facebook Ads, which Terraform cannot run. Get one with the Streamkap CLI: run `streamkap sources start-source-oauth-connect facebook_ads`, open the returned authorize_url and approve, then run `streamkap sources poll-source-oauth-grant facebook_ads --state <state>` until it returns oauth_grant_id (see the [OAuth grants guide](https://registry.terraform.io/providers/streamkap-com/streamkap/latest/docs/guides/oauth-grants)). Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. To use Connect in the Streamkap UI instead, create the source there and import it, leaving this unset.
+
+**Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `tags` (Set of String) Optional set of tag IDs to apply to this source. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
 - `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 

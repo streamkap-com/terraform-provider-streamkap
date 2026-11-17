@@ -24,17 +24,19 @@ type SourceFacebookAdsModel struct {
 	ConnectorStatus      types.String   `tfsdk:"connector_status"`
 	KcClusterId          types.String   `tfsdk:"kc_cluster_id"`
 	Tags                 types.Set      `tfsdk:"tags"`
-	AccessToken          types.String   `tfsdk:"access_token"`
+	AuthMode             types.String   `tfsdk:"auth_mode"`
 	Resources            types.List     `tfsdk:"resources"`
-	AppID                types.String   `tfsdk:"app_id"`
+	AccessToken          types.String   `tfsdk:"access_token"`
 	CustomInsights       types.String   `tfsdk:"custom_insights"`
-	AppSecret            types.String   `tfsdk:"app_secret"`
+	AppID                types.String   `tfsdk:"app_id"`
 	IncludeDeleted       types.Bool     `tfsdk:"include_deleted"`
-	AccountID            types.String   `tfsdk:"account_id"`
+	AppSecret            types.String   `tfsdk:"app_secret"`
 	FetchThumbnailImages types.Bool     `tfsdk:"fetch_thumbnail_images"`
+	AccountID            types.String   `tfsdk:"account_id"`
 	AccountIds           types.List     `tfsdk:"account_ids"`
 	APIVersion           types.String   `tfsdk:"api_version"`
 	BackfillStart        types.String   `tfsdk:"backfill_start"`
+	OauthGrantID         types.String   `tfsdk:"oauth_grant_id"`
 	Timeouts             timeouts.Value `tfsdk:"timeouts"`
 }
 
@@ -91,36 +93,48 @@ func SourceFacebookAdsSchema() schema.Schema {
 					setplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"access_token": schema.StringAttribute{
-				Required:            true,
-				Sensitive:           true,
-				Description:         "A system-user access token with ads_read: in Business settings → Users → System users, assign the ad account under Assign assets, then Generate token for an app with the Marketing API. A token with a 60-day expiry must be replaced here before it expires. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "A system-user access token with ads_read: in Business settings → Users → System users, assign the ad account under Assign assets, then Generate token for an app with the Marketing API. A token with a 60-day expiry must be replaced here before it expires.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+			"auth_mode": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How Streamkap signs in to Facebook Ads: paste a system-user access token, or click Connect with Facebook to connect your business to Streamkap's Meta app. Defaults to \"token\". Valid values: token, oauth.",
+				MarkdownDescription: "How Streamkap signs in to Facebook Ads: paste a system-user access token, or click Connect with Facebook to connect your business to Streamkap's Meta app. Defaults to `token`. Valid values: `token`, `oauth`.",
+				Default:             stringdefault.StaticString("token"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("token", "oauth"),
+				},
 			},
 			"resources": schema.ListAttribute{
 				Required:            true,
 				ElementType:         types.StringType,
-				Description:         "Ad objects and daily insights reports to sync, each to its own topic; select custom_<name> for each report in Custom insights (custom_insights). Breakdowns by demographics, geography, platform, device or hour multiply the rows. Requires at least one item.",
-				MarkdownDescription: "Ad objects and daily insights reports to sync, each to its own topic; select custom_<name> for each report in Custom insights (custom_insights). Breakdowns by demographics, geography, platform, device or hour multiply the rows. Requires at least one item.",
+				Description:         "Ad objects and daily insights reports to sync, each to its own topic; select custom_<name> for each report in Custom insights. Breakdowns by demographics, geography, platform, device or hour multiply the rows. Requires at least one item.",
+				MarkdownDescription: "Ad objects and daily insights reports to sync, each to its own topic; select custom_<name> for each report in Custom insights. Breakdowns by demographics, geography, platform, device or hour multiply the rows. Requires at least one item.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},
 			},
-			"app_id": schema.StringAttribute{
+			"access_token": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Optional, set together with App secret: the ID of the Meta app the token was generated for, from App Dashboard → App settings → Basic.",
-				MarkdownDescription: "Optional, set together with App secret: the ID of the Meta app the token was generated for, from App Dashboard → App settings → Basic.",
+				Computed:            true,
+				Sensitive:           true,
+				Description:         "A system-user access token with ads_read: in Business settings → Users → System users, assign the ad account under Assign assets, then Generate token for an app with the Marketing API. A token with a 60-day expiry must be replaced here before it expires. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "A system-user access token with ads_read: in Business settings → Users → System users, assign the ad account under Assign assets, then Generate token for an app with the Marketing API. A token with a 60-day expiry must be replaced here before it expires.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"custom_insights": schema.StringAttribute{
 				Optional:            true,
 				Description:         "Insights reports you define, as a JSON list of {name, level, …} using Marketing API names, e.g. [{\"name\": \"campaign_by_country\", \"level\": \"campaign\", \"breakdowns\": [\"country\"], \"fields\": [\"campaign_id\", \"spend\", \"impressions\", \"clicks\", \"actions\"]}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; to change a synced report, add it under a new name.",
 				MarkdownDescription: "Insights reports you define, as a JSON list of {name, level, …} using Marketing API names, e.g. [{\"name\": \"campaign_by_country\", \"level\": \"campaign\", \"breakdowns\": [\"country\"], \"fields\": [\"campaign_id\", \"spend\", \"impressions\", \"clicks\", \"actions\"]}]. Select each as custom_<name> in Resources, and define every custom_<name> you select; to change a synced report, add it under a new name.",
 			},
-			"app_secret": schema.StringAttribute{
+			"app_id": schema.StringAttribute{
 				Optional:            true,
-				Sensitive:           true,
-				Description:         "The app's secret from App Dashboard → App settings → Basic; set it together with App ID. Required if the app has Require App Secret on, and lets the connection test warn before the token expires or if it lacks ads_read. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "The app's secret from App Dashboard → App settings → Basic; set it together with App ID. Required if the app has Require App Secret on, and lets the connection test warn before the token expires or if it lacks ads_read.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Computed:            true,
+				Description:         "Optional, set together with App secret: the ID of the Meta app the token was generated for, from App Dashboard → App settings → Basic.",
+				MarkdownDescription: "Optional, set together with App secret: the ID of the Meta app the token was generated for, from App Dashboard → App settings → Basic.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"include_deleted": schema.BoolAttribute{
 				Optional:            true,
@@ -129,10 +143,15 @@ func SourceFacebookAdsSchema() schema.Schema {
 				MarkdownDescription: "Also sync deleted campaigns, ad sets, ads and creatives, with status DELETED, since Meta still reports their spend. Turned on later, it applies from then on. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
-			"account_id": schema.StringAttribute{
-				Required:            true,
-				Description:         "The ad account's number, shown after the account name in Ads Manager's account menu, e.g. 123456789012345; an act_ prefix is fine.",
-				MarkdownDescription: "The ad account's number, shown after the account name in Ads Manager's account menu, e.g. 123456789012345; an act_ prefix is fine.",
+			"app_secret": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Sensitive:           true,
+				Description:         "The app's secret from App Dashboard → App settings → Basic; set it together with App ID. Required if the app has Require App Secret on, and lets the connection test warn before the token expires or if it lacks ads_read. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The app's secret from App Dashboard → App settings → Basic; set it together with App ID. Required if the app has Require App Secret on, and lets the connection test warn before the token expires or if it lacks ads_read.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"fetch_thumbnail_images": schema.BoolAttribute{
 				Optional:            true,
@@ -141,11 +160,16 @@ func SourceFacebookAdsSchema() schema.Schema {
 				MarkdownDescription: "Store each creative's thumbnail image in thumbnail_data_url, since Meta's thumbnail_url link expires after a few days. Images over 256 KB are skipped. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
+			"account_id": schema.StringAttribute{
+				Required:            true,
+				Description:         "The ad account's number, shown after the account name in Ads Manager's account menu, e.g. 123456789012345; an act_ prefix is fine. Filled in from the ad accounts you select when you connect with Facebook.",
+				MarkdownDescription: "The ad account's number, shown after the account name in Ads Manager's account menu, e.g. 123456789012345; an act_ prefix is fine. Filled in from the ad accounts you select when you connect with Facebook.",
+			},
 			"account_ids": schema.ListAttribute{
 				Optional:            true,
 				ElementType:         types.StringType,
-				Description:         "More ad accounts to sync with the same access token; assign each to the token's system user. Their rows share each resource's topic, tagged with account_id, and an account added later syncs only from then on unless you reset the source.",
-				MarkdownDescription: "More ad accounts to sync with the same access token; assign each to the token's system user. Their rows share each resource's topic, tagged with account_id, and an account added later syncs only from then on unless you reset the source.",
+				Description:         "More ad accounts to sync with the same credentials: select each in the Facebook dialog when you connect with Facebook, or assign each to the token's system user when you paste a token. Their rows share each resource's topic, tagged with account_id, and an account added later syncs only from then on unless you reset the source.",
+				MarkdownDescription: "More ad accounts to sync with the same credentials: select each in the Facebook dialog when you connect with Facebook, or assign each to the token's system user when you paste a token. Their rows share each resource's topic, tagged with account_id, and an account added later syncs only from then on unless you reset the source.",
 			},
 			"api_version": schema.StringAttribute{
 				Optional:            true,
@@ -162,23 +186,35 @@ func SourceFacebookAdsSchema() schema.Schema {
 				Description:         "Earliest date to read when a resource first syncs; unset reads insights from about 13 months back and full object history. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.",
 				MarkdownDescription: "Earliest date to read when a resource first syncs; unset reads insights from about 13 months back and full object history. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.",
 			},
+			"oauth_grant_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Sensitive:           true,
+				Description:         "Single-use grant from Connect with Facebook Ads, which Terraform cannot run. Get one with the Streamkap CLI: run `streamkap sources start-source-oauth-connect facebook_ads`, open the returned authorize_url and approve, then run `streamkap sources poll-source-oauth-grant facebook_ads --state <state>` until it returns oauth_grant_id (see the [OAuth grants guide](https://registry.terraform.io/providers/streamkap-com/streamkap/latest/docs/guides/oauth-grants)). Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. To use Connect in the Streamkap UI instead, create the source there and import it, leaving this unset. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Single-use grant from Connect with Facebook Ads, which Terraform cannot run. Get one with the Streamkap CLI: run `streamkap sources start-source-oauth-connect facebook_ads`, open the returned authorize_url and approve, then run `streamkap sources poll-source-oauth-grant facebook_ads --state <state>` until it returns oauth_grant_id (see the [OAuth grants guide](https://registry.terraform.io/providers/streamkap-com/streamkap/latest/docs/guides/oauth-grants)). Set the grant to create the source or to reconnect it within 10 minutes; saving the source spends it. To use Connect in the Streamkap UI instead, create the source there and import it, leaving this unset.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 		},
 	}
 }
 
 // SourceFacebookAdsFieldMappings maps Terraform attribute names to API field names.
 var SourceFacebookAdsFieldMappings = map[string]string{
-	"access_token":           "access_token",
+	"auth_mode":              "auth_mode",
 	"resources":              "resources",
-	"app_id":                 "app_id",
+	"access_token":           "access_token",
 	"custom_insights":        "custom_insights",
-	"app_secret":             "app_secret",
+	"app_id":                 "app_id",
 	"include_deleted":        "include_deleted",
-	"account_id":             "account_id",
+	"app_secret":             "app_secret",
 	"fetch_thumbnail_images": "fetch_thumbnail_images",
+	"account_id":             "account_id",
 	"account_ids":            "account_ids",
 	"api_version":            "api_version",
 	"backfill_start":         "backfill_start",
+	"oauth_grant_id":         "oauth_grant_id",
 }
 
 // SourceFacebookAdsAPISource is the facebook_ads API source's generated contract.
@@ -188,11 +224,15 @@ var SourceFacebookAdsAPISource = APISource{
 	Schema:        SourceFacebookAdsSchema,
 	FieldMappings: SourceFacebookAdsFieldMappings,
 	NewModel:      func() any { return &SourceFacebookAdsModel{} },
-	AuthModeField: "",
-	Conditions:    []APICondition{},
+	AuthModeField: "auth_mode",
+	Conditions: []APICondition{
+		{Field: "access_token", ConditionField: "auth_mode", ConditionValues: []string{"token"}, ConditionDefault: "token", Required: true},
+		{Field: "app_id", ConditionField: "auth_mode", ConditionValues: []string{"token"}, ConditionDefault: "token", Required: false},
+		{Field: "app_secret", ConditionField: "auth_mode", ConditionValues: []string{"token"}, ConditionDefault: "token", Required: false},
+	},
 	Dependencies: []APIDependency{
 		{Field: "app_id", Requires: []string{"app_secret"}},
 		{Field: "app_secret", Requires: []string{"app_id"}},
 	},
-	OAuth: APIOAuth{Enabled: false, AuthModeField: "", AuthModeValue: "", AuthModeDefault: "", ConnectCommand: "", HostField: ""},
+	OAuth: APIOAuth{Enabled: true, AuthModeField: "auth_mode", AuthModeValue: "oauth", AuthModeDefault: "token", ConnectCommand: "`streamkap sources start-source-oauth-connect facebook_ads`", HostField: ""},
 }

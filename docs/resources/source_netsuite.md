@@ -108,14 +108,14 @@ output "netsuite_source_id" {
 - `auth_mode` (String) How Streamkap signs in to NetSuite: Certificate for a new integration, token-based authentication only for an existing TBA integration. Defaults to `certificate`. Valid values: `certificate`, `tba`.
 - `backfill_start` (String) Earliest modification date to read when a resource first syncs; unset reads all history. Applies to resources added later too; changing it does not re-read resources already synced. An ISO 8601 date or datetime, e.g. 2026-01-01 or 2026-01-01T09:00:00+02:00; one without an offset is read as UTC, and the value is stored in UTC.
 - `certificate_id` (String) The Certificate ID (not the fingerprint) of the certificate mapped to this integration in Setup → Integration → Manage Authentication → OAuth 2.0 Client Credentials (M2M) Setup.
-- `client_id` (String) The Client ID NetSuite showed once, when you saved the integration record in Setup → Integration → Manage Integrations.
+- `client_id` (String) The Client ID NetSuite showed once, when you saved the integration record in Setup → Integration → Manage Integrations. Tick only Client Credentials (Machine to Machine) Grant on it: with Authorization Code Grant ticked, NetSuite demands a Redirect URI, which Streamkap does not use.
 - `consumer_key` (String, Sensitive) The Consumer Key of the integration record the access token belongs to, shown once when you save the record in Setup → Integration → Manage Integrations.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `consumer_secret` (String, Sensitive) The Consumer Secret shown beside the Consumer Key when the integration record was saved.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
-- `private_key` (String, Sensitive) The PEM private key (RSA or EC P-256) of the certificate you uploaded to NetSuite, including its BEGIN and END lines.
+- `private_key` (String, Sensitive) The PEM private key of the certificate you uploaded to NetSuite (3072- or 4096-bit RSA, or EC on P-256, P-384 or P-521), including its BEGIN and END lines.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
 - `private_key_passphrase` (String, Sensitive) The private key's passphrase, if the key is encrypted.

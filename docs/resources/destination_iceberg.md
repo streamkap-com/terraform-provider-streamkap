@@ -151,9 +151,18 @@ output "iceberg_destination_id" {
 - `iceberg_tables_compaction_retain_last` (String) Number of most recent snapshots to retain when expiring snapshots after compaction. Defaults to `1`.
 - `iceberg_tables_compaction_target_file_size_bytes` (String) Target file size in bytes for compaction. Files smaller than this are candidates for merging. Defaults to `134217728`.
 - `iceberg_tables_default_id_columns` (String) Optional. A comma-separated list of field names to use as record identifiers when key fields are not present in Kafka messages
+- `iceberg_tables_default_partition_by` (String) Optional. Comma-separated partition spec for tables this connector creates. A column name on its own partitions by that column; or use year(col), month(col), day(col), hour(col), bucket(col, N), truncate(col, N). Column names are case-sensitive. Applies to new tables only; existing tables are not re-partitioned. In Upsert mode, partition only on columns whose values never change.
 - `iceberg_tables_hard_delete_enabled` (Boolean) Specifies whether the connector processes DELETE or tombstone events and removes the corresponding row from the database (applies to `upsert` only). Defaults to `true`.
+- `iceberg_tables_partition_overrides` (String) Optional. Per-table partition specs as JSON, keyed by the bare table name (the Schema is added for you). An override replaces Partition By for that table rather than adding to it; "" leaves that table unpartitioned. Same syntax and limits as Partition By.
+
+Example:
+{
+  "orders": "day(order_date), bucket(customer_id, 16)",
+  "audit": ""
+}
 - `insert_mode` (String) Specifies the strategy used to insert events into the database. Defaults to `insert`. Valid values: `insert`, `upsert`.
 - `kc_cluster_id` (String) Kafka Connect cluster ID to deploy the connector to. Empty for default cluster.
+- `preserve_decimal_precision_scale` (Boolean) When enabled, decimal columns keep the precision and scale defined at the source when they fit 38 digits with up to 7 decimal places. Larger decimal columns are written as DECIMAL(38,7). When disabled, the current behaviour is kept. Defaults to `false`.
 - `preserve_null_values` (Boolean) When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
 - `tags` (Set of String) Optional set of tag IDs to apply to this destination. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.
@@ -177,9 +186,10 @@ output "iceberg_destination_id" {
 - `transforms_oversized_records_fields_include_list` (String) Truncate or nullify oversized string fields. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). WARNING: Do not include primary key columns - truncation/nullification could cause data loss or failures.
 - `transforms_oversized_records_max_field_size_bytes` (Number) Maximum allowed byte size per field. Fields exceeding this size will be truncated or nullified. Required when using Oversized Records transform. Defaults to `1048576`.
 - `transforms_oversized_records_max_record_size_bytes` (Number) Optional overall record size limit in bytes. Records are NOT dropped - only a warning is logged if record exceeds this after field processing. Set to -1 to disable. Defaults to `-1`.
-- `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.
+- `transforms_oversized_records_oversized_field_behavior` (String) Action for oversized fields: TRUNCATE (trim to max size), NULLIFY (set to null), or CLEAR (replace with a placeholder of the right shape). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`, `CLEAR`.
 - `transforms_oversized_records_replace_null_with_default` (Boolean) Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.
-- `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
+- `transforms_oversized_records_semantic_types_exclude` (String) Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Removing io.debezium.data.Json from this list turns on structure-aware JSON truncation: the document is cut at a value boundary and the open objects/arrays are closed, so the result is still valid JSON, marked with a __streamkap_truncated flag. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.
+- `transforms_oversized_records_truncate_to_bytes` (Number) How much of an oversized value to keep, in bytes. Independent of the size limit above, which only decides whether a column counts as oversized: a column can be flagged at the destination's limit (e.g. 16MB for Snowflake) but trimmed to something far smaller (e.g. 256 bytes). Default -1 keeps up to the size limit. This is also the main cost lever for JSON truncation - the structure-aware scan only walks the bytes it keeps, so a smaller value is proportionally cheaper; tune it down on pipelines with many oversized JSON columns. Defaults to `-1`.
 - `transforms_oversized_records_truncation_suffix` (String) Suffix to append to truncated values (e.g., '...[TRUNCATED]'). Leave empty for no suffix. Defaults to an empty string.
 - `transforms_rename_fields_renames` (String) JSON mapping of source to target column names. Keys should be schema.table.column, table.column or just column. Values must be valid column names (no dots or spaces).
 
@@ -189,6 +199,11 @@ Example:
   "orders.quantity": "Qty",
   "customer_id": "CustomerId"
 }
+- `transforms_sanitize_fields_fields_exclude_list` (String) Columns to exclude from field sanitization. Comma separated list in format 'table1.column1,table2.column2'.
+- `transforms_sanitize_fields_fields_include_list` (String) Clamp or null temporal values the destination cannot represent (e.g. Postgres '-infinity', or a date beyond year 9999), instead of dead-lettering the record. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). Only date-bearing columns are affected; time-of-day columns are ignored.
+- `transforms_sanitize_fields_temporal_max` (String) Latest temporal value the destination can represent, as an ISO-8601 instant. Default '9999-12-31T23:59:59.999999Z' matches Snowflake and the SQL standard. Defaults to `9999-12-31T23:59:59.999999Z`.
+- `transforms_sanitize_fields_temporal_min` (String) Earliest temporal value the destination can represent, as an ISO-8601 instant. Default '0001-01-01T00:00:00Z' matches Snowflake and the SQL standard. Defaults to `0001-01-01T00:00:00Z`.
+- `transforms_sanitize_fields_temporal_range_behavior` (String) Action for temporal values outside the range below: CLAMP (replace with the bound that was crossed) or NULLIFY (set to null). Defaults to `CLAMP`. Valid values: `CLAMP`, `NULLIFY`.
 - `transforms_string_replace_fields_include_list` (String) Replaces column(s) value with a user-defined string. Comma separated list of table columns in format 'table1.column1,table2.column2'
 - `transforms_string_replace_regex_patterns` (String) List of regex patterns to search for. Comma separated list in format 'regex1,regex2'
 - `transforms_string_replace_replacement_values` (String) List of replacement values for each regex pattern. Comma separated list in format 'regex1,regex2'

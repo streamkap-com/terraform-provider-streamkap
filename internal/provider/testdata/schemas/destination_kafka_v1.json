@@ -64,6 +64,13 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "preserve_decimal_precision_scale": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
     "preserve_null_values": {
       "required": false,
       "optional": true,
@@ -281,6 +288,13 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "transforms_oversized_records_truncate_to_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
     "transforms_oversized_records_truncation_suffix": {
       "required": false,
       "optional": true,
@@ -289,6 +303,41 @@
       "type": "basetypes.StringType"
     },
     "transforms_rename_fields_renames": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_sanitize_fields_fields_exclude_list": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_sanitize_fields_fields_include_list": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_sanitize_fields_temporal_max": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_sanitize_fields_temporal_min": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_sanitize_fields_temporal_range_behavior": {
       "required": false,
       "optional": true,
       "computed": true,

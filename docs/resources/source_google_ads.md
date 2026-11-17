@@ -117,7 +117,7 @@ output "google_ads_source_id" {
 - `auth_mode` (String) How Streamkap signs in to Google Ads: Connect with Google through your own OAuth client, a service account key, or a refresh token minted with your OAuth client. Valid values: `oauth`, `service_account`, `refresh_token`.
 - `customer_id` (String) The Google Ads account to sync, shown at the top right of Google Ads, e.g. 123-456-7890. For a manager account, turn on Include client accounts.
 - `name` (String) Name of the source
-- `resources` (List of String) Google Ads objects and daily reports to sync, each to its own topic; select custom_<name> for each query in Custom queries (custom_queries). Each uses Google Ads API operations from your Cloud project's daily limit, about 360 a day per account for the default set. Requires at least one item.
+- `resources` (List of String) Google Ads objects and daily reports to sync, each to its own topic; select custom_<name> for each query in Custom queries. Each uses Google Ads API operations from your Cloud project's daily limit, about 360 a day per account for the default set. Requires at least one item.
 
 ### Optional
 

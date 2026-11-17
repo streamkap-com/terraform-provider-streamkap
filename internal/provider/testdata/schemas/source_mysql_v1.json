@@ -92,6 +92,13 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "enable_time_adjuster": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
     "heartbeat_data_collection_schema_or_database": {
       "required": false,
       "optional": true,
@@ -288,6 +295,13 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "stream_empty_tables": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
     "streamkap_snapshot_chunk_size_bytes": {
       "required": false,
       "optional": true,
@@ -435,7 +449,42 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "transforms_oversized_records_truncate_to_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
     "transforms_oversized_records_truncation_suffix": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_records_filter_field": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_records_filter_negate_condition": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "transforms_records_filter_op": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_records_filter_values": {
       "required": false,
       "optional": true,
       "computed": true,

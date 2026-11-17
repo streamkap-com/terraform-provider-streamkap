@@ -47,6 +47,7 @@ type SourceMysqlModel struct {
 	SchemaHistoryInternalStoreOnlyCapturedDatabasesDdl types.Bool     `tfsdk:"schema_history_internal_store_only_captured_databases_ddl"`
 	SchemaHistoryInternalStoreOnlyCapturedTablesDdl    types.Bool     `tfsdk:"schema_history_internal_store_only_captured_tables_ddl"`
 	BinaryHandlingMode                                 types.String   `tfsdk:"binary_handling_mode"`
+	EnableTimeAdjuster                                 types.Bool     `tfsdk:"enable_time_adjuster"`
 	SSHEnabled                                         types.Bool     `tfsdk:"ssh_enabled"`
 	SSHHost                                            types.String   `tfsdk:"ssh_host"`
 	SSHPort                                            types.Int64    `tfsdk:"ssh_port"`
@@ -61,6 +62,7 @@ type SourceMysqlModel struct {
 	TransformsInsertStaticValue2StaticValue            types.String   `tfsdk:"transforms_insert_static_value2_static_value"`
 	PredicatesIsTopicToEnrichPattern                   types.String   `tfsdk:"predicates_is_topic_to_enrich_pattern"`
 	SSHPublicKey                                       types.String   `tfsdk:"ssh_public_key"`
+	StreamEmptyTables                                  types.Bool     `tfsdk:"stream_empty_tables"`
 	StreamkapSnapshotParallelism                       types.Int64    `tfsdk:"streamkap_snapshot_parallelism"`
 	StreamkapSnapshotChunkSizeBytes                    types.Int64    `tfsdk:"streamkap_snapshot_chunk_size_bytes"`
 	StreamkapSnapshotMaxSplitSizeBytes                 types.Int64    `tfsdk:"streamkap_snapshot_max_split_size_bytes"`
@@ -75,8 +77,13 @@ type SourceMysqlModel struct {
 	TransformsOversizedRecordsTruncationSuffix         types.String   `tfsdk:"transforms_oversized_records_truncation_suffix"`
 	TransformsOversizedRecordsMaxRecordSizeBytes       types.Int64    `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
 	TransformsOversizedRecordsSemanticTypesExclude     types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
+	TransformsOversizedRecordsTruncateToBytes          types.Int64    `tfsdk:"transforms_oversized_records_truncate_to_bytes"`
 	TransformsOversizedRecordsReplaceNullWithDefault   types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
 	InsertTopicNameEnabled                             types.Bool     `tfsdk:"insert_topic_name_enabled"`
+	TransformsRecordsFilterField                       types.String   `tfsdk:"transforms_records_filter_field"`
+	TransformsRecordsFilterOp                          types.String   `tfsdk:"transforms_records_filter_op"`
+	TransformsRecordsFilterValues                      types.String   `tfsdk:"transforms_records_filter_values"`
+	TransformsRecordsFilterNegateCondition             types.Bool     `tfsdk:"transforms_records_filter_negate_condition"`
 	Timeouts                                           timeouts.Value `tfsdk:"timeouts"`
 }
 
@@ -297,6 +304,13 @@ func SourceMysqlSchema() schema.Schema {
 					stringvalidator.OneOf("bytes", "base64", "base64-url-safe", "hex"),
 				},
 			},
+			"enable_time_adjuster": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "When on (the default), DATE, DATETIME and TIMESTAMP values with a year from 0 to 99 are moved to 1970-2069, so 0001-01-01 becomes 2001-01-01. Turn off to keep years exactly as stored in MySQL. Changing this affects new events only; re-snapshot tables to correct existing rows. Defaults to true.",
+				MarkdownDescription: "When on (the default), DATE, DATETIME and TIMESTAMP values with a year from 0 to 99 are moved to 1970-2069, so 0001-01-01 becomes 2001-01-01. Turn off to keep years exactly as stored in MySQL. Changing this affects new events only; re-snapshot tables to correct existing rows. Defaults to `true`.",
+				Default:             booldefault.StaticBool(true),
+			},
 			"ssh_enabled": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -415,6 +429,13 @@ func SourceMysqlSchema() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"stream_empty_tables": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Emit a schema-bearing delete for empty tables after a parallel snapshot, creating Snowflake tables and Dynamic Tables. Enable only for timestamp-deduplicated destinations, not hard-delete sinks. Defaults to false.",
+				MarkdownDescription: "Emit a schema-bearing delete for empty tables after a parallel snapshot, creating Snowflake tables and Dynamic Tables. Enable only for timestamp-deduplicated destinations, not hard-delete sinks. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
 			"streamkap_snapshot_parallelism": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
@@ -509,11 +530,11 @@ func SourceMysqlSchema() schema.Schema {
 			"transforms_oversized_records_oversized_field_behavior": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to \"TRUNCATE\". Valid values: TRUNCATE, NULLIFY.",
-				MarkdownDescription: "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.",
+				Description:         "Action for oversized fields: TRUNCATE (trim to max size), NULLIFY (set to null), or CLEAR (replace with a placeholder of the right shape). Defaults to \"TRUNCATE\". Valid values: TRUNCATE, NULLIFY, CLEAR.",
+				MarkdownDescription: "Action for oversized fields: TRUNCATE (trim to max size), NULLIFY (set to null), or CLEAR (replace with a placeholder of the right shape). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`, `CLEAR`.",
 				Default:             stringdefault.StaticString("TRUNCATE"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("TRUNCATE", "NULLIFY"),
+					stringvalidator.OneOf("TRUNCATE", "NULLIFY", "CLEAR"),
 				},
 			},
 			"transforms_oversized_records_truncation_suffix": schema.StringAttribute{
@@ -536,9 +557,16 @@ func SourceMysqlSchema() schema.Schema {
 			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
-				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Removing io.debezium.data.Json from this list turns on structure-aware JSON truncation: the document is cut at a value boundary and the open objects/arrays are closed, so the result is still valid JSON, marked with a __streamkap_truncated flag. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Removing io.debezium.data.Json from this list turns on structure-aware JSON truncation: the document is cut at a value boundary and the open objects/arrays are closed, so the result is still valid JSON, marked with a __streamkap_truncated flag. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
 				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
+			},
+			"transforms_oversized_records_truncate_to_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How much of an oversized value to keep, in bytes. Independent of the size limit above, which only decides whether a column counts as oversized: a column can be flagged at the destination's limit (e.g. 16MB for Snowflake) but trimmed to something far smaller (e.g. 256 bytes). Default -1 keeps up to the size limit. This is also the main cost lever for JSON truncation - the structure-aware scan only walks the bytes it keeps, so a smaller value is proportionally cheaper; tune it down on pipelines with many oversized JSON columns. Defaults to -1.",
+				MarkdownDescription: "How much of an oversized value to keep, in bytes. Independent of the size limit above, which only decides whether a column counts as oversized: a column can be flagged at the destination's limit (e.g. 16MB for Snowflake) but trimmed to something far smaller (e.g. 256 bytes). Default -1 keeps up to the size limit. This is also the main cost lever for JSON truncation - the structure-aware scan only walks the bytes it keeps, so a smaller value is proportionally cheaper; tune it down on pipelines with many oversized JSON columns. Defaults to `-1`.",
+				Default:             int64default.StaticInt64(-1),
 			},
 			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{
 				Optional:            true,
@@ -552,6 +580,41 @@ func SourceMysqlSchema() schema.Schema {
 				Computed:            true,
 				Description:         "Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to false.",
 				MarkdownDescription: "Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"transforms_records_filter_field": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Drop (or keep) records based on the value of this column. Leave empty to disable the filter. Top-level columns only - nested fields and arrays are not supported.",
+				MarkdownDescription: "Drop (or keep) records based on the value of this column. Leave empty to disable the filter. Top-level columns only - nested fields and arrays are not supported.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_records_filter_op": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How the column value is compared. 'in' / 'not_in' take a comma separated list; 'eq', 'ne', 'gt', 'gte', 'lt', 'lte' and 'matches' take a single value; 'is_null' and 'is_not_null' take none. Defaults to \"in\". Valid values: in, not_in, eq, ne, gt, gte, lt, lte, is_null, is_not_null, matches.",
+				MarkdownDescription: "How the column value is compared. 'in' / 'not_in' take a comma separated list; 'eq', 'ne', 'gt', 'gte', 'lt', 'lte' and 'matches' take a single value; 'is_null' and 'is_not_null' take none. Defaults to `in`. Valid values: `in`, `not_in`, `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `is_null`, `is_not_null`, `matches`.",
+				Default:             stringdefault.StaticString("in"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("in", "not_in", "eq", "ne", "gt", "gte", "lt", "lte", "is_null", "is_not_null", "matches"),
+				},
+			},
+			"transforms_records_filter_values": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Value(s) to compare against, comma separated. Dates, timestamps and decimals are converted once to the column's type - there is no per-record parsing. Leave empty for 'is_null' / 'is_not_null'.",
+				MarkdownDescription: "Value(s) to compare against, comma separated. Dates, timestamps and decimals are converted once to the column's type - there is no per-record parsing. Leave empty for 'is_null' / 'is_not_null'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_records_filter_negate_condition": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Off (default) is a blacklist: the records that match the condition are dropped. On is a whitelist: only the records that match are kept, everything else is dropped. Defaults to false.",
+				MarkdownDescription: "Off (default) is a blacklist: the records that match the condition are dropped. On is a whitelist: only the records that match are kept, everything else is dropped. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 		},
@@ -582,6 +645,7 @@ var SourceMysqlFieldMappings = map[string]string{
 	"schema_history_internal_store_only_captured_databases_ddl": "schema.history.internal.store.only.captured.databases.ddl",
 	"schema_history_internal_store_only_captured_tables_ddl":    "schema.history.internal.store.only.captured.tables.ddl",
 	"binary_handling_mode":                                      "binary.handling.mode",
+	"enable_time_adjuster":                                      "enable.time.adjuster",
 	"ssh_enabled":                                               "ssh.enabled",
 	"ssh_host":                                                  "ssh.host",
 	"ssh_port":                                                  "ssh.port",
@@ -596,6 +660,7 @@ var SourceMysqlFieldMappings = map[string]string{
 	"transforms_insert_static_value2_static_value":              "transforms.InsertStaticValue2.static.value",
 	"predicates_is_topic_to_enrich_pattern":                     "predicates.IsTopicToEnrich.pattern",
 	"ssh_public_key":                                            "ssh.public.key.user.displayed",
+	"stream_empty_tables":                                       "stream.empty.tables",
 	"streamkap_snapshot_parallelism":                            "streamkap.snapshot.parallelism",
 	"streamkap_snapshot_chunk_size_bytes":                       "streamkap.snapshot.chunk.size.bytes",
 	"streamkap_snapshot_max_split_size_bytes":                   "streamkap.snapshot.max.split.size.bytes",
@@ -610,6 +675,11 @@ var SourceMysqlFieldMappings = map[string]string{
 	"transforms_oversized_records_truncation_suffix":            "transforms.OversizedRecords.truncation.suffix",
 	"transforms_oversized_records_max_record_size_bytes":        "transforms.OversizedRecords.max.record.size.bytes",
 	"transforms_oversized_records_semantic_types_exclude":       "transforms.OversizedRecords.semantic.types.exclude",
+	"transforms_oversized_records_truncate_to_bytes":            "transforms.OversizedRecords.truncate.to.bytes",
 	"transforms_oversized_records_replace_null_with_default":    "transforms.OversizedRecords.replace.null.with.default",
 	"insert_topic_name_enabled":                                 "InsertTopicName.enabled",
+	"transforms_records_filter_field":                           "transforms.RecordsFilter.field",
+	"transforms_records_filter_op":                              "transforms.RecordsFilter.op",
+	"transforms_records_filter_values":                          "transforms.RecordsFilter.values",
+	"transforms_records_filter_negate_condition":                "transforms.RecordsFilter.negate.condition",
 }

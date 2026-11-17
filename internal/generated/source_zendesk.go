@@ -83,8 +83,8 @@ func SourceZendeskSchema() schema.Schema {
 			},
 			"subdomain": schema.StringAttribute{
 				Required:            true,
-				Description:         "The acme in acme.zendesk.com, shown in Admin Center → Account → Appearance → Branding. Then Connect with Zendesk (through the API, the oauth_grant_id Connect returns) and approve as a Zendesk admin; an agent's access misses the tickets that agent cannot see.",
-				MarkdownDescription: "The acme in acme.zendesk.com, shown in Admin Center → Account → Appearance → Branding. Then Connect with Zendesk (through the API, the oauth_grant_id Connect returns) and approve as a Zendesk admin; an agent's access misses the tickets that agent cannot see.",
+				Description:         "The acme in acme.zendesk.com, shown in Admin Center → Account → Appearance → Branding. Then click Connect with Zendesk and approve as a Zendesk admin; an agent's access misses the tickets that agent cannot see.",
+				MarkdownDescription: "The acme in acme.zendesk.com, shown in Admin Center → Account → Appearance → Branding. Then click Connect with Zendesk and approve as a Zendesk admin; an agent's access misses the tickets that agent cannot see.",
 			},
 			"resources": schema.ListAttribute{
 				Required:            true,

@@ -118,8 +118,8 @@ func SourceNetsuiteSchema() schema.Schema {
 			"client_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "The Client ID NetSuite showed once, when you saved the integration record in Setup → Integration → Manage Integrations.",
-				MarkdownDescription: "The Client ID NetSuite showed once, when you saved the integration record in Setup → Integration → Manage Integrations.",
+				Description:         "The Client ID NetSuite showed once, when you saved the integration record in Setup → Integration → Manage Integrations. Tick only Client Credentials (Machine to Machine) Grant on it: with Authorization Code Grant ticked, NetSuite demands a Redirect URI, which Streamkap does not use.",
+				MarkdownDescription: "The Client ID NetSuite showed once, when you saved the integration record in Setup → Integration → Manage Integrations. Tick only Client Credentials (Machine to Machine) Grant on it: with Authorization Code Grant ticked, NetSuite demands a Redirect URI, which Streamkap does not use.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -137,8 +137,8 @@ func SourceNetsuiteSchema() schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
-				Description:         "The PEM private key (RSA or EC P-256) of the certificate you uploaded to NetSuite, including its BEGIN and END lines. This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "The PEM private key (RSA or EC P-256) of the certificate you uploaded to NetSuite, including its BEGIN and END lines.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "The PEM private key of the certificate you uploaded to NetSuite (3072- or 4096-bit RSA, or EC on P-256, P-384 or P-521), including its BEGIN and END lines. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "The PEM private key of the certificate you uploaded to NetSuite (3072- or 4096-bit RSA, or EC on P-256, P-384 or P-521), including its BEGIN and END lines.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

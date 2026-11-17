@@ -88,8 +88,8 @@ func SourceStripeSchema() schema.Schema {
 			"auth_mode": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "How Streamkap signs in to Stripe: paste a restricted key, or install Streamkap's Stripe App with Connect with Stripe (through the API, the oauth_grant_id Connect returns). Defaults to \"restricted_key\". Valid values: restricted_key, oauth.",
-				MarkdownDescription: "How Streamkap signs in to Stripe: paste a restricted key, or install Streamkap's Stripe App with Connect with Stripe (through the API, the oauth_grant_id Connect returns). Defaults to `restricted_key`. Valid values: `restricted_key`, `oauth`.",
+				Description:         "How Streamkap signs in to Stripe: paste a restricted key, or click Connect with Stripe to install Streamkap's Stripe App. Defaults to \"restricted_key\". Valid values: restricted_key, oauth.",
+				MarkdownDescription: "How Streamkap signs in to Stripe: paste a restricted key, or click Connect with Stripe to install Streamkap's Stripe App. Defaults to `restricted_key`. Valid values: `restricted_key`, `oauth`.",
 				Default:             stringdefault.StaticString("restricted_key"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("restricted_key", "oauth"),

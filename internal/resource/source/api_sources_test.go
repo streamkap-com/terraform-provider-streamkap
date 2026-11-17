@@ -376,16 +376,21 @@ func diagPaths(diags diag.Diagnostics) []string {
 
 func TestAPISourceFacebookAdsAppPair(t *testing.T) {
 	config := apiSource(t, NewFacebookAdsResource)
+	// access_token is required unconditionally after the backend's Facebook
+	// OAuth/system-user rework, so every case below carries it alongside the
+	// app_id/app_secret pairing being exercised. token keeps the required
+	// field satisfied in cases that only test the pair.
+	token := types.StringValue("tok")
 	for _, test := range []struct {
 		name    string
 		model   generated.SourceFacebookAdsModel
 		missing []string
 	}{
-		{"neither", generated.SourceFacebookAdsModel{}, nil},
-		{"both", generated.SourceFacebookAdsModel{AppID: types.StringValue("42"), AppSecret: types.StringValue("secret")}, nil},
-		{"id only", generated.SourceFacebookAdsModel{AppID: types.StringValue("42")}, []string{"app_secret"}},
-		{"secret only", generated.SourceFacebookAdsModel{AppSecret: types.StringValue("secret")}, []string{"app_id"}},
-		{"secret unknown", generated.SourceFacebookAdsModel{AppID: types.StringValue("42"), AppSecret: types.StringUnknown()}, nil},
+		{"neither", generated.SourceFacebookAdsModel{AccessToken: token}, nil},
+		{"both", generated.SourceFacebookAdsModel{AccessToken: token, AppID: types.StringValue("42"), AppSecret: types.StringValue("secret")}, nil},
+		{"id only", generated.SourceFacebookAdsModel{AccessToken: token, AppID: types.StringValue("42")}, []string{"app_secret"}},
+		{"secret only", generated.SourceFacebookAdsModel{AccessToken: token, AppSecret: types.StringValue("secret")}, []string{"app_id"}},
+		{"secret unknown", generated.SourceFacebookAdsModel{AccessToken: token, AppID: types.StringValue("42"), AppSecret: types.StringUnknown()}, nil},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if got := diagPaths(config.ValidateConfiguration(&test.model, &test.model)); !slices.Equal(got, test.missing) {

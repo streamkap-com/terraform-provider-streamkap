@@ -25,6 +25,7 @@ type DestinationDatabricksModel struct {
 	ConnectorStatus                                  types.String   `tfsdk:"connector_status"`
 	KcClusterId                                      types.String   `tfsdk:"kc_cluster_id"`
 	Tags                                             types.Set      `tfsdk:"tags"`
+	DatabricksStagePath                              types.String   `tfsdk:"databricks_stage_path"`
 	IngestionMode                                    types.String   `tfsdk:"ingestion_mode"`
 	DatabricksToken                                  types.String   `tfsdk:"databricks_token"`
 	ConnectionURL                                    types.String   `tfsdk:"connection_url"`
@@ -40,6 +41,7 @@ type DestinationDatabricksModel struct {
 	TransformsChangeTopicNameMatchRegex              types.String   `tfsdk:"transforms_change_topic_name_match_regex"`
 	TransformsChangeTopicNameMapping                 types.String   `tfsdk:"transforms_change_topic_name_mapping"`
 	PreserveNullValues                               types.Bool     `tfsdk:"preserve_null_values"`
+	PreserveDecimalPrecisionScale                    types.Bool     `tfsdk:"preserve_decimal_precision_scale"`
 	QuoteIdentifiers                                 types.Bool     `tfsdk:"quote_identifiers"`
 	TransformsToIntJFieldsIncludeList                types.String   `tfsdk:"transforms_to_int_j_fields_include_list"`
 	TransformsToFloatJFieldsIncludeList              types.String   `tfsdk:"transforms_to_float_j_fields_include_list"`
@@ -61,7 +63,13 @@ type DestinationDatabricksModel struct {
 	TransformsOversizedRecordsTruncationSuffix       types.String   `tfsdk:"transforms_oversized_records_truncation_suffix"`
 	TransformsOversizedRecordsMaxRecordSizeBytes     types.Int64    `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
 	TransformsOversizedRecordsSemanticTypesExclude   types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
+	TransformsOversizedRecordsTruncateToBytes        types.Int64    `tfsdk:"transforms_oversized_records_truncate_to_bytes"`
 	TransformsOversizedRecordsReplaceNullWithDefault types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
+	TransformsSanitizeFieldsFieldsIncludeList        types.String   `tfsdk:"transforms_sanitize_fields_fields_include_list"`
+	TransformsSanitizeFieldsFieldsExcludeList        types.String   `tfsdk:"transforms_sanitize_fields_fields_exclude_list"`
+	TransformsSanitizeFieldsTemporalRangeBehavior    types.String   `tfsdk:"transforms_sanitize_fields_temporal_range_behavior"`
+	TransformsSanitizeFieldsTemporalMin              types.String   `tfsdk:"transforms_sanitize_fields_temporal_min"`
+	TransformsSanitizeFieldsTemporalMax              types.String   `tfsdk:"transforms_sanitize_fields_temporal_max"`
 	TransformsMaskFieldFieldsIncludeList             types.String   `tfsdk:"transforms_mask_field_fields_include_list"`
 	TransformsMaskFieldFieldsExcludeList             types.String   `tfsdk:"transforms_mask_field_fields_exclude_list"`
 	TransformsMaskFieldMaskFunction                  types.String   `tfsdk:"transforms_mask_field_mask_function"`
@@ -130,6 +138,15 @@ func DestinationDatabricksSchema() schema.Schema {
 				MarkdownDescription: "Optional set of tag IDs to apply to this destination. Use `streamkap_tag` (resource or data source) to obtain IDs. Defaults to empty; the backend may attach tags out-of-band, in which case the unset value is preserved on subsequent reads.",
 				PlanModifiers: []planmodifier.Set{
 					setplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"databricks_stage_path": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Unity Catalog volume used to stage data files, for example /Volumes/my_catalog/my_schema/my_volume/. Leave blank to stage on DBFS root, which is unavailable in workspaces created after Databricks disabled it.",
+				MarkdownDescription: "Unity Catalog volume used to stage data files, for example /Volumes/my_catalog/my_schema/my_volume/. Leave blank to stage on DBFS root, which is unavailable in workspaces created after Databricks disabled it.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"ingestion_mode": schema.StringAttribute{
@@ -251,6 +268,13 @@ func DestinationDatabricksSchema() schema.Schema {
 				Computed:            true,
 				Description:         "When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to false.",
 				MarkdownDescription: "When enabled, preserves NULL values from the source database instead of replacing them with schema default values. Enable this if you need to distinguish between explicit NULLs and default values. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
+			"preserve_decimal_precision_scale": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "When enabled, decimal columns keep the precision and scale defined at the source when they fit 38 digits with up to 7 decimal places. Larger decimal columns are written as DECIMAL(38,7). When disabled, the current behaviour is kept. Defaults to false.",
+				MarkdownDescription: "When enabled, decimal columns keep the precision and scale defined at the source when they fit 38 digits with up to 7 decimal places. Larger decimal columns are written as DECIMAL(38,7). When disabled, the current behaviour is kept. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
 			"quote_identifiers": schema.BoolAttribute{
@@ -400,11 +424,11 @@ func DestinationDatabricksSchema() schema.Schema {
 			"transforms_oversized_records_oversized_field_behavior": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to \"TRUNCATE\". Valid values: TRUNCATE, NULLIFY.",
-				MarkdownDescription: "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.",
+				Description:         "Action for oversized fields: TRUNCATE (trim to max size), NULLIFY (set to null), or CLEAR (replace with a placeholder of the right shape). Defaults to \"TRUNCATE\". Valid values: TRUNCATE, NULLIFY, CLEAR.",
+				MarkdownDescription: "Action for oversized fields: TRUNCATE (trim to max size), NULLIFY (set to null), or CLEAR (replace with a placeholder of the right shape). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`, `CLEAR`.",
 				Default:             stringdefault.StaticString("TRUNCATE"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("TRUNCATE", "NULLIFY"),
+					stringvalidator.OneOf("TRUNCATE", "NULLIFY", "CLEAR"),
 				},
 			},
 			"transforms_oversized_records_truncation_suffix": schema.StringAttribute{
@@ -427,9 +451,16 @@ func DestinationDatabricksSchema() schema.Schema {
 			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
-				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Removing io.debezium.data.Json from this list turns on structure-aware JSON truncation: the document is cut at a value boundary and the open objects/arrays are closed, so the result is still valid JSON, marked with a __streamkap_truncated flag. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Removing io.debezium.data.Json from this list turns on structure-aware JSON truncation: the document is cut at a value boundary and the open objects/arrays are closed, so the result is still valid JSON, marked with a __streamkap_truncated flag. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
 				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
+			},
+			"transforms_oversized_records_truncate_to_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How much of an oversized value to keep, in bytes. Independent of the size limit above, which only decides whether a column counts as oversized: a column can be flagged at the destination's limit (e.g. 16MB for Snowflake) but trimmed to something far smaller (e.g. 256 bytes). Default -1 keeps up to the size limit. This is also the main cost lever for JSON truncation - the structure-aware scan only walks the bytes it keeps, so a smaller value is proportionally cheaper; tune it down on pipelines with many oversized JSON columns. Defaults to -1.",
+				MarkdownDescription: "How much of an oversized value to keep, in bytes. Independent of the size limit above, which only decides whether a column counts as oversized: a column can be flagged at the destination's limit (e.g. 16MB for Snowflake) but trimmed to something far smaller (e.g. 256 bytes). Default -1 keeps up to the size limit. This is also the main cost lever for JSON truncation - the structure-aware scan only walks the bytes it keeps, so a smaller value is proportionally cheaper; tune it down on pipelines with many oversized JSON columns. Defaults to `-1`.",
+				Default:             int64default.StaticInt64(-1),
 			},
 			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{
 				Optional:            true,
@@ -437,6 +468,48 @@ func DestinationDatabricksSchema() schema.Schema {
 				Description:         "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to true.",
 				MarkdownDescription: "Whether null fields should use schema default values. Set to false to preserve user-set NULLs from source. Defaults to `true`.",
 				Default:             booldefault.StaticBool(true),
+			},
+			"transforms_sanitize_fields_fields_include_list": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Clamp or null temporal values the destination cannot represent (e.g. Postgres '-infinity', or a date beyond year 9999), instead of dead-lettering the record. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). Only date-bearing columns are affected; time-of-day columns are ignored.",
+				MarkdownDescription: "Clamp or null temporal values the destination cannot represent (e.g. Postgres '-infinity', or a date beyond year 9999), instead of dead-lettering the record. Comma separated list of table columns in format 'table1.column1,table2.column2'. Supports wildcards (e.g., 'mytable.*'). Only date-bearing columns are affected; time-of-day columns are ignored.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_sanitize_fields_fields_exclude_list": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Columns to exclude from field sanitization. Comma separated list in format 'table1.column1,table2.column2'.",
+				MarkdownDescription: "Columns to exclude from field sanitization. Comma separated list in format 'table1.column1,table2.column2'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_sanitize_fields_temporal_range_behavior": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Action for temporal values outside the range below: CLAMP (replace with the bound that was crossed) or NULLIFY (set to null). Defaults to \"CLAMP\". Valid values: CLAMP, NULLIFY.",
+				MarkdownDescription: "Action for temporal values outside the range below: CLAMP (replace with the bound that was crossed) or NULLIFY (set to null). Defaults to `CLAMP`. Valid values: `CLAMP`, `NULLIFY`.",
+				Default:             stringdefault.StaticString("CLAMP"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("CLAMP", "NULLIFY"),
+				},
+			},
+			"transforms_sanitize_fields_temporal_min": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Earliest temporal value the destination can represent, as an ISO-8601 instant. Default '0001-01-01T00:00:00Z' matches Snowflake and the SQL standard. Defaults to \"0001-01-01T00:00:00Z\".",
+				MarkdownDescription: "Earliest temporal value the destination can represent, as an ISO-8601 instant. Default '0001-01-01T00:00:00Z' matches Snowflake and the SQL standard. Defaults to `0001-01-01T00:00:00Z`.",
+				Default:             stringdefault.StaticString("0001-01-01T00:00:00Z"),
+			},
+			"transforms_sanitize_fields_temporal_max": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Latest temporal value the destination can represent, as an ISO-8601 instant. Default '9999-12-31T23:59:59.999999Z' matches Snowflake and the SQL standard. Defaults to \"9999-12-31T23:59:59.999999Z\".",
+				MarkdownDescription: "Latest temporal value the destination can represent, as an ISO-8601 instant. Default '9999-12-31T23:59:59.999999Z' matches Snowflake and the SQL standard. Defaults to `9999-12-31T23:59:59.999999Z`.",
+				Default:             stringdefault.StaticString("9999-12-31T23:59:59.999999Z"),
 			},
 			"transforms_mask_field_fields_include_list": schema.StringAttribute{
 				Optional:            true,
@@ -571,6 +644,7 @@ func DestinationDatabricksSchema() schema.Schema {
 
 // DestinationDatabricksFieldMappings maps Terraform attribute names to API field names.
 var DestinationDatabricksFieldMappings = map[string]string{
+	"databricks_stage_path":                                   "databricks.stage.path.user.defined",
 	"ingestion_mode":                                          "ingestion.mode",
 	"databricks_token":                                        "databricks.token",
 	"connection_url":                                          "connection.url.user.defined",
@@ -586,6 +660,7 @@ var DestinationDatabricksFieldMappings = map[string]string{
 	"transforms_change_topic_name_match_regex":                "transforms.changeTopicName.match.regex.user.defined",
 	"transforms_change_topic_name_mapping":                    "transforms.changeTopicName.mapping",
 	"preserve_null_values":                                    "preserve.null.values",
+	"preserve_decimal_precision_scale":                        "preserve.decimal.precision.scale",
 	"quote_identifiers":                                       "quote.identifiers",
 	"transforms_to_int_j_fields_include_list":                 "transforms.ToIntJ.fields.include.list",
 	"transforms_to_float_j_fields_include_list":               "transforms.ToFloatJ.fields.include.list",
@@ -607,7 +682,13 @@ var DestinationDatabricksFieldMappings = map[string]string{
 	"transforms_oversized_records_truncation_suffix":          "transforms.OversizedRecords.truncation.suffix",
 	"transforms_oversized_records_max_record_size_bytes":      "transforms.OversizedRecords.max.record.size.bytes",
 	"transforms_oversized_records_semantic_types_exclude":     "transforms.OversizedRecords.semantic.types.exclude",
+	"transforms_oversized_records_truncate_to_bytes":          "transforms.OversizedRecords.truncate.to.bytes",
 	"transforms_oversized_records_replace_null_with_default":  "transforms.OversizedRecords.replace.null.with.default",
+	"transforms_sanitize_fields_fields_include_list":          "transforms.SanitizeFields.fields.include.list",
+	"transforms_sanitize_fields_fields_exclude_list":          "transforms.SanitizeFields.fields.exclude.list",
+	"transforms_sanitize_fields_temporal_range_behavior":      "transforms.SanitizeFields.temporal.range.behavior",
+	"transforms_sanitize_fields_temporal_min":                 "transforms.SanitizeFields.temporal.min",
+	"transforms_sanitize_fields_temporal_max":                 "transforms.SanitizeFields.temporal.max",
 	"transforms_mask_field_fields_include_list":               "transforms.MaskField.fields.include.list",
 	"transforms_mask_field_fields_exclude_list":               "transforms.MaskField.fields.exclude.list",
 	"transforms_mask_field_mask_function":                     "transforms.MaskField.mask.function",
