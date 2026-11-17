@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `streamkap_source_sqlserver`: Azure Entra Service Principal authentication. Set `auth_mode = "entra_service_principal"` and provide `azure_tenant_id`, `azure_client_id` and `azure_client_secret` to connect to Azure SQL databases that have SQL authentication disabled. `auth_mode` defaults to `"sql"`, which keeps the existing `database_user` and `database_password` flow unchanged. The provider validates mutual exclusivity at plan time: setting `azure_*` fields alongside `database_user`/`database_password`, or leaving the required set for the selected `auth_mode` incomplete, fails before any apply reaches the backend.
+- `streamkap_source_sqlserver`: `transforms_oversized_records_truncate_to_bytes` (int64) truncates an oversized field to a fixed byte length; `transforms_oversized_records_oversized_field_behavior` now also accepts `CLEAR`, which replaces the value with null instead of truncating.
+- `streamkap_source_sqlserver`: `transforms_records_filter_field`, `transforms_records_filter_op`, `transforms_records_filter_values` and `transforms_records_filter_negate_condition` drop records by a field match before they reach Kafka.
+- Codegen ride-along across CDC sources and sinks: `transforms_oversized_records_truncate_to_bytes` and the `CLEAR` behavior value, and the `transforms_records_filter_*` set, are now exposed on every source that ships the shared transforms (PostgreSQL, MySQL, MariaDB, MongoDB, MongoDB Hosted, Oracle, OracleAWS, DB2, SQL Server, AlloyDB, Supabase, DocumentDB, DynamoDB, Vitess, PlanetScale, Elasticsearch, Redis and the webhook/API sources that share the common config). Destinations gain their own ride-along set from the same regen pass: new Iceberg partition controls (`iceberg_tables_default_partition_by`, `iceberg_tables_partition_overrides`), Databricks `databricks_stage_path`, Azure Blob `azblob_blob_overwrite`, S3/GCS/R2/Starburst file-name timestamp controls (`file_name_timestamp_source`, `file_name_timestamp_timezone`), HTTPSink timeout tuning (`http_client_connection_timeout_millis`, `http_client_read_timeout_millis`, `http_timer_interval_millis`), Elasticsearch `es_page_size` and `es_query_filter`, and `preserve_decimal_precision_scale` on the JDBC-family sinks.
+- Codegen ride-along on PostgreSQL, MySQL and MariaDB: `stream_empty_tables` (bool), on PostgreSQL alone `streamkap_snapshot_statement_timeout_ms` (int64), on MySQL and MariaDB `enable_time_adjuster` (bool) and `streamkap_snapshot_chunk_size_records` (int64), and on Elasticsearch `tiebreak_field_name`.
+
+### Changed
+- `streamkap_source_sqlserver`: `database_user` and `database_password` are now `Optional` (required only in `auth_mode = "sql"`). Existing configurations continue to work because the default `auth_mode` is `"sql"`. The provider rejects a mismatched credential set at plan time; the backend accepts whatever is sent, so this check lives on the Terraform side.
+- Facebook Ads API source: `access_token` is now unconditionally required (upstream backend change in the OAuth rework).
+
+### Fixed
+- `streamkap_source_sqlserver`: `database_encrypt` now maps to the backend's `.user.defined` wire key, following the split of `database.user` and `database.password` into `.user.defined` entries with dynamic resolvers. Read restores the configured value for sources whose Mongo document still carries the pre-split legacy key, via the resolver's fallback, so existing Terraform-managed sources keep their planned value through `shared.FillNullFields` and no diff appears on the first refresh after upgrade.
+
+### Known limitations
+- The first plan after upgrade on a legacy SQL Server source whose state was written before this release may show an in-place `auth_mode: null -> "sql"` update. The value is the schema default, applying it is a no-op on the wire, and subsequent plans converge.
+- Switching an existing source between `auth_mode = "sql"` and `auth_mode = "entra_service_principal"` leaves the prior mode's credentials in state until the backend drops them on write. Clearing stale fields as part of the plan is deferred to a follow-up PR (a `ConnectorConfigPlanAdjuster` on `SQLServerConfig`); for now, unset the unused fields explicitly in the configuration to converge.
+
 ## [3.1.0] - 2026-10-22
 
 ### Added

@@ -219,3 +219,78 @@ resource "streamkap_source_sqlserver" "test" {
 		},
 	})
 }
+
+// TestAccSourceSQLServerResource_EntraServicePrincipal covers the Entra SP
+// auth mode. database_user and database_password must be omitted; the backend
+// derives the connection credentials from azure_client_id/azure_client_secret.
+func TestAccSourceSQLServerResource_EntraServicePrincipal(t *testing.T) {
+	azureTenantID := os.Getenv("TF_VAR_source_sqlserver_azure_tenant_id")
+	azureClientID := os.Getenv("TF_VAR_source_sqlserver_azure_client_id")
+	azureClientSecret := os.Getenv("TF_VAR_source_sqlserver_azure_client_secret")
+	if azureTenantID == "" || azureClientID == "" || azureClientSecret == "" {
+		t.Skip("set TF_VAR_source_sqlserver_azure_tenant_id, TF_VAR_source_sqlserver_azure_client_id and TF_VAR_source_sqlserver_azure_client_secret to run this test")
+	}
+
+	name := acctestName(t, "entra")
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccCheckSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: providerConfig + fmt.Sprintf(`
+variable "source_sqlserver_hostname" {
+	type        = string
+	description = "The hostname of the SQLServer database"
+}
+variable "source_sqlserver_azure_tenant_id" {
+	type        = string
+	description = "Azure AD tenant ID"
+}
+variable "source_sqlserver_azure_client_id" {
+	type        = string
+	description = "Entra app registration client ID"
+}
+variable "source_sqlserver_azure_client_secret" {
+	type        = string
+	sensitive   = true
+	description = "Entra app registration client secret"
+}
+resource "streamkap_source_sqlserver" "entra" {
+	name                                      = %q
+	database_hostname                         = var.source_sqlserver_hostname
+	database_port                             = 1433
+	auth_mode                                 = "entra_service_principal"
+	azure_tenant_id                           = var.source_sqlserver_azure_tenant_id
+	azure_client_id                           = var.source_sqlserver_azure_client_id
+	azure_client_secret                       = var.source_sqlserver_azure_client_secret
+	database_names                            = "demo"
+	schema_include_list                       = "dbo"
+	table_include_list                        = "dbo.Orders"
+	signal_data_collection_schema_or_database = "streamkap"
+	heartbeat_enabled                         = false
+}
+`, name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.entra", "name", name),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.entra", "auth_mode", "entra_service_principal"),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.entra", "azure_tenant_id", azureTenantID),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.entra", "azure_client_id", azureClientID),
+					resource.TestCheckResourceAttr("streamkap_source_sqlserver.entra", "azure_client_secret", azureClientSecret),
+					// Entra mode: the backend reflection reads database_user only from
+					// the .user.defined wire key, so Read echoes null for both.
+					resource.TestCheckNoResourceAttr("streamkap_source_sqlserver.entra", "database_user"),
+					resource.TestCheckNoResourceAttr("streamkap_source_sqlserver.entra", "database_password"),
+				),
+			},
+			{
+				// azure_client_secret round-trips via secret_returned=true,
+				// matching database_password; no ignore needed.
+				ResourceName:            "streamkap_source_sqlserver.entra",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"connector_status"},
+			},
+		},
+	})
+}

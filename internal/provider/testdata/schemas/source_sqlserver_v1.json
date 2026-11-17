@@ -1,6 +1,34 @@
 {
   "version": "v3.0.0",
   "attributes": {
+    "auth_mode": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "azure_client_id": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "azure_client_secret": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": true,
+      "type": "basetypes.StringType"
+    },
+    "azure_tenant_id": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
     "binary_handling_mode": {
       "required": false,
       "optional": true,
@@ -51,9 +79,9 @@
       "type": "basetypes.StringType"
     },
     "database_password": {
-      "required": true,
-      "optional": false,
-      "computed": false,
+      "required": false,
+      "optional": true,
+      "computed": true,
       "sensitive": true,
       "type": "basetypes.StringType"
     },
@@ -65,9 +93,9 @@
       "type": "basetypes.Int64Type"
     },
     "database_user": {
-      "required": true,
-      "optional": false,
-      "computed": false,
+      "required": false,
+      "optional": true,
+      "computed": true,
       "sensitive": false,
       "type": "basetypes.StringType"
     },
@@ -337,7 +365,42 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "transforms_oversized_records_truncate_to_bytes": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.Int64Type"
+    },
     "transforms_oversized_records_truncation_suffix": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_records_filter_field": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_records_filter_negate_condition": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "transforms_records_filter_op": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "transforms_records_filter_values": {
       "required": false,
       "optional": true,
       "computed": true,
