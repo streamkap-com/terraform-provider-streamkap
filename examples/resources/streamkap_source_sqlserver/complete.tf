@@ -79,3 +79,40 @@ resource "streamkap_source_sqlserver" "example-source-sqlserver" {
 output "example-source-sqlserver" {
   value = streamkap_source_sqlserver.example-source-sqlserver.id
 }
+
+# Azure Entra Service Principal authentication
+# Use this mode for Azure SQL databases that have SQL authentication disabled.
+# The Entra app registration must have db_datareader (and CDC) permissions on the
+# target database. database_user and database_password are omitted in this mode.
+variable "source_sqlserver_azure_tenant_id" {
+  type        = string
+  description = "Azure AD Directory (tenant) ID of the Entra app registration"
+}
+
+variable "source_sqlserver_azure_client_id" {
+  type        = string
+  description = "Application (client) ID of the Entra app registration"
+}
+
+variable "source_sqlserver_azure_client_secret" {
+  type        = string
+  sensitive   = true
+  description = "Client secret value for the Entra app registration"
+}
+
+resource "streamkap_source_sqlserver" "example-source-sqlserver-entra" {
+  name = "example-source-sqlserver-entra"
+
+  database_hostname = var.source_sqlserver_hostname
+  database_port     = 1433
+
+  # Azure Entra Service Principal auth
+  auth_mode           = "entra_service_principal"
+  azure_tenant_id     = var.source_sqlserver_azure_tenant_id
+  azure_client_id     = var.source_sqlserver_azure_client_id
+  azure_client_secret = var.source_sqlserver_azure_client_secret
+
+  database_names      = "demo"
+  schema_include_list = "dbo"
+  table_include_list  = "dbo.Orders"
+}

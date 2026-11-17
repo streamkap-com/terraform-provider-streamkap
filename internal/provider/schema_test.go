@@ -202,8 +202,6 @@ func TestSourceSchemas(t *testing.T) {
 			requiredAttrs: []string{
 				"name",
 				"database_hostname",
-				"database_user",
-				"database_password",
 				"database_names",
 				"schema_include_list",
 				"table_include_list",
@@ -213,6 +211,7 @@ func TestSourceSchemas(t *testing.T) {
 				"connector",
 			},
 			sensitiveAttrs: []string{
+				"azure_client_secret",
 				"database_password",
 			},
 		},
