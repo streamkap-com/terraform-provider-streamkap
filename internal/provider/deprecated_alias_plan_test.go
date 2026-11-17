@@ -47,6 +47,15 @@ func TestDeprecatedAliasPlan(t *testing.T) {
 				connector.NewBaseConnectorResource(connectorConfig).Schema(ctx, resource.SchemaRequest{}, &schemaResponse)
 				s := schemaResponse.Schema
 				cfg := configWithOnlyAttrSet(ctx, s, tc.attribute, tftypes.NewValue(tc.typ, tc.value))
+				// SQL Server's plan-time validator requires a complete credential
+				// set for the selected auth_mode; this test exercises deprecated
+				// alias planning, not auth, so supply valid SQL-mode creds.
+				if _, ok := connectorConfig.(*source.SQLServerConfig); ok {
+					cfg = cfgSetAttrs(ctx, s, cfg, map[string]tftypes.Value{
+						"database_user":     tftypes.NewValue(tftypes.String, "sa"),
+						"database_password": tftypes.NewValue(tftypes.String, "secret"),
+					})
+				}
 				typ := s.Type().TerraformType(ctx)
 				config, err := tfprotov6.NewDynamicValue(typ, cfg.Raw)
 				require.NoError(t, err)
