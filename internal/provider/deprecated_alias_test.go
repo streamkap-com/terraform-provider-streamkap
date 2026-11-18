@@ -40,6 +40,22 @@ func configWithOnlyAttrSet(ctx context.Context, s rschema.Schema, attrName strin
 	}
 }
 
+// cfgSetAttrs returns a copy of cfg with each (name, value) in overrides
+// applied over the original Raw object.
+func cfgSetAttrs(ctx context.Context, s rschema.Schema, cfg tfsdk.Config, overrides map[string]tftypes.Value) tfsdk.Config {
+	var raw map[string]tftypes.Value
+	if err := cfg.Raw.As(&raw); err != nil {
+		panic(err)
+	}
+	for name, value := range overrides {
+		raw[name] = value
+	}
+	return tfsdk.Config{
+		Schema: s,
+		Raw:    tftypes.NewValue(s.Type().TerraformType(ctx).(tftypes.Object), raw),
+	}
+}
+
 // runAttributeValidators invokes every validator attached to attrName with a
 // non-null value, returning whatever diagnostics they emit.
 func runAttributeValidators(ctx context.Context, s rschema.Schema, attrName string, a rschema.Attribute) diag.Diagnostics {

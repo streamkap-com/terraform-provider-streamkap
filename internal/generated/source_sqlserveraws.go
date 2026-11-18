@@ -30,6 +30,10 @@ type SourceSqlserverawsModel struct {
 	DatabaseEncrypt                                    types.Bool     `tfsdk:"database_encrypt"`
 	DatabaseUser                                       types.String   `tfsdk:"database_user"`
 	DatabasePassword                                   types.String   `tfsdk:"database_password"`
+	AuthMode                                           types.String   `tfsdk:"auth_mode"`
+	AzureTenantID                                      types.String   `tfsdk:"azure_tenant_id"`
+	AzureClientID                                      types.String   `tfsdk:"azure_client_id"`
+	AzureClientSecret                                  types.String   `tfsdk:"azure_client_secret"`
 	DatabaseNames                                      types.String   `tfsdk:"database_names"`
 	SchemaIncludeList                                  types.String   `tfsdk:"schema_include_list"`
 	TableIncludeList                                   types.String   `tfsdk:"table_include_list"`
@@ -63,8 +67,13 @@ type SourceSqlserverawsModel struct {
 	TransformsOversizedRecordsTruncationSuffix         types.String   `tfsdk:"transforms_oversized_records_truncation_suffix"`
 	TransformsOversizedRecordsMaxRecordSizeBytes       types.Int64    `tfsdk:"transforms_oversized_records_max_record_size_bytes"`
 	TransformsOversizedRecordsSemanticTypesExclude     types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
+	TransformsOversizedRecordsTruncateToBytes          types.Int64    `tfsdk:"transforms_oversized_records_truncate_to_bytes"`
 	TransformsOversizedRecordsReplaceNullWithDefault   types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
 	InsertTopicNameEnabled                             types.Bool     `tfsdk:"insert_topic_name_enabled"`
+	TransformsRecordsFilterField                       types.String   `tfsdk:"transforms_records_filter_field"`
+	TransformsRecordsFilterOp                          types.String   `tfsdk:"transforms_records_filter_op"`
+	TransformsRecordsFilterValues                      types.String   `tfsdk:"transforms_records_filter_values"`
+	TransformsRecordsFilterNegateCondition             types.Bool     `tfsdk:"transforms_records_filter_negate_condition"`
 	SmtChain                                           types.List     `tfsdk:"smt_chain"`
 	Timeouts                                           timeouts.Value `tfsdk:"timeouts"`
 }
@@ -141,15 +150,61 @@ func SourceSqlserverawsSchema() schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"database_user": schema.StringAttribute{
-				Required:            true,
-				Description:         "Username to access the database",
-				MarkdownDescription: "Username to access the database",
+				Optional:            true,
+				Computed:            true,
+				Description:         "Username to access the database. Required in SQL auth mode; hidden in Entra Service Principal mode.",
+				MarkdownDescription: "Username to access the database. Required in SQL auth mode; hidden in Entra Service Principal mode.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"database_password": schema.StringAttribute{
-				Required:            true,
+				Optional:            true,
+				Computed:            true,
 				Sensitive:           true,
-				Description:         "Password to access the database This value is sensitive and will not appear in logs or CLI output.",
-				MarkdownDescription: "Password to access the database\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				Description:         "Password to access the database. Required in SQL auth mode; hidden in Entra Service Principal mode. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Password to access the database. Required in SQL auth mode; hidden in Entra Service Principal mode.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"auth_mode": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How Streamkap authenticates to the SQL Server. SQL authentication uses a username/password. Azure Entra Service Principal uses an app-registration tenant/client ID + client secret, and is required for Azure SQL databases that have SQL authentication disabled. Defaults to \"sql\". Valid values: sql, entra_service_principal.",
+				MarkdownDescription: "How Streamkap authenticates to the SQL Server. SQL authentication uses a username/password. Azure Entra Service Principal uses an app-registration tenant/client ID + client secret, and is required for Azure SQL databases that have SQL authentication disabled. Defaults to `sql`. Valid values: `sql`, `entra_service_principal`.",
+				Default:             stringdefault.StaticString("sql"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("sql", "entra_service_principal"),
+				},
+			},
+			"azure_tenant_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Azure AD Directory (tenant) ID of the Entra app registration. Required in Entra Service Principal mode; hidden in SQL mode.",
+				MarkdownDescription: "Azure AD Directory (tenant) ID of the Entra app registration. Required in Entra Service Principal mode; hidden in SQL mode.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"azure_client_id": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Application (client) ID of the Entra app registration. Required in Entra Service Principal mode; hidden in SQL mode.",
+				MarkdownDescription: "Application (client) ID of the Entra app registration. Required in Entra Service Principal mode; hidden in SQL mode.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"azure_client_secret": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Sensitive:           true,
+				Description:         "Client secret VALUE (not the ID) for the Entra app registration. Required in Entra Service Principal mode; hidden in SQL mode. Stored encrypted; masked in API responses and UI. This value is sensitive and will not appear in logs or CLI output.",
+				MarkdownDescription: "Client secret VALUE (not the ID) for the Entra app registration. Required in Entra Service Principal mode; hidden in SQL mode. Stored encrypted; masked in API responses and UI.\n\n**Security:** This value is marked sensitive and will not appear in CLI output or logs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"database_names": schema.StringAttribute{
 				Required:            true,
@@ -391,11 +446,11 @@ func SourceSqlserverawsSchema() schema.Schema {
 			"transforms_oversized_records_oversized_field_behavior": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to \"TRUNCATE\". Valid values: TRUNCATE, NULLIFY.",
-				MarkdownDescription: "Action for oversized fields: TRUNCATE (trim to max size) or NULLIFY (set to null). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`.",
+				Description:         "Action for oversized fields: TRUNCATE (trim to max size), NULLIFY (set to null), or CLEAR (replace with a placeholder of the right shape). Defaults to \"TRUNCATE\". Valid values: TRUNCATE, NULLIFY, CLEAR.",
+				MarkdownDescription: "Action for oversized fields: TRUNCATE (trim to max size), NULLIFY (set to null), or CLEAR (replace with a placeholder of the right shape). Defaults to `TRUNCATE`. Valid values: `TRUNCATE`, `NULLIFY`, `CLEAR`.",
 				Default:             stringdefault.StaticString("TRUNCATE"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("TRUNCATE", "NULLIFY"),
+					stringvalidator.OneOf("TRUNCATE", "NULLIFY", "CLEAR"),
 				},
 			},
 			"transforms_oversized_records_truncation_suffix": schema.StringAttribute{
@@ -418,9 +473,16 @@ func SourceSqlserverawsSchema() schema.Schema {
 			"transforms_oversized_records_semantic_types_exclude": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
-				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
+				Description:         "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Removing io.debezium.data.Json from this list turns on structure-aware JSON truncation: the document is cut at a value boundary and the open objects/arrays are closed, so the result is still valid JSON, marked with a __streamkap_truncated flag. Defaults to \"io.debezium.data.Json,io.debezium.data.Xml\".",
+				MarkdownDescription: "Column data types that should never be truncated. Comma-separated. Defaults exclude JSON and XML columns. Removing io.debezium.data.Json from this list turns on structure-aware JSON truncation: the document is cut at a value boundary and the open objects/arrays are closed, so the result is still valid JSON, marked with a __streamkap_truncated flag. Defaults to `io.debezium.data.Json,io.debezium.data.Xml`.",
 				Default:             stringdefault.StaticString("io.debezium.data.Json,io.debezium.data.Xml"),
+			},
+			"transforms_oversized_records_truncate_to_bytes": schema.Int64Attribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How much of an oversized value to keep, in bytes. Independent of the size limit above, which only decides whether a column counts as oversized: a column can be flagged at the destination's limit (e.g. 16MB for Snowflake) but trimmed to something far smaller (e.g. 256 bytes). Default -1 keeps up to the size limit. This is also the main cost lever for JSON truncation - the structure-aware scan only walks the bytes it keeps, so a smaller value is proportionally cheaper; tune it down on pipelines with many oversized JSON columns. Defaults to -1.",
+				MarkdownDescription: "How much of an oversized value to keep, in bytes. Independent of the size limit above, which only decides whether a column counts as oversized: a column can be flagged at the destination's limit (e.g. 16MB for Snowflake) but trimmed to something far smaller (e.g. 256 bytes). Default -1 keeps up to the size limit. This is also the main cost lever for JSON truncation - the structure-aware scan only walks the bytes it keeps, so a smaller value is proportionally cheaper; tune it down on pipelines with many oversized JSON columns. Defaults to `-1`.",
+				Default:             int64default.StaticInt64(-1),
 			},
 			"transforms_oversized_records_replace_null_with_default": schema.BoolAttribute{
 				Optional:            true,
@@ -436,50 +498,94 @@ func SourceSqlserverawsSchema() schema.Schema {
 				MarkdownDescription: "Add _streamkap_topic field containing the Kafka topic name. Required for topic_router transforms to preserve end-to-end data lineage. Defaults to `false`.",
 				Default:             booldefault.StaticBool(false),
 			},
+			"transforms_records_filter_field": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Drop (or keep) records based on the value of this column. Leave empty to disable the filter. Top-level columns only - nested fields and arrays are not supported.",
+				MarkdownDescription: "Drop (or keep) records based on the value of this column. Leave empty to disable the filter. Top-level columns only - nested fields and arrays are not supported.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_records_filter_op": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "How the column value is compared. 'in' / 'not_in' take a comma separated list; 'eq', 'ne', 'gt', 'gte', 'lt', 'lte' and 'matches' take a single value; 'is_null' and 'is_not_null' take none. Defaults to \"in\". Valid values: in, not_in, eq, ne, gt, gte, lt, lte, is_null, is_not_null, matches.",
+				MarkdownDescription: "How the column value is compared. 'in' / 'not_in' take a comma separated list; 'eq', 'ne', 'gt', 'gte', 'lt', 'lte' and 'matches' take a single value; 'is_null' and 'is_not_null' take none. Defaults to `in`. Valid values: `in`, `not_in`, `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `is_null`, `is_not_null`, `matches`.",
+				Default:             stringdefault.StaticString("in"),
+				Validators: []validator.String{
+					stringvalidator.OneOf("in", "not_in", "eq", "ne", "gt", "gte", "lt", "lte", "is_null", "is_not_null", "matches"),
+				},
+			},
+			"transforms_records_filter_values": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Value(s) to compare against, comma separated. Dates, timestamps and decimals are converted once to the column's type - there is no per-record parsing. Leave empty for 'is_null' / 'is_not_null'.",
+				MarkdownDescription: "Value(s) to compare against, comma separated. Dates, timestamps and decimals are converted once to the column's type - there is no per-record parsing. Leave empty for 'is_null' / 'is_not_null'.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"transforms_records_filter_negate_condition": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Off (default) is a blacklist: the records that match the condition are dropped. On is a whitelist: only the records that match are kept, everything else is dropped. Defaults to false.",
+				MarkdownDescription: "Off (default) is a blacklist: the records that match the condition are dropped. On is a whitelist: only the records that match are kept, everything else is dropped. Defaults to `false`.",
+				Default:             booldefault.StaticBool(false),
+			},
 		},
 	}
 }
 
 // SourceSqlserverawsFieldMappings maps Terraform attribute names to API field names.
 var SourceSqlserverawsFieldMappings = map[string]string{
-	"database_hostname":                            "database.hostname.user.defined",
-	"database_port":                                "database.port.user.defined",
-	"database_encrypt":                             "database.encrypt",
-	"database_user":                                "database.user",
-	"database_password":                            "database.password",
-	"database_names":                               "database.names",
-	"schema_include_list":                          "schema.include.list",
-	"table_include_list":                           "table.include.list.user.defined",
-	"signal_data_collection_schema_or_database":    "signal.data.collection.schema.or.database",
-	"column_exclude_list":                          "column.exclude.list.user.defined",
-	"heartbeat_enabled":                            "heartbeat.enabled",
-	"heartbeat_data_collection_schema_or_database": "heartbeat.data.collection.schema.or.database",
+	"database_hostname":   "database.hostname.user.defined",
+	"database_port":       "database.port.user.defined",
+	"database_encrypt":    "database.encrypt.user.defined",
+	"database_user":       "database.user.user.defined",
+	"database_password":   "database.password.user.defined",
+	"auth_mode":           "auth_mode",
+	"azure_tenant_id":     "azure_tenant_id",
+	"azure_client_id":     "azure_client_id",
+	"azure_client_secret": "azure_client_secret",
+	"database_names":      "database.names",
+	"schema_include_list": "schema.include.list",
+	"table_include_list":  "table.include.list.user.defined",
+	"signal_data_collection_schema_or_database":                 "signal.data.collection.schema.or.database",
+	"column_exclude_list":                                       "column.exclude.list.user.defined",
+	"heartbeat_enabled":                                         "heartbeat.enabled",
+	"heartbeat_data_collection_schema_or_database":              "heartbeat.data.collection.schema.or.database",
 	"schema_history_internal_store_only_captured_databases_ddl": "schema.history.internal.store.only.captured.databases.ddl",
 	"schema_history_internal_store_only_captured_tables_ddl":    "schema.history.internal.store.only.captured.tables.ddl",
-	"binary_handling_mode":                                   "binary.handling.mode",
-	"streamkap_snapshot_parallelism":                         "streamkap.snapshot.parallelism",
-	"streamkap_snapshot_chunk_size_bytes":                    "streamkap.snapshot.chunk.size.bytes",
-	"streamkap_snapshot_max_split_size_bytes":                "streamkap.snapshot.max.split.size.bytes",
-	"streamkap_snapshot_state_refresh_ms":                    "streamkap.snapshot.state.refresh.ms",
-	"ssh_enabled":                                            "ssh.enabled",
-	"ssh_host":                                               "ssh.host",
-	"ssh_port":                                               "ssh.port",
-	"ssh_user":                                               "ssh.user",
-	"transforms_insert_static_key1_static_field":             "transforms.InsertStaticKey1.static.field",
-	"transforms_insert_static_key1_static_value":             "transforms.InsertStaticKey1.static.value",
-	"transforms_insert_static_value1_static_field":           "transforms.InsertStaticValue1.static.field",
-	"transforms_insert_static_value1_static_value":           "transforms.InsertStaticValue1.static.value",
-	"ssh_public_key":                                         "ssh.public.key.user.displayed",
-	"transforms_value_to_key_fields_include_list":            "transforms.ValueToKey.fields.include.list",
-	"transforms_value_to_key_replace_null_with_default":      "transforms.ValueToKey.replace.null.with.default",
-	"preserve_null_values":                                   "preserve.null.values",
-	"transforms_oversized_records_fields_include_list":       "transforms.OversizedRecords.fields.include.list",
-	"transforms_oversized_records_fields_exclude_list":       "transforms.OversizedRecords.fields.exclude.list",
-	"transforms_oversized_records_max_field_size_bytes":      "transforms.OversizedRecords.max.field.size.bytes",
-	"transforms_oversized_records_oversized_field_behavior":  "transforms.OversizedRecords.oversized.field.behavior",
-	"transforms_oversized_records_truncation_suffix":         "transforms.OversizedRecords.truncation.suffix",
-	"transforms_oversized_records_max_record_size_bytes":     "transforms.OversizedRecords.max.record.size.bytes",
-	"transforms_oversized_records_semantic_types_exclude":    "transforms.OversizedRecords.semantic.types.exclude",
-	"transforms_oversized_records_replace_null_with_default": "transforms.OversizedRecords.replace.null.with.default",
-	"insert_topic_name_enabled":                              "InsertTopicName.enabled",
+	"binary_handling_mode":                                      "binary.handling.mode",
+	"streamkap_snapshot_parallelism":                            "streamkap.snapshot.parallelism",
+	"streamkap_snapshot_chunk_size_bytes":                       "streamkap.snapshot.chunk.size.bytes",
+	"streamkap_snapshot_max_split_size_bytes":                   "streamkap.snapshot.max.split.size.bytes",
+	"streamkap_snapshot_state_refresh_ms":                       "streamkap.snapshot.state.refresh.ms",
+	"ssh_enabled":                                               "ssh.enabled",
+	"ssh_host":                                                  "ssh.host",
+	"ssh_port":                                                  "ssh.port",
+	"ssh_user":                                                  "ssh.user",
+	"transforms_insert_static_key1_static_field":                "transforms.InsertStaticKey1.static.field",
+	"transforms_insert_static_key1_static_value":                "transforms.InsertStaticKey1.static.value",
+	"transforms_insert_static_value1_static_field":              "transforms.InsertStaticValue1.static.field",
+	"transforms_insert_static_value1_static_value":              "transforms.InsertStaticValue1.static.value",
+	"ssh_public_key":                                            "ssh.public.key.user.displayed",
+	"transforms_value_to_key_fields_include_list":               "transforms.ValueToKey.fields.include.list",
+	"transforms_value_to_key_replace_null_with_default":         "transforms.ValueToKey.replace.null.with.default",
+	"preserve_null_values":                                      "preserve.null.values",
+	"transforms_oversized_records_fields_include_list":          "transforms.OversizedRecords.fields.include.list",
+	"transforms_oversized_records_fields_exclude_list":          "transforms.OversizedRecords.fields.exclude.list",
+	"transforms_oversized_records_max_field_size_bytes":         "transforms.OversizedRecords.max.field.size.bytes",
+	"transforms_oversized_records_oversized_field_behavior":     "transforms.OversizedRecords.oversized.field.behavior",
+	"transforms_oversized_records_truncation_suffix":            "transforms.OversizedRecords.truncation.suffix",
+	"transforms_oversized_records_max_record_size_bytes":        "transforms.OversizedRecords.max.record.size.bytes",
+	"transforms_oversized_records_semantic_types_exclude":       "transforms.OversizedRecords.semantic.types.exclude",
+	"transforms_oversized_records_truncate_to_bytes":            "transforms.OversizedRecords.truncate.to.bytes",
+	"transforms_oversized_records_replace_null_with_default":    "transforms.OversizedRecords.replace.null.with.default",
+	"insert_topic_name_enabled":                                 "InsertTopicName.enabled",
+	"transforms_records_filter_field":                           "transforms.RecordsFilter.field",
+	"transforms_records_filter_op":                              "transforms.RecordsFilter.op",
+	"transforms_records_filter_values":                          "transforms.RecordsFilter.values",
+	"transforms_records_filter_negate_condition":                "transforms.RecordsFilter.negate.condition",
 }

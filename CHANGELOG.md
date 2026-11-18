@@ -10,6 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `smt_chain` on Kafka Connect sources and destinations: an ordered list of Single Message Transforms (`mask_field`, `drop_fields`, `regex_router` on destinations; `filter` on sources), each with an optional `topic_name_matches` predicate. Secrets such as `mask.salt` go in the sensitive `secret_config`. Removing `smt_chain` removes the chain; a connector that never had one is unchanged. A chain added in the app on a resource that does not declare `smt_chain` is removed on the next apply unless the resource sets `lifecycle { ignore_changes = [smt_chain] }`.
 
+## [3.2.0] - 2026-11-17
+
+### Added
+- `streamkap_source_sqlserver`: Azure Entra Service Principal authentication. Set `auth_mode = "entra_service_principal"` and provide `azure_tenant_id`, `azure_client_id` and `azure_client_secret` to connect to Azure SQL databases that have SQL authentication disabled. `auth_mode` defaults to `"sql"`, which keeps the existing `database_user` and `database_password` flow unchanged. The provider validates mutual exclusivity at plan time: setting `azure_*` fields alongside `database_user`/`database_password`, or leaving the required set for the selected `auth_mode` incomplete, fails before any apply reaches the backend.
+- `streamkap_source_sqlserver`: `transforms_oversized_records_truncate_to_bytes` (int64) truncates an oversized field to a fixed byte length; `transforms_oversized_records_oversized_field_behavior` now also accepts `CLEAR`, which replaces the value with null instead of truncating.
+- `streamkap_source_sqlserver`: `transforms_records_filter_field`, `transforms_records_filter_op`, `transforms_records_filter_values` and `transforms_records_filter_negate_condition` drop records by a field match before they reach Kafka.
+
+### Changed
+- `streamkap_source_sqlserver`: `database_user` and `database_password` are now `Optional` (required only in `auth_mode = "sql"`). Existing configurations continue to work because the default `auth_mode` is `"sql"`. The provider rejects a mismatched credential set at plan time; the backend accepts whatever is sent, so this check lives on the Terraform side.
+
+### Fixed
+- `streamkap_source_sqlserver`: `database_encrypt` now maps to the backend's `.user.defined` wire key, following the split of `database.user` and `database.password` into `.user.defined` entries with dynamic resolvers. Read restores the configured value for sources whose Mongo document still carries the pre-split legacy key, via the resolver's fallback, so existing Terraform-managed sources keep their planned value through `shared.FillNullFields` and no diff appears on the first refresh after upgrade.
+
+### Known limitations
+- Switching an existing source between `auth_mode = "sql"` and `auth_mode = "entra_service_principal"` leaves the prior mode's credentials in state until the backend drops them on write. Clearing stale fields as part of the plan is deferred to a follow-up PR (a `ConnectorConfigPlanAdjuster` on `SQLServerConfig`); for now, unset the unused fields explicitly in the configuration to converge.
+
 ## [3.1.0] - 2026-10-22
 
 ### Added
