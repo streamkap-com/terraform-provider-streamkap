@@ -27,6 +27,8 @@ type Destination struct {
 	KcClusterId     string         `json:"kc_cluster_id,omitempty"`
 	// See the matching comment on api.Source.Tags for why omitempty is absent here.
 	Tags []string `json:"tags"`
+	// See api.Source.SmtChain.
+	SmtChain *[]SmtChainItem `json:"smt_chain,omitempty"`
 }
 
 func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destination) (*Destination, error) {
@@ -59,7 +61,7 @@ func (s *streamkapAPI) CreateDestination(ctx context.Context, reqPayload Destina
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		redactSensitiveJSON(payload),
+		redactRequestJSON(ctx, payload),
 	))
 	var resp Destination
 	err = s.doRequestWithRetry(ctx, req, &resp)
@@ -151,7 +153,7 @@ func (s *streamkapAPI) UpdateDestination(ctx context.Context, destinationID stri
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		redactSensitiveJSON(payload),
+		redactRequestJSON(ctx, payload),
 	))
 	var resp Destination
 	err = s.doRequestWithRetry(ctx, req, &resp)

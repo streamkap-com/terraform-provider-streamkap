@@ -148,6 +148,13 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "smt_chain": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ListType[types.ObjectType[\"config\":jsontypes.NormalizedType, \"enabled\":basetypes.BoolType, \"id\":basetypes.StringType, \"name\":basetypes.StringType, \"predicate\":types.ObjectType[\"config\":jsontypes.NormalizedType, \"negate\":basetypes.BoolType, \"type\":basetypes.StringType], \"secret_config\":types.MapType[basetypes.StringType], \"type\":basetypes.StringType]]"
+    },
     "ssl_enabled": {
       "required": false,
       "optional": true,
@@ -252,6 +259,78 @@
       "computed": true,
       "sensitive": false,
       "type": "basetypes.BoolType"
+    }
+  },
+  "nested_attributes": {
+    "smt_chain.config": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "jsontypes.NormalizedType"
+    },
+    "smt_chain.enabled": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "smt_chain.id": {
+      "required": false,
+      "optional": false,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.name": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.predicate": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "types.ObjectType[\"config\":jsontypes.NormalizedType, \"negate\":basetypes.BoolType, \"type\":basetypes.StringType]"
+    },
+    "smt_chain.predicate.config": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": false,
+      "type": "jsontypes.NormalizedType"
+    },
+    "smt_chain.predicate.negate": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.BoolType"
+    },
+    "smt_chain.predicate.type": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "smt_chain.secret_config": {
+      "required": false,
+      "optional": true,
+      "computed": false,
+      "sensitive": true,
+      "type": "types.MapType[basetypes.StringType]"
+    },
+    "smt_chain.type": {
+      "required": true,
+      "optional": false,
+      "computed": false,
+      "sensitive": false,
+      "type": "basetypes.StringType"
     }
   },
   "blocks": {
