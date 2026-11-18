@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -38,7 +37,8 @@ type smtItemModel struct {
 	Enabled      types.Bool           `tfsdk:"enabled"`
 	Config       jsontypes.Normalized `tfsdk:"config"`
 	SecretConfig types.Map            `tfsdk:"secret_config"`
-	Predicate    *smtPredicateModel   `tfsdk:"predicate"`
+	// An object, so a predicate unknown at plan time is carried through as is.
+	Predicate types.Object `tfsdk:"predicate"`
 }
 
 type smtPredicateModel struct {
@@ -47,15 +47,39 @@ type smtPredicateModel struct {
 	Negate types.Bool           `tfsdk:"negate"`
 }
 
+var smtPredicateAttrTypes = map[string]attr.Type{
+	"type":   types.StringType,
+	"config": jsontypes.NormalizedType{},
+	"negate": types.BoolType,
+}
+
+func (p smtPredicateModel) object() types.Object {
+	return types.ObjectValueMust(smtPredicateAttrTypes, map[string]attr.Value{"type": p.Type, "config": p.Config, "negate": p.Negate})
+}
+
+// smtPredicateOf returns the predicate, or nil when it is null or unknown.
+func smtPredicateOf(o types.Object) *smtPredicateModel {
+	if o.IsNull() || o.IsUnknown() {
+		return nil
+	}
+	a := o.Attributes()
+	return &smtPredicateModel{Type: a["type"].(types.String), Config: a["config"].(jsontypes.Normalized), Negate: a["negate"].(types.Bool)}
+}
+
 // smtChainAttribute is the smt_chain schema shared by every Kafka Connect
 // source and destination.
 func smtChainAttribute(host ConnectorType) schema.ListNestedAttribute {
 	supported := "`filter`"
+	configExample := ""
 	if host == ConnectorTypeDestination {
 		supported = "`regex_router`, `mask_field`, `drop_fields`"
+		configExample = ", e.g. `jsonencode({ \"fields.include.list\" = [\"users.email\"] })`"
 	}
-	configAttr := func(example string) schema.StringAttribute {
-		d := "JSON object of properties, e.g. `jsonencode(" + example + ")`. Values are strings, booleans or lists of strings. Put secrets in `secret_config`."
+	configAttr := func(example string, secrets bool) schema.StringAttribute {
+		d := "JSON object of properties" + example + ". Values are strings, booleans or lists of strings."
+		if secrets {
+			d += " Put secrets in `secret_config`."
+		}
 		return schema.StringAttribute{Optional: true, CustomType: jsontypes.NormalizedType{}, Description: d, MarkdownDescription: d}
 	}
 	d := "Single Message Transforms applied by this connector, in the order they run (at most 20). Supported types: " + supported + ". Removing the attribute removes the chain, and so does an apply on a resource that never declared it after a chain was added in the Streamkap app. To manage the chain in the app instead, add `lifecycle { ignore_changes = [smt_chain] }`."
@@ -76,7 +100,7 @@ func smtChainAttribute(host ConnectorType) schema.ListNestedAttribute {
 				Validators:  []validator.String{stringvalidator.LengthAtMost(200), stringvalidator.RegexMatches(regexp.MustCompile(`^[^<>&]*$`), "must not contain <, > or &")},
 			},
 			"enabled": schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(true), Description: "A disabled item keeps its settings but does not run. Defaults to `true`."},
-			"config":  configAttr(`{ "fields.include.list" = ["users.email"] }`),
+			"config":  configAttr(configExample, true),
 			"secret_config": schema.MapAttribute{
 				Optional:    true,
 				Sensitive:   true,
@@ -88,7 +112,7 @@ func smtChainAttribute(host ConnectorType) schema.ListNestedAttribute {
 				Description: "Run the transform only on records that match.",
 				Attributes: map[string]schema.Attribute{
 					"type":   schema.StringAttribute{Required: true, Description: "Predicate type, e.g. `topic_name_matches`."},
-					"config": configAttr(`{ pattern = "orders.*" }`),
+					"config": configAttr(", e.g. `jsonencode({ pattern = \"orders.*\" })`", false),
 					"negate": schema.BoolAttribute{Optional: true, Computed: true, Default: booldefault.StaticBool(false), Description: "Apply the transform to the records that do not match. Defaults to `false`."},
 				},
 			},
@@ -134,8 +158,10 @@ func planSmtChainIDs(ctx context.Context, req resource.ModifyPlanRequest, resp *
 	resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root(smtChainAttr), planned)...)
 }
 
-// keepSmtChainIDs fills each planned item's unknown id with the id of the first
-// unclaimed prior item of the same type and name.
+// keepSmtChainIDs fills each planned item's unknown id with the id of an
+// unclaimed prior item of the same type and name. Items that also share their
+// config are matched first, so two items with the same type and name keep their
+// own ids when reordered.
 func keepSmtChainIDs(planned, prior []smtItemModel) {
 	used := map[string]bool{}
 	for _, item := range planned {
@@ -143,18 +169,34 @@ func keepSmtChainIDs(planned, prior []smtItemModel) {
 			used[item.ID.ValueString()] = true
 		}
 	}
-	for i, item := range planned {
-		if !item.ID.IsUnknown() {
-			continue
-		}
-		for _, before := range prior {
-			if !used[before.ID.ValueString()] && before.Type.Equal(item.Type) && before.Name.Equal(item.Name) {
+	for _, sameConfig := range []bool{true, false} {
+		for i, item := range planned {
+			if !item.ID.IsUnknown() {
+				continue
+			}
+			for _, before := range prior {
+				if used[before.ID.ValueString()] || !before.Type.Equal(item.Type) || !before.Name.Equal(item.Name) {
+					continue
+				}
+				if sameConfig && !smtConfigEqual(before.Config, item.Config) {
+					continue
+				}
 				planned[i].ID = before.ID
 				used[before.ID.ValueString()] = true
 				break
 			}
 		}
 	}
+}
+
+// smtConfigEqual compares two config attributes by their JSON content.
+func smtConfigEqual(a, b jsontypes.Normalized) bool {
+	if a.IsUnknown() || b.IsUnknown() {
+		return false
+	}
+	x, errA := decodeJSONObject(a)
+	y, errB := decodeJSONObject(b)
+	return errA == nil && errB == nil && reflect.DeepEqual(x, y)
 }
 
 func decodeJSONObject(value jsontypes.Normalized) (map[string]any, error) {
@@ -213,12 +255,14 @@ func smtChainToAPI(planned, prior *[]smtItemModel) (*[]api.SmtChainItem, []strin
 		}
 		for key, value := range secrets {
 			config[key] = value
+			// The request logger and error masker see this value under an
+			// ordinary config key, so each one is named.
 			if value != "" {
 				secretValues = append(secretValues, value)
 			}
 		}
 		sent := api.SmtChainItem{ID: item.ID.ValueString(), Type: item.Type.ValueString(), Name: item.Name.ValueString(), Enabled: item.Enabled.ValueBool(), Config: config}
-		if p := item.Predicate; p != nil {
+		if p := smtPredicateOf(item.Predicate); p != nil {
 			predicateConfig, err := decodeJSONObject(p.Config)
 			if err != nil {
 				return nil, nil, fmt.Errorf("smt_chain[%d].predicate.config %w", i, err)
@@ -288,11 +332,11 @@ func smtChainFromAPI(got *[]api.SmtChainItem, prior *[]smtItemModel, isSecret fu
 			priorSecret, wasSecret := priorSecrets[key]
 			priorValue, wasPlain := priorConfig[key]
 			switch {
-			case isString && strings.HasPrefix(secret, smtSecretMask) && wasSecret:
+			case isString && secret == smtSecretMask && wasSecret:
 				secrets[key] = types.StringValue(priorSecret)
-			case isString && strings.HasPrefix(secret, smtSecretMask) && wasPlain:
+			case isString && secret == smtSecretMask && wasPlain:
 				config[key] = priorValue
-			case isString && strings.HasPrefix(secret, smtSecretMask):
+			case isString && secret == smtSecretMask:
 				// A secret set outside Terraform: there is no value to keep.
 			case isString && (wasSecret || !wasPlain && isSecret(item.Type, key)):
 				secrets[key] = types.StringValue(secret)
@@ -300,7 +344,7 @@ func smtChainFromAPI(got *[]api.SmtChainItem, prior *[]smtItemModel, isSecret fu
 				config[key] = value
 			}
 		}
-		model := smtItemModel{ID: types.StringValue(item.ID), Type: types.StringValue(item.Type), Name: types.StringValue(item.Name), Enabled: types.BoolValue(item.Enabled)}
+		model := smtItemModel{Predicate: types.ObjectNull(smtPredicateAttrTypes), ID: types.StringValue(item.ID), Type: types.StringValue(item.Type), Name: types.StringValue(item.Name), Enabled: types.BoolValue(item.Enabled)}
 		if model.Config, err = encodeJSONObject(config, before.Config); err != nil {
 			return nil, err
 		}
@@ -310,14 +354,14 @@ func smtChainFromAPI(got *[]api.SmtChainItem, prior *[]smtItemModel, isSecret fu
 		}
 		if p := item.Predicate; p != nil {
 			priorPredicate := jsontypes.NewNormalizedNull()
-			if before.Predicate != nil {
-				priorPredicate = before.Predicate.Config
+			if bp := smtPredicateOf(before.Predicate); bp != nil {
+				priorPredicate = bp.Config
 			}
 			predicate := &smtPredicateModel{Type: types.StringValue(p.Type), Negate: types.BoolValue(p.Negate)}
 			if predicate.Config, err = encodeJSONObject(p.Config, priorPredicate); err != nil {
 				return nil, err
 			}
-			model.Predicate = predicate
+			model.Predicate = predicate.object()
 		}
 		out = append(out, model)
 	}

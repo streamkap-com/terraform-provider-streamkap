@@ -48,6 +48,13 @@ func redactSensitiveJSON(body []byte) string {
 	return redactJSON(body, false, "<non-JSON body omitted from logs>")
 }
 
+// redactRequestJSON is redactSensitiveJSON that also masks the values
+// WithSentSecrets named on ctx, which can sit under keys the key list misses.
+func redactRequestJSON(ctx context.Context, body []byte) string {
+	named, _ := ctx.Value(sentSecretsKey{}).([]string)
+	return maskSentSecrets(redactSensitiveJSON(body), secretForms(named))
+}
+
 // redactSensitiveErrorJSON also masks Pydantic's `input` and `ctx` fields,
 // which can contain rejected request values in structured validation errors.
 func redactSensitiveErrorJSON(body []byte) string {

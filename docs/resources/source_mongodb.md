@@ -186,7 +186,7 @@ Required:
 
 Optional:
 
-- `config` (String) JSON object of properties, e.g. `jsonencode({ "fields.include.list" = ["users.email"] })`. Values are strings, booleans or lists of strings. Put secrets in `secret_config`.
+- `config` (String) JSON object of properties. Values are strings, booleans or lists of strings. Put secrets in `secret_config`.
 - `enabled` (Boolean) A disabled item keeps its settings but does not run. Defaults to `true`.
 - `predicate` (Attributes) Run the transform only on records that match. (see [below for nested schema](#nestedatt--smt_chain--predicate))
 - `secret_config` (Map of String, Sensitive) Secret properties, e.g. `mask.salt`, kept out of plan output. **Security:** stored in state; mark the source variable sensitive. Removing a key clears the stored secret.
@@ -204,7 +204,7 @@ Required:
 
 Optional:
 
-- `config` (String) JSON object of properties, e.g. `jsonencode({ pattern = "orders.*" })`. Values are strings, booleans or lists of strings. Put secrets in `secret_config`.
+- `config` (String) JSON object of properties, e.g. `jsonencode({ pattern = "orders.*" })`. Values are strings, booleans or lists of strings.
 - `negate` (Boolean) Apply the transform to the records that do not match. Defaults to `false`.
 
 

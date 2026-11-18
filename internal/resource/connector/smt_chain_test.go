@@ -1,11 +1,14 @@
 package connector
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 
@@ -20,6 +23,7 @@ func smtItem(id, smtType, name, config string, secrets map[string]string) smtIte
 		Enabled:      types.BoolValue(true),
 		Config:       jsontypes.NewNormalizedValue(config),
 		SecretConfig: types.MapNull(types.StringType),
+		Predicate:    types.ObjectNull(smtPredicateAttrTypes),
 	}
 	if id != "" {
 		item.ID = types.StringValue(id)
@@ -56,7 +60,7 @@ func TestSmtChainToAPI(t *testing.T) {
 		smtItem("", "regex_router", "route", `{"regex":"(.*)","replacement":"x_$1"}`, nil),
 		smtItem("MaskField1", "mask_field", "hash", `{"fields.include.list":["t.a","t.b"],"replace.null.with.default":false}`, nil),
 	}
-	planned[0].Predicate = &smtPredicateModel{Type: types.StringValue("topic_name_matches"), Config: jsontypes.NewNormalizedValue(`{"pattern":"orders"}`), Negate: types.BoolValue(true)}
+	planned[0].Predicate = smtPredicateModel{Type: types.StringValue("topic_name_matches"), Config: jsontypes.NewNormalizedValue(`{"pattern":"orders"}`), Negate: types.BoolValue(true)}.object()
 
 	sent, _, err := smtChainToAPI(&planned, &prior)
 	require.NoError(t, err)
@@ -112,4 +116,45 @@ func TestSmtChainFromAPISecrets(t *testing.T) {
 	none, err := smtChainFromAPI(nil, nil, isSecret)
 	require.NoError(t, err)
 	require.Nil(t, none, "no chain stays null")
+}
+
+func TestSmtChainIDsKeepWhenTypeAndNameTie(t *testing.T) {
+	prior := []smtItemModel{
+		smtItem("MaskField1", "mask_field", "mask", `{"fields.include.list":["a.x"]}`, nil),
+		smtItem("MaskField2", "mask_field", "mask", `{"fields.include.list":["b.y"]}`, nil),
+	}
+	planned := []smtItemModel{
+		smtItem("", "mask_field", "mask", `{"fields.include.list": ["b.y"]}`, nil),
+		smtItem("", "mask_field", "mask", `{"fields.include.list":["a.x"]}`, nil),
+	}
+	keepSmtChainIDs(planned, prior)
+	require.Equal(t, "MaskField2", planned[0].ID.ValueString())
+	require.Equal(t, "MaskField1", planned[1].ID.ValueString())
+}
+
+func TestSmtChainFromAPIMaskIsTheWholeSentinel(t *testing.T) {
+	got := []api.SmtChainItem{{ID: "MaskField1", Type: "mask_field", Name: "hash", Enabled: true, Config: map[string]any{"mask.salt": "*****new", "other": "*****"}}}
+	isSecret := func(smtType, key string) bool { return key == "mask.salt" }
+	chain, err := smtChainFromAPI(&got, nil, isSecret)
+	require.NoError(t, err)
+	item := (*chain)[0]
+	require.Equal(t, `"*****new"`, item.SecretConfig.Elements()["mask.salt"].String(), "cleartext that starts with the mask is a value")
+	require.NotContains(t, item.Config.ValueString(), "other", "the exact mask with nothing to keep is dropped")
+}
+
+func TestSmtChainUnknownPredicateIsCarriedThrough(t *testing.T) {
+	elem := smtChainAttribute(ConnectorTypeDestination).GetType().(types.ListType).ElemType.(types.ObjectType)
+	attrs := map[string]attr.Value{
+		"id": types.StringUnknown(), "type": types.StringValue("mask_field"), "name": types.StringValue("m"), "enabled": types.BoolValue(true),
+		"config": jsontypes.NewNormalizedNull(), "secret_config": types.MapNull(types.StringType),
+		"predicate": types.ObjectUnknown(smtPredicateAttrTypes),
+	}
+	list := types.ListValueMust(elem, []attr.Value{types.ObjectValueMust(elem.AttrTypes, attrs)})
+	get := func(_ context.Context, _ path.Path, target any) diag.Diagnostics {
+		*target.(*types.List) = list
+		return nil
+	}
+	chain, diags := getSmtChain(context.Background(), get)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.True(t, (*chain)[0].Predicate.IsUnknown())
 }

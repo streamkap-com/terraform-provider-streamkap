@@ -206,7 +206,7 @@ Required:
 
 Optional:
 
-- `config` (String) JSON object of properties, e.g. `jsonencode({ pattern = "orders.*" })`. Values are strings, booleans or lists of strings. Put secrets in `secret_config`.
+- `config` (String) JSON object of properties, e.g. `jsonencode({ pattern = "orders.*" })`. Values are strings, booleans or lists of strings.
 - `negate` (Boolean) Apply the transform to the records that do not match. Defaults to `false`.
 
 
