@@ -66,6 +66,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -205,15 +206,15 @@ const (
 )
 
 // ParseConnectorConfig reads and parses a configuration.latest.json file.
-func ParseConnectorConfig(filepath string) (*ConnectorConfig, error) {
-	data, err := os.ReadFile(filepath)
+func ParseConnectorConfig(path string) (*ConnectorConfig, error) {
+	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config file %s: %w", filepath, err)
+		return nil, fmt.Errorf("failed to read config file %s: %w", path, err)
 	}
 
 	var config ConnectorConfig
 	if err := json.Unmarshal(data, &config); err != nil {
-		return nil, fmt.Errorf("failed to parse config file %s: %w", filepath, err)
+		return nil, fmt.Errorf("failed to parse config file %s: %w", path, err)
 	}
 
 	return &config, nil

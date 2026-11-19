@@ -139,7 +139,7 @@ type ValidatorConfig struct {
 
 // LoadOverrides loads the override configuration from a JSON file.
 func LoadOverrides(path string) (*OverrideConfig, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Return empty config if file doesn't exist
@@ -231,7 +231,7 @@ func (g *Generator) loadCommonConfig(backendPath string) (*ConnectorConfig, erro
 func (g *Generator) Generate(config *ConnectorConfig, connectorCode string, backendPath string) error {
 	g.apiSource = config.APISource
 	// Ensure output directory exists
-	if err := os.MkdirAll(g.outputDir, 0755); err != nil {
+	if err := os.MkdirAll(g.outputDir, 0750); err != nil {
 		return fmt.Errorf("failed to create output directory %s: %w", g.outputDir, err)
 	}
 

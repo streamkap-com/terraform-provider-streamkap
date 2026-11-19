@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -222,7 +223,7 @@ func (form *apiFormContract) oauthMode(code string) (APIOAuth, error) {
 const authModeProperty = "auth_mode"
 
 func applyAPIFormContract(config *ConnectorConfig, code, path string) error {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(filepath.Clean(path))
 	if err != nil {
 		return fmt.Errorf("read API source form %s: %w", path, err)
 	}
