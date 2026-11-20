@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `streamkap_source_postgresql`: `streamkap_extra_dbnames` streams more databases
+  with the same schema on the same server through one source, and
+  `streamkap_extra_dbnames_key_field` names the record key field carrying each
+  row's database (default `_streamkap_source_db`). Requires a backend that
+  declares both fields; changing either changes every record's key, so
+  destination tables keyed on the old key need a new snapshot.
+
 ## [3.2.0] - 2026-11-17
 
 ### Added

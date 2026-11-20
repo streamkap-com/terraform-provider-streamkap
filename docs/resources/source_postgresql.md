@@ -208,6 +208,8 @@ output "example-source-postgresql" {
 - `ssh_port` (Number) Port of your SSH server. Defaults to `22`.
 - `ssh_public_key` (String) Public key to add to SSH server
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
+- `streamkap_extra_dbnames` (String) Comma-separated extra databases on the same server to stream with the same schema. Adding extra databases will cause every record's key to carry the row's database (see Database key field), and only Fast-Parallel snapshots will be available.
+- `streamkap_extra_dbnames_key_field` (String) Name of the record key field that carries each row's database, when extra databases are set. Changing it changes every record's key, so destination tables keyed on the old name need a new snapshot. Defaults to `_streamkap_source_db`.
 - `streamkap_snapshot_chunk_size_bytes` (Number) Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to `524288`.
 - `streamkap_snapshot_max_split_size_bytes` (Number) A table whose on-disk size exceeds this splits into ceil(size / threshold) disjoint ctid page-range sub-ranges so it doesn't monopolize one snapshot worker. Applies only to unfiltered ctid snapshots. Default 50 GiB. Defaults to `53687091200`.
 - `streamkap_snapshot_parallelism` (Number) How many parallel chunk requests to send to the source DB. Defaults to `1`.

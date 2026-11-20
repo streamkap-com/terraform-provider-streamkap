@@ -35,6 +35,11 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   database_password = var.source_postgresql_password # Password (use variables for secrets)
   database_dbname   = "commerce"                     # Database name to connect to
 
+  # Multi-database: stream more same-schema databases on this server through one source.
+  # Every record key then carries the row's database; only Fast Parallel snapshots are available.
+  # streamkap_extra_dbnames           = "commerce_cell1,commerce_cell2"
+  # streamkap_extra_dbnames_key_field = "_streamkap_source_db" # key field naming the row's database
+
   # SSL configuration
   database_sslmode = "require" # Options: disable, allow, prefer, require, verify-ca, verify-full
 
