@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `streamkap_source_postgresql`: `streamkap_extra_dbnames` streams more databases
+  with the same schema on the same server through one source, and
+  `streamkap_extra_dbnames_key_field` names the record key field carrying each
+  row's database (default `_streamkap_source_db`). Requires a backend that
+  declares both fields; changing either changes every record's key, so
+  destination tables keyed on the old key need a new snapshot.
+
 ## [3.0.0-beta.31] - 2026-09-09 (Pre-release)
 
 ### Changed (breaking, v3 beta)
