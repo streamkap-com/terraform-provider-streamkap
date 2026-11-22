@@ -1577,6 +1577,10 @@ type {{ .ModelName }} struct {
 	ReplayWindow       types.String         ` + "`" + `tfsdk:"replay_window"` + "`" + `
 	ConnectorStatus    types.String         ` + "`" + `tfsdk:"connector_status"` + "`" + `
 {{- end }}
+{{- /* Kafka Connect connectors carry an SMT chain; its schema is shared in the connector base resource. */ -}}
+{{- if and (ne .EntityType "transform") (not .APISource) (ne .ConnectorCode "kafkadirect") }}
+	SmtChain types.List ` + "`" + `tfsdk:"smt_chain"` + "`" + `
+{{- end }}
 	Timeouts timeouts.Value ` + "`" + `tfsdk:"timeouts"` + "`" + `
 }
 

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -178,5 +179,17 @@ func TestSentSecrets_KeepTheTransformLanguage(t *testing.T) {
 	got := maskSentSecrets("JAVASCRIPT failed on return 'outbound-credential'", secretForms(sentSecrets(body)))
 	if got != "JAVASCRIPT failed on "+redactedPlaceholder {
 		t.Fatalf("got %s", got)
+	}
+}
+
+// A secret merged under an ordinary key is masked in the request log once it is named.
+func TestRedactRequestJSON_MasksNamedSecretUnderOrdinaryKey(t *testing.T) {
+	body := []byte(`{"smt_chain":[{"config":{"replacement":"private-value"}}]}`)
+	if got := redactRequestJSON(context.Background(), body); !strings.Contains(got, "private-value") {
+		t.Fatalf("unnamed values are not masked by key, got %s", got)
+	}
+	got := redactRequestJSON(WithSentSecrets(context.Background(), "private-value"), body)
+	if strings.Contains(got, "private-value") || !strings.Contains(got, redactedPlaceholder) {
+		t.Fatalf("named secret must be masked, got %s", got)
 	}
 }

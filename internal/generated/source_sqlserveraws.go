@@ -74,6 +74,7 @@ type SourceSqlserverawsModel struct {
 	TransformsRecordsFilterOp                          types.String   `tfsdk:"transforms_records_filter_op"`
 	TransformsRecordsFilterValues                      types.String   `tfsdk:"transforms_records_filter_values"`
 	TransformsRecordsFilterNegateCondition             types.Bool     `tfsdk:"transforms_records_filter_negate_condition"`
+	SmtChain                                           types.List     `tfsdk:"smt_chain"`
 	Timeouts                                           timeouts.Value `tfsdk:"timeouts"`
 }
 

@@ -86,6 +86,7 @@ type DestinationSnowflakeModel struct {
 	TransformsCopyFieldCopyFieldMapping              types.String            `tfsdk:"transforms_copy_field_copy_field_mapping"`
 	TransformsHeaderToFieldCustomHeaderMappings      types.String            `tfsdk:"transforms_header_to_field_custom_header_mappings"`
 	AutoQADedupeTableMapping                         map[string]types.String `tfsdk:"auto_qa_dedupe_table_mapping"`
+	SmtChain                                         types.List              `tfsdk:"smt_chain"`
 	Timeouts                                         timeouts.Value          `tfsdk:"timeouts"`
 }
 

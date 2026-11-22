@@ -75,6 +75,7 @@ type DestinationR2Model struct {
 	TransformsMarkColumnsAsOptionalFieldsIncludeList types.String   `tfsdk:"transforms_mark_columns_as_optional_fields_include_list"`
 	TransformsCopyFieldCopyFieldMapping              types.String   `tfsdk:"transforms_copy_field_copy_field_mapping"`
 	TransformsHeaderToFieldCustomHeaderMappings      types.String   `tfsdk:"transforms_header_to_field_custom_header_mappings"`
+	SmtChain                                         types.List     `tfsdk:"smt_chain"`
 	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
 }
 

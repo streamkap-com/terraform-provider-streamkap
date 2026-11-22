@@ -84,6 +84,11 @@ variable "destination_snowflake_key_passphrase" {
   sensitive   = true
   description = "The passphrase of the private key of the Snowflake database"
 }
+variable "mask_salt" {
+  type        = string
+  sensitive   = true
+  description = "Salt prepended to masked values before hashing"
+}
 resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   name                             = "example-destination-snowflake"
   snowflake_url_name               = var.destination_snowflake_url_name
@@ -100,6 +105,16 @@ resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   apply_dynamic_table_script       = false
   snowflake_topic2table_map        = "REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5"
 
+  # Transforms run in list order. A column is table.column with exactly one dot,
+  # matched against the topic name the record has at this step.
+  smt_chain = [
+    {
+      type          = "mask_field"
+      name          = "Hash emails"
+      config        = jsonencode({ "fields.include.list" = ["users.email"], "mask.function" = "SHA256" })
+      secret_config = { "mask.salt" = var.mask_salt }
+    },
+  ]
 }
 
 output "example-destination-snowflake" {
@@ -137,6 +152,7 @@ output "example-destination-snowflake" {
 - `quote_identifiers` (Boolean) Whether to quote identifiers in SQL statements. Defaults to `true`.
 - `schema_evolution` (String) Controls how schema evolution is handled by the sink connector. For pipelines with pre-created destination tables, set to `none`. Defaults to `basic`. Valid values: `basic`, `none`.
 - `sfwarehouse` (String) The name of the snowflake warehouse. Defaults to `STREAMKAP_WH`.
+- `smt_chain` (Attributes List) Single Message Transforms applied by this connector, in the order they run (at most 20). Supported types: `regex_router`, `mask_field`, `drop_fields`. Removing the attribute removes the chain, and so does an apply on a resource that never declared it after a chain was added in the Streamkap app. To manage the chain in the app instead, add `lifecycle { ignore_changes = [smt_chain] }`. (see [below for nested schema](#nestedatt--smt_chain))
 - `snowflake_private_key_passphrase` (String, Sensitive) The passphrase is used to decrypt the private key.
 
 **Security:** This value is marked sensitive and will not appear in CLI output or logs.
@@ -198,6 +214,39 @@ Example:
 - `connector` (String) Connector type
 - `connector_status` (String) Current status of the connector. Refreshed on each plan/apply. Values: `Active`, `Paused`, `Stopped`, `Broken`, `Starting`, `Unassigned`, `Unknown`.
 - `id` (String) Unique identifier for the destination
+
+<a id="nestedatt--smt_chain"></a>
+### Nested Schema for `smt_chain`
+
+Required:
+
+- `name` (String) Display name: at most 200 characters, without `<`, `>` or `&`.
+- `type` (String) Transform type, e.g. `mask_field`.
+
+Optional:
+
+- `config` (String) JSON object of properties, e.g. `jsonencode({ "fields.include.list" = ["users.email"] })`. Values are strings, booleans or lists of strings. Put secrets in `secret_config`.
+- `enabled` (Boolean) A disabled item keeps its settings but does not run. Defaults to `true`.
+- `predicate` (Attributes) Run the transform only on records that match. (see [below for nested schema](#nestedatt--smt_chain--predicate))
+- `secret_config` (Map of String, Sensitive) Secret properties, e.g. `mask.salt`, kept out of plan output. **Security:** stored in state; mark the source variable sensitive. Removing a key clears the stored secret.
+
+Read-Only:
+
+- `id` (String) Kafka Connect alias the server assigns, e.g. `MaskField1`. Kept across plans while the item's type and name stay the same.
+
+<a id="nestedatt--smt_chain--predicate"></a>
+### Nested Schema for `smt_chain.predicate`
+
+Required:
+
+- `type` (String) Predicate type, e.g. `topic_name_matches`.
+
+Optional:
+
+- `config` (String) JSON object of properties, e.g. `jsonencode({ pattern = "orders.*" })`. Values are strings, booleans or lists of strings.
+- `negate` (Boolean) Apply the transform to the records that do not match. Defaults to `false`.
+
+
 
 <a id="nestedblock--timeouts"></a>
 ### Nested Schema for `timeouts`

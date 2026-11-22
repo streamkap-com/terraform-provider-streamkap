@@ -50,6 +50,7 @@ type SourceDocumentdbModel struct {
 	TransformsOversizedRecordsSemanticTypesExclude   types.String   `tfsdk:"transforms_oversized_records_semantic_types_exclude"`
 	TransformsOversizedRecordsReplaceNullWithDefault types.Bool     `tfsdk:"transforms_oversized_records_replace_null_with_default"`
 	InsertTopicNameEnabled                           types.Bool     `tfsdk:"insert_topic_name_enabled"`
+	SmtChain                                         types.List     `tfsdk:"smt_chain"`
 	Timeouts                                         timeouts.Value `tfsdk:"timeouts"`
 }
 

@@ -23,7 +23,7 @@ import (
 // underscored Terraform attribute names, and those dotted keys are what this
 // sees. Matching only `[_-]` silently passed both of those through in the clear.
 var sensitiveKeyRegex = regexp.MustCompile(`(?i)` +
-	`(password|passwd|secret|token|credential|passphrase|` +
+	`(password|passwd|secret|token|credential|passphrase|salt|` +
 	`api[_.-]?key|private[_.-]?key|public[_.-]?key|` +
 	`access[_.-]?key|consumer[_.-]?key|service[_.-]?account|keyfile|connection[_.-]?string|` +
 	`auth|bearer|session|cookie|` +
@@ -46,6 +46,13 @@ const redactedPlaceholder = "***REDACTED***"
 // debug log as sensitive and restrict access accordingly.
 func redactSensitiveJSON(body []byte) string {
 	return redactJSON(body, false, "<non-JSON body omitted from logs>")
+}
+
+// redactRequestJSON is redactSensitiveJSON that also masks the values
+// WithSentSecrets named on ctx, which can sit under keys the key list misses.
+func redactRequestJSON(ctx context.Context, body []byte) string {
+	named, _ := ctx.Value(sentSecretsKey{}).([]string)
+	return maskSentSecrets(redactSensitiveJSON(body), secretForms(named))
 }
 
 // redactSensitiveErrorJSON also masks Pydantic's `input` and `ctx` fields,

@@ -82,6 +82,7 @@ type DestinationClickhouseModel struct {
 	TransformsCopyFieldCopyFieldMapping              types.String                                  `tfsdk:"transforms_copy_field_copy_field_mapping"`
 	TransformsHeaderToFieldCustomHeaderMappings      types.String                                  `tfsdk:"transforms_header_to_field_custom_header_mappings"`
 	TopicsConfigMap                                  map[string]clickHouseTopicsConfigMapItemModel `tfsdk:"topics_config_map"`
+	SmtChain                                         types.List                                    `tfsdk:"smt_chain"`
 	Timeouts                                         timeouts.Value                                `tfsdk:"timeouts"`
 }
 

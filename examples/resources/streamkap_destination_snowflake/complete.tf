@@ -25,6 +25,11 @@ variable "destination_snowflake_key_passphrase" {
   sensitive   = true
   description = "The passphrase of the private key of the Snowflake database"
 }
+variable "mask_salt" {
+  type        = string
+  sensitive   = true
+  description = "Salt prepended to masked values before hashing"
+}
 resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   name                             = "example-destination-snowflake"
   snowflake_url_name               = var.destination_snowflake_url_name
@@ -41,6 +46,16 @@ resource "streamkap_destination_snowflake" "example-destination-snowflake" {
   apply_dynamic_table_script       = false
   snowflake_topic2table_map        = "REGEX_MATCHER>^([-\\w]+\\.)([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+\\.)?([-\\w]+):$5"
 
+  # Transforms run in list order. A column is table.column with exactly one dot,
+  # matched against the topic name the record has at this step.
+  smt_chain = [
+    {
+      type          = "mask_field"
+      name          = "Hash emails"
+      config        = jsonencode({ "fields.include.list" = ["users.email"], "mask.function" = "SHA256" })
+      secret_config = { "mask.salt" = var.mask_salt }
+    },
+  ]
 }
 
 output "example-destination-snowflake" {

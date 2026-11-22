@@ -36,6 +36,8 @@ type Source struct {
 	// ConnectionWarning is set on an API source's create and update responses
 	// when the save succeeded but a credential or resource check warned.
 	ConnectionWarning string `json:"connection_warning,omitempty"`
+	// SmtChain is omitted when nil, which keeps the stored chain; an empty slice removes it.
+	SmtChain *[]SmtChainItem `json:"smt_chain,omitempty"`
 }
 
 func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*Source, error) {
@@ -68,7 +70,7 @@ func (s *streamkapAPI) CreateSource(ctx context.Context, reqPayload Source) (*So
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		redactSensitiveJSON(payload),
+		redactRequestJSON(ctx, payload),
 	))
 	var resp Source
 	err = s.doRequestWithRetry(ctx, req, &resp)
@@ -166,7 +168,7 @@ func (s *streamkapAPI) UpdateSource(ctx context.Context, sourceID string, reqPay
 			"\tBody: %s",
 		req.Method,
 		req.URL.String(),
-		redactSensitiveJSON(payload),
+		redactRequestJSON(ctx, payload),
 	))
 	var resp Source
 	err = s.doRequestWithRetry(ctx, req, &resp)
