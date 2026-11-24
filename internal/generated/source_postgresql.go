@@ -30,6 +30,8 @@ type SourcePostgresqlModel struct {
 	DatabaseUser                                     types.String   `tfsdk:"database_user"`
 	DatabasePassword                                 types.String   `tfsdk:"database_password"`
 	DatabaseDbname                                   types.String   `tfsdk:"database_dbname"`
+	StreamkapExtraDbnames                            types.String   `tfsdk:"streamkap_extra_dbnames"`
+	StreamkapExtraDbnamesKeyField                    types.String   `tfsdk:"streamkap_extra_dbnames_key_field"`
 	SnapshotReadOnly                                 types.String   `tfsdk:"snapshot_read_only"`
 	SignalDataCollectionSchemaOrDatabase             types.String   `tfsdk:"signal_data_collection_schema_or_database"`
 	ColumnIncludeListToggled                         types.Bool     `tfsdk:"column_include_list_toggled"`
@@ -163,6 +165,21 @@ func SourcePostgresqlSchema() schema.Schema {
 				Required:            true,
 				Description:         "Database from which to stream data",
 				MarkdownDescription: "Database from which to stream data",
+			},
+			"streamkap_extra_dbnames": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Comma-separated extra databases on the same server to stream with the same schema. Adding extra databases will cause every record's key to carry the row's database (see Database key field), and only Fast-Parallel snapshots will be available.",
+				MarkdownDescription: "Comma-separated extra databases on the same server to stream with the same schema. Adding extra databases will cause every record's key to carry the row's database (see Database key field), and only Fast-Parallel snapshots will be available.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"streamkap_extra_dbnames_key_field": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Description:         "Name of the record key field that carries each row's database, when extra databases are set. Changing it changes every record's key, so destination tables keyed on the old name need a new snapshot.",
+				MarkdownDescription: "Name of the record key field that carries each row's database, when extra databases are set. Changing it changes every record's key, so destination tables keyed on the old name need a new snapshot.",
 			},
 			"snapshot_read_only": schema.StringAttribute{
 				Optional:            true,
@@ -590,12 +607,14 @@ func SourcePostgresqlSchema() schema.Schema {
 
 // SourcePostgresqlFieldMappings maps Terraform attribute names to API field names.
 var SourcePostgresqlFieldMappings = map[string]string{
-	"database_hostname":  "database.hostname.user.defined",
-	"database_port":      "database.port.user.defined",
-	"database_user":      "database.user",
-	"database_password":  "database.password",
-	"database_dbname":    "database.dbname",
-	"snapshot_read_only": "snapshot.read.only.user.defined",
+	"database_hostname":                                      "database.hostname.user.defined",
+	"database_port":                                          "database.port.user.defined",
+	"database_user":                                          "database.user",
+	"database_password":                                      "database.password",
+	"database_dbname":                                        "database.dbname",
+	"streamkap_extra_dbnames":                                "streamkap.extra.dbnames",
+	"streamkap_extra_dbnames_key_field":                      "streamkap.extra.dbnames.key.field",
+	"snapshot_read_only":                                     "snapshot.read.only.user.defined",
 	"signal_data_collection_schema_or_database":              "signal.data.collection.schema.or.database",
 	"column_include_list_toggled":                            "column.include.list.toggled",
 	"source_regex_support_enabled":                           "SourceRegexSupport.enabled",

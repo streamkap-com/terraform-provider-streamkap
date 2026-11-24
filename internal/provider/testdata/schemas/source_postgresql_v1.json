@@ -309,6 +309,20 @@
       "sensitive": false,
       "type": "basetypes.StringType"
     },
+    "streamkap_extra_dbnames": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
+    "streamkap_extra_dbnames_key_field": {
+      "required": false,
+      "optional": true,
+      "computed": true,
+      "sensitive": false,
+      "type": "basetypes.StringType"
+    },
     "streamkap_snapshot_chunk_size_bytes": {
       "required": false,
       "optional": true,
