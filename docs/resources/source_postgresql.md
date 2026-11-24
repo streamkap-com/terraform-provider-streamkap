@@ -97,6 +97,11 @@ resource "streamkap_source_postgresql" "example-source-postgresql" {
   database_password = var.source_postgresql_password # Password (use variables for secrets)
   database_dbname   = "commerce"                     # Database name to connect to
 
+  # Multi-database: stream more same-schema databases on this server through one source.
+  # Every record key then carries the row's database; only Fast Parallel snapshots are available.
+  # streamkap_extra_dbnames           = "commerce_cell1,commerce_cell2"
+  # streamkap_extra_dbnames_key_field = "_streamkap_source_db" # key field naming the row's database
+
   # SSL configuration
   database_sslmode = "require" # Options: disable, allow, prefer, require, verify-ca, verify-full
 
@@ -209,7 +214,7 @@ output "example-source-postgresql" {
 - `ssh_public_key` (String) Public key to add to SSH server
 - `ssh_user` (String) User that allows Streamkap to connect to SSH server. Defaults to `streamkap`.
 - `streamkap_extra_dbnames` (String) Comma-separated extra databases on the same server to stream with the same schema. Adding extra databases will cause every record's key to carry the row's database (see Database key field), and only Fast-Parallel snapshots will be available.
-- `streamkap_extra_dbnames_key_field` (String) Name of the record key field that carries each row's database, when extra databases are set. Changing it changes every record's key, so destination tables keyed on the old name need a new snapshot. Defaults to `_streamkap_source_db`.
+- `streamkap_extra_dbnames_key_field` (String) Name of the record key field that carries each row's database, when extra databases are set. Changing it changes every record's key, so destination tables keyed on the old name need a new snapshot.
 - `streamkap_snapshot_chunk_size_bytes` (Number) Target byte size for one chunk SELECT. Drives LIMIT = ceil(chunk.size.bytes / avg_row_size). Defaults to `524288`.
 - `streamkap_snapshot_max_split_size_bytes` (Number) A table whose on-disk size exceeds this splits into ceil(size / threshold) disjoint ctid page-range sub-ranges so it doesn't monopolize one snapshot worker. Applies only to unfiltered ctid snapshots. Default 50 GiB. Defaults to `53687091200`.
 - `streamkap_snapshot_parallelism` (Number) How many parallel chunk requests to send to the source DB. Defaults to `1`.

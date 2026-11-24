@@ -178,9 +178,8 @@ func SourcePostgresqlSchema() schema.Schema {
 			"streamkap_extra_dbnames_key_field": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				Description:         "Name of the record key field that carries each row's database, when extra databases are set. Changing it changes every record's key, so destination tables keyed on the old name need a new snapshot. Defaults to \"_streamkap_source_db\".",
-				MarkdownDescription: "Name of the record key field that carries each row's database, when extra databases are set. Changing it changes every record's key, so destination tables keyed on the old name need a new snapshot. Defaults to `_streamkap_source_db`.",
-				Default:             stringdefault.StaticString("_streamkap_source_db"),
+				Description:         "Name of the record key field that carries each row's database, when extra databases are set. Changing it changes every record's key, so destination tables keyed on the old name need a new snapshot.",
+				MarkdownDescription: "Name of the record key field that carries each row's database, when extra databases are set. Changing it changes every record's key, so destination tables keyed on the old name need a new snapshot.",
 			},
 			"snapshot_read_only": schema.StringAttribute{
 				Optional:            true,

@@ -1090,8 +1090,13 @@ func isPortField(tfAttrName string) bool {
 // Dropping the client-side default lets the backend's value stand. A user who
 // sets the template explicitly still plans a value the backend will rewrite;
 // that is a narrower, backend-side contract problem, tracked separately.
+//
+// `streamkap.extra.dbnames.key.field` (postgresql source) defaults to "_streamkap_source_db" only while
+// `streamkap.extra.dbnames` is set; otherwise the backend drops it. A client-side default would also plan an
+// update on every source created before the attribute existed, whose state holds null.
 var rewrittenDefaultNames = []string{
 	"file_name_template",
+	"streamkap_extra_dbnames_key_field",
 }
 
 func isRewrittenDefault(tfAttrName string) bool {

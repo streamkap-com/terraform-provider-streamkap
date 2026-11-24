@@ -224,9 +224,10 @@ func TestIssue80_OptionalComputedFieldsHaveUseStateForUnknown(t *testing.T) {
 				if hasDefault(attr) {
 					continue
 				}
-				if (f.name == "source_mongodb" || f.name == "source_mongodbhosted") && name == "mongodb_connection_hostname" {
+				if (f.name == "source_mongodb" || f.name == "source_mongodbhosted") && name == "mongodb_connection_hostname" ||
+					f.name == "source_postgresql" && name == "streamkap_extra_dbnames_key_field" {
 					if hasUseStateForUnknown(attr) {
-						t.Errorf("%s.%s must be recomputed after connection-string changes", f.name, name)
+						t.Errorf("%s.%s must be recomputed when the inputs it derives from change", f.name, name)
 					}
 					continue
 				}

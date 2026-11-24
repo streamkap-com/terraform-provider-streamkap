@@ -1919,6 +1919,16 @@ func TestRewrittenDefault_DropsClientSideDefault(t *testing.T) {
 			"so pinning the prior state plans a stale value and the update is rejected")
 	}
 
+	// The multi-DB key field's default exists only while extra databases are set.
+	keyField := &ConfigEntry{
+		Name:        "streamkap.extra.dbnames.key.field",
+		UserDefined: true,
+		Value:       ValueObject{Control: "string", Default: "_streamkap_source_db"},
+	}
+	if kf := g.entryToFieldData(keyField); kf.HasDefault || kf.NeedsPlanMod || !kf.Optional || !kf.Computed {
+		t.Errorf("streamkap_extra_dbnames_key_field must be Optional+Computed with no default and no UseStateForUnknown, got %+v", kf)
+	}
+
 	// A field with an ordinary default is untouched.
 	other := &ConfigEntry{
 		Name:        "file.name.prefix",
