@@ -232,7 +232,7 @@ Keep the histories independent: never merge `main` and `v2`. A fix for v2 users 
 
 ## Public repository: content hygiene
 
-This repo is public. Do not commit internal ticket IDs/URLs, customer or tenant identifiers, real credentials, internal hostnames, verbatim production traces or unannounced roadmap details. Public GitHub issue numbers (`#75`) are fine. Reference `https://api.streamkap.com` and `https://docs.streamkap.com`. Flag any new occurrences you find.
+This repo is public. Bare internal ticket IDs (`ENG-2815`) are fine in branch names, commit messages and PR titles: they open nothing without workspace access and keep commits linked to their tickets. Do not commit internal ticket URLs, customer or tenant identifiers, real credentials, internal hostnames, verbatim production traces or unannounced roadmap details. Public GitHub issue numbers (`#75`) are fine. Reference `https://api.streamkap.com` and `https://docs.streamkap.com`. Flag any new occurrences you find.
 
 ## Reported issues
 
